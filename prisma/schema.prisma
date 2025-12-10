@@ -1,0 +1,746 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 1. Admin Users
+model AdminUser {
+  id            Int       @id @default(autoincrement())
+  email         String    @unique
+  password_hash String
+  name          String?
+  role          String    @default("ADMIN") // ADMIN, USER
+  created_at    DateTime  @default(now())
+  last_login    DateTime?
+
+  // Relations
+  uploaded_media MediaLibrary[]
+  blog_posts     BlogPost[]
+
+  @@map("admin_users")
+}
+
+// 2. Settings
+model Setting {
+  id            Int      @id @default(autoincrement())
+  setting_key   String   @unique
+  setting_value String?
+  updated_at    DateTime @default(now()) @updatedAt
+  
+  // Parallax backgrounds
+  parallax_home_1         String?  @default("")
+  parallax_home_2         String?  @default("")
+  
+  // About Me images
+  about_me_hero_image     String?  @default("")
+  about_me_portrait       String?  @default("")
+  
+  // Info band section
+  info_band_image         String?  @default("")
+  info_band_title         String?
+  info_band_content       String?
+  
+  // Exit popup
+  exit_popup_enabled      Boolean? @default(false)
+  exit_popup_title        String?
+  exit_popup_content      String?
+  exit_popup_cta_text     String?
+  exit_popup_cta_link     String?
+
+  // Navbar Configuration
+  navbar_layout   String? @default("logo_left_menu_right") // Options: logo_left_menu_right, logo_center_menu_split, logo_left_menu_center, logo_right_menu_left
+  navbar_sticky   Boolean @default(true)
+  navbar_font_size Int     @default(16)
+  navbar_font_family String @default("Montserrat") // Options: Montserrat, Playfair Display, Lato, etc.
+
+  // Favicon & Logo
+  favicon_url     String?
+  logo_url        String?
+  logo_dark_url   String?
+  logo_size       Int     @default(140) // Default width in pixels
+
+  // Email Configuration
+  smtp_host       String?
+  smtp_port       Int?
+  smtp_user       String?
+  smtp_password   String?
+  smtp_from       String?
+
+  // Payment Configuration (PayU)
+  payu_merchant_pos_id    String?
+  payu_notify_url         String?
+  payu_client_id          String?
+  payu_client_secret      String?
+  payu_environment        String  @default("sandbox") // sandbox, secure
+
+  // Legacy P24 (Deprecating)
+  p24_merchant_id     String?
+  p24_pos_id          String?
+  p24_crc_key         String?
+  p24_api_key         String?
+  p24_test_mode       Boolean @default(true)
+  p24_method_blik     Boolean @default(true)
+  p24_method_card     Boolean @default(true)
+  p24_method_transfer Boolean @default(true)
+
+  // Portfolio
+  portfolio_categories String? // JSON array ["wedding", "family", ...]
+
+  // Seasonal Decorations
+  seasonal_effect   String? @default("none") // none, snow, lights, hearts, halloween
+
+  @@map("settings")
+}
+
+// 2.5 Menu Items
+model MenuItem {
+  id          Int        @id @default(autoincrement())
+  title       String
+  url         String?    // Optional, if linking to external or custom path
+  page_id     Int?       // Optional, relation to Page
+  parent_id   Int?       // For submenus
+  order       Int        @default(0)
+  is_active   Boolean    @default(true)
+  created_at  DateTime   @default(now())
+
+  // Relations
+  page        Page?      @relation(fields: [page_id], references: [id])
+  parent      MenuItem?  @relation("MenuHierarchy", fields: [parent_id], references: [id])
+  children    MenuItem[] @relation("MenuHierarchy")
+
+  @@map("menu_items")
+}
+
+// 3. Media Library
+model MediaLibrary {
+  id             Int      @id @default(autoincrement())
+  file_name      String
+  original_name  String
+  file_path      String
+  file_size      BigInt
+  mime_type      String
+  width          Int?
+  height         Int?
+  folder         String
+  category       String?
+  tags           String?  // JSON string
+  alt_text       String?
+  webp_path      String?
+  avif_path      String?
+  thumbnail_path String?
+  used_in        String?  // JSON string
+  is_featured    Boolean  @default(false)
+  uploaded_by    Int?
+  created_at     DateTime @default(now())
+
+  // Relations
+  uploader           AdminUser?         @relation(fields: [uploaded_by], references: [id])
+  portfolio_covers   PortfolioSession[]
+  blog_featured      BlogPost[]
+  testimonial_photos Testimonial[]
+  hero_slides        HeroSlide[]
+  challenge_photos   ChallengePhoto[]
+
+  @@map("media_library")
+}
+
+// 4. Portfolio Sessions
+model PortfolioSession {
+  id               Int       @id @default(autoincrement())
+  title            String
+  slug             String    @unique
+  category         String
+  description      String?
+  location         String?
+  session_date     DateTime?
+  cover_image_id   Int?
+  media_ids        String?   // JSON string
+  meta_title       String?
+  meta_description String?
+  is_published     Boolean   @default(false)
+  display_order    Int       @default(0)
+  created_at       DateTime  @default(now())
+  updated_at       DateTime  @default(now()) @updatedAt
+
+  // Relations
+  cover_image MediaLibrary? @relation(fields: [cover_image_id], references: [id])
+
+  @@map("portfolio_sessions")
+}
+
+// 5. Blog Posts
+model BlogPost {
+  id                Int       @id @default(autoincrement())
+  title             String
+  slug              String    @unique
+  excerpt           String?
+  content           String
+  featured_image_id Int?
+  meta_title        String?
+  meta_description  String?
+  keywords          String?   // JSON string
+  category          String?
+  tags              String?   // JSON string
+  status            String    @default("draft") // draft, published, scheduled
+  published_at      DateTime?
+  author_id         Int?
+  created_at        DateTime  @default(now())
+  updated_at        DateTime  @default(now()) @updatedAt
+
+  // Relations
+  featured_image MediaLibrary? @relation(fields: [featured_image_id], references: [id])
+  author         AdminUser?    @relation(fields: [author_id], references: [id])
+
+  @@map("blog_posts")
+}
+
+// 6. Testimonials
+model Testimonial {
+  id               Int      @id @default(autoincrement())
+  client_name      String
+  client_photo_id  Int?
+  testimonial_text String
+  rating           Int?
+  source           String?
+  photo_size       Int?     @default(80) // Size of circular photo in pixels (32-200)
+  is_featured      Boolean  @default(false)
+  show_on_booking_page Boolean @default(false)
+  display_order    Int      @default(0)
+  created_at       DateTime @default(now())
+
+  // Relations
+  client_photo MediaLibrary? @relation(fields: [client_photo_id], references: [id])
+
+  @@map("testimonials")
+}
+
+// 7. Promo Codes
+model PromoCode {
+  id                       Int       @id @default(autoincrement())
+  code                     String    @unique
+  discount_value           Int
+  discount_type            String // percentage, fixed
+  valid_from               DateTime  @default(now())
+  valid_until              DateTime?
+  is_active                Boolean   @default(true)
+  max_usage                Int?
+  usage_count              Int       @default(0)
+  auto_generated_for_email String?
+  created_at               DateTime  @default(now())
+
+  @@map("promo_codes")
+}
+
+// 8. Inquiries
+model Inquiry {
+  id             Int      @id @default(autoincrement())
+  name           String
+  email          String
+  phone          String?
+  message        String
+  session_type   String?
+  preferred_date DateTime?
+  promo_code     String?
+  source         String?
+  status         String   @default("new") // new, contacted, booked, closed
+  notes          String?
+  created_at     DateTime @default(now())
+
+  @@map("inquiries")
+}
+
+// 9. Email Subscribers
+model EmailSubscriber {
+  id              Int      @id @default(autoincrement())
+  email           String   @unique
+  source          String
+  promo_code_sent String?
+  is_active       Boolean  @default(true)
+  subscribed_at   DateTime @default(now())
+
+  @@map("email_subscribers")
+}
+
+// 10. Analytics Events
+model AnalyticsEvent {
+  id           Int      @id @default(autoincrement())
+  event_type   String
+  page_url     String?
+  user_id      String
+  session_id   String
+  referrer     String?
+  utm_source   String?
+  utm_medium   String?
+  utm_campaign String?
+  metadata     String?  // JSON string
+  created_at   DateTime @default(now())
+
+  @@index([event_type])
+  @@index([created_at])
+  @@index([session_id])
+
+  @@map("analytics_events")
+}
+
+// 11. Hero Slides
+model HeroSlide {
+  id            Int      @id @default(autoincrement())
+  title         String?
+  subtitle      String?
+  button_text   String?
+  button_link   String?
+  image_id      Int
+  display_order Int      @default(0)
+  display_mode  String   @default("BOTH") // MOBILE, DESKTOP, BOTH
+  is_active     Boolean  @default(true)
+  created_at    DateTime @default(now())
+
+  // Relations
+  image MediaLibrary @relation(fields: [image_id], references: [id])
+
+  @@map("hero_slides")
+}
+
+// 12. Static Pages
+model Page {
+  id               Int      @id @default(autoincrement())
+  slug             String   @unique
+  title            String
+  content          String   // HTML or JSON
+  meta_title       String?
+  meta_description String?
+  is_published     Boolean  @default(false)
+  updated_at       DateTime @default(now()) @updatedAt
+  
+  // Hero section
+  hero_image       String?
+  hero_subtitle    String?
+  
+  // Content images (JSON array: [{url, caption, position}])
+  content_images   String?  // JSON
+  
+  // Advanced features for dynamic pages
+  parallax_sections String? // JSON array: [{image, title, subtitle, enabled}]
+  content_cards     String? // JSON array: [{title, description, icon, enabled}]
+  about_photo       String? // Photo for about section
+  about_text_side   String? // Side text for about section
+  
+  // Homepage specific
+  home_sections     String? // JSON: {hero_slider: [], about_section: {}, features: []}
+  
+  // SEO
+  meta_keywords    String?
+  page_type        String   @default("regular") // regular, home, portfolio, contact, about, offer
+
+  // Dynamic Page Builder Sections
+  sections         String?  // JSON array: [{type, content, settings, ...}]
+
+  // Menu fields
+  is_in_menu       Boolean  @default(false)
+  menu_title       String?
+  menu_order       Int      @default(0)
+  
+  // Relations
+  menu_items       MenuItem[]
+
+  @@map("pages")
+}
+
+// 13. Bookings
+
+
+// 5. Blog Posts
+
+
+// 12. Static Pages
+
+
+// 13. Bookings
+model Booking {
+  id            Int      @id @default(autoincrement())
+  service       String
+  package       String
+  price         Int
+  date          DateTime
+  start_time    String?
+  end_time      String?
+  client_name   String
+  email         String
+  phone         String?
+  venue_city    String?
+  venue_place   String?
+  notes         String?
+  promo_code    String?
+  gift_card_code String?  // Track which gift card was used for this booking
+  challenge_id  Int?     // Link to PhotoChallenge if booking came from a challenge
+  status        String   @default("pending") // pending, confirmed, cancelled, completed
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  @@map("bookings")
+}
+
+// 14. Gift Cards
+model GiftCard {
+  id              Int       @id @default(autoincrement())
+  code            String    @unique
+  amount          Int       // discount amount in PLN or percentage
+  discount_type   String    @default("percentage") // "percentage" | "fixed"
+  recipient_email String
+  recipient_name  String
+  message         String?
+  card_template   String    @default("gold") // "gold" | "dark" | "classic"
+  valid_until     DateTime?
+  is_used         Boolean   @default(false)
+  created_at      DateTime  @default(now())
+  used_at         DateTime?
+  created_by      Int?      // Admin user who created it
+  notes           String?   // Internal notes for admin
+
+  @@map("gift_cards")
+}
+
+// 15. Session Invites
+model SessionInvite {
+  id              Int      @id @default(autoincrement())
+  slug            String   @unique
+  inviter_name    String
+  partner_name    String
+  occasion        String?
+  message         String?
+  style           String   @default("romantic") // romantic, fun, elegant
+  is_viewed       Boolean  @default(false)
+  created_at      DateTime @default(now())
+
+  @@map("session_invites")
+}
+
+// ============================================
+// PHOTO CHALLENGE MODULE
+// ============================================
+
+// Challenge Packages
+model ChallengePackage {
+  id                  Int              @id @default(autoincrement())
+  name                String
+  description         String?
+  base_price          Int
+  challenge_price     Int
+  discount_percentage Int
+  included_items      String?          // JSON array
+  is_active           Boolean          @default(true)
+  display_order       Int              @default(0)
+  created_at          DateTime         @default(now())
+  updated_at          DateTime         @updatedAt
+
+  // Styling options
+  style_variant       String?          @default("classic") // classic, modern, gradient, outline
+  bg_color            String?          @default("#18181b")
+  accent_color        String?          @default("#d4af37")
+  gradient_to         String?          @default("#1a1a1a")
+  icon                String?          // Lucide icon name
+
+  // Relations
+  challenges PhotoChallenge[]
+
+  @@map("challenge_packages")
+}
+
+// Challenge Locations
+model ChallengeLocation {
+  id              Int              @id @default(autoincrement())
+  name            String
+  description     String?
+  address         String?
+  google_maps_url String?
+  image_url       String?
+  is_active       Boolean          @default(true)
+  display_order   Int              @default(0)
+  created_at      DateTime         @default(now())
+  updated_at      DateTime         @updatedAt
+
+  // Relations
+  challenges PhotoChallenge[]
+
+  @@map("challenge_locations")
+}
+
+// Challenge Users (separate from AdminUser)
+model ChallengeUser {
+  id               Int              @id @default(autoincrement())
+  email            String           @unique
+  password_hash    String?
+  name             String?
+  phone            String?
+  auth_provider    String           @default("email") // email, facebook, google
+  auth_provider_id String?
+  created_at       DateTime         @default(now())
+  last_login       DateTime?
+
+  // Relations
+  challenges PhotoChallenge[]
+
+  @@map("challenge_users")
+}
+
+// Photo Challenges
+model PhotoChallenge {
+  id                       Int       @id @default(autoincrement())
+  unique_link              String    @unique
+  
+  // Inviter
+  inviter_name             String
+  inviter_contact          String
+  inviter_contact_type     String    @default("email")
+  
+  // Invitee
+  invitee_name             String
+  invitee_contact          String
+  invitee_contact_type     String    @default("email")
+  invitee_user_id          Int?
+  
+  // Challenge details
+  package_id               Int
+  location_id              Int?
+  custom_location          String?
+  custom_location_maps_url String?
+  
+  // Discount
+  discount_amount          Int
+  discount_percentage      Int
+  
+  // Status & Dates
+  status                   String    @default("sent") // sent, viewed, accepted, rejected, scheduled, completed, expired
+  acceptance_deadline      DateTime?
+  created_at               DateTime  @default(now())
+  viewed_at                DateTime?
+  accepted_at              DateTime?
+  rejected_at              DateTime?
+  session_date             DateTime?
+  completed_at             DateTime?
+  
+  // Preferred dates (JSON array)
+  preferred_dates          String?
+  
+  // Admin
+  admin_notes              String?
+  channel                  String?    @default("messenger") // Communication channel: messenger, email, sms
+  
+  // Relations
+  package      ChallengePackage  @relation(fields: [package_id], references: [id])
+  location     ChallengeLocation? @relation(fields: [location_id], references: [id])
+  invitee_user ChallengeUser?    @relation(fields: [invitee_user_id], references: [id])
+  timeline     ChallengeTimelineEvent[]
+  gallery      ChallengeGallery?
+
+  @@index([unique_link])
+  @@index([status])
+  @@map("photo_challenges")
+}
+
+// Challenge Timeline Events
+model ChallengeTimelineEvent {
+  id                Int      @id @default(autoincrement())
+  challenge_id      Int
+  event_type        String
+  event_description String?
+  metadata          String? // JSON
+  created_at        DateTime @default(now())
+
+  // Relations
+  challenge PhotoChallenge @relation(fields: [challenge_id], references: [id], onDelete: Cascade)
+
+  @@index([challenge_id])
+  @@map("challenge_timeline_events")
+}
+
+// Challenge Settings
+model ChallengeSetting {
+  id            Int      @id @default(autoincrement())
+  setting_key   String   @unique
+  setting_value String?
+  setting_type  String   @default("text") // boolean, number, text, json
+  updated_at    DateTime @updatedAt
+
+  @@map("challenge_settings")
+}
+
+// Challenge Galleries
+model ChallengeGallery {
+  id                   Int       @id @default(autoincrement())
+  challenge_id         Int?      @unique
+  title                String
+  couple_names         String?
+  session_type         String?
+  testimonial_text     String?
+  layout_style         String    @default("grid") // grid, masonry, carousel
+  is_published         Boolean   @default(false)
+  show_in_public_gallery Boolean @default(true)
+  published_at         DateTime?
+  created_at           DateTime  @default(now())
+  updated_at           DateTime  @updatedAt
+
+  // Relations
+  challenge PhotoChallenge? @relation(fields: [challenge_id], references: [id])
+  photos    ChallengePhoto[]
+
+  @@map("challenge_galleries")
+}
+
+// Challenge Photos
+model ChallengePhoto {
+  id            Int      @id @default(autoincrement())
+  gallery_id    Int
+  media_id      Int
+  is_cover      Boolean  @default(false)
+  display_order Int      @default(0)
+  caption       String?
+  created_at    DateTime @default(now())
+
+  // Relations
+  gallery ChallengeGallery @relation(fields: [gallery_id], references: [id], onDelete: Cascade)
+  media   MediaLibrary     @relation(fields: [media_id], references: [id])
+
+  @@map("challenge_photos")
+}
+
+// =====================================================
+// CLIENT GALLERY SYSTEM
+// =====================================================
+
+// 22. Client Galleries
+// Main gallery assigned to a booking
+model ClientGallery {
+  id                Int      @id @default(autoincrement())
+  booking_id        Int?     @unique // Link to Booking (optional)
+  client_email      String   // Client email for login
+  client_name       String   // Client name
+  access_code       String   @unique // Unique access code for gallery
+  expires_at        DateTime? // When gallery expires (optional)
+  standard_count    Int      @default(0) // Number of standard photos included in package
+  price_per_premium Int      @default(2000) // Price per premium photo in cents (default 20 PLN)
+  is_active         Boolean  @default(true)
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  // Relations
+  photos            GalleryPhoto[]
+  orders            PhotoOrder[]
+
+  @@map("client_galleries")
+}
+
+// 23. Gallery Photos
+// Individual photo in a client gallery
+model GalleryPhoto {
+  id            Int      @id @default(autoincrement())
+  gallery_id    Int
+  file_url      String   // Path to file on server (e.g., /uploads/galleries/123/photo.jpg)
+  thumbnail_url String?  // Path to thumbnail
+  file_size     Int      // Size in bytes
+  width         Int?     // Image width
+  height        Int?     // Image height
+  is_standard   Boolean  @default(false) // Standard (included) vs Premium (paid)
+  order_index   Int      @default(0) // Display order
+  created_at    DateTime @default(now())
+
+  // Relations
+  gallery       ClientGallery @relation(fields: [gallery_id], references: [id], onDelete: Cascade)
+
+  @@map("gallery_photos")
+}
+
+// 24. Photo Orders
+// Order for premium photos
+model PhotoOrder {
+  id              Int      @id @default(autoincrement())
+  gallery_id      Int
+  photo_ids       String   // JSON array of photo IDs
+  photo_count     Int      // Number of photos ordered
+  total_amount    Int      // Total amount in cents
+  payment_status  String   @default("pending") // pending, paid, failed, cancelled
+  payment_id      String?  // Payment ID from PayU/Stripe
+  payment_url     String?  // Payment URL for client
+  paid_at         DateTime?
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  // Relations
+  gallery         ClientGallery @relation(fields: [gallery_id], references: [id], onDelete: Cascade)
+
+  @@map("photo_orders")
+}
+
+// 25. System Settings
+// Global system configuration
+model SystemSettings {
+  id                    Int      @id @default(autoincrement())
+  key                   String   @unique
+  value                 String   // JSON value
+  description           String?  // Description of the setting
+  updated_at            DateTime @updatedAt
+
+  @@map("system_settings")
+}
+
+// =====================================================
+// VISUAL EFFECTS SYSTEM
+// =====================================================
+
+// Page Visual Effects
+// Manages visual effects (carousel, 3D orbiting, masonry) on different pages
+model PageEffect {
+  id              Int      @id @default(autoincrement())
+  page_slug       String   // home, foto-wyzwanie, jak-sie-ubrac, portfolio
+  section_name    String   // hero, gallery, examples, testimonials
+  effect_type     String   // carousel, orbiting3d, masonry, parallax, none
+  is_enabled      Boolean  @default(false)
+  config          String?  // JSON config: {speed, autoplay, slides_per_view, etc}
+  photos_source   String   @default("portfolio") // portfolio, manual, gallery_id
+  manual_photos   String?  // JSON array of photo URLs if manual
+  order_index     Int      @default(0)
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  @@unique([page_slug, section_name])
+  @@map("page_effects")
+}
+
+
+// 26. System Logs
+model SystemLog {
+  id         Int      @id @default(autoincrement())
+  level      String   @default("INFO") // INFO, WARN, ERROR
+  module     String   // AUTH, PAYMENT, EMAIL, SYSTEM, CHALLENGE
+  message    String
+  metadata   String?  // JSON string
+  created_at DateTime @default(now())
+
+  @@index([level])
+  @@index([module])
+  @@index([created_at])
+  @@map("system_logs")
+}
+
+// Error Notebook - Track database issues and fixes
+model ErrorNote {
+  id          Int      @id @default(autoincrement())
+  title       String   // e.g. "Duplikat strony głównej"
+  category    String   @default("DATABASE") // DATABASE, API, FRONTEND, OTHER
+  severity    String   @default("MEDIUM") // LOW, MEDIUM, HIGH, CRITICAL
+  description String   // Detailed explanation in Polish
+  sql_query   String?  // SQL query to fix (if applicable)
+  status      String   @default("OPEN") // OPEN, RESOLVED, IGNORED
+  created_at  DateTime @default(now())
+  resolved_at DateTime?
+  notes       String?  // Additional notes
+
+  @@map("error_notes")
+}

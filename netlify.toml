@@ -1,0 +1,21 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "20"
+  NPM_FLAGS = "--legacy-peer-deps"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+# Optional: Add instructions for environment variables here or in a README
+# Netlify UI > Site settings > Build & deploy > Environment > Edit variables
+# Required:
+# DATABASE_URL
+# JWT_SECRET
+# NEXT_PUBLIC_BASE_URL
+# AWS_ACCESS_KEY_ID
+# AWS_SECRET_ACCESS_KEY
+# S3_BUCKET
+# S3_REGION
