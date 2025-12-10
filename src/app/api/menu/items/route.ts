@@ -32,6 +32,38 @@ export async function GET() {
             }
         });
 
+        if (menuItems.length === 0) {
+            // Fallback: build menu from pages where is_in_menu = true
+            const pages = await prisma.page.findMany({
+                where: { is_in_menu: true },
+                orderBy: { menu_order: 'asc' },
+                select: {
+                    id: true,
+                    title: true,
+                    slug: true,
+                    menu_title: true,
+                    menu_order: true,
+                    is_published: true
+                }
+            });
+
+            const fallback = pages.map(p => ({
+                id: p.id,
+                title: p.menu_title || p.title,
+                url: p.slug === 'strona-glowna' ? '/' : `/${p.slug}`,
+                page_id: p.id,
+                parent_id: null,
+                order: p.menu_order || 0,
+                is_active: p.is_published,
+                page: { slug: p.slug, title: p.title },
+                children: [],
+                // mark source so frontend can detect this is pages-based fallback
+                __source: 'pages'
+            }));
+
+            return NextResponse.json(fallback);
+        }
+
         return NextResponse.json(menuItems);
     } catch (error) {
         console.error("Error fetching menu:", error);
@@ -101,17 +133,24 @@ export async function DELETE(request: Request) {
             return NextResponse.json({ error: "ID is required" }, { status: 400 });
         }
 
-        // First, delete all children (if any)
-        await prisma.menuItem.deleteMany({
-            where: { parent_id: Number(id) },
-        });
+        const numericId = Number(id);
 
-        // Then delete the item itself
-        await prisma.menuItem.delete({
-            where: { id: Number(id) },
-        });
+        // If a menuItem exists with this id, delete it (and its children)
+        const existing = await prisma.menuItem.findUnique({ where: { id: numericId } });
+        if (existing) {
+            await prisma.menuItem.deleteMany({ where: { parent_id: numericId } });
+            await prisma.menuItem.delete({ where: { id: numericId } });
+            return NextResponse.json({ success: true });
+        }
 
-        return NextResponse.json({ success: true });
+        // Fallback: if no menuItem, maybe this is a Page id (from fallback). Unset is_in_menu on that page.
+        const page = await prisma.page.findUnique({ where: { id: numericId } });
+        if (page) {
+            await prisma.page.update({ where: { id: numericId }, data: { is_in_menu: false } });
+            return NextResponse.json({ success: true, fallback: true });
+        }
+
+        return NextResponse.json({ error: 'Item not found' }, { status: 404 });
     } catch (error) {
         console.error("Error deleting menu item:", error);
         return NextResponse.json({ error: "Failed to delete menu item" }, { status: 500 });
