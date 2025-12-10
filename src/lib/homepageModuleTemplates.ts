@@ -70,7 +70,10 @@ export function createParallaxSectionTemplate() {
             title: 'Parallax',
             floatingImage: true,
             parallaxSpeed: 0.5,
-            imageOffset: 20
+            imageOffset: 20,
+            textOpacity: 1,
+            textColor: '#FFFFFF',
+            textAnimation: 'slide-up'
         }
     };
 }

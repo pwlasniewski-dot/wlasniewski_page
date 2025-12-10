@@ -804,18 +804,122 @@ export default function HomepageManager() {
 
                             {/* PARALLAX EDITOR */}
                             {section.type === 'parallax' && (
-                                <div className="grid md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm text-zinc-400 mb-1">Tytuł</label>
-                                        <input type="text" value={section.data.title} onChange={e => updateSectionData(index, 'title', e.target.value)} className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-white" />
+                                <div className="space-y-4">
+                                    {/* Basic fields */}
+                                    <div className="grid md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm text-zinc-400 mb-1">Tytuł</label>
+                                            <input type="text" value={section.data.title} onChange={e => updateSectionData(index, 'title', e.target.value)} className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-white" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm text-zinc-400 mb-1">Zdjęcie tła (fallback)</label>
+                                            <div className="flex gap-2">
+                                                {section.data.image && <img src={section.data.image} alt="" className="w-20 h-10 object-cover rounded" />}
+                                                <button onClick={() => openMediaPicker('section', index)} className="px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-sm text-white hover:bg-zinc-700 flex items-center gap-2">
+                                                    <ImageIcon className="w-4 h-4" /> Wybierz
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <label className="block text-sm text-zinc-400 mb-1">Zdjęcie tła</label>
-                                        <div className="flex gap-2">
-                                            {section.data.image && <img src={section.data.image} alt="" className="w-20 h-10 object-cover rounded" />}
-                                            <button onClick={() => openMediaPicker('section', index)} className="px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-sm text-white hover:bg-zinc-700 flex items-center gap-2">
-                                                <ImageIcon className="w-4 h-4" /> Wybierz
+
+                                    {/* Desktop & Mobile Images */}
+                                    <div className="grid md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm text-zinc-400 mb-1">Zdjęcie Desktop</label>
+                                            <div className="flex gap-2">
+                                                {section.data.image_desktop && <img src={section.data.image_desktop} alt="" className="w-20 h-10 object-cover rounded" />}
+                                                <button onClick={() => openMediaPicker('section', index, 'image_desktop')} className="px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-sm text-white hover:bg-zinc-700 flex items-center gap-2">
+                                                    <ImageIcon className="w-4 h-4" /> {section.data.image_desktop ? 'Zmień' : 'Wybierz'}
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm text-zinc-400 mb-1">Zdjęcie Mobile</label>
+                                            <div className="flex gap-2">
+                                                {section.data.image_mobile && <img src={section.data.image_mobile} alt="" className="w-20 h-10 object-cover rounded" />}
+                                                <button onClick={() => openMediaPicker('section', index, 'image_mobile')} className="px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-sm text-white hover:bg-zinc-700 flex items-center gap-2">
+                                                    <ImageIcon className="w-4 h-4" /> {section.data.image_mobile ? 'Zmień' : 'Wybierz'}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Text Style Settings */}
+                                    <div className="grid md:grid-cols-3 gap-4 bg-zinc-800/50 p-3 rounded border border-zinc-700">
+                                        <div>
+                                            <label className="block text-sm text-zinc-400 mb-1">Kolor tekstu</label>
+                                            <input 
+                                                type="color" 
+                                                value={section.data.textColor || '#FFFFFF'} 
+                                                onChange={e => updateSectionData(index, 'textColor', e.target.value)} 
+                                                className="w-full h-8 rounded cursor-pointer" 
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm text-zinc-400 mb-1">Przezroczystość tekstu</label>
+                                            <input 
+                                                type="range" 
+                                                min="0" 
+                                                max="1" 
+                                                step="0.1" 
+                                                value={section.data.textOpacity || 1} 
+                                                onChange={e => updateSectionData(index, 'textOpacity', parseFloat(e.target.value))} 
+                                                className="w-full" 
+                                            />
+                                            <span className="text-xs text-zinc-500">{((section.data.textOpacity || 1) * 100).toFixed(0)}%</span>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm text-zinc-400 mb-1">Animacja tekstu</label>
+                                            <select 
+                                                value={section.data.textAnimation || 'slide-up'} 
+                                                onChange={e => updateSectionData(index, 'textAnimation', e.target.value)} 
+                                                className="w-full px-2 py-2 bg-zinc-900 border border-zinc-700 rounded text-white text-sm"
+                                            >
+                                                <option value="fade">Fade</option>
+                                                <option value="slide-up">Slide Up</option>
+                                                <option value="scale">Scale</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    {/* Parallax Effect Settings */}
+                                    <div className="grid md:grid-cols-3 gap-4 bg-zinc-800/50 p-3 rounded border border-zinc-700">
+                                        <div>
+                                            <label className="block text-sm text-zinc-400 mb-1">Efekt pływającego zdjęcia</label>
+                                            <button
+                                                onClick={() => updateSectionData(index, 'floatingImage', !section.data.floatingImage)}
+                                                className={`w-full px-3 py-2 rounded text-sm font-medium border transition-colors ${
+                                                    section.data.floatingImage 
+                                                        ? 'bg-green-600/20 text-green-400 border-green-500' 
+                                                        : 'bg-zinc-900 text-zinc-400 border-zinc-700'
+                                                }`}
+                                            >
+                                                {section.data.floatingImage ? '✓ Włączony' : 'Wyłączony'}
                                             </button>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm text-zinc-400 mb-1">Szybkość parallaxu</label>
+                                            <input 
+                                                type="range" 
+                                                min="0" 
+                                                max="1" 
+                                                step="0.1" 
+                                                value={section.data.parallaxSpeed || 0.5} 
+                                                onChange={e => updateSectionData(index, 'parallaxSpeed', parseFloat(e.target.value))} 
+                                                className="w-full" 
+                                            />
+                                            <span className="text-xs text-zinc-500">{((section.data.parallaxSpeed || 0.5) * 100).toFixed(0)}%</span>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm text-zinc-400 mb-1">Offset zdjęcia (px)</label>
+                                            <input 
+                                                type="number" 
+                                                min="0" 
+                                                max="100" 
+                                                value={section.data.imageOffset || 20} 
+                                                onChange={e => updateSectionData(index, 'imageOffset', parseInt(e.target.value))} 
+                                                className="w-full px-2 py-2 bg-zinc-900 border border-zinc-700 rounded text-white text-sm" 
+                                            />
                                         </div>
                                     </div>
                                 </div>

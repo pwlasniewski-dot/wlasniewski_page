@@ -2,12 +2,23 @@
 
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { useRef, useState, useEffect } from 'react';
-import { getApiUrl } from "@/lib/api-config";
 
-interface ParallaxBandProps {
+interface ParallaxSectionData {
+    image?: string;
+    image_desktop?: string;
+    image_mobile?: string;
+    title?: string;
+    floatingImage?: boolean;
+    parallaxSpeed?: number;
+    imageOffset?: number;
+    textOpacity?: number;
+    textColor?: string;
+    textAnimation?: 'fade' | 'slide-up' | 'scale';
+}
+
+interface ParallaxBandProps extends ParallaxSectionData {
     settingKey?: string;
     imageSrc?: string;
-    title?: string;
     height?: string;
     overlayOpacity?: number;
     children?: React.ReactNode;
@@ -17,74 +28,131 @@ export default function ParallaxBand({
     settingKey,
     imageSrc,
     title,
-    height = "min-h-[70vh] md:min-h-[80vh]",
-    overlayOpacity = 0.35,
+    height = "min-h-[60vh] md:min-h-[80vh] lg:min-h-screen",
+    overlayOpacity = 0.4,
+    image,
+    image_desktop,
+    image_mobile,
+    floatingImage = true,
+    parallaxSpeed = 0.5,
+    imageOffset = 20,
+    textOpacity = 1,
+    textColor = 'white',
+    textAnimation = 'fade',
     children
 }: ParallaxBandProps) {
     const ref = useRef<HTMLDivElement>(null);
-    const [finalImage, setFinalImage] = useState(imageSrc || '');
+    const [isMobile, setIsMobile] = useState(false);
+    const [finalImage, setFinalImage] = useState(imageSrc || image || '');
 
-    // Framer Motion parallax scroll tracking
+    // Determine image based on screen size
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth < 768);
+        };
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
+
+    // Select image based on device
+    useEffect(() => {
+        const selectedImage = isMobile && image_mobile ? image_mobile : image_desktop || image || imageSrc || '';
+        setFinalImage(selectedImage);
+    }, [isMobile, image_mobile, image_desktop, image, imageSrc]);
+
+    // Parallax scroll effect
     const { scrollYProgress } = useScroll({
         target: ref,
         offset: ["start end", "end start"]
     });
 
-    // Transform scroll progress to Y movement (-30% to +30% for visible effect)
-    const y = useTransform(scrollYProgress, [0, 1], ["-30%", "30%"]);
+    const parallaxY = useTransform(
+        scrollYProgress,
+        [0, 1],
+        [imageOffset, -imageOffset * parallaxSpeed]
+    );
 
-    useEffect(() => {
-        if (imageSrc) return;
-        if (settingKey) {
-            const fetchSettings = async () => {
-                try {
-                    const res = await fetch(getApiUrl('settings/public'));
-                    const data = await res.json();
-                    if (data.success && data.settings?.[settingKey]) {
-                        setFinalImage(data.settings[settingKey]);
-                    }
-                } catch (error) {
-                    // silent fail
-                }
-            };
-            fetchSettings();
+    // Text animation variants
+    const textVariants = {
+        'fade': {
+            initial: { opacity: 0 },
+            animate: { opacity: textOpacity },
+            transition: { duration: 1.2, ease: "easeOut" }
+        },
+        'slide-up': {
+            initial: { opacity: 0, y: 60 },
+            animate: { opacity: textOpacity, y: 0 },
+            transition: { duration: 1, ease: "easeOut" }
+        },
+        'scale': {
+            initial: { opacity: 0, scale: 0.8 },
+            animate: { opacity: textOpacity, scale: 1 },
+            transition: { duration: 1.2, ease: "easeOut" }
         }
-    }, [settingKey, imageSrc]);
+    };
 
     if (!finalImage) return null;
 
     return (
         <section
             ref={ref}
-            className={`relative ${height} w-full flex items-center justify-center overflow-hidden bg-zinc-950`}
+            className={`relative ${height} w-full flex items-center justify-center overflow-hidden bg-black`}
             aria-label={title}
         >
-            {/* Parallax Background - moves with scroll */}
-            <motion.div
-                style={{
-                    y,
-                    backgroundImage: `url(${finalImage})`,
-                }}
-                className="absolute inset-0 w-full h-[150%] -top-[25%] bg-cover bg-center bg-no-repeat z-0"
-            />
+            {/* Parallax Background Container */}
+            <div className="absolute inset-0 w-full h-full overflow-hidden">
+                {floatingImage ? (
+                    // Floating image with parallax effect
+                    <motion.div
+                        style={{
+                            y: parallaxY,
+                        }}
+                        className="absolute inset-0 w-full h-full"
+                    >
+                        <div
+                            className="w-full h-full bg-cover bg-center bg-no-repeat"
+                            style={{
+                                backgroundImage: `url(${finalImage})`,
+                                backgroundAttachment: 'fixed',
+                            }}
+                        />
+                    </motion.div>
+                ) : (
+                    // Static background image
+                    <div
+                        className="w-full h-full bg-cover bg-center bg-no-repeat"
+                        style={{
+                            backgroundImage: `url(${finalImage})`,
+                        }}
+                    />
+                )}
+            </div>
 
-            {/* Gradient Overlay */}
+            {/* Gradient Overlay with customizable opacity */}
             <div
-                className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black/50 z-10"
+                className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-black/60 z-10"
                 style={{ opacity: overlayOpacity }}
             />
 
-            {/* Content */}
-            <div className="relative z-20 w-full max-w-7xl mx-auto px-4 flex items-center justify-center">
+            {/* Content Container */}
+            <div className="relative z-20 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-center">
                 {children || (
                     <motion.div
-                        initial={{ opacity: 0, y: 50 }}
-                        whileInView={{ opacity: 1, y: 0 }}
+                        initial={textVariants[textAnimation].initial}
+                        whileInView={textVariants[textAnimation].animate}
                         viewport={{ once: true, margin: "-100px" }}
-                        transition={{ duration: 1, ease: "easeOut" }}
-                        className="text-center"
+                        transition={textVariants[textAnimation].transition}
+                        className="text-center space-y-4"
                     >
-                        <h2 className="text-white text-5xl md:text-8xl lg:text-9xl font-extrabold tracking-tight drop-shadow-[0_4px_40px_rgba(0,0,0,0.95)] font-display leading-tight">
+                        <h2
+                            className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-extrabold tracking-tighter drop-shadow-2xl font-display leading-tight"
+                            style={{
+                                color: textColor,
+                                textShadow: '0 8px 32px rgba(0, 0, 0, 0.7), 0 4px 16px rgba(0, 0, 0, 0.5)',
+                                opacity: textOpacity
+                            }}
+                        >
                             {title}
                         </h2>
                     </motion.div>

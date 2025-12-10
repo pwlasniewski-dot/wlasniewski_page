@@ -412,8 +412,18 @@ export default function Home() {
                     <ParallaxBand
                         key={section.id}
                         imageSrc={section.data.image}
+                        image={section.data.image}
+                        image_desktop={section.data.image_desktop}
+                        image_mobile={section.data.image_mobile}
                         title={section.data.title}
-                        height="60vh"
+                        height="min-h-[60vh] md:min-h-[80vh] lg:min-h-screen"
+                        floatingImage={section.data.floatingImage ?? true}
+                        parallaxSpeed={section.data.parallaxSpeed ?? 0.5}
+                        imageOffset={section.data.imageOffset ?? 20}
+                        textOpacity={section.data.textOpacity ?? 1}
+                        textColor={section.data.textColor ?? '#FFFFFF'}
+                        textAnimation={section.data.textAnimation ?? 'slide-up'}
+                        overlayOpacity={0.4}
                     />
                 );
 
