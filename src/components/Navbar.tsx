@@ -1,476 +1,239 @@
-/**
- * Navbar.tsx
- * Ostatnia aktualizacja: 2024-12-09 23:48
- * Przywrócono z commit 21383194 - poprawione chowanie navbara przy scrollu
- * Zmiany: scroll visibility, isScrolled state, płynne przejścia
- */
-"use client";
+'use client';
 
-import React from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
+import Image from 'next/image';
+import { usePathname } from 'next/navigation';
+import { Menu, X, ChevronDown } from 'lucide-react';
 
-/** Linki w menu */
-const LEFT = [
-    { to: "/blog", label: "Blog" },
-    { to: "/jak-sie-ubrac", label: "Jak się ubrać" },
-    { to: "/omnie", label: "O mnie" },
+const MENU_ITEMS = [
+    { label: 'Blog', href: '/blog' },
+    { label: 'Jak się ubrać', href: '/jak-sie-ubrac' },
+    { label: 'O mnie', href: '/o-mnie' },
+    {
+        label: 'Portfolio',
+        href: '/portfolio',
+        submenu: [
+            { label: 'Sesje ślubne', href: '/portfolio/slub' },
+            { label: 'Sesje rodzinne', href: '/portfolio/rodzina' },
+            { label: 'Sesje ciążowe', href: '/portfolio/ciaza' },
+        ]
+    },
 ];
 
-const LOCALS = [
-    { to: "/fotograf-torun", label: "Toruń" },
-    { to: "/fotograf-wabrzezno", label: "Wąbrzeźno" },
-    { to: "/fotograf-pluznica", label: "Płużnica" },
-    { to: "/fotograf-lisewo", label: "Lisewo" },
-    { to: "/fotograf-grudziadz", label: "Grudziądz" },
-    { to: "/fotograf-powiat-torunski", label: "Powiat toruński" },
-    { to: "/fotograf-powiat-wabrzeski", label: "Powiat wąbrzeski" },
+const CTA_ITEMS = [
+    { label: 'Rezerwacja', href: '/rezerwacja' },
+    {
+        label: 'Lokalizacje',
+        href: '/lokalizacje',
+        submenu: [
+            { label: 'Toruń', href: '/fotograf-torun' },
+            { label: 'Wąbrzeźno', href: '/fotograf-wabrzezno' },
+            { label: 'Płużnica', href: '/fotograf-pluznica' },
+            { label: 'Lisewo', href: '/fotograf-lisewo' },
+            { label: 'Grudziądz', href: '/fotograf-grudziadz' },
+        ]
+    },
 ];
 
-const RIGHT = [
-    { to: "/portfolio", label: "Portfolio" },
-    { to: "/rezerwacja", label: "Rezerwacja" },
-    { label: "Lokalizacje", children: LOCALS }, // dropdown
-];
-
-// ------------------------------------
-// Brand Logo Component
-// ------------------------------------
-import Image from "next/image";
-
-function BrandLogo({
-    src,
-    darkSrc,
-    size = 44, // Default fallback if not provided
-    isScrolledOrDark = false
-}: {
-    src?: string;
-    darkSrc?: string;
-    size?: number;
-    isScrolledOrDark?: boolean;
-}) {
-    const DEFAULT_LOGO = "/assets/brand/logo.png";
-    let logoToUse = DEFAULT_LOGO;
-
-    if (isScrolledOrDark) {
-        logoToUse = darkSrc || src || DEFAULT_LOGO;
-    } else {
-        logoToUse = src || DEFAULT_LOGO;
-    }
-
-    return (
-        <Link href="/" aria-label="Strona główna" className="inline-flex items-center group">
-            <div className="relative overflow-hidden transition-all duration-300">
-                <Image
-                    src={logoToUse}
-                    alt="Logo"
-                    width={size}
-                    height={size} // Aspect ratio is handled by auto height if needed, but next/image needs dims.
-                    style={{ width: 'auto', height: size + 'px' }}
-                    className="object-contain group-hover:opacity-90"
-                    priority={true} // Priority loading as requested
-                />
-            </div>
-        </Link>
-    );
+interface NavbarSettings {
+    logo_url?: string;
+    logo_dark_url?: string;
+    logo_size?: number;
+    navbar_font_size?: number;
+    navbar_font_family?: string;
+    navbar_layout?: string;
 }
 
-function IconBurger() {
-    return (
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
-            <path d="M3 6h18M6 12h12M9 18h6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-        </svg>
-    );
-}
-function IconClose() {
-    return (
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
-            <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-        </svg>
-    );
-}
-
-/** Jeden wspólny navbar — reagujący na tryb light/dark (dla linków, nie tła) */
-export default function Navbar({
-    mode = "dark",
-    logoLight,
-    logoDark,
-    ctaWhatsapp = "https://wa.me/48530788694",
-}: {
-    mode?: "light" | "dark";
-    logoLight?: string;
-    logoDark?: string;
-    ctaWhatsapp?: string;
-}) {
+export default function Navbar() {
     const pathname = usePathname();
-    const [open, setOpen] = React.useState(false);
-    const headerRef = React.useRef<HTMLElement>(null);
-    const [menuItems, setMenuItems] = React.useState<any[]>([]);
-    const [fontSettings, setFontSettings] = React.useState({ size: 16, family: 'var(--font-sans)', logoSize: 140 });
-    const [dynamicLogo, setDynamicLogo] = React.useState<string | null>(null);
-    const [isLoggedIn, setIsLoggedIn] = React.useState(false);
+    const [isOpen, setIsOpen] = useState(false);
+    const [settings, setSettings] = useState<NavbarSettings>({});
+    const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
+    const [isScrolled, setIsScrolled] = useState(false);
 
-    React.useEffect(() => {
-        // Check for auth token (simple check)
-        const token = localStorage.getItem('token');
-        setIsLoggedIn(!!token);
-    }, []);
-
-    React.useEffect(() => {
+    // Fetch settings
+    useEffect(() => {
         const fetchSettings = async () => {
             try {
-                const res = await fetch("/api/settings/public");
+                const res = await fetch('/api/settings/public');
                 const data = await res.json();
                 if (data.success && data.settings) {
-                    const s = data.settings;
-
-                    // Map font names to CSS variables
-                    let familyVar = 'var(--font-sans)';
-                    if (s.navbar_font_family === 'Playfair Display') familyVar = 'var(--font-playfair)';
-                    else if (s.navbar_font_family === 'Lato') familyVar = 'var(--font-lato)';
-                    else if (s.navbar_font_family === 'Great Vibes') familyVar = 'var(--font-great-vibes)';
-                    else if (s.navbar_font_family === 'Cinzel') familyVar = 'var(--font-cinzel)';
-                    else if (s.navbar_font_family === 'Montserrat') familyVar = 'var(--font-sans)';
-
-                    setFontSettings({
-                        size: s.navbar_font_size || 16,
-                        family: familyVar,
-                        logoSize: s.logo_size || 140
-                    });
-
-                    // Set dynamic logo
-                    if (s.logo_url) {
-                        setDynamicLogo(s.logo_url);
-                        // Update logoLight prop if we could, but here we use local state or pass it to BrandLogo
-                        // But wait, Navbar props logoLight/logoDark are passed from parent?
-                        // Actually, looking at usages, Navbar is usually used with hardcoded props or from context.
-                        // But here we want to override with settings?
-                        // The BrandLogo uses 'src' which corresponds to 'logo' from props or dynamic.
-                    }
+                    setSettings(data.settings);
                 }
             } catch (error) {
-                console.error("Failed to fetch settings for navbar", error);
+                console.error('Failed to fetch settings:', error);
             }
         };
-
-        const fetchMenu = async () => {
-            try {
-                const res = await fetch("/api/menu");
-                const data = await res.json();
-
-                // API returns array directly
-                if (Array.isArray(data)) {
-                    // Filter out items without titles (safety check)
-                    const validItems = data.filter(item => item.title && item.title.trim());
-                    setMenuItems(validItems);
-                } else if (data.success && data.menu) {
-                    // Fallback for previous structure if changed
-                    setMenuItems(data.menu);
-                } else {
-                    console.error('Unexpected menu format:', data);
-                    setMenuItems([]);
-                }
-            } catch (error) {
-                console.error("Failed to fetch menu", error);
-                setMenuItems([]);
-            }
-        };
-
         fetchSettings();
-        fetchMenu();
     }, []);
 
-    // Scroll listener
-    const [isScrolled, setIsScrolled] = React.useState(false);
-    const [visible, setVisible] = React.useState(true);
-    const lastScrollY = React.useRef(0);
-    React.useEffect(() => {
+    // Track scroll
+    useEffect(() => {
         const handleScroll = () => {
-            const current = window.scrollY || 0;
-            // Use a slightly higher threshold to avoid small gestures toggling header
-            setIsScrolled(current > 80);
-
-            // Hide on scroll down, show on scroll up
-            if (current > lastScrollY.current && current > 120) {
-                // scrolling down
-                setVisible(false);
-            } else {
-                // scrolling up
-                setVisible(true);
-            }
-
-            lastScrollY.current = current;
+            setIsScrolled(window.scrollY > 50);
         };
-
-        window.addEventListener("scroll", handleScroll, { passive: true });
-        // Run once on mount to initialise
-        handleScroll();
-        return () => window.removeEventListener("scroll", handleScroll);
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
-    // Logic for colors
-    const isDark = mode === "dark";
-    // If scrolled -> white bg, dark text
-    // If not scrolled -> transparent bg. Text depends on 'mode'.
-    //   mode='dark' -> text white (e.g. on hero image)
-    //   mode='light' -> text black (e.g. on white page)
+    const logoSize = Math.min(settings.logo_size || 50, 80);
+    const logoSrc = settings.logo_url || '/assets/brand/logo.png';
 
-    // BUT: design requirement "scrolled -> white bg".
-    // "not scrolled" -> transparent.
-
-    // Text colors:
-    // Scrolled -> black
-    // Not scrolled && mode=dark -> white
-    // Not scrolled && mode=light -> black
-
-    const isScrolledOrLightMode = isScrolled || mode === "light";
-    const linkBase = "text-sm font-medium transition-colors hover:text-gold-400 relative uppercase tracking-wider";
-    const linkColor = isScrolledOrLightMode ? "text-zinc-900" : "text-white/90";
-    const activeLinkIndicator = isScrolledOrLightMode ? "bg-gold-400" : "bg-white";
-
-    // Logo logic
-    // We have props: logoLight, logoDark.
-    // Also fetched dynamicLogo (which is essentially 'logoLight' / master logo).
-    // Let's assume dynamicLogo overrides logoLight if present.
-    const logo = dynamicLogo || logoLight || "/assets/brand/logo.png";
-
-    // Burger color
-    const mobileButtonColor = isScrolledOrLightMode ? "text-zinc-900 hover:bg-zinc-100" : "text-white hover:bg-white/10";
+    const isActive = (href: string) => pathname === href;
 
     return (
-        <>
-            <header
-                ref={headerRef}
-                // CSS variable for header height so pages can offset content precisely
-                style={{ fontFamily: fontSettings.family, ['--header-height' as any]: isScrolled ? '56px' : '64px' }}
-                className={`fixed top-0 inset-x-0 z-50 transition-transform duration-300 ${visible ? 'translate-y-0' : '-translate-y-full'}`}
-            >
-                <div className={`transition-all duration-500 ${isScrolled ? "bg-white/95 backdrop-blur-md shadow-lg border-b border-zinc-200/50 py-2" : "bg-transparent py-4"}`}>
-                <nav className="max-w-7xl mx-auto px-4 grid grid-cols-[1fr_auto_1fr] items-center h-14 md:h-16">
-
-                    {/* lewa (desktop) - Pierwsza połowa menu */}
-                    <ul
-                        className="hidden md:flex justify-end gap-6 pr-3"
-                        style={{ fontSize: `${fontSettings.size}px` }}
-                    >
-                        {menuItems.filter((_, i) => i < Math.ceil(menuItems.length / 2)).map((item) => {
-                            const href = item.url || `/${item.slug}`;
-                            const isActive = pathname === href;
-                            const hasChildren = item.children && item.children.length > 0;
-
-                            if (hasChildren) {
-                                return (
-                                    <li key={item.id} className="relative group">
-                                        <button
-                                            type="button"
-                                            className={`${linkBase} ${linkColor} inline-flex items-center gap-1`}
-                                        >
-                                            {item.title}
-                                            <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden className="opacity-90">
-                                                <path d="m7 10 5 5 5-5" stroke="currentColor" strokeWidth="1.8" fill="none" strokeLinecap="round" />
-                                            </svg>
-                                        </button>
-                                        {/* Dropdown */}
-                                        <div className="invisible opacity-0 translate-y-1 group-hover:visible group-hover:opacity-100 group-hover:translate-y-0 hover:visible hover:opacity-100 hover:translate-y-0 focus-within:visible focus-within:opacity-100 focus-within:translate-y-0 absolute right-0 top-full min-w-[220px] rounded-xl border border-white/10 bg-zinc-900/95 backdrop-blur shadow-2xl p-2 transition">
-                                            {item.children.map((child: any) => {
-                                                const childHref = child.slug ? `/${child.slug}` : child.url || "#";
-                                                return (
-                                                    <Link
-                                                        key={child.id}
-                                                        href={childHref}
-                                                        className="block rounded-lg px-3 py-2 text-sm text-white/90 hover:bg-white/10"
-                                                    >
-                                                        {child.title}
-                                                    </Link>
-                                                );
-                                            })}
-                                        </div>
-                                    </li>
-                                );
-                            }
-
-                            return (
-                                <li key={item.id}>
-                                    <Link
-                                        href={href}
-                                        className={`${linkBase} ${linkColor} ${isActive ? `after:absolute after:-bottom-2 after:left-1/2 after:-translate-x-1/2 after:h-[2px] after:w-7 ${activeLinkIndicator}` : ""}`}
-                                    >
-                                        {item.title}
-                                    </Link>
-                                </li>
-                            );
-                        })}
-                    </ul>
-
-                    {/* logo środek */}
-                    <div className="hidden md:flex justify-center flex-col items-center">
-                        <BrandLogo src={logo} size={(fontSettings as any).logoSize} />
-                        {isLoggedIn && (
-                            <Link
-                                href="/konto"
-                                className="mt-2 text-xs text-gold-400 hover:text-white uppercase tracking-widest transition-colors font-medium"
-                            >
-                                Moje Konto
-                            </Link>
-                        )}
-                    </div>
-
-                    {/* prawa (desktop) - Druga połowa menu */}
-                    <ul
-                        className="hidden md:flex justify-start gap-6 pl-3"
-                        style={{ fontSize: `${fontSettings.size}px` }}
-                    >
-                        {menuItems.filter((_, i) => i >= Math.ceil(menuItems.length / 2)).map((item) => {
-                            const href = item.url || `/${item.slug}`;
-                            const isActive = pathname === href;
-                            const hasChildren = item.children && item.children.length > 0;
-
-                            if (hasChildren) {
-                                return (
-                                    <li key={item.id} className="relative group">
-                                        <button
-                                            type="button"
-                                            className={`${linkBase} ${linkColor} inline-flex items-center gap-1`}
-                                        >
-                                            {item.title}
-                                            <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden className="opacity-90">
-                                                <path d="m7 10 5 5 5-5" stroke="currentColor" strokeWidth="1.8" fill="none" strokeLinecap="round" />
-                                            </svg>
-                                        </button>
-                                        <div className="invisible opacity-0 translate-y-1 group-hover:visible group-hover:opacity-100 group-hover:translate-y-0 hover:visible hover:opacity-100 hover:translate-y-0 focus-within:visible focus-within:opacity-100 focus-within:translate-y-0 absolute left-0 top-full min-w-[220px] rounded-xl border border-white/10 bg-zinc-900/95 backdrop-blur shadow-2xl p-2 transition">
-                                            {item.children.map((child: any) => {
-                                                const childHref = child.slug ? `/${child.slug}` : child.url || "#";
-                                                return (
-                                                    <Link
-                                                        key={child.id}
-                                                        href={childHref}
-                                                        className="block rounded-lg px-3 py-2 text-sm text-white/90 hover:bg-white/10"
-                                                    >
-                                                        {child.title}
-                                                    </Link>
-                                                );
-                                            })}
-                                        </div>
-                                    </li>
-                                );
-                            }
-
-                            return (
-                                <li key={item.id}>
-                                    <Link
-                                        href={href}
-                                        className={`${linkBase} ${linkColor} ${isActive ? `after:absolute after:-bottom-2 after:left-1/2 after:-translate-x-1/2 after:h-[2px] after:w-7 ${activeLinkIndicator}` : ""}`}
-                                    >
-                                        {item.title}
-                                    </Link>
-                                </li>
-                            );
-                        })}
-                    </ul>
-
-                    {/* mobile: logo + burger */}
-                    <div className="md:hidden col-span-3 flex items-center justify-between">
-                        <BrandLogo src={logo} size={60} />
-                        <button
-                            aria-label="Menu"
-                            onClick={() => setOpen(true)}
-                            className={`rounded-xl p-2 transition active:scale-[.98] ${mobileButtonColor}`}
-                        >
-                            <IconBurger />
-                        </button>
-                    </div>
-                </nav>
-                </div>
-            </header>
-
-            {/* drawer mobile (pozostaje ciemny) */}
-            <div className={`fixed inset-0 z-[9999] ${open ? "" : "pointer-events-none"}`}>
-                <div
-                    className={`absolute inset-0 bg-black/70 backdrop-blur-sm transition-opacity duration-300 ${open ? "opacity-100" : "opacity-0"}`}
-                    onClick={() => setOpen(false)}
-                />
-                <div
-                    className={`absolute inset-x-0 top-0 mx-auto mt-10 w-[92%] max-w-md rounded-2xl border border-white/10 bg-zinc-900/95 backdrop-blur-md shadow-2xl transition-all duration-300 ${open ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-3 pointer-events-none"}`}
-                >
-                    <div className="flex items-center justify-between px-4 py-3">
-                        <BrandLogo src={logoDark} size={50} />
-                        <button
-                            aria-label="Zamknij"
-                            onClick={() => setOpen(false)}
-                            className="rounded-lg p-2 text-white/80 hover:bg-white/10"
-                        >
-                            <IconClose />
-                        </button>
-                    </div>
-                    <nav className="px-3 pb-3">
-                        <ul className="divide-y divide-white/10 text-white">
-                            {menuItems.map((item) => {
-                                const href = item.url || `/${item.slug}`;
-                                const hasChildren = item.children && item.children.length > 0;
-
-                                if (hasChildren) {
-                                    return (
-                                        <li key={item.id}>
-                                            <h3 className="block py-3 px-3 text-lg font-sans font-semibold tracking-wide text-white/50">
-                                                {item.title}
-                                            </h3>
-                                            {item.children.map((child: any) => {
-                                                const childHref = child.slug ? `/${child.slug}` : child.url || "#";
-                                                return (
-                                                    <Link
-                                                        key={child.id}
-                                                        href={childHref}
-                                                        onClick={() => setOpen(false)}
-                                                        className="block py-2 pl-6 pr-3 text-base hover:bg-white/5 rounded-lg font-sans font-medium tracking-wide"
-                                                    >
-                                                        {child.title}
-                                                    </Link>
-                                                );
-                                            })}
-                                        </li>
-                                    );
-                                }
-
-                                return (
-                                    <li key={item.id}>
-                                        <Link
-                                            href={href}
-                                            onClick={() => setOpen(false)}
-                                            className="block py-3 px-3 text-lg hover:bg-white/5 rounded-lg font-sans font-semibold tracking-wide"
-                                        >
-                                            {item.title}
-                                        </Link>
-                                    </li>
-                                );
-                            })}
-                        </ul>
-                        <div className="p-3 grid grid-cols-2 gap-2 mt-2">
-                            <Link
-                                href="/rezerwacja"
-                                onClick={() => setOpen(false)}
-                                className="rounded-xl bg-white text-zinc-900 px-4 py-3 text-center font-sans font-semibold"
-                            >
-                                Rezerwacja
-                            </Link>
-                            <a
-                                href={ctaWhatsapp}
-                                className="rounded-xl border border-white/25 px-4 py-3 text-center text-white font-sans font-semibold hover:bg-white/10"
-                            >
-                                WhatsApp
-                            </a>
-                            {isLoggedIn && (
+        <header
+            className={`fixed w-full top-0 z-50 transition-all duration-300 ${
+                isScrolled
+                    ? 'bg-white/95 backdrop-blur-md shadow-lg'
+                    : 'bg-transparent'
+            }`}
+        >
+            <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="flex items-center justify-between h-20">
+                    {/* LEFT MENU */}
+                    <div className="hidden md:flex items-center gap-8">
+                        {MENU_ITEMS.map((item) => (
+                            <div key={item.label} className="relative group">
                                 <Link
-                                    href="/konto"
-                                    onClick={() => setOpen(false)}
-                                    className="col-span-2 rounded-xl border border-gold-400/25 px-4 py-3 text-center text-gold-400 font-sans font-semibold hover:bg-gold-400/10"
+                                    href={item.href}
+                                    className={`text-sm font-medium transition-colors py-2 ${
+                                        isActive(item.href)
+                                            ? 'text-gold-500'
+                                            : isScrolled
+                                            ? 'text-zinc-700 hover:text-gold-500'
+                                            : 'text-white hover:text-gold-400'
+                                    } flex items-center gap-1`}
                                 >
-                                    Moje Konto
+                                    {item.label}
+                                    {item.submenu && <ChevronDown className="w-4 h-4" />}
                                 </Link>
-                            )}
+                                {item.submenu && (
+                                    <div className="absolute left-0 mt-0 w-48 bg-white shadow-lg rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 py-2 z-40">
+                                        {item.submenu.map((sub) => (
+                                            <Link
+                                                key={sub.href}
+                                                href={sub.href}
+                                                className="block px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-50 hover:text-gold-500 transition-colors first:rounded-t-lg last:rounded-b-lg"
+                                            >
+                                                {sub.label}
+                                            </Link>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* CENTER LOGO */}
+                    <Link
+                        href="/"
+                        className="flex-shrink-0 hover:opacity-80 transition-opacity"
+                        aria-label="Strona główna"
+                    >
+                        <div className="relative" style={{ width: logoSize, height: logoSize }}>
+                            <Image
+                                src={logoSrc}
+                                alt="Logo"
+                                fill
+                                className="object-contain"
+                                priority
+                            />
                         </div>
-                    </nav>
+                    </Link>
+
+                    {/* RIGHT MENU */}
+                    <div className="hidden md:flex items-center gap-8">
+                        {CTA_ITEMS.map((item) => (
+                            <div key={item.label} className="relative group">
+                                <Link
+                                    href={item.href}
+                                    className={`text-sm font-medium transition-colors py-2 ${
+                                        isActive(item.href)
+                                            ? 'text-gold-500'
+                                            : isScrolled
+                                            ? 'text-zinc-700 hover:text-gold-500'
+                                            : 'text-white hover:text-gold-400'
+                                    } flex items-center gap-1`}
+                                >
+                                    {item.label}
+                                    {item.submenu && <ChevronDown className="w-4 h-4" />}
+                                </Link>
+                                {item.submenu && (
+                                    <div className="absolute right-0 mt-0 w-48 bg-white shadow-lg rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 py-2 z-40">
+                                        {item.submenu.map((sub) => (
+                                            <Link
+                                                key={sub.href}
+                                                href={sub.href}
+                                                className="block px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-50 hover:text-gold-500 transition-colors first:rounded-t-lg last:rounded-b-lg"
+                                            >
+                                                {sub.label}
+                                            </Link>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* MOBILE MENU BUTTON */}
+                    <button
+                        onClick={() => setIsOpen(!isOpen)}
+                        className="md:hidden p-2"
+                        aria-label="Otwórz menu"
+                    >
+                        {isOpen ? (
+                            <X className={`w-6 h-6 ${isScrolled ? 'text-zinc-700' : 'text-white'}`} />
+                        ) : (
+                            <Menu className={`w-6 h-6 ${isScrolled ? 'text-zinc-700' : 'text-white'}`} />
+                        )}
+                    </button>
                 </div>
-            </div>
-        </>
+
+                {/* MOBILE MENU */}
+                {isOpen && (
+                    <div className="md:hidden bg-white shadow-lg rounded-lg mt-2 py-4 space-y-4 max-h-[70vh] overflow-y-auto">
+                        {[...MENU_ITEMS, ...CTA_ITEMS].map((item) => (
+                            <div key={item.label}>
+                                <Link
+                                    href={item.href}
+                                    onClick={() => setIsOpen(false)}
+                                    className={`block px-4 py-2 font-medium transition-colors rounded ${
+                                        isActive(item.href)
+                                            ? 'bg-gold-100 text-gold-600'
+                                            : 'text-zinc-700 hover:bg-zinc-50'
+                                    }`}
+                                >
+                                    {item.label}
+                                </Link>
+                                {item.submenu && (
+                                    <button
+                                        onClick={() => setOpenSubmenu(openSubmenu === item.label ? null : item.label)}
+                                        className="w-full text-left px-4 py-1 text-xs text-zinc-500 hover:text-zinc-700"
+                                    >
+                                        {openSubmenu === item.label ? '▼' : '▶'} Pokaż więcej
+                                    </button>
+                                )}
+                                {item.submenu && openSubmenu === item.label && (
+                                    <div className="pl-4 space-y-1">
+                                        {item.submenu.map((sub) => (
+                                            <Link
+                                                key={sub.href}
+                                                href={sub.href}
+                                                onClick={() => setIsOpen(false)}
+                                                className="block px-3 py-1 text-sm text-zinc-600 hover:text-gold-500"
+                                            >
+                                                • {sub.label}
+                                            </Link>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </nav>
+        </header>
     );
 }
