@@ -8,11 +8,13 @@ export async function GET(request: NextRequest) {
     const slug = searchParams.get('slug');
 
     try {
-        if (slug) {
+        // If slug param exists (even if empty string), search for specific page
+        if (slug !== null) {
             const page = await prisma.page.findUnique({ where: { slug } });
             if (!page) return NextResponse.json({ error: 'Page not found' }, { status: 404 });
             return NextResponse.json({ success: true, page });
         } else {
+            // No slug param - return all pages
             const pages = await prisma.page.findMany();
             return NextResponse.json({ success: true, pages });
         }

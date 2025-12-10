@@ -85,6 +85,13 @@ model Setting {
   stripe_secret_key       String?
   stripe_webhook_secret   String?
 
+  // Booking Configuration
+  booking_require_payment Boolean @default(false)  // true = require payment, false = only reservation
+  booking_payment_method  String  @default("stripe")  // stripe, payu
+  booking_currency        String  @default("PLN")
+  booking_min_days_ahead  Int     @default(7)  // How many days ahead can customer book
+  booking_terms_url       String?
+
   // Legacy P24 (Deprecating)
   p24_merchant_id     String?
   p24_pos_id          String?
