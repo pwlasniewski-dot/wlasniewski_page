@@ -5,8 +5,12 @@ import type { NextRequest } from 'next/server';
 
 const prisma = new PrismaClient();
 
+// Route segment config for Next.js
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 // GET - Pobierz wszystkie notatki błędów
-export async function GET(req: NextRequest): Promise<NextResponse> {
+export async function GET(req: NextRequest) {
     const authError = await requireAuth(req);
     if (authError) return authError;
 
@@ -39,7 +43,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 }
 
 // POST - Dodaj nową notatkę błędu
-export async function POST(req: NextRequest): Promise<NextResponse> {
+export async function POST(req: NextRequest) {
     const authError = await requireAuth(req);
     if (authError) return authError;
 
@@ -77,7 +81,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 }
 
 // PUT - Aktualizuj status notatki
-export async function PUT(req: NextRequest): Promise<NextResponse> {
+export async function PUT(req: NextRequest) {
     const authError = await requireAuth(req);
     if (authError) return authError;
 
@@ -117,7 +121,7 @@ export async function PUT(req: NextRequest): Promise<NextResponse> {
 }
 
 // DELETE - Usuń notatkę
-export async function DELETE(req: NextRequest): Promise<NextResponse> {
+export async function DELETE(req: NextRequest) {
     const authError = await requireAuth(req);
     if (authError) return authError;
 
