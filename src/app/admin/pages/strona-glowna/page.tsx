@@ -155,6 +155,7 @@ export default function HomepageManager() {
 
     const fetchHomepage = async () => {
         try {
+            const token = localStorage.getItem('admin_token');
             // Always fetch homepage by ID (homepage is always id=1)
             const res = await fetch(`${getApiUrl('pages')}?id=1`, {
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -291,6 +292,7 @@ export default function HomepageManager() {
                     'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({
+                    id: 1,
                     slug: '',
                     title: 'Strona główna',
                     content: '',

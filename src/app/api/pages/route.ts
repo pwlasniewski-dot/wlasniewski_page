@@ -36,6 +36,7 @@ export async function POST(request: NextRequest) {
         try {
             const body = await req.json();
             const {
+                id,
                 slug,
                 title,
                 page_type,
@@ -58,52 +59,83 @@ export async function POST(request: NextRequest) {
                 meta_keywords
             } = body;
 
-            const page = await prisma.page.upsert({
-                where: { slug },
-                update: {
-                    title,
-                    page_type: page_type || 'regular',
-                    content: content || '',
-                    is_published,
-                    is_in_menu: is_in_menu ?? undefined,
-                    menu_order: menu_order ?? undefined,
-                    menu_title: menu_title ?? undefined,
-                    hero_image,
-                    hero_subtitle,
-                    content_images,
-                    parallax_sections,
-                    content_cards,
-                    about_photo,
-                    about_text_side,
-                    home_sections,
-                    sections,
-                    meta_title,
-                    meta_description,
-                    meta_keywords
-                },
-                create: {
-                    slug,
-                    title,
-                    page_type: page_type || 'regular',
-                    content: content || '',
-                    is_published: is_published || false,
-                    is_in_menu: is_in_menu || false,
-                    menu_order: menu_order || 0,
-                    menu_title: menu_title || title,
-                    hero_image,
-                    hero_subtitle,
-                    content_images,
-                    parallax_sections,
-                    content_cards,
-                    about_photo,
-                    about_text_side,
-                    home_sections,
-                    sections,
-                    meta_title,
-                    meta_description,
-                    meta_keywords
-                },
-            });
+            let page;
+
+            // If id is provided (e.g., homepage with id=1), update by id
+            if (id) {
+                page = await prisma.page.update({
+                    where: { id: parseInt(id) },
+                    data: {
+                        title,
+                        page_type: page_type || 'regular',
+                        content: content || '',
+                        is_published,
+                        is_in_menu: is_in_menu ?? undefined,
+                        menu_order: menu_order ?? undefined,
+                        menu_title: menu_title ?? undefined,
+                        hero_image,
+                        hero_subtitle,
+                        content_images,
+                        parallax_sections,
+                        content_cards,
+                        about_photo,
+                        about_text_side,
+                        home_sections,
+                        sections,
+                        meta_title,
+                        meta_description,
+                        meta_keywords
+                    }
+                });
+            } else {
+                // Otherwise, use upsert by slug (for other pages)
+                page = await prisma.page.upsert({
+                    where: { slug },
+                    update: {
+                        title,
+                        page_type: page_type || 'regular',
+                        content: content || '',
+                        is_published,
+                        is_in_menu: is_in_menu ?? undefined,
+                        menu_order: menu_order ?? undefined,
+                        menu_title: menu_title ?? undefined,
+                        hero_image,
+                        hero_subtitle,
+                        content_images,
+                        parallax_sections,
+                        content_cards,
+                        about_photo,
+                        about_text_side,
+                        home_sections,
+                        sections,
+                        meta_title,
+                        meta_description,
+                        meta_keywords
+                    },
+                    create: {
+                        slug,
+                        title,
+                        page_type: page_type || 'regular',
+                        content: content || '',
+                        is_published: is_published || false,
+                        is_in_menu: is_in_menu || false,
+                        menu_order: menu_order || 0,
+                        menu_title: menu_title || title,
+                        hero_image,
+                        hero_subtitle,
+                        content_images,
+                        parallax_sections,
+                        content_cards,
+                        about_photo,
+                        about_text_side,
+                        home_sections,
+                        sections,
+                        meta_title,
+                        meta_description,
+                        meta_keywords
+                    },
+                });
+            }
 
             // Menu jest teraz oparte TYLKO na pages.is_in_menu - bez synchronizacji z menu_items
 
