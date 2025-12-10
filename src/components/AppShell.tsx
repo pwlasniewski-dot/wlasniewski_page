@@ -16,7 +16,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             {!isAdmin && <Navbar />}
             {/* Use a div wrapper instead of <main> so page-level <main> elements are not nested.
                 Add top padding to offset the fixed header (header height ~56-64px). */}
-            <div className="flex-1 pt-16 md:pt-20">
+            <div className="flex-1" style={{ paddingTop: 'var(--header-height, 64px)' }}>
                 {children}
             </div>
             {!isAdmin && <Footer />}

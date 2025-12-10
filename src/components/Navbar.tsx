@@ -182,11 +182,29 @@ export default function Navbar({
 
     // Scroll listener
     const [isScrolled, setIsScrolled] = React.useState(false);
+    const [visible, setVisible] = React.useState(true);
+    const lastScrollY = React.useRef(0);
     React.useEffect(() => {
         const handleScroll = () => {
-            setIsScrolled(window.scrollY > 20);
+            const current = window.scrollY || 0;
+            // Use a slightly higher threshold to avoid small gestures toggling header
+            setIsScrolled(current > 80);
+
+            // Hide on scroll down, show on scroll up
+            if (current > lastScrollY.current && current > 120) {
+                // scrolling down
+                setVisible(false);
+            } else {
+                // scrolling up
+                setVisible(true);
+            }
+
+            lastScrollY.current = current;
         };
-        window.addEventListener("scroll", handleScroll);
+
+        window.addEventListener("scroll", handleScroll, { passive: true });
+        // Run once on mount to initialise
+        handleScroll();
         return () => window.removeEventListener("scroll", handleScroll);
     }, []);
 
@@ -223,12 +241,11 @@ export default function Navbar({
         <>
             <header
                 ref={headerRef}
-                className={`fixed top-0 inset-x-0 z-50 transition-all duration-500 ${isScrolled
-                    ? "bg-white/95 backdrop-blur-md shadow-lg border-b border-zinc-200/50 py-2"
-                    : "bg-transparent py-4"
-                    }`}
-                style={{ fontFamily: fontSettings.family }}
+                // CSS variable for header height so pages can offset content precisely
+                style={{ fontFamily: fontSettings.family, ['--header-height' as any]: isScrolled ? '56px' : '64px' }}
+                className={`fixed top-0 inset-x-0 z-50 transition-transform duration-300 ${visible ? 'translate-y-0' : '-translate-y-full'}`}
             >
+                <div className={`transition-all duration-500 ${isScrolled ? "bg-white/95 backdrop-blur-md shadow-lg border-b border-zinc-200/50 py-2" : "bg-transparent py-4"}`}>
                 <nav className="max-w-7xl mx-auto px-4 grid grid-cols-[1fr_auto_1fr] items-center h-14 md:h-16">
 
                     {/* lewa (desktop) - Pierwsza połowa menu */}
@@ -363,6 +380,7 @@ export default function Navbar({
                         </button>
                     </div>
                 </nav>
+                </div>
             </header>
 
             {/* drawer mobile (pozostaje ciemny) */}
