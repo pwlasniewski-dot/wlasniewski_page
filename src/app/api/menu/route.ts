@@ -33,6 +33,44 @@ export async function GET() {
             order: page.menu_order || 0,
         }));
 
+        // If pages-based menu is empty, fallback to legacy `menu_items` table
+        if (menu.length === 0) {
+            try {
+                const legacy = await prisma.menuItem.findMany({
+                    where: { is_active: true },
+                    orderBy: { order: 'asc' },
+                    include: { children: true, page: true }
+                });
+
+                // Build hierarchy: top-level items (parent_id == null)
+                const top = legacy.filter(item => item.parent_id === null || item.parent_id === undefined);
+
+                const mapped = top.map(item => {
+                    const children = legacy
+                        .filter(c => c.parent_id === item.id)
+                        .map(c => ({
+                            id: c.id,
+                            title: c.title,
+                            url: c.url || (c.page ? (c.page.slug === 'strona-glowna' ? '/' : `/${c.page.slug}`) : '#'),
+                            order: c.order || 0,
+                        }));
+
+                    return {
+                        id: item.id,
+                        title: item.title,
+                        url: item.url || (item.page ? (item.page.slug === 'strona-glowna' ? '/' : `/${item.page.slug}`) : '#'),
+                        order: item.order || 0,
+                        children
+                    };
+                });
+
+                return NextResponse.json(mapped);
+            } catch (e) {
+                console.error('Error fetching legacy menu_items fallback:', e);
+                return NextResponse.json([]);
+            }
+        }
+
         return NextResponse.json(menu);
     } catch (error) {
         console.error("Error fetching menu:", error);

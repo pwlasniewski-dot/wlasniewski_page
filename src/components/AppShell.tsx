@@ -14,9 +14,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         <>
             {!isAdmin && <UrgencyBanner />}
             {!isAdmin && <Navbar />}
-            <main className="flex-1">
+            {/* Use a div wrapper instead of <main> so page-level <main> elements are not nested.
+                Add top padding to offset the fixed header (header height ~56-64px). */}
+            <div className="flex-1 pt-16 md:pt-20">
                 {children}
-            </main>
+            </div>
             {!isAdmin && <Footer />}
             {!isAdmin && <CookieBanner />}
         </>
