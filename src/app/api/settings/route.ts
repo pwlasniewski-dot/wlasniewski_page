@@ -59,13 +59,13 @@ export async function POST(request: NextRequest) {
                 'info_band_image', 'info_band_title', 'info_band_content',
                 // Navbar
                 'navbar_font_size', 'navbar_font_family',
-                // Navbar
-                'navbar_font_size', 'navbar_font_family',
                 // Logo
                 'logo_url', 'logo_dark_url', 'logo_size',
                 // Payment Config
                 'p24_merchant_id', 'p24_pos_id', 'p24_crc_key', 'p24_api_key',
                 'p24_test_mode', 'p24_method_blik', 'p24_method_card', 'p24_method_transfer',
+                // Booking Settings
+                'booking_require_payment', 'booking_payment_method', 'booking_currency', 'booking_min_days_ahead',
                 // Portfolio
                 'portfolio_categories',
                 // Other

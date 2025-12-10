@@ -19,13 +19,19 @@ export async function POST(request: Request) {
             date,
             start,
             end,
+            start_time,
+            end_time,
             name,
             email,
             phone,
             venueCity,
+            venue_city,
             venuePlace,
+            venue_place,
             notes,
+            hours,
             promoCode,
+            promo_code,
             gift_card_code,
             originalPrice
         } = body;
@@ -45,15 +51,15 @@ export async function POST(request: Request) {
                 package: packageName,
                 price: Number(price),
                 date: new Date(date),
-                start_time: start || null,
-                end_time: end || null,
+                start_time: start_time || start || null,
+                end_time: end_time || end || null,
                 client_name: name,
                 email,
                 phone: phone || null,
-                venue_city: venueCity || null,
-                venue_place: venuePlace || null,
+                venue_city: venue_city || venueCity || null,
+                venue_place: venue_place || venuePlace || null,
                 notes: notes || null,
-                promo_code: promoCode || null,
+                promo_code: promo_code || promoCode || null,
                 gift_card_code: gift_card_code || null,
                 status: "pending",
             },
@@ -69,16 +75,19 @@ export async function POST(request: Request) {
             day: 'numeric'
         });
 
+        const finalStartTime = start_time || start;
+        const finalEndTime = end_time || end;
+
         const emailData = {
             clientName: name,
             service,
             packageName,
             date: formattedDate,
-            time: start ? (end ? `${start} - ${end}` : start) : undefined,
-            location: venueCity ? (venuePlace ? `${venueCity}, ${venuePlace}` : venueCity) : undefined,
+            time: finalStartTime ? (finalEndTime ? `${finalStartTime} - ${finalEndTime}` : finalStartTime) : undefined,
+            location: (venue_city || venueCity) ? (venue_place || venuePlace ? `${venue_city || venueCity}, ${venue_place || venuePlace}` : venue_city || venueCity) : undefined,
             price: Number(price),
             originalPrice: originalPrice ? Number(originalPrice) : undefined,
-            promoCode: promoCode || undefined,
+            promoCode: promo_code || promoCode || undefined,
             giftCardCode: gift_card_code || undefined,
             notes: notes || undefined,
             phone: phone || undefined,
