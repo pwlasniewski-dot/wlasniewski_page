@@ -2,19 +2,26 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { withAuth } from '@/lib/auth/middleware';
 
-// GET all pages or specific page by slug
+// GET all pages or specific page by slug or id
 export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const slug = searchParams.get('slug');
+    const id = searchParams.get('id');
 
     try {
+        // If id param exists, fetch by id
+        if (id) {
+            const page = await prisma.page.findUnique({ where: { id: parseInt(id) } });
+            if (!page) return NextResponse.json({ error: 'Page not found' }, { status: 404 });
+            return NextResponse.json({ success: true, page });
+        }
         // If slug param exists (even if empty string), search for specific page
-        if (slug !== null) {
+        else if (slug !== null) {
             const page = await prisma.page.findUnique({ where: { slug } });
             if (!page) return NextResponse.json({ error: 'Page not found' }, { status: 404 });
             return NextResponse.json({ success: true, page });
         } else {
-            // No slug param - return all pages
+            // No params - return all pages
             const pages = await prisma.page.findMany();
             return NextResponse.json({ success: true, pages });
         }

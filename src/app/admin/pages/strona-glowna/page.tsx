@@ -155,7 +155,10 @@ export default function HomepageManager() {
 
     const fetchHomepage = async () => {
         try {
-            const res = await fetch(`${getApiUrl('pages')}?slug=`);
+            // Always fetch homepage by ID (homepage is always id=1)
+            const res = await fetch(`${getApiUrl('pages')}?id=1`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
             const data = await res.json();
 
             if (data.success && data.page?.home_sections) {

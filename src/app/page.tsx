@@ -58,8 +58,8 @@ export default function Home() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // 1. Fetch Homepage Data
-                const pageRes = await fetch('/api/pages?slug=');
+                // 1. Fetch Homepage Data (homepage is always id=1)
+                const pageRes = await fetch('/api/pages?id=1');
                 const pageData = await pageRes.json();
 
                 if (pageData.success && pageData.page?.home_sections) {
