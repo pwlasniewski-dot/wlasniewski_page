@@ -13,6 +13,7 @@ import { Save, ArrowLeft, Plus, Trash2, Image as ImageIcon, Eye, EyeOff, MoveUp,
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import MediaPicker from '@/components/admin/MediaPicker';
+import templates from '@/lib/homepageModuleTemplates';
 
 // --- Types ---
 
@@ -308,6 +309,71 @@ export default function HomepageManager() {
         }
     };
 
+    // --- Quick-add module helpers (use templates from lib) ---
+    const addAboutSectionTemplate = () => {
+        const tpl = templates.createAboutSectionTemplate();
+        setSections(prev => [...prev, tpl]);
+        toast.success('Dodano sekcję O mnie (pamiętaj zapisać)');
+    };
+
+    const addFeaturesSectionTemplate = () => {
+        const tpl = templates.createFeaturesSectionTemplate();
+        setSections(prev => [...prev, tpl]);
+        toast.success('Dodano sekcję Kafelki (pamiętaj zapisać)');
+    };
+
+    const addParallaxSectionTemplate = () => {
+        const tpl = templates.createParallaxSectionTemplate();
+        setSections(prev => [...prev, tpl]);
+        toast.success('Dodano sekcję Parallax (pamiętaj zapisać)');
+    };
+
+    const addInfoBandTemplate = () => {
+        const tpl = templates.createInfoBandTemplate();
+        setSections(prev => [...prev, tpl]);
+        toast.success('Dodano Info Band (pamiętaj zapisać)');
+    };
+
+    const addChallengeBannerTemplate = () => {
+        const tpl = templates.createChallengeBannerTemplate();
+        setSections(prev => [...prev, tpl]);
+        toast.success('Dodano Foto Wyzwanie (pamiętaj zapisać)');
+    };
+
+    const addTestimonialsTemplate = () => {
+        const tpl = templates.createTestimonialsTemplate();
+        setSections(prev => [...prev, tpl]);
+        toast.success('Dodano Opinie (pamiętaj zapisać)');
+    };
+
+    const addHeroSlideTemplate = () => {
+        const tpl = templates.createHeroSlideTemplate();
+        setHeroSlides(prev => [...prev, tpl]);
+        toast.success('Dodano slajd do hero (pamiętaj zapisać)');
+    };
+
+    // --- Add all modules at once (szybkie wypełnienie wszystkimi moduły) ---
+    const addAllModulesAtOnce = () => {
+        // Clear existing sections and add all templates
+        const allSections: Section[] = [
+            templates.createAboutSectionTemplate() as AboutSection,
+            templates.createFeaturesSectionTemplate() as FeaturesSection,
+            templates.createParallaxSectionTemplate() as ParallaxSection,
+            templates.createInfoBandTemplate() as InfoBandSection,
+            templates.createChallengeBannerTemplate() as ChallengeBannerSection,
+            templates.createTestimonialsTemplate() as TestimonialsSection
+        ];
+        setSections(allSections);
+        
+        // Add hero slides
+        const heroSlides = [
+            templates.createHeroSlideTemplate()
+        ];
+        setHeroSlides(heroSlides);
+        
+        toast.success('Dodano wszystkie moduły! Uzupełnij treści i kliknij Zapisz zmiany');
+    };
+
     // --- Media Picker ---
 
     const openMediaPicker = (type: 'hero' | 'section' | 'advanced' | 'advanced_challenge', index: number, field?: string, subIndex?: number) => {
@@ -550,6 +616,18 @@ export default function HomepageManager() {
                     <Save className="w-4 h-4" />
                     {saving ? 'Zapisywanie...' : 'Zapisz zmiany'}
                 </button>
+            </div>
+
+            {/* Quick-add toolbar: insert commonly used modules */}
+            <div className="mb-6 flex flex-wrap gap-2">
+                <button onClick={addAllModulesAtOnce} className="px-4 py-2 bg-gold-500 hover:bg-gold-400 text-black rounded text-sm font-semibold">⭐ Dodaj wszystkie moduły</button>
+                <button onClick={addHeroSlideTemplate} className="px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-white rounded text-sm">Dodaj slajd (Hero)</button>
+                <button onClick={addAboutSectionTemplate} className="px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-white rounded text-sm">Dodaj O mnie</button>
+                <button onClick={addFeaturesSectionTemplate} className="px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-white rounded text-sm">Dodaj Kafelki</button>
+                <button onClick={addParallaxSectionTemplate} className="px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-white rounded text-sm">Dodaj Parallax</button>
+                <button onClick={addInfoBandTemplate} className="px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-white rounded text-sm">Dodaj Info Band</button>
+                <button onClick={addChallengeBannerTemplate} className="px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-white rounded text-sm">Dodaj Foto Wyzwanie</button>
+                <button onClick={addTestimonialsTemplate} className="px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-white rounded text-sm">Dodaj Opinie</button>
             </div>
 
             <div className="space-y-8">
