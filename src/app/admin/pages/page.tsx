@@ -162,7 +162,7 @@ export default function PagesListPage() {
                                     </div>
                                     <div className="flex items-center gap-4">
                                         <Link
-                                            href={`/admin/pages/${page.slug}`}
+                                            href={page.slug === '' ? '/admin/pages/strona-glowna' : `/admin/pages/${page.slug}`}
                                             className="inline-flex items-center px-3 py-1.5 border border-zinc-700 rounded-md text-sm font-medium text-zinc-300 hover:bg-zinc-800"
                                         >
                                             <Edit className="h-4 w-4 mr-2" />
