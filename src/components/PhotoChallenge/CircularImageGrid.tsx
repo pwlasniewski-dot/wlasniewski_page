@@ -32,7 +32,7 @@ export default function CircularImageGrid({ images, columns = 4 }: CircularImage
                         transition={{
                             duration: 0.5,
                             delay: index * 0.1,
-                            ease: 'easeOut',
+                            ease: "easeOut" as const,
                         }}
                         whileHover={{ scale: 1.1 }}
                         className="relative aspect-square w-full mb-4"

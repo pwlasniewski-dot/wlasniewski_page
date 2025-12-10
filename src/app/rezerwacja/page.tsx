@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Toaster, toast } from 'sonner';
 import { getApiUrl } from '@/lib/api-config';
 import BookingCalendar from '@/components/BookingCalendar';

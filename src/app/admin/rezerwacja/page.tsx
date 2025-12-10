@@ -1,9 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { getApiUrl } from '@/lib/api-config';
-import { useAuthContext } from '@/lib/auth/useAuthContext';
 import { Toaster, toast } from 'sonner';
 
 interface ServiceType {
@@ -26,14 +24,13 @@ interface Package {
     price: number;
     subtitle?: string;
     features?: string;
+    available_hours?: string; // JSON: "9,10,11,12,13,14,15,16,17" or "MON,TUE,WED,THU,FRI"
+    blocks_entire_day?: boolean; // true for weddings, false for sessions
     order: number;
     is_active: boolean;
 }
 
 export default function AdminPackagesPage() {
-    const router = useRouter();
-    const { token, user } = useAuthContext();
-    
     const [serviceTypes, setServiceTypes] = useState<ServiceType[]>([]);
     const [loading, setLoading] = useState(true);
     const [editingPackage, setEditingPackage] = useState<Package | null>(null);
@@ -41,20 +38,11 @@ export default function AdminPackagesPage() {
     const [showPackageForm, setShowPackageForm] = useState(false);
     const [showServiceForm, setShowServiceForm] = useState(false);
 
-    // Redirect if not authenticated
-    useEffect(() => {
-        if (!token) {
-            router.push('/admin/login');
-        }
-    }, [token, router]);
-
     // Load service types and packages
     useEffect(() => {
         const loadData = async () => {
             try {
-                const res = await fetch(getApiUrl('service-types'), {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+                const res = await fetch(getApiUrl('service-types'));
                 if (res.ok) {
                     const data = await res.json();
                     setServiceTypes(data.serviceTypes || []);
@@ -67,8 +55,8 @@ export default function AdminPackagesPage() {
             }
         };
 
-        if (token) loadData();
-    }, [token]);
+        loadData();
+    }, []);
 
     // Save package
     const handleSavePackage = async (pkg: Package, serviceId: number) => {
@@ -81,8 +69,7 @@ export default function AdminPackagesPage() {
             const res = await fetch(getApiUrl('packages'), {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
                     ...pkg,
@@ -97,11 +84,9 @@ export default function AdminPackagesPage() {
                 toast.success(pkg.id ? 'Pakiet zaktualizowany' : 'Pakiet dodany');
                 setEditingPackage(null);
                 setShowPackageForm(false);
-                
+
                 // Reload data
-                const reloadRes = await fetch(getApiUrl('service-types'), {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+                const reloadRes = await fetch(getApiUrl('service-types'));
                 if (reloadRes.ok) {
                     const reloadData = await reloadRes.json();
                     setServiceTypes(reloadData.serviceTypes || []);
@@ -121,17 +106,14 @@ export default function AdminPackagesPage() {
 
         try {
             const res = await fetch(`${getApiUrl('packages')}?id=${packageId}`, {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${token}` }
+                method: 'DELETE'
             });
 
             if (res.ok) {
                 toast.success('Pakiet usunięty');
-                
+
                 // Reload data
-                const reloadRes = await fetch(getApiUrl('service-types'), {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+                const reloadRes = await fetch(getApiUrl('service-types'));
                 if (reloadRes.ok) {
                     const reloadData = await reloadRes.json();
                     setServiceTypes(reloadData.serviceTypes || []);
@@ -145,13 +127,12 @@ export default function AdminPackagesPage() {
         }
     };
 
-    if (!token) return null;
     if (loading) return <div className="p-8 text-center">Ładowanie...</div>;
 
     return (
         <div className="min-h-screen bg-zinc-950 p-8">
             <Toaster position="top-right" theme="dark" />
-            
+
             <div className="max-w-6xl mx-auto">
                 <h1 className="text-4xl font-bold text-white mb-8">📦 Zarządzaj Pakietami</h1>
 
@@ -194,9 +175,9 @@ export default function AdminPackagesPage() {
                                                 {pkg.is_active ? 'Aktywny' : 'Nieaktywny'}
                                             </span>
                                         </div>
-                                        
+
                                         {pkg.subtitle && <p className="text-sm text-zinc-300 mb-2">{pkg.subtitle}</p>}
-                                        
+
                                         <div className="flex gap-2 mt-4">
                                             <button
                                                 onClick={() => {
@@ -319,6 +300,29 @@ export default function AdminPackagesPage() {
                                         className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 text-white rounded-lg focus:ring-2 focus:ring-amber-500 outline-none"
                                         placeholder="Szczegółowy opis pakietu..."
                                     />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-zinc-300 mb-1">Dostępne godziny (np: 9,10,11,12,13,14,15,16,17)</label>
+                                    <input
+                                        type="text"
+                                        value={editingPackage.available_hours || ''}
+                                        onChange={(e) => setEditingPackage({ ...editingPackage, available_hours: e.target.value })}
+                                        className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 text-white rounded-lg focus:ring-2 focus:ring-amber-500 outline-none text-sm"
+                                        placeholder="9,10,11,12,13,14,15,16,17"
+                                    />
+                                    <p className="text-xs text-zinc-400 mt-1">Wpisz numery godzin od 0-23 dla poszczególnych dni</p>
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                    <input
+                                        type="checkbox"
+                                        id="blocks_entire_day"
+                                        checked={editingPackage.blocks_entire_day || false}
+                                        onChange={(e) => setEditingPackage({ ...editingPackage, blocks_entire_day: e.target.checked })}
+                                        className="w-4 h-4 rounded"
+                                    />
+                                    <label htmlFor="blocks_entire_day" className="text-sm text-zinc-300">Blokuje cały dzień (ślub/urodziny)</label>
                                 </div>
 
                                 <div className="flex items-center gap-2">

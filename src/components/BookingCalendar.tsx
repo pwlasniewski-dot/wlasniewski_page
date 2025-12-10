@@ -19,7 +19,10 @@ type Props = {
   // Support both interfaces
   value?: { date: string; start?: string; end?: string } | null;
   selectedDate?: Date | null;
-  onChange: ((val: { date: string; start?: string; end?: string } | null) => void) | ((date: Date | null) => void);
+  // Backwards-compatible aliases used in some pages
+  selectedSlot?: { date: string; start?: string; end?: string } | null;
+  onChange?: ((val: { date: string; start?: string; end?: string } | null) => void) | ((date: Date | null) => void);
+  onSlotSelect?: ((val: { date: string; start?: string; end?: string } | null) => void) | ((date: Date | null) => void);
   availabilityEndpoint?: string;
 };
 
@@ -56,6 +59,9 @@ export default function BookingCalendar(props: Props) {
     value: propValue,
     selectedDate,
     onChange,
+    // legacy aliases
+    selectedSlot,
+    onSlotSelect,
     availabilityEndpoint,
   } = props;
 
@@ -68,6 +74,10 @@ export default function BookingCalendar(props: Props) {
     : selectedDate
       ? { date: selectedDate.toISOString().split('T')[0] }
       : null;
+
+  // Normalize legacy `selectedSlot` / `onSlotSelect` props
+  const effectiveValue = value !== undefined && value !== null ? value : (selectedSlot !== undefined ? selectedSlot : value);
+  const effectiveOnChange = onChange ?? onSlotSelect;
 
   const [cursor, setCursor] = useState<Date>(() => new Date());
   const ym = useMemo(() => `${cursor.getFullYear()}-${pad(cursor.getMonth() + 1)}`, [cursor]);
@@ -116,22 +126,22 @@ export default function BookingCalendar(props: Props) {
     // Check if onChange expects Date | null (for selectedDate interface)
     if (selectedDate !== undefined) {
       const dateObj = new Date(iso + 'T12:00:00');
-      (onChange as (date: Date | null) => void)(dateObj);
+      (effectiveOnChange as (date: Date | null) => void)(dateObj);
     } else {
       // Original slot-based interface
       if (service === "Sesja") {
-        (onChange as (val: { date: string; start?: string; end?: string } | null) => void)({ date: iso, start: undefined, end: undefined });
+        (effectiveOnChange as (val: { date: string; start?: string; end?: string } | null) => void)({ date: iso, start: undefined, end: undefined });
       } else {
         const info = availability[iso];
         if (info?.fullDay) return;
-        (onChange as (val: { date: string; start?: string; end?: string } | null) => void)({ date: iso });
+        (effectiveOnChange as (val: { date: string; start?: string; end?: string } | null) => void)({ date: iso });
       }
     }
   };
 
   const sessionSlots = useMemo(() => {
-    if (service !== "Sesja" || !value?.date) return [];
-    const iso = value.date;
+    if (service !== "Sesja" || !effectiveValue?.date) return [];
+    const iso = effectiveValue.date;
     const slots = buildSessionSlots(iso, durationHours);
 
     const info = availability[iso];
@@ -145,10 +155,10 @@ export default function BookingCalendar(props: Props) {
         ranges.some((r) => overlap(slot.start, slot.end, r.start, r.end)) ||
         (info?.booked || []).includes(slot.start);
 
-      const picked = value?.start === slot.start && value?.end === slot.end;
+      const picked = effectiveValue?.start === slot.start && effectiveValue?.end === slot.end;
       return { ...slot, blocked, picked };
     });
-  }, [service, value?.date, value?.start, value?.end, durationHours, availability]);
+  }, [service, effectiveValue?.date, effectiveValue?.start, effectiveValue?.end, durationHours, availability]);
 
   return (
     <div className="rounded-xl border p-4">

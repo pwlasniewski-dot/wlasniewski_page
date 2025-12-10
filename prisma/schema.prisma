@@ -427,6 +427,8 @@ model Package {
   price           Int          // Price in PLN (store as cents: 299 = 2.99 zł)
   subtitle        String?      // Short description shown in card
   features        String?      // JSON array of feature strings with emojis
+  available_hours String?      // JSON array of available hours: "9,10,11,12,13,14,15,16,17" for weekends, or days: "MON,TUE,WED,THU,FRI" for weekdays
+  blocks_entire_day Boolean?    // true for weddings/events (blocks whole day), false for sessions (blocks only booked time)
   order           Int          @default(0) // Sort order within service
   is_active       Boolean      @default(true)
   created_at      DateTime     @default(now())
