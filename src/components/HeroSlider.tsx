@@ -5,71 +5,108 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
-interface Slide {
+interface HeroSlide {
     id: string | number;
+    image: string;
+    image_mobile?: string;
+    image_desktop?: string;
     title: string;
     subtitle: string;
+    description?: string;
     buttonText?: string;
     buttonLink?: string;
-    image: string; // URL string directly from home_sections
+    enabled?: boolean;
+    order?: number;
+    textAnimation?: 'fade' | 'slide-up' | 'slide-down' | 'scale' | 'bounce' | 'zoom-in';
 }
 
 interface HeroSliderProps {
-    slides?: any[];
+    slides?: HeroSlide[];
 }
+
+// Text animation variants
+const animationVariants = {
+    fade: {
+        initial: { opacity: 0 },
+        animate: { opacity: 1 },
+        exit: { opacity: 0 },
+        transition: { duration: 0.8 }
+    },
+    'slide-up': {
+        initial: { opacity: 0, y: 60 },
+        animate: { opacity: 1, y: 0 },
+        exit: { opacity: 0, y: -60 },
+        transition: { duration: 0.8 }
+    },
+    'slide-down': {
+        initial: { opacity: 0, y: -60 },
+        animate: { opacity: 1, y: 0 },
+        exit: { opacity: 0, y: 60 },
+        transition: { duration: 0.8 }
+    },
+    scale: {
+        initial: { opacity: 0, scale: 0.9 },
+        animate: { opacity: 1, scale: 1 },
+        exit: { opacity: 0, scale: 0.9 },
+        transition: { duration: 0.8 }
+    },
+    bounce: {
+        initial: { opacity: 0, y: 40 },
+        animate: { opacity: 1, y: [40, -10, 0] },
+        exit: { opacity: 0, y: -40 },
+        transition: { duration: 0.9 }
+    },
+    'zoom-in': {
+        initial: { opacity: 0, scale: 0.5 },
+        animate: { opacity: 1, scale: 1 },
+        exit: { opacity: 0, scale: 1.5 },
+        transition: { duration: 0.9 }
+    }
+};
 
 export default function HeroSlider({ slides = [] }: HeroSliderProps) {
     const [currentSlide, setCurrentSlide] = useState(0);
-    const [filteredSlides, setFilteredSlides] = useState<any[]>([]);
+    const [isMobile, setIsMobile] = useState(false);
     const [mounted, setMounted] = useState(false);
+    const [autoplay, setAutoplay] = useState(true);
 
+    // Filter enabled slides
+    const enabledSlides = slides.filter(s => s.enabled !== false).sort((a, b) => (a.order || 0) - (b.order || 0));
+
+    // Detect mobile
     useEffect(() => {
         setMounted(true);
-        const handleResize = () => {
-            const isMobile = window.innerWidth < 768;
-            const filtered = slides.filter(slide => {
-                const mode = slide.display_mode || 'BOTH';
-                if (mode === 'BOTH') return true;
-                if (mode === 'MOBILE' && isMobile) return true;
-                if (mode === 'DESKTOP' && !isMobile) return true;
-                return false;
-            });
-            setFilteredSlides(filtered);
-        };
+        const checkMobile = () => setIsMobile(window.innerWidth < 768);
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
 
-        handleResize(); // Initial check
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, [slides]);
-
+    // Autoplay
     useEffect(() => {
-        if (filteredSlides.length <= 1) return;
+        if (!autoplay || enabledSlides.length <= 1 || !mounted) return;
         const timer = setInterval(() => {
-            setCurrentSlide((prev) => (prev + 1) % filteredSlides.length);
-        }, 5000);
+            setCurrentSlide((prev) => (prev + 1) % enabledSlides.length);
+        }, 6000);
         return () => clearInterval(timer);
-    }, [filteredSlides.length]);
+    }, [autoplay, enabledSlides.length, mounted]);
 
-    const nextSlide = () => setCurrentSlide((prev) => (prev + 1) % filteredSlides.length);
-    const prevSlide = () => setCurrentSlide((prev) => (prev - 1 + filteredSlides.length) % filteredSlides.length);
+    if (!mounted) return <div className="h-screen w-full bg-black" />;
 
-    // Fallback static content if no slides
-    if (!mounted) return <div className="h-screen w-full bg-zinc-950" />; // Prevent hydration mismatch
-
-    if (!filteredSlides || filteredSlides.length === 0) {
+    if (!enabledSlides || enabledSlides.length === 0) {
         return (
-            <div className="relative h-screen w-full overflow-hidden bg-zinc-950">
-                <div className="absolute inset-0 bg-black/40 z-10" />
-                <div className="relative z-10 flex h-full flex-col items-center justify-center text-center px-4">
-                    <h1 className="font-display text-5xl md:text-7xl font-bold text-white mb-6 tracking-wide">
-                        Wspomnienia zapisane światłem
+            <div className="relative h-screen w-full flex items-center justify-center bg-black overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-b from-black/40 to-black/60 z-10" />
+                <div className="relative z-20 text-center px-4 space-y-4">
+                    <h1 className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-extrabold text-white tracking-tight drop-shadow-2xl">
+                        Wspomnienia<br />zapisane światłem
                     </h1>
-                    <p className="font-sans text-lg md:text-xl text-zinc-200 mb-8 max-w-2xl">
+                    <p className="text-base sm:text-lg md:text-xl text-zinc-200 max-w-2xl mx-auto">
                         Fotografia ślubna i rodzinna pełna naturalnych emocji.
                     </p>
                     <Link
                         href="/portfolio"
-                        className="px-8 py-3 bg-gold-500 text-black font-medium rounded hover:bg-gold-400 transition-colors"
+                        className="inline-block px-6 sm:px-8 py-2 sm:py-3 bg-gold-500 text-black font-semibold rounded hover:bg-gold-400 transition-colors shadow-lg"
                     >
                         Zobacz Portfolio
                     </Link>
@@ -78,90 +115,126 @@ export default function HeroSlider({ slides = [] }: HeroSliderProps) {
         );
     }
 
+    const slide = enabledSlides[currentSlide];
+    const slideImage = isMobile && slide.image_mobile ? slide.image_mobile : slide.image_desktop || slide.image;
+    const textAnim = (slide.textAnimation || 'slide-up') as keyof typeof animationVariants;
+    const variant = animationVariants[textAnim] || animationVariants['slide-up'];
+
+    const nextSlide = () => {
+        setCurrentSlide((prev) => (prev + 1) % enabledSlides.length);
+        setAutoplay(false);
+    };
+
+    const prevSlide = () => {
+        setCurrentSlide((prev) => (prev - 1 + enabledSlides.length) % enabledSlides.length);
+        setAutoplay(false);
+    };
+
     return (
-        <div className="relative h-screen w-full overflow-hidden bg-zinc-950">
+        <div className="relative w-full bg-black overflow-hidden" style={{ aspectRatio: isMobile ? '9/16' : '16/9', minHeight: isMobile ? '100vh' : '100vh' }}>
+            {/* Background Images */}
             <AnimatePresence mode="wait">
                 <motion.div
-                    key={currentSlide}
+                    key={`bg-${currentSlide}`}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    transition={{ duration: 0.7 }}
+                    transition={{ duration: 0.6 }}
                     className="absolute inset-0"
                 >
-                    <picture className="absolute inset-0 w-full h-full">
-                        {filteredSlides[currentSlide].mobileImage && (
-                            <source
-                                media="(max-width: 768px)"
-                                srcSet={filteredSlides[currentSlide].mobileImage}
-                            />
-                        )}
-                        <img
-                            src={filteredSlides[currentSlide].image?.file_path || filteredSlides[currentSlide].image}
-                            alt={filteredSlides[currentSlide].title}
-                            className="w-full h-full object-cover object-[center_30%]"
-                            fetchPriority="high"
-                            loading="eager"
-                        />
-                    </picture>
-                    <div className="absolute inset-0 bg-black/40" />
+                    <div
+                        className="w-full h-full bg-cover bg-center"
+                        style={{
+                            backgroundImage: `url(${slideImage})`,
+                            backgroundPosition: isMobile ? 'center' : 'center 30%'
+                        }}
+                    />
                 </motion.div>
             </AnimatePresence>
 
-            <div className="relative z-10 flex h-full flex-col items-center justify-center text-center px-4">
+            {/* Gradient Overlay */}
+            <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/40 to-black/60 z-10" />
+
+            {/* Content */}
+            <div className="relative z-20 w-full h-full flex flex-col items-center justify-center px-4 sm:px-6 text-center">
                 <AnimatePresence mode="wait">
                     <motion.div
-                        key={currentSlide}
-                        initial={{ y: 20, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        exit={{ y: -20, opacity: 0 }}
-                        transition={{ duration: 0.5, delay: 0.2 }}
+                        key={`content-${currentSlide}`}
+                        initial={variant.initial}
+                        animate={variant.animate}
+                        exit={variant.exit}
+                        transition={variant.transition}
+                        className="space-y-3 sm:space-y-4 md:space-y-6 max-w-4xl"
                     >
-                        <h1 className="font-display text-5xl md:text-7xl font-bold text-white mb-6 tracking-wide drop-shadow-lg">
-                            {filteredSlides[currentSlide].title}
+                        <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-8xl font-extrabold text-white tracking-tighter drop-shadow-2xl leading-tight">
+                            {slide.title}
                         </h1>
-                        <p className="font-sans text-lg md:text-xl text-zinc-200 mb-8 max-w-2xl mx-auto drop-shadow-md">
-                            {filteredSlides[currentSlide].subtitle}
+                        <p className="text-sm sm:text-base md:text-lg lg:text-xl text-zinc-200 drop-shadow-lg">
+                            {slide.subtitle}
                         </p>
-                        {filteredSlides[currentSlide].buttonText && (
-                            <Link
-                                href={filteredSlides[currentSlide].buttonLink || '/portfolio'}
-                                className="inline-block px-8 py-3 bg-gold-500 text-black font-medium rounded hover:bg-gold-400 transition-colors shadow-lg"
+                        {slide.description && (
+                            <p className="text-xs sm:text-sm md:text-base text-zinc-300 max-w-xl mx-auto drop-shadow-md">
+                                {slide.description}
+                            </p>
+                        )}
+                        {slide.buttonText && (
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.3 }}
                             >
-                                {filteredSlides[currentSlide].buttonText}
-                            </Link>
+                                <Link
+                                    href={slide.buttonLink || '/portfolio'}
+                                    className="inline-block px-6 sm:px-8 py-2 sm:py-3 bg-gold-500 text-black font-semibold rounded-lg hover:bg-gold-400 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105"
+                                >
+                                    {slide.buttonText}
+                                </Link>
+                            </motion.div>
                         )}
                     </motion.div>
                 </AnimatePresence>
             </div>
 
             {/* Navigation Arrows */}
-            {filteredSlides.length > 1 && (
+            {enabledSlides.length > 1 && (
                 <>
                     <button
                         onClick={prevSlide}
-                        className="absolute left-4 top-1/2 -translate-y-1/2 p-2 text-white/50 hover:text-white transition-colors z-20"
+                        onMouseEnter={() => setAutoplay(false)}
+                        className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 p-2 sm:p-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all z-30 backdrop-blur-sm"
+                        aria-label="Poprzedni slajd"
                     >
-                        <ChevronLeft className="w-10 h-10" />
+                        <ChevronLeft className="w-6 h-6 sm:w-8 sm:h-8" />
                     </button>
                     <button
                         onClick={nextSlide}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-white/50 hover:text-white transition-colors z-20"
+                        onMouseEnter={() => setAutoplay(false)}
+                        className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 p-2 sm:p-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all z-30 backdrop-blur-sm"
+                        aria-label="Następny slajd"
                     >
-                        <ChevronRight className="w-10 h-10" />
+                        <ChevronRight className="w-6 h-6 sm:w-8 sm:h-8" />
                     </button>
                 </>
             )}
 
-            {/* Dots */}
-            {filteredSlides.length > 1 && (
-                <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-3 z-20">
-                    {filteredSlides.map((_, index) => (
-                        <button
+            {/* Dots Navigation */}
+            {enabledSlides.length > 1 && (
+                <div className="absolute bottom-6 sm:bottom-8 left-1/2 -translate-x-1/2 flex gap-2 z-30">
+                    {enabledSlides.map((_, index) => (
+                        <motion.button
                             key={index}
-                            onClick={() => setCurrentSlide(index)}
-                            className={`w-3 h-3 rounded-full transition-all ${index === currentSlide ? 'bg-gold-500 w-8' : 'bg-white/50 hover:bg-white'
-                                }`}
+                            onClick={() => {
+                                setCurrentSlide(index);
+                                setAutoplay(false);
+                            }}
+                            className={`rounded-full transition-all ${
+                                index === currentSlide ? 'bg-gold-500' : 'bg-white/40 hover:bg-white/60'
+                            }`}
+                            animate={{
+                                width: index === currentSlide ? 32 : 10,
+                                height: 10
+                            }}
+                            aria-label={`Przejdź do slajdu ${index + 1}`}
                         />
                     ))}
                 </div>

@@ -389,7 +389,14 @@ export default function HomepageManager() {
 
         if (currentPickerTarget.type === 'hero') {
             const updated = [...heroSlides];
-            updated[currentPickerTarget.index].image = filePath;
+            // Handle different image fields for hero slides
+            if (currentPickerTarget.field === 'image_desktop') {
+                updated[currentPickerTarget.index].image_desktop = filePath;
+            } else if (currentPickerTarget.field === 'image_mobile') {
+                updated[currentPickerTarget.index].image_mobile = filePath;
+            } else {
+                updated[currentPickerTarget.index].image = filePath;
+            }
             setHeroSlides(updated);
         } else if (currentPickerTarget.type === 'advanced') {
             const updated = [...sections];
@@ -416,7 +423,14 @@ export default function HomepageManager() {
             const section = updated[currentPickerTarget.index];
 
             if (section.type === 'about' || section.type === 'parallax' || section.type === 'info_band') {
-                (section.data as any).image = filePath;
+                // Handle different image fields for sections
+                if (currentPickerTarget.field === 'image_desktop') {
+                    (section.data as any).image_desktop = filePath;
+                } else if (currentPickerTarget.field === 'image_mobile') {
+                    (section.data as any).image_mobile = filePath;
+                } else {
+                    (section.data as any).image = filePath;
+                }
             } else if (section.type === 'challenge_banner') {
                 // For challenge banner, we might be selecting multiple photos for the effect
                 if (currentPickerTarget.field === 'photos') {
@@ -648,7 +662,7 @@ export default function HomepageManager() {
                     </div>
 
                     {heroSlides.map((slide, index) => (
-                        <div key={slide.id} className="border border-zinc-700 rounded p-4 space-y-3 bg-zinc-900/50">
+                        <div key={slide.id} className="border border-zinc-700 rounded p-4 space-y-4 bg-zinc-900/50">
                             <div className="flex items-center justify-between">
                                 <span className="text-sm text-gold-400">Slajd #{index + 1}</span>
                                 <div className="flex gap-1">
@@ -658,19 +672,83 @@ export default function HomepageManager() {
                                     <button onClick={() => removeHeroSlide(index)} className="p-1 text-red-400 hover:text-red-300"><Trash2 className="w-4 h-4" /></button>
                                 </div>
                             </div>
-                            <div className="grid md:grid-cols-2 gap-4">
+
+                            {/* Images: fallback, desktop, mobile */}
+                            <div className="grid md:grid-cols-3 gap-3 bg-zinc-800/30 p-3 rounded border border-zinc-700">
                                 <div>
-                                    <label className="block text-xs text-zinc-400 mb-1">Zdjęcie</label>
+                                    <label className="block text-xs text-zinc-400 mb-1">Zdjęcie (fallback)</label>
                                     <div className="flex gap-2">
-                                        {slide.image && <img src={slide.image} alt="" className="w-20 h-14 object-cover rounded" />}
-                                        <button onClick={() => openMediaPicker('hero', index)} className="px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-sm text-white hover:bg-zinc-700 flex items-center gap-2">
-                                            <ImageIcon className="w-4 h-4" /> {slide.image ? 'Zmień' : 'Wybierz'}
+                                        {slide.image && <img src={slide.image} alt="" className="w-16 h-12 object-cover rounded" />}
+                                        <button onClick={() => openMediaPicker('hero', index)} className="px-2 py-1 bg-zinc-700 border border-zinc-600 rounded text-xs text-white hover:bg-zinc-600 flex items-center gap-1">
+                                            <ImageIcon className="w-3 h-3" /> {slide.image ? 'Zmień' : 'Wybierz'}
                                         </button>
                                     </div>
                                 </div>
-                                <div className="space-y-2">
-                                    <input type="text" value={slide.title} onChange={e => updateHeroSlide(index, 'title', e.target.value)} placeholder="Tytuł" className="w-full px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-sm text-white" />
-                                    <input type="text" value={slide.subtitle} onChange={e => updateHeroSlide(index, 'subtitle', e.target.value)} placeholder="Podtytuł" className="w-full px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-sm text-white" />
+                                <div>
+                                    <label className="block text-xs text-zinc-400 mb-1">Desktop</label>
+                                    <div className="flex gap-2">
+                                        {slide.image_desktop && <img src={slide.image_desktop} alt="" className="w-16 h-12 object-cover rounded" />}
+                                        <button onClick={() => openMediaPicker('hero', index, 'image_desktop')} className="px-2 py-1 bg-zinc-700 border border-zinc-600 rounded text-xs text-white hover:bg-zinc-600 flex items-center gap-1">
+                                            <ImageIcon className="w-3 h-3" /> {slide.image_desktop ? 'Zmień' : 'Dodaj'}
+                                        </button>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-xs text-zinc-400 mb-1">Mobile (pionowy)</label>
+                                    <div className="flex gap-2">
+                                        {slide.image_mobile && <img src={slide.image_mobile} alt="" className="w-10 h-12 object-cover rounded" />}
+                                        <button onClick={() => openMediaPicker('hero', index, 'image_mobile')} className="px-2 py-1 bg-zinc-700 border border-zinc-600 rounded text-xs text-white hover:bg-zinc-600 flex items-center gap-1">
+                                            <ImageIcon className="w-3 h-3" /> {slide.image_mobile ? 'Zmień' : 'Dodaj'}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Text Fields */}
+                            <div className="space-y-2">
+                                <div>
+                                    <label className="block text-sm text-zinc-400 mb-1">Tytuł</label>
+                                    <input type="text" value={slide.title} onChange={e => updateHeroSlide(index, 'title', e.target.value)} placeholder="Główny tytuł" className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-sm text-white" />
+                                </div>
+                                <div>
+                                    <label className="block text-sm text-zinc-400 mb-1">Podtytuł</label>
+                                    <input type="text" value={slide.subtitle} onChange={e => updateHeroSlide(index, 'subtitle', e.target.value)} placeholder="Podtytuł/opis krótki" className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-sm text-white" />
+                                </div>
+                                <div>
+                                    <label className="block text-sm text-zinc-400 mb-1">Opis (szczegółowy)</label>
+                                    <textarea rows={2} value={slide.description || ''} onChange={e => updateHeroSlide(index, 'description', e.target.value)} placeholder="Dodatkowy opis pod podtytułem" className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-sm text-white" />
+                                </div>
+                            </div>
+
+                            {/* Button Fields */}
+                            <div className="grid md:grid-cols-2 gap-3 bg-zinc-800/30 p-3 rounded border border-zinc-700">
+                                <div>
+                                    <label className="block text-sm text-zinc-400 mb-1">Tekst przycisku</label>
+                                    <input type="text" value={slide.buttonText || ''} onChange={e => updateHeroSlide(index, 'buttonText', e.target.value)} placeholder="np. Zobacz Portfolio" className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-sm text-white" />
+                                </div>
+                                <div>
+                                    <label className="block text-sm text-zinc-400 mb-1">Link przycisku</label>
+                                    <input type="text" value={slide.buttonLink || ''} onChange={e => updateHeroSlide(index, 'buttonLink', e.target.value)} placeholder="np. /portfolio" className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-sm text-white" />
+                                </div>
+                            </div>
+
+                            {/* Animation */}
+                            <div className="bg-zinc-800/30 p-3 rounded border border-zinc-700">
+                                <label className="block text-sm text-zinc-400 mb-2">Animacja tekstu</label>
+                                <div className="grid md:grid-cols-3 gap-2">
+                                    {(['fade', 'slide-up', 'slide-down', 'scale', 'bounce', 'zoom-in'] as const).map(anim => (
+                                        <button
+                                            key={anim}
+                                            onClick={() => updateHeroSlide(index, 'textAnimation', anim)}
+                                            className={`px-2 py-1 rounded text-xs border transition-colors ${
+                                                slide.textAnimation === anim
+                                                    ? 'bg-gold-500 text-black border-gold-500'
+                                                    : 'bg-zinc-900 text-zinc-400 border-zinc-700 hover:border-zinc-600'
+                                            }`}
+                                        >
+                                            {anim === 'slide-up' ? '↑ Slide Up' : anim === 'slide-down' ? '↓ Slide Down' : anim === 'zoom-in' ? '🔍 Zoom' : anim}
+                                        </button>
+                                    ))}
                                 </div>
                             </div>
                         </div>
