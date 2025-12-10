@@ -80,6 +80,11 @@ model Setting {
   payu_client_secret      String?
   payu_environment        String  @default("sandbox") // sandbox, secure
 
+  // Payment Configuration (Stripe)
+  stripe_publishable_key  String?
+  stripe_secret_key       String?
+  stripe_webhook_secret   String?
+
   // Legacy P24 (Deprecating)
   p24_merchant_id     String?
   p24_pos_id          String?
@@ -385,6 +390,46 @@ model Booking {
   updated_at    DateTime @updatedAt
 
   @@map("bookings")
+}
+
+// 13.5 Service Types (Sesja, Ślub, Przyjęcie, Urodziny, etc.)
+model ServiceType {
+  id          Int       @id @default(autoincrement())
+  name        String    @unique // "Sesja", "Ślub", "Przyjęcie", "Urodziny", etc.
+  icon        String?   // Emoji or icon name (e.g., "📸", "💍", "🎂")
+  description String?   // Short description for UI
+  order       Int       @default(0) // Sort order in UI
+  is_active   Boolean   @default(true)
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @updatedAt
+
+  // Relations
+  packages    Package[]
+
+  @@map("service_types")
+}
+
+// 13.6 Booking Packages (Ekonomiczny, Złoty, Platynowy, Foto, Standard, etc.)
+model Package {
+  id              Int          @id @default(autoincrement())
+  service_id      Int
+  name            String       // "Ekonomiczny", "Złoty", "Platynowy", etc.
+  icon            String?      // Emoji for the package (e.g., "💰", "⭐", "👑")
+  description     String?      // Rich description (HTML or plain text)
+  hours           Int          // Duration in hours
+  price           Int          // Price in PLN (store as cents: 299 = 2.99 zł)
+  subtitle        String?      // Short description shown in card
+  features        String?      // JSON array of feature strings with emojis
+  order           Int          @default(0) // Sort order within service
+  is_active       Boolean      @default(true)
+  created_at      DateTime     @default(now())
+  updated_at      DateTime     @updatedAt
+
+  // Relations
+  service         ServiceType  @relation(fields: [service_id], references: [id], onDelete: Cascade)
+  
+  @@unique([service_id, name])
+  @@map("packages")
 }
 
 // 14. Gift Cards
