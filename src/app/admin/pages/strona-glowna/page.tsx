@@ -299,11 +299,14 @@ export default function HomepageManager() {
             if (res.ok) {
                 toast.success('Zapisano zmiany');
             } else {
-                throw new Error('Failed to save');
+                const errorData = await res.json().catch(() => ({}));
+                console.error('Save error:', res.status, errorData);
+                throw new Error(`Failed to save: ${res.status} ${errorData.error || 'Unknown error'}`);
             }
         } catch (error) {
-            console.error(error);
-            toast.error('Błąd zapisu');
+            const message = error instanceof Error ? error.message : 'Nieznany błąd';
+            console.error('Save failed:', message, error);
+            toast.error(`Błąd zapisu: ${message}`);
         } finally {
             setSaving(false);
         }
