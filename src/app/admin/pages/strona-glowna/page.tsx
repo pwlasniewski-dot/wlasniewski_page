@@ -155,7 +155,7 @@ export default function HomepageManager() {
 
     const fetchHomepage = async () => {
         try {
-            const res = await fetch(`${getApiUrl('pages')}?slug=strona-glowna`);
+            const res = await fetch(`${getApiUrl('pages')}?slug=`);
             const data = await res.json();
 
             if (data.success && data.page?.home_sections) {
@@ -288,7 +288,7 @@ export default function HomepageManager() {
                     'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({
-                    slug: 'strona-glowna',
+                    slug: '',
                     title: 'Strona główna',
                     content: '',
                     is_published: true,

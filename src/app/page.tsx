@@ -59,7 +59,7 @@ export default function Home() {
         const fetchData = async () => {
             try {
                 // 1. Fetch Homepage Data
-                const pageRes = await fetch('/api/pages?slug=strona-glowna');
+                const pageRes = await fetch('/api/pages?slug=');
                 const pageData = await pageRes.json();
 
                 if (pageData.success && pageData.page?.home_sections) {
