@@ -1,4 +1,4 @@
-[build]
+﻿[build]
   command = "npm run build"
   publish = ".next"
 
@@ -9,13 +9,10 @@
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
-# Optional: Add instructions for environment variables here or in a README
-# Netlify UI > Site settings > Build & deploy > Environment > Edit variables
-# Required:
-# DATABASE_URL
-# JWT_SECRET
-# NEXT_PUBLIC_BASE_URL
-# AWS_ACCESS_KEY_ID
-# AWS_SECRET_ACCESS_KEY
-# S3_BUCKET
-# S3_REGION
+[functions]
+  node_bundler = "esbuild"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
