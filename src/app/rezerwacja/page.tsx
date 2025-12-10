@@ -1,19 +1,16 @@
-"use client";
+'use client';
 
-import React, { useMemo, useState, useEffect } from "react";
-import BookingCalendar from "@/components/BookingCalendar";
-import { buildICS } from "@/utils/ics";
-import TestimonialsSection from "@/components/TestimonialsSection";
-import { getApiUrl } from "@/lib/api-config";
+import { useEffect, useState } from 'react';
+import { Toaster, toast } from 'sonner';
+import { getApiUrl } from '@/lib/api-config';
+import BookingCalendar from '@/components/BookingCalendar';
+import TestimonialsSection from '@/components/TestimonialsSection';
 
-// Type definitions
 interface ServiceType {
     id: number;
     name: string;
     icon?: string;
     description?: string;
-    order: number;
-    is_active: boolean;
     packages: Package[];
 }
 
