@@ -67,12 +67,12 @@ async function main() {
         { key: 'contact_email', value: 'pwlasniewski@gmail.com' },
         { key: 'contact_phone', value: '+48530788694' },
         { key: 'whatsapp_number', value: '48530788694' },
-        // Gmail SMTP settings
-        { key: 'smtp_host', value: 'smtp.gmail.com' },
-        { key: 'smtp_port', value: '587' },
-        { key: 'smtp_user', value: 'pwlasniewski@gmail.com' },
-        { key: 'smtp_password', value: 'bava jtrh wwql uokn' },
-        { key: 'smtp_from', value: 'pwlasniewski@gmail.com' },
+        // SMTP settings - use environment variables, NOT hardcoded passwords!
+        { key: 'smtp_host', value: process.env.SMTP_HOST || 'mail.wlasniewski.pl' },
+        { key: 'smtp_port', value: process.env.SMTP_PORT || '465' },
+        { key: 'smtp_user', value: process.env.SMTP_USER || 'noreply@wlasniewski.pl' },
+        { key: 'smtp_from', value: process.env.SMTP_FROM || 'noreply@wlasniewski.pl' },
+        // NOTE: SMTP_PASS should NEVER be stored in database - use environment variables only!
     ];
 
     for (const setting of settings) {

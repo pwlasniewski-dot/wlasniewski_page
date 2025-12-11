@@ -67,12 +67,16 @@ DATABASE_URL=postgresql://... (Neon)
 JWT_SECRET=wlasniewski-fotograf-jwt-secret-2024-production
 NEXT_PUBLIC_BASE_URL=https://wlasniewski.pl
 ADMIN_EMAIL=pwlasniewski@gmail.com
-ADMIN_PASSWORD=Wlasniewski123!
+ADMIN_PASSWORD=Wlasniewski123! (change after first login)
 SMTP_HOST=mail.wlasniewski.pl
 SMTP_PORT=465
 SMTP_USER=noreply@wlasniewski.pl
-SMTP_PASS=bava jtrh wwql uokn
+SMTP_PASS=(stored securely in Netlify environment - DO NOT COMMIT)
 ```
+
+⚠️ **SECURITY WARNING**: Never commit SMTP passwords or sensitive credentials to git!
+- Use `.env.local` for local development (in .gitignore)
+- Use Netlify Environment Variables UI for production
 
 ### 8. Features Deployed
 ✅ Gift Card System (9 seasonal themes)
