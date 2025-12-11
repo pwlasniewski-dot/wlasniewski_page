@@ -49,6 +49,11 @@ export default function SettingsPage() {
         p24_method_blik: true,
         p24_method_card: true,
         p24_method_transfer: true,
+        // Payment PayU
+        payu_client_id: '',
+        payu_client_secret: '',
+        payu_pos_id: '',
+        payu_test_mode: true,
         // Portfolio
         portfolio_categories: [] as string[] | string, // Can be array or JSON string
     });
@@ -709,6 +714,55 @@ export default function SettingsPage() {
                                 <span className="text-sm text-white">Szybkie Przelewy</span>
                             </label>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Payment Settings (PayU) */}
+            <div className="bg-zinc-900 shadow rounded-lg border border-zinc-800 p-6">
+                <h2 className="text-lg font-medium text-white mb-4">Konfiguracja Płatności (PayU)</h2>
+                <div className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-zinc-400 mb-1">Client ID</label>
+                            <input
+                                type="text"
+                                value={settings.payu_client_id || ''}
+                                onChange={e => setSettings(s => ({ ...s, payu_client_id: e.target.value }))}
+                                className="block w-full rounded-md border-zinc-700 bg-zinc-800 text-white shadow-sm focus:border-gold-500 focus:ring-gold-500 sm:text-sm px-3 py-2"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-zinc-400 mb-1">Client Secret</label>
+                            <input
+                                type="password"
+                                value={settings.payu_client_secret || ''}
+                                onChange={e => setSettings(s => ({ ...s, payu_client_secret: e.target.value }))}
+                                className="block w-full rounded-md border-zinc-700 bg-zinc-800 text-white shadow-sm focus:border-gold-500 focus:ring-gold-500 sm:text-sm px-3 py-2"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-zinc-400 mb-1">POS ID</label>
+                            <input
+                                type="text"
+                                value={settings.payu_pos_id || ''}
+                                onChange={e => setSettings(s => ({ ...s, payu_pos_id: e.target.value }))}
+                                className="block w-full rounded-md border-zinc-700 bg-zinc-800 text-white shadow-sm focus:border-gold-500 focus:ring-gold-500 sm:text-sm px-3 py-2"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="flex items-center justify-between border-t border-zinc-800 pt-4">
+                        <div>
+                            <label className="text-sm font-medium text-zinc-400">Tryb Testowy (Sandbox)</label>
+                            <p className="text-xs text-zinc-500">Użyj sandbox.payu.com zamiast produkcji</p>
+                        </div>
+                        <button
+                            onClick={() => setSettings(s => ({ ...s, payu_test_mode: !s.payu_test_mode }))}
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${settings.payu_test_mode ? 'bg-gold-500' : 'bg-zinc-700'}`}
+                        >
+                            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${settings.payu_test_mode ? 'translate-x-6' : 'translate-x-1'}`} />
+                        </button>
                     </div>
                 </div>
             </div>

@@ -4,14 +4,32 @@ import { nanoid } from 'nanoid';
 
 export const dynamic = 'force-dynamic';
 
-let stripe: any = null;
+// Get OAuth token from PayU
+async function getPayUToken() {
+    const clientId = process.env.PAYU_CLIENT_ID;
+    const clientSecret = process.env.PAYU_CLIENT_SECRET;
+    const baseUrl = process.env.PAYU_TEST_MODE === 'true' 
+        ? 'https://secure.sandbox.payu.com'
+        : 'https://secure.payu.com';
 
-function getStripe() {
-    if (!stripe) {
-        const Stripe = require('stripe').default;
-        stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '');
+    const response = await fetch(`${baseUrl}/pl/standard/user/oauth/authorize`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+            grant_type: 'client_credentials',
+            client_id: clientId || '',
+            client_secret: clientSecret || '',
+        }).toString(),
+    });
+
+    if (!response.ok) {
+        throw new Error('Failed to get PayU OAuth token');
     }
-    return stripe;
+
+    const data = await response.json();
+    return data.access_token;
 }
 
 export async function GET() {
@@ -81,53 +99,66 @@ export async function POST(request: NextRequest) {
                 recipient_email: recipientEmail,
                 message: message,
                 sender_name: senderName,
-                payment_method: 'stripe',
+                payment_method: 'payu',
                 amount_paid: Math.round(price * 100), // Convert to groszy
                 access_token: accessToken,
                 expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
             }
         });
 
-        // Create Stripe Checkout Session
-        const stripeClient = getStripe();
-        const session = await stripeClient.checkout.sessions.create({
-            payment_method_types: ['card'],
-            mode: 'payment',
-            customer_email: customerEmail,
-            success_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://wlasniewski.pl'}/karta-podarunkowa/sukces?session_id={CHECKOUT_SESSION_ID}&order_id=${order.id}`,
-            cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://wlasniewski.pl'}/karta-podarunkowa/${cardId}/kup?canceled=true`,
-            metadata: {
-                order_id: order.id.toString(),
-                card_id: cardId.toString(),
-                access_token: accessToken
+        // Create PayU order
+        const oauthToken = await getPayUToken();
+        const baseUrl = process.env.PAYU_TEST_MODE === 'true'
+            ? 'https://secure.sandbox.payu.com'
+            : 'https://secure.payu.com';
+
+        const payuResponse = await fetch(`${baseUrl}/api/v2_1/orders`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${oauthToken}`,
             },
-            line_items: [
-                {
-                    price_data: {
-                        currency: 'pln',
-                        product_data: {
-                            name: `Karta Podarunkowa - ${theme}`,
-                            description: `Karta o wartości ${value} PLN`,
-                            images: [
-                                // Add card image if available
-                            ]
-                        },
-                        unit_amount: Math.round(price * 100) // Price in groszy
-                    },
-                    quantity: 1
-                }
-            ]
+            body: JSON.stringify({
+                notifyUrl: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://wlasniewski.pl'}/api/payu/notify`,
+                customerIp: request.headers.get('x-forwarded-for') || '127.0.0.1',
+                merchantPosId: process.env.PAYU_POS_ID,
+                description: `Karta Podarunkowa - ${theme} (${value} PLN)`,
+                currencyCode: 'PLN',
+                totalAmount: Math.round(price * 100),
+                extOrderId: order.id.toString(),
+                buyer: {
+                    email: customerEmail,
+                    firstName: customerName.split(' ')[0],
+                    lastName: customerName.split(' ').slice(1).join(' ') || 'N/A',
+                    language: 'pl',
+                },
+                products: [
+                    {
+                        name: `Karta Podarunkowa - ${theme}`,
+                        unitPrice: Math.round(price * 100),
+                        quantity: 1,
+                    }
+                ]
+            }),
         });
 
-        // Update order with Stripe session ID
+        if (!payuResponse.ok) {
+            throw new Error('Failed to create PayU order');
+        }
+
+        const payuData = await payuResponse.json();
+        const payuOrderId = payuData.orders[0].orderId;
+
+        // Update order with PayU order ID
         await prisma.giftCardOrder.update({
             where: { id: order.id },
-            data: { stripe_session_id: session.id }
+            data: { stripe_session_id: payuOrderId } // Reuse field for PayU order ID
         });
 
         return NextResponse.json({
             success: true,
-            checkoutUrl: session.url,
+            checkoutUrl: payuData.links.find((link: any) => link.rel === 'redirect_uri')?.href,
+            payuOrderId: payuOrderId,
             orderId: order.id,
             accessToken: accessToken
         });
