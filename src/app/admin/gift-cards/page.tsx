@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Gift, Mail, Printer, Copy, Trash2, Plus } from 'lucide-react';
 import GiftCard from '@/components/GiftCard';
 import toast from 'react-hot-toast';
@@ -31,10 +32,12 @@ interface GiftCard {
 }
 
 export default function GiftCardsAdmin() {
+    const router = useRouter();
     const [giftCards, setGiftCards] = useState<GiftCard[]>([]);
     const [loading, setLoading] = useState(false);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [logoUrl, setLogoUrl] = useState('');
+    const [isAuthorized, setIsAuthorized] = useState(false);
     
     const [formData, setFormData] = useState({
         code: '',
@@ -48,31 +51,63 @@ export default function GiftCardsAdmin() {
     });
 
     useEffect(() => {
+        const token = localStorage.getItem('admin_token');
+        if (!token) {
+            toast.error('Musisz być zalogowany');
+            router.push('/admin/login');
+            return;
+        }
+        setIsAuthorized(true);
         fetchCards();
         fetchLogo();
-    }, []);
+    }, [router]);
 
     const fetchCards = async () => {
         try {
             const token = localStorage.getItem('admin_token');
+            if (!token) {
+                toast.error('Brak tokenu - zaloguj się ponownie');
+                router.push('/admin/login');
+                return;
+            }
             const res = await fetch(getApiUrl('gift-cards'), {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
+            
+            if (res.status === 401) {
+                toast.error('Sesja wygasła - zaloguj się ponownie');
+                localStorage.removeItem('admin_token');
+                router.push('/admin/login');
+                return;
+            }
+            
             const data = await res.json();
             if (data.success) {
                 setGiftCards(data.cards || []);
+            } else {
+                toast.error(data.error || 'Błąd ładowania kart');
             }
         } catch (error) {
             console.error('Error:', error);
+            toast.error('Błąd połączenia');
         }
     };
 
     const fetchLogo = async () => {
         try {
             const token = localStorage.getItem('admin_token');
+            if (!token) return;
+            
             const res = await fetch(getApiUrl('settings'), {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
+            
+            if (res.status === 401) {
+                localStorage.removeItem('admin_token');
+                router.push('/admin/login');
+                return;
+            }
+            
             const data = await res.json();
             if (data.success) {
                 setLogoUrl(data.settings?.logo_url || '');
@@ -100,6 +135,12 @@ export default function GiftCardsAdmin() {
         setLoading(true);
         try {
             const token = localStorage.getItem('admin_token');
+            if (!token) {
+                toast.error('Brak tokenu - zaloguj się ponownie');
+                router.push('/admin/login');
+                return;
+            }
+            
             const res = await fetch(getApiUrl('gift-cards'), {
                 method: 'POST',
                 headers: {
@@ -108,6 +149,13 @@ export default function GiftCardsAdmin() {
                 },
                 body: JSON.stringify(formData)
             });
+
+            if (res.status === 401) {
+                toast.error('Sesja wygasła - zaloguj się ponownie');
+                localStorage.removeItem('admin_token');
+                router.push('/admin/login');
+                return;
+            }
 
             const data = await res.json();
             if (data.success) {
@@ -128,6 +176,7 @@ export default function GiftCardsAdmin() {
                 toast.error(data.error || 'Błąd');
             }
         } catch (error) {
+            console.error('Error:', error);
             toast.error('Błąd serwera');
         } finally {
             setLoading(false);
@@ -139,16 +188,32 @@ export default function GiftCardsAdmin() {
 
         try {
             const token = localStorage.getItem('admin_token');
+            if (!token) {
+                toast.error('Brak tokenu - zaloguj się ponownie');
+                router.push('/admin/login');
+                return;
+            }
+            
             const res = await fetch(getApiUrl(`gift-cards/${id}`), {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
+            if (res.status === 401) {
+                toast.error('Sesja wygasła');
+                localStorage.removeItem('admin_token');
+                router.push('/admin/login');
+                return;
+            }
+
             if (res.ok) {
                 toast.success('Karta usunięta');
                 fetchCards();
+            } else {
+                toast.error('Błąd usuwania');
             }
         } catch (error) {
+            console.error('Error:', error);
             toast.error('Błąd');
         }
     };
@@ -210,6 +275,15 @@ export default function GiftCardsAdmin() {
 
     return (
         <div className="min-h-screen bg-zinc-950 p-6">
+            {!isAuthorized && (
+                <div className="flex items-center justify-center min-h-screen">
+                    <div className="text-center">
+                        <p className="text-zinc-400">Ładowanie...</p>
+                    </div>
+                </div>
+            )}
+
+            {isAuthorized && (
             <div className="max-w-7xl mx-auto">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-8">
@@ -462,6 +536,7 @@ export default function GiftCardsAdmin() {
                     </div>
                 )}
             </div>
+            )}
         </div>
     );
 }
