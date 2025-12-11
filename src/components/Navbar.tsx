@@ -7,9 +7,10 @@ import { usePathname } from 'next/navigation';
 import { Menu, X, ChevronDown } from 'lucide-react';
 
 interface MenuItem {
+    id: number;
     label: string;
     href: string;
-    submenu?: { label: string; href: string }[];
+    children?: { id: number; label: string; href: string }[];
 }
 
 const MENU_ITEMS: MenuItem[] = [];
@@ -64,10 +65,16 @@ export default function Navbar() {
                 const res = await fetch('/api/menu');
                 const data = await res.json();
                 if (Array.isArray(data) && data.length > 0) {
-                    // Convert API response to MenuItem format
+                    // Convert API response to MenuItem format with children
                     const dynamicMenuItems = data.map((item: any) => ({
+                        id: item.id,
                         label: item.title,
-                        href: item.url
+                        href: item.url,
+                        children: item.children && item.children.length > 0 ? item.children.map((child: any) => ({
+                            id: child.id,
+                            label: child.title,
+                            href: child.url
+                        })) : undefined
                     }));
                     setMenuItems(dynamicMenuItems);
                 }
@@ -135,7 +142,7 @@ export default function Navbar() {
                     {/* LEFT MENU - flex-1 to balanced spacing */}
                     <div className="hidden md:flex items-center gap-8 flex-1">
                         {menuItems.map((item) => (
-                            <div key={item.label} className="relative group">
+                            <div key={item.id} className="relative group">
                                 <Link
                                     href={item.href}
                                     className={`font-medium transition-colors py-2 ${isActive(item.href)
@@ -149,17 +156,17 @@ export default function Navbar() {
                                     }}
                                 >
                                     {item.label}
-                                    {item.submenu && <ChevronDown className="w-4 h-4" />}
+                                    {item.children && item.children.length > 0 && <ChevronDown className="w-4 h-4" />}
                                 </Link>
-                                {item.submenu && (
+                                {item.children && item.children.length > 0 && (
                                     <div className="absolute left-0 mt-0 w-48 bg-white shadow-lg rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 py-2 z-40">
-                                        {item.submenu.map((sub) => (
+                                        {item.children.map((child) => (
                                             <Link
-                                                key={sub.href}
-                                                href={sub.href}
+                                                key={child.id}
+                                                href={child.href}
                                                 className="block px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-50 hover:text-gold-500 transition-colors first:rounded-t-lg last:rounded-b-lg"
                                             >
-                                                {sub.label}
+                                                {child.label}
                                             </Link>
                                         ))}
                                     </div>
@@ -196,7 +203,7 @@ export default function Navbar() {
                     {/* RIGHT MENU - flex-1 for balanced spacing */}
                     <div className="hidden md:flex items-center gap-8 flex-1 justify-end">
                         {ctaItems.map((item) => (
-                            <div key={item.label} className="relative group">
+                            <div key={item.id} className="relative group">
                                 <Link
                                     href={item.href}
                                     className={`font-medium transition-colors py-2 ${isActive(item.href)
@@ -210,17 +217,17 @@ export default function Navbar() {
                                     }}
                                 >
                                     {item.label}
-                                    {item.submenu && <ChevronDown className="w-4 h-4" />}
+                                    {item.children && item.children.length > 0 && <ChevronDown className="w-4 h-4" />}
                                 </Link>
-                                {item.submenu && (
+                                {item.children && item.children.length > 0 && (
                                     <div className="absolute right-0 mt-0 w-48 bg-white shadow-lg rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 py-2 z-40">
-                                        {item.submenu.map((sub) => (
+                                        {item.children.map((child) => (
                                             <Link
-                                                key={sub.href}
-                                                href={sub.href}
+                                                key={child.id}
+                                                href={child.href}
                                                 className="block px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-50 hover:text-gold-500 transition-colors first:rounded-t-lg last:rounded-b-lg"
                                             >
-                                                {sub.label}
+                                                {child.label}
                                             </Link>
                                         ))}
                                     </div>
@@ -258,24 +265,24 @@ export default function Navbar() {
                                 >
                                     {item.label}
                                 </Link>
-                                {item.submenu && (
+                                {item.children && item.children.length > 0 && (
                                     <button
-                                        onClick={() => setOpenSubmenu(openSubmenu === item.label ? null : item.label)}
+                                        onClick={() => setOpenSubmenu(openSubmenu === String(item.id) ? null : String(item.id))}
                                         className="w-full text-left px-4 py-1 text-xs text-zinc-500 hover:text-zinc-700"
                                     >
-                                        {openSubmenu === item.label ? '▼' : '▶'} Pokaż więcej
+                                        {openSubmenu === String(item.id) ? '▼' : '▶'} Pokaż więcej
                                     </button>
                                 )}
-                                {item.submenu && openSubmenu === item.label && (
+                                {item.children && item.children.length > 0 && openSubmenu === String(item.id) && (
                                     <div className="pl-4 space-y-1">
-                                        {item.submenu.map((sub) => (
+                                        {item.children.map((child) => (
                                             <Link
-                                                key={sub.href}
-                                                href={sub.href}
+                                                key={child.id}
+                                                href={child.href}
                                                 onClick={() => setIsOpen(false)}
                                                 className="block px-3 py-1 text-sm text-zinc-600 hover:text-gold-500"
                                             >
-                                                • {sub.label}
+                                                • {child.label}
                                             </Link>
                                         ))}
                                     </div>

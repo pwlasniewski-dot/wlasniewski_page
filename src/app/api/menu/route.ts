@@ -6,10 +6,12 @@ const prisma = new PrismaClient();
 // UPROSZCZONE MENU - tylko z tabeli pages (is_in_menu = true)
 export async function GET() {
     try {
+        // Pobierz wszystkie strony które powinny być w menu
         const menuPages = await prisma.page.findMany({
             where: {
                 is_in_menu: true,
                 is_published: true,
+                parent_page_id: null, // Only top-level pages
             },
             orderBy: {
                 menu_order: "asc",
@@ -20,17 +22,38 @@ export async function GET() {
                 slug: true,
                 menu_title: true,
                 menu_order: true,
-                page_type: true,
+                children: {
+                    where: {
+                        is_published: true
+                    },
+                    orderBy: {
+                        menu_order: "asc"
+                    },
+                    select: {
+                        id: true,
+                        title: true,
+                        slug: true,
+                        menu_title: true,
+                        menu_order: true
+                    }
+                }
             },
         });
 
-        // Formatuj do prostej struktury menu
+        // Formatuj do struktury z submenu
         const menu = menuPages.map(page => ({
             id: page.id,
             title: page.menu_title || page.title,
             slug: page.slug,
             url: page.slug === 'strona-glowna' ? '/' : `/${page.slug}`,
             order: page.menu_order || 0,
+            children: page.children.map(child => ({
+                id: child.id,
+                title: child.menu_title || child.title,
+                slug: child.slug,
+                url: child.slug === 'strona-glowna' ? '/' : `/${child.slug}`,
+                order: child.menu_order || 0,
+            }))
         }));
 
         return NextResponse.json(menu);

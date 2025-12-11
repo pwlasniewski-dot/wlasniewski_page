@@ -19,7 +19,7 @@ export default function PagesListPage() {
     const [pages, setPages] = useState<Page[]>([]);
     const [loading, setLoading] = useState(true);
     const [showCreateModal, setShowCreateModal] = useState(false);
-    const [newPageData, setNewPageData] = useState({ title: '', slug: '', page_type: 'regular', is_in_menu: false });
+    const [newPageData, setNewPageData] = useState({ title: '', slug: '', page_type: 'regular', is_in_menu: false, parent_page_id: null as number | null });
     const [creating, setCreating] = useState(false);
 
     const fetchPages = async () => {
@@ -83,14 +83,15 @@ export default function PagesListPage() {
                     content: '',
                     is_published: false,
                     is_in_menu: newPageData.is_in_menu,
-                    menu_title: newPageData.title
+                    menu_title: newPageData.title,
+                    parent_page_id: newPageData.parent_page_id
                 }),
             });
 
             if (res.ok) {
                 toast.success('Strona utworzona');
                 setShowCreateModal(false);
-                setNewPageData({ title: '', slug: '', page_type: 'regular', is_in_menu: false });
+                setNewPageData({ title: '', slug: '', page_type: 'regular', is_in_menu: false, parent_page_id: null });
                 fetchPages();
             } else {
                 throw new Error('Failed to create');
@@ -268,6 +269,27 @@ export default function PagesListPage() {
                                     ✅ Dodaj do menu nawigacji
                                 </label>
                             </div>
+
+                            {newPageData.is_in_menu && (
+                                <div>
+                                    <label className="block text-sm font-medium text-zinc-400 mb-1">
+                                        Strona nadrzędna (dla submenu)
+                                    </label>
+                                    <select
+                                        value={newPageData.parent_page_id || ''}
+                                        onChange={(e) => setNewPageData({ ...newPageData, parent_page_id: e.target.value ? parseInt(e.target.value) : null })}
+                                        className="w-full px-4 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-white focus:outline-none focus:border-gold-500"
+                                    >
+                                        <option value="">Brak (strona główna w menu)</option>
+                                        {pages.filter(p => p.id !== undefined && p.is_published).map(p => (
+                                            <option key={p.id} value={p.id}>
+                                                {p.title}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <p className="text-xs text-zinc-500 mt-1">Jeśli wybierzesz, ta strona będzie podmenu pod wybraną stroną</p>
+                                </div>
+                            )}
 
                             <div className="flex justify-end gap-3 mt-8">
                                 <button

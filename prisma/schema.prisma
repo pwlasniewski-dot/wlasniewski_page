@@ -360,6 +360,11 @@ model Page {
   menu_title       String?
   menu_order       Int      @default(0)
   
+  // Hierarchical menu
+  parent_page_id   Int?
+  parent_page      Page?    @relation("PageChildren", fields: [parent_page_id], references: [id], onDelete: SetNull)
+  children         Page[]   @relation("PageChildren")
+  
   // Relations
   menu_items       MenuItem[]
 
