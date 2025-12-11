@@ -6,6 +6,7 @@ import { getApiUrl } from '@/lib/api-config';
 import { buildICS } from '@/utils/ics';
 import TestimonialsSection from '@/components/TestimonialsSection';
 import BookingCalendar from '@/components/BookingCalendar';
+import PromocodeBar from '@/components/PromocodeBar';
 
 interface ServiceType {
     id: number;
@@ -77,6 +78,15 @@ export default function RezerwacjaPage() {
     const [checkingGiftCard, setCheckingGiftCard] = useState(false);
     const [giftCardMessage, setGiftCardMessage] = useState("");
 
+    // Promo bar settings
+    const [promoSettings, setPromoSettings] = useState<{
+        enabled: boolean;
+        code: string;
+        discount: number;
+        discountType: 'percentage' | 'fixed';
+        expiryDate?: string;
+    } | null>(null);
+
     // Payment
     const [submitting, setSubmitting] = useState(false);
 
@@ -101,6 +111,32 @@ export default function RezerwacjaPage() {
         };
 
         loadServices();
+
+        // Load promo settings
+        const loadPromoSettings = async () => {
+            try {
+                const res = await fetch(getApiUrl('settings'));
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.settings) {
+                        const settings = data.settings;
+                        if (settings.promo_code_discount_enabled === 'true' || settings.promo_code_discount_enabled === true) {
+                            setPromoSettings({
+                                enabled: true,
+                                code: settings.promo_code || 'WELCOME',
+                                discount: parseInt(settings.promo_code_discount_amount || '10'),
+                                discountType: settings.promo_code_discount_type || 'percentage',
+                                expiryDate: settings.promo_code_expiry_date
+                            });
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to load promo settings:', error);
+            }
+        };
+
+        loadPromoSettings();
     }, []);
 
     // Load available hours when package and date are selected
@@ -367,6 +403,15 @@ export default function RezerwacjaPage() {
 
     return (
         <main className="min-h-screen bg-gradient-to-b from-zinc-950 via-black to-zinc-950 py-20 px-4">
+            {/* Promocode Bar */}
+            {promoSettings?.enabled && (
+                <PromocodeBar
+                    code={promoSettings.code}
+                    discount={promoSettings.discount}
+                    discountType={promoSettings.discountType}
+                    expiryDate={promoSettings.expiryDate}
+                />
+            )}
             <div className="max-w-4xl mx-auto">
                 <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 text-center">
                     📸 Zarezerwuj Sesję

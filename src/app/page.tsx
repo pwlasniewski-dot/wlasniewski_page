@@ -14,6 +14,7 @@ import PuzzleGallery from '@/components/VisualEffects/PuzzleGallery';
 import AdvancedBanner from '@/components/AdvancedBanner';
 import CreativeSlider from '@/components/CreativeSlider';
 import WhiteInfoBand from '@/components/WhiteInfoBand';
+import PhotoChallengeBanner from '@/components/PhotoChallengeBanner';
 
 interface Testimonial {
     id: number;
@@ -300,6 +301,23 @@ export default function Home() {
                 );
 
             case 'challenge_banner':
+                return (
+                    <PhotoChallengeBanner
+                        key={section.id}
+                        title={section.data.title || '📸 Foto Wyzwanie'}
+                        subtitle={section.data.subtitle || 'Pokaż Swoją Kreatywność'}
+                        description={section.data.content || 'Podejmij wyzwanie i wygraj fantastyczne nagrody!'}
+                        buttonText={section.data.buttonText || 'Dołącz Teraz'}
+                        buttonLink={section.data.buttonLink || '/foto-wyzwanie'}
+                        layout={section.data.layout || 'full-width'}
+                        accentColor={section.data.accentColor || 'gold'}
+                        animationStyle={section.data.animationStyle || 'fade'}
+                        enableParticles={section.data.enableParticles !== false}
+                        height={section.data.height || 'min-h-[70vh]'}
+                    />
+                );
+
+            case 'challenge_banner_old':
                 if (section.data.advanced?.items && section.data.advanced.items.length > 0) {
                     return (
                         <AdvancedBanner

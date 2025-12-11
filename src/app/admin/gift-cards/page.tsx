@@ -1,268 +1,420 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
-import { Gift, Mail, Printer, Copy, Trash2, Plus, Download } from 'lucide-react';
-import GiftCardCanvas, { GiftCardData } from '@/components/GiftCardCanvas';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
+import React, { useState, useEffect } from 'react';
+import { Gift, Mail, Printer, Copy, Trash2, Plus } from 'lucide-react';
+import GiftCard from '@/components/GiftCard';
+import toast from 'react-hot-toast';
+import { getApiUrl } from '@/lib/api-config';
 
-type GiftCard = {
-    id: number;
+const THEMES = [
+    { id: 'christmas', label: 'Boże Narodzenie', icon: '🎄' },
+    { id: 'wosp', label: 'Wielka Orkiestra', icon: '❤️' },
+    { id: 'valentines', label: 'Walentynki', icon: '💝' },
+    { id: 'easter', label: 'Wielkanoc', icon: '🐰' },
+    { id: 'halloween', label: 'Halloween', icon: '👻' },
+    { id: 'mothers-day', label: 'Dzień Matki', icon: '💐' },
+    { id: 'childrens-day', label: 'Dzień Dziecka', icon: '🎈' },
+    { id: 'wedding', label: 'Ślub', icon: '💒' },
+    { id: 'birthday', label: 'Urodziny', icon: '🎂' }
+] as const;
+
+interface GiftCard {
+    id?: string;
     code: string;
-    recipient_name: string;
-    recipient_email: string;
-    amount: number;
-    discount_type: string;
-    card_template: string;
-    valid_until?: string;
-    is_used: boolean;
-    created_at: string;
-    used_at?: string;
-    notes?: string;
-};
+    value: number;
+    theme: string;
+    recipient_name?: string;
+    sender_name?: string;
+    message?: string;
+    status?: string;
+    created_at?: string;
+}
 
 export default function GiftCardsAdmin() {
     const [giftCards, setGiftCards] = useState<GiftCard[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [filter, setFilter] = useState('all'); // 'all', 'active', 'used', 'expired'
+    const [loading, setLoading] = useState(false);
     const [showCreateModal, setShowCreateModal] = useState(false);
-    const [previewCard, setPreviewCard] = useState<GiftCardData | null>(null);
-    const cardRef = useRef<HTMLDivElement>(null);
-
-    // Form state
+    const [logoUrl, setLogoUrl] = useState('');
+    
     const [formData, setFormData] = useState({
+        code: '',
+        value: 100,
+        theme: 'christmas' as string,
         recipient_name: '',
-        recipient_email: '',
-        amount: 10,
-        discount_type: 'percentage' as 'percentage' | 'fixed',
-        card_template: 'gold' as 'gold' | 'dark' | 'classic',
-        valid_until: '',
-        message: '',
-        notes: ''
+        sender_name: '',
+        message: ''
     });
 
     useEffect(() => {
-        fetchGiftCards();
-    }, [filter]);
+        fetchCards();
+        fetchLogo();
+    }, []);
 
-    const fetchGiftCards = async () => {
+    const fetchCards = async () => {
         try {
-            const res = await fetch(`/api/gift-cards?status=${filter}`);
+            const token = localStorage.getItem('admin_token');
+            const res = await fetch(getApiUrl('gift-cards'), {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
             const data = await res.json();
             if (data.success) {
-                setGiftCards(data.giftCards);
+                setGiftCards(data.cards || []);
             }
         } catch (error) {
-            console.error('Error fetching gift cards:', error);
+            console.error('Error:', error);
+        }
+    };
+
+    const fetchLogo = async () => {
+        try {
+            const token = localStorage.getItem('admin_token');
+            const res = await fetch(getApiUrl('settings'), {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            if (data.success) {
+                setLogoUrl(data.settings?.logo_url || '');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    };
+
+    const generateCode = () => {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let code = '';
+        for (let i = 0; i < 8; i++) {
+            code += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        setFormData(prev => ({ ...prev, code }));
+    };
+
+    const createCard = async () => {
+        if (!formData.code || !formData.value) {
+            toast.error('Wypełnij wymagane pola');
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const token = localStorage.getItem('admin_token');
+            const res = await fetch(getApiUrl('gift-cards'), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(formData)
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                toast.success('Karta podarunkowa utworzona');
+                setFormData({
+                    code: '',
+                    value: 100,
+                    theme: 'christmas',
+                    recipient_name: '',
+                    sender_name: '',
+                    message: ''
+                });
+                setShowCreateModal(false);
+                fetchCards();
+            } else {
+                toast.error(data.error || 'Błąd');
+            }
+        } catch (error) {
+            toast.error('Błąd serwera');
         } finally {
             setLoading(false);
         }
     };
 
-    const createGiftCard = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const deleteCard = async (id: string) => {
+        if (!confirm('Usunąć kartę?')) return;
+
         try {
-            const res = await fetch('/api/gift-cards', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData)
+            const token = localStorage.getItem('admin_token');
+            const res = await fetch(getApiUrl(`gift-cards/${id}`), {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
             });
-            const data = await res.json();
-            if (data.success) {
-                alert('Karta rabatowa utworzona!');
-                fetchGiftCards();
-                setShowCreateModal(false);
-                resetForm();
+
+            if (res.ok) {
+                toast.success('Karta usunięta');
+                fetchCards();
             }
         } catch (error) {
-            console.error('Error creating gift card:', error);
-            alert('Błąd podczas tworzenia karty');
-        }
-    };
-
-    const deleteGiftCard = async (id: number) => {
-        if (!confirm('Czy na pewno usunąć tę kartę?')) return;
-        try {
-            await fetch(`/api/gift-cards?id=${id}`, { method: 'DELETE' });
-            fetchGiftCards();
-        } catch (error) {
-            console.error('Error deleting gift card:', error);
+            toast.error('Błąd');
         }
     };
 
     const copyCode = (code: string) => {
         navigator.clipboard.writeText(code);
-        alert(`Kod ${code} skopiowany!`);
+        toast.success('Kod skopiowany');
     };
 
-    const downloadPDF = async (card: GiftCard) => {
-        const cardData: GiftCardData = {
-            recipientName: card.recipient_name,
-            code: card.code,
-            amount: card.amount,
-            discountType: card.discount_type as 'percentage' | 'fixed',
-            validUntil: card.valid_until ? new Date(card.valid_until) : undefined,
-            template: card.card_template as 'gold' | 'dark' | 'classic'
-        };
-
-        setPreviewCard(cardData);
-
-        // Wait for render
-        setTimeout(async () => {
-            if (cardRef.current) {
-                const canvas = await html2canvas(cardRef.current, {
-                    scale: 3,
-                    backgroundColor: null
-                });
-
-                const imgData = canvas.toDataURL('image/png');
-                const pdf = new jsPDF({
-                    orientation: 'landscape',
-                    unit: 'mm',
-                    format: [85.6, 53.98] // Credit card size
-                });
-
-                pdf.addImage(imgData, 'PNG', 0, 0, 85.6, 53.98);
-                pdf.save(`giftcard-${card.code}.pdf`);
-
-                setPreviewCard(null);
-            }
-        }, 500);
-    };
-
-    const sendEmail = async (card: GiftCard) => {
-        if (!confirm(`Wysłać kartę na adres ${card.recipient_email}?`)) return;
-
-        try {
-            const res = await fetch('/api/gift-cards/send-email', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: card.id })
-            });
-            const data = await res.json();
-            if (data.success) {
-                alert('Email wysłany!');
-            } else {
-                alert('Błąd wysyłki: ' + data.error);
-            }
-        } catch (error) {
-            console.error('Error sending email:', error);
-            alert('Błąd podczas wysyłki emaila');
+    const printCard = (card: GiftCard) => {
+        const printWindow = window.open('', '', 'width=800,height=600');
+        if (printWindow) {
+            printWindow.document.write(`
+                <html>
+                <head>
+                    <style>
+                        body { margin: 0; padding: 20px; background: white; }
+                        @page { size: landscape; margin: 0; }
+                        @media print { body { margin: 0; padding: 0; } }
+                    </style>
+                </head>
+                <body onload="window.print(); window.close();">
+                    <div style="display: flex; justify-content: center; align-items: center; min-height: 100vh;">
+                        <div style="width: 540px; height: 340px; border: 2px dashed #ccc; padding: 20px;">
+                            <!-- Karta będzie tutaj -->
+                        </div>
+                    </div>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
         }
     };
 
-    const resetForm = () => {
-        setFormData({
-            recipient_name: '',
-            recipient_email: '',
-            amount: 10,
-            discount_type: 'percentage',
-            card_template: 'gold',
-            valid_until: '',
-            message: '',
-            notes: ''
-        });
+    const sendEmail = async (card: GiftCard) => {
+        try {
+            const token = localStorage.getItem('admin_token');
+            const res = await fetch(getApiUrl(`gift-cards/${card.id}/send-email`), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ 
+                    email: card.recipient_name,
+                    logoUrl 
+                })
+            });
+
+            if (res.ok) {
+                toast.success('Email wysłany');
+            } else {
+                toast.error('Błąd wysyłania');
+            }
+        } catch (error) {
+            toast.error('Błąd');
+        }
     };
 
     return (
-        <div className="p-6 max-w-7xl mx-auto">
-            {/* Header */}
-            <div className="flex justify-between items-center mb-8">
-                <div>
-                    <h1 className="text-3xl font-bold text-white flex items-center gap-2">
-                        <Gift className="w-8 h-8" />
-                        Karty Rabatowe
-                    </h1>
-                    <p className="text-zinc-400 mt-1">Zarządzaj voucherami dla klientów</p>
-                </div>
-                <button
-                    onClick={() => setShowCreateModal(true)}
-                    className="bg-gold-500 hover:bg-gold-600 text-black px-6 py-3 rounded-lg font-semibold flex items-center gap-2 transition"
-                >
-                    <Plus className="w-5 h-5" />
-                    Nowa Karta
-                </button>
-            </div>
-
-            {/* Filters */}
-            <div className="flex gap-2 mb-6">
-                {['all', 'active', 'used', 'expired'].map(f => (
+        <div className="min-h-screen bg-zinc-950 p-6">
+            <div className="max-w-7xl mx-auto">
+                {/* Header */}
+                <div className="flex items-center justify-between mb-8">
+                    <div>
+                        <h1 className="text-4xl font-bold text-white">🎁 Karty Podarunkowe</h1>
+                        <p className="text-zinc-400 mt-2">Twórz i zarządzaj kartami podarunkowymi z sezonowymi wzorami</p>
+                    </div>
                     <button
-                        key={f}
-                        onClick={() => setFilter(f)}
-                        className={`px-4 py-2 rounded-lg font-medium transition ${filter === f
-                            ? 'bg-gold-500 text-black'
-                            : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
-                            }`}
+                        onClick={() => setShowCreateModal(!showCreateModal)}
+                        className="inline-flex items-center gap-2 px-6 py-3 bg-gold-500 hover:bg-gold-400 text-black font-bold rounded-lg transition-all"
                     >
-                        {f === 'all' ? 'Wszystkie' :
-                            f === 'active' ? 'Aktywne' :
-                                f === 'used' ? 'Użyte' : 'Wygasłe'}
+                        <Plus className="w-5 h-5" />
+                        Nowa Karta
                     </button>
-                ))}
-            </div>
+                </div>
 
-            {/* Cards List */}
-            {loading ? (
-                <div className="text-center text-zinc-400 py-12">Ładowanie...</div>
-            ) : giftCards.length === 0 ? (
-                <div className="text-center text-zinc-400 py-12">Brak kart rabatowych</div>
-            ) : (
-                <div className="grid gap-4">
-                    {giftCards.map(card => (
-                        <div key={card.id} className="bg-zinc-900 border border-zinc-800 rounded-lg p-6">
-                            <div className="flex justify-between items-start">
-                                <div className="flex-1">
-                                    <div className="flex items-center gap-3 mb-2">
-                                        <span className="text-xl font-bold text-white">{card.recipient_name}</span>
-                                        <span className={`px-3 py-1 rounded text-xs font-medium ${card.is_used ? 'bg-zinc-700 text-zinc-400' :
-                                            card.valid_until && new Date(card.valid_until) < new Date() ? 'bg-red-900/30 text-red-400' :
-                                                'bg-green-900/30 text-green-400'
-                                            }`}>
-                                            {card.is_used ? 'Użyta' :
-                                                card.valid_until && new Date(card.valid_until) < new Date() ? 'Wygasła' :
-                                                    'Aktywna'}
-                                        </span>
-                                    </div>
-                                    <div className="text-sm text-zinc-400 space-y-1">
-                                        <p><Mail className="w-4 h-4 inline mr-2" />{card.recipient_email}</p>
-                                        <p className="font-mono text-gold-400">KOD: {card.code}</p>
-                                        <p>Rabat: <span className="font-semibold text-white">
-                                            {card.discount_type === 'percentage' ? `${card.amount}%` : `${card.amount} PLN`}
-                                        </span></p>
-                                        {card.valid_until && (
-                                            <p>Ważny do: {new Date(card.valid_until).toLocaleDateString('pl-PL')}</p>
-                                        )}
+                {/* Create Form */}
+                {showCreateModal && (
+                    <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6 mb-8">
+                        <h2 className="text-xl font-bold text-white mb-6">Stwórz Nową Kartę</h2>
+                        
+                        <div className="grid md:grid-cols-2 gap-8">
+                            {/* Form */}
+                            <div className="space-y-4">
+                                {/* Code */}
+                                <div>
+                                    <label className="block text-sm font-medium text-zinc-400 mb-2">Kod promocyjny *</label>
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            value={formData.code}
+                                            onChange={e => setFormData(prev => ({ ...prev, code: e.target.value.toUpperCase() }))}
+                                            placeholder="np. WINTER2024"
+                                            className="flex-1 px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:border-gold-500 focus:outline-none"
+                                        />
+                                        <button
+                                            onClick={generateCode}
+                                            className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg transition-all"
+                                        >
+                                            Generuj
+                                        </button>
                                     </div>
                                 </div>
 
-                                {/* Actions */}
-                                <div className="flex gap-2">
-                                    <button
-                                        onClick={() => copyCode(card.code)}
-                                        className="p-2 bg-zinc-800 hover:bg-zinc-700 rounded text-zinc-300"
-                                        title="Kopiuj kod"
+                                {/* Value */}
+                                <div>
+                                    <label className="block text-sm font-medium text-zinc-400 mb-2">Wartość (zł) *</label>
+                                    <input
+                                        type="number"
+                                        value={formData.value}
+                                        onChange={e => setFormData(prev => ({ ...prev, value: parseInt(e.target.value) }))}
+                                        className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:border-gold-500 focus:outline-none"
+                                    />
+                                </div>
+
+                                {/* Theme */}
+                                <div>
+                                    <label className="block text-sm font-medium text-zinc-400 mb-2">Motyw *</label>
+                                    <select
+                                        value={formData.theme}
+                                        onChange={e => setFormData(prev => ({ ...prev, theme: e.target.value }))}
+                                        className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:border-gold-500 focus:outline-none"
                                     >
-                                        <Copy className="w-4 h-4" />
+                                        {THEMES.map(t => (
+                                            <option key={t.id} value={t.id}>{t.icon} {t.label}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                {/* Recipient */}
+                                <div>
+                                    <label className="block text-sm font-medium text-zinc-400 mb-2">Dla kogo (email)</label>
+                                    <input
+                                        type="email"
+                                        value={formData.recipient_name}
+                                        onChange={e => setFormData(prev => ({ ...prev, recipient_name: e.target.value }))}
+                                        placeholder="klient@example.com"
+                                        className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:border-gold-500 focus:outline-none"
+                                    />
+                                </div>
+
+                                {/* Sender */}
+                                <div>
+                                    <label className="block text-sm font-medium text-zinc-400 mb-2">Od kogo</label>
+                                    <input
+                                        type="text"
+                                        value={formData.sender_name}
+                                        onChange={e => setFormData(prev => ({ ...prev, sender_name: e.target.value }))}
+                                        placeholder="Nazwa firmy"
+                                        className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:border-gold-500 focus:outline-none"
+                                    />
+                                </div>
+
+                                {/* Message */}
+                                <div>
+                                    <label className="block text-sm font-medium text-zinc-400 mb-2">Wiadomość</label>
+                                    <textarea
+                                        value={formData.message}
+                                        onChange={e => setFormData(prev => ({ ...prev, message: e.target.value }))}
+                                        placeholder="Osobista wiadomość..."
+                                        rows={3}
+                                        className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:border-gold-500 focus:outline-none resize-none"
+                                    />
+                                </div>
+
+                                {/* Actions */}
+                                <div className="flex gap-2 pt-4">
+                                    <button
+                                        onClick={createCard}
+                                        disabled={loading}
+                                        className="flex-1 px-6 py-3 bg-gold-500 hover:bg-gold-400 text-black font-bold rounded-lg transition-all disabled:opacity-50"
+                                    >
+                                        {loading ? 'Tworzenie...' : 'Stwórz Kartę'}
                                     </button>
                                     <button
-                                        onClick={() => downloadPDF(card)}
-                                        className="p-2 bg-zinc-800 hover:bg-zinc-700 rounded text-zinc-300"
-                                        title="Pobierz PDF"
+                                        onClick={() => setShowCreateModal(false)}
+                                        className="px-6 py-3 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg transition-all"
                                     >
-                                        <Download className="w-4 h-4" />
+                                        Anuluj
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Preview */}
+                            <div className="flex items-center justify-center bg-zinc-800/50 rounded-lg p-6">
+                                <div className="w-full max-w-sm">
+                                    <p className="text-sm text-zinc-400 text-center mb-4 font-medium">Podgląd karty:</p>
+                                    <GiftCard
+                                        code={formData.code || 'EXAMPLE'}
+                                        value={formData.value}
+                                        theme={formData.theme as any}
+                                        logoUrl={logoUrl}
+                                        recipientName={formData.recipient_name}
+                                        senderName={formData.sender_name}
+                                        message={formData.message}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Cards Grid */}
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {giftCards.map(card => (
+                        <div key={card.id} className="bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden">
+                            {/* Card Preview */}
+                            <div className="p-4 bg-zinc-800/50">
+                                <div className="scale-75 origin-top-left">
+                                    <GiftCard
+                                        code={card.code}
+                                        value={card.value}
+                                        theme={card.theme as any}
+                                        logoUrl={logoUrl}
+                                        recipientName={card.recipient_name}
+                                        senderName={card.sender_name}
+                                        message={card.message}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Card Info */}
+                            <div className="p-4 space-y-3">
+                                <div>
+                                    <p className="text-xs text-zinc-500">Kod</p>
+                                    <p className="text-white font-mono font-bold text-sm">{card.code}</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-zinc-500">Wartość</p>
+                                    <p className="text-white font-bold">{card.value} zł</p>
+                                </div>
+                                {card.recipient_name && (
+                                    <div>
+                                        <p className="text-xs text-zinc-500">Dla</p>
+                                        <p className="text-white text-sm">{card.recipient_name}</p>
+                                    </div>
+                                )}
+                                {card.created_at && (
+                                    <p className="text-xs text-zinc-500">
+                                        Utworzona: {new Date(card.created_at).toLocaleDateString('pl-PL')}
+                                    </p>
+                                )}
+
+                                {/* Actions */}
+                                <div className="flex gap-2 pt-3 border-t border-zinc-700">
+                                    <button
+                                        onClick={() => copyCode(card.code)}
+                                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded text-sm transition-all"
+                                    >
+                                        <Copy className="w-4 h-4" />
+                                        Kopiuj
+                                    </button>
+                                    <button
+                                        onClick={() => printCard(card)}
+                                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm transition-all"
+                                    >
+                                        <Printer className="w-4 h-4" />
+                                        Drukuj
                                     </button>
                                     <button
                                         onClick={() => sendEmail(card)}
-                                        className="p-2 bg-zinc-800 hover:bg-zinc-700 rounded text-zinc-300"
-                                        title="Wyślij email"
+                                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-sm transition-all"
                                     >
                                         <Mail className="w-4 h-4" />
+                                        Email
                                     </button>
                                     <button
-                                        onClick={() => deleteGiftCard(card.id)}
-                                        className="p-2 bg-red-900/30 hover:bg-red-900/50 rounded text-red-400"
-                                        title="Usuń"
+                                        onClick={() => deleteCard(card.id!)}
+                                        className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded transition-all"
                                     >
                                         <Trash2 className="w-4 h-4" />
                                     </button>
@@ -271,126 +423,13 @@ export default function GiftCardsAdmin() {
                         </div>
                     ))}
                 </div>
-            )}
 
-            {/* Create Modal */}
-            {showCreateModal && (
-                <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-                    <div className="bg-zinc-900 rounded-xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                        <h2 className="text-2xl font-bold text-white mb-6">Nowa Karta Rabatowa</h2>
-
-                        <form onSubmit={createGiftCard} className="space-y-4">
-                            <div className="grid md:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-zinc-300 mb-2">
-                                        Imię i nazwisko
-                                    </label>
-                                    <input
-                                        type="text"
-                                        required
-                                        value={formData.recipient_name}
-                                        onChange={e => setFormData({ ...formData, recipient_name: e.target.value })}
-                                        className="w-full bg-zinc-800 border border-zinc-700 rounded px-4 py-2 text-white"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-zinc-300 mb-2">
-                                        Email
-                                    </label>
-                                    <input
-                                        type="email"
-                                        required
-                                        value={formData.recipient_email}
-                                        onChange={e => setFormData({ ...formData, recipient_email: e.target.value })}
-                                        className="w-full bg-zinc-800 border border-zinc-700 rounded px-4 py-2 text-white"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="grid md:grid-cols-3 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-zinc-300 mb-2">
-                                        Wartość
-                                    </label>
-                                    <input
-                                        type="number"
-                                        required
-                                        min="1"
-                                        value={formData.amount}
-                                        onChange={e => setFormData({ ...formData, amount: parseInt(e.target.value) })}
-                                        className="w-full bg-zinc-800 border border-zinc-700 rounded px-4 py-2 text-white"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-zinc-300 mb-2">
-                                        Typ rabatu
-                                    </label>
-                                    <select
-                                        value={formData.discount_type}
-                                        onChange={e => setFormData({ ...formData, discount_type: e.target.value as 'percentage' | 'fixed' })}
-                                        className="w-full bg-zinc-800 border border-zinc-700 rounded px-4 py-2 text-white"
-                                    >
-                                        <option value="percentage">Procent (%)</option>
-                                        <option value="fixed">Kwota (PLN)</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-zinc-300 mb-2">
-                                        Szablon
-                                    </label>
-                                    <select
-                                        value={formData.card_template}
-                                        onChange={e => setFormData({ ...formData, card_template: e.target.value as 'gold' | 'dark' | 'classic' })}
-                                        className="w-full bg-zinc-800 border border-zinc-700 rounded px-4 py-2 text-white"
-                                    >
-                                        <option value="gold">Gold Luxury</option>
-                                        <option value="dark">Dark Minimal</option>
-                                        <option value="classic">Classic Elegant</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-zinc-300 mb-2">
-                                    Data ważności (opcjonalnie)
-                                </label>
-                                <input
-                                    type="date"
-                                    value={formData.valid_until}
-                                    onChange={e => setFormData({ ...formData, valid_until: e.target.value })}
-                                    className="w-full bg-zinc-800 border border-zinc-700 rounded px-4 py-2 text-white"
-                                />
-                            </div>
-
-                            <div className="flex gap-3 pt-4">
-                                <button
-                                    type="submit"
-                                    className="flex-1 bg-gold-500 hover:bg-gold-600 text-black py-3 rounded-lg font-semibold transition"
-                                >
-                                    Utwórz Kartę
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setShowCreateModal(false);
-                                        resetForm();
-                                    }}
-                                    className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-white py-3 rounded-lg font-semibold transition"
-                                >
-                                    Anuluj
-                                </button>
-                            </div>
-                        </form>
+                {giftCards.length === 0 && !showCreateModal && (
+                    <div className="text-center py-12">
+                        <p className="text-zinc-400 text-lg">Brak kart. Stwórz pierwszą kartę podarunkową</p>
                     </div>
-                </div>
-            )}
-
-            {/* Hidden Preview for PDF generation */}
-            {previewCard && (
-                <div className="fixed -left-[9999px]" ref={cardRef}>
-                    <GiftCardCanvas data={previewCard} />
-                </div>
-            )}
+                )}
+            </div>
         </div>
     );
 }

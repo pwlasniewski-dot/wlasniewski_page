@@ -14,10 +14,15 @@ export default function SeasonalEffects() {
             .then(res => res.json())
             .then(data => {
                 if (data.success && data.settings?.seasonal_effect) {
+                    console.log('[SeasonalEffects] Setting effect to:', data.settings.seasonal_effect);
                     setEffect(data.settings.seasonal_effect);
+                } else {
+                    console.log('[SeasonalEffects] No seasonal_effect in settings:', data.settings);
                 }
             })
-            .catch(() => { });
+            .catch((err) => { 
+                console.error('[SeasonalEffects] Error fetching settings:', err);
+            });
     }, [pathname]); // Re-check on nav? Or just once. Usually global setting.
 
     // Don't show on admin pages
@@ -25,6 +30,7 @@ export default function SeasonalEffects() {
 
     if (effect === 'none') return null;
 
+    console.log('[SeasonalEffects] Rendering effect:', effect);
     return (
         <div className="pointer-events-none fixed inset-0 z-[9999] overflow-hidden" aria-hidden="true">
             {effect === 'snow' && <SnowEffect />}
@@ -191,8 +197,7 @@ function HeartsEffect() {
 }
 
 function HalloweenEffect() {
-    useEffect(() => {
-        const styleSheet = document.createElement('style');
+    useEffect(() => {        console.log('[HalloweenEffect] Mounting');        const styleSheet = document.createElement('style');
         styleSheet.textContent = `
             @keyframes spooky-float {
                 0% { transform: translateY(0) translateX(0) rotate(0deg); opacity: 0; }
@@ -239,6 +244,7 @@ function HalloweenEffect() {
 
 function EasterEffect() {
     useEffect(() => {
+        console.log('[EasterEffect] Mounting');
         const styleSheet = document.createElement('style');
         styleSheet.textContent = `
             @keyframes easter-float {

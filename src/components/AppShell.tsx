@@ -15,9 +15,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             {!isAdmin && <UrgencyBanner />}
             {!isAdmin && <Navbar />}
             {/* Use a div wrapper instead of <main> so page-level <main> elements are not nested.
-                Add top padding to offset the fixed header (header height ~56-64px).
+                Add top padding to offset the fixed header (header height ~20 = 80px).
                 Use 'relative' for scroll-based animations (parallax, etc.) to calculate offsets correctly. */}
-            <div className="relative flex-1" style={{ paddingTop: 'var(--header-height, 64px)' }}>
+            <div className="relative flex-1 pt-20">
                 {children}
             </div>
             {!isAdmin && <Footer />}

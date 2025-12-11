@@ -81,8 +81,10 @@ export default function SettingsPage() {
             // Fetch main settings
             const res = await fetch(getApiUrl('settings'), { headers });
             const data = await res.json();
+            console.log('[Admin Settings] Fetched settings:', data.settings);
             if (data.success) {
                 setSettings(prev => ({ ...prev, ...data.settings }));
+                console.log('[Admin Settings] Updated state with seasonal_effect:', data.settings.seasonal_effect);
             }
 
             // Fetch challenge settings
@@ -106,6 +108,8 @@ export default function SettingsPage() {
 
             // Process portfolio categories if it's a string (from input)
             const settingsToSave = { ...settings };
+            console.log('[Admin Settings] Saving settings with seasonal_effect:', settingsToSave.seasonal_effect);
+            
             if (typeof settings.portfolio_categories === 'string') {
                 // Split by comma and trim
                 const cats = settings.portfolio_categories.split(',').map((s: string) => s.trim()).filter(Boolean);
@@ -123,6 +127,8 @@ export default function SettingsPage() {
                 },
                 body: JSON.stringify(settingsToSave),
             });
+
+            console.log('[Admin Settings] Save response:', { status: res.status, ok: res.ok });
 
             // Save challenge settings
             const challengeRes = await fetch('/api/photo-challenge/settings', {

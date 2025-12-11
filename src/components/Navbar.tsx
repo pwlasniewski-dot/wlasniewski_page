@@ -93,25 +93,21 @@ export default function Navbar() {
     const isActive = (href: string) => pathname === href;
 
     return (
-        <>
-            {/* Spacer for fixed navbar */}
-            {isNavbarSticky && <div className="h-20"></div>}
-            
-            <header
-                className={`${isNavbarSticky ? 'fixed left-0 right-0 top-0' : 'absolute top-0'} w-full z-50 transition-all duration-300 ${isScrolled
-                        ? 'bg-white/95 backdrop-blur-md shadow-lg'
-                        : isNavbarTransparent
-                            ? 'bg-transparent'
-                            : 'bg-white/10 backdrop-blur-sm'
-                    }`}
+        <header
+            className={`${isNavbarSticky ? 'fixed left-0 right-0 top-0' : 'absolute top-0'} w-full z-50 transition-all duration-300 ${isScrolled
+                    ? 'bg-white/95 backdrop-blur-md shadow-lg'
+                    : isNavbarTransparent
+                        ? 'bg-transparent'
+                        : 'bg-white/10 backdrop-blur-sm'
+                }`}
                 style={{
                     fontFamily: navbarFontFamily
                 }}
             >
             <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between h-20">
-                    {/* LEFT MENU */}
-                    <div className="hidden md:flex items-center gap-8">
+                    {/* LEFT MENU - flex-1 to balanced spacing */}
+                    <div className="hidden md:flex items-center gap-8 flex-1">
                         {MENU_ITEMS.map((item) => (
                             <div key={item.label} className="relative group">
                                 <Link
@@ -150,7 +146,7 @@ export default function Navbar() {
                     {logoLoaded && (
                         <Link
                             href="/"
-                            className="flex-shrink-0 hover:opacity-80 transition-opacity"
+                            className="flex-shrink-0 hover:opacity-80 transition-opacity mx-auto"
                             aria-label="Strona główna"
                         >
                             <div
@@ -171,8 +167,8 @@ export default function Navbar() {
                         </Link>
                     )}
 
-                    {/* RIGHT MENU */}
-                    <div className="hidden md:flex items-center gap-8">
+                    {/* RIGHT MENU - flex-1 for balanced spacing */}
+                    <div className="hidden md:flex items-center gap-8 flex-1 justify-end">
                         {CTA_ITEMS.map((item) => (
                             <div key={item.label} className="relative group">
                                 <Link
@@ -264,6 +260,5 @@ export default function Navbar() {
                 )}
             </nav>
             </header>
-        </>
     );
 }

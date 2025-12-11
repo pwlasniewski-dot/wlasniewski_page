@@ -452,9 +452,14 @@ model GiftCard {
   recipient_name  String
   message         String?
   card_template   String    @default("gold") // "gold" | "dark" | "classic"
+  value           Int?      // Alternative to amount for new system
+  theme           String?   // "christmas" | "wosp" | "valentines" | "easter" | "halloween" | "mothers-day" | "childrens-day" | "wedding" | "birthday"
+  sender_name     String?   // Who sent the gift
+  status          String    @default("active") // "active" | "sent" | "used" | "expired"
   valid_until     DateTime?
   is_used         Boolean   @default(false)
   created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
   used_at         DateTime?
   created_by      Int?      // Admin user who created it
   notes           String?   // Internal notes for admin
