@@ -394,6 +394,7 @@ model Booking {
   gift_card_code String?  // Track which gift card was used for this booking
   challenge_id  Int?     // Link to PhotoChallenge if booking came from a challenge
   status        String   @default("pending") // pending, confirmed, cancelled, completed
+  stripe_session_id String?  // Payment order ID (Stripe or PayU)
   created_at    DateTime @default(now())
   updated_at    DateTime @updatedAt
 
