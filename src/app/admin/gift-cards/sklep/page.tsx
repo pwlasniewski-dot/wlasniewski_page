@@ -53,16 +53,33 @@ export default function GiftCardShopPage() {
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
 
+    // Helper to get auth headers
+    const getAuthHeaders = () => {
+        const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null;
+        return {
+            'Content-Type': 'application/json',
+            ...(token && { 'Authorization': `Bearer ${token}` }),
+        };
+    };
+
     useEffect(() => {
+        const token = localStorage.getItem('admin_token');
+        if (!token) {
+            router.push('/admin/login');
+            return;
+        }
         fetchCards();
-    }, []);
+    }, [router]);
 
     const fetchCards = async () => {
         try {
             setLoading(true);
-            const res = await fetch('/api/admin/gift-cards');
+            const res = await fetch('/api/admin/gift-cards', {
+                headers: getAuthHeaders(),
+            });
             if (!res.ok) {
                 if (res.status === 401) {
+                    localStorage.removeItem('admin_token');
                     router.push('/admin/login');
                     return;
                 }
@@ -91,7 +108,7 @@ export default function GiftCardShopPage() {
 
             const res = await fetch(url, {
                 method,
-                headers: { 'Content-Type': 'application/json' },
+                headers: getAuthHeaders(),
                 body: JSON.stringify({
                     ...formData,
                     value: parseInt(formData.value),
@@ -100,6 +117,7 @@ export default function GiftCardShopPage() {
 
             if (!res.ok) {
                 if (res.status === 401) {
+                    localStorage.removeItem('admin_token');
                     router.push('/admin/login');
                     return;
                 }
@@ -121,10 +139,12 @@ export default function GiftCardShopPage() {
         try {
             const res = await fetch(`/api/admin/gift-cards/${id}`, {
                 method: 'DELETE',
+                headers: getAuthHeaders(),
             });
 
             if (!res.ok) {
                 if (res.status === 401) {
+                    localStorage.removeItem('admin_token');
                     router.push('/admin/login');
                     return;
                 }
