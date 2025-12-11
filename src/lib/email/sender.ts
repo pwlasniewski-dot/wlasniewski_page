@@ -45,6 +45,16 @@ async function getTransporter() {
     if (!transporter) {
         const config = await getSMTPConfig();
         
+        // Validate SMTP config
+        if (!config.host || !config.user || !config.pass) {
+            console.error('❌ SMTP not configured! Missing:', {
+                host: !config.host ? 'MISSING' : '✓',
+                user: !config.user ? 'MISSING' : '✓',
+                pass: !config.pass ? 'MISSING' : '✓'
+            });
+            throw new Error('SMTP not configured. Configure settings in Admin → Settings → Email');
+        }
+        
         console.log('📧 Initializing SMTP transporter with config:', {
             host: config.host,
             port: config.port,

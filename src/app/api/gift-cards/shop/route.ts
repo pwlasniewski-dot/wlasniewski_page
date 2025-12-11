@@ -18,7 +18,7 @@ export async function GET() {
         // In production, these would be product templates from admin
         const cards = await prisma.giftCard.findMany({
             where: {
-                status: { in: ['active', 'available'] }
+                status: { in: ['active', 'available', 'sent'] }
             },
             select: {
                 id: true,
