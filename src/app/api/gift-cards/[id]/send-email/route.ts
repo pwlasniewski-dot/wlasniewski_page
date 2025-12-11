@@ -45,13 +45,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
                 card.theme || card.card_template,
                 card.sender_name || 'Fotograf',
                 card.message || '',
-                logoUrl
+                logoUrl,
+                card.card_title || 'KARTA PODARUNKOWA',
+                card.card_description || undefined
             );
 
-            // Send email
+            // Send email with photographer name in subject
             await sendEmail({
                 to: recipientEmail,
-                subject: `🎁 Twoja Karta Podarunkowa od ${card.sender_name || 'Fotografa'}!`,
+                subject: `🎁 Twoja Karta Podarunkowa od PRZEMYSŁAW WŁAŚNIEWSKI FOTOGRAFIA`,
                 html: emailHtml
             });
 

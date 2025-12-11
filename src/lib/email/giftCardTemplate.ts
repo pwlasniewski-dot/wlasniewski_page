@@ -5,21 +5,89 @@ export function generateGiftCardEmail(
     theme: string,
     senderName: string,
     message: string,
-    logoUrl?: string
+    logoUrl?: string,
+    cardTitle?: string,
+    cardDescription?: string
 ): string {
-    const themeColors = {
-        christmas: { bg: '#8B0000', accent: '#FFD700' },
-        wosp: { bg: '#DC143C', accent: '#FFD700' },
-        valentines: { bg: '#C71585', accent: '#FFB6C1' },
-        easter: { bg: '#F0E68C', accent: '#9370DB' },
-        halloween: { bg: '#FF8C00', accent: '#000' },
-        'mothers-day': { bg: '#9932CC', accent: '#FFD700' },
-        'childrens-day': { bg: '#1E90FF', accent: '#FFD700' },
-        wedding: { bg: '#E6D7E6', accent: '#9932CC' },
-        birthday: { bg: '#00CED1', accent: '#FFD700' }
+    // Match GiftCard.tsx theme configurations
+    const themeConfigs: any = {
+        christmas: {
+            bgColor1: '#8b0000',
+            bgColor2: '#228b22',
+            accentColor: '#ffd700',
+            icon: '🎄',
+            title: 'Boże Narodzenie',
+            defaultDescription: 'Życzenia pięknego świąt'
+        },
+        wosp: {
+            bgColor1: '#dc143c',
+            bgColor2: '#b8860b',
+            accentColor: '#ffd700',
+            icon: '💛',
+            title: 'Karta Pomocy',
+            defaultDescription: 'Wspieraj co w Tobie dobre'
+        },
+        valentines: {
+            bgColor1: '#c71585',
+            bgColor2: '#8b0000',
+            accentColor: '#ffb6c1',
+            icon: '💝',
+            title: 'Walentynki',
+            defaultDescription: 'Z miłością'
+        },
+        easter: {
+            bgColor1: '#daa520',
+            bgColor2: '#ffd700',
+            accentColor: '#9370db',
+            icon: '🐰',
+            title: 'Wielkanoc',
+            defaultDescription: 'Wesołych Świąt'
+        },
+        halloween: {
+            bgColor1: '#ff8c00',
+            bgColor2: '#000000',
+            accentColor: '#ff8c00',
+            icon: '👻',
+            title: 'Halloween',
+            defaultDescription: 'Straszna zniżka czeka!'
+        },
+        'mothers-day': {
+            bgColor1: '#9932cc',
+            bgColor2: '#ff1493',
+            accentColor: '#ffd700',
+            icon: '💐',
+            title: 'Dzień Matki',
+            defaultDescription: 'Dla najwspanialszej mamy'
+        },
+        'childrens-day': {
+            bgColor1: '#1e90ff',
+            bgColor2: '#da70d6',
+            accentColor: '#ffd700',
+            icon: '🎈',
+            title: 'Dzień Dziecka',
+            defaultDescription: 'Dla małego uśmieszku'
+        },
+        wedding: {
+            bgColor1: '#dda0dd',
+            bgColor2: '#ffc0cb',
+            accentColor: '#9932cc',
+            icon: '💒',
+            title: 'Ślub',
+            defaultDescription: 'Życzenia szczęścia'
+        },
+        birthday: {
+            bgColor1: '#00ced1',
+            bgColor2: '#4169e1',
+            accentColor: '#ffd700',
+            icon: '🎂',
+            title: 'Urodziny',
+            defaultDescription: 'Wiele szczęścia!'
+        }
     };
 
-    const colors = themeColors[theme as keyof typeof themeColors] || themeColors.christmas;
+    const config = themeConfigs[theme] || themeConfigs.christmas;
+    const displayTitle = cardTitle || 'KARTA PODARUNKOWA';
+    const displayDescription = cardDescription || config.defaultDescription;
 
     return `
     <!DOCTYPE html>
@@ -35,159 +103,227 @@ export function generateGiftCardEmail(
             }
             
             body {
-                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
                 background: #f5f5f5;
                 color: #333;
-                line-height: 1.6;
+                padding: 20px 0;
             }
             
-            .container {
+            .email-container {
                 max-width: 600px;
-                margin: 20px auto;
+                margin: 0 auto;
                 background: white;
-                border-radius: 12px;
-                overflow: hidden;
-                box-shadow: 0 10px 40px rgba(0,0,0,0.1);
             }
             
-            .header {
-                background: linear-gradient(135deg, ${colors.bg} 0%, ${colors.accent}33 100%);
+            /* Header with logo and photographer info */
+            .photographer-header {
+                background: linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%);
                 padding: 30px 20px;
                 text-align: center;
                 color: white;
-                position: relative;
-                overflow: hidden;
             }
             
-            .header::before {
-                content: '';
-                position: absolute;
-                top: -50%;
-                right: -10%;
-                width: 200px;
-                height: 200px;
-                background: rgba(255,255,255,0.1);
-                border-radius: 50%;
-            }
-            
-            .header h1 {
-                font-size: 32px;
-                font-weight: bold;
-                margin-bottom: 10px;
-                position: relative;
-                z-index: 1;
-                text-shadow: 0 2px 4px rgba(0,0,0,0.2);
-            }
-            
-            .header p {
-                font-size: 14px;
-                opacity: 0.9;
-                position: relative;
-                z-index: 1;
-            }
-            
-            ${logoUrl ? `
-            .logo {
+            .photographer-logo {
                 width: 80px;
                 height: 80px;
-                margin: 20px auto;
+                margin: 0 auto 15px;
                 background: white;
                 border-radius: 50%;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                overflow: hidden;
             }
             
-            .logo img {
+            .photographer-logo img {
                 max-width: 70px;
                 max-height: 70px;
                 object-fit: contain;
             }
-            ` : ''}
             
-            .content {
-                padding: 40px 20px;
-                text-align: center;
-            }
-            
-            .greeting {
+            .photographer-name {
                 font-size: 18px;
-                margin-bottom: 20px;
-                color: #333;
+                font-weight: bold;
+                letter-spacing: 1px;
+                margin-bottom: 5px;
             }
             
-            .greeting strong {
-                color: ${colors.bg};
-                font-size: 20px;
-            }
-            
-            .message-box {
-                background: #f9f9f9;
-                border-left: 4px solid ${colors.bg};
-                padding: 15px 20px;
-                margin: 20px 0;
-                border-radius: 4px;
-                font-style: italic;
-                color: #666;
-            }
-            
-            .card {
-                background: linear-gradient(135deg, ${colors.bg}20, ${colors.accent}20);
-                border: 2px solid ${colors.bg};
-                border-radius: 12px;
-                padding: 30px 20px;
-                margin: 30px 0;
-                text-align: center;
-            }
-            
-            .card-label {
+            .photographer-title {
                 font-size: 12px;
+                opacity: 0.8;
                 text-transform: uppercase;
                 letter-spacing: 2px;
-                color: ${colors.bg};
+            }
+            
+            /* Main gift card section */
+            .gift-card-wrapper {
+                padding: 40px 20px;
+                background: white;
+            }
+            
+            .gift-card-container {
+                position: relative;
+                width: 100%;
+                aspect-ratio: 16 / 10;
+                max-width: 500px;
+                margin: 0 auto 30px;
+                border-radius: 24px;
+                overflow: hidden;
+                box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+                background: linear-gradient(135deg, ${config.bgColor1} 0%, ${config.bgColor2} 100%);
+                padding: 40px;
+                color: white;
+                text-align: center;
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+                box-sizing: border-box;
+            }
+            
+            .gift-card-top {
+                display: flex;
+                align-items: flex-start;
+                justify-content: space-between;
+                margin-bottom: 20px;
+            }
+            
+            .gift-card-icon {
+                font-size: 48px;
+            }
+            
+            .gift-card-center {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                margin: 20px 0;
+            }
+            
+            .gift-card-title {
+                font-size: 28px;
                 font-weight: bold;
+                margin-bottom: 10px;
+                text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            }
+            
+            .gift-card-description {
+                font-size: 14px;
+                opacity: 0.9;
+                margin-bottom: 15px;
+            }
+            
+            .recipient-name {
+                font-size: 13px;
+                opacity: 0.85;
+                margin-bottom: 10px;
+                font-style: italic;
+            }
+            
+            .message-text {
+                font-size: 12px;
+                opacity: 0.8;
+                font-style: italic;
+                max-width: 90%;
+                margin: 0 auto;
+            }
+            
+            .gift-card-bottom {
+                display: flex;
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .value-section {
+                text-align: center;
+            }
+            
+            .value-label {
+                font-size: 11px;
+                opacity: 0.8;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+                margin-bottom: 5px;
+            }
+            
+            .value-amount {
+                font-size: 42px;
+                font-weight: bold;
+                text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            }
+            
+            .code-section {
+                background: rgba(255,255,255,0.2);
+                backdrop-filter: blur(10px);
+                border-radius: 12px;
+                padding: 12px 16px;
+                border: 2px solid rgba(255,255,255,0.4);
+            }
+            
+            .code-label {
+                font-size: 10px;
+                text-transform: uppercase;
+                letter-spacing: 2px;
+                opacity: 0.8;
+                margin-bottom: 8px;
+            }
+            
+            .code-value {
+                font-family: 'Courier New', monospace;
+                font-size: 20px;
+                font-weight: bold;
+                letter-spacing: 2px;
+                word-break: break-all;
+                text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            }
+            
+            /* Info section below card */
+            .info-section {
+                background: #f9f9f9;
+                padding: 25px 20px;
+                border-top: 1px solid #eee;
+            }
+            
+            .info-title {
+                font-size: 16px;
+                font-weight: bold;
+                color: ${config.bgColor1};
+                margin-bottom: 15px;
+                text-align: center;
+            }
+            
+            .info-text {
+                font-size: 14px;
+                color: #555;
+                line-height: 1.8;
                 margin-bottom: 10px;
             }
             
-            .card-code {
-                font-size: 28px;
-                font-weight: bold;
-                font-family: 'Courier New', monospace;
-                color: ${colors.bg};
-                letter-spacing: 3px;
-                margin: 15px 0;
-                padding: 20px;
-                background: white;
-                border-radius: 8px;
-                border: 1px dashed ${colors.bg};
-            }
-            
-            .card-value {
-                font-size: 24px;
-                font-weight: bold;
-                color: ${colors.bg};
-                margin-top: 15px;
+            .info-text strong {
+                color: ${config.bgColor1};
             }
             
             .instructions {
-                background: ${colors.bg}08;
+                background: white;
+                border: 1px solid #eee;
                 border-radius: 8px;
-                padding: 20px;
+                padding: 15px;
                 margin: 20px 0;
                 text-align: left;
-                color: #555;
             }
             
-            .instructions h3 {
-                color: ${colors.bg};
+            .instructions h4 {
+                color: ${config.bgColor1};
+                font-size: 12px;
+                text-transform: uppercase;
+                letter-spacing: 1px;
                 margin-bottom: 10px;
-                font-size: 14px;
             }
             
             .instructions ol {
                 margin-left: 20px;
                 font-size: 13px;
+                color: #666;
                 line-height: 1.8;
             }
             
@@ -195,31 +331,13 @@ export function generateGiftCardEmail(
                 margin-bottom: 8px;
             }
             
-            .cta-button {
-                display: inline-block;
-                background: ${colors.bg};
-                color: white;
-                padding: 15px 40px;
-                text-decoration: none;
-                border-radius: 50px;
-                font-weight: bold;
-                font-size: 14px;
-                margin: 20px 0;
-                transition: opacity 0.3s;
-                text-transform: uppercase;
-                letter-spacing: 1px;
-            }
-            
-            .cta-button:hover {
-                opacity: 0.9;
-            }
-            
+            /* Footer */
             .footer {
                 background: #f5f5f5;
                 padding: 20px;
                 text-align: center;
-                font-size: 12px;
-                color: #888;
+                font-size: 11px;
+                color: #999;
                 border-top: 1px solid #eee;
             }
             
@@ -227,103 +345,111 @@ export function generateGiftCardEmail(
                 margin: 5px 0;
             }
             
-            .sender-info {
-                margin-top: 20px;
-                padding-top: 20px;
-                border-top: 1px solid #eee;
-                font-size: 13px;
-                color: #666;
+            .footer-bold {
+                color: #555;
+                font-weight: bold;
             }
             
-            .sender-info strong {
-                color: ${colors.bg};
-            }
-            
-            @media (max-width: 600px) {
-                .container {
-                    margin: 0;
-                    border-radius: 0;
+            @media (max-width: 480px) {
+                .gift-card-container {
+                    padding: 25px;
                 }
                 
-                .header h1 {
-                    font-size: 24px;
+                .gift-card-title {
+                    font-size: 22px;
                 }
                 
-                .card-code {
-                    font-size: 20px;
-                    letter-spacing: 2px;
+                .value-amount {
+                    font-size: 36px;
+                }
+                
+                .code-value {
+                    font-size: 16px;
                 }
             }
         </style>
     </head>
     <body>
-        <div class="container">
-            <!-- Header -->
-            <div class="header">
-                <h1>🎁 Karta Podarunkowa</h1>
-                <p>Specjalny upominek czeka na Ciebie!</p>
-            </div>
-            
-            <!-- Logo -->
-            ${logoUrl ? `
-            <div style="text-align: center; padding: 20px 0;">
-                <div class="logo">
-                    <img src="${logoUrl}" alt="Logo" />
-                </div>
-            </div>
-            ` : ''}
-            
-            <!-- Content -->
-            <div class="content">
-                <p class="greeting">Cześć <strong>${recipientName}</strong>! 👋</p>
-                
-                <p style="margin: 20px 0; color: #555;">
-                    Mamy dla Ciebie cudowną niespodziankę – kartę podarunkową o wartości <strong style="color: ${colors.bg};">${value} zł</strong>!
-                </p>
-                
-                ${message ? `
-                <div class="message-box">
-                    "${message}"
+        <div class="email-container">
+            <!-- Photographer Header -->
+            <div class="photographer-header">
+                ${logoUrl ? `
+                <div class="photographer-logo">
+                    <img src="${logoUrl}" alt="Fotograf Logo" />
                 </div>
                 ` : ''}
+                <div class="photographer-name">PRZEMYSŁAW WŁAŚNIEWSKI</div>
+                <div class="photographer-title">📸 Fotografia</div>
+            </div>
+            
+            <!-- Gift Card Section -->
+            <div class="gift-card-wrapper">
+                <div class="gift-card-container">
+                    <!-- Top Section -->
+                    <div class="gift-card-top">
+                        <div></div>
+                        <div class="gift-card-icon">${config.icon}</div>
+                    </div>
+                    
+                    <!-- Center Section -->
+                    <div class="gift-card-center">
+                        <div class="gift-card-title">${displayTitle}</div>
+                        <div class="gift-card-description">${displayDescription}</div>
+                        
+                        ${recipientName ? `
+                        <div class="recipient-name">Dla: <strong>${recipientName}</strong></div>
+                        ` : ''}
+                        
+                        ${message ? `
+                        <div class="message-text">"${message}"</div>
+                        ` : ''}
+                    </div>
+                    
+                    <!-- Bottom Section -->
+                    <div class="gift-card-bottom">
+                        <div class="value-section">
+                            <div class="value-label">Wartość karty</div>
+                            <div class="value-amount">${value} zł</div>
+                        </div>
+                        
+                        <div class="code-section">
+                            <div class="code-label">🎉 Kod Promocyjny</div>
+                            <div class="code-value">${code}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Info Section -->
+            <div class="info-section">
+                <div class="info-title">Jak korzystać z karty?</div>
                 
-                <!-- Gift Card Display -->
-                <div class="card">
-                    <div class="card-label">🎉 Twój Kod Promocyjny</div>
-                    <div class="card-code">${code}</div>
-                    <div class="card-value">Wartość: ${value} zł</div>
+                <div class="info-text">
+                    <strong>Gratulacje!</strong> Właśnie otrzymałeś kartę podarunkową o wartości <strong>${value} zł</strong> od <strong>${senderName || 'Fotografa'}</strong>!
                 </div>
                 
-                <!-- Instructions -->
                 <div class="instructions">
-                    <h3>Jak korzystać z karty?</h3>
+                    <h4>Kroki do realizacji:</h4>
                     <ol>
                         <li>Skopiuj powyższy kod promocyjny</li>
-                        <li>Przejdź na naszą stronę rezerwacji</li>
+                        <li>Przejdź na stronę rezerwacji www.wlasniewski.pl/rezerwacja</li>
                         <li>Wklej kod w polu "Kod promocyjny"</li>
-                        <li>Ciesz się zniżką! 🎉</li>
+                        <li>Ciesz się swoją sesją fotograficzną! 🎉</li>
                     </ol>
                 </div>
                 
-                <!-- CTA Button -->
-                <a href="https://twojadomena.pl/rezerwacja" class="cta-button">Przejdź do rezerwacji</a>
-                
-                <div class="sender-info">
-                    <p>Tę kartę podarunkową przygotował dla Ciebie: <strong>${senderName || 'Przemysław Właśniewski'}</strong></p>
-                    <p style="margin-top: 10px; font-size: 11px; color: #999;">
-                        Karta jest ważna jednorazowo. Nie można jej łączyć z innymi promocjami.
-                    </p>
+                <div class="info-text" style="margin-top: 20px; font-size: 12px; color: #888;">
+                    <strong>Ważne:</strong> Karta jest ważna przez 12 miesięcy od daty wystawienia. Nie można jej łączyć z innymi promocjami ani zwracać w formie pieniężnej.
                 </div>
             </div>
             
             <!-- Footer -->
             <div class="footer">
-                <p><strong>Fotografia Przemysław Właśniewski</strong></p>
-                <p>Dziękujemy za zaufanie!</p>
-                <p style="margin-top: 10px; color: #aaa;">© 2024 Wszystkie prawa zastrzeżone</p>
+                <p class="footer-bold">Fotografia Przemysław Właśniewski</p>
+                <p style="margin-top: 10px;">Dziękujemy za zaufanie i do zobaczenia!</p>
+                <p style="margin-top: 15px; color: #aaa;">© 2024 Wszystkie prawa zastrzeżone</p>
             </div>
         </div>
     </body>
-    </html>
-    `;
+    </html>`;
 }
