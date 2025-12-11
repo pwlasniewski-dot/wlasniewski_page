@@ -12,35 +12,9 @@ interface MenuItem {
     submenu?: { label: string; href: string }[];
 }
 
-const MENU_ITEMS: MenuItem[] = [
-    { label: 'Blog', href: '/blog' },
-    { label: 'Jak się ubrać', href: '/jak-sie-ubrac' },
-    { label: 'O mnie', href: '/o-mnie' },
-];
+const MENU_ITEMS: MenuItem[] = [];
 
-const CTA_ITEMS: MenuItem[] = [
-    {
-        label: 'Portfolio',
-        href: '/portfolio',
-        submenu: [
-            { label: 'Sesje ślubne', href: '/portfolio/slub' },
-            { label: 'Sesje rodzinne', href: '/portfolio/rodzina' },
-            { label: 'Sesje ciążowe', href: '/portfolio/ciaza' },
-        ]
-    },
-    { label: 'Rezerwacja', href: '/rezerwacja' },
-    {
-        label: 'Lokalizacje',
-        href: '/lokalizacje',
-        submenu: [
-            { label: 'Toruń', href: '/fotograf-torun' },
-            { label: 'Wąbrzeźno', href: '/fotograf-wabrzezno' },
-            { label: 'Płużnica', href: '/fotograf-pluznica' },
-            { label: 'Lisewo', href: '/fotograf-lisewo' },
-            { label: 'Grudziądz', href: '/fotograf-grudziadz' },
-        ]
-    },
-];
+const CTA_ITEMS: MenuItem[] = [];
 
 interface NavbarSettings {
     logo_url?: string;
@@ -99,7 +73,7 @@ export default function Navbar() {
                 }
             } catch (error) {
                 console.error('Failed to fetch menu:', error);
-                // Keep default MENU_ITEMS on error
+                // Keep empty menu on error (no fallback to hardcoded values)
             }
         };
         fetchMenu();
