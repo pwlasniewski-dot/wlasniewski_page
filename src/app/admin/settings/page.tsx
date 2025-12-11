@@ -906,15 +906,14 @@ export default function SettingsPage() {
                                 setSettings(s => ({ ...s, gift_card_promo_enabled: newValue }));
                                 try {
                                     const token = localStorage.getItem('admin_token');
-                                    await fetch('/api/admin/gift-card-promo', {
+                                    await fetch(getApiUrl('settings'), {
                                         method: 'POST',
                                         headers: { 
                                             'Content-Type': 'application/json',
                                             'Authorization': `Bearer ${token}`
                                         },
                                         body: JSON.stringify({ 
-                                            enabled: newValue,
-                                            messages: [] // Will use defaults
+                                            gift_card_promo_enabled: newValue ? 'true' : 'false'
                                         })
                                     });
                                     toast.success(newValue ? 'Bajerek włączony!' : 'Bajerek wyłączony');
