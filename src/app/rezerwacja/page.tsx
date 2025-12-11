@@ -48,6 +48,11 @@ export default function RezerwacjaPage() {
     const [service, setService] = useState<ServiceType | null>(null);
     const [chosenPackage, setChosenPackage] = useState<Package | null>(null);
     const [slot, setSlot] = useState<{ date: string; start?: string; end?: string } | null>(null);
+    
+    // Availability
+    const [availableHours, setAvailableHours] = useState<Array<{ hour: number; available: boolean; reason?: string }>>([]);
+    const [loadingAvailability, setLoadingAvailability] = useState(false);
+    const [selectedHour, setSelectedHour] = useState<number | null>(null);
 
     // Form fields
     const [name, setName] = useState("");
@@ -95,6 +100,39 @@ export default function RezerwacjaPage() {
 
         loadServices();
     }, []);
+
+    // Load available hours when package and date are selected
+    useEffect(() => {
+        if (!chosenPackage || !slot?.date) {
+            setAvailableHours([]);
+            setSelectedHour(null);
+            return;
+        }
+
+        const loadAvailability = async () => {
+            setLoadingAvailability(true);
+            try {
+                const res = await fetch(
+                    `/api/availability?serviceId=${chosenPackage.service_id}&packageId=${chosenPackage.id}&date=${slot.date}`
+                );
+                if (res.ok) {
+                    const data = await res.json();
+                    setAvailableHours(data.slots || []);
+                    setSelectedHour(null); // Reset selection when date changes
+                } else {
+                    console.error('Failed to load availability:', res.status);
+                    setAvailableHours([]);
+                }
+            } catch (error) {
+                console.error('Failed to load availability:', error);
+                setAvailableHours([]);
+            } finally {
+                setLoadingAvailability(false);
+            }
+        };
+
+        loadAvailability();
+    }, [chosenPackage, slot?.date]);
 
     const needsVenue = service && ['Ślub', 'Przyjęcie', 'Urodziny'].includes(service.name);
 
@@ -404,6 +442,59 @@ export default function RezerwacjaPage() {
                         <section className="bg-zinc-900/50 rounded-2xl p-8 border border-zinc-800">
                             <h2 className="text-2xl font-bold text-white mb-6">Krok 3: Wybierz Termin</h2>
                             <BookingCalendar onSlotSelect={setSlot} selectedSlot={slot} />
+                            
+                            {/* Hour Selection - shown after date is selected */}
+                            {slot?.date && (
+                                <div className="mt-8 pt-8 border-t border-zinc-700">
+                                    <h3 className="text-xl font-bold text-white mb-4">
+                                        {loadingAvailability ? '⏳ Ładowanie dostępnych godzin...' : '⏰ Wybierz Godzinę'}
+                                    </h3>
+                                    
+                                    {loadingAvailability ? (
+                                        <div className="text-center text-zinc-400">
+                                            <p>Sprawdzam dostępność...</p>
+                                        </div>
+                                    ) : availableHours.length === 0 ? (
+                                        <div className="text-center text-amber-500">
+                                            <p>Brak dostępnych godzin na wybrany dzień</p>
+                                        </div>
+                                    ) : (
+                                        <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
+                                            {availableHours.map((slot) => (
+                                                <button
+                                                    key={slot.hour}
+                                                    type="button"
+                                                    disabled={!slot.available}
+                                                    onClick={() => {
+                                                        const start = `${slot.hour.toString().padStart(2, '0')}:00`;
+                                                        const end = `${(slot.hour + (chosenPackage?.hours || 1)).toString().padStart(2, '0')}:00`;
+                                                        setSelectedHour(slot.hour);
+                                                        setSlot(prev => prev ? { ...prev, start, end } : null);
+                                                    }}
+                                                    className={`py-2 rounded-lg transition-all text-sm font-medium ${
+                                                        slot.available
+                                                            ? selectedHour === slot.hour
+                                                                ? 'bg-amber-500 text-white border border-amber-400'
+                                                                : 'bg-zinc-800 text-white border border-zinc-700 hover:border-amber-400 hover:bg-zinc-700'
+                                                            : 'bg-zinc-900 text-zinc-600 border border-zinc-800 cursor-not-allowed'
+                                                    }`}
+                                                    title={
+                                                        !slot.available
+                                                            ? slot.reason === 'booked_session'
+                                                                ? 'Zajęte - rezerwacja sesji'
+                                                                : slot.reason === 'booked_event'
+                                                                    ? 'Zajęte - rezerwacja całodniowa'
+                                                                    : 'Poza godzinami dostępnymi'
+                                                            : ''
+                                                    }
+                                                >
+                                                    {slot.hour.toString().padStart(2, '0')}:00
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </section>
                     )}
 
