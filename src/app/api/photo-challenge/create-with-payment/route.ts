@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { v4 as uuidv4 } from 'uuid';
+import { sendEmail } from '@/lib/email/sender';
 
 export async function POST(request: NextRequest) {
     try {
@@ -60,6 +61,28 @@ export async function POST(request: NextRequest) {
         // For now, we'll return a mock payment URL
         // In production, integrate with Przelewy24 API
         const paymentUrl = `/api/photo-challenge/payment/${challenge.id}?amount=${pkg.challenge_price}`;
+
+        // Send invitation email
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+        const inviteLink = `${baseUrl}/foto-wyzwanie/invite/${uniqueLink}`;
+
+        try {
+            await sendEmail({
+                to: invitee_email,
+                subject: `🎉 ${inviter_name} zaprasza Cię do Foto Wyzwania!`,
+                template: 'challenge-invitation',
+                data: {
+                    inviterName: inviter_name,
+                    packageName: pkg.package_name,
+                    packagePrice: pkg.challenge_price,
+                    packageDescription: pkg.description,
+                    inviteLink
+                }
+            });
+        } catch (emailError) {
+            console.error('Failed to send invitation email:', emailError);
+            // Don't fail the request if email fails
+        }
 
         return NextResponse.json({
             success: true,

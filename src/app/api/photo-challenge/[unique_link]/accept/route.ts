@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
+import { sendEmail } from '@/lib/email/sender';
 
 export async function POST(
     request: NextRequest,
@@ -59,6 +60,27 @@ export async function POST(
                 session_date: startTime
             }
         });
+
+        // Send confirmation email
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+        const galleryLink = `${baseUrl}/foto-wyzwanie/gallery/${challenge.id}`;
+
+        try {
+            await sendEmail({
+                to: challenge.invitee_contact,
+                subject: '✅ Wyzwanie zaakceptowane! Szczegóły sesji',
+                template: 'challenge-accepted',
+                data: {
+                    sessionDate: startTime.toLocaleDateString('pl-PL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
+                    sessionTime: `${String(hour).padStart(2, '0')}:00`,
+                    location: challenge.location?.name || 'Będzie podane wkrótce',
+                    galleryLink
+                }
+            });
+        } catch (emailError) {
+            console.error('Failed to send acceptance email:', emailError);
+            // Don't fail the request if email fails
+        }
 
         return NextResponse.json({
             success: true,
