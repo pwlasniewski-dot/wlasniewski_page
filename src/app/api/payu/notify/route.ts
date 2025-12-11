@@ -94,6 +94,136 @@ export async function POST(request: NextRequest) {
                     } catch (err) {
                         console.error('Failed to send gift card email:', err);
                     }
+
+                    // Send admin notification email
+                    try {
+                        const adminEmail = process.env.ADMIN_EMAIL || 'kontakt@wlasniewski.pl';
+                        const amountPLN = (giftCardOrder.amount_paid / 100).toFixed(2);
+                        const adminHtml = `
+                            <html>
+                                <head>
+                                    <meta charset="utf-8">
+                                    <style>
+                                        body { font-family: Arial, sans-serif; background: #0f0f0f; color: #fff; }
+                                        .container { max-width: 600px; margin: 0 auto; background: #1a1a1a; padding: 40px; border-radius: 12px; }
+                                        .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #d4af37; padding-bottom: 20px; }
+                                        .section { background: #2a2a2a; padding: 20px; border-radius: 8px; margin: 15px 0; }
+                                        .section h3 { color: #d4af37; margin-top: 0; }
+                                        .row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #3a3a3a; }
+                                        .row:last-child { border-bottom: none; }
+                                        .label { color: #888; font-weight: bold; }
+                                        .value { color: #fff; }
+                                        .success { color: #4ade80; font-weight: bold; }
+                                        .footer { text-align: center; margin-top: 30px; border-top: 1px solid #333; padding-top: 20px; font-size: 12px; color: #888; }
+                                    </style>
+                                </head>
+                                <body>
+                                    <div class="container">
+                                        <div class="header">
+                                            <h1 style="color: #d4af37; margin: 0;">💳 Nowa Transakcja Karty Podarunkowej</h1>
+                                            <p style="color: #aaa; margin: 5px 0 0 0;">Płatność Potwierdzona</p>
+                                        </div>
+
+                                        <div class="section">
+                                            <h3>👤 Kupujący</h3>
+                                            <div class="row">
+                                                <span class="label">Imię:</span>
+                                                <span class="value">${giftCardOrder.customer_name}</span>
+                                            </div>
+                                            <div class="row">
+                                                <span class="label">Email:</span>
+                                                <span class="value">${giftCardOrder.customer_email}</span>
+                                            </div>
+                                        </div>
+
+                                        ${giftCardOrder.recipient_name ? `
+                                        <div class="section">
+                                            <h3>🎁 Odbiorca</h3>
+                                            <div class="row">
+                                                <span class="label">Imię:</span>
+                                                <span class="value">${giftCardOrder.recipient_name}</span>
+                                            </div>
+                                            ${giftCardOrder.recipient_email ? `
+                                            <div class="row">
+                                                <span class="label">Email:</span>
+                                                <span class="value">${giftCardOrder.recipient_email}</span>
+                                            </div>
+                                            ` : ''}
+                                            ${giftCardOrder.sender_name ? `
+                                            <div class="row">
+                                                <span class="label">Od:</span>
+                                                <span class="value">${giftCardOrder.sender_name}</span>
+                                            </div>
+                                            ` : ''}
+                                            ${giftCardOrder.message ? `
+                                            <div class="row">
+                                                <span class="label">Wiadomość:</span>
+                                                <span class="value"><em>"${giftCardOrder.message}"</em></span>
+                                            </div>
+                                            ` : ''}
+                                        </div>
+                                        ` : ''}
+
+                                        <div class="section">
+                                            <h3>🎟️ Karta Podarunkowa</h3>
+                                            <div class="row">
+                                                <span class="label">Kod:</span>
+                                                <span class="value" style="font-family: monospace; font-weight: bold;">${giftCardOrder.gift_card.code}</span>
+                                            </div>
+                                            <div class="row">
+                                                <span class="label">Temat:</span>
+                                                <span class="value">${giftCardOrder.gift_card.theme || 'N/A'}</span>
+                                            </div>
+                                            <div class="row">
+                                                <span class="label">Wartość:</span>
+                                                <span class="value">${giftCardOrder.gift_card.value || giftCardOrder.gift_card.amount} PLN</span>
+                                            </div>
+                                        </div>
+
+                                        <div class="section">
+                                            <h3>💰 Płatność</h3>
+                                            <div class="row">
+                                                <span class="label">Kwota:</span>
+                                                <span class="value success">${amountPLN} PLN</span>
+                                            </div>
+                                            <div class="row">
+                                                <span class="label">Metoda:</span>
+                                                <span class="value">PayU</span>
+                                            </div>
+                                            <div class="row">
+                                                <span class="label">Numer PayU:</span>
+                                                <span class="value" style="font-family: monospace; font-size: 12px;">${orderId}</span>
+                                            </div>
+                                            <div class="row">
+                                                <span class="label">ID Zamówienia:</span>
+                                                <span class="value">${resourceId}</span>
+                                            </div>
+                                            <div class="row">
+                                                <span class="label">Status:</span>
+                                                <span class="success">✅ ZATWIERDZONO</span>
+                                            </div>
+                                        </div>
+
+                                        <div class="footer">
+                                            <p>Wiadomość automatyczna z systemu płatności</p>
+                                            <p>© Fotograf Wlasniewski - Wszystkie prawa zastrzeżone</p>
+                                        </div>
+                                    </div>
+                                </body>
+                            </html>
+                        `;
+
+                        const { sendEmail } = await import('@/lib/email/sender');
+                        await sendEmail({
+                            to: adminEmail,
+                            subject: `💳 [NOWA TRANSAKCJA] Karta ${giftCardOrder.gift_card.code} - ${amountPLN} PLN`,
+                            html: adminHtml
+                        });
+                        console.log(`Admin notification sent to ${adminEmail} for order ${resourceId}`);
+                    } catch (adminErr) {
+                        console.error('Failed to send admin notification:', adminErr);
+                    }
+
                     handled = true;
                 }
             }
