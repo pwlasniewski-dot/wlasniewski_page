@@ -6,7 +6,7 @@ import prisma from '@/lib/db/prisma'; // Use default export
 import { generateUniqueLink, generateShareableUrl } from '@/lib/photo-challenge/link-generator';
 import { getSetting, getAcceptanceDeadline } from '@/lib/photo-challenge/settings';
 import { hashPassword, generateToken } from '@/lib/auth/jwt';
-import { sendEmail } from '@/lib/email';
+import { sendEmail } from '@/lib/email/sender';
 import { generateChallengeCreatedEmail, generateChallengeInviteEmail } from '@/lib/email-templates';
 import { logSystem } from '@/lib/logger';
 

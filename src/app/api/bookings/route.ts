@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
-import { sendEmail } from "@/lib/email";
+import { sendEmail } from "@/lib/email/sender";
 import { generateClientEmail, generateAdminEmail } from "@/lib/email-templates";
 import { logSystem } from "@/lib/logger";
 
