@@ -134,6 +134,9 @@ export function generateGiftCardEmail(
                 justify-content: center;
                 box-shadow: 0 4px 12px rgba(0,0,0,0.3);
                 overflow: hidden;
+                font-size: 32px;
+                font-weight: bold;
+                color: #1a1a1a;
             }
             
             .photographer-logo img {
@@ -418,11 +421,9 @@ export function generateGiftCardEmail(
         <div class="email-container">
             <!-- Photographer Header -->
             <div class="photographer-header">
-                ${logoUrl ? `
                 <div class="photographer-logo">
-                    <img src="${logoUrl}" alt="Fotograf Logo" />
+                    ${logoUrl ? `<img src="${logoUrl}" alt="Fotograf Logo" />` : 'PW'}
                 </div>
-                ` : ''}
                 <div class="photographer-name">PRZEMYSŁAW WŁAŚNIEWSKI</div>
                 <div class="photographer-title">📸 Fotografia</div>
             </div>

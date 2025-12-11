@@ -85,7 +85,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
                 orderBy: { id: 'asc' }
             });
 
-            const logoUrl = (settings as any)?.logo_url || body.logoUrl;
+            // Use provided logoUrl first, fallback to settings, then fallback to default
+            let logoUrl = body.logoUrl || (settings as any)?.logo_url;
+            
+            // Ensure it's an absolute URL
+            if (logoUrl && !logoUrl.startsWith('http')) {
+                const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://wlasniewski.pl';
+                logoUrl = baseUrl + (logoUrl.startsWith('/') ? logoUrl : '/' + logoUrl);
+            }
 
             // Generate email HTML
             const emailHtml = generateGiftCardEmail(
