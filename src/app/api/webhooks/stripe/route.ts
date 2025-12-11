@@ -1,11 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import Stripe from 'stripe';
+import type Stripe from 'stripe';
 import prisma from '@/lib/db/prisma';
 import { sendGiftCardAccessEmail } from '@/lib/email/giftCardAccess';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '');
-
 export const dynamic = 'force-dynamic';
+
+let stripe: any = null;
+
+function getStripe() {
+    if (!stripe) {
+        const Stripe = require('stripe').default;
+        stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '');
+    }
+    return stripe;
+}
 
 export async function POST(request: NextRequest) {
     try {
@@ -15,7 +23,8 @@ export async function POST(request: NextRequest) {
         // Verify webhook signature
         let event;
         try {
-            event = stripe.webhooks.constructEvent(
+            const stripeClient = getStripe();
+            event = stripeClient.webhooks.constructEvent(
                 body,
                 signature,
                 process.env.STRIPE_WEBHOOK_SECRET || ''
