@@ -3,14 +3,16 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { Toaster, toast } from 'sonner';
 import { getApiUrl } from '@/lib/api-config';
-import BookingCalendar from '@/components/BookingCalendar';
+import { buildICS } from '@/utils/ics';
 import TestimonialsSection from '@/components/TestimonialsSection';
+import BookingCalendar from '@/components/BookingCalendar';
 
 interface ServiceType {
     id: number;
     name: string;
     icon?: string;
     description?: string;
+    is_active: boolean;
     packages: Package[];
 }
 
@@ -48,7 +50,7 @@ export default function RezerwacjaPage() {
     const [service, setService] = useState<ServiceType | null>(null);
     const [chosenPackage, setChosenPackage] = useState<Package | null>(null);
     const [slot, setSlot] = useState<{ date: string; start?: string; end?: string } | null>(null);
-    
+
     // Availability
     const [availableHours, setAvailableHours] = useState<Array<{ hour: number; available: boolean; reason?: string }>>([]);
     const [loadingAvailability, setLoadingAvailability] = useState(false);
@@ -386,11 +388,10 @@ export default function RezerwacjaPage() {
                                         setService(svc);
                                         setChosenPackage(null);
                                     }}
-                                    className={`p-4 rounded-xl border-2 transition-all text-left ${
-                                        service?.id === svc.id
-                                            ? "border-amber-500 bg-amber-500/10"
-                                            : "border-zinc-700 bg-zinc-800/50 hover:border-zinc-600"
-                                    }`}
+                                    className={`p-4 rounded-xl border-2 transition-all text-left ${service?.id === svc.id
+                                        ? "border-amber-500 bg-amber-500/10"
+                                        : "border-zinc-700 bg-zinc-800/50 hover:border-zinc-600"
+                                        }`}
                                 >
                                     <div className="flex items-center gap-3">
                                         <span className="text-3xl">{svc.icon || '📸'}</span>
@@ -414,11 +415,10 @@ export default function RezerwacjaPage() {
                                         key={pkg.id}
                                         type="button"
                                         onClick={() => setChosenPackage(pkg)}
-                                        className={`p-4 rounded-xl border-2 transition-all text-left ${
-                                            chosenPackage?.id === pkg.id
-                                                ? "border-amber-500 bg-amber-500/10"
-                                                : "border-zinc-700 bg-zinc-800/50 hover:border-zinc-600"
-                                        }`}
+                                        className={`p-4 rounded-xl border-2 transition-all text-left ${chosenPackage?.id === pkg.id
+                                            ? "border-amber-500 bg-amber-500/10"
+                                            : "border-zinc-700 bg-zinc-800/50 hover:border-zinc-600"
+                                            }`}
                                     >
                                         <div className="flex items-center gap-2 mb-2">
                                             <span className="text-2xl">{pkg.icon || '📦'}</span>
@@ -441,15 +441,24 @@ export default function RezerwacjaPage() {
                     {chosenPackage && (
                         <section className="bg-zinc-900/50 rounded-2xl p-8 border border-zinc-800">
                             <h2 className="text-2xl font-bold text-white mb-6">Krok 3: Wybierz Termin</h2>
-                            <BookingCalendar onSlotSelect={setSlot} selectedSlot={slot} />
                             
+                            {/* Calendar */}
+                            <div className="mb-8">
+                                <h3 className="text-lg font-bold text-white mb-4">Wybierz Dzień</h3>
+                                <BookingCalendar 
+                                    onSlotSelect={setSlot} 
+                                    selectedSlot={slot}
+                                    service={service?.name || 'Sesja'}
+                                />
+                            </div>
+
                             {/* Hour Selection - shown after date is selected */}
                             {slot?.date && (
                                 <div className="mt-8 pt-8 border-t border-zinc-700">
                                     <h3 className="text-xl font-bold text-white mb-4">
                                         {loadingAvailability ? '⏳ Ładowanie dostępnych godzin...' : '⏰ Wybierz Godzinę'}
                                     </h3>
-                                    
+
                                     {loadingAvailability ? (
                                         <div className="text-center text-zinc-400">
                                             <p>Sprawdzam dostępność...</p>
@@ -471,13 +480,12 @@ export default function RezerwacjaPage() {
                                                         setSelectedHour(slot.hour);
                                                         setSlot(prev => prev ? { ...prev, start, end } : null);
                                                     }}
-                                                    className={`py-2 rounded-lg transition-all text-sm font-medium ${
-                                                        slot.available
-                                                            ? selectedHour === slot.hour
-                                                                ? 'bg-amber-500 text-white border border-amber-400'
-                                                                : 'bg-zinc-800 text-white border border-zinc-700 hover:border-amber-400 hover:bg-zinc-700'
-                                                            : 'bg-zinc-900 text-zinc-600 border border-zinc-800 cursor-not-allowed'
-                                                    }`}
+                                                    className={`py-2 rounded-lg transition-all text-sm font-medium ${slot.available
+                                                        ? selectedHour === slot.hour
+                                                            ? 'bg-amber-500 text-white border border-amber-400'
+                                                            : 'bg-zinc-800 text-white border border-zinc-700 hover:border-amber-400 hover:bg-zinc-700'
+                                                        : 'bg-zinc-900 text-zinc-600 border border-zinc-800 cursor-not-allowed'
+                                                        }`}
                                                     title={
                                                         !slot.available
                                                             ? slot.reason === 'booked_session'

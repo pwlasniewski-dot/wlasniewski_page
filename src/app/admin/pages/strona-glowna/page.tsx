@@ -20,12 +20,16 @@ import templates from '@/lib/homepageModuleTemplates';
 interface HeroSlide {
     id: string;
     image: string;
+    image_desktop?: string;
+    image_mobile?: string;
     title: string;
     subtitle: string;
+    description?: string;
     buttonText: string;
     buttonLink: string;
     enabled: boolean;
     order: number;
+    textAnimation?: 'fade' | 'slide-up' | 'slide-down' | 'scale' | 'bounce' | 'zoom-in';
 }
 
 interface Feature {
@@ -72,7 +76,15 @@ interface ParallaxSection extends BaseSection {
     type: 'parallax';
     data: {
         image: string;
+        image_desktop?: string;
+        image_mobile?: string;
         title: string;
+        floatingImage?: boolean;
+        parallaxSpeed?: number;
+        imageOffset?: number;
+        textOpacity?: number;
+        textColor?: string;
+        textAnimation?: string;
     };
 }
 
@@ -319,37 +331,37 @@ export default function HomepageManager() {
 
     // --- Quick-add module helpers (use templates from lib) ---
     const addAboutSectionTemplate = () => {
-        const tpl = templates.createAboutSectionTemplate();
+        const tpl = templates.createAboutSectionTemplate() as AboutSection;
         setSections(prev => [...prev, tpl]);
         toast.success('Dodano sekcję O mnie (pamiętaj zapisać)');
     };
 
     const addFeaturesSectionTemplate = () => {
-        const tpl = templates.createFeaturesSectionTemplate();
+        const tpl = templates.createFeaturesSectionTemplate() as FeaturesSection;
         setSections(prev => [...prev, tpl]);
         toast.success('Dodano sekcję Kafelki (pamiętaj zapisać)');
     };
 
     const addParallaxSectionTemplate = () => {
-        const tpl = templates.createParallaxSectionTemplate();
+        const tpl = templates.createParallaxSectionTemplate() as ParallaxSection;
         setSections(prev => [...prev, tpl]);
         toast.success('Dodano sekcję Parallax (pamiętaj zapisać)');
     };
 
     const addInfoBandTemplate = () => {
-        const tpl = templates.createInfoBandTemplate();
+        const tpl = templates.createInfoBandTemplate() as InfoBandSection;
         setSections(prev => [...prev, tpl]);
         toast.success('Dodano Info Band (pamiętaj zapisać)');
     };
 
     const addChallengeBannerTemplate = () => {
-        const tpl = templates.createChallengeBannerTemplate();
+        const tpl = templates.createChallengeBannerTemplate() as ChallengeBannerSection;
         setSections(prev => [...prev, tpl]);
         toast.success('Dodano Foto Wyzwanie (pamiętaj zapisać)');
     };
 
     const addTestimonialsTemplate = () => {
-        const tpl = templates.createTestimonialsTemplate();
+        const tpl = templates.createTestimonialsTemplate() as TestimonialsSection;
         setSections(prev => [...prev, tpl]);
         toast.success('Dodano Opinie (pamiętaj zapisać)');
     };
@@ -372,13 +384,13 @@ export default function HomepageManager() {
             templates.createTestimonialsTemplate() as TestimonialsSection
         ];
         setSections(allSections);
-        
+
         // Add hero slides
         const heroSlides = [
             templates.createHeroSlideTemplate()
         ];
         setHeroSlides(heroSlides);
-        
+
         toast.success('Dodano wszystkie moduły! Uzupełnij treści i kliknij Zapisz zmiany');
     };
 
@@ -748,11 +760,10 @@ export default function HomepageManager() {
                                         <button
                                             key={anim}
                                             onClick={() => updateHeroSlide(index, 'textAnimation', anim)}
-                                            className={`px-2 py-1 rounded text-xs border transition-colors ${
-                                                slide.textAnimation === anim
-                                                    ? 'bg-gold-500 text-black border-gold-500'
-                                                    : 'bg-zinc-900 text-zinc-400 border-zinc-700 hover:border-zinc-600'
-                                            }`}
+                                            className={`px-2 py-1 rounded text-xs border transition-colors ${slide.textAnimation === anim
+                                                ? 'bg-gold-500 text-black border-gold-500'
+                                                : 'bg-zinc-900 text-zinc-400 border-zinc-700 hover:border-zinc-600'
+                                                }`}
                                         >
                                             {anim === 'slide-up' ? '↑ Slide Up' : anim === 'slide-down' ? '↓ Slide Down' : anim === 'zoom-in' ? '🔍 Zoom' : anim}
                                         </button>
@@ -934,31 +945,31 @@ export default function HomepageManager() {
                                     <div className="grid md:grid-cols-3 gap-4 bg-zinc-800/50 p-3 rounded border border-zinc-700">
                                         <div>
                                             <label className="block text-sm text-zinc-400 mb-1">Kolor tekstu</label>
-                                            <input 
-                                                type="color" 
-                                                value={section.data.textColor || '#FFFFFF'} 
-                                                onChange={e => updateSectionData(index, 'textColor', e.target.value)} 
-                                                className="w-full h-8 rounded cursor-pointer" 
+                                            <input
+                                                type="color"
+                                                value={section.data.textColor || '#FFFFFF'}
+                                                onChange={e => updateSectionData(index, 'textColor', e.target.value)}
+                                                className="w-full h-8 rounded cursor-pointer"
                                             />
                                         </div>
                                         <div>
                                             <label className="block text-sm text-zinc-400 mb-1">Przezroczystość tekstu</label>
-                                            <input 
-                                                type="range" 
-                                                min="0" 
-                                                max="1" 
-                                                step="0.1" 
-                                                value={section.data.textOpacity || 1} 
-                                                onChange={e => updateSectionData(index, 'textOpacity', parseFloat(e.target.value))} 
-                                                className="w-full" 
+                                            <input
+                                                type="range"
+                                                min="0"
+                                                max="1"
+                                                step="0.1"
+                                                value={section.data.textOpacity || 1}
+                                                onChange={e => updateSectionData(index, 'textOpacity', parseFloat(e.target.value))}
+                                                className="w-full"
                                             />
                                             <span className="text-xs text-zinc-500">{((section.data.textOpacity || 1) * 100).toFixed(0)}%</span>
                                         </div>
                                         <div>
                                             <label className="block text-sm text-zinc-400 mb-1">Animacja tekstu</label>
-                                            <select 
-                                                value={section.data.textAnimation || 'slide-up'} 
-                                                onChange={e => updateSectionData(index, 'textAnimation', e.target.value)} 
+                                            <select
+                                                value={section.data.textAnimation || 'slide-up'}
+                                                onChange={e => updateSectionData(index, 'textAnimation', e.target.value)}
                                                 className="w-full px-2 py-2 bg-zinc-900 border border-zinc-700 rounded text-white text-sm"
                                             >
                                                 <option value="fade">Fade</option>
@@ -974,37 +985,36 @@ export default function HomepageManager() {
                                             <label className="block text-sm text-zinc-400 mb-1">Efekt pływającego zdjęcia</label>
                                             <button
                                                 onClick={() => updateSectionData(index, 'floatingImage', !section.data.floatingImage)}
-                                                className={`w-full px-3 py-2 rounded text-sm font-medium border transition-colors ${
-                                                    section.data.floatingImage 
-                                                        ? 'bg-green-600/20 text-green-400 border-green-500' 
-                                                        : 'bg-zinc-900 text-zinc-400 border-zinc-700'
-                                                }`}
+                                                className={`w-full px-3 py-2 rounded text-sm font-medium border transition-colors ${section.data.floatingImage
+                                                    ? 'bg-green-600/20 text-green-400 border-green-500'
+                                                    : 'bg-zinc-900 text-zinc-400 border-zinc-700'
+                                                    }`}
                                             >
                                                 {section.data.floatingImage ? '✓ Włączony' : 'Wyłączony'}
                                             </button>
                                         </div>
                                         <div>
                                             <label className="block text-sm text-zinc-400 mb-1">Szybkość parallaxu</label>
-                                            <input 
-                                                type="range" 
-                                                min="0" 
-                                                max="1" 
-                                                step="0.1" 
-                                                value={section.data.parallaxSpeed || 0.5} 
-                                                onChange={e => updateSectionData(index, 'parallaxSpeed', parseFloat(e.target.value))} 
-                                                className="w-full" 
+                                            <input
+                                                type="range"
+                                                min="0"
+                                                max="1"
+                                                step="0.1"
+                                                value={section.data.parallaxSpeed || 0.5}
+                                                onChange={e => updateSectionData(index, 'parallaxSpeed', parseFloat(e.target.value))}
+                                                className="w-full"
                                             />
                                             <span className="text-xs text-zinc-500">{((section.data.parallaxSpeed || 0.5) * 100).toFixed(0)}%</span>
                                         </div>
                                         <div>
                                             <label className="block text-sm text-zinc-400 mb-1">Offset zdjęcia (px)</label>
-                                            <input 
-                                                type="number" 
-                                                min="0" 
-                                                max="100" 
-                                                value={section.data.imageOffset || 20} 
-                                                onChange={e => updateSectionData(index, 'imageOffset', parseInt(e.target.value))} 
-                                                className="w-full px-2 py-2 bg-zinc-900 border border-zinc-700 rounded text-white text-sm" 
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                max="100"
+                                                value={section.data.imageOffset || 20}
+                                                onChange={e => updateSectionData(index, 'imageOffset', parseInt(e.target.value))}
+                                                className="w-full px-2 py-2 bg-zinc-900 border border-zinc-700 rounded text-white text-sm"
                                             />
                                         </div>
                                     </div>

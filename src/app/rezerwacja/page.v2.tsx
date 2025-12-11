@@ -11,6 +11,7 @@ interface ServiceType {
     name: string;
     icon?: string;
     description?: string;
+    is_active: boolean;
     packages: Package[];
 }
 
@@ -101,7 +102,7 @@ export default function RezerwacjaPage() {
 
     const needsVenue = selectedService && ['Ślub', 'Przyjęcie', 'Urodziny'].includes(selectedService.name);
 
-    const isFormValid = formData.name && formData.email && selectedSlot && selectedPackage && formData.rodo && 
+    const isFormValid = formData.name && formData.email && selectedSlot && selectedPackage && formData.rodo &&
         (!needsVenue || (formData.venueCity && formData.venuePlace));
 
     const calculateFinalPrice = () => {
@@ -206,11 +207,10 @@ export default function RezerwacjaPage() {
                                             setSelectedService(service);
                                             setSelectedPackage(null);
                                         }}
-                                        className={`p-6 rounded-2xl border-2 transition-all ${
-                                            selectedService?.id === service.id
-                                                ? 'border-amber-500 bg-amber-500/10 scale-105'
-                                                : 'border-zinc-700 bg-zinc-800/50 hover:border-zinc-600'
-                                        }`}
+                                        className={`p-6 rounded-2xl border-2 transition-all ${selectedService?.id === service.id
+                                            ? 'border-amber-500 bg-amber-500/10 scale-105'
+                                            : 'border-zinc-700 bg-zinc-800/50 hover:border-zinc-600'
+                                            }`}
                                     >
                                         <div className="text-4xl mb-2">{service.icon || '📸'}</div>
                                         <p className="font-bold text-white">{service.name}</p>
@@ -235,11 +235,10 @@ export default function RezerwacjaPage() {
                                             key={pkg.id}
                                             type="button"
                                             onClick={() => setSelectedPackage(pkg)}
-                                            className={`p-6 rounded-2xl border-2 transition-all ${
-                                                selectedPackage?.id === pkg.id
-                                                    ? 'border-amber-500 bg-amber-500/10 scale-105'
-                                                    : 'border-zinc-700 bg-zinc-800/50 hover:border-zinc-600'
-                                            }`}
+                                            className={`p-6 rounded-2xl border-2 transition-all ${selectedPackage?.id === pkg.id
+                                                ? 'border-amber-500 bg-amber-500/10 scale-105'
+                                                : 'border-zinc-700 bg-zinc-800/50 hover:border-zinc-600'
+                                                }`}
                                         >
                                             <div className="flex items-center gap-2 mb-4">
                                                 <span className="text-3xl">{pkg.icon || '📦'}</span>
@@ -273,7 +272,11 @@ export default function RezerwacjaPage() {
                             <h2 className="text-3xl font-bold text-white mb-8">
                                 Krok 3: Wybierz Termin
                             </h2>
-                            <BookingCalendar onSlotSelect={setSelectedSlot} selectedSlot={selectedSlot} />
+                            <BookingCalendar
+                                service={selectedService?.name as any}
+                                onSlotSelect={setSelectedSlot}
+                                selectedSlot={selectedSlot}
+                            />
                         </section>
                     )}
 

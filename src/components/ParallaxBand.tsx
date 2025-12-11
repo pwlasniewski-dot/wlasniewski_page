@@ -78,17 +78,17 @@ export default function ParallaxBand({
         'fade': {
             initial: { opacity: 0 },
             animate: { opacity: textOpacity },
-            transition: { duration: 1.2, ease: "easeOut" }
+            transition: { duration: 1.2, ease: [0.4, 0, 0.2, 1] as any }
         },
         'slide-up': {
             initial: { opacity: 0, y: 60 },
             animate: { opacity: textOpacity, y: 0 },
-            transition: { duration: 1, ease: "easeOut" }
+            transition: { duration: 1, ease: [0.4, 0, 0.2, 1] as any }
         },
         'scale': {
             initial: { opacity: 0, scale: 0.8 },
             animate: { opacity: textOpacity, scale: 1 },
-            transition: { duration: 1.2, ease: "easeOut" }
+            transition: { duration: 1.2, ease: [0.4, 0, 0.2, 1] as any }
         }
     };
 

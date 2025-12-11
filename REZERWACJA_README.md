@@ -1,248 +1,307 @@
-# 📸 System Rezerwacji - Dokumentacja Konsultanta
+# 📸 System Rezerwacji - Dokumentacja Techniczna
+
+> **Ostatnia aktualizacja**: 11 grudnia 2025  
+> **Wersja**: 3.0
+
+---
 
 ## 🎯 Przegląd Systemu
 
-System rezerwacji to w pełni integrowana platforma do zarządzania rezerwacjami sesji fotograficznych. Obejmuje:
-- **Frontend**: Piękna strona rezerwacji dla klientów (`/rezerwacja`)
-- **Admin Panel**: Panel zarządzania pakietami (`/admin/rezerwacja`)
-- **Backend**: REST API endpoints do zarządzania danymi
-- **Baza Danych**: PostgreSQL z tabelami ServiceType, Package, Booking
+System rezerwacji to w pełni zintegrowana platforma do zarządzania rezerwacjami sesji fotograficznych z następującymi możliwościami:
+
+- ✅ **Frontend klienta**: 4-krokowy proces rezerwacji (`/rezerwacja`)
+- ✅ **Panel admina**: Zarządzanie pakietami i usługami (`/admin/rezerwacja`)
+- ✅ **Backend API**: REST endpoints dla wszystkich operacji
+- ✅ **Płatności**: Integracja Stripe Checkout
+- ✅ **Promocje**: Kody promocyjne i karty podarunkowe
+- ✅ **Dostępność**: Inteligentny system blokowania terminów
+- ✅ **Emaile**: Automatyczne powiadomienia dla klienta i fotografa
 
 ---
 
 ## 🏗️ Architektura
 
-### Struktura Danych
+### Stack Technologiczny
+
+- **Framework**: Next.js 14+ (App Router)
+- **Database**: PostgreSQL (via Prisma ORM)
+- **Styling**: TailwindCSS
+- **Payments**: Stripe Checkout
+- **Email**: SMTP (configured in `settings`)
+- **UI Components**: Sonner (toasts), custom React components
+
+### Struktura Plików
 
 ```
-ServiceType (Typ Usługi)
-├── id: number
-├── name: string (np. "Sesja", "Ślub", "Przyjęcie")
-├── icon: string (emoji, np. "📸")
-├── description: string
-├── is_active: boolean
-└── packages: Package[]
-    ├── id: number
-    ├── name: string (np. "Złoty", "Srebrny")
-    ├── icon: string (emoji)
-    ├── price: number (w groszach, np. 19900 = 199zł)
-    ├── hours: number (2, 4, 8)
-    ├── subtitle: string (np. "2h sesji")
-    ├── features: string (JSON array)
-    ├── is_active: boolean
-    └── order: number
-
-BookingSettings (Ustawienia Rezerwacji)
-├── booking_require_payment: boolean (czy wymagana płatność?)
-├── booking_payment_method: string ("stripe" lub "payu")
-├── booking_currency: string ("PLN", "EUR", etc.)
-└── booking_min_days_ahead: number (np. 7 = min. 7 dni naprzód)
-
-Booking (Rezerwacja Klienta)
-├── id: number
-├── service: string
-├── package: string
-├── price: number
-├── date: date
-├── start_time: time
-├── end_time: time
-├── client_name: string
-├── email: string
-├── phone: string
-├── venue_city: string
-├── venue_place: string
-├── notes: string
-├── status: enum (pending, confirmed, paid, cancelled)
-└── created_at: timestamp
+src/
+├── app/
+│   ├── rezerwacja/
+│   │   └── page.tsx                    # [PUBLIC] Strona rezerwacji klienta
+│   ├── admin/
+│   │   └── rezerwacja/
+│   │       └── page.tsx                # [ADMIN] Panel zarządzania pakietami
+│   └── api/
+│       ├── service-types/route.ts      # GET/POST/DELETE usługi
+│       ├── packages/route.ts           # GET/POST/DELETE pakiety
+│       ├── bookings/route.ts           # POST/GET/PATCH rezerwacje
+│       ├── availability/route.ts       # GET dostępność godzin
+│       ├── checkout/route.ts           # POST Stripe checkout session
+│       ├── promo-codes/route.ts        # POST weryfikacja kodu
+│       └── gift-cards/route.ts         # POST weryfikacja karty
+├── components/
+│   ├── BookingCalendar.tsx             # Kalendarz (legacy, nieużywany)
+│   └── TestimonialsSection.tsx         # Sekcja referencji
+└── lib/
+    ├── email.ts                        # Funkcje wysyłki email
+    └── email-templates.ts              # Szablony HTML emaili
 ```
 
 ---
 
-## 🖥️ Frontend - Strona Rezerwacji (`/rezerwacja`)
+## 💾 Baza Danych
+
+### Model: `ServiceType` (Typ Usługi)
+
+Główne kategorie usług (Sesja, Ślub, Przyjęcie, Urodziny itp.)
+
+```prisma
+model ServiceType {
+  id          Int       @id @default(autoincrement())
+  name        String    @unique            // "Sesja", "Ślub", "Przyjęcie"
+  icon        String?                      // Emoji: "📸", "💍", "🎂"
+  description String?
+  order       Int       @default(0)
+  is_active   Boolean   @default(true)
+  
+  // Relations
+  packages    Package[]
+}
+```
+
+**Przykładowe dane:**
+
+| id | name | icon | description |
+|----|------|------|-------------|
+| 1 | Sesja | 📸 | Profesjonalna sesja fotograficzna |
+| 2 | Ślub | 💍 | Reportaż ślubny |
+| 3 | Przyjęcie | 🎉 | Fotografia eventowa |
+
+---
+
+### Model: `Package` (Pakiet)
+
+Pakiety cenowe dla każdego typu usługi.
+
+```prisma
+model Package {
+  id                 Int      @id @default(autoincrement())
+  service_id         Int                             // FK → ServiceType
+  name               String                          // "Złoty", "Srebrny", "Platynowy"
+  icon               String?                         // Emoji: "⭐", "💎"
+  description        String?                         // Opis HTML/plain text
+  hours              Int                             // Długość sesji (1, 2, 4, 8)
+  price              Int                             // Cena w GROSZACH (19900 = 199 zł)
+  subtitle           String?                         // "2h sesji + edycja"
+  features           String?                         // JSON: ["Edycja zdjęć", "Album PDF"]
+  available_hours    String?                         // "9,10,11,12,13,14,15,16,17"
+  blocks_entire_day  Boolean? @default(false)        // true = ślub (blokuje cały dzień)
+  order              Int      @default(0)
+  is_active          Boolean  @default(true)
+  
+  // Relations
+  service            ServiceType @relation(...)
+}
+```
+
+**Kluczowe pola:**
+- `price`: **ZAWSZE w groszach** (np. 29900 = 299 zł)
+- `blocks_entire_day`: `true` dla ślubu/przyjęcia → blokuje cały dzień
+- `available_hours`: Godziny dostępności (CSV format)
+
+---
+
+### Model: `Booking` (Rezerwacja)
+
+Przechowuje rezerwacje klientów.
+
+```prisma
+model Booking {
+  id             Int      @id @default(autoincrement())
+  service        String                              // Nazwa usługi
+  package        String                              // Nazwa pakietu
+  price          Int                                 // Finalna cena (po rabatach)
+  date           DateTime                            // Data sesji
+  start_time     String?                             // "14:00"
+  end_time       String?                             // "16:00"
+  client_name    String
+  email          String
+  phone          String?
+  venue_city     String?                             // Dla ślubu/przyjęcia
+  venue_place    String?                             // Dla ślubu/przyjęcia
+  notes          String?
+  promo_code     String?
+  gift_card_code String?
+  status         String   @default("pending")        // pending, confirmed, paid, cancelled
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+}
+```
+
+**Statusy rezerwacji:**
+- `pending` – Utworzona, czeka na płatność
+- `confirmed` – Potwierdzona (gdy płatność niewymagana)
+- `paid` – Opłacona (Stripe)
+- `cancelled` – Anulowana
+
+---
+
+## 🌐 Frontend - Strona Rezerwacji (`/rezerwacja`)
 
 ### URL
 ```
 https://wlasniewski.pl/rezerwacja
 ```
 
-### Wygląd & Flow
-
-Strona podzielona na **4 kroki** (progressive disclosure):
+### 4-Krokowy Proces Rezerwacji
 
 #### **Krok 1: Wybór Usługi**
-- Kafelki z ikonami emoji
-- Wybór domyślnie ustawiony na pierwszą usługę
-- Kolory: gold border przy wyborze, hover efekty
+- Kafelki z emoji i opisem każdej usługi
+- Wybór domyślnie na pierwszej aktywnej usłudze
+- **Wygląd**: Złoty border przy wyborze, hover efekty
 
 #### **Krok 2: Wybór Pakietu**
-- Karty pakietów w siatce 3-kolumnowej (na mobile 1)
-- Każda karta pokazuje:
-  - Emoji ikona pakietu
+- Siatka 3-kolumnowa (mobile: 1 kolumna)
+- Wyświetlane dane:
+  - Emoji ikona
   - Nazwa pakietu
-  - Cena (w PLN lub innej walucie z settings)
+  - Cena (formatowana z `/100`)
   - Liczba godzin
-  - Top 3 features (spunktowane)
-- Wybrany pakiet ma gold border i scale-up animation
+  - Opis (`subtitle`)
+- **Interakcja**: Gold border + scale-up animation przy wyborze
 
-#### **Krok 3: Wybór Terminu**
-- Komponent BookingCalendar
-- Pokazuje dostępne terminy
-- Można wybrać datę i (opcjonalnie) godzinę
+#### **Krok 3: Wybór Terminu i Godziny**
+- Kalendarz z wybranym miesiącem
+- Po wyborze daty → automatyczne ładowanie dostępnych godzin
+- **System dostępności**:
+  - Fetch: `GET /api/availability?serviceId=X&packageId=Y&date=YYYY-MM-DD`
+  - Wyświetla godziny 0-23 z oznaczeniem dostępności
+  - Niedostępne godziny: wyszarzone z powodem (`booked_session`, `booked_event`, `outside_hours`)
 
 #### **Krok 4: Formularz Danych**
-- **Pola obowiązkowe**: Imię, Email, Termin, Pakiet, RODO
-- **Pola opcjonalne**: Telefon, Notatki
-- **Pola warunkowe**: Jeśli usługa = "Ślub", "Przyjęcie" lub "Urodziny" → pojawiają się pola Miasto i Miejsce (obowiązkowe)
 
-#### **Podsumowanie**
-- Przezroczysty box z:
-  - Nazwą usługi
-  - Nazwą pakietu
-  - Ceną do zapłaty
-- Przycisk submit:
-  - Jeśli `booking_require_payment = true` → "💳 Przejdź do Płatności"
-  - Jeśli `booking_require_payment = false` → "✅ Potwierdź Rezerwację"
+**Pola obowiązkowe:**
+- Imię i nazwisko
+- Email
+- RODO (checkbox)
 
-#### **Po Submissji**
-```javascript
-// Jeśli płatność WYMAGANA:
-toast.success('✅ Rezerwacja utworzona! Przejdź do płatności...');
-// TODO: redirect to /rezerwacja/platnosc?booking_id=123
+**Pola opcjonalne:**
+- Telefon
+- Uwagi
 
-// Jeśli BRAK płatności:
-toast.success('✅ Rezerwacja potwierdzona! Email wysłany.');
-window.location.href = '/rezerwacja/potwierdzenie';
-```
+**Pola warunkowe** (jeśli usługa = Ślub/Przyjęcie/Urodziny):
+- Miasto (wymagane)
+- Miejsce (wymagane)
 
-### Załadowanie Danych
-```typescript
-// 1. Fetch service types + packages
-GET /api/service-types
-// Response: { serviceTypes: ServiceType[] }
+**Promocje:**
+- Kod promocyjny → weryfikacja przez `POST /api/promo-codes`
+- Karta podarunkowa → weryfikacja przez `POST /api/gift-cards`
+- Wyświetlenie rabatu i końcowej ceny
 
-// 2. Fetch booking settings
-GET /api/settings/booking
-// Response: { settings: { 
-//   require_payment: boolean, 
-//   payment_method: string,
-//   currency: string,
-//   min_days_ahead: number
-// }}
-```
-
-### Styl & Responsywność
-- **Kolory**: Black background, zinc-900/800 cards, amber-500 accents
-- **Font**: "text-white", "font-bold", "text-3xl" dla nagłówków
-- **Rounded**: "rounded-3xl" dla sekcji, "rounded-2xl" dla kafelków
-- **Breakpoints**: Mobile-first, md (768px), lg (1024px)
-- **Animacje**: Sonner toasts (top-right), hover scale, border transitions
+**Przycisk submit:**
+- "💳 Przejdź do Płatności"
+- Tworzy rezerwację → przekierowuje do Stripe Checkout
 
 ---
 
-## 👨‍💼 Admin Panel - Zarządzanie Pakietami (`/admin/rezerwacja`)
+### Flow po Submissji
+
+```javascript
+1. POST /api/bookings → tworzy booking (status: pending)
+2. POST /api/checkout → tworzy Stripe Checkout Session
+   - Jeśli sukces → redirect na Stripe URL
+   - Jeśli brak Stripe setup → fallback alert i przekierowanie na /rezerwacja/potwierdzenie
+3. Email automatyczny:
+   - Dla klienta: Potwierdzenie rezerwacji
+   - Dla admina: Powiadomienie o nowej rezerwacji
+```
+
+---
+
+## 🛠️ Panel Admina (`/admin/rezerwacja`)
 
 ### Dostęp
 ```
 /admin/rezerwacja
 ```
-*Wymaga logowania (JWT token)*
+*Brak autentykacji (zgodnie z wcześniejszym usunięciem auth dla tego endpointa)*
 
-### Funkcjonalność
+### Funkcjonalności
 
-#### **1. Lista Usług**
-Dla każdej usługi wyświetla się karta z:
-- Ikoną emoji + nazwą
-- Opisem
-- Przycisk "Edytuj usługę"
-- Grid pakietów (3-kolumnowy)
+#### 1. **Lista Usług**
+- Wyświetla wszystkie `ServiceType` z pakietami
+- Dla każdej usługi:
+  - Ikona emoji + nazwa + opis
+  - Przycisk "Edytuj usługę" (otwiera modal)
+  - Grid pakietów (3 kolumny)
 
-#### **2. Zarządzanie Pakietami**
+#### 2. **Zarządzanie Pakietami**
 
-**Wyświetlanie pakietu (karta):**
-- Emoji + nazwa + cena + godziny
-- Status badge (Aktywny/Nieaktywny)
-- Przycisk "Edytuj" → otwiera modal
-- Przycisk "Usuń" → confirmation dialog
+**Karta pakietu:**
+- Emoji + Nazwa + Cena + Godziny
+- Badge statusu (Aktywny/Nieaktywny)
+- Przyciski:
+  - "Edytuj" → otwiera modal edycji
+  - "Usuń" → confirmation dialog
 
-**Edycja pakietu (modal):**
-- Nazwa pakietu
-- Emoji ikona
-- Godziny (number input)
-- Cena w PLN (number input)
-- Opis krótki (subtitle)
-- Opis pełny (textarea)
-- Checkbox "Pakiet aktywny"
-- Przyciski: Anuluj | Zapisz
+**Modal - Edycja/Tworzenie pakietu:**
+- **Pola**:
+  - Nazwa (text)
+  - Emoji (text)
+  - Godziny (number)
+  - Cena w PLN (number) - **uwaga**: zapisywana w groszach na backendzie
+  - Opis krótki (`subtitle`)
+  - Opis pełny (`description`)
+  - Dostępne godziny (`available_hours`) - format CSV: "9,10,11,12,13,14,15,16,17"
+  - Checkbox: "Blokuje cały dzień"
+  - Checkbox: "Pakiet aktywny"
+- **Akcje**:
+  - Anuluj
+  - Zapisz → `POST /api/packages`
 
 **Dodawanie pakietu:**
-Przycisk "➕ Dodaj pakiet do [Nazwa Usługi]" tworzy nowy pakiet z:
-```typescript
-{
-  id: 0,
-  service_id: service.id,
-  name: '',
-  icon: '📦',
-  description: '',
-  hours: 1,
-  price: 0,
-  subtitle: '',
-  features: '[]',
-  order: lastOrder + 1,
-  is_active: true
-}
-```
-
-#### **3. API Calls (Admin)**
-
-**Załadowanie pakietów:**
-```http
-GET /api/service-types
-Headers: Authorization: Bearer {token}
-Response: { serviceTypes: ServiceType[] }
-```
-
-**Dodanie/Edycja pakietu:**
-```http
-POST /api/packages
-Headers: 
-  - Authorization: Bearer {token}
-  - Content-Type: application/json
-Body: {
-  id?: number,
-  service_id: number,
-  name: string,
-  icon: string,
-  description: string,
-  hours: number,
-  price: number,
-  subtitle: string,
-  features: string (JSON),
-  is_active: boolean
-}
-Response: { success: true, package: Package }
-```
-
-**Usunięcie pakietu:**
-```http
-DELETE /api/packages?id={id}
-Headers: Authorization: Bearer {token}
-Response: { success: true }
-```
+- Przycisk "➕ Dodaj pakiet do [Nazwa Usługi]"
+- Tworzy pusty pakiet z domyślnymi wartościami:
+  ```typescript
+  {
+    id: 0,
+    service_id: service.id,
+    name: '',
+    icon: '📦',
+    hours: 1,
+    price: 0,
+    order: lastOrder + 1,
+    is_active: true
+  }
+  ```
 
 ---
 
 ## 🔌 API Endpoints
 
-### Public Endpoints (bez autentykacji)
+### **Public Endpoints** (bez autentykacji)
 
-#### 1. **GET /api/service-types**
+#### `GET /api/service-types`
 Pobiera wszystkie aktywne usługi z pakietami.
-```javascript
-// Request
-fetch('/api/service-types')
 
-// Response
+**Request:**
+```http
+GET /api/service-types
+```
+
+**Response (200 OK):**
+```json
 {
+  "success": true,
   "serviceTypes": [
     {
       "id": 1,
@@ -257,7 +316,7 @@ fetch('/api/service-types')
           "icon": "⭐",
           "price": 19900,
           "hours": 2,
-          "subtitle": "2h sesji",
+          "subtitle": "2h sesji + edycja",
           "features": "[\"Edycja zdjęć\", \"Album PDF\"]",
           "is_active": true
         }
@@ -267,49 +326,74 @@ fetch('/api/service-types')
 }
 ```
 
-#### 2. **GET /api/settings/booking**
-Pobiera ustawienia rezerwacji.
-```javascript
-// Request
-fetch('/api/settings/booking')
+---
 
-// Response
+#### `GET /api/availability`
+Sprawdza dostępność godzin dla danej daty i pakietu.
+
+**Request:**
+```http
+GET /api/availability?serviceId=1&packageId=2&date=2025-12-20
+```
+
+**Response (200 OK):**
+```json
 {
   "success": true,
-  "settings": {
-    "booking_require_payment": false,
-    "booking_payment_method": "stripe",
-    "booking_currency": "PLN",
-    "booking_min_days_ahead": 7
-  }
+  "date": "2025-12-20",
+  "dayOfWeek": 6,
+  "isWeekend": true,
+  "packageName": "Złoty",
+  "packageHours": 2,
+  "dayCompletelyBlocked": false,
+  "slots": [
+    { "hour": 9, "available": true },
+    { "hour": 10, "available": true },
+    { "hour": 11, "available": false, "reason": "booked_session" },
+    { "hour": 12, "available": false, "reason": "booked_session" },
+    { "hour": 13, "available": true }
+  ]
 }
 ```
 
-#### 3. **POST /api/bookings**
-Tworzy nową rezerwację.
-```javascript
-// Request
-fetch('/api/bookings', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    service: "Sesja",
-    package: "Złoty",
-    hours: 2,
-    price: 19900,
-    date: "2025-12-20",
-    start_time: "14:00",
-    end_time: "16:00",
-    name: "Jan Kowalski",
-    email: "jan@example.com",
-    phone: "+48123456789",
-    venue_city: "Toruń",
-    venue_place: "Park",
-    notes: "Sesja rodzinna"
-  })
-})
+**Logika dostępności:**
+1. **Ślub/Przyjęcie/Urodziny** (`blocks_entire_day = true`) → blokuje cały dzień (wszystkie godziny 0-23)
+2. **Sesja** → blokuje tylko godziny w zakresie `start_time` – `end_time`
+3. Jeśli dzień zajęty przez wydarzenie → `dayCompletelyBlocked: true`, wszystkie sloty z `reason: "booked_event"`
 
-// Response
+---
+
+#### `POST /api/bookings`
+Tworzy nową rezerwację.
+
+**Request:**
+```http
+POST /api/bookings
+Content-Type: application/json
+
+{
+  "service": "Sesja",
+  "package": "Złoty",
+  "hours": 2,
+  "price": 19900,
+  "originalPrice": 19900,
+  "date": "2025-12-20",
+  "start_time": "14:00",
+  "end_time": "16:00",
+  "name": "Jan Kowalski",
+  "email": "jan@example.com",
+  "phone": "+48123456789",
+  "venue_city": null,
+  "venue_place": null,
+  "notes": "Sesja rodzinna",
+  "promo_code": null,
+  "gift_card_code": null,
+  "ics": "<ICS calendar attachment>"
+}
+```
+
+**Response (200 OK):**
+```json
 {
   "ok": true,
   "booking": {
@@ -317,72 +401,274 @@ fetch('/api/bookings', {
     "service": "Sesja",
     "package": "Złoty",
     "status": "pending",
-    "created_at": "2025-12-10T15:30:00Z"
+    "created_at": "2025-12-11T08:00:00Z"
   }
 }
 ```
 
-### Protected Endpoints (wymagają JWT token w Authorization header)
+**Side effects:**
+1. Wysłanie emaila do klienta (potwierdzenie)
+2. Wysłanie emaila do admina (powiadomienie o nowej rezerwacji)
 
-#### 4. **GET /api/packages**
-Pobiera wszystkie pakiety (z filtrem opcjonalnym).
+---
 
-#### 5. **POST /api/packages**
+#### `POST /api/checkout`
+Tworzy sesję Stripe Checkout.
+
+**Request:**
+```http
+POST /api/checkout
+Content-Type: application/json
+
+{
+  "bookingId": 123,
+  "amount": 19900,
+  "email": "jan@example.com",
+  "serviceName": "Sesja",
+  "packageName": "Złoty"
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "url": "https://checkout.stripe.com/c/pay/cs_test_..."
+}
+```
+
+**Frontend handling:**
+```javascript
+if (checkoutRes.ok) {
+  const { url } = await checkoutRes.json();
+  window.location.href = url; // Przekierowanie na Stripe
+}
+```
+
+---
+
+### **Admin Endpoints** (częściowe auth - zobacz uwagi)
+
+#### `POST /api/packages`
 Tworzy lub aktualizuje pakiet.
 
-#### 6. **DELETE /api/packages?id={id}**
+**Request:**
+```http
+POST /api/packages
+Content-Type: application/json
+
+{
+  "id": 0,                    // 0 = nowy, >0 = update
+  "service_id": 1,
+  "name": "Platynowy",
+  "icon": "👑",
+  "description": "Premium package",
+  "hours": 4,
+  "price": 499,              // Admin podaje PLN, backend konwertuje na grosze
+  "subtitle": "4h + album",
+  "features": "[\"Edycja\", \"Album\", \"Pendrive\"]",
+  "available_hours": "9,10,11,12,13,14,15,16,17",
+  "blocks_entire_day": false,
+  "is_active": true
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "package": { ... }
+}
+```
+
+> **Uwaga**: Price conversion - admin wpisuje `499` (PLN), backend zapisuje jako `49900` (grosze)
+
+---
+
+#### `DELETE /api/packages?id={id}`
 Usuwa pakiet.
 
-#### 7. **GET /api/service-types** (admin)
-Pobiera usługi z pełnymi danymi dla admina.
+**Request:**
+```http
+DELETE /api/packages?id=5
+```
 
-#### 8. **POST /api/service-types**
-Tworzy lub aktualizuje usługę.
+**Response (200 OK):**
+```json
+{
+  "success": true
+}
+```
 
 ---
 
 ## 📧 Email Notifications
 
-### Automatyczne Emaile
+### Konfiguracja SMTP
 
-#### **1. Email do Klienta**
-```
-Subject: ✨ Potwierdzenie rezerwacji - [Nazwa Usługi]
-Content: 
-- Potwierdzenie rezerwacji
-- Detale sesji (data, czas, lokalizacja)
-- Cena
+Ustawienia przechowywane w tabeli `settings`:
+- `smtp_host`
+- `smtp_port`
+- `smtp_user`
+- `smtp_password`
+- `smtp_from`
+
+### Email do Klienta
+
+**Subject**: `✨ Potwierdzenie rezerwacji - {service}`
+
+**Template**: `generateClientEmail()` z `@/lib/email-templates`
+
+**Zawiera**:
+- Potwierdzenie danych rezerwacji
+- Data i godzina sesji
+- Lokalizacja (jeśli podana)
+- Cena (oryginalna + po rabatach)
+- Kod promocyjny / Karta podarunkowa (jeśli użyta)
 - Link do strony (TODO)
-```
 
-#### **2. Email do Fotografa**
-```
-Subject: 🎉 Nowa rezerwacja: [Imię] - [Usługa] (data)
-Content:
-- Pełne dane klienta
-- Detale sesji
-- Cena
-- Notatki dodatkowe
-```
+### Email do Fotografa
 
-**Konfiguracja:**
-- `ADMIN_EMAIL = "przemyslaw@wlasniewski.pl"` (w `/api/bookings/route.ts`)
-- SMTP configured w `.env.local`
+**Subject**: `🎉 Nowa rezerwacja: {name} - {service} ({date})`
+
+**Template**: `generateAdminEmail()` z `@/lib/email-templates`
+
+**Zawiera**:
+- Pełne dane klienta (imię, email, telefon)
+- Szczegóły sesji
+- Cena i rabaty
+- Notatki klienta
+
+**Admin email**: `przemyslaw@wlasniewski.pl` (hardcoded w `/api/bookings/route.ts`)
 
 ---
 
-## ⚙️ Konfiguracja & Ustawienia
+## 💳 Integracja Stripe
 
-### Gdzie edytować ustawienia rezerwacji?
+### Setup
 
-#### **Opcja 1: Bezpośrednio w panelu admina**
-*(TODO: Dodać UI dla booking settings)*
+**Wymagane zmienne środowiskowe:**
+```env
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_PUBLISHABLE_KEY=pk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+```
 
-Obecnie brakuje UI do edycji ustawień. Muszą być edytowane przez:
+Przechowywane również w tabeli `settings`:
+- `stripe_secret_key`
+- `stripe_publishable_key`
+- `stripe_webhook_secret`
 
-#### **Opcja 2: Bezpośrednie wstawienie w DB**
+### Checkout Flow
+
+1. **Klient wypełnia formularz** → `POST /api/bookings` (tworzy booking ze statusem `pending`)
+2. **Backend tworzy sesję Stripe** → `POST /api/checkout`
+   - Line item: nazwa pakietu, cena (w groszach), quantity: 1
+   - Success URL: `/rezerwacja/potwierdzenie?session_id={CHECKOUT_SESSION_ID}`
+   - Cancel URL: `/rezerwacja?cancelled=true`
+3. **Redirect na Stripe Checkout**
+4. **Po płatności**:
+   - Stripe webhook → aktualizacja statusu booking na `paid`
+   - Przekierowanie na `/rezerwacja/potwierdzenie`
+
+> **TODO**: Webhook handler dla Stripe (`/api/webhooks/stripe`) - obecnie brak implementacji
+
+---
+
+## 🎟️ Rabaty: Kody Promocyjne i Karty Podarunkowe
+
+### Kody Promocyjne
+
+**Model**: `PromoCode`
+
+**API**: `POST /api/promo-codes`
+
+**Request:**
+```json
+{
+  "code": "ZIMA2025"
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "promo_code": {
+    "code": "ZIMA2025",
+    "discount_value": 20,
+    "discount_type": "percentage"
+  }
+}
+```
+
+**Typy rabatów:**
+- `percentage`: Procent (np. `20` = 20%)
+- `fixed`: Kwota stała w PLN (np. `50` = 50 zł rabatu)
+
+**Zastosowanie w kalkulacji ceny:**
+```typescript
+let price = chosenPackage.price; // w groszach
+
+if (discount.type === "percentage") {
+  price -= Math.floor((price * discount.value) / 100);
+} else {
+  price -= discount.value * 100; // Convert PLN to cents
+}
+```
+
+### Karty Podarunkowe
+
+**Model**: `GiftCard`
+
+**API**: `POST /api/gift-cards`
+
+**Request:**
+```json
+{
+  "code": "GIFT-ABCD-1234"
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "gift_card": {
+    "code": "GIFT-ABCD-1234",
+    "amount": 100,
+    "is_used": false
+  }
+}
+```
+
+**Zastosowanie w kalkulacji:**
+```typescript
+if (giftCard) {
+  price -= giftCard.amount * 100; // Convert PLN to cents
+}
+
+finalPrice = Math.max(0, price); // Cena nie może być ujemna
+```
+
+---
+
+## ⚙️ Konfiguracja i Ustawienia
+
+### Booking Settings
+
+Przechowywane w tabeli `Setting` (single row, id=1):
+
+| Pole | Typ | Domyślna | Opis |
+|------|-----|----------|------|
+| `booking_require_payment` | Boolean | `false` | Czy płatność wymagana? |
+| `booking_payment_method` | String | `"stripe"` | Metoda płatności: `stripe` lub `payu` |
+| `booking_currency` | String | `"PLN"` | Waluta |
+| `booking_min_days_ahead` | Int | `7` | Min. dni naprzód do rezerwacji |
+| `booking_terms_url` | String | - | URL do regulaminu |
+
+### Edycja ustawień
+
+**Opcja 1: Bezpośrednio w bazie danych**
 ```sql
-UPDATE setting SET 
+UPDATE settings SET 
   booking_require_payment = true,
   booking_payment_method = 'stripe',
   booking_currency = 'PLN',
@@ -390,88 +676,15 @@ UPDATE setting SET
 WHERE id = 1;
 ```
 
-#### **Opcja 3: API call (z auth)**
-```javascript
-fetch('/api/settings', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${adminToken}`
-  },
-  body: JSON.stringify({
-    booking_require_payment: true,
-    booking_payment_method: 'stripe',
-    booking_currency: 'PLN',
-    booking_min_days_ahead: 7
-  })
-})
-```
-
----
-
-## 🎨 Customization
-
-### Zmiana Waluty
-```javascript
-// W /api/settings/booking (lub bezpośrednio w DB)
-booking_currency = 'EUR' // zamiast 'PLN'
-```
-
-### Zmiana Minimalnego Okresu Naprzód
-```javascript
-// Aby rezerwować min. 14 dni naprzód:
-booking_min_days_ahead = 14
-```
-
-### Toggle Płatności
-```javascript
-// Jeśli chcesz wyłączyć płatność (tylko rezerwacja):
-booking_require_payment = false
-
-// Jeśli chcesz włączyć płatność:
-booking_require_payment = true
-booking_payment_method = 'stripe' // lub 'payu'
-```
-
-### Dodanie Nowej Usługi
-1. Otwórz `/admin/rezerwacja`
-2. (TODO: Dodać UI) Lub API:
-```javascript
-POST /api/service-types
-{
-  "name": "Połów",
-  "icon": "🎣",
-  "description": "Sesja nad morzem",
-  "is_active": true
-}
-```
-
-### Edycja Pakietu
-1. Otwórz `/admin/rezerwacja`
-2. Najedź na kafelek pakietu
-3. Kliknij "Edytuj"
-4. Zmień dane
-5. Kliknij "Zapisz"
-
----
-
-## 🚀 Deployment Checklist
-
-- [ ] Rezerwacja strona testowana na mobile
-- [ ] Admin panel testowany
-- [ ] Service types + packages załadowane z danymi
-- [ ] Booking settings skonfigurowane
-- [ ] SMTP email configured
-- [ ] Stripe (jeśli `require_payment = true`) initialized
-- [ ] URL rezerwacji linkowany z głównej strony
-- [ ] Potwierdzenie rezerwacji strona stworzona (`/rezerwacja/potwierdzenie`)
-- [ ] Strona płatności stworzona (`/rezerwacja/platnosc`) - jeśli wymagana
+**Opcja 2: TODO - Panel admina**
+Obecnie brak UI do edycji `booking_*` settings w panelu admina. Konieczne dodanie sekcji w `/admin/settings` lub `/admin/rezerwacja`.
 
 ---
 
 ## 🐛 Troubleshooting
 
 ### Problem: Brak pakietów na stronie rezerwacji
+
 **Rozwiązanie:**
 ```bash
 # 1. Sprawdź czy service types istnieją
@@ -479,61 +692,196 @@ curl http://localhost:3000/api/service-types
 
 # 2. Sprawdź czy są aktywne (is_active = true)
 # 3. Sprawdź czy mają packages
+# 4. Sprawdź czy packages są aktywne
 
-# 4. Reload strony rezerwacji (Ctrl+Shift+R)
+# 5. Reload strony (Ctrl+Shift+R)
 ```
 
-### Problem: Ustawienia rezerwacji nie działają
-**Rozwiązanie:**
+**SQL debug:**
+```sql
+SELECT st.name, st.is_active, COUNT(p.id) as package_count
+FROM service_types st
+LEFT JOIN packages p ON p.service_id = st.id AND p.is_active = true
+GROUP BY st.id;
+```
+
+---
+
+### Problem: Godziny nie ładują się po wyborze daty
+
+**Możliwe przyczyny:**
+1. Błąd API `/api/availability`
+2. Brak `packageId` w parametrach
+3. Błąd formatu daty (wymagane: `YYYY-MM-DD`)
+
+**Debug:**
+```javascript
+// Otwórz DevTools → Network
+// Sprawdź request do /api/availability
+// Powinien być status 200 i JSON z `slots`
+
+// Przykład:
+GET /api/availability?serviceId=1&packageId=2&date=2025-12-20
+```
+
+**Backend logs:**
 ```bash
-# 1. Sprawdź czy settings istnieją w bazie
-curl http://localhost:3000/api/settings/booking
-
-# 2. Jeśli puste, wstaw manualne settings:
-UPDATE setting SET 
-  booking_require_payment = false,
-  booking_payment_method = 'stripe',
-  booking_currency = 'PLN',
-  booking_min_days_ahead = 7
-WHERE id = 1;
-
-# 3. Reload strony
+npm run dev
+# Sprawdź console dla błędów prisma
 ```
+
+---
 
 ### Problem: Email nie jest wysyłany
+
 **Rozwiązanie:**
 ```bash
-# 1. Sprawdź czy SMTP configured w .env.local
+# 1. Sprawdź SMTP settings w bazie
+SELECT smtp_host, smtp_port, smtp_user FROM settings WHERE id = 1;
+
 # 2. Sprawdź czy ADMIN_EMAIL ustawiony w /api/bookings/route.ts
-# 3. Sprawdź logi serwera (console.error)
-# 4. Sprawdź czy booking został zapisany (query DB)
+# Aktualnie: "przemyslaw@wlasniewski.pl"
+
+# 3. Sprawdź logi serwera
+# Console.error powinien pokazać błąd wysyłki
+
+# 4. Test SMTP connection
+# TODO: Dodać endpoint /api/test-email
 ```
+
+---
+
+### Problem: Stripe redirect nie działa
+
+**Możliwe przyczyny:**
+1. Brak `STRIPE_SECRET_KEY` w `.env`
+2. Niepoprawny `bookingId`
+3. Błąd tworzenia Checkout Session
+
+**Debug:**
+```javascript
+// Sprawdź response z /api/checkout
+const checkoutRes = await fetch('/api/checkout', { ... });
+const data = await checkoutRes.json();
+console.log(data); // Powinno mieć { url: "..." }
+```
+
+**Fallback behavior:**
+Jeśli Stripe nie jest skonfigurowany:
+```javascript
+alert("✅ Rezerwacja utworzona!\n\nPrzejdź do panelu aby dokonać płatności.");
+window.location.href = "/rezerwacja/potwierdzenie";
+```
+
+---
+
+## 🎨 Customization
+
+### Zmiana Waluty
+```sql
+UPDATE settings SET booking_currency = 'EUR' WHERE id = 1;
+```
+Frontend automatycznie wyświetli walutę z settings.
+
+### Zmiana Minimalnego Okresu Rezerwacji
+```sql
+UPDATE settings SET booking_min_days_ahead = 14 WHERE id = 1;
+```
+
+### Toggle Płatności (włącz/wyłącz)
+```sql
+-- Wyłącz płatność (tylko rezerwacja)
+UPDATE settings SET booking_require_payment = false WHERE id = 1;
+
+-- Włącz płatność
+UPDATE settings SET booking_require_payment = true WHERE id = 1;
+```
+
+**Efekt na frontend:**
+- `false` → Przycisk: "✅ Potwierdź Rezerwację"
+- `true` → Przycisk: "💳 Przejdź do Płatności"
+
+### Dodanie Nowej Usługi
+
+**Opcja 1: Panel admina**
+1. TODO: Brak UI do dodawania `ServiceType`
+2. Obecnie trzeba edytować bezpośrednio w bazie
+
+**Opcja 2: SQL**
+```sql
+INSERT INTO service_types (name, icon, description, "order", is_active)
+VALUES ('Chrzest', '👼', 'Fotografia chrzcin', 4, true);
+```
+
+---
+
+## 🚀 Deployment Checklist
+
+- [ ] **Database**
+  - [ ] Service types załadowane z danymi
+  - [ ] Packages załadowane z danymi (aktywne)
+  - [ ] Booking settings skonfigurowane
+- [ ] **Email**
+  - [ ] SMTP configured w `settings`
+  - [ ] ADMIN_EMAIL poprawnie ustawiony
+  - [ ] Test email wysyłany poprawnie
+- [ ] **Payments**
+  - [ ] Stripe keys w `.env` (production)
+  - [ ] Webhook URL skonfigurowany w Stripe Dashboard
+  - [ ] Test płatności przeprowadzony
+- [ ] **Frontend**
+  - [ ] Strona `/rezerwacja` testowana na mobile
+  - [ ] Strona `/rezerwacja/potwierdzenie` stworzona
+  - [ ] Link `/rezerwacja` dodany do menu głównego
+- [ ] **Admin Panel**
+  - [ ] `/admin/rezerwacja` testowany
+  - [ ] CRUD pakietów działa poprawnie
+
+---
+
+## 🔄 Changelog
+
+### v3.0 (2025-12-11)
+- ✅ **Nowa strona rezerwacji** z 4-krokowym formularzem
+- ✅ **Inteligentny system dostępności** (blokowanie całego dnia vs godziny)
+- ✅ **Admin panel** do zarządzania pakietami i usługami
+- ✅ **API endpoints** dla wszystkich operacji CRUD
+- ✅ **Stripe integration** - Checkout flow
+- ✅ **Kody promocyjne** i **karty podarunkowe**
+- ✅ **Automatyczne emaile** (klient + admin)
+- ✅ **Mobile-responsive design**
+- 🔲 TODO: Webhook handler dla Stripe
+- 🔲 TODO: Strona `/rezerwacja/potwierdzenie`
+- 🔲 TODO: Admin UI do edycji `booking_*` settings
+- 🔲 TODO: Admin UI do CRUD `ServiceType`
+
+### v2.0 (2025-12-10)
+- ✅ Initial version with basic booking system
 
 ---
 
 ## 📞 Kontakt
 
-- **Fotografka**: Przemysław Właśniewski
-- **Email**: przemyslaw@wlasniewski.pl
-- **Strona**: https://wlasniewski.pl
+**Fotografka**: Przemysław Właśniewski  
+**Email**: przemyslaw@wlasniewski.pl  
+**Strona**: https://wlasniewski.pl
 
 ---
 
-## 📝 Changelog
+## 🔍 Appendix: Kluczowe Pliki
 
-### v2.0 (2025-12-10)
-- ✅ Nowa strona rezerwacji z 4-stopniowym formularzem
-- ✅ Admin panel do zarządzania pakietami
-- ✅ API endpoints dla service types, packages, bookings
-- ✅ Automatyczne emaile
-- ✅ Booking settings (currency, payment toggle, min days)
-- ✅ Mobile-responsive design
-- 🔲 Stripe integration (placeholder)
-- 🔲 Confirmation page (`/rezerwacja/potwierdzenie`)
-- 🔲 Payment page (`/rezerwacja/platnosc`)
-- 🔲 Admin UI do edycji booking settings
+| Plik | Opis |
+|------|------|
+| `src/app/rezerwacja/page.tsx` | Główna strona rezerwacji (4 kroki) |
+| `src/app/admin/rezerwacja/page.tsx` | Panel admina - zarządzanie pakietami |
+| `src/app/api/bookings/route.ts` | API rezerwacji + email notifications |
+| `src/app/api/availability/route.ts` | Logika dostępności godzin |
+| `src/app/api/service-types/route.ts` | CRUD dla usług |
+| `src/app/api/packages/route.ts` | CRUD dla pakietów |
+| `src/app/api/checkout/route.ts` | Stripe Checkout Session |
+| `src/lib/email-templates.ts` | Szablony HTML emaili |
+| `prisma/schema.prisma` | Definicje modeli DB |
 
 ---
 
-**Ostatnia aktualizacja**: 10 grudnia 2025
-
+**Koniec dokumentacji** ✅
