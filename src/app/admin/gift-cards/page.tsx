@@ -264,7 +264,12 @@ export default function GiftCardsAdmin() {
                         }
                         @media print {
                             body { padding: 0; background: white; }
-                            .print-container { page-break-inside: avoid; }
+                            .print-container { 
+                                page-break-inside: avoid; 
+                                -webkit-print-color-adjust: exact !important;
+                                print-color-adjust: exact !important;
+                                color-adjust: exact !important;
+                            }
                         }
                         .print-container {
                             width: 540px;
@@ -279,6 +284,9 @@ export default function GiftCardsAdmin() {
                             box-shadow: 0 10px 40px rgba(0,0,0,0.3);
                             position: relative;
                             overflow: hidden;
+                            -webkit-print-color-adjust: exact !important;
+                            print-color-adjust: exact !important;
+                            color-adjust: exact !important;
                         }
                         .emoji { font-size: 60px; position: absolute; opacity: 0.2; }
                         .emoji-top { top: 10px; right: 20px; }
