@@ -1,11 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
-import Stripe from 'stripe';
 import { nanoid } from 'nanoid';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '');
-
 export const dynamic = 'force-dynamic';
+
+let stripe: any = null;
+
+function getStripe() {
+    if (!stripe) {
+        const Stripe = require('stripe').default;
+        stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '');
+    }
+    return stripe;
+}
 
 export async function GET() {
     return NextResponse.json(
@@ -82,7 +89,8 @@ export async function POST(request: NextRequest) {
         });
 
         // Create Stripe Checkout Session
-        const session = await stripe.checkout.sessions.create({
+        const stripeClient = getStripe();
+        const session = await stripeClient.checkout.sessions.create({
             payment_method_types: ['card'],
             mode: 'payment',
             customer_email: customerEmail,
