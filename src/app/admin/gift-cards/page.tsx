@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Gift, Mail, Printer, Copy, Trash2, Plus } from 'lucide-react';
+import { Gift, Mail, Printer, Copy, Trash2, Plus, Share2, Facebook, Send } from 'lucide-react';
 import GiftCard from '@/components/GiftCard';
 import toast from 'react-hot-toast';
 import { getApiUrl } from '@/lib/api-config';
@@ -228,21 +228,163 @@ export default function GiftCardsAdmin() {
     };
 
     const printCard = (card: GiftCard) => {
-        const printWindow = window.open('', '', 'width=800,height=600');
+        const printWindow = window.open('', '', 'width=1000,height=700');
         if (printWindow) {
+            const themes: any = {
+                christmas: { bg: 'linear-gradient(135deg, #c41e3a 0%, #165b33 100%)', emoji: '🎄' },
+                wosp: { bg: 'linear-gradient(135deg, #e63946 0%, #a4161a 100%)', emoji: '❤️' },
+                valentines: { bg: 'linear-gradient(135deg, #e01e5a 0%, #c5192d 100%)', emoji: '💝' },
+                easter: { bg: 'linear-gradient(135deg, #ffd60a 0%, #ffc300 100%)', emoji: '🐰' },
+                halloween: { bg: 'linear-gradient(135deg, #ff6b35 0%, #f7931e 100%)', emoji: '👻' },
+                'mothers-day': { bg: 'linear-gradient(135deg, #ff69b4 0%, #ff1493 100%)', emoji: '💐' },
+                'childrens-day': { bg: 'linear-gradient(135deg, #00d4ff 0%, #0099ff 100%)', emoji: '🎈' },
+                wedding: { bg: 'linear-gradient(135deg, #fff5ee 0%, #ffe4e1 100%)', emoji: '💒' },
+                birthday: { bg: 'linear-gradient(135deg, #ff6b9d 0%, #c44569 100%)', emoji: '🎂' }
+            };
+            
+            const theme = themes[card.theme] || themes.christmas;
+            
             printWindow.document.write(`
+                <!DOCTYPE html>
                 <html>
                 <head>
+                    <meta charset="UTF-8">
+                    <title>Karta Podarunkowa - ${card.code}</title>
                     <style>
-                        body { margin: 0; padding: 20px; background: white; }
-                        @page { size: landscape; margin: 0; }
-                        @media print { body { margin: 0; padding: 0; } }
+                        * { margin: 0; padding: 0; box-sizing: border-box; }
+                        body { 
+                            font-family: 'Arial', sans-serif; 
+                            background: #f5f5f5; 
+                            padding: 20px;
+                            display: flex;
+                            justify-content: center;
+                            align-items: center;
+                            min-height: 100vh;
+                        }
+                        @media print {
+                            body { padding: 0; background: white; }
+                            .print-container { page-break-inside: avoid; }
+                        }
+                        .print-container {
+                            width: 540px;
+                            height: 340px;
+                            background: ${theme.bg};
+                            border-radius: 20px;
+                            padding: 30px;
+                            color: white;
+                            display: flex;
+                            flex-direction: column;
+                            justify-content: space-between;
+                            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+                            position: relative;
+                            overflow: hidden;
+                        }
+                        .emoji { font-size: 60px; position: absolute; opacity: 0.2; }
+                        .emoji-top { top: 10px; right: 20px; }
+                        .emoji-bottom { bottom: 10px; left: 20px; }
+                        .header {
+                            text-align: center;
+                            z-index: 2;
+                        }
+                        .title {
+                            font-size: 32px;
+                            font-weight: bold;
+                            margin-bottom: 10px;
+                            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+                        }
+                        .subtitle {
+                            font-size: 14px;
+                            opacity: 0.9;
+                            margin-bottom: 20px;
+                        }
+                        .middle {
+                            text-align: center;
+                            z-index: 2;
+                        }
+                        .recipient {
+                            font-size: 12px;
+                            opacity: 0.85;
+                            margin-bottom: 15px;
+                        }
+                        .amount {
+                            font-size: 48px;
+                            font-weight: bold;
+                            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+                        }
+                        .footer {
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: flex-end;
+                            z-index: 2;
+                        }
+                        .code-box {
+                            background: rgba(255,255,255,0.2);
+                            border: 2px solid rgba(255,255,255,0.5);
+                            border-radius: 8px;
+                            padding: 10px 15px;
+                            text-align: center;
+                        }
+                        .code {
+                            font-size: 18px;
+                            font-weight: bold;
+                            letter-spacing: 2px;
+                        }
+                        .sender {
+                            font-size: 12px;
+                            opacity: 0.8;
+                        }
+                        .print-button {
+                            margin-top: 30px;
+                            text-align: center;
+                        }
+                        button {
+                            padding: 10px 30px;
+                            font-size: 16px;
+                            background: #4CAF50;
+                            color: white;
+                            border: none;
+                            border-radius: 5px;
+                            cursor: pointer;
+                        }
+                        button:hover {
+                            background: #45a049;
+                        }
+                        @media print {
+                            button { display: none; }
+                        }
                     </style>
                 </head>
-                <body onload="window.print(); window.close();">
-                    <div style="display: flex; justify-content: center; align-items: center; min-height: 100vh;">
-                        <div style="width: 540px; height: 340px; border: 2px dashed #ccc; padding: 20px;">
-                            <!-- Karta będzie tutaj -->
+                <body>
+                    <div style="width: 100%; display: flex; flex-direction: column; align-items: center;">
+                        <div class="print-container">
+                            <div class="emoji emoji-top">${theme.emoji}</div>
+                            <div class="emoji emoji-bottom">${theme.emoji}</div>
+                            
+                            <div class="header">
+                                <div class="title">${card.card_title || 'KARTA PODARUNKOWA'}</div>
+                                <div class="subtitle">${card.card_description || 'Życzenia pełnego sza!'}</div>
+                            </div>
+                            
+                            <div class="middle">
+                                <div class="recipient">${card.recipientName || 'Drogi odbiorco'}</div>
+                                <div class="amount">${card.value} zł</div>
+                            </div>
+                            
+                            <div class="footer">
+                                <div class="code-box">
+                                    <div style="font-size: 10px; opacity: 0.8; margin-bottom: 5px;">KOD PROMOCYJNY</div>
+                                    <div class="code">${card.code}</div>
+                                </div>
+                                <div style="text-align: right;">
+                                    <div class="sender">${card.senderName || 'Od Fotografa'}</div>
+                                    <div style="font-size: 11px; opacity: 0.7; margin-top: 3px;">wlasniewski.pl</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="print-button">
+                            <button onclick="window.print()">Drukuj</button>
+                            <button onclick="window.close()" style="margin-left: 10px; background: #999;">Zamknij</button>
                         </div>
                     </div>
                 </body>
@@ -250,6 +392,58 @@ export default function GiftCardsAdmin() {
             `);
             printWindow.document.close();
         }
+    };
+
+    const generateShareText = (card: GiftCard) => {
+        return `🎁 KARTA PODARUNKOWA - ${card.value}zł
+
+Otrzymałeś kartę podarunkową na sesję fotograficzną!
+
+💝 Kod promocyjny: ${card.code}
+📸 Wartość: ${card.value}zł
+
+✨ Specjalna oferta - sesja fotograficzna na wiele okazji:
+- Sesje ślubne
+- Fotografia rodzinna
+- Portrety biznesowe
+- i wiele więcej!
+
+📲 Sprawdź dostępne pakiety na: www.wlasniewski.pl
+✉️ Zarezerwuj swoją sesję: www.wlasniewski.pl/rezerwacja
+
+#fotograf #kartapodarunkowa #sesjasfotograficzna`;
+    };
+
+    const shareOnFacebook = (card: GiftCard) => {
+        const text = generateShareText(card);
+        const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent('https://www.wlasniewski.pl')}&quote=${encodeURIComponent(text)}`;
+        window.open(url, 'facebook-share', 'width=600,height=400');
+        toast.success('Otwórz Facebooka aby udostępnić');
+    };
+
+    const shareOnInstagram = (card: GiftCard) => {
+        const text = generateShareText(card);
+        navigator.clipboard.writeText(text);
+        toast.success('Tekst skopiowany! Otwórz Instagrama i wklej w Stories lub Feed');
+        window.open('https://instagram.com', '_blank');
+    };
+
+    const shareOnWhatsApp = (card: GiftCard) => {
+        const text = generateShareText(card);
+        const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+        window.open(url, '_blank');
+    };
+
+    const shareOnTelegram = (card: GiftCard) => {
+        const text = generateShareText(card);
+        const url = `https://t.me/share/url?url=${encodeURIComponent('https://www.wlasniewski.pl')}&text=${encodeURIComponent(text)}`;
+        window.open(url, '_blank');
+    };
+
+    const copyShareText = (card: GiftCard) => {
+        const text = generateShareText(card);
+        navigator.clipboard.writeText(text);
+        toast.success('Tekst skopiowany do schowka!');
     };
 
     const sendEmail = async (card: GiftCard) => {
@@ -262,7 +456,7 @@ export default function GiftCardsAdmin() {
                     'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({ 
-                    email: card.recipient_name,
+                    email: card.recipient_email,
                     logoUrl 
                 })
             });
@@ -541,6 +735,48 @@ export default function GiftCardsAdmin() {
                                     >
                                         <Trash2 className="w-4 h-4" />
                                     </button>
+                                </div>
+
+                                {/* Share Actions */}
+                                <div className="mt-4 pt-4 border-t border-zinc-700">
+                                    <p className="text-xs font-semibold text-zinc-400 mb-3">📢 UDOSTĘPNIJ NA MEDIACH SPOŁECZNYCH</p>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <button
+                                            onClick={() => shareOnFacebook(card)}
+                                            className="flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm transition-all"
+                                        >
+                                            <Facebook className="w-4 h-4" />
+                                            Facebook
+                                        </button>
+                                        <button
+                                            onClick={() => shareOnInstagram(card)}
+                                            className="flex items-center justify-center gap-2 px-3 py-2 bg-pink-600 hover:bg-pink-700 text-white rounded text-sm transition-all"
+                                        >
+                                            <span>📷</span>
+                                            Instagram
+                                        </button>
+                                        <button
+                                            onClick={() => shareOnWhatsApp(card)}
+                                            className="flex items-center justify-center gap-2 px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-sm transition-all"
+                                        >
+                                            <span>💬</span>
+                                            WhatsApp
+                                        </button>
+                                        <button
+                                            onClick={() => shareOnTelegram(card)}
+                                            className="flex items-center justify-center gap-2 px-3 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded text-sm transition-all"
+                                        >
+                                            <Send className="w-4 h-4" />
+                                            Telegram
+                                        </button>
+                                        <button
+                                            onClick={() => copyShareText(card)}
+                                            className="col-span-2 flex items-center justify-center gap-2 px-3 py-2 bg-zinc-700 hover:bg-zinc-600 text-white rounded text-sm transition-all"
+                                        >
+                                            <Copy className="w-4 h-4" />
+                                            Kopiuj tekst promki
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
