@@ -34,9 +34,7 @@ export default function AdminPackagesPage() {
     const [serviceTypes, setServiceTypes] = useState<ServiceType[]>([]);
     const [loading, setLoading] = useState(true);
     const [editingPackage, setEditingPackage] = useState<Package | null>(null);
-    const [editingService, setEditingService] = useState<ServiceType | null>(null);
     const [showPackageForm, setShowPackageForm] = useState(false);
-    const [showServiceForm, setShowServiceForm] = useState(false);
 
     // Load service types and packages
     useEffect(() => {
@@ -148,15 +146,6 @@ export default function AdminPackagesPage() {
                                         <p className="text-zinc-400 text-sm">{service.description}</p>
                                     </div>
                                 </div>
-                                <button
-                                    onClick={() => {
-                                        setEditingService(service);
-                                        setShowServiceForm(true);
-                                    }}
-                                    className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-500 transition"
-                                >
-                                    Edytuj usługę
-                                </button>
                             </div>
 
                             {/* Packages Grid */}
