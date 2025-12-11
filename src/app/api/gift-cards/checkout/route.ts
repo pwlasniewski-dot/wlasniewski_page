@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { nanoid } from 'nanoid';
+import { sendEmail } from '@/lib/email/sender';
 
 export const dynamic = 'force-dynamic';
 
@@ -154,6 +155,62 @@ export async function POST(request: NextRequest) {
             where: { id: order.id },
             data: { stripe_session_id: payuOrderId } // Reuse field for PayU order ID
         });
+
+        // Send confirmation email to customer
+        try {
+            const confirmationHtml = `
+                <html>
+                    <head>
+                        <meta charset="utf-8">
+                        <style>
+                            body { font-family: Arial, sans-serif; background: #0f0f0f; color: #fff; }
+                            .container { max-width: 600px; margin: 0 auto; background: #1a1a1a; padding: 40px; border-radius: 12px; }
+                            .header { text-align: center; margin-bottom: 30px; }
+                            .info { background: #2a2a2a; padding: 20px; border-radius: 8px; margin: 20px 0; }
+                            .button { display: inline-block; background: #d4af37; color: #000; padding: 12px 30px; border-radius: 6px; text-decoration: none; font-weight: bold; margin-top: 20px; }
+                            .footer { text-align: center; margin-top: 40px; border-top: 1px solid #333; padding-top: 20px; font-size: 12px; color: #888; }
+                        </style>
+                    </head>
+                    <body>
+                        <div class="container">
+                            <div class="header">
+                                <h1 style="color: #d4af37; margin: 0;">🎁 Potwierdzenie Zamówienia</h1>
+                                <p style="color: #aaa;">Karta Podarunkowa</p>
+                            </div>
+
+                            <p>Cześć ${customerName.split(' ')[0]},</p>
+
+                            <p>Dziękujemy za złożenie zamówienia karty podarunkowej! Twoja płatność jest w toku.</p>
+
+                            <div class="info">
+                                <h3 style="margin-top: 0; color: #d4af37;">📋 Szczegóły Zamówienia</h3>
+                                <p><strong>Wartość karty:</strong> ${value} PLN</p>
+                                <p><strong>Cena:</strong> ${(price / 100).toFixed(2)} PLN</p>
+                                <p><strong>Numer zamówienia:</strong> ${order.id}</p>
+                            </div>
+
+                            <p>Po potwierddzeniu płatności otrzymasz wiadomość email z dostępem do karty podarunkowej.</p>
+
+                            <p style="color: #d4af37; font-weight: bold;">⏳ Czekamy na potwierdzenie płatności...</p>
+
+                            <div class="footer">
+                                <p>Jeśli masz pytania, skontaktuj się z nami: <strong>kontakt@wlasniewski.pl</strong></p>
+                                <p>© Fotograf Wlasniewski - Wszystkie prawa zastrzeżone</p>
+                            </div>
+                        </div>
+                    </body>
+                </html>
+            `;
+
+            await sendEmail({
+                to: customerEmail,
+                subject: `✓ Potwierdzenie zamówienia karty podarunkowej`,
+                html: confirmationHtml
+            });
+        } catch (emailErr) {
+            console.error('Failed to send confirmation email:', emailErr);
+            // Don't fail checkout if email fails
+        }
 
         return NextResponse.json({
             success: true,
