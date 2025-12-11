@@ -21,6 +21,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
                 return NextResponse.json({ error: 'Card not found' }, { status: 404 });
             }
 
+            // Check if recipient email is available
+            const recipientEmail = body.email || card.recipient_email;
+            if (!recipientEmail) {
+                return NextResponse.json({ 
+                    error: 'No recipient email provided',
+                    details: 'Card recipient_email is missing and no email provided in request'
+                }, { status: 400 });
+            }
+
             // Get settings for logo
             const settings = await prisma.setting.findFirst({
                 orderBy: { id: 'asc' }
@@ -41,7 +50,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
             // Send email
             await sendEmail({
-                to: body.email || card.recipient_email,
+                to: recipientEmail,
                 subject: `🎁 Twoja Karta Podarunkowa od ${card.sender_name || 'Fotografa'}!`,
                 html: emailHtml
             });
@@ -53,9 +62,19 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             });
 
             return NextResponse.json({ success: true });
-        } catch (error) {
-            console.error('Error sending gift card:', error);
-            return NextResponse.json({ error: 'Failed to send email' }, { status: 500 });
+        } catch (error: any) {
+            console.error('❌ Error sending gift card email:', {
+                message: error?.message,
+                code: error?.code,
+                command: error?.command,
+                response: error?.response,
+                stack: error?.stack
+            });
+            return NextResponse.json({ 
+                error: 'Failed to send email',
+                details: error?.message || 'Unknown error',
+                code: error?.code
+            }, { status: 500 });
         }
     });
 }
