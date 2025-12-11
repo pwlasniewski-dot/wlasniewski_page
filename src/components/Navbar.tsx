@@ -57,6 +57,8 @@ export default function Navbar() {
     const pathname = usePathname();
     const [isOpen, setIsOpen] = useState(false);
     const [settings, setSettings] = useState<NavbarSettings>({});
+    const [menuItems, setMenuItems] = useState<MenuItem[]>(MENU_ITEMS);
+    const [ctaItems, setCtaItems] = useState<MenuItem[]>(CTA_ITEMS);
     const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
     const [isScrolled, setIsScrolled] = useState(false);
     const [logoLoaded, setLogoLoaded] = useState(false);
@@ -79,6 +81,28 @@ export default function Navbar() {
             }
         };
         fetchSettings();
+    }, []);
+
+    // Fetch menu items from database
+    useEffect(() => {
+        const fetchMenu = async () => {
+            try {
+                const res = await fetch('/api/menu');
+                const data = await res.json();
+                if (Array.isArray(data) && data.length > 0) {
+                    // Convert API response to MenuItem format
+                    const dynamicMenuItems = data.map((item: any) => ({
+                        label: item.title,
+                        href: item.url
+                    }));
+                    setMenuItems(dynamicMenuItems);
+                }
+            } catch (error) {
+                console.error('Failed to fetch menu:', error);
+                // Keep default MENU_ITEMS on error
+            }
+        };
+        fetchMenu();
     }, []);
 
     // Track scroll
@@ -136,7 +160,7 @@ export default function Navbar() {
                 <div className="flex items-center justify-between h-20 relative">
                     {/* LEFT MENU - flex-1 to balanced spacing */}
                     <div className="hidden md:flex items-center gap-8 flex-1">
-                        {MENU_ITEMS.map((item) => (
+                        {menuItems.map((item) => (
                             <div key={item.label} className="relative group">
                                 <Link
                                     href={item.href}
@@ -197,7 +221,7 @@ export default function Navbar() {
 
                     {/* RIGHT MENU - flex-1 for balanced spacing */}
                     <div className="hidden md:flex items-center gap-8 flex-1 justify-end">
-                        {CTA_ITEMS.map((item) => (
+                        {ctaItems.map((item) => (
                             <div key={item.label} className="relative group">
                                 <Link
                                     href={item.href}
@@ -248,7 +272,7 @@ export default function Navbar() {
                 {/* MOBILE MENU */}
                 {isOpen && (
                     <div className="md:hidden bg-white shadow-lg rounded-lg mt-2 py-4 space-y-4 max-h-[70vh] overflow-y-auto">
-                        {[...MENU_ITEMS, ...CTA_ITEMS].map((item) => (
+                        {[...menuItems, ...ctaItems].map((item) => (
                             <div key={item.label}>
                                 <Link
                                     href={item.href}
