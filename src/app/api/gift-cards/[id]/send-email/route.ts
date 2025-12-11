@@ -6,6 +6,14 @@ import { generateGiftCardEmail } from '@/lib/email/giftCardTemplate';
 
 export const dynamic = 'force-dynamic';
 
+const ADMIN_EMAIL = 'przemyslaw@wlasniewski.pl';
+
+// Simple email validation
+function isValidEmail(email: string): boolean {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+}
+
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     return withAuth(request, async (req) => {
         try {
@@ -24,9 +32,51 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             // Check if recipient email is available
             const recipientEmail = body.email || card.recipient_email;
             if (!recipientEmail) {
+                // Notify admin about error
+                try {
+                    await sendEmail({
+                        to: ADMIN_EMAIL,
+                        subject: `❌ Błąd wysyłania karty podarunkowej #${card.id}`,
+                        html: `
+                            <h2>Błąd wysyłania karty</h2>
+                            <p><strong>Karta:</strong> #${card.id}</p>
+                            <p><strong>Kod:</strong> ${card.code}</p>
+                            <p><strong>Błąd:</strong> Brak adresu email odbiorcy</p>
+                            <p>Uzupełnij email odbiorcy w formularzu karty.</p>
+                        `
+                    });
+                } catch (e) {
+                    console.error('Failed to send error notification:', e);
+                }
+                
                 return NextResponse.json({ 
                     error: 'No recipient email provided',
-                    details: 'Card recipient_email is missing and no email provided in request'
+                    details: 'Uzupełnij email odbiorcy w karcie'
+                }, { status: 400 });
+            }
+
+            // Validate email format
+            if (!isValidEmail(recipientEmail)) {
+                // Notify admin about invalid email
+                try {
+                    await sendEmail({
+                        to: ADMIN_EMAIL,
+                        subject: `⚠️ Błędny adres email - karta #${card.id}`,
+                        html: `
+                            <h2>Błędny format adresu email</h2>
+                            <p><strong>Karta:</strong> #${card.id}</p>
+                            <p><strong>Kod:</strong> ${card.code}</p>
+                            <p><strong>Email:</strong> ${recipientEmail}</p>
+                            <p>Adres email jest nieprawidłowy. Sprawdź i spróbuj ponownie.</p>
+                        `
+                    });
+                } catch (e) {
+                    console.error('Failed to send validation error notification:', e);
+                }
+                
+                return NextResponse.json({ 
+                    error: 'Invalid email format',
+                    details: `Email "${recipientEmail}" jest nieprawidłowy`
                 }, { status: 400 });
             }
 
@@ -50,7 +100,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
                 card.card_description || undefined
             );
 
-            // Send email with photographer name in subject
+            // Send email to recipient
             await sendEmail({
                 to: recipientEmail,
                 subject: `🎁 Twoja Karta Podarunkowa od PRZEMYSŁAW WŁAŚNIEWSKI FOTOGRAFIA`,
@@ -63,6 +113,26 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
                 data: { status: 'sent', updated_at: new Date() }
             });
 
+            // Send confirmation to admin
+            try {
+                await sendEmail({
+                    to: ADMIN_EMAIL,
+                    subject: `✅ Karta podarunkowa wysłana - #${card.id}`,
+                    html: `
+                        <h2>✅ Karta podarunkowa wysłana pomyślnie</h2>
+                        <p><strong>Karta:</strong> #${card.id}</p>
+                        <p><strong>Kod:</strong> ${card.code}</p>
+                        <p><strong>Wartość:</strong> ${card.value || card.amount} PLN</p>
+                        <p><strong>Odbiorca:</strong> ${card.recipient_name || 'Nie podane'}</p>
+                        <p><strong>Email:</strong> ${recipientEmail}</p>
+                        <p><strong>Wysłano:</strong> ${new Date().toLocaleString('pl-PL')}</p>
+                    `
+                });
+            } catch (e) {
+                console.error('Failed to send confirmation to admin:', e);
+                // Don't fail the request if admin notification fails
+            }
+
             return NextResponse.json({ success: true });
         } catch (error: any) {
             console.error('❌ Error sending gift card email:', {
@@ -71,21 +141,40 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
                 command: error?.command,
                 response: error?.response,
                 stack: error?.stack,
-                commandsupported: error?.commandsupported,
-                responseCode: error?.responseCode,
             });
+            
+            // Send error notification to admin
+            try {
+                await sendEmail({
+                    to: ADMIN_EMAIL,
+                    subject: `❌ Błąd wysyłania karty podarunkowej`,
+                    html: `
+                        <h2>❌ Błąd wysyłania karty podarunkowej</h2>
+                        <p><strong>Błąd:</strong> ${error?.message || 'Nieznany błąd'}</p>
+                        <p><strong>Kod błędu:</strong> ${error?.code || 'N/A'}</p>
+                        <p><strong>Czas:</strong> ${new Date().toLocaleString('pl-PL')}</p>
+                        <hr>
+                        <p><strong>Sugestie:</strong></p>
+                        <ul>
+                            <li>Sprawdź ustawienia SMTP w Admin → Settings</li>
+                            <li>Sprawdź czy adres email odbiorcy jest poprawny</li>
+                            <li>Sprawdź czy serwer mailowy jest dostępny</li>
+                        </ul>
+                    `
+                });
+            } catch (notifyError) {
+                console.error('Failed to send error notification:', notifyError);
+            }
             
             // Return detailed error information for debugging
             return NextResponse.json({ 
                 error: 'Failed to send email',
                 details: error?.message || 'Unknown error',
                 code: error?.code,
-                errorType: error?.name,
                 suggestions: [
-                    'Verify SMTP credentials in Admin Settings',
-                    'Check SMTP host and port configuration',
-                    'Ensure sender email is valid and configured',
-                    'Check recipient email address format'
+                    'Sprawdź czy adres email jest poprawny',
+                    'Sprawdź ustawienia SMTP w Admin Settings',
+                    'Spróbuj ponownie za chwilę'
                 ]
             }, { status: 500 });
         }

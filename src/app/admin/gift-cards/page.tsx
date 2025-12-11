@@ -457,6 +457,19 @@ Otrzymałeś kartę podarunkową na sesję fotograficzną!
 
     const sendEmail = async (card: GiftCard) => {
         try {
+            // Validate email first
+            if (!card.recipient_email) {
+                toast.error('❌ Brak adresu email odbiorcy - uzupełnij dane karty');
+                return;
+            }
+
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(card.recipient_email)) {
+                toast.error(`❌ Błędny adres email: "${card.recipient_email}"`);
+                return;
+            }
+
+            toast.loading('Wysyłanie emaila...');
             const token = localStorage.getItem('admin_token');
             const res = await fetch(getApiUrl(`gift-cards/${card.id}/send-email`), {
                 method: 'POST',
@@ -470,13 +483,30 @@ Otrzymałeś kartę podarunkową na sesję fotograficzną!
                 })
             });
 
+            const data = await res.json();
+
             if (res.ok) {
-                toast.success('Email wysłany');
+                toast.dismiss();
+                toast.success('✅ Email wysłany! Admin dostał potwierdzenie');
             } else {
-                toast.error('Błąd wysyłania');
+                toast.dismiss();
+                console.error('Email send error:', data);
+                toast.error(`❌ ${data.details || data.error || 'Błąd wysyłania'}`);
+                
+                // Show suggestions if available
+                if (data.suggestions) {
+                    setTimeout(() => {
+                        toast('💡 ' + data.suggestions[0], {
+                            icon: 'ℹ️',
+                            duration: 5000
+                        });
+                    }, 500);
+                }
             }
         } catch (error) {
-            toast.error('Błąd');
+            toast.dismiss();
+            console.error('Network error:', error);
+            toast.error('❌ Błąd połączenia - spróbuj ponownie');
         }
     };
 
