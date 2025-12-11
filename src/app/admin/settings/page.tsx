@@ -890,61 +890,6 @@ export default function SettingsPage() {
                 </div>
             </div>
 
-            {/* Gift Card Promo Bar Settings */}
-            <div className="bg-zinc-900 shadow rounded-lg border border-zinc-800 p-6">
-                <h2 className="text-lg font-medium text-white mb-4">🎁 Pasek Promocyjny Kart Podarunkowych</h2>
-                <div className="space-y-6">
-                    {/* Enable Promo Bar */}
-                    <div className="flex items-center justify-between border-b border-zinc-800 pb-4">
-                        <div>
-                            <label className="text-sm font-medium text-zinc-400">Włącz Pasek Promocyjny</label>
-                            <p className="text-xs text-zinc-500">Pokaż animowany bajerek z kartami podarunkowymi na górze strony</p>
-                        </div>
-                        <button
-                            onClick={async () => {
-                                const newValue = !settings.gift_card_promo_enabled;
-                                setSettings(s => ({ ...s, gift_card_promo_enabled: newValue }));
-                                try {
-                                    const token = localStorage.getItem('admin_token');
-                                    await fetch(getApiUrl('settings'), {
-                                        method: 'POST',
-                                        headers: { 
-                                            'Content-Type': 'application/json',
-                                            'Authorization': `Bearer ${token}`
-                                        },
-                                        body: JSON.stringify({ 
-                                            gift_card_promo_enabled: newValue ? 'true' : 'false'
-                                        })
-                                    });
-                                    toast.success(newValue ? 'Bajerek włączony!' : 'Bajerek wyłączony');
-                                } catch (e) {
-                                    toast.error('Błąd ustawienia');
-                                }
-                            }}
-                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-gold-500 focus:ring-offset-2 ${settings.gift_card_promo_enabled ? 'bg-gold-500' : 'bg-zinc-700'}`}
-                        >
-                            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${settings.gift_card_promo_enabled ? 'translate-x-6' : 'translate-x-1'}`} />
-                        </button>
-                    </div>
-
-                    {/* Info */}
-                    <div className="bg-gold-900/20 border border-gold-900/50 rounded-lg p-4">
-                        <p className="text-sm text-gold-300">
-                            <strong>ℹ️ Jak to działa:</strong> Pasek pokazuje się na górze strony i rotuje między domyślnymi wiadomościami promocyjnymi. Użytkownik może zamknąć bajerek "X" w prawym rogu.
-                        </p>
-                    </div>
-
-                    {/* Link to Shop */}
-                    <div className="bg-zinc-800/50 p-4 rounded-lg border border-zinc-700">
-                        <p className="text-sm text-zinc-300 mb-3"><strong>Przydatne linki:</strong></p>
-                        <ul className="space-y-2">
-                            <li><a href="/karta-podarunkowa" target="_blank" className="text-gold-400 hover:underline">📱 Przedgląd: /karta-podarunkowa (Sklep)</a></li>
-                            <li><a href="#" onClick={() => alert('Admin → Karty Podarunkowe')} className="text-gold-400 hover:underline">🎁 Zarządzanie kartami: Admin → Karty Podarunkowe</a></li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-
             {/* Media Picker Modal */}
             {showMediaPicker && (
                 <MediaPicker

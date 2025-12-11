@@ -66,14 +66,14 @@ export default function GiftCardPromoBar() {
         <AnimatePresence>
             {isVisible && (
                 <motion.div
-                    initial={{ y: -100, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    exit={{ y: -100, opacity: 0 }}
-                    transition={{ type: 'spring', stiffness: 100, damping: 20 }}
-                    className="fixed top-20 left-0 right-0 z-40"
+                    initial={{ x: -400, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    exit={{ x: -400, opacity: 0 }}
+                    transition={{ type: 'spring', stiffness: 80, damping: 25 }}
+                    className="fixed left-0 top-1/2 -translate-y-1/2 z-40 w-96"
                 >
                     <div
-                        className="relative overflow-hidden mx-4 rounded-2xl shadow-2xl border border-opacity-30"
+                        className="relative overflow-hidden rounded-r-2xl shadow-2xl border border-opacity-30 px-4 py-6 md:py-8"
                         style={{
                             background: `linear-gradient(135deg, ${message.colors.bg} 0%, ${message.colors.accent}20 100%)`,
                             borderColor: message.colors.accent
@@ -103,13 +103,13 @@ export default function GiftCardPromoBar() {
                         </div>
 
                         {/* Content */}
-                        <div className="relative z-10 px-6 py-4 md:py-5 flex items-center justify-between gap-4">
-                            {/* Left - Icon and Text */}
-                            <div className="flex items-center gap-4 flex-1 min-w-0">
+                        <div className="relative z-10 px-4 py-2 flex flex-col items-start justify-between gap-3">
+                            {/* Icon and Text */}
+                            <div className="flex items-start gap-3 w-full">
                                 <motion.div
                                     animate={{ scale: [1, 1.1, 1] }}
                                     transition={{ duration: 2, repeat: Infinity }}
-                                    className="text-3xl md:text-4xl flex-shrink-0"
+                                    className="text-3xl flex-shrink-0"
                                 >
                                     {message.icon}
                                 </motion.div>
@@ -121,7 +121,7 @@ export default function GiftCardPromoBar() {
                                         animate={{ opacity: 1, y: 0 }}
                                         exit={{ opacity: 0, y: -10 }}
                                         transition={{ duration: 0.3 }}
-                                        className="font-bold text-white text-sm md:text-base truncate"
+                                        className="font-bold text-white text-sm line-clamp-2"
                                     >
                                         {message.title}
                                     </motion.h3>
@@ -131,50 +131,32 @@ export default function GiftCardPromoBar() {
                                         animate={{ opacity: 1, y: 0 }}
                                         exit={{ opacity: 0, y: -10 }}
                                         transition={{ duration: 0.3, delay: 0.05 }}
-                                        className="text-white/85 text-xs md:text-sm truncate"
+                                        className="text-white/85 text-xs line-clamp-3"
                                     >
                                         {message.message}
                                     </motion.p>
                                 </div>
                             </div>
 
-                            {/* Right - CTA Button */}
+                            {/* CTA Button - Full width */}
                             <Link
                                 href="/karta-podarunkowa"
-                                className="flex-shrink-0 inline-flex items-center gap-2 px-4 md:px-6 py-2 md:py-3 rounded-lg font-semibold text-black transition-all hover:shadow-lg hover:scale-105 whitespace-nowrap text-sm md:text-base"
+                                className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg font-semibold text-black text-xs transition-all hover:shadow-lg hover:scale-105 whitespace-nowrap"
                                 style={{ backgroundColor: message.colors.accent }}
                             >
                                 {message.cta_text}
-                                <ChevronRight className="w-4 h-4" />
+                                <ChevronRight className="w-3 h-3" />
                             </Link>
 
                             {/* Close Button */}
                             <button
                                 onClick={() => setIsVisible(false)}
-                                className="flex-shrink-0 p-2 text-white/70 hover:text-white transition-colors"
+                                className="absolute top-2 right-2 p-1 text-white/70 hover:text-white transition-colors"
                                 aria-label="Close promo bar"
                             >
-                                <X className="w-5 h-5" />
+                                <X className="w-4 h-4" />
                             </button>
                         </div>
-
-                        {/* Progress dots */}
-                        {messages.length > 1 && (
-                            <div className="relative z-10 flex items-center justify-center gap-2 px-6 py-3 border-t border-white/10">
-                                {messages.map((_, idx) => (
-                                    <motion.button
-                                        key={idx}
-                                        onClick={() => setCurrentMessage(idx)}
-                                        className={`h-2 rounded-full transition-all ${
-                                            idx === currentMessage
-                                                ? 'w-8 bg-white'
-                                                : 'w-2 bg-white/40 hover:bg-white/60'
-                                        }`}
-                                        whileHover={{ scale: 1.2 }}
-                                    />
-                                ))}
-                            </div>
-                        )}
                     </div>
                 </motion.div>
             )}

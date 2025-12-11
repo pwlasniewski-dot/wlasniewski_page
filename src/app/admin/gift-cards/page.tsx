@@ -41,6 +41,7 @@ export default function GiftCardsAdmin() {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [logoUrl, setLogoUrl] = useState('');
     const [isAuthorized, setIsAuthorized] = useState(false);
+    const [promoBarEnabled, setPromoBarEnabled] = useState(false);
     
     const [formData, setFormData] = useState({
         code: '',
@@ -64,6 +65,7 @@ export default function GiftCardsAdmin() {
         setIsAuthorized(true);
         fetchCards();
         fetchLogo();
+        fetchPromoBarStatus();
     }, [router]);
 
     const fetchCards = async () => {
@@ -118,6 +120,43 @@ export default function GiftCardsAdmin() {
             }
         } catch (error) {
             console.error('Error:', error);
+        }
+    };
+
+    const fetchPromoBarStatus = async () => {
+        try {
+            const token = localStorage.getItem('admin_token');
+            const res = await fetch(getApiUrl('settings'), {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            if (data.success) {
+                setPromoBarEnabled(data.settings?.gift_card_promo_enabled === 'true' || data.settings?.gift_card_promo_enabled === true);
+            }
+        } catch (error) {
+            console.error('Error fetching promo bar status:', error);
+        }
+    };
+
+    const togglePromoBar = async () => {
+        const newValue = !promoBarEnabled;
+        setPromoBarEnabled(newValue);
+        try {
+            const token = localStorage.getItem('admin_token');
+            await fetch(getApiUrl('settings'), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    gift_card_promo_enabled: newValue ? 'true' : 'false'
+                })
+            });
+            toast.success(newValue ? 'Bajerek włączony!' : 'Bajerek wyłączony');
+        } catch (e) {
+            toast.error('Błąd ustawienia');
+            setPromoBarEnabled(!newValue);
         }
     };
 
@@ -535,6 +574,30 @@ Otrzymałeś kartę podarunkową na sesję fotograficzną!
                         <Plus className="w-5 h-5" />
                         Nowa Karta
                     </button>
+                </div>
+
+                {/* Gift Card Promo Bar Toggle */}
+                <div className="bg-gradient-to-r from-blue-900 to-blue-800 border border-blue-700 rounded-lg p-6 mb-8">
+                    <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                            <h3 className="text-lg font-bold text-white mb-2">📢 Pasek Promocyjny Kart Podarunkowych</h3>
+                            <p className="text-blue-200">Włącz pasek na górze strony aby promować karty podarunkowe (widoczny dla wszystkich odwiedzających)</p>
+                        </div>
+                        <button
+                            onClick={togglePromoBar}
+                            className={`ml-6 px-6 py-3 font-bold rounded-lg transition-all flex items-center gap-2 whitespace-nowrap ${
+                                promoBarEnabled
+                                    ? 'bg-green-500 hover:bg-green-600 text-white'
+                                    : 'bg-zinc-700 hover:bg-zinc-600 text-zinc-200'
+                            }`}
+                        >
+                            {promoBarEnabled ? (
+                                <>✅ Włączony</>
+                            ) : (
+                                <>⭕ Wyłączony</>
+                            )}
+                        </button>
+                    </div>
                 </div>
 
                 {/* Create Form */}
