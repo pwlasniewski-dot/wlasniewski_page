@@ -775,12 +775,17 @@ export default function SettingsPage() {
                     <div className="flex gap-2">
                         <input
                             type="text"
-                            // Assume categories are stored as JSON string but edited as comma-separated string here for simplicity initially, or we parse it
                             value={Array.isArray(settings.portfolio_categories)
                                 ? settings.portfolio_categories.join(', ')
-                                : typeof settings.portfolio_categories === 'string' && settings.portfolio_categories.startsWith('[')
-                                    ? JSON.parse(settings.portfolio_categories).join(', ')
-                                    : settings.portfolio_categories || ''}
+                                : typeof settings.portfolio_categories === 'string' && settings.portfolio_categories.trim().startsWith('[')
+                                    ? (() => {
+                                        try {
+                                            return JSON.parse(settings.portfolio_categories).join(', ');
+                                        } catch {
+                                            return '';
+                                        }
+                                    })()
+                                    : (typeof settings.portfolio_categories === 'string' ? settings.portfolio_categories : '')}
                             onChange={e => {
                                 const val = e.target.value;
                                 // We keep it as string in local state, but convert to array on save if needed, or simple string split
