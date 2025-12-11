@@ -140,13 +140,17 @@ export default function PagesListPage() {
                                             <span className={`px-2 py-0.5 rounded text-xs border ${page.page_type === 'home' ? 'bg-gold-500/10 text-gold-500 border-gold-500/30' :
                                                 page.page_type === 'portfolio' ? 'bg-purple-500/10 text-purple-400 border-purple-500/30' :
                                                     page.page_type === 'contact' ? 'bg-blue-500/10 text-blue-400 border-blue-500/30' :
+                                                        page.page_type === 'shop' ? 'bg-green-500/10 text-green-400 border-green-500/30' :
+                                                            page.page_type === 'reviews' ? 'bg-orange-500/10 text-orange-400 border-orange-500/30' :
                                                         'bg-zinc-800 text-zinc-400 border-zinc-700'
                                                 }`}>
                                                 {page.page_type === 'home' ? 'Strona główna' :
                                                     page.page_type === 'portfolio' ? 'Portfolio' :
                                                         page.page_type === 'about' ? 'O mnie' :
                                                             page.page_type === 'contact' ? 'Kontakt' :
-                                                                page.page_type === 'offer' ? 'Oferta' : 'Standardowa'}
+                                                                page.page_type === 'shop' ? 'Sklep' :
+                                                                    page.page_type === 'reviews' ? 'Opinie' :
+                                                                        page.page_type === 'offer' ? 'Oferta' : 'Standardowa'}
                                             </span>
                                             {page.is_published ? (
                                                 <span className="px-2 py-0.5 rounded text-xs bg-green-900/30 text-green-400 border border-green-900/50">
@@ -245,6 +249,8 @@ export default function PagesListPage() {
                                     <option value="portfolio">Portfolio</option>
                                     <option value="jak-sie-ubrac">Jak się ubrać (paleta kolorów)</option>
                                     <option value="offer">Oferta</option>
+                                    <option value="shop">Sklep (Karty Podarunkowe)</option>
+                                    <option value="reviews">Opinie i Recenzje</option>
                                     <option value="contact">Kontakt</option>
                                 </select>
                                 <p className="text-xs text-zinc-500 mt-1">Typ strony pomaga w automatycznym budowaniu menu i struktury.</p>
