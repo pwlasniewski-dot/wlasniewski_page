@@ -43,6 +43,7 @@ interface NavbarSettings {
     navbar_font_size?: number;
     navbar_font_family?: string;
     navbar_layout?: string;
+    navbar_sticky?: boolean;
 }
 
 export default function Navbar() {
@@ -82,16 +83,21 @@ export default function Navbar() {
 
     const logoSize = Math.min(settings.logo_size || 50, 80);
     const logoSrc = settings.logo_url || '/assets/brand/logo.png';
+    const navbarFontSize = settings.navbar_font_size || 16;
+    const navbarFontFamily = settings.navbar_font_family || 'Montserrat';
+    const isNavbarSticky = settings.navbar_sticky !== false; // default true
 
     const isActive = (href: string) => pathname === href;
 
     return (
         <header
-            className={`fixed w-full top-0 z-50 transition-all duration-300 ${
-                isScrolled
+            className={`${isNavbarSticky ? 'fixed' : 'absolute'} w-full top-0 z-50 transition-all duration-300 ${isScrolled
                     ? 'bg-white/95 backdrop-blur-md shadow-lg'
                     : 'bg-transparent'
-            }`}
+                }`}
+            style={{
+                fontFamily: navbarFontFamily
+            }}
         >
             <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between h-20">
@@ -101,13 +107,15 @@ export default function Navbar() {
                             <div key={item.label} className="relative group">
                                 <Link
                                     href={item.href}
-                                    className={`text-sm font-medium transition-colors py-2 ${
-                                        isActive(item.href)
+                                    className={`font-medium transition-colors py-2 ${isActive(item.href)
                                             ? 'text-gold-500'
                                             : isScrolled
-                                            ? 'text-zinc-700 hover:text-gold-500'
-                                            : 'text-white hover:text-gold-400'
-                                    } flex items-center gap-1`}
+                                                ? 'text-zinc-700 hover:text-gold-500'
+                                                : 'text-white hover:text-gold-400'
+                                        } flex items-center gap-1`}
+                                    style={{
+                                        fontSize: `${navbarFontSize}px`
+                                    }}
                                 >
                                     {item.label}
                                     {item.submenu && <ChevronDown className="w-4 h-4" />}
@@ -136,7 +144,13 @@ export default function Navbar() {
                             className="flex-shrink-0 hover:opacity-80 transition-opacity"
                             aria-label="Strona główna"
                         >
-                            <div className="relative" style={{ width: logoSize, height: logoSize }}>
+                            <div
+                                className="relative transition-all duration-300"
+                                style={{
+                                    width: isScrolled ? logoSize * 0.7 : logoSize,
+                                    height: isScrolled ? logoSize * 0.7 : logoSize
+                                }}
+                            >
                                 <Image
                                     src={logoSrc}
                                     alt="Logo"
@@ -154,13 +168,15 @@ export default function Navbar() {
                             <div key={item.label} className="relative group">
                                 <Link
                                     href={item.href}
-                                    className={`text-sm font-medium transition-colors py-2 ${
-                                        isActive(item.href)
+                                    className={`font-medium transition-colors py-2 ${isActive(item.href)
                                             ? 'text-gold-500'
                                             : isScrolled
-                                            ? 'text-zinc-700 hover:text-gold-500'
-                                            : 'text-white hover:text-gold-400'
-                                    } flex items-center gap-1`}
+                                                ? 'text-zinc-700 hover:text-gold-500'
+                                                : 'text-white hover:text-gold-400'
+                                        } flex items-center gap-1`}
+                                    style={{
+                                        fontSize: `${navbarFontSize}px`
+                                    }}
                                 >
                                     {item.label}
                                     {item.submenu && <ChevronDown className="w-4 h-4" />}
@@ -204,11 +220,10 @@ export default function Navbar() {
                                 <Link
                                     href={item.href}
                                     onClick={() => setIsOpen(false)}
-                                    className={`block px-4 py-2 font-medium transition-colors rounded ${
-                                        isActive(item.href)
+                                    className={`block px-4 py-2 font-medium transition-colors rounded ${isActive(item.href)
                                             ? 'bg-gold-100 text-gold-600'
                                             : 'text-zinc-700 hover:bg-zinc-50'
-                                    }`}
+                                        }`}
                                 >
                                     {item.label}
                                 </Link>
