@@ -68,12 +68,23 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
                 code: error?.code,
                 command: error?.command,
                 response: error?.response,
-                stack: error?.stack
+                stack: error?.stack,
+                commandsupported: error?.commandsupported,
+                responseCode: error?.responseCode,
             });
+            
+            // Return detailed error information for debugging
             return NextResponse.json({ 
                 error: 'Failed to send email',
                 details: error?.message || 'Unknown error',
-                code: error?.code
+                code: error?.code,
+                errorType: error?.name,
+                suggestions: [
+                    'Verify SMTP credentials in Admin Settings',
+                    'Check SMTP host and port configuration',
+                    'Ensure sender email is valid and configured',
+                    'Check recipient email address format'
+                ]
             }, { status: 500 });
         }
     });

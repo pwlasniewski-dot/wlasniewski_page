@@ -1,15 +1,70 @@
 import nodemailer from 'nodemailer';
+import prisma from '@/lib/db/prisma';
 
-// Email transporter configuration
-const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: parseInt(process.env.SMTP_PORT || '587'),
-    secure: process.env.SMTP_SECURE === 'true' || process.env.SMTP_PORT === '465',
-    auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS || process.env.SMTP_PASSWORD,
-    },
-});
+// Get SMTP configuration from database or environment variables
+async function getSMTPConfig() {
+    try {
+        // Try to get from database first
+        const settings = await prisma.setting.findMany({
+            where: {
+                setting_key: {
+                    in: ['smtp_host', 'smtp_port', 'smtp_user', 'smtp_password', 'smtp_from']
+                }
+            }
+        });
+
+        const config: any = {};
+        settings.forEach(s => {
+            config[s.setting_key] = s.setting_value;
+        });
+
+        // Use database settings if available, fallback to environment variables
+        return {
+            host: config.smtp_host || process.env.SMTP_HOST,
+            port: parseInt(config.smtp_port || process.env.SMTP_PORT || '587'),
+            user: config.smtp_user || process.env.SMTP_USER,
+            pass: config.smtp_password || process.env.SMTP_PASS || process.env.SMTP_PASSWORD,
+            from: config.smtp_from || process.env.SMTP_FROM || process.env.SMTP_USER,
+        };
+    } catch (error) {
+        console.warn('⚠️ Could not load SMTP config from database, using environment variables:', error);
+        return {
+            host: process.env.SMTP_HOST,
+            port: parseInt(process.env.SMTP_PORT || '587'),
+            user: process.env.SMTP_USER,
+            pass: process.env.SMTP_PASS || process.env.SMTP_PASSWORD,
+            from: process.env.SMTP_FROM || process.env.SMTP_USER,
+        };
+    }
+}
+
+// Email transporter configuration (will be initialized lazily)
+let transporter: any = null;
+
+async function getTransporter() {
+    if (!transporter) {
+        const config = await getSMTPConfig();
+        
+        console.log('📧 Initializing SMTP transporter with config:', {
+            host: config.host,
+            port: config.port,
+            user: config.user,
+            hasPassword: !!config.pass,
+            from: config.from,
+        });
+
+        transporter = nodemailer.createTransport({
+            host: config.host,
+            port: config.port,
+            secure: config.port === 465,
+            auth: {
+                user: config.user,
+                pass: config.pass,
+            },
+        });
+    }
+    return transporter;
+}
 
 interface EmailData {
     to: string;
@@ -24,11 +79,15 @@ export async function sendEmail(emailData: EmailData) {
         const { to, subject, template, data, html } = emailData;
 
         console.log('📧 Sending email to:', to);
+
+        // Get SMTP config (from database or env vars)
+        const config = await getSMTPConfig();
         console.log('📧 SMTP Config:', {
-            host: process.env.SMTP_HOST,
-            port: process.env.SMTP_PORT,
-            user: process.env.SMTP_USER,
-            hasPass: !!process.env.SMTP_PASS
+            host: config.host,
+            port: config.port,
+            user: config.user,
+            hasPass: !!config.pass,
+            from: config.from,
         });
 
         // Use provided HTML or render from template
@@ -41,8 +100,9 @@ export async function sendEmail(emailData: EmailData) {
             throw new Error('Either html or template+data must be provided');
         }
 
-        const result = await transporter.sendMail({
-            from: process.env.SMTP_FROM || process.env.SMTP_USER,
+        const transport = await getTransporter();
+        const result = await transport.sendMail({
+            from: config.from,
             to,
             subject,
             html: emailHtml,
@@ -50,8 +110,14 @@ export async function sendEmail(emailData: EmailData) {
 
         console.log('✅ Email sent successfully:', result.messageId);
         return { success: true, messageId: result.messageId };
-    } catch (error) {
-        console.error('❌ Email send error:', error);
+    } catch (error: any) {
+        console.error('❌ Email send error:', {
+            message: error.message,
+            code: error.code,
+            commandsupported: error.commandsupported,
+            responseCode: error.responseCode,
+            to: emailData.to,
+        });
         throw error;
     }
 }
