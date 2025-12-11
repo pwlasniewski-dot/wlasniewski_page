@@ -6,10 +6,10 @@ import { generateGiftCardEmail } from '@/lib/email/giftCardTemplate';
 
 export const dynamic = 'force-dynamic';
 
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     return withAuth(request, async (req) => {
         try {
-            const { id } = params;
+            const { id } = await params;
             const body = await request.json();
 
             // Get gift card

@@ -22,11 +22,12 @@ interface Gallery {
     photos: Photo[];
 }
 
-export default function GalleryAdminPage({ params }: { params: { challenge_id: string } }) {
+export default function GalleryAdminPage({ params }: { params: Promise<{ challenge_id: string }> }) {
     const [gallery, setGallery] = useState<Gallery | null>(null);
     const [loading, setLoading] = useState(true);
     const [uploading, setUploading] = useState(false);
     const [editingGallery, setEditingGallery] = useState(false);
+    const [challengeId, setChallengId] = useState<string>('');
     const [galleryData, setGalleryData] = useState({
         title: '',
         couple_names: '',
@@ -35,12 +36,17 @@ export default function GalleryAdminPage({ params }: { params: { challenge_id: s
     });
 
     useEffect(() => {
-        fetchGallery();
-    }, []);
+        const loadParams = async () => {
+            const resolvedParams = await params;
+            setChallengId(resolvedParams.challenge_id);
+            fetchGallery(resolvedParams.challenge_id);
+        };
+        loadParams();
+    }, [params]);
 
-    const fetchGallery = async () => {
+    const fetchGallery = async (id: string) => {
         try {
-            const res = await fetch(`/api/photo-challenge/gallery/admin/${params.challenge_id}`);
+            const res = await fetch(`/api/photo-challenge/gallery/admin/${id}`);
             const data = await res.json();
             if (data.success) {
                 setGallery(data.gallery);
@@ -70,7 +76,7 @@ export default function GalleryAdminPage({ params }: { params: { challenge_id: s
                 formData.append('caption', file.name.replace(/\.[^/.]+$/, ''));
                 formData.append('alt_text', file.name);
 
-                const res = await fetch(`/api/photo-challenge/gallery/${params.challenge_id}/upload`, {
+                const res = await fetch(`/api/photo-challenge/gallery/${challengeId}/upload`, {
                     method: 'POST',
                     body: formData
                 });
@@ -79,7 +85,7 @@ export default function GalleryAdminPage({ params }: { params: { challenge_id: s
                     throw new Error('Upload failed');
                 }
             }
-            fetchGallery();
+            fetchGallery(challengeId);
         } catch (error) {
             console.error('Upload error:', error);
         } finally {
@@ -91,12 +97,12 @@ export default function GalleryAdminPage({ params }: { params: { challenge_id: s
         if (!confirm('Usunąć zdjęcie?')) return;
 
         try {
-            const res = await fetch(`/api/photo-challenge/gallery/${params.challenge_id}/photos/${photoId}`, {
+            const res = await fetch(`/api/photo-challenge/gallery/${challengeId}/photos/${photoId}`, {
                 method: 'DELETE'
             });
 
             if (res.ok) {
-                fetchGallery();
+                fetchGallery(challengeId);
             }
         } catch (error) {
             console.error('Delete error:', error);
@@ -105,7 +111,7 @@ export default function GalleryAdminPage({ params }: { params: { challenge_id: s
 
     const handleSaveGallery = async () => {
         try {
-            const res = await fetch(`/api/photo-challenge/gallery/admin/${params.challenge_id}`, {
+            const res = await fetch(`/api/photo-challenge/gallery/admin/${challengeId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(galleryData)
@@ -113,7 +119,7 @@ export default function GalleryAdminPage({ params }: { params: { challenge_id: s
 
             if (res.ok) {
                 setEditingGallery(false);
-                fetchGallery();
+                fetchGallery(challengeId);
             }
         } catch (error) {
             console.error('Save error:', error);

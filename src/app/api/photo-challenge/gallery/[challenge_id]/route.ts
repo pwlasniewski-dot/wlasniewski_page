@@ -3,16 +3,18 @@ import prisma from '@/lib/db/prisma';
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: { challenge_id: string } }
+    { params }: { params: Promise<{ challenge_id: string }> }
 ) {
     try {
-        const challengeId = parseInt(params.challenge_id);
+        const { challenge_id } = await params;
+        const challengeId = parseInt(challenge_id);
 
         // Fetch gallery
         const gallery = await prisma.challengeGallery.findUnique({
             where: { challenge_id: challengeId },
             include: {
                 photos: {
+                    include: { media: true },
                     orderBy: { created_at: 'asc' }
                 },
                 challenge: true
@@ -38,12 +40,15 @@ export async function GET(
                 session_type: gallery.session_type,
                 testimonial_text: gallery.testimonial_text,
                 is_published: gallery.is_published,
-                photos: gallery.photos.map(p => ({
-                    id: p.id,
-                    image_url: p.image_url,
-                    caption: p.caption,
-                    alt_text: p.alt_text
-                }))
+                photos: gallery.photos.map(p => {
+                    const photo: any = {
+                        id: p.id,
+                        image_url: p.media?.file_path || '',
+                        caption: p.caption,
+                        alt_text: p.media?.alt_text || ''
+                    };
+                    return photo;
+                })
             }
         });
     } catch (error) {

@@ -3,11 +3,12 @@ import prisma from '@/lib/db/prisma';
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: { unique_link: string } }
+    { params }: { params: Promise<{ unique_link: string }> }
 ) {
     try {
+        const { unique_link } = await params;
         const challenge = await prisma.photoChallenge.findUnique({
-            where: { unique_link: params.unique_link },
+            where: { unique_link },
             include: {
                 package: true,
                 location: true
@@ -24,7 +25,7 @@ export async function GET(
         // Update viewed_at if not already viewed
         if (!challenge.viewed_at) {
             await prisma.photoChallenge.update({
-                where: { unique_link: params.unique_link },
+                where: { unique_link },
                 data: { viewed_at: new Date(), status: 'viewed' }
             });
         }

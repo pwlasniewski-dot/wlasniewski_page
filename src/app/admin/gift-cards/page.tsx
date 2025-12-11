@@ -27,6 +27,8 @@ interface GiftCard {
     recipient_name?: string;
     sender_name?: string;
     message?: string;
+    card_title?: string;
+    card_description?: string;
     status?: string;
     created_at?: string;
 }

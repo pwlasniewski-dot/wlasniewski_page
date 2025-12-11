@@ -4,14 +4,15 @@ import { unlink } from 'fs/promises';
 
 export async function DELETE(
     request: NextRequest,
-    { params }: { params: { challenge_id: string; photoId: string } }
+    { params }: { params: Promise<{ challenge_id: string; photoId: string }> }
 ) {
     try {
-        const photoId = parseInt(params.photoId);
+        const { challenge_id, photoId } = await params;
+        const photoIdNum = parseInt(photoId);
 
         // Find photo with media info
         const photo = await prisma.challengePhoto.findUnique({
-            where: { id: photoId },
+            where: { id: photoIdNum },
             include: {
                 media: true
             }
@@ -35,7 +36,7 @@ export async function DELETE(
 
         // Delete photo record
         await prisma.challengePhoto.delete({
-            where: { id: photoId }
+            where: { id: photoIdNum }
         });
 
         // Delete media if not used elsewhere

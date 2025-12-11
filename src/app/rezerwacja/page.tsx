@@ -493,7 +493,7 @@ export default function RezerwacjaPage() {
                                 <BookingCalendar 
                                     onSlotSelect={setSlot} 
                                     selectedSlot={slot}
-                                    service={service?.name || 'Sesja'}
+                                    service={(service?.name as "Sesja" | "Ślub" | "Przyjęcie" | "Urodziny") || 'Sesja'}
                                 />
                             </div>
 

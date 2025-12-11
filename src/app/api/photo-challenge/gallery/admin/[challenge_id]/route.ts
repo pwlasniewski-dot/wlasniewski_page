@@ -3,10 +3,11 @@ import prisma from '@/lib/db/prisma';
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: { challenge_id: string } }
+    { params }: { params: Promise<{ challenge_id: string }> }
 ) {
     try {
-        const challengeId = parseInt(params.challenge_id);
+        const { challenge_id } = await params;
+        const challengeId = parseInt(challenge_id);
 
         const gallery = await prisma.challengeGallery.findFirst({
             where: { challenge_id: challengeId },
@@ -67,14 +68,15 @@ export async function GET(
 
 export async function PUT(
     request: NextRequest,
-    { params }: { params: { challenge_id: string } }
+    { params }: { params: Promise<{ challenge_id: string }> }
 ) {
     try {
+        const { challenge_id } = await params;
         const body = await request.json();
         const { title, couple_names, testimonial, is_published } = body;
 
         const gallery = await prisma.challengeGallery.update({
-            where: { challenge_id: parseInt(params.challenge_id) },
+            where: { challenge_id: parseInt(challenge_id) },
             data: {
                 title,
                 couple_names,

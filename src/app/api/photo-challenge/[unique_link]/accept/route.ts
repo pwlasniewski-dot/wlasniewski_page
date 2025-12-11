@@ -4,9 +4,10 @@ import { sendEmail } from '@/lib/email/sender';
 
 export async function POST(
     request: NextRequest,
-    { params }: { params: { unique_link: string } }
+    { params }: { params: Promise<{ unique_link: string }> }
 ) {
     try {
+        const { unique_link } = await params;
         const body = await request.json();
         const { name, date, hour } = body;
 
@@ -19,8 +20,8 @@ export async function POST(
 
         // Fetch challenge
         const challenge = await prisma.photoChallenge.findUnique({
-            where: { unique_link: params.unique_link },
-            include: { package: true }
+            where: { unique_link },
+            include: { package: true, location: true }
         });
 
         if (!challenge) {
@@ -38,7 +39,7 @@ export async function POST(
         const booking = await prisma.booking.create({
             data: {
                 service: 'Foto-wyzwanie',
-                package: (challenge.package as any)?.package_name || 'Challenge',
+                package: (challenge.package as any)?.name || 'Challenge',
                 price: (challenge.package as any)?.challenge_price || 0,
                 date: startTime,
                 start_time: startTime.toISOString(),
@@ -53,7 +54,7 @@ export async function POST(
 
         // Update challenge status
         await prisma.photoChallenge.update({
-            where: { unique_link: params.unique_link },
+            where: { unique_link },
             data: {
                 status: 'accepted',
                 accepted_at: new Date(),

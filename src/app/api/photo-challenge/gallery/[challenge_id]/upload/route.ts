@@ -6,9 +6,10 @@ import { existsSync } from 'fs';
 
 export async function POST(
     request: NextRequest,
-    { params }: { params: { challenge_id: string } }
+    { params }: { params: Promise<{ challenge_id: string }> }
 ) {
     try {
+        const { challenge_id } = await params;
         const formData = await request.formData();
         const file = formData.get('file') as File;
         const caption = (formData.get('caption') as string) || '';
@@ -24,13 +25,13 @@ export async function POST(
 
         // Get or create gallery
         let gallery = await prisma.challengeGallery.findFirst({
-            where: { challenge_id: parseInt(params.challenge_id) }
+            where: { challenge_id: parseInt(challenge_id) }
         });
 
         if (!gallery) {
             gallery = await prisma.challengeGallery.create({
                 data: {
-                    challenge_id: parseInt(params.challenge_id),
+                    challenge_id: parseInt(challenge_id),
                     title: 'Galeria',
                     is_published: false
                 }
@@ -38,7 +39,7 @@ export async function POST(
         }
 
         // Save file to public/uploads/galleries
-        const uploadsDir = join(process.cwd(), 'public', 'uploads', 'galleries', params.challenge_id);
+        const uploadsDir = join(process.cwd(), 'public', 'uploads', 'galleries', challenge_id);
         
         if (!existsSync(uploadsDir)) {
             await mkdir(uploadsDir, { recursive: true });
@@ -47,7 +48,7 @@ export async function POST(
         const bytes = await file.arrayBuffer();
         const filename = `${Date.now()}-${file.name}`;
         const filepath = join(uploadsDir, filename);
-        const publicUrl = `/uploads/galleries/${params.challenge_id}/${filename}`;
+        const publicUrl = `/uploads/galleries/${challenge_id}/${filename}`;
 
         await writeFile(filepath, Buffer.from(bytes));
 

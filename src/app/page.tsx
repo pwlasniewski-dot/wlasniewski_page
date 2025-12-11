@@ -317,17 +317,6 @@ export default function Home() {
                     />
                 );
 
-            case 'challenge_banner_old':
-                if (section.data.advanced?.items && section.data.advanced.items.length > 0) {
-                    return (
-                        <AdvancedBanner
-                            key={section.id}
-                            items={section.data.advanced.items}
-                            config={section.data.advanced.config}
-                        />
-                    );
-                }
-
                 return (
                     <section key={section.id} className="py-20 px-6 bg-zinc-900 relative overflow-hidden">
                         <div className="absolute inset-0 bg-[url('/images/pattern.png')] opacity-5"></div>

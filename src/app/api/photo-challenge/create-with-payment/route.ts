@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
                 template: 'challenge-invitation',
                 data: {
                     inviterName: inviter_name,
-                    packageName: pkg.package_name,
+                    packageName: pkg.name,
                     packagePrice: pkg.challenge_price,
                     packageDescription: pkg.description,
                     inviteLink
