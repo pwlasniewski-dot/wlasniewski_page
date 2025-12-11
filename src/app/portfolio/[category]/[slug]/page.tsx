@@ -26,10 +26,9 @@ export default async function SessionPage({ params }: Props) {
     let session = null;
     try {
         const prisma = (await import('@/lib/db/prisma')).default;
-        const dbSession = await prisma.portfolioSession.findFirst({
+        const dbSession = await prisma.portfolioSession.findUnique({
             where: {
-                slug: slug,
-                category: category // or check case insensitively if needed, but usually slugs are precise
+                slug: slug
             },
             include: {
                 cover_image: true
