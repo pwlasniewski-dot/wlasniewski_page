@@ -88,6 +88,7 @@ export default function AdminMenuPage() {
         { title: "Strona Główna", url: "/" },
         { title: "Blog", url: "/blog" },
         { title: "Portfolio", url: "/portfolio" },
+        { title: "Sklep", url: "/sklep" },
         { title: "O mnie", url: "/o-mnie" },
         { title: "Jak się ubrać", url: "/jak-sie-ubrac" },
         { title: "Rezerwacja", url: "/rezerwacja" },
