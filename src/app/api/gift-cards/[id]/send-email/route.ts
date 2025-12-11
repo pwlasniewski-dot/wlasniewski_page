@@ -44,7 +44,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
                 to: body.email || card.recipient_email,
                 subject: `🎁 Twoja Karta Podarunkowa od ${card.sender_name || 'Fotografa'}!`,
                 html: emailHtml
-            } as any);
+            });
 
             // Update card status
             await prisma.giftCard.update({

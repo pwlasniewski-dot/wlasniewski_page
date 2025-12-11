@@ -14,28 +14,37 @@ const transporter = nodemailer.createTransport({
 interface EmailData {
     to: string;
     subject: string;
-    template: string;
-    data: Record<string, any>;
+    template?: string;
+    data?: Record<string, any>;
+    html?: string; // Direct HTML support
 }
 
 export async function sendEmail(emailData: EmailData) {
     try {
-        const { to, subject, template, data } = emailData;
+        const { to, subject, template, data, html } = emailData;
 
-        // Template rendering
-        const html = renderTemplate(template, data);
+        // Use provided HTML or render from template
+        let emailHtml = html;
+        if (!emailHtml && template && data) {
+            emailHtml = renderTemplate(template, data);
+        }
 
-        await transporter.sendMail({
-            from: process.env.SMTP_FROM_EMAIL,
+        if (!emailHtml) {
+            throw new Error('Either html or template+data must be provided');
+        }
+
+        const result = await transporter.sendMail({
+            from: process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER,
             to,
             subject,
-            html,
+            html: emailHtml,
         });
 
-        return { success: true };
+        console.log('Email sent successfully:', result.messageId);
+        return { success: true, messageId: result.messageId };
     } catch (error) {
         console.error('Email send error:', error);
-        return { success: false, error };
+        throw error;
     }
 }
 
