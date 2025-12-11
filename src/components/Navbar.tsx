@@ -51,6 +51,7 @@ export default function Navbar() {
     const [settings, setSettings] = useState<NavbarSettings>({});
     const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
     const [isScrolled, setIsScrolled] = useState(false);
+    const [logoLoaded, setLogoLoaded] = useState(false);
 
     // Fetch settings
     useEffect(() => {
@@ -60,9 +61,11 @@ export default function Navbar() {
                 const data = await res.json();
                 if (data.success && data.settings) {
                     setSettings(data.settings);
+                    setLogoLoaded(true);
                 }
             } catch (error) {
                 console.error('Failed to fetch settings:', error);
+                setLogoLoaded(true); // Show default logo on error
             }
         };
         fetchSettings();
@@ -127,21 +130,23 @@ export default function Navbar() {
                     </div>
 
                     {/* CENTER LOGO */}
-                    <Link
-                        href="/"
-                        className="flex-shrink-0 hover:opacity-80 transition-opacity"
-                        aria-label="Strona główna"
-                    >
-                        <div className="relative" style={{ width: logoSize, height: logoSize }}>
-                            <Image
-                                src={logoSrc}
-                                alt="Logo"
-                                fill
-                                className="object-contain"
-                                priority
-                            />
-                        </div>
-                    </Link>
+                    {logoLoaded && (
+                        <Link
+                            href="/"
+                            className="flex-shrink-0 hover:opacity-80 transition-opacity"
+                            aria-label="Strona główna"
+                        >
+                            <div className="relative" style={{ width: logoSize, height: logoSize }}>
+                                <Image
+                                    src={logoSrc}
+                                    alt="Logo"
+                                    fill
+                                    className="object-contain"
+                                    priority
+                                />
+                            </div>
+                        </Link>
+                    )}
 
                     {/* RIGHT MENU */}
                     <div className="hidden md:flex items-center gap-8">
