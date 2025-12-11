@@ -74,12 +74,18 @@ export default function AcceptChallengePage() {
 
         try {
             const res = await fetch(
-                `/api/availability?packageId=${challenge?.package_id}&date=${date}`
+                `/api/photo-challenge/availability?unique_link=${uniqueLink}&daysAhead=30`
             );
             const data = await res.json();
 
-            if (data.success) {
-                setAvailableHours(data.slots || []);
+            if (data.success && data.availability) {
+                // Find the availability for this specific date
+                const dayAvailability = data.availability.find((a: any) => a.date === date);
+                if (dayAvailability && dayAvailability.hours) {
+                    setAvailableHours(dayAvailability.hours);
+                } else {
+                    setAvailableHours([]);
+                }
             }
         } catch (err) {
             console.error('Error fetching availability:', err);
