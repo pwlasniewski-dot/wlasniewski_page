@@ -8,6 +8,7 @@ import { motion } from 'framer-motion';
 import { ArrowRight, Star, Check, Camera } from 'lucide-react';
 import HeroSlider from '@/components/HeroSlider';
 import ParallaxBand from '@/components/ParallaxBand';
+import GiftCardPromoBar from '@/components/GiftCardPromoBar';
 import CarouselGallery from '@/components/VisualEffects/CarouselGallery';
 import MasonryGallery from '@/components/VisualEffects/MasonryGallery';
 import PuzzleGallery from '@/components/VisualEffects/PuzzleGallery';
@@ -566,6 +567,9 @@ export default function Home() {
 
     return (
         <main className="min-h-screen bg-black text-white">
+            {/* Gift Card Promo Bar */}
+            <GiftCardPromoBar />
+
             {/* JSON-LD Structured Data for SEO */}
             <script
                 type="application/ld+json"
