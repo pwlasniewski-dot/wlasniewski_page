@@ -93,17 +93,21 @@ export default function Navbar() {
     const isActive = (href: string) => pathname === href;
 
     return (
-        <header
-            className={`${isNavbarSticky ? 'fixed' : 'absolute'} w-full top-0 z-50 transition-all duration-300 ${isScrolled
-                    ? 'bg-white/95 backdrop-blur-md shadow-lg'
-                    : isNavbarTransparent
-                        ? 'bg-transparent'
-                        : 'bg-white/10 backdrop-blur-sm'
-                }`}
-            style={{
-                fontFamily: navbarFontFamily
-            }}
-        >
+        <>
+            {/* Spacer for fixed navbar */}
+            {isNavbarSticky && <div className="h-20"></div>}
+            
+            <header
+                className={`${isNavbarSticky ? 'fixed left-0 right-0 top-0' : 'absolute top-0'} w-full z-50 transition-all duration-300 ${isScrolled
+                        ? 'bg-white/95 backdrop-blur-md shadow-lg'
+                        : isNavbarTransparent
+                            ? 'bg-transparent'
+                            : 'bg-white/10 backdrop-blur-sm'
+                    }`}
+                style={{
+                    fontFamily: navbarFontFamily
+                }}
+            >
             <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between h-20">
                     {/* LEFT MENU */}
@@ -259,6 +263,7 @@ export default function Navbar() {
                     </div>
                 )}
             </nav>
-        </header>
+            </header>
+        </>
     );
 }
