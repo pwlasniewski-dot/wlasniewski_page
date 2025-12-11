@@ -103,6 +103,19 @@ export async function POST(request: NextRequest) {
                     notes,
                     card_title: finalCardTitle,
                     card_description: finalCardDescription
+                }
+            });
+
+            return NextResponse.json({ success: true, giftCard });
+        } catch (error) {
+            console.error('[Gift Cards API] POST error:', error);
+            return NextResponse.json({ error: 'Failed to create gift card' }, { status: 500 });
+        }
+    });
+}
+
+// PATCH: Update gift card (e.g., mark as used)
+export async function PATCH(request: NextRequest) {
     return withAuth(request, async () => {
         try {
             const body = await request.json();
