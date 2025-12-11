@@ -703,9 +703,15 @@ Otrzymałeś kartę podarunkową na sesję fotograficzną!
                                     <p className="text-xs text-zinc-500">Wartość</p>
                                     <p className="text-white font-bold">{card.value} zł</p>
                                 </div>
+                                {card.recipient_email && (
+                                    <div>
+                                        <p className="text-xs text-zinc-500">Email odbiorcy</p>
+                                        <p className="text-white text-sm break-all">{card.recipient_email}</p>
+                                    </div>
+                                )}
                                 {card.recipient_name && (
                                     <div>
-                                        <p className="text-xs text-zinc-500">Dla</p>
+                                        <p className="text-xs text-zinc-500">Imię odbiorcy</p>
                                         <p className="text-white text-sm">{card.recipient_name}</p>
                                     </div>
                                 )}
