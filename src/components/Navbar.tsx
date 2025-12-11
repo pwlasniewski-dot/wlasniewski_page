@@ -104,8 +104,8 @@ export default function Navbar() {
                     fontFamily: navbarFontFamily
                 }}
             >
-            <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="flex items-center justify-between h-20">
+            <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+                <div className="flex items-center justify-between h-20 relative">
                     {/* LEFT MENU - flex-1 to balanced spacing */}
                     <div className="hidden md:flex items-center gap-8 flex-1">
                         {MENU_ITEMS.map((item) => (
@@ -142,11 +142,11 @@ export default function Navbar() {
                         ))}
                     </div>
 
-                    {/* CENTER LOGO */}
+                    {/* CENTER LOGO - Absolutely positioned for perfect centering */}
                     {logoLoaded && (
                         <Link
                             href="/"
-                            className="flex-shrink-0 hover:opacity-80 transition-opacity mx-auto"
+                            className="absolute left-1/2 transform -translate-x-1/2 hover:opacity-80 transition-opacity"
                             aria-label="Strona główna"
                         >
                             <div

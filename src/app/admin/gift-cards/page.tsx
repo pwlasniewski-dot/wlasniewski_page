@@ -45,8 +45,9 @@ export default function GiftCardsAdmin() {
         code: '',
         value: 100,
         theme: 'christmas' as string,
-        recipient_name: '',
-        sender_name: '',
+        recipientEmail: '',
+        recipientName: '',
+        senderName: '',
         message: '',
         card_title: '',
         card_description: ''
@@ -129,8 +130,8 @@ export default function GiftCardsAdmin() {
     };
 
     const createCard = async () => {
-        if (!formData.code || !formData.value) {
-            toast.error('Wypełnij wymagane pola');
+        if (!formData.code || !formData.value || !formData.recipientEmail) {
+            toast.error('Wypełnij wszystkie wymagane pola (kod, wartość, email)');
             return;
         }
 
@@ -166,8 +167,9 @@ export default function GiftCardsAdmin() {
                     code: '',
                     value: 100,
                     theme: 'christmas',
-                    recipient_name: '',
-                    sender_name: '',
+                    recipientEmail: '',
+                    recipientName: '',
+                    senderName: '',
                     message: '',
                     card_title: '',
                     card_description: ''
@@ -355,26 +357,39 @@ export default function GiftCardsAdmin() {
                                     </select>
                                 </div>
 
-                                {/* Recipient */}
+                                {/* Recipient Email */}
                                 <div>
-                                    <label className="block text-sm font-medium text-zinc-400 mb-2">Dla kogo (email)</label>
+                                    <label className="block text-sm font-medium text-zinc-400 mb-2">Dla kogo (email) *</label>
                                     <input
                                         type="email"
-                                        value={formData.recipient_name}
-                                        onChange={e => setFormData(prev => ({ ...prev, recipient_name: e.target.value }))}
-                                        placeholder="klient@example.com"
+                                        value={formData.recipientEmail}
+                                        onChange={e => setFormData(prev => ({ ...prev, recipientEmail: e.target.value }))}
+                                        placeholder="recipient@example.com"
+                                        className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:border-gold-500 focus:outline-none"
+                                        required
+                                    />
+                                </div>
+
+                                {/* Recipient Name */}
+                                <div>
+                                    <label className="block text-sm font-medium text-zinc-400 mb-2">Imię odbiorcy</label>
+                                    <input
+                                        type="text"
+                                        value={formData.recipientName}
+                                        onChange={e => setFormData(prev => ({ ...prev, recipientName: e.target.value }))}
+                                        placeholder="Imię odbiorcy"
                                         className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:border-gold-500 focus:outline-none"
                                     />
                                 </div>
 
                                 {/* Sender */}
                                 <div>
-                                    <label className="block text-sm font-medium text-zinc-400 mb-2">Od kogo</label>
+                                    <label className="block text-sm font-medium text-zinc-400 mb-2">Od kogo (nadawca)</label>
                                     <input
                                         type="text"
-                                        value={formData.sender_name}
-                                        onChange={e => setFormData(prev => ({ ...prev, sender_name: e.target.value }))}
-                                        placeholder="Nazwa firmy"
+                                        value={formData.senderName}
+                                        onChange={e => setFormData(prev => ({ ...prev, senderName: e.target.value }))}
+                                        placeholder="Twoje imię lub nazwa firmy"
                                         className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:border-gold-500 focus:outline-none"
                                     />
                                 </div>
@@ -442,8 +457,8 @@ export default function GiftCardsAdmin() {
                                         value={formData.value}
                                         theme={formData.theme as any}
                                         logoUrl={logoUrl}
-                                        recipientName={formData.recipient_name}
-                                        senderName={formData.sender_name}
+                                        recipientName={formData.recipientName}
+                                        senderName={formData.senderName}
                                         message={formData.message}
                                         cardTitle={formData.card_title}
                                         cardDescription={formData.card_description}
