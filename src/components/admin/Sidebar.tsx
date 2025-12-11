@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { useState } from 'react';
 import {
     LayoutDashboard,
     Image,
@@ -18,7 +19,8 @@ import {
     Trophy,
     Sparkles,
     Menu,
-    Users
+    Users,
+    ChevronDown
 } from 'lucide-react';
 
 const navigation = [
@@ -53,6 +55,7 @@ interface SidebarProps {
 export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
     const pathname = usePathname();
     const router = useRouter();
+    const [expandedMenu, setExpandedMenu] = useState<string | null>(null);
 
     const handleLogout = () => {
         localStorage.removeItem('admin_token');
@@ -88,6 +91,59 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                     <nav className="mt-2 flex-1 space-y-1 px-2">
                         {navigation.map((item) => {
                             const isActive = pathname.startsWith(item.href);
+                            const isGiftCards = item.name === 'Karty podarunkowe';
+                            const isExpanded = expandedMenu === 'gift-cards';
+                            
+                            if (isGiftCards) {
+                                return (
+                                    <div key={item.name}>
+                                        <button
+                                            onClick={() => setExpandedMenu(isExpanded ? null : 'gift-cards')}
+                                            className={`w-full group flex items-center justify-between px-2 py-3 text-base font-medium rounded-md transition-colors ${isActive
+                                                ? 'bg-zinc-800 text-gold-400'
+                                                : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
+                                                }`}
+                                        >
+                                            <div className="flex items-center">
+                                                <item.icon
+                                                    className={`mr-3 h-5 w-5 flex-shrink-0 transition-colors ${isActive ? 'text-gold-400' : 'text-zinc-500 group-hover:text-zinc-300'
+                                                        }`}
+                                                    aria-hidden="true"
+                                                />
+                                                {item.name}
+                                            </div>
+                                            <ChevronDown
+                                                className={`h-5 w-5 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                                            />
+                                        </button>
+                                        {isExpanded && (
+                                            <div className="ml-6 space-y-1 mt-1">
+                                                <Link
+                                                    href="/admin/gift-cards"
+                                                    onClick={() => setIsOpen?.(false)}
+                                                    className={`block px-2 py-2 text-sm rounded-md transition-colors ${pathname === '/admin/gift-cards'
+                                                        ? 'bg-zinc-800 text-gold-400'
+                                                        : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
+                                                        }`}
+                                                >
+                                                    Karty
+                                                </Link>
+                                                <Link
+                                                    href="/admin/gift-cards/sklep"
+                                                    onClick={() => setIsOpen?.(false)}
+                                                    className={`block px-2 py-2 text-sm rounded-md transition-colors ${pathname === '/admin/gift-cards/sklep'
+                                                        ? 'bg-zinc-800 text-gold-400'
+                                                        : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
+                                                        }`}
+                                                >
+                                                    Sklep
+                                                </Link>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            }
+                            
                             return (
                                 <Link
                                     key={item.name}
