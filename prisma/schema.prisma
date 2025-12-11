@@ -466,7 +466,54 @@ model GiftCard {
   card_title      String?   // Custom title on card
   card_description String?  // Custom description on card
 
+  // Relations
+  orders          GiftCardOrder[]
+
   @@map("gift_cards")
+}
+
+// Gift Card Orders (Purchases)
+model GiftCardOrder {
+  id                  Int       @id @default(autoincrement())
+  gift_card_id        Int
+  gift_card           GiftCard  @relation(fields: [gift_card_id], references: [id], onDelete: Cascade)
+  
+  // Customer info
+  customer_email      String
+  customer_name       String
+  
+  // Card customization
+  recipient_name      String?
+  recipient_email     String?
+  message             String?
+  sender_name         String?
+  
+  // Payment info
+  payment_method      String    // "stripe", "payu", "transfer"
+  stripe_session_id   String?   @unique
+  stripe_payment_id   String?
+  payu_order_id       String?   @unique
+  amount_paid         Int       // Price paid in groszy (PLN * 100)
+  currency            String    @default("PLN")
+  
+  // Status
+  payment_status      String    @default("pending") // "pending" | "completed" | "failed" | "cancelled"
+  delivery_status     String    @default("not_sent") // "not_sent" | "email_sent" | "printed" | "accessed"
+  
+  // Tracking
+  created_at          DateTime  @default(now())
+  updated_at          DateTime  @updatedAt
+  paid_at             DateTime?
+  expires_at          DateTime? // Access expires after 30 days
+  accessed_at         DateTime?
+  
+  // Security
+  access_token        String?   @unique // For accessing the order without auth
+  
+  @@map("gift_card_orders")
+  @@index([customer_email])
+  @@index([stripe_session_id])
+  @@index([payment_status])
 }
 
 // 15. Session Invites

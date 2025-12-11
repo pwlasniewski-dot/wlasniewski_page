@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
+import Stripe from 'stripe';
+import { nanoid } from 'nanoid';
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '');
 
 export const dynamic = 'force-dynamic';
 
@@ -8,68 +12,118 @@ interface CheckoutRequest {
     price: number;
     value: number;
     theme: string;
+    customerEmail: string;
+    customerName: string;
+    recipientName?: string;
+    recipientEmail?: string;
+    senderName?: string;
+    message?: string;
 }
 
 export async function POST(request: NextRequest) {
     try {
         const body: CheckoutRequest = await request.json();
-        const { cardId, price, value, theme } = body;
+        const {
+            cardId,
+            price,
+            value,
+            theme,
+            customerEmail,
+            customerName,
+            recipientName,
+            recipientEmail,
+            senderName,
+            message
+        } = body;
 
-        // Validate input
-        if (!cardId || !price || !value) {
+        // Validate
+        if (!cardId || !price || !customerEmail || !customerName) {
             return NextResponse.json(
                 { error: 'Missing required fields', success: false },
                 { status: 400 }
             );
         }
 
-        // Get payment settings
-        const settings = await Promise.all([
-            prisma.setting.findFirst({
-                where: { setting_key: 'payment_method' }
-            }),
-            prisma.setting.findFirst({
-                where: { setting_key: 'stripe_publishable_key' }
-            }),
-            prisma.setting.findFirst({
-                where: { setting_key: 'payu_merchant_pos_id' }
-            })
-        ]);
+        // Get card
+        const card = await prisma.giftCard.findUnique({
+            where: { id: cardId }
+        });
 
-        const paymentMethod = settings[0]?.setting_value || 'stripe';
-        const stripeKey = settings[1]?.setting_value;
-        const payuPosId = settings[2]?.setting_value;
-
-        // For now, return a placeholder
-        // In production, integrate with Stripe or PayU
-        
-        if (paymentMethod === 'stripe' && stripeKey) {
-            // TODO: Create Stripe Checkout Session
-            // This would require stripe server library
-            return NextResponse.json({
-                success: false,
-                error: 'Stripe integration in progress',
-                checkoutUrl: null
-            });
-        } else if (paymentMethod === 'payu' && payuPosId) {
-            // TODO: Create PayU order
-            // This would require PayU API integration
-            return NextResponse.json({
-                success: false,
-                error: 'PayU integration in progress',
-                checkoutUrl: null
-            });
-        } else {
-            return NextResponse.json({
-                success: false,
-                error: 'Payment method not configured',
-                checkoutUrl: null
-            });
+        if (!card) {
+            return NextResponse.json(
+                { error: 'Gift card not found', success: false },
+                { status: 404 }
+            );
         }
+
+        // Create order in database
+        const accessToken = nanoid(32);
+        const order = await prisma.giftCardOrder.create({
+            data: {
+                gift_card_id: cardId,
+                customer_email: customerEmail,
+                customer_name: customerName,
+                recipient_name: recipientName,
+                recipient_email: recipientEmail,
+                message: message,
+                sender_name: senderName,
+                payment_method: 'stripe',
+                amount_paid: Math.round(price * 100), // Convert to groszy
+                access_token: accessToken,
+                expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
+            }
+        });
+
+        // Create Stripe Checkout Session
+        const session = await stripe.checkout.sessions.create({
+            payment_method_types: ['card'],
+            mode: 'payment',
+            customer_email: customerEmail,
+            success_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://wlasniewski.pl'}/karta-podarunkowa/sukces?session_id={CHECKOUT_SESSION_ID}&order_id=${order.id}`,
+            cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://wlasniewski.pl'}/karta-podarunkowa/${cardId}/kup?canceled=true`,
+            metadata: {
+                order_id: order.id.toString(),
+                card_id: cardId.toString(),
+                access_token: accessToken
+            },
+            line_items: [
+                {
+                    price_data: {
+                        currency: 'pln',
+                        product_data: {
+                            name: `Karta Podarunkowa - ${theme}`,
+                            description: `Karta o wartości ${value} PLN`,
+                            images: [
+                                // Add card image if available
+                            ]
+                        },
+                        unit_amount: Math.round(price * 100) // Price in groszy
+                    },
+                    quantity: 1
+                }
+            ]
+        });
+
+        // Update order with Stripe session ID
+        await prisma.giftCardOrder.update({
+            where: { id: order.id },
+            data: { stripe_session_id: session.id }
+        });
+
+        return NextResponse.json({
+            success: true,
+            checkoutUrl: session.url,
+            orderId: order.id,
+            accessToken: accessToken
+        });
     } catch (error: any) {
         console.error('Checkout error:', error);
         return NextResponse.json(
-            { error: 'Checkout failed', details: error.message, success: false },
+            { 
+                error: 'Checkout failed', 
+                details: error.message, 
+                success: false 
+            },
             { status: 500 }
         );
     }

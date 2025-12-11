@@ -39,6 +39,14 @@ export default function BuyGiftCardPage() {
     const [card, setCard] = useState<GiftCardProduct | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isProcessing, setIsProcessing] = useState(false);
+    
+    // Customer info
+    const [customerName, setCustomerName] = useState('');
+    const [customerEmail, setCustomerEmail] = useState('');
+    const [recipientName, setRecipientName] = useState('');
+    const [recipientEmail, setRecipientEmail] = useState('');
+    const [senderName, setSenderName] = useState('');
+    const [message, setMessage] = useState('');
 
     useEffect(() => {
         const fetchCard = async () => {
@@ -64,7 +72,10 @@ export default function BuyGiftCardPage() {
     }, [cardId, router]);
 
     const handleCheckout = async () => {
-        if (!card) return;
+        if (!card || !customerName || !customerEmail) {
+            alert('Uzupełnij wymagane pola');
+            return;
+        }
 
         setIsProcessing(true);
         try {
@@ -76,17 +87,23 @@ export default function BuyGiftCardPage() {
                     cardId: card.id,
                     price: card.price,
                     value: card.value,
-                    theme: card.theme
+                    theme: card.theme,
+                    customerName,
+                    customerEmail,
+                    recipientName: recipientName || undefined,
+                    recipientEmail: recipientEmail || undefined,
+                    senderName: senderName || undefined,
+                    message: message || undefined
                 })
             });
 
             const data = await res.json();
             
             if (data.success && data.checkoutUrl) {
-                // Redirect to payment gateway (Stripe, PayU, etc)
+                // Redirect to Stripe checkout
                 window.location.href = data.checkoutUrl;
             } else {
-                alert('Błąd przy tworzeniu sesji płatności');
+                alert('Błąd przy tworzeniu sesji płatności: ' + (data.error || 'Nieznany błąd'));
             }
         } catch (error) {
             console.error('Checkout error:', error);
@@ -235,7 +252,63 @@ export default function BuyGiftCardPage() {
                             </ul>
                         </div>
 
-                        {/* Checkout Button */}
+                        {/* Customer Form */}
+                        <div className="bg-zinc-900 rounded-xl p-6 border border-zinc-800 space-y-4">
+                            <h3 className="font-bold text-lg mb-4">Twoje dane</h3>
+                            
+                            <input
+                                type="text"
+                                placeholder="Twoje imię"
+                                value={customerName}
+                                onChange={(e) => setCustomerName(e.target.value)}
+                                className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-gold-500"
+                            />
+                            
+                            <input
+                                type="email"
+                                placeholder="Twój email"
+                                value={customerEmail}
+                                onChange={(e) => setCustomerEmail(e.target.value)}
+                                className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-gold-500"
+                            />
+                        </div>
+
+                        {/* Recipient Form */}
+                        <div className="bg-zinc-900 rounded-xl p-6 border border-zinc-800 space-y-4">
+                            <h3 className="font-bold text-lg mb-4">Dane odbiorcy (opcjonalnie)</h3>
+                            
+                            <input
+                                type="text"
+                                placeholder="Imię odbiorcy"
+                                value={recipientName}
+                                onChange={(e) => setRecipientName(e.target.value)}
+                                className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-gold-500"
+                            />
+                            
+                            <input
+                                type="email"
+                                placeholder="Email odbiorcy"
+                                value={recipientEmail}
+                                onChange={(e) => setRecipientEmail(e.target.value)}
+                                className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-gold-500"
+                            />
+
+                            <input
+                                type="text"
+                                placeholder="Od kogo (np. Twoje imię lub nazwa firmy)"
+                                value={senderName}
+                                onChange={(e) => setSenderName(e.target.value)}
+                                className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-gold-500"
+                            />
+                            
+                            <textarea
+                                placeholder="Wiadomość na karcie..."
+                                value={message}
+                                onChange={(e) => setMessage(e.target.value)}
+                                className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-gold-500"
+                                rows={3}
+                            />
+                        </div>
                         <button
                             onClick={handleCheckout}
                             disabled={isProcessing}

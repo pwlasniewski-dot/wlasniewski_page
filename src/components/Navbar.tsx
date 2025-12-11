@@ -6,10 +6,19 @@ import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { Menu, X, ChevronDown } from 'lucide-react';
 
-const MENU_ITEMS = [
+interface MenuItem {
+    label: string;
+    href: string;
+    submenu?: { label: string; href: string }[];
+}
+
+const MENU_ITEMS: MenuItem[] = [
     { label: 'Blog', href: '/blog' },
     { label: 'Jak się ubrać', href: '/jak-sie-ubrac' },
     { label: 'O mnie', href: '/o-mnie' },
+];
+
+const CTA_ITEMS: MenuItem[] = [
     {
         label: 'Portfolio',
         href: '/portfolio',
@@ -19,9 +28,6 @@ const MENU_ITEMS = [
             { label: 'Sesje ciążowe', href: '/portfolio/ciaza' },
         ]
     },
-];
-
-const CTA_ITEMS = [
     { label: 'Rezerwacja', href: '/rezerwacja' },
     {
         label: 'Lokalizacje',
@@ -54,6 +60,8 @@ export default function Navbar() {
     const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
     const [isScrolled, setIsScrolled] = useState(false);
     const [logoLoaded, setLogoLoaded] = useState(false);
+    const [isNavbarVisible, setIsNavbarVisible] = useState(true);
+    const [lastScrollY, setLastScrollY] = useState(0);
 
     // Fetch settings
     useEffect(() => {
@@ -76,11 +84,30 @@ export default function Navbar() {
     // Track scroll
     useEffect(() => {
         const handleScroll = () => {
-            setIsScrolled(window.scrollY > 50);
+            const currentScrollY = window.scrollY;
+            
+            setIsScrolled(currentScrollY > 50);
+            
+            // Show navbar when scrolling up, hide when scrolling down
+            if (currentScrollY > 100) {
+                if (currentScrollY < lastScrollY) {
+                    // Scrolling up
+                    setIsNavbarVisible(true);
+                } else if (currentScrollY > lastScrollY) {
+                    // Scrolling down
+                    setIsNavbarVisible(false);
+                }
+            } else {
+                // Always show navbar near top
+                setIsNavbarVisible(true);
+            }
+            
+            setLastScrollY(currentScrollY);
         };
+        
         window.addEventListener('scroll', handleScroll);
         return () => window.removeEventListener('scroll', handleScroll);
-    }, []);
+    }, [lastScrollY]);
 
     const logoSize = settings.logo_size || 140; // Use full value from settings
     const logoDisplaySize = Math.min(logoSize, 100); // On desktop, limit displayed size
@@ -99,9 +126,10 @@ export default function Navbar() {
                     : isNavbarTransparent
                         ? 'bg-transparent'
                         : 'bg-white/10 backdrop-blur-sm'
-                }`}
+                } ${!isNavbarVisible && isNavbarSticky ? '-translate-y-full' : 'translate-y-0'}`}
                 style={{
-                    fontFamily: navbarFontFamily
+                    fontFamily: navbarFontFamily,
+                    transform: !isNavbarVisible && isNavbarSticky ? 'translateY(-100%)' : 'translateY(0)'
                 }}
             >
             <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
