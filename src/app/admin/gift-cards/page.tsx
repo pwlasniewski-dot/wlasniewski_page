@@ -42,7 +42,9 @@ export default function GiftCardsAdmin() {
         theme: 'christmas' as string,
         recipient_name: '',
         sender_name: '',
-        message: ''
+        message: '',
+        card_title: '',
+        card_description: ''
     });
 
     useEffect(() => {
@@ -116,7 +118,9 @@ export default function GiftCardsAdmin() {
                     theme: 'christmas',
                     recipient_name: '',
                     sender_name: '',
-                    message: ''
+                    message: '',
+                    card_title: '',
+                    card_description: ''
                 });
                 setShowCreateModal(false);
                 fetchCards();
@@ -311,6 +315,30 @@ export default function GiftCardsAdmin() {
                                     />
                                 </div>
 
+                                {/* Card Title - Custom */}
+                                <div>
+                                    <label className="block text-sm font-medium text-zinc-400 mb-2">Tytuł karty (customowy)</label>
+                                    <input
+                                        type="text"
+                                        value={formData.card_title}
+                                        onChange={e => setFormData(prev => ({ ...prev, card_title: e.target.value }))}
+                                        placeholder="np. KARTA PODARUNKOWA, BON PREZENTOWY, etc."
+                                        className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:border-gold-500 focus:outline-none"
+                                    />
+                                </div>
+
+                                {/* Card Description - Custom */}
+                                <div>
+                                    <label className="block text-sm font-medium text-zinc-400 mb-2">Opis karty (customowy)</label>
+                                    <input
+                                        type="text"
+                                        value={formData.card_description}
+                                        onChange={e => setFormData(prev => ({ ...prev, card_description: e.target.value }))}
+                                        placeholder="np. Specjalny rabat, Świąteczny bonus, etc."
+                                        className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:border-gold-500 focus:outline-none"
+                                    />
+                                </div>
+
                                 {/* Actions */}
                                 <div className="flex gap-2 pt-4">
                                     <button
@@ -341,6 +369,8 @@ export default function GiftCardsAdmin() {
                                         recipientName={formData.recipient_name}
                                         senderName={formData.sender_name}
                                         message={formData.message}
+                                        cardTitle={formData.card_title}
+                                        cardDescription={formData.card_description}
                                     />
                                 </div>
                             </div>
@@ -363,6 +393,8 @@ export default function GiftCardsAdmin() {
                                         recipientName={card.recipient_name}
                                         senderName={card.sender_name}
                                         message={card.message}
+                                        cardTitle={card.card_title}
+                                        cardDescription={card.card_description}
                                     />
                                 </div>
                             </div>

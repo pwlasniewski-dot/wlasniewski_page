@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
+import { withAuth } from '@/lib/auth/middleware';
 
 // Generate unique gift card code
 function generateGiftCardCode(): string {
@@ -10,9 +11,10 @@ function generateGiftCardCode(): string {
 
 // GET: List all gift cards (with optional filtering)
 export async function GET(request: NextRequest) {
-    try {
-        const { searchParams } = new URL(request.url);
-        const status = searchParams.get('status'); // 'active' | 'used' | 'expired' | 'all'
+    return withAuth(request, async () => {
+        try {
+            const { searchParams } = new URL(request.url);
+            const status = searchParams.get('status'); // 'active' | 'used' | 'expired' | 'all'
 
         const where: any = {};
 
@@ -34,70 +36,83 @@ export async function GET(request: NextRequest) {
             orderBy: { created_at: 'desc' }
         });
 
-        return NextResponse.json({ success: true, giftCards });
+        return NextResponse.json({ success: true, cards: giftCards });
     } catch (error) {
         console.error('[Gift Cards API] GET error:', error);
         return NextResponse.json({ error: 'Failed to fetch gift cards' }, { status: 500 });
     }
+    });
 }
 
 // POST: Create new gift card
 export async function POST(request: NextRequest) {
-    try {
-        const body = await request.json();
-        const {
-            recipient_name,
-            recipient_email,
-            amount,
-            discount_type = 'percentage',
-            card_template = 'gold',
-            valid_until,
-            message,
-            notes
-        } = body;
-
-        if (!recipient_name || !recipient_email || !amount) {
-            return NextResponse.json(
-                { error: 'Missing required fields: recipient_name, recipient_email, amount' },
-                { status: 400 }
-            );
-        }
-
-        // Generate unique code
-        const code = generateGiftCardCode();
-
-        const giftCard = await prisma.giftCard.create({
-            data: {
+    return withAuth(request, async () => {
+        try {
+            const body = await request.json();
+            const {
                 code,
+                value,
+                theme = 'christmas',
+                recipientName,
+                recipientEmail,
+                senderName,
+                message,
+                card_title,
+                card_description,
+                // Legacy support
                 recipient_name,
                 recipient_email,
-                amount: parseInt(amount),
-                discount_type,
-                card_template,
-                valid_until: valid_until ? new Date(valid_until) : null,
-                message,
+                amount,
+                discount_type = 'percentage',
+                card_template = 'gold',
+                valid_until,
                 notes
+            } = body;
+
+            // Use new fields if provided, fall back to legacy fields
+            const finalCode = code;
+            const finalValue = value || amount;
+            const finalRecipientName = recipientName || recipient_name;
+            const finalRecipientEmail = recipientEmail || recipient_email;
+            const finalMessage = message;
+            const finalSenderName = senderName;
+            const finalTheme = theme;
+            const finalCardTitle = card_title;
+            const finalCardDescription = card_description;
+
+            if (!finalCode || !finalValue || !finalRecipientEmail) {
+                return NextResponse.json(
+                    { error: 'Missing required fields: code, value, recipientEmail' },
+                    { status: 400 }
+                );
             }
-        });
 
-        return NextResponse.json({ success: true, giftCard });
-    } catch (error) {
-        console.error('[Gift Cards API] POST error:', error);
-        return NextResponse.json({ error: 'Failed to create gift card' }, { status: 500 });
-    }
-}
+            const giftCard = await prisma.giftCard.create({
+                data: {
+                    code: finalCode,
+                    recipient_name: finalRecipientName,
+                    recipient_email: finalRecipientEmail,
+                    amount: parseInt(finalValue),
+                    discount_type,
+                    card_template,
+                    theme: finalTheme,
+                    sender_name: finalSenderName,
+                    message: finalMessage,
+                    valid_until: valid_until ? new Date(valid_until) : null,
+                    value: parseInt(finalValue),
+                    notes,
+                    card_title: finalCardTitle,
+                    card_description: finalCardDescription
+    return withAuth(request, async () => {
+        try {
+            const body = await request.json();
+            const { id, is_used, notes } = body;
 
-// PATCH: Update gift card (e.g., mark as used)
-export async function PATCH(request: NextRequest) {
-    try {
-        const body = await request.json();
-        const { id, is_used, notes } = body;
+            if (!id) {
+                return NextResponse.json({ error: 'Gift card ID is required' }, { status: 400 });
+            }
 
-        if (!id) {
-            return NextResponse.json({ error: 'Gift card ID is required' }, { status: 400 });
-        }
-
-        const updateData: any = {};
+            const updateData: any = {};
         if (typeof is_used === 'boolean') {
             updateData.is_used = is_used;
             if (is_used) {
@@ -118,25 +133,34 @@ export async function PATCH(request: NextRequest) {
         console.error('[Gift Cards API] PATCH error:', error);
         return NextResponse.json({ error: 'Failed to update gift card' }, { status: 500 });
     }
+    });
 }
 
 // DELETE: Remove gift card
 export async function DELETE(request: NextRequest) {
-    try {
-        const { searchParams } = new URL(request.url);
-        const id = searchParams.get('id');
+    return withAuth(request, async () => {
+        try {
+            const { searchParams } = new URL(request.url);
+            let id = searchParams.get('id');
+            
+            // If no id in searchParams, try to extract from path
+            if (!id) {
+                const pathParts = request.nextUrl.pathname.split('/');
+                id = pathParts[pathParts.length - 1];
+            }
 
-        if (!id) {
-            return NextResponse.json({ error: 'Gift card ID is required' }, { status: 400 });
+            if (!id) {
+                return NextResponse.json({ error: 'Gift card ID is required' }, { status: 400 });
+            }
+
+            await prisma.giftCard.delete({
+                where: { id: parseInt(id) }
+            });
+
+            return NextResponse.json({ success: true, message: 'Gift card deleted' });
+        } catch (error) {
+            console.error('[Gift Cards API] DELETE error:', error);
+            return NextResponse.json({ error: 'Failed to delete gift card' }, { status: 500 });
         }
-
-        await prisma.giftCard.delete({
-            where: { id: parseInt(id) }
-        });
-
-        return NextResponse.json({ success: true, message: 'Gift card deleted' });
-    } catch (error) {
-        console.error('[Gift Cards API] DELETE error:', error);
-        return NextResponse.json({ error: 'Failed to delete gift card' }, { status: 500 });
-    }
+    });
 }

@@ -12,6 +12,8 @@ interface GiftCardProps {
     recipientName?: string;
     senderName?: string;
     message?: string;
+    cardTitle?: string;
+    cardDescription?: string;
     isPrint?: boolean;
 }
 
@@ -36,12 +38,12 @@ const themeConfigs: Record<string, ThemeConfig> = {
         textColor: 'text-white'
     },
     wosp: {
-        bgGradient: 'from-red-700 via-red-600 to-red-800',
-        accentColor: 'text-yellow-300',
-        icon: '❤️',
-        title: 'Wielka Orkiestra Świątecznej Pomocy',
-        description: 'Pomagaj sercem',
-        borderPattern: '❤️🎵❤️🎵',
+        bgGradient: 'from-red-600 via-red-700 to-amber-700',
+        accentColor: 'text-amber-300',
+        icon: '💛',
+        title: 'Karta Pomocy',
+        description: 'Wspieraj co w Tobie dobre',
+        borderPattern: '✨💫✨💫',
         textColor: 'text-white'
     },
     valentines: {
@@ -117,9 +119,13 @@ export default function GiftCard({
     recipientName,
     senderName,
     message,
+    cardTitle,
+    cardDescription,
     isPrint = false
 }: GiftCardProps) {
     const config = themeConfigs[theme] || themeConfigs.christmas;
+    const displayTitle = cardTitle || 'KARTA PODARUNKOWA';
+    const displayDescription = cardDescription || config.description;
 
     const cardStyle = isPrint
         ? { width: '540px', height: '340px' } // Standard gift card size in pixels (for printing)
@@ -176,10 +182,10 @@ export default function GiftCard({
                 {/* Center section - Card title and message */}
                 <div className="flex flex-col items-center justify-center text-center flex-1 my-4">
                     <h2 className="text-2xl sm:text-3xl font-bold mb-2 drop-shadow-lg">
-                        KARTA PODARUNKOWA
+                        {displayTitle}
                     </h2>
                     <p className={`text-sm sm:text-base opacity-90 mb-4 drop-shadow`}>
-                        {config.description}
+                        {displayDescription}
                     </p>
 
                     {recipientName && (
