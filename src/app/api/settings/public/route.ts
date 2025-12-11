@@ -24,6 +24,8 @@ export async function GET(request: NextRequest) {
             logo_url: (settings as any).logo_url,
             logo_dark_url: (settings as any).logo_dark_url,
             logo_size: (settings as any).logo_size || 140,
+            // Seasonal Effects
+            seasonal_effect: (settings as any).seasonal_effect || 'none',
             // Urgency
             urgency_enabled: await getSetting('urgency_enabled'),
             urgency_slots_remaining: await getSetting('urgency_slots_remaining'),

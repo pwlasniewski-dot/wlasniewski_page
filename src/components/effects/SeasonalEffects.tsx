@@ -30,6 +30,7 @@ export default function SeasonalEffects() {
             {effect === 'snow' && <SnowEffect />}
             {effect === 'lights' && <LightsEffect />}
             {effect === 'hearts' && <HeartsEffect />}
+            {effect === 'halloween' && <HalloweenEffect />}
         </div>
     );
 }
@@ -91,19 +92,78 @@ function SnowEffect() {
 }
 
 function LightsEffect() {
+    useEffect(() => {
+        // Inject keyframes dynamically
+        const styleSheet = document.createElement('style');
+        styleSheet.textContent = `
+            @keyframes twinkle {
+                0%, 100% { opacity: 0.3; }
+                50% { opacity: 1; }
+            }
+        `;
+        document.head.appendChild(styleSheet);
+        return () => {
+            document.head.removeChild(styleSheet);
+        };
+    }, []);
+
+    const lights = Array.from({ length: 40 }).map((_, i) => ({
+        id: i,
+        left: Math.random() * 100 + '%',
+        top: Math.random() * 20 + '%',
+        size: Math.random() * 2 + 4 + 'px',
+        duration: Math.random() * 1 + 1.5 + 's',
+        delay: Math.random() * 2 + 's',
+        color: ['#FFD700', '#FFA500', '#FF6347', '#00FF00', '#0099FF'][Math.floor(Math.random() * 5)]
+    }));
+
     return (
-        <div className="absolute top-0 left-0 right-0 h-10 bg-gradient-to-b from-yellow-500/20 to-transparent flex justify-between px-4">
-            {/* Placeholder for header lights */}
-        </div>
+        <>
+            {lights.map(light => (
+                <div
+                    key={light.id}
+                    style={{
+                        position: 'absolute',
+                        top: light.top,
+                        left: light.left,
+                        width: light.size,
+                        height: light.size,
+                        backgroundColor: light.color,
+                        borderRadius: '50%',
+                        animation: `twinkle ${light.duration} ease-in-out infinite`,
+                        animationDelay: light.delay,
+                        boxShadow: `0 0 20px ${light.color}, inset 0 0 10px ${light.color}`,
+                        pointerEvents: 'none'
+                    }}
+                />
+            ))}
+        </>
     );
 }
 
 function HeartsEffect() {
-    const hearts = Array.from({ length: 20 }).map((_, i) => ({
+    useEffect(() => {
+        const styleSheet = document.createElement('style');
+        styleSheet.textContent = `
+            @keyframes float-up {
+                0% { transform: translateY(0) scale(0.5) rotate(0deg); opacity: 0; }
+                20% { opacity: 1; }
+                80% { opacity: 1; }
+                100% { transform: translateY(-120vh) scale(1.2) rotate(360deg); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(styleSheet);
+        return () => {
+            document.head.removeChild(styleSheet);
+        };
+    }, []);
+
+    const hearts = Array.from({ length: 30 }).map((_, i) => ({
         id: i,
         left: Math.random() * 100 + '%',
         animationDuration: Math.random() * 4 + 3 + 's',
-        delay: Math.random() * 5 + 's'
+        delay: Math.random() * 6 + 's',
+        size: Math.random() * 1.5 + 1 + 'rem'
     }));
 
     return (
@@ -111,29 +171,67 @@ function HeartsEffect() {
             {hearts.map(h => (
                 <div
                     key={h.id}
-                    className="absolute bottom-0 text-red-500 animate-float-up text-2xl"
                     style={{
+                        position: 'absolute',
                         left: h.left,
-                        animationDuration: h.animationDuration,
+                        bottom: '-50px',
+                        fontSize: h.size,
+                        animation: `float-up ${h.animationDuration} ease-in infinite`,
                         animationDelay: h.delay,
-                        bottom: '-30px'
+                        pointerEvents: 'none',
+                        filter: 'drop-shadow(0 0 3px rgba(255, 105, 180, 0.6))'
                     }}
                 >
                     ❤️
                 </div>
             ))}
-            <style jsx global>{`
-                @keyframes float-up {
-                    0% { transform: translateY(0) scale(0.5); opacity: 0; }
-                    50% { opacity: 1; }
-                    100% { transform: translateY(-100vh) scale(1.2); opacity: 0; }
-                }
-                .animate-float-up {
-                    animation-name: float-up;
-                    animation-timing-function: ease-in;
-                    animation-iteration-count: infinite;
-                }
-            `}</style>
+        </>
+    );
+}
+
+function HalloweenEffect() {
+    useEffect(() => {
+        const styleSheet = document.createElement('style');
+        styleSheet.textContent = `
+            @keyframes spooky-float {
+                0% { transform: translateY(0) translateX(0) rotate(0deg); opacity: 0; }
+                10% { opacity: 1; }
+                90% { opacity: 1; }
+                100% { transform: translateY(-120vh) translateX(30px) rotate(360deg); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(styleSheet);
+        return () => {
+            document.head.removeChild(styleSheet);
+        };
+    }, []);
+
+    const ghosts = Array.from({ length: 20 }).map((_, i) => ({
+        id: i,
+        left: Math.random() * 100 + '%',
+        duration: Math.random() * 5 + 6 + 's',
+        delay: Math.random() * 3 + 's'
+    }));
+
+    return (
+        <>
+            {ghosts.map(g => (
+                <div
+                    key={g.id}
+                    style={{
+                        position: 'absolute',
+                        top: '-50px',
+                        left: g.left,
+                        fontSize: '2.5rem',
+                        animation: `spooky-float ${g.duration} linear infinite`,
+                        animationDelay: g.delay,
+                        pointerEvents: 'none',
+                        filter: 'drop-shadow(0 0 8px rgba(255, 165, 0, 0.5))'
+                    }}
+                >
+                    👻
+                </div>
+            ))}
         </>
     );
 }
