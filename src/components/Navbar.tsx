@@ -44,6 +44,7 @@ interface NavbarSettings {
     navbar_font_family?: string;
     navbar_layout?: string;
     navbar_sticky?: boolean;
+    navbar_transparent?: boolean;
 }
 
 export default function Navbar() {
@@ -81,11 +82,13 @@ export default function Navbar() {
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
-    const logoSize = Math.min(settings.logo_size || 50, 80);
+    const logoSize = settings.logo_size || 140; // Use full value from settings
+    const logoDisplaySize = Math.min(logoSize, 100); // On desktop, limit displayed size
     const logoSrc = settings.logo_url || '/assets/brand/logo.png';
     const navbarFontSize = settings.navbar_font_size || 16;
     const navbarFontFamily = settings.navbar_font_family || 'Montserrat';
     const isNavbarSticky = settings.navbar_sticky !== false; // default true
+    const isNavbarTransparent = settings.navbar_transparent === true; // default false
 
     const isActive = (href: string) => pathname === href;
 
@@ -93,7 +96,9 @@ export default function Navbar() {
         <header
             className={`${isNavbarSticky ? 'fixed' : 'absolute'} w-full top-0 z-50 transition-all duration-300 ${isScrolled
                     ? 'bg-white/95 backdrop-blur-md shadow-lg'
-                    : 'bg-transparent'
+                    : isNavbarTransparent
+                        ? 'bg-transparent'
+                        : 'bg-white/10 backdrop-blur-sm'
                 }`}
             style={{
                 fontFamily: navbarFontFamily
@@ -147,8 +152,8 @@ export default function Navbar() {
                             <div
                                 className="relative transition-all duration-300"
                                 style={{
-                                    width: isScrolled ? logoSize * 0.7 : logoSize,
-                                    height: isScrolled ? logoSize * 0.7 : logoSize
+                                    width: isScrolled ? logoDisplaySize * 0.7 : logoDisplaySize,
+                                    height: isScrolled ? logoDisplaySize * 0.7 : logoDisplaySize
                                 }}
                             >
                                 <Image

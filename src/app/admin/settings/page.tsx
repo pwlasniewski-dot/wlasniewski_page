@@ -19,6 +19,7 @@ export default function SettingsPage() {
         // Navbar
         navbar_layout: 'logo_left_menu_right',
         navbar_sticky: 'true',
+        navbar_transparent: 'false',
         navbar_font_size: 16,
         navbar_font_family: 'Montserrat',
         // Favicon & Logo
@@ -249,6 +250,19 @@ export default function SettingsPage() {
                                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-gold-500 focus:ring-offset-2 ${String(settings.navbar_sticky) === 'true' ? 'bg-gold-500' : 'bg-zinc-700'}`}
                                 >
                                     <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${String(settings.navbar_sticky) === 'true' ? 'translate-x-6' : 'translate-x-1'}`} />
+                                </button>
+                            </div>
+
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <label className="text-sm font-medium text-zinc-400">Przezroczysty pasek</label>
+                                    <p className="text-xs text-zinc-500">Czy pasek ma być przezroczysty na górze strony?</p>
+                                </div>
+                                <button
+                                    onClick={() => setSettings(s => ({ ...s, navbar_transparent: String(s.navbar_transparent) === 'true' ? 'false' : 'true' }))}
+                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-gold-500 focus:ring-offset-2 ${String(settings.navbar_transparent) === 'true' ? 'bg-gold-500' : 'bg-zinc-700'}`}
+                                >
+                                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${String(settings.navbar_transparent) === 'true' ? 'translate-x-6' : 'translate-x-1'}`} />
                                 </button>
                             </div>
 

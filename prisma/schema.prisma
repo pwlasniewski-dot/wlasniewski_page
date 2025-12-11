@@ -59,6 +59,7 @@ model Setting {
   navbar_sticky   Boolean @default(true)
   navbar_font_size Int     @default(16)
   navbar_font_family String @default("Montserrat") // Options: Montserrat, Playfair Display, Lato, etc.
+  navbar_transparent Boolean @default(false) // When true, navbar starts with transparent background
 
   // Favicon & Logo
   favicon_url     String?

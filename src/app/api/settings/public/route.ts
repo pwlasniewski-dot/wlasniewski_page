@@ -17,6 +17,7 @@ export async function GET(request: NextRequest) {
         const publicSettings = {
             navbar_layout: (settings as any).navbar_layout,
             navbar_sticky: (settings as any).navbar_sticky,
+            navbar_transparent: (settings as any).navbar_transparent,
             navbar_font_size: (settings as any).navbar_font_size,
             navbar_font_family: (settings as any).navbar_font_family,
             favicon_url: (settings as any).favicon_url,
