@@ -4,10 +4,10 @@ import nodemailer from 'nodemailer';
 const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port: parseInt(process.env.SMTP_PORT || '587'),
-    secure: process.env.SMTP_SECURE === 'true',
+    secure: process.env.SMTP_SECURE === 'true' || process.env.SMTP_PORT === '465',
     auth: {
         user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASSWORD,
+        pass: process.env.SMTP_PASS || process.env.SMTP_PASSWORD,
     },
 });
 
@@ -23,6 +23,14 @@ export async function sendEmail(emailData: EmailData) {
     try {
         const { to, subject, template, data, html } = emailData;
 
+        console.log('📧 Sending email to:', to);
+        console.log('📧 SMTP Config:', {
+            host: process.env.SMTP_HOST,
+            port: process.env.SMTP_PORT,
+            user: process.env.SMTP_USER,
+            hasPass: !!process.env.SMTP_PASS
+        });
+
         // Use provided HTML or render from template
         let emailHtml = html;
         if (!emailHtml && template && data) {
@@ -34,16 +42,16 @@ export async function sendEmail(emailData: EmailData) {
         }
 
         const result = await transporter.sendMail({
-            from: process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER,
+            from: process.env.SMTP_FROM || process.env.SMTP_USER,
             to,
             subject,
             html: emailHtml,
         });
 
-        console.log('Email sent successfully:', result.messageId);
+        console.log('✅ Email sent successfully:', result.messageId);
         return { success: true, messageId: result.messageId };
     } catch (error) {
-        console.error('Email send error:', error);
+        console.error('❌ Email send error:', error);
         throw error;
     }
 }
