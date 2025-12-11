@@ -1,14 +1,24 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, X, Send, Phone, Calendar } from 'lucide-react';
-import Link from 'next/link';
+import { MessageCircle, X, Send } from 'lucide-react';
+import { usePathname } from 'next/navigation';
 
 export default function FloatingContact() {
     const [isOpen, setIsOpen] = useState(false);
-    const phoneNumber = '+48530788694';
+    const [isAdminPanel, setIsAdminPanel] = useState(false);
+    const pathname = usePathname();
     const whatsappUrl = 'https://wa.me/48530788694';
+
+    useEffect(() => {
+        // Hide in admin panel
+        setIsAdminPanel(pathname?.startsWith('/admin') || false);
+    }, [pathname]);
+
+    if (isAdminPanel) {
+        return null; // Don't render in admin panel
+    }
 
     return (
         <div className="fixed bottom-6 right-6 z-[100] flex flex-col items-end gap-3 pointer-events-none">
@@ -32,36 +42,6 @@ export default function FloatingContact() {
                                 <Send className="w-5 h-5" />
                             </div>
                         </motion.a>
-
-                        {/* Telefon */}
-                        <motion.a
-                            initial={{ opacity: 0, y: 20, scale: 0.8 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: 20, scale: 0.8 }}
-                            transition={{ delay: 0.05 }}
-                            href={`tel:${phoneNumber}`}
-                            className="flex items-center gap-3 bg-white text-zinc-900 pl-4 pr-3 py-2.5 rounded-full shadow-lg border border-zinc-200 hover:bg-zinc-50 group whitespace-nowrap"
-                        >
-                            <span className="text-sm font-medium">Zadzwoń</span>
-                            <div className="w-10 h-10 rounded-full bg-zinc-900 flex items-center justify-center text-white shadow-sm group-hover:scale-110 transition-transform">
-                                <Phone className="w-5 h-5" />
-                            </div>
-                        </motion.a>
-
-                        {/* Rezerwacja */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 20, scale: 0.8 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: 20, scale: 0.8 }}
-                            className="flex items-center gap-3 bg-white text-zinc-900 pl-4 pr-3 py-2.5 rounded-full shadow-lg border border-zinc-200 hover:bg-zinc-50 group whitespace-nowrap"
-                        >
-                            <Link href="/rezerwacja" className="flex items-center gap-3">
-                                <span className="text-sm font-medium">Zarezerwuj</span>
-                                <div className="w-10 h-10 rounded-full bg-gold-400 flex items-center justify-center text-white shadow-sm group-hover:scale-110 transition-transform">
-                                    <Calendar className="w-5 h-5" />
-                                </div>
-                            </Link>
-                        </motion.div>
                     </div>
                 )}
             </AnimatePresence>

@@ -34,7 +34,6 @@ import { Suspense } from "react";
 import { AnalyticsTracker } from "@/hooks/useAnalytics";
 import AnalyticsLoader from "@/components/AnalyticsLoader";
 import FloatingContact from "@/components/FloatingContact";
-import MobileReservationButton from "@/components/MobileReservationButton";
 import SeasonalEffects from "@/components/effects/SeasonalEffects";
 
 const cormorant = Cormorant_Garamond({
@@ -135,7 +134,6 @@ export default function RootLayout({
                     {children}
                 </AppShell>
                 <FloatingContact />
-                <MobileReservationButton />
             </body>
         </html>
     );
