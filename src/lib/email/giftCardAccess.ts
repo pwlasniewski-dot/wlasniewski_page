@@ -1,4 +1,5 @@
 import { sendEmail } from './sender';
+import prisma from '@/lib/db/prisma';
 
 export async function sendGiftCardAccessEmail(
     customerEmail: string,
@@ -12,6 +13,22 @@ export async function sendGiftCardAccessEmail(
 ) {
     const accessUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'https://wlasniewski.pl'}/karta-podarunkowa/dostep/${accessToken}`;
 
+    // Fetch logo from settings
+    let logoUrl = '';
+    try {
+        const logoSetting = await prisma.setting.findFirst({
+            where: { setting_key: 'logo_url' }
+        });
+        if (logoSetting?.setting_value) {
+            // Ensure absolute URL
+            logoUrl = logoSetting.setting_value.startsWith('http') 
+                ? logoSetting.setting_value 
+                : `${process.env.NEXT_PUBLIC_BASE_URL || 'https://wlasniewski.pl'}${logoSetting.setting_value}`;
+        }
+    } catch (error) {
+        console.error('Error fetching logo:', error);
+    }
+
     const html = `
     <!DOCTYPE html>
     <html lang="pl">
@@ -20,67 +37,77 @@ export async function sendGiftCardAccessEmail(
         <style>
             body { font-family: Arial, sans-serif; background: #f5f5f5; color: #333; }
             .container { max-width: 600px; margin: 0 auto; background: white; padding: 40px; border-radius: 12px; }
-            .header { background: #8B0000; color: white; padding: 20px; border-radius: 8px; text-align: center; }
+            .header { background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%); color: white; padding: 30px; border-radius: 8px; text-align: center; }
+            .logo { margin-bottom: 20px; }
+            .logo img { max-width: 100px; height: auto; }
+            .photographer-name { font-size: 18px; font-weight: bold; letter-spacing: 1px; margin: 15px 0 5px 0; }
+            .photographer-title { font-size: 12px; color: #ddd; letter-spacing: 2px; }
             .content { padding: 20px 0; }
             .button { display: inline-block; background: #FFD700; color: black; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; }
-            .info { background: #f9f9f9; padding: 15px; border-radius: 6px; margin: 20px 0; }
+            .info { background: #f9f9f9; padding: 15px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #FFD700; }
+            .code-box { background: #f0f0f0; padding: 15px; border-radius: 6px; text-align: center; font-family: monospace; font-size: 18px; font-weight: bold; color: #FFD700; margin: 15px 0; }
             .footer { text-align: center; color: #888; font-size: 12px; margin-top: 30px; }
         </style>
     </head>
     <body>
         <div class="container">
             <div class="header">
-                <h1>🎁 Twoja Karta Podarunkowa Czeka!</h1>
-                <p>Dziękujemy za zakup</p>
+                ${logoUrl ? `<div class="logo"><img src="${logoUrl}" alt="Logo" /></div>` : ''}
+                <div class="photographer-name">PRZEMYSŁAW WŁAŚNIEWSKI</div>
+                <div class="photographer-title">📸 FOTOGRAFIA</div>
             </div>
 
             <div class="content">
                 <p>Cześć <strong>${customerName}</strong>,</p>
 
-                <p>Twoja karta podarunkowa o wartości <strong>${giftCard.value || giftCard.amount} PLN</strong> jest już gotowa!</p>
+                <p>Dziękujemy za zakup! Twoja karta podarunkowa o wartości <strong>${giftCard.value || giftCard.amount} PLN</strong> jest już gotowa!</p>
+
+                <h3>🎁 Twój Kod Promocyjny:</h3>
+                <div class="code-box">${giftCard.code}</div>
 
                 <div class="info">
-                    <p><strong>Kod promocyjny:</strong> ${giftCard.code}</p>
-                    <p>Karta jest ważna przez 12 miesięcy od daty zakupu.</p>
+                    <p><strong>⏰ Ważność:</strong></p>
+                    <ul style="margin: 10px 0; padding-left: 20px;">
+                        <li>30 dni dostępu do karty podarunkowej online</li>
+                        <li>12 miesięcy do wykorzystania kodu promocyjnego</li>
+                    </ul>
                 </div>
 
-                <p>Możesz teraz:</p>
+                <p><strong>Możesz teraz:</strong></p>
                 <ul>
-                    <li>Wydrukować kartę</li>
-                    <li>Wysłać kartę mailem komuś bliskim</li>
-                    <li>Udostępnić kod promocyjny</li>
+                    <li>✅ Wydrukować kartę w wysokiej jakości</li>
+                    <li>📧 Wysłać kartę mailem komuś bliskim</li>
+                    <li>🔗 Udostępnić link do karty</li>
                 </ul>
 
-                <p style="text-align: center; margin: 30px 0;">
-                    <a href="${accessUrl}" class="button">Przejdź do Mojej Karty →</a>
+                <p style="margin: 30px 0; text-align: center;">
+                    <a href="${accessUrl}" class="button">📲 Przejdź do Mojej Karty</a>
                 </p>
 
                 <div class="info">
-                    <p><strong>⚠️ Ważne:</strong> Dostęp do karty jest dostępny przez 30 dni. Upewnij się, że pobierzesz lub wyślesz kartę w tym czasie.</p>
+                    <p><strong>Jak wykorzystać kod?</strong></p>
+                    <ol style="margin: 10px 0; padding-left: 20px;">
+                        <li>Skontaktuj się z fotografem</li>
+                        <li>Umów sesję fotograficzną</li>
+                        <li>Podaj kod promocyjny przy rezerwacji</li>
+                        <li>Ciesz się wspaniałymi zdjęciami! 📸</li>
+                    </ol>
                 </div>
-
-                <p>Jeśli masz pytania, skontaktuj się z nami na <strong>kontakt@wlasniewski.pl</strong></p>
             </div>
 
             <div class="footer">
-                <p>Fotografia Przemysław Właśniewski</p>
-                <p>© 2024 Wszystkie prawa zastrzeżone</p>
+                <p>Ta karta jest ważna przez 30 dni. Link do karty wygasa po tym okresie.</p>
+                <p>© ${new Date().getFullYear()} PRZEMYSŁAW WŁAŚNIEWSKI FOTOGRAFIA</p>
+                <p>Email: <a href="mailto:kontakt@wlasniewski.pl">kontakt@wlasniewski.pl</a></p>
             </div>
         </div>
     </body>
     </html>
     `;
 
-    try {
-        await sendEmail({
-            to: customerEmail,
-            subject: `✅ Twoja Karta Podarunkowa jest gotowa - ${giftCard.code}`,
-            html
-        });
-
-        return { success: true };
-    } catch (error) {
-        console.error('Failed to send access email:', error);
-        throw error;
-    }
+    return sendEmail({
+        to: customerEmail,
+        subject: `🎁 Twoja Karta Podarunkowa od PRZEMYSŁAW WŁAŚNIEWSKI FOTOGRAFIA`,
+        html
+    });
 }

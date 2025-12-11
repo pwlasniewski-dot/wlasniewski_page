@@ -160,120 +160,149 @@ export function generateGiftCardEmail(
             .gift-card-wrapper {
                 padding: 40px 20px;
                 background: white;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
             }
             
             .gift-card-container {
                 position: relative;
                 width: 100%;
-                aspect-ratio: 16 / 10;
-                max-width: 500px;
+                max-width: 360px;
                 margin: 0 auto 30px;
-                border-radius: 24px;
+                border-radius: 28px;
                 overflow: hidden;
-                box-shadow: 0 10px 40px rgba(0,0,0,0.15);
-                background: linear-gradient(135deg, ${config.bgColor1} 0%, ${config.bgColor2} 100%);
-                padding: 40px;
+                box-shadow: 0 18px 45px rgba(0,0,0,0.18);
+                background: linear-gradient(145deg, rgba(255,255,255,0.15) 0%, rgba(0,0,0,0.15) 100%), linear-gradient(135deg, ${config.bgColor1} 0%, ${config.bgColor2} 100%);
+                padding: 32px 28px;
                 color: white;
-                text-align: center;
                 display: flex;
                 flex-direction: column;
-                justify-content: space-between;
+                gap: 24px;
+                text-align: left;
                 box-sizing: border-box;
             }
             
             .gift-card-top {
                 display: flex;
-                align-items: flex-start;
+                align-items: center;
                 justify-content: space-between;
-                margin-bottom: 20px;
+            }
+            
+            .theme-pill {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                background: rgba(255,255,255,0.15);
+                border-radius: 999px;
+                padding: 6px 12px;
+                font-size: 11px;
+                letter-spacing: 0.5px;
+                text-transform: uppercase;
+            }
+            
+            .theme-dot {
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                background: rgba(255,255,255,0.8);
             }
             
             .gift-card-icon {
-                font-size: 48px;
+                font-size: 40px;
             }
             
             .gift-card-center {
-                flex: 1;
                 display: flex;
                 flex-direction: column;
-                justify-content: center;
-                margin: 20px 0;
+                gap: 12px;
             }
             
             .gift-card-title {
-                font-size: 28px;
-                font-weight: bold;
-                margin-bottom: 10px;
-                text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+                font-size: 26px;
+                font-weight: 700;
+                line-height: 1.3;
+                text-shadow: 0 2px 4px rgba(0,0,0,0.25);
             }
             
             .gift-card-description {
                 font-size: 14px;
                 opacity: 0.9;
-                margin-bottom: 15px;
+                line-height: 1.6;
+            }
+            
+            .recipient-block {
+                background: rgba(0,0,0,0.18);
+                border-radius: 18px;
+                padding: 14px 16px;
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
             }
             
             .recipient-name {
                 font-size: 13px;
-                opacity: 0.85;
-                margin-bottom: 10px;
-                font-style: italic;
+                font-weight: 600;
+                letter-spacing: 0.5px;
             }
             
             .message-text {
                 font-size: 12px;
                 opacity: 0.8;
+                line-height: 1.5;
                 font-style: italic;
-                max-width: 90%;
-                margin: 0 auto;
             }
             
             .gift-card-bottom {
                 display: flex;
                 flex-direction: column;
-                gap: 15px;
+                gap: 18px;
             }
             
             .value-section {
+                background: rgba(255,255,255,0.14);
+                border-radius: 20px;
+                padding: 18px;
                 text-align: center;
+                box-shadow: inset 0 1px 0 rgba(255,255,255,0.2);
             }
             
             .value-label {
                 font-size: 11px;
                 opacity: 0.8;
                 text-transform: uppercase;
-                letter-spacing: 1px;
-                margin-bottom: 5px;
+                letter-spacing: 1.5px;
+                margin-bottom: 6px;
             }
             
             .value-amount {
-                font-size: 42px;
-                font-weight: bold;
-                text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+                font-size: 36px;
+                font-weight: 700;
+                text-shadow: 0 3px 6px rgba(0,0,0,0.25);
             }
             
             .code-section {
                 background: rgba(255,255,255,0.2);
-                backdrop-filter: blur(10px);
-                border-radius: 12px;
-                padding: 12px 16px;
-                border: 2px solid rgba(255,255,255,0.4);
+                border-radius: 16px;
+                padding: 14px 18px;
+                border: 1px solid rgba(255,255,255,0.35);
             }
             
             .code-label {
                 font-size: 10px;
                 text-transform: uppercase;
                 letter-spacing: 2px;
-                opacity: 0.8;
-                margin-bottom: 8px;
+                opacity: 0.75;
+                margin-bottom: 10px;
             }
             
             .code-value {
                 font-family: 'Courier New', monospace;
-                font-size: 20px;
-                font-weight: bold;
-                letter-spacing: 2px;
+                font-size: 18px;
+                font-weight: 700;
+                letter-spacing: 3px;
                 word-break: break-all;
+                text-align: center;
                 text-shadow: 0 2px 4px rgba(0,0,0,0.2);
             }
             
@@ -352,19 +381,35 @@ export function generateGiftCardEmail(
             
             @media (max-width: 480px) {
                 .gift-card-container {
-                    padding: 25px;
+                    padding: 26px 22px;
+                    max-width: 320px;
+                    gap: 20px;
                 }
                 
                 .gift-card-title {
                     font-size: 22px;
                 }
                 
+                .theme-pill {
+                    padding: 5px 10px;
+                    font-size: 10px;
+                }
+
+                .gift-card-icon {
+                    font-size: 32px;
+                }
+
+                .value-section {
+                    padding: 16px;
+                }
+
                 .value-amount {
-                    font-size: 36px;
+                    font-size: 32px;
                 }
                 
                 .code-value {
                     font-size: 16px;
+                    letter-spacing: 2px;
                 }
             }
         </style>
@@ -387,7 +432,10 @@ export function generateGiftCardEmail(
                 <div class="gift-card-container">
                     <!-- Top Section -->
                     <div class="gift-card-top">
-                        <div></div>
+                        <div class="theme-pill">
+                            <span class="theme-dot"></span>
+                            <span>${config.title}</span>
+                        </div>
                         <div class="gift-card-icon">${config.icon}</div>
                     </div>
                     
@@ -395,13 +443,11 @@ export function generateGiftCardEmail(
                     <div class="gift-card-center">
                         <div class="gift-card-title">${displayTitle}</div>
                         <div class="gift-card-description">${displayDescription}</div>
-                        
-                        ${recipientName ? `
-                        <div class="recipient-name">Dla: <strong>${recipientName}</strong></div>
-                        ` : ''}
-                        
-                        ${message ? `
-                        <div class="message-text">"${message}"</div>
+                        ${(recipientName || message) ? `
+                        <div class="recipient-block">
+                            ${recipientName ? `<div class="recipient-name">Dla ${recipientName}</div>` : ''}
+                            ${message ? `<div class="message-text">${message}</div>` : ''}
+                        </div>
                         ` : ''}
                     </div>
                     
