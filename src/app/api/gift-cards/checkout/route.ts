@@ -7,6 +7,13 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '');
 
 export const dynamic = 'force-dynamic';
 
+export async function GET() {
+    return NextResponse.json(
+        { error: 'Method not allowed', success: false },
+        { status: 405 }
+    );
+}
+
 interface CheckoutRequest {
     cardId: number;
     price: number;
