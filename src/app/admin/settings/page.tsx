@@ -401,12 +401,14 @@ export default function SettingsPage() {
                     <h2 className="text-lg font-medium text-white mb-4">Dekoracje Sezonowe</h2>
                     <div>
                         <label className="block text-sm font-medium text-zinc-400 mb-1">Aktywny Efekt</label>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                             {[
                                 { id: 'none', label: 'Brak', icon: '⛔' },
                                 { id: 'snow', label: 'Zima / Śnieg', icon: '❄️' },
                                 { id: 'lights', label: 'Światełka', icon: '💡' },
                                 { id: 'hearts', label: 'Walentynki', icon: '❤️' },
+                                { id: 'halloween', label: 'Halloween', icon: '👻' },
+                                { id: 'easter', label: 'Wielkanoc', icon: '🐰' },
                             ].map(opt => (
                                 <button
                                     key={opt.id}

@@ -31,6 +31,7 @@ export default function SeasonalEffects() {
             {effect === 'lights' && <LightsEffect />}
             {effect === 'hearts' && <HeartsEffect />}
             {effect === 'halloween' && <HalloweenEffect />}
+            {effect === 'easter' && <EasterEffect />}
         </div>
     );
 }
@@ -230,6 +231,54 @@ function HalloweenEffect() {
                     }}
                 >
                     👻
+                </div>
+            ))}
+        </>
+    );
+}
+
+function EasterEffect() {
+    useEffect(() => {
+        const styleSheet = document.createElement('style');
+        styleSheet.textContent = `
+            @keyframes easter-float {
+                0% { transform: translateY(0) translateX(0) rotate(0deg); opacity: 0; }
+                10% { opacity: 1; }
+                90% { opacity: 1; }
+                100% { transform: translateY(-120vh) translateX(30px) rotate(360deg); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(styleSheet);
+        return () => {
+            document.head.removeChild(styleSheet);
+        };
+    }, []);
+
+    const creatures = Array.from({ length: 25 }).map((_, i) => ({
+        id: i,
+        left: Math.random() * 100 + '%',
+        duration: Math.random() * 5 + 6 + 's',
+        delay: Math.random() * 3 + 's',
+        emoji: i % 3 === 0 ? '🐰' : i % 3 === 1 ? '🐑' : '🥚' // Bunny, Lamb, Egg
+    }));
+
+    return (
+        <>
+            {creatures.map(creature => (
+                <div
+                    key={creature.id}
+                    style={{
+                        position: 'absolute',
+                        top: '-50px',
+                        left: creature.left,
+                        fontSize: '2.2rem',
+                        animation: `easter-float ${creature.duration} linear infinite`,
+                        animationDelay: creature.delay,
+                        pointerEvents: 'none',
+                        filter: 'drop-shadow(0 0 5px rgba(139, 69, 19, 0.4))'
+                    }}
+                >
+                    {creature.emoji}
                 </div>
             ))}
         </>
