@@ -25,6 +25,7 @@ interface GiftCard {
     value: number;
     theme: string;
     recipient_name?: string;
+    recipient_email?: string;
     sender_name?: string;
     message?: string;
     card_title?: string;
@@ -366,7 +367,7 @@ export default function GiftCardsAdmin() {
                             </div>
                             
                             <div class="middle">
-                                <div class="recipient">${card.recipientName || 'Drogi odbiorco'}</div>
+                                <div class="recipient">${card.recipient_name || 'Drogi odbiorco'}</div>
                                 <div class="amount">${card.value} zł</div>
                             </div>
                             
@@ -376,7 +377,7 @@ export default function GiftCardsAdmin() {
                                     <div class="code">${card.code}</div>
                                 </div>
                                 <div style="text-align: right;">
-                                    <div class="sender">${card.senderName || 'Od Fotografa'}</div>
+                                    <div class="sender">${card.sender_name || 'Od Fotografa'}</div>
                                     <div style="font-size: 11px; opacity: 0.7; margin-top: 3px;">wlasniewski.pl</div>
                                 </div>
                             </div>
