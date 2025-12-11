@@ -1,27 +1,45 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { motion } from 'framer-motion';
+import GiftCard from '@/components/GiftCard';
+
+interface GiftCardType {
+    id: string;
+    code: string;
+    value: number;
+    theme: string;
+    card_title?: string;
+    card_description?: string;
+}
 
 export default function GiftCardShop() {
-    const [cards, setCards] = useState<any[]>([]);
+    const [cards, setCards] = useState<GiftCardType[]>([]);
     const [loading, setLoading] = useState(true);
+    const [logoUrl, setLogoUrl] = useState('');
 
     useEffect(() => {
-        const fetchCards = async () => {
+        const fetchData = async () => {
             try {
-                const res = await fetch('/api/gift-cards/shop');
-                const data = await res.json();
-                setCards(data);
+                // Fetch cards
+                const cardsRes = await fetch('/api/gift-cards/shop');
+                const cardsData = await cardsRes.json();
+                setCards(cardsData);
+
+                // Fetch logo
+                const settingsRes = await fetch('/api/settings/public');
+                const settingsData = await settingsRes.json();
+                if (settingsData.settings?.logo_url) {
+                    setLogoUrl(settingsData.settings.logo_url);
+                }
             } catch (error) {
-                console.error('Failed to fetch gift cards');
+                console.error('Failed to fetch data:', error);
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchCards();
+        fetchData();
     }, []);
 
     if (loading) {
@@ -71,26 +89,37 @@ export default function GiftCardShop() {
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                             {cards.map((card, idx) => (
                                 <motion.div
-                                    key={card.id || idx}
+                                    key={card.id}
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: idx * 0.1 }}
-                                    className="bg-zinc-900 rounded-2xl overflow-hidden border border-gold-500/20 hover:border-gold-500/50 transition-all hover:shadow-2xl"
+                                    className="cursor-pointer group"
                                 >
-                                    <div className="p-6">
-                                        <div className="text-4xl mb-4">🎁</div>
-                                        <h3 className="text-2xl font-bold mb-2 text-gold-400">
-                                            {card.value} PLN
-                                        </h3>
-                                        <p className="text-zinc-400 mb-6">
-                                            {card.description || 'Karta podarunkowa'}
-                                        </p>
-                                        <Link
+                                    <div className="mb-4">
+                                        <GiftCard
+                                            code={card.code}
+                                            value={card.value}
+                                            theme={card.theme as any}
+                                            logoUrl={logoUrl}
+                                            cardTitle={card.card_title}
+                                            cardDescription={card.card_description}
+                                        />
+                                    </div>
+                                    <div className="text-center space-y-3">
+                                        <div>
+                                            <p className="text-xs text-zinc-500">Kod</p>
+                                            <p className="text-white font-mono font-bold text-sm">{card.code}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs text-zinc-500">Wartość</p>
+                                            <p className="text-white font-bold text-lg">{card.value} zł</p>
+                                        </div>
+                                        <a
                                             href={`/karta-podarunkowa/${card.id}/kup`}
-                                            className="inline-flex items-center justify-center w-full px-6 py-3 bg-gold-500 text-black font-bold rounded-lg hover:bg-gold-400 transition-colors"
+                                            className="inline-flex items-center justify-center w-full px-6 py-3 bg-gold-500 hover:bg-gold-400 text-black font-bold rounded-lg transition-all"
                                         >
                                             Kup kartę
-                                        </Link>
+                                        </a>
                                     </div>
                                 </motion.div>
                             ))}
