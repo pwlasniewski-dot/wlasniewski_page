@@ -70,7 +70,7 @@ export default function GiftCardPromoBar() {
                     animate={{ x: 0, opacity: 1 }}
                     exit={{ x: -400, opacity: 0 }}
                     transition={{ type: 'spring', stiffness: 80, damping: 25 }}
-                    className="fixed left-0 top-1/2 -translate-y-1/2 z-40 w-96"
+                    className="fixed left-0 top-1/2 -translate-y-1/2 z-50 w-96"
                 >
                     <div
                         className="relative overflow-hidden rounded-r-2xl shadow-2xl border border-opacity-30 px-4 py-6 md:py-8"
