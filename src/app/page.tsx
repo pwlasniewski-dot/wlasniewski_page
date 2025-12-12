@@ -466,7 +466,7 @@ export default function Home() {
                                         </div>
 
                                         {/* Content */}
-                                        <div className={block.position === 'right' ? 'md:col-start-1 md:row-start-1' : ''}>
+                                        <div className={`${block.position === 'right' ? 'md:col-start-1 md:row-start-1 text-right' : 'text-left'}`}>
                                             <h2 className={`text-4xl font-display font-bold ${textColors.heading} mb-4`}>
                                                 {block.title}
                                             </h2>
