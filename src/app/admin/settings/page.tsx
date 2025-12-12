@@ -503,7 +503,23 @@ export default function SettingsPage() {
 
             {/* Email Settings */}
             <div className="bg-zinc-900 shadow rounded-lg border border-zinc-800 p-6">
-                <h2 className="text-lg font-medium text-white mb-4">Konfiguracja Email (SMTP)</h2>
+                <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-lg font-medium text-white">Konfiguracja Email (SMTP)</h2>
+                    <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${
+                        settings.smtp_host && settings.smtp_user && settings.smtp_password && settings.smtp_from
+                            ? 'bg-green-900/30 text-green-400 border border-green-900/50'
+                            : 'bg-red-900/30 text-red-400 border border-red-900/50'
+                    }`}>
+                        <div className={`w-2 h-2 rounded-full ${
+                            settings.smtp_host && settings.smtp_user && settings.smtp_password && settings.smtp_from
+                                ? 'bg-green-500'
+                                : 'bg-red-500'
+                        }`}></div>
+                        {settings.smtp_host && settings.smtp_user && settings.smtp_password && settings.smtp_from
+                            ? '✅ Skonfigurowany'
+                            : '⚠️ Niekompletny'}
+                    </div>
+                </div>
                 <div className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
