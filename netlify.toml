@@ -1,9 +1,13 @@
 [build]
   command = "npm run build"
-  # Next.js with standalone output - let Next.js handle server rendering
   base = "."
 
 # Netlify Next.js Runtime - required for Next.js apps with SSR/ISR
 [[plugins]]
   package = "@netlify/plugin-nextjs"
+
+# Cache headers for static assets
+[[headers]]
+  for = "/_next/static/*"
+  [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
