@@ -58,6 +58,7 @@ export async function POST(request: NextRequest) {
                 'about_me_hero_image', 'about_me_portrait',
                 'info_band_image', 'info_band_title', 'info_band_content',
                 // Navbar
+                'navbar_layout', 'navbar_sticky', 'navbar_transparent',
                 'navbar_font_size', 'navbar_font_family',
                 // Logo
                 'logo_url', 'logo_dark_url', 'logo_size',
