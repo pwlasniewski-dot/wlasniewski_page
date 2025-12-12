@@ -73,6 +73,10 @@ export default function HeroSlider({ slides = [] }: HeroSliderProps) {
     // Filter enabled slides
     const enabledSlides = slides.filter(s => s.enabled !== false).sort((a, b) => (a.order || 0) - (b.order || 0));
 
+    useEffect(() => {
+        if (mounted) console.log('[HeroSlider] Slides:', slides.length, 'Enabled:', enabledSlides.length);
+    }, [mounted, slides.length, enabledSlides.length]);
+
     // Detect mobile
     useEffect(() => {
         setMounted(true);
@@ -227,9 +231,8 @@ export default function HeroSlider({ slides = [] }: HeroSliderProps) {
                                 setCurrentSlide(index);
                                 setAutoplay(false);
                             }}
-                            className={`rounded-full transition-all ${
-                                index === currentSlide ? 'bg-gold-500' : 'bg-white/40 hover:bg-white/60'
-                            }`}
+                            className={`rounded-full transition-all ${index === currentSlide ? 'bg-gold-500' : 'bg-white/40 hover:bg-white/60'
+                                }`}
                             animate={{
                                 width: index === currentSlide ? 32 : 10,
                                 height: 10

@@ -20,7 +20,7 @@ export default function SeasonalEffects() {
                     console.log('[SeasonalEffects] No seasonal_effect in settings:', data.settings);
                 }
             })
-            .catch((err) => { 
+            .catch((err) => {
                 console.error('[SeasonalEffects] Error fetching settings:', err);
             });
     }, [pathname]); // Re-check on nav? Or just once. Usually global setting.
@@ -197,7 +197,8 @@ function HeartsEffect() {
 }
 
 function HalloweenEffect() {
-    useEffect(() => {        console.log('[HalloweenEffect] Mounting');        const styleSheet = document.createElement('style');
+    useEffect(() => {
+        console.log('[HalloweenEffect] Mounting'); const styleSheet = document.createElement('style');
         styleSheet.textContent = `
             @keyframes spooky-float {
                 0% { transform: translateY(0) translateX(0) rotate(0deg); opacity: 0; }
@@ -212,11 +213,12 @@ function HalloweenEffect() {
         };
     }, []);
 
-    const ghosts = Array.from({ length: 20 }).map((_, i) => ({
+    const ghosts = Array.from({ length: 25 }).map((_, i) => ({
         id: i,
         left: Math.random() * 100 + '%',
         duration: Math.random() * 5 + 6 + 's',
-        delay: Math.random() * 3 + 's'
+        delay: Math.random() * 3 + 's',
+        emoji: Math.random() > 0.6 ? '🎃' : '👻' // 40% Chance for Pumpkin
     }));
 
     return (
@@ -226,7 +228,7 @@ function HalloweenEffect() {
                     key={g.id}
                     style={{
                         position: 'absolute',
-                        top: '-50px',
+                        bottom: '-50px',
                         left: g.left,
                         fontSize: '2.5rem',
                         animation: `spooky-float ${g.duration} linear infinite`,
@@ -235,7 +237,7 @@ function HalloweenEffect() {
                         filter: 'drop-shadow(0 0 8px rgba(255, 165, 0, 0.5))'
                     }}
                 >
-                    👻
+                    {g.emoji}
                 </div>
             ))}
         </>
@@ -275,7 +277,7 @@ function EasterEffect() {
                     key={creature.id}
                     style={{
                         position: 'absolute',
-                        top: '-50px',
+                        bottom: '-50px',
                         left: creature.left,
                         fontSize: '2.2rem',
                         animation: `easter-float ${creature.duration} linear infinite`,

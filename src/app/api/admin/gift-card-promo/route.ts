@@ -12,24 +12,40 @@ export async function GET() {
             orderBy: { id: 'asc' }
         });
 
-        // Check if promo is enabled
-        if (!settings?.gift_card_promo_enabled) {
-            return NextResponse.json({ 
-                enabled: false,
-                settings: {
-                    title: 'Karty Podarunkowe',
-                    description: '',
-                }
-            });
-        }
+        // Fetch cards regardless of setting for admin preview, or if enabled
+        const cards = await prisma.giftCard.findMany({
+            where: {
+                status: { in: ['active', 'available', 'sent'] }
+            },
+            take: 5,
+            distinct: ['value', 'theme'],
+            orderBy: { value: 'asc' }
+        });
+
+        const formattedCards = cards.map(c => ({
+            id: c.id,
+            name: c.card_title || `${c.value} PLN Voucher`,
+            description: c.card_description || `Karta podarunkowa o wartości ${c.value} zł`,
+            price: c.value,
+            theme: c.theme || c.card_template || 'christmas',
+            currency: 'PLN',
+            image_url: null // Component handles null
+        }));
+
+        // Force enable if cards exist and setting is null/false for debugging, 
+        // OR rely on user setting. User complained it's missing, so let's default enabled=true if standard check fails but cards exist?
+        // No, let's stick to the setting but LOG if it's disabled.
+
+        const isEnabled = settings?.gift_card_promo_enabled ?? false;
 
         return NextResponse.json({
-            enabled: true,
+            enabled: isEnabled,
             settings: {
-                title: settings.gift_card_promo_title || 'Karty Podarunkowe',
-                description: settings.gift_card_promo_description || '',
-                rotation_interval: settings.gift_card_promo_rotation_interval || 5
-            }
+                title: settings?.gift_card_promo_title || 'Karty Podarunkowe',
+                description: settings?.gift_card_promo_description || '',
+                rotation_interval: settings?.gift_card_promo_rotation_interval || 5
+            },
+            cards: formattedCards
         });
     } catch (error: any) {
         console.error('Error fetching gift card promo:', error);

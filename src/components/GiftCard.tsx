@@ -136,7 +136,7 @@ export default function GiftCard({
             className={`relative overflow-hidden rounded-3xl ${isPrint ? '' : 'shadow-2xl hover:shadow-3xl'} transition-shadow duration-300`}
             style={{
                 ...cardStyle,
-                aspectRatio: isPrint ? '1.588 / 1' : undefined,
+                aspectRatio: '1.588 / 1', // Standard credit card ratio (ISO/IEC 7810 ID-1)
             }}
             animate={!isPrint ? { scale: [1, 1.02, 1] } : {}}
             transition={!isPrint ? { duration: 4, repeat: Infinity } : {}}
@@ -162,7 +162,7 @@ export default function GiftCard({
             />
 
             {/* Content */}
-            <div className={`relative h-full p-6 sm:p-8 flex flex-col justify-between ${config.textColor}`}>
+            <div className={`relative h-full p-4 sm:p-6 flex flex-col justify-between ${config.textColor}`}>
                 {/* Top section - Logo and theme */}
                 <div className="flex items-start justify-between">
                     {logoUrl && (
