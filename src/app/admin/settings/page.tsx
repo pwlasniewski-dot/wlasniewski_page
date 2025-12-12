@@ -135,7 +135,12 @@ export default function SettingsPage() {
                 body: JSON.stringify(settingsToSave),
             });
 
-            console.log('[Admin Settings] Save response:', { status: res.status, ok: res.ok });
+            const resData = await res.json();
+            console.log('[Admin Settings] Save response:', { status: res.status, ok: res.ok, data: resData });
+
+            if (!res.ok || !resData.success) {
+                throw new Error(resData.error || 'Nie udało się zapisać ustawień');
+            }
 
             // Save challenge settings
             const challengeRes = await fetch('/api/photo-challenge/settings', {
@@ -147,13 +152,17 @@ export default function SettingsPage() {
                 body: JSON.stringify(challengeSettings),
             });
 
-            if (res.ok && challengeRes.ok) {
-                toast.success('Zapisano wszystkie ustawienia');
-            } else {
-                throw new Error('Save failed');
+            const challengeResData = await challengeRes.json();
+            console.log('[Admin Settings] Challenge settings response:', { status: challengeRes.status, ok: challengeRes.ok, data: challengeResData });
+
+            if (!challengeRes.ok || !challengeResData.success) {
+                throw new Error(challengeResData.error || 'Nie udało się zapisać ustawień wyzwania');
             }
-        } catch (error) {
-            toast.error('Błąd zapisu');
+
+            toast.success('Zapisano wszystkie ustawienia');
+        } catch (error: any) {
+            console.error('[Admin Settings] Save error:', error);
+            toast.error(error?.message || 'Błąd zapisu');
         } finally {
             setSaving(false);
         }
