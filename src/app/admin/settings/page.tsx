@@ -242,6 +242,47 @@ export default function SettingsPage() {
                     </div>
                 </div>
 
+                {/* Urgency Banner Settings */}
+                <div className="bg-zinc-900 shadow rounded-lg border border-zinc-800 p-6">
+                    <h2 className="text-lg font-medium text-white mb-4">Licznik Terminów (Pilność)</h2>
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                            <label className="text-zinc-300">Włącz licznik na stronie głównej</label>
+                            <button
+                                onClick={() => setSettings(s => ({ ...s, urgency_enabled: s.urgency_enabled === 'true' ? 'false' : 'true' }))}
+                                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${settings.urgency_enabled === 'true' ? 'bg-gold-500' : 'bg-zinc-700'
+                                    }`}
+                            >
+                                <span
+                                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${settings.urgency_enabled === 'true' ? 'translate-x-5' : 'translate-x-0'
+                                        }`}
+                                />
+                            </button>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-zinc-400 mb-1">Liczba wolnych miejsc</label>
+                                <input
+                                    type="number"
+                                    value={settings.urgency_slots_remaining}
+                                    onChange={e => setSettings(s => ({ ...s, urgency_slots_remaining: e.target.value }))}
+                                    className="block w-full rounded-md border-zinc-700 bg-zinc-800 text-white shadow-sm focus:border-gold-500 focus:ring-gold-500 sm:text-sm px-3 py-2"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-zinc-400 mb-1">Miesiąc (np. Styczeń)</label>
+                                <input
+                                    type="text"
+                                    value={settings.urgency_month}
+                                    onChange={e => setSettings(s => ({ ...s, urgency_month: e.target.value }))}
+                                    className="block w-full rounded-md border-zinc-700 bg-zinc-800 text-white shadow-sm focus:border-gold-500 focus:ring-gold-500 sm:text-sm px-3 py-2"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 {/* Navbar Settings */}
                 <div className="bg-zinc-900 shadow rounded-lg border border-zinc-800 p-6">
                     <h2 className="text-lg font-medium text-white mb-4">Wygląd Nawigacji (Navbar)</h2>
