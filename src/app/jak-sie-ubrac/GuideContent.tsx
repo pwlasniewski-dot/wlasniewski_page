@@ -5,6 +5,11 @@ import Link from "next/link";
 import ParallaxSection from "@/components/ParallaxSection";
 import { motion } from "framer-motion";
 import EffectWrapper from "@/components/VisualEffects/EffectWrapper";
+import { Swiper, SwiperSlide } from 'swiper/react';
+import { Navigation, Pagination } from 'swiper/modules';
+import 'swiper/css';
+import 'swiper/css/navigation';
+import 'swiper/css/pagination';
 
 const ICON_MAP: any = {
     city: '🏙️',
@@ -90,38 +95,62 @@ export default function GuideContent({ pageData, parallaxSections, contentCards,
                         <div className="text-center mb-12">
                             <h2 className="text-4xl font-bold mb-4">Palety kolorów</h2>
                         </div>
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                            {colorPalettes.map((palette, index) => (
-                                <motion.div
-                                    key={palette.id || index}
-                                    initial={{ opacity: 0, y: 30 }}
-                                    whileInView={{ opacity: 1, y: 0 }}
-                                    viewport={{ once: true }}
-                                    transition={{ duration: 0.6, delay: index * 0.15 }}
-                                    className="bg-zinc-900 border border-white/5 p-8 rounded-lg"
-                                >
-                                    <h3 className="text-2xl font-bold mb-3">{palette.title}</h3>
-                                    <p className="text-zinc-400 text-sm mb-6">{palette.description}</p>
+                        <div className="guide-swiper-container">
+                            <Swiper
+                                modules={[Navigation, Pagination]}
+                                spaceBetween={30}
+                                slidesPerView={1}
+                                navigation
+                                pagination={{ clickable: true }}
+                                breakpoints={{
+                                    768: {
+                                        slidesPerView: 2,
+                                    }
+                                }}
+                                className="pb-12"
+                            >
+                                {colorPalettes.map((palette, index) => (
+                                    <SwiperSlide key={palette.id || index} className="h-auto">
+                                        <div className="bg-zinc-900 border border-white/5 p-8 rounded-lg h-full flex flex-col justify-start">
+                                            <h3 className="text-3xl md:text-4xl font-bold mb-4 text-gold-400">{palette.title}</h3>
+                                            <p className="text-zinc-300 text-lg mb-8">{palette.description}</p>
 
-                                    <div className="grid grid-cols-5 gap-2 mb-4">
-                                        {palette.colors.map((color: any, i: number) => (
-                                            <div
-                                                key={i}
-                                                className="aspect-square rounded border border-white/10"
-                                                style={{ backgroundColor: color.hex }}
-                                                title={color.name}
-                                            />
-                                        ))}
-                                    </div>
+                                            <div className="grid grid-cols-5 gap-3 mb-8">
+                                                {palette.colors.map((color: any, i: number) => (
+                                                    <div
+                                                        key={i}
+                                                        className="aspect-square rounded-lg border border-white/10 shadow-lg transform hover:scale-105 transition-transform"
+                                                        style={{ backgroundColor: color.hex }}
+                                                        title={color.name}
+                                                    />
+                                                ))}
+                                            </div>
 
-                                    {palette.tips && (
-                                        <div className="bg-black/40 border border-white/10 p-4 rounded">
-                                            <p className="text-zinc-300 text-sm">{palette.tips}</p>
+                                            {palette.tips && (
+                                                <div className="bg-black/40 border border-white/10 p-6 rounded-lg mt-auto">
+                                                    <p className="text-zinc-200 italic text-base leading-relaxed">"{palette.tips}"</p>
+                                                </div>
+                                            )}
                                         </div>
-                                    )}
-                                </motion.div>
-                            ))}
+                                    </SwiperSlide>
+                                ))}
+                            </Swiper>
                         </div>
+                        <style jsx global>{`
+                            .guide-swiper-container .swiper-button-next,
+                            .guide-swiper-container .swiper-button-prev {
+                                color: #fbbf24;
+                            }
+                            .guide-swiper-container .swiper-pagination-bullet {
+                                background: #71717a;
+                            }
+                            .guide-swiper-container .swiper-pagination-bullet-active {
+                                background: #fbbf24;
+                            }
+                            .guide-swiper-container .swiper-slide {
+                                height: auto;
+                            }
+                        `}</style>
                     </div>
                 )}
 

@@ -493,8 +493,8 @@ export default function RezerwacjaPage() {
                         </motion.section>
                     )}
 
-                    {/* Step 3: Date & Time Selection */}
-                    {chosenPackage && (
+                    {/* Step 3: Date & Time Selection - Visible immediately after Service is present */}
+                    {service && (
                         <motion.section
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -502,12 +502,12 @@ export default function RezerwacjaPage() {
                             className="bg-zinc-900/50 rounded-2xl p-8 border border-zinc-800"
                         >
                             <h2 className="text-2xl font-bold text-white mb-6">Krok 3: Wybierz Termin</h2>
-                            
+
                             {/* Calendar */}
                             <div className="mb-8">
                                 <h3 className="text-lg font-bold text-white mb-4">Wybierz Dzień</h3>
-                                <BookingCalendar 
-                                    onSlotSelect={setSlot} 
+                                <BookingCalendar
+                                    onSlotSelect={setSlot}
                                     selectedSlot={slot}
                                     service={(service?.name as "Sesja" | "Ślub" | "Przyjęcie" | "Urodziny") || 'Sesja'}
                                 />
@@ -517,10 +517,19 @@ export default function RezerwacjaPage() {
                             {slot?.date && (
                                 <div className="mt-8 pt-8 border-t border-zinc-700">
                                     <h3 className="text-xl font-bold text-white mb-4">
-                                        {loadingAvailability ? '⏳ Ładowanie dostępnych godzin...' : '⏰ Wybierz Godzinę'}
+                                        {!chosenPackage
+                                            ? '📦 Wybierz pakiet, aby zobaczyć godziny'
+                                            : loadingAvailability
+                                                ? '⏳ Ładowanie dostępnych godzin...'
+                                                : '⏰ Wybierz Godzinę'}
                                     </h3>
 
-                                    {loadingAvailability ? (
+                                    {!chosenPackage ? (
+                                        <div className="text-center text-amber-500 py-8 border border-dashed border-zinc-700 rounded-xl bg-zinc-900/50">
+                                            <p className="mb-2">Najpierw wybierz pakiet powyżej,</p>
+                                            <p className="text-sm text-zinc-400">abyśmy mogli sprawdzić dostępność dla wybranej długości sesji.</p>
+                                        </div>
+                                    ) : loadingAvailability ? (
                                         <div className="text-center text-zinc-400">
                                             <p>Sprawdzam dostępność...</p>
                                         </div>

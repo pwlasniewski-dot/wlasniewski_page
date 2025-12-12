@@ -90,7 +90,7 @@ export default function GiftCardPromoBar() {
                     animate={{ x: 0, opacity: 1 }}
                     exit={{ x: -400, opacity: 0 }}
                     transition={{ type: 'spring', stiffness: 80, damping: 25 }}
-                    className="fixed left-0 top-24 z-[100] w-80"
+                    className="fixed left-0 top-32 z-[100] w-80"
                 >
                     <div className="bg-gradient-to-b from-zinc-900 to-black rounded-r-2xl shadow-2xl border border-gold-500/30 overflow-hidden">
                         {/* Header */}
@@ -163,7 +163,7 @@ export default function GiftCardPromoBar() {
                                                 </>
                                             )}
                                             <Link
-                                                href={`/karta-podarunkowa/${currentCard.id}/kup`}
+                                                href="/sklep-karty-podarunkowe"
                                                 className="flex-1 bg-gold-500 hover:bg-gold-400 text-black font-semibold py-2 px-4 rounded-lg text-xs flex items-center justify-center gap-2 transition-transform hover:scale-105"
                                             >
                                                 Wybierz
