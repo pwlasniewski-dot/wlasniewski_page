@@ -37,6 +37,19 @@ export async function GET(request: NextRequest) {
                     }
                 }
             });
+
+            // Normalize legacy PayU fields
+            const payuPosId = (mainSettings as any).payu_merchant_pos_id;
+            if (payuPosId !== undefined) {
+                settingsMap.payu_merchant_pos_id = payuPosId;
+                settingsMap.payu_pos_id = payuPosId;
+            }
+
+            const payuEnvironment = (mainSettings as any).payu_environment;
+            if (payuEnvironment !== undefined) {
+                settingsMap.payu_environment = payuEnvironment;
+                settingsMap.payu_test_mode = payuEnvironment === 'sandbox';
+            }
         }
 
         return NextResponse.json({ success: true, settings: settingsMap });
@@ -65,8 +78,8 @@ export async function POST(request: NextRequest) {
                 // Payment Config
                 'p24_merchant_id', 'p24_pos_id', 'p24_crc_key', 'p24_api_key',
                 'p24_test_mode', 'p24_method_blik', 'p24_method_card', 'p24_method_transfer',
-                // PayU Config
-                'payu_client_id', 'payu_client_secret', 'payu_pos_id', 'payu_test_mode',
+                // PayU Config (stored as merchant_pos_id/environment in DB)
+                'payu_client_id', 'payu_client_secret', 'payu_merchant_pos_id', 'payu_environment',
                 // Booking Settings
                 'booking_require_payment', 'booking_payment_method', 'booking_currency', 'booking_min_days_ahead',
                 // Email SMTP
@@ -96,15 +109,36 @@ export async function POST(request: NextRequest) {
                 'navbar_sticky', 'navbar_transparent',
                 'urgency_enabled', 'promo_code_discount_enabled',
                 'gift_card_promo_enabled', 'p24_test_mode',
-                'payu_test_mode'
+                'p24_method_blik', 'p24_method_card', 'p24_method_transfer',
+                'booking_require_payment'
+            ];
+
+            // Map of numeric fields that need type conversion
+            const numericFields = [
+                'navbar_font_size', 'logo_size',
+                'smtp_port', 'booking_min_days_ahead',
+                'promo_code_discount_amount', 'gift_card_promo_rotation_interval',
+                'urgency_slots_remaining', 'social_proof_total_clients'
             ];
 
             for (const [key, value] of Object.entries(body)) {
+                // Legacy PayU keys -> map to DB columns
+                if (key === 'payu_pos_id') {
+                    columnUpdates.payu_merchant_pos_id = value;
+                    kvUpdates.payu_pos_id = String(value);
+                    continue;
+                }
+                if (key === 'payu_test_mode') {
+                    columnUpdates.payu_environment = value === 'true' || value === true ? 'sandbox' : 'secure';
+                    kvUpdates.payu_test_mode = (value === 'true' || value === true).toString();
+                    continue;
+                }
+
                 if (columnFields.includes(key)) {
                     // Convert string booleans to actual booleans
                     if (booleanFields.includes(key)) {
                         columnUpdates[key] = value === 'true' || value === true;
-                    } else if (key === 'navbar_font_size' || key === 'logo_size') {
+                    } else if (numericFields.includes(key)) {
                         // Convert to number
                         columnUpdates[key] = Number(value);
                     } else {
