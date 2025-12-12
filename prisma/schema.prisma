@@ -122,8 +122,11 @@ model Setting {
   promo_code_discount_amount  Int?    @default(10)
   promo_code_discount_type    String? @default("percentage") // percentage, fixed
 
-  // Gift Card Promo
-  gift_card_promo_enabled Boolean @default(false)
+  // Gift Card Promo Bar
+  gift_card_promo_enabled Boolean  @default(false)
+  gift_card_promo_title   String?  @default("Karty Podarunkowe")
+  gift_card_promo_description String? // Long description for the promo
+  gift_card_promo_rotation_interval Int? @default(5) // seconds between card rotation
 
   // SEO & Analytics
   google_analytics_id      String?

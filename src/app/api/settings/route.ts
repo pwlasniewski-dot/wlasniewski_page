@@ -80,8 +80,8 @@ export async function POST(request: NextRequest) {
                 'social_proof_total_clients',
                 // Promo Code
                 'promo_code_discount_enabled', 'promo_code_discount_amount', 'promo_code_discount_type',
-                // Gift Card
-                'gift_card_promo_enabled',
+                // Gift Card Promo
+                'gift_card_promo_enabled', 'gift_card_promo_title', 'gift_card_promo_description', 'gift_card_promo_rotation_interval',
                 // Portfolio
                 'portfolio_categories',
                 // Seasonal

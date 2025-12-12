@@ -4,121 +4,83 @@ import { withAuth } from '@/lib/auth/middleware';
 
 export const dynamic = 'force-dynamic';
 
-// GET - Fetch promo settings
+// GET - Fetch gift card promo settings
 export async function GET() {
     try {
-        // Get the first settings record (where columns are stored)
+        // Get settings from columns
         const settings = await prisma.setting.findFirst({
             orderBy: { id: 'asc' }
         });
 
-        // Check if promo is enabled from column
+        // Check if promo is enabled
         if (!settings?.gift_card_promo_enabled) {
-            return NextResponse.json({ enabled: false, messages: [] });
-        }
-
-        // Fetch promo messages from kv storage
-        const messagesData = await prisma.setting.findFirst({
-            where: { setting_key: 'gift_card_promo_messages' }
-        });
-
-        let messages = [];
-        if (messagesData?.setting_value) {
-            try {
-                messages = JSON.parse(messagesData.setting_value);
-            } catch (e) {
-                messages = getDefaultMessages();
-            }
-        } else {
-            messages = getDefaultMessages();
+            return NextResponse.json({ 
+                enabled: false,
+                settings: {
+                    title: 'Karty Podarunkowe',
+                    description: '',
+                }
+            });
         }
 
         return NextResponse.json({
             enabled: true,
-            messages
+            settings: {
+                title: settings.gift_card_promo_title || 'Karty Podarunkowe',
+                description: settings.gift_card_promo_description || '',
+                rotation_interval: settings.gift_card_promo_rotation_interval || 5
+            }
         });
     } catch (error: any) {
-        console.error('Error fetching promo settings:', error);
+        console.error('Error fetching gift card promo:', error);
         return NextResponse.json(
-            { enabled: false, messages: [], error: error.message },
+            { enabled: false, error: error.message },
             { status: 500 }
         );
     }
 }
 
-// POST - Save/Update promo settings
+// POST - Update gift card promo settings
 export async function POST(request: NextRequest) {
     return withAuth(request, async (req) => {
         try {
             const body = await request.json();
-            const { enabled, messages } = body;
+            const { enabled, title, description, rotation_interval } = body;
 
-            // Update enable/disable setting
-            await prisma.setting.upsert({
-                where: { setting_key: 'gift_card_promo_enabled' },
-                update: { setting_value: enabled ? 'true' : 'false' },
-                create: {
-                    setting_key: 'gift_card_promo_enabled',
-                    setting_value: enabled ? 'true' : 'false'
-                }
+            const firstSetting = await prisma.setting.findFirst({
+                orderBy: { id: 'asc' }
             });
 
-            // Update messages
-            if (messages && Array.isArray(messages)) {
-                await prisma.setting.upsert({
-                    where: { setting_key: 'gift_card_promo_messages' },
-                    update: { setting_value: JSON.stringify(messages) },
-                    create: {
-                        setting_key: 'gift_card_promo_messages',
-                        setting_value: JSON.stringify(messages)
+            if (firstSetting) {
+                await prisma.setting.update({
+                    where: { id: firstSetting.id },
+                    data: {
+                        gift_card_promo_enabled: enabled || false,
+                        gift_card_promo_title: title || 'Karty Podarunkowe',
+                        gift_card_promo_description: description || '',
+                        gift_card_promo_rotation_interval: rotation_interval || 5
+                    }
+                });
+            } else {
+                await prisma.setting.create({
+                    data: {
+                        setting_key: 'system_init',
+                        setting_value: 'true',
+                        gift_card_promo_enabled: enabled || false,
+                        gift_card_promo_title: title || 'Karty Podarunkowe',
+                        gift_card_promo_description: description || '',
+                        gift_card_promo_rotation_interval: rotation_interval || 5
                     }
                 });
             }
 
-            return NextResponse.json({ success: true });
+            return NextResponse.json({ success: true, message: 'Gift card promo settings updated' });
         } catch (error: any) {
-            console.error('Error saving promo settings:', error);
+            console.error('Error updating gift card promo settings:', error);
             return NextResponse.json(
-                { error: 'Failed to save promo settings', details: error.message },
+                { error: error.message || 'Failed to update settings' },
                 { status: 500 }
             );
         }
     });
-}
-
-function getDefaultMessages() {
-    return [
-        {
-            id: 1,
-            title: '🎁 Chcesz podarować sesję?',
-            message: 'Kup kartę podarunkową na dowolną wartość',
-            cta_text: 'Kup kartę',
-            icon: '🎁',
-            colors: { bg: '#DC143C', accent: '#FFD700' }
-        },
-        {
-            id: 2,
-            title: '💝 Karta dla ukochanej osoby',
-            message: 'Spersonalizowana karta do wysłania mailem lub wydruku',
-            cta_text: 'Wybierz kartę',
-            icon: '💝',
-            colors: { bg: '#C71585', accent: '#FFB6C1' }
-        },
-        {
-            id: 3,
-            title: '🎉 Na każdą okazję',
-            message: 'Kartę możesz spersonalizować własnymi słowami',
-            cta_text: 'Odkryj wzory',
-            icon: '🎉',
-            colors: { bg: '#1E90FF', accent: '#FFD700' }
-        },
-        {
-            id: 4,
-            title: '📸 Prezent dla fotografii',
-            message: 'Idealne rozwiązanie na każde święto',
-            cta_text: 'Przejdź do sklepu',
-            icon: '📸',
-            colors: { bg: '#9932CC', accent: '#FFD700' }
-        }
-    ];
 }
