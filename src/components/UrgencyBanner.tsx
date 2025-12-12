@@ -50,13 +50,21 @@ export default function UrgencyBanner() {
 
     if (loading || (!settings.enabled && !settings.promoEnabled)) return null;
 
+    // Hide on booking/payment pages to avoid collision with forms
+    if (typeof window !== 'undefined') {
+        const isReservationPage = window.location.pathname.includes('/rezerwacja') || 
+                                 window.location.pathname.includes('/platnosc') ||
+                                 window.location.pathname.includes('/potwierdzenie');
+        if (isReservationPage) return null;
+    }
+
     return (
         <AnimatePresence>
             <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                className="relative z-[110] bg-gold-500/10 border-b border-gold-500/20 backdrop-blur-sm"
+                className="relative z-40 mt-20 bg-gold-500/10 border-b border-gold-500/20 backdrop-blur-sm"
                 data-urgency-banner="true"
             >
                 <div className="max-w-7xl mx-auto py-3 px-3 sm:px-6 lg:px-8">

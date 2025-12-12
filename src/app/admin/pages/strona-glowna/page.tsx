@@ -83,8 +83,10 @@ interface ParallaxSection extends BaseSection {
         parallaxSpeed?: number;
         imageOffset?: number;
         textOpacity?: number;
+        overlayOpacity?: number;
         textColor?: string;
         textAnimation?: string;
+        height?: string;
     };
 }
 
@@ -917,6 +919,28 @@ export default function HomepageManager() {
                                                 </button>
                                             </div>
                                         </div>
+                                        <div className="md:col-span-2 bg-zinc-800/30 p-3 rounded border border-zinc-700">
+                                            <label className="block text-sm text-zinc-400 mb-1">Wysokość sekcji (VH)</label>
+                                            <div className="flex items-center gap-4">
+                                                <input
+                                                    type="range"
+                                                    min="50"
+                                                    max="130"
+                                                    step="10"
+                                                    value={parseInt((section.data.height || "min-h-[80vh]").match(/\d+/)?.[0] || "80")}
+                                                    onChange={e => {
+                                                        const val = e.target.value;
+                                                        // Update with Tailwind class format
+                                                        updateSectionData(index, 'height', `min-h-[${val}vh] md:min-h-[${val}vh]`);
+                                                    }}
+                                                    className="flex-1"
+                                                />
+                                                <span className="text-sm font-mono text-gold-400 w-16 text-right">
+                                                    {parseInt((section.data.height || "min-h-[80vh]").match(/\d+/)?.[0] || "80")} vh
+                                                </span>
+                                            </div>
+                                            <p className="text-xs text-zinc-500 mt-1">Dostosuj wysokość obszaru parallax. Standardowo 80-100vh.</p>
+                                        </div>
                                     </div>
 
                                     {/* Desktop & Mobile Images */}
@@ -993,25 +1017,40 @@ export default function HomepageManager() {
                                                 {section.data.floatingImage ? '✓ Włączony' : 'Wyłączony'}
                                             </button>
                                         </div>
-                                        <div>
-                                            <label className="block text-sm text-zinc-400 mb-1">Szybkość parallaxu</label>
-                                            <input
-                                                type="range"
-                                                min="0"
-                                                max="1"
-                                                step="0.1"
-                                                value={section.data.parallaxSpeed || 0.5}
-                                                onChange={e => updateSectionData(index, 'parallaxSpeed', parseFloat(e.target.value))}
-                                                className="w-full"
-                                            />
-                                            <span className="text-xs text-zinc-500">{((section.data.parallaxSpeed || 0.5) * 100).toFixed(0)}%</span>
+                                        <div className="col-span-2 flex gap-4">
+                                            <div className="w-1/2">
+                                                <label className="block text-sm text-zinc-400 mb-1">Szybkość parallaxu</label>
+                                                <input
+                                                    type="range"
+                                                    min="0.1"
+                                                    max="1.5"
+                                                    step="0.1"
+                                                    value={section.data.parallaxSpeed || 0.5}
+                                                    onChange={e => updateSectionData(index, 'parallaxSpeed', parseFloat(e.target.value))}
+                                                    className="w-full"
+                                                />
+                                                <span className="text-xs text-zinc-500">{((section.data.parallaxSpeed || 0.5) * 100).toFixed(0)}%</span>
+                                            </div>
+                                            <div className="w-1/2">
+                                                <label className="block text-sm text-zinc-400 mb-1">Przyciemnienie (Opacity)</label>
+                                                <input
+                                                    type="range"
+                                                    min="0"
+                                                    max="0.9"
+                                                    step="0.1"
+                                                    value={section.data.overlayOpacity ?? 0.4}
+                                                    onChange={e => updateSectionData(index, 'overlayOpacity', parseFloat(e.target.value))}
+                                                    className="w-full"
+                                                />
+                                                <span className="text-xs text-zinc-500">{((section.data.overlayOpacity ?? 0.4) * 100).toFixed(0)}%</span>
+                                            </div>
                                         </div>
                                         <div>
                                             <label className="block text-sm text-zinc-400 mb-1">Offset zdjęcia (px)</label>
                                             <input
                                                 type="number"
                                                 min="0"
-                                                max="100"
+                                                max="200"
                                                 value={section.data.imageOffset || 20}
                                                 onChange={e => updateSectionData(index, 'imageOffset', parseInt(e.target.value))}
                                                 className="w-full px-2 py-2 bg-zinc-900 border border-zinc-700 rounded text-white text-sm"
@@ -1019,6 +1058,7 @@ export default function HomepageManager() {
                                         </div>
                                     </div>
                                 </div>
+
                             )}
 
                             {/* INFO BAND EDITOR */}
@@ -1394,10 +1434,10 @@ export default function HomepageManager() {
                             )}
 
                         </div>
-                    </div >
+                    </div>
                 ))
                 }
-            </div >
+            </div>
 
             <MediaPicker
                 isOpen={mediaPickerOpen}
@@ -1405,6 +1445,6 @@ export default function HomepageManager() {
                 onSelect={handleMediaSelect}
                 multiple={currentPickerTarget?.field === 'photos'}
             />
-        </div >
+        </div>
     );
 }

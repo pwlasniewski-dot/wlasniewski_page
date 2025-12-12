@@ -7,50 +7,82 @@ import { useParams } from "next/navigation";
 const cityData: Record<string, { title: string; subtitle: string; tag: string; content: string[] }> = {
     torun: {
         title: "Fotograf Toruń",
-        subtitle: "Sesje rodzinne, biznesowe i z drona",
+        subtitle: "Naturalne sesje w sercu miasta i plenerze",
         tag: "fotograf toruń",
         content: [
-            "Pracuję w Toruniu i okolicach — realizuję sesje rodzinne, portrety biznesowe oraz reportaże z wydarzeń.",
-            "Dbam o komfort na planie, pomagam w stylizacji i doborze miejsc. Na co dzień łączę podejście inżynierskie z wrażliwością fotografa.",
-            "Dysponuję dronem (NSTS-01) i termowizją (ITC Level 1) — mogę dołączyć ujęcia z powietrza lub wykonać inspekcję techniczną.",
-        ],
-    },
-    lisewo: {
-        title: "Fotograf Lisewo",
-        subtitle: "Rodzinnie, naturalnie, po Twojemu",
-        tag: "fotograf lisewo",
-        content: [
-            "Najlepsze zdjęcia powstają w swobodnej atmosferze. Pomagam zaplanować miejsce i stylizację.",
-            "Pracuję szybko i sprawnie, aby dzieci nie zdążyły się znudzić, a dorośli czuli komfort.",
-        ],
-    },
-    wabrzezno: {
-        title: "Fotograf Wąbrzeźno",
-        subtitle: "Sesje rodzinne i eventowe",
-        tag: "fotograf wąbrzeźno",
-        content: [
-            "Realizuję sesje w Wąbrzeźnie i okolicy — zarówno w plenerze, jak i w studio.",
-            "Specjalizuję się w naturalnych kadrach rodzinnych i reportażach z wydarzeń lokalnych.",
-        ],
-    },
-    pluznica: {
-        title: "Fotograf Płużnica",
-        subtitle: "Lokalne sesje z pasją",
-        tag: "fotograf płużnica",
-        content: [
-            "Znam najlepsze miejsca w gminie Płużnica — uwiecznię Twoje najważniejsze chwile.",
-            "Od sesji rodzinnych po uroczystości — wszystko z profesjonalnym podejściem.",
+            "Toruń to dla mnie coś więcej niż tylko gotyk i pierniki. To miasto z duszą, gdzie każda uliczka Starówki kryje idealne tło do sesji narzeczeńskiej czy rodzinnej. Często pracuję na Bydgoskim Przedmieściu, w Parku Miejskim czy nad Wisłą, szukając miękkiego, złotego światła.",
+            "Jako fotograf mieszkający niedaleko, znam Toruń od podszewki. Niezależnie czy planujesz kameralny ślub w Ratuszu Staromiejskim, czy luźną sesję rodzinną w plenerze – jestem do Twojej dyspozycji. Stawiam na autentyczność; wolę łapać Wasze prawdziwe uśmiechy niż ustawiać sztywne pozy.",
+            "Dojeżdżam do Torunia bez dodatkowych kosztów w ramach większych pakietów. Zabieram ze sobą nie tylko aparat, ale też drona, dzięki któremu możemy spojrzeć na Waszą historię z zupełnie innej perspektywy.",
         ],
     },
     grudziadz: {
         title: "Fotograf Grudziądz",
-        subtitle: "Profesjonalna fotografia w Grudziądzu",
+        subtitle: "Spichlerze emocji – sesje nad Wisłą",
         tag: "fotograf grudziądz",
         content: [
-            "Dojeżdżam do Grudziądza na sesje rodzinne, biznesowe i eventowe.",
-            "Zdjęcia z charakterem — naturalne, pełne emocji kadry.",
+            "Grudziądz ze swoją panoramą spichlerzy to jedno z najbardziej fotogenicznych miejsc w naszym województwie. Uwielbiam realizować tu sesje o zachodzie słońca, gdy ceglane mury nabierają ciepłych barw.",
+            "Jestem stąd – to znaczy z regionu (baza w Płużnicy), więc do Grudziądza mam rzut beretem. Często bywam na Górze Zamkowej czy w Parku Miejskim, realizując reportaże z chrztów i urodzin oraz luźne sesje par.",
+            "Jeśli szukasz fotografa w Grudziądzu, który nie będzie Cię stresował „pozowaniem”, a raczej pójdzie z Tobą na spacer i przy okazji zrobi świetne zdjęcia – trafiłeś idealnie.",
         ],
     },
+    wabrzezno: {
+        title: "Fotograf Wąbrzeźno",
+        subtitle: "Lokalne historie nad jeziorami",
+        tag: "fotograf wąbrzeźno",
+        content: [
+            "Mieszkam tuż obok, więc Wąbrzeźno to mój „domowy” teren. Jezioro Zamkowe i Frydek to klasyki, ale znam też mnóstwo ukrytych miejsc w okolicznych lasach i na polach, które idealnie nadają się na sesje brzuszkowe czy rodzinne.",
+            "Działając lokalnie, jestem dostępny nierzadko „od ręki” na krótsze sesje. Fotografia w Wąbrzeźnie nie musi być nudna – pokażę Ci, jak wydobyć piękno z naszych codziennych okolic.",
+            "Realizuję tu reportaże ślubne, osiemnastki i sesje komunijne, zawsze z pełnym zaangażowaniem i uśmiechem.",
+        ],
+    },
+    pluznica: {
+        title: "Fotograf Płużnica",
+        subtitle: "Tu wszystko się zaczęło",
+        tag: "fotograf płużnica",
+        content: [
+            "Płużnica to moja baza wypadowa. To tutaj mieszkam, tutaj ładuję baterie i stąd ruszam do Was w promieniu 75 km (a czasem dalej!).",
+            "Sesje w gminie Płużnica mają ten unikalny, sielski klimat. Pola rzepaku wiosną, złote zboża latem – to naturalne studio fotograficzne tuż za progiem. Jeśli jesteś sąsiadem, wiesz, że możesz liczyć na sąsiedzkie podejście.",
+            "Zapraszam na sesje w Twoim ogrodzie lub w moich ulubionych plenerach w okolicy.",
+        ],
+    },
+    lisewo: {
+        title: "Fotograf Lisewo",
+        subtitle: "Blisko, naturalnie, swojsko",
+        tag: "fotograf lisewo",
+        content: [
+            "Lisewo i okolice to świetny wybór na spokojne sesje zdjęciowe z dala od miejskiego zgiełku. Często fotografuję tu rodziny, które cenią sobie prywatność i naturę.",
+            "Dojeżdżam do Lisewa błyskawicznie. Niezależnie czy to chrzest w lokalnym kościele, czy sesja narzeczeńska na łące – jestem do dyspozycji.",
+        ],
+    },
+    chelmno: {
+        title: "Fotograf Chełmno",
+        subtitle: "Miasto Zakochanych w kadrze",
+        tag: "fotograf chełmno",
+        content: [
+            "Chełmno, miasto zakochanych – czy może być lepsze miejsce na sesję narzeczeńską lub ślubną? Urokliwy rynek, parki i panorama Wisły tworzą niesamowity klimat.",
+            "Lubię wykorzystywać architekturę Chełmna jako tło do portretów, ale nie dominujące. Najważniejsi jesteście Wy i Wasze uczucia. Staram się łapać te ulotne momenty czułości, które w tym mieście wydają się jeszcze bardziej magiczne.",
+            "Jestem u Was w kilkanaście minut, gotowy by uwiecznić Waszą historię.",
+        ],
+    },
+    swiecie: {
+        title: "Fotograf Świecie",
+        subtitle: "Zamek, natura i Wasze emocje",
+        tag: "fotograf świecie",
+        content: [
+            "Zamek w Świeciu to ikona, ale fotograficznie miasto ma do zaoferowania znacznie więcej. Parki, okolice Wdy i Wisły to świetne plenery.",
+            "Często bywam w Świeciu na reportażach okolicznościowych. Cenię sobie otwartość mieszkańców i swobodną atmosferę, którą staram się oddać na zdjęciach.",
+            "Jeśli szukasz fotografa, który połączy reportażowy styl z artystycznym spojrzeniem, zapraszam do kontaktu.",
+        ],
+    },
+    bydgoszcz: {
+        title: "Fotograf Bydgoszcz",
+        subtitle: "Wyspa Młyńska i miejski styl",
+        tag: "fotograf bydgoszcz",
+        content: [
+            "Choć z Płużnicy mam kawałek, Bydgoszcz odwiedzam z przyjemnością. Wyspa Młyńska, kanały i nowoczesna architektura Opery dają ogromne pole do popisu przy sesjach biznesowych i wizerunkowych.",
+            "Realizuję w Bydgoszczy także duże reportaże ślubne. Miasto tętni życiem, a ja staram się to życie zamknąć w kadrach – dynamicznych, pełnych koloru i emocji.",
+        ],
+    }
 };
 
 export default function CityPage() {

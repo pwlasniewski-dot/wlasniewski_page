@@ -1,172 +1,29 @@
-// @ts-nocheck
-"use client";
+import { prisma } from "@/lib/prisma";
+import OMnieContent from "./OMnieContent";
+import { Metadata } from "next";
 
-import React, { useState, useEffect } from "react";
-import Link from "next/link";
-import { getApiUrl } from "@/lib/api-config";
-import ParallaxBand from "@/components/ParallaxBand";
-import { motion } from "framer-motion";
+export const revalidate = 3600; // Cache for 1 hour
 
-export default function OMnie() {
-    const [pageData, setPageData] = useState<any>(null);
-    const [parallaxSections, setParallaxSections] = useState<any[]>([]);
+export const metadata: Metadata = {
+    title: "O mnie - Paweł Wwaśniewski | Fotograf Płużnica, Toruń, Grudziądz",
+    description: "Poznaj mnie lepiej. Fotograf ślubny i rodzinny z pasją. Inżynier z duszą artysty. Działam w Płużnicy i całym kujawsko-pomorskim.",
+};
 
-    useEffect(() => {
-        const fetchPage = async () => {
-            try {
-                const res = await fetch(`${getApiUrl('pages')}?slug=o-mnie`);
-                const data = await res.json();
-                if (data.success && data.page) {
-                    setPageData(data.page);
+async function getPageData() {
+    return await prisma.page.findUnique({
+        where: { slug: 'o-mnie' }
+    });
+}
 
-                    if (data.page.parallax_sections) {
-                        try {
-                            const sections = JSON.parse(data.page.parallax_sections);
-                            setParallaxSections(sections.filter((s: any) => s.enabled));
-                        } catch { }
-                    }
-                }
-            } catch (error) {
-                console.error('Failed to fetch page data');
-            }
-        };
-        fetchPage();
-    }, []);
+export default async function OMniePage() {
+    const pageData = await getPageData();
 
-    return (
-        <main className="min-h-screen bg-black text-white">
-            {/* Hero Parallax */}
-            {parallaxSections.length > 0 && parallaxSections[0]?.image && (
-                <ParallaxBand
-                    imageSrc={parallaxSections[0].image}
-                    title={parallaxSections[0].title || "O mnie"}
-                    subtitle={parallaxSections[0].subtitle || "Fotograf z pasją"}
-                    height="75vh"
-                />
-            )}
+    let parallaxSections = [];
+    if (pageData?.parallax_sections) {
+        try {
+            parallaxSections = JSON.parse(pageData.parallax_sections).filter((s: any) => s.enabled);
+        } catch { }
+    }
 
-            {!parallaxSections.length && pageData?.hero_image && (
-                <ParallaxBand
-                    imageSrc={pageData.hero_image}
-                    title={pageData.title || "O mnie"}
-                    subtitle={pageData.hero_subtitle || "Fotograf z pasją"}
-                    height="75vh"
-                />
-            )}
-
-            <div className="mx-auto max-w-5xl px-6 py-20">
-                <div className="mb-12">
-                    <Link href="/" className="text-zinc-400 hover:text-gold-400">← Powrót</Link>
-                </div>
-
-                {/* Main Content */}
-                {pageData?.content && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6 }}
-                        className="prose prose-lg prose-invert max-w-none mb-20"
-                    >
-                        <div className="w-20 h-px bg-gold-400 mb-12" />
-                        <div dangerouslySetInnerHTML={{ __html: pageData.content }} className="text-zinc-300" />
-                    </motion.div>
-                )}
-
-                {/* Photo + Text Section */}
-                {pageData?.about_photo && pageData?.about_text_side && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 30 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 0.6 }}
-                        className="grid md:grid-cols-2 gap-12 mb-20"
-                    >
-                        {/* Text - Left */}
-                        <div className="flex flex-col justify-center">
-                            <div className="prose prose-invert">
-                                <div dangerouslySetInnerHTML={{ __html: pageData.about_text_side }} className="text-zinc-300 text-lg leading-relaxed" />
-                            </div>
-                        </div>
-
-                        {/* Photo - Right */}
-                        <div className="relative aspect-[3/4] rounded-lg overflow-hidden border border-white/10">
-                            <img
-                                src={pageData.about_photo}
-                                alt="O mnie"
-                                className="w-full h-full object-cover"
-                            />
-                        </div>
-                    </motion.div>
-                )}
-
-                {/* Stats Grid */}
-                <motion.div
-                    initial={{ opacity: 0, y: 30 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.6 }}
-                    className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-20"
-                >
-                    {[
-                        { number: "500+", label: "Sesji zdjęciowych" },
-                        { number: "10+", label: "Lat doświadczenia" },
-                        { number: "100%", label: "Zadowolonych klientów" },
-                        { number: "∞", label: "Pięknych wspomnień" },
-                    ].map((stat, index) => (
-                        <div
-                            key={index}
-                            className="text-center p-6 bg-zinc-900 border border-white/5 hover:border-gold-400/30 transition-colors rounded-lg"
-                        >
-                            <div className="text-4xl font-bold text-gold-400 mb-2 font-display">
-                                {stat.number}
-                            </div>
-                            <div className="text-sm text-zinc-400 font-sans tracking-wide uppercase">
-                                {stat.label}
-                            </div>
-                        </div>
-                    ))}
-                </motion.div>
-
-                {/* Additional Parallax Sections */}
-                {parallaxSections.slice(1).map((section, index) => (
-                    <div key={section.id} className="mb-24 -mx-6">
-                        <ParallaxBand
-                            imageSrc={section.image}
-                            title={section.title}
-                            subtitle={section.subtitle}
-                            height="60vh"
-                        />
-                    </div>
-                ))}
-
-                {/* CTA */}
-                <motion.div
-                    initial={{ opacity: 0, y: 30 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.6 }}
-                    className="text-center bg-gradient-to-br from-zinc-900 to-black border border-white/10 p-12 rounded-lg"
-                >
-                    <h2 className="text-4xl font-bold mb-4">Stwórzmy coś razem</h2>
-                    <p className="text-zinc-400 text-lg mb-8 max-w-2xl mx-auto">
-                        Skontaktuj się, aby porozmawiać o Twojej sesji
-                    </p>
-                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                        <Link
-                            href="/rezerwacja"
-                            className="inline-flex items-center gap-3 bg-gold-400 hover:bg-gold-500 text-black font-bold px-8 py-4 rounded-full text-lg"
-                        >
-                            Zarezerwuj sesję →
-                        </Link>
-                        <Link
-                            href="/kontakt"
-                            className="inline-flex items-center gap-3 bg-transparent hover:bg-white/5 text-white font-bold px-8 py-4 rounded-full text-lg border-2 border-white/20 hover:border-gold-400/50"
-                        >
-                            Napisz do mnie
-                        </Link>
-                    </div>
-                </motion.div>
-            </div>
-        </main>
-    );
+    return <OMnieContent pageData={pageData} parallaxSections={parallaxSections} />;
 }

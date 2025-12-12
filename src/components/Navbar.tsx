@@ -87,72 +87,97 @@ export default function Navbar() {
     }, []);
 
     // Track scroll
+    // Track scroll
     useEffect(() => {
         const handleScroll = () => {
             const currentScrollY = window.scrollY;
-            
-            setIsScrolled(currentScrollY > 50);
-            
+
+            // Updated threshold for transparency switch
+            const isScrolledDown = currentScrollY > 20; // Reduced from 50 to 20 for quicker response
+            if (isScrolled !== isScrolledDown) {
+                setIsScrolled(isScrolledDown);
+            }
+
+            // Always show navbar at the very top (fix for flash/hiding glitches)
+            if (currentScrollY <= 0) {
+                if (!isNavbarVisible) setIsNavbarVisible(true);
+                return;
+            }
+
             // Show navbar when scrolling up, hide when scrolling down
             if (currentScrollY > 100) {
-                if (currentScrollY < lastScrollY) {
+                if (currentScrollY < lastScrollY && !isNavbarVisible) {
                     // Scrolling up
                     setIsNavbarVisible(true);
-                } else if (currentScrollY > lastScrollY) {
+                } else if (currentScrollY > lastScrollY && isNavbarVisible) {
                     // Scrolling down
                     setIsNavbarVisible(false);
                 }
             } else {
-                // Always show navbar near top
-                setIsNavbarVisible(true);
+                if (!isNavbarVisible) setIsNavbarVisible(true);
             }
-            
+
             setLastScrollY(currentScrollY);
         };
-        
-        window.addEventListener('scroll', handleScroll);
+
+        window.addEventListener('scroll', handleScroll, { passive: true });
         return () => window.removeEventListener('scroll', handleScroll);
-    }, [lastScrollY]);
+    }, [lastScrollY, isNavbarVisible, isScrolled]);
 
     const logoSize = settings.logo_size || 140; // Use full value from settings
-    const logoDisplaySize = Math.min(logoSize, 100); // On desktop, limit displayed size
+    const logoDisplaySize = logoSize; // Removed Math.min(logoSize, 100) cap to respect slider
     const logoSrc = settings.logo_url || '/assets/brand/logo.png';
     const navbarFontSize = settings.navbar_font_size || 16;
     const navbarFontFamily = settings.navbar_font_family || 'Montserrat';
     const isNavbarSticky = settings.navbar_sticky !== false; // default true
     const isNavbarTransparent = settings.navbar_transparent === true; // default false
-    const navbarLayout = settings.navbar_layout || 'logo_center_menu_split'; // ADDED THIS
+    const navbarLayout = settings.navbar_layout || 'logo_center_menu_split';
+
+    // Helper to calculate menu split
+    const getSplitMenuItems = () => {
+        const allItems = [...menuItems, ...ctaItems];
+        const midPoint = Math.ceil(allItems.length / 2);
+        return {
+            leftItems: allItems.slice(0, midPoint),
+            rightItems: allItems.slice(midPoint)
+        };
+    };
 
     const isActive = (href: string) => pathname === href;
+
+    const { leftItems, rightItems } = navbarLayout === 'logo_center_menu_split' ? getSplitMenuItems() : { leftItems: [], rightItems: [] };
 
     return (
         <header
             className={`${isNavbarSticky ? 'fixed left-0 right-0 top-0' : 'absolute top-0'} w-full z-50 transition-all duration-300 ${isScrolled
-                    ? 'bg-white/95 backdrop-blur-md shadow-lg'
-                    : isNavbarTransparent
-                        ? 'bg-transparent'
-                        : 'bg-white/10 backdrop-blur-sm'
+                ? 'bg-white/95 backdrop-blur-md shadow-lg'
+                : isNavbarTransparent
+                    ? 'bg-transparent'
+                    : 'bg-white/10 backdrop-blur-sm'
                 } ${!isNavbarVisible && isNavbarSticky ? '-translate-y-full' : 'translate-y-0'}`}
-                style={{
-                    fontFamily: navbarFontFamily,
-                    transform: !isNavbarVisible && isNavbarSticky ? 'translateY(-100%)' : 'translateY(0)'
-                }}
-            >
-            <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-                <div className="flex items-center justify-between h-20 relative">
+            style={{
+                fontFamily: navbarFontFamily,
+                transform: !isNavbarVisible && isNavbarSticky ? 'translateY(-100%)' : 'translateY(0)'
+            }}
+        >
+            <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative transition-all duration-300">
+                <div
+                    className={`flex items-center justify-between relative transition-all duration-300 ${navbarLayout === 'logo_center_menu_bottom' ? 'flex-col py-4 gap-4' : 'min-h-[80px] py-2'
+                        }`}
+                >
                     {navbarLayout === 'logo_center_menu_split' && (
                         <>
                             {/* LEFT MENU - flex-1 for balanced spacing */}
-                            <div className="hidden md:flex items-center gap-8 flex-1">
-                                {menuItems.map((item) => (
+                            <div className="hidden md:flex items-center gap-8 flex-1 justify-end pr-8">
+                                {leftItems.map((item) => (
                                     <div key={item.id} className="relative group">
                                         <Link
                                             href={item.href}
                                             className={`font-medium transition-colors py-2 ${isActive(item.href)
-                                                    ? 'text-gold-500'
-                                                    : isScrolled
-                                                        ? 'text-zinc-700 hover:text-gold-500'
-                                                        : 'text-white hover:text-gold-400'
+                                                ? 'text-gold-500'
+                                                : isScrolled
+                                                    ? 'text-zinc-700 hover:text-gold-500'
+                                                    : 'text-white hover:text-gold-400'
                                                 } flex items-center gap-1`}
                                             style={{
                                                 fontSize: `${navbarFontSize}px`
@@ -182,14 +207,14 @@ export default function Navbar() {
                             {logoLoaded && (
                                 <Link
                                     href="/"
-                                    className="absolute left-1/2 transform -translate-x-1/2 hover:opacity-80 transition-opacity"
+                                    className="hover:opacity-80 transition-opacity z-10 flex-shrink-0"
                                     aria-label="Strona główna"
                                 >
                                     <div
                                         className="relative transition-all duration-300"
                                         style={{
-                                            width: isScrolled ? logoDisplaySize * 0.7 : logoDisplaySize,
-                                            height: isScrolled ? logoDisplaySize * 0.7 : logoDisplaySize
+                                            width: isScrolled ? logoDisplaySize * 0.8 : logoDisplaySize,
+                                            height: isScrolled ? logoDisplaySize * 0.8 : logoDisplaySize
                                         }}
                                     >
                                         <Image
@@ -204,16 +229,16 @@ export default function Navbar() {
                             )}
 
                             {/* RIGHT MENU - flex-1 for balanced spacing */}
-                            <div className="hidden md:flex items-center gap-8 flex-1 justify-end">
-                                {ctaItems.map((item) => (
+                            <div className="hidden md:flex items-center gap-8 flex-1 justify-start pl-8">
+                                {rightItems.map((item) => (
                                     <div key={item.id} className="relative group">
                                         <Link
                                             href={item.href}
                                             className={`font-medium transition-colors py-2 ${isActive(item.href)
-                                                    ? 'text-gold-500'
-                                                    : isScrolled
-                                                        ? 'text-zinc-700 hover:text-gold-500'
-                                                        : 'text-white hover:text-gold-400'
+                                                ? 'text-gold-500'
+                                                : isScrolled
+                                                    ? 'text-zinc-700 hover:text-gold-500'
+                                                    : 'text-white hover:text-gold-400'
                                                 } flex items-center gap-1`}
                                             style={{
                                                 fontSize: `${navbarFontSize}px`
@@ -275,10 +300,10 @@ export default function Navbar() {
                                         <Link
                                             href={item.href}
                                             className={`font-medium transition-colors py-2 ${isActive(item.href)
-                                                    ? 'text-gold-500'
-                                                    : isScrolled
-                                                        ? 'text-zinc-700 hover:text-gold-500'
-                                                        : 'text-white hover:text-gold-400'
+                                                ? 'text-gold-500'
+                                                : isScrolled
+                                                    ? 'text-zinc-700 hover:text-gold-500'
+                                                    : 'text-white hover:text-gold-400'
                                                 } flex items-center gap-1`}
                                             style={{
                                                 fontSize: `${navbarFontSize}px`
@@ -311,10 +336,10 @@ export default function Navbar() {
                                         <Link
                                             href={item.href}
                                             className={`font-medium transition-colors py-2 ${isActive(item.href)
-                                                    ? 'text-gold-500'
-                                                    : isScrolled
-                                                        ? 'text-zinc-700 hover:text-gold-500'
-                                                        : 'text-white hover:text-gold-400'
+                                                ? 'text-gold-500'
+                                                : isScrolled
+                                                    ? 'text-zinc-700 hover:text-gold-500'
+                                                    : 'text-white hover:text-gold-400'
                                                 } flex items-center gap-1`}
                                             style={{
                                                 fontSize: `${navbarFontSize}px`
@@ -344,7 +369,7 @@ export default function Navbar() {
 
                     {navbarLayout === 'logo_center_menu_bottom' && (
                         <>
-                            {/* CENTER LOGO ONLY ON TOP */}
+                            {/* CENTER LOGO TOP */}
                             <div className="w-full flex justify-center">
                                 {logoLoaded && (
                                     <Link
@@ -355,8 +380,8 @@ export default function Navbar() {
                                         <div
                                             className="relative transition-all duration-300"
                                             style={{
-                                                width: isScrolled ? logoDisplaySize * 0.7 : logoDisplaySize,
-                                                height: isScrolled ? logoDisplaySize * 0.7 : logoDisplaySize
+                                                width: isScrolled ? logoDisplaySize * 0.8 : logoDisplaySize,
+                                                height: isScrolled ? logoDisplaySize * 0.8 : logoDisplaySize
                                             }}
                                         >
                                             <Image
@@ -370,6 +395,42 @@ export default function Navbar() {
                                     </Link>
                                 )}
                             </div>
+
+                            {/* MENU BOTTOM CENTER */}
+                            <div className="hidden md:flex items-center gap-8 justify-center">
+                                {[...menuItems, ...ctaItems].map((item) => (
+                                    <div key={item.id} className="relative group">
+                                        <Link
+                                            href={item.href}
+                                            className={`font-medium transition-colors py-2 ${isActive(item.href)
+                                                ? 'text-gold-500'
+                                                : isScrolled
+                                                    ? 'text-zinc-700 hover:text-gold-500'
+                                                    : 'text-white hover:text-gold-400'
+                                                } flex items-center gap-1`}
+                                            style={{
+                                                fontSize: `${navbarFontSize}px`
+                                            }}
+                                        >
+                                            {item.label}
+                                            {item.children && item.children.length > 0 && <ChevronDown className="w-4 h-4" />}
+                                        </Link>
+                                        {item.children && item.children.length > 0 && (
+                                            <div className="absolute left-1/2 -translate-x-1/2 mt-0 w-48 bg-white shadow-lg rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 py-2 z-40">
+                                                {item.children.map((child) => (
+                                                    <Link
+                                                        key={child.id}
+                                                        href={child.href}
+                                                        className="block px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-50 hover:text-gold-500 transition-colors first:rounded-t-lg last:rounded-b-lg"
+                                                    >
+                                                        {child.label}
+                                                    </Link>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
                         </>
                     )}
 
@@ -382,10 +443,10 @@ export default function Navbar() {
                                         <Link
                                             href={item.href}
                                             className={`font-medium transition-colors py-2 ${isActive(item.href)
-                                                    ? 'text-gold-500'
-                                                    : isScrolled
-                                                        ? 'text-zinc-700 hover:text-gold-500'
-                                                        : 'text-white hover:text-gold-400'
+                                                ? 'text-gold-500'
+                                                : isScrolled
+                                                    ? 'text-zinc-700 hover:text-gold-500'
+                                                    : 'text-white hover:text-gold-400'
                                                 } flex items-center gap-1`}
                                             style={{
                                                 fontSize: `${navbarFontSize}px`
@@ -461,8 +522,8 @@ export default function Navbar() {
                                     href={item.href}
                                     onClick={() => setIsOpen(false)}
                                     className={`block px-4 py-2 font-medium transition-colors rounded ${isActive(item.href)
-                                            ? 'bg-gold-100 text-gold-600'
-                                            : 'text-zinc-700 hover:bg-zinc-50'
+                                        ? 'bg-gold-100 text-gold-600'
+                                        : 'text-zinc-700 hover:bg-zinc-50'
                                         }`}
                                 >
                                     {item.label}
@@ -494,6 +555,6 @@ export default function Navbar() {
                     </div>
                 )}
             </nav>
-            </header>
+        </header>
     );
 }

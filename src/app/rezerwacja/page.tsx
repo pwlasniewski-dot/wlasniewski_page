@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { Toaster, toast } from 'sonner';
+import { motion } from 'framer-motion';
 import { getApiUrl } from '@/lib/api-config';
 import { buildICS } from '@/utils/ics';
 import TestimonialsSection from '@/components/TestimonialsSection';
@@ -412,7 +413,7 @@ export default function RezerwacjaPage() {
                     expiryDate={promoSettings.expiryDate}
                 />
             )}
-            <div className="max-w-4xl mx-auto">
+            <div className="max-w-4xl mx-auto pt-8">
                 <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 text-center">
                     📸 Zarezerwuj Sesję
                 </h1>
@@ -422,7 +423,12 @@ export default function RezerwacjaPage() {
 
                 <form onSubmit={handleSubmit} className="space-y-8">
                     {/* Step 1: Service Selection */}
-                    <section className="bg-zinc-900/50 rounded-2xl p-8 border border-zinc-800">
+                    <motion.section
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5 }}
+                        className="bg-zinc-900/50 rounded-2xl p-8 border border-zinc-800"
+                    >
                         <h2 className="text-2xl font-bold text-white mb-6">Krok 1: Wybierz Usługę</h2>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {serviceTypes.map((svc) => (
@@ -448,11 +454,16 @@ export default function RezerwacjaPage() {
                                 </button>
                             ))}
                         </div>
-                    </section>
+                    </motion.section>
 
                     {/* Step 2: Package Selection */}
                     {service && activePackages.length > 0 && (
-                        <section className="bg-zinc-900/50 rounded-2xl p-8 border border-zinc-800">
+                        <motion.section
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.5, delay: 0.1 }}
+                            className="bg-zinc-900/50 rounded-2xl p-8 border border-zinc-800"
+                        >
                             <h2 className="text-2xl font-bold text-white mb-6">Krok 2: Wybierz Pakiet</h2>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 {activePackages.map((pkg) => (
@@ -479,12 +490,17 @@ export default function RezerwacjaPage() {
                                     </button>
                                 ))}
                             </div>
-                        </section>
+                        </motion.section>
                     )}
 
                     {/* Step 3: Date & Time Selection */}
                     {chosenPackage && (
-                        <section className="bg-zinc-900/50 rounded-2xl p-8 border border-zinc-800">
+                        <motion.section
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.5, delay: 0.2 }}
+                            className="bg-zinc-900/50 rounded-2xl p-8 border border-zinc-800"
+                        >
                             <h2 className="text-2xl font-bold text-white mb-6">Krok 3: Wybierz Termin</h2>
                             
                             {/* Calendar */}
@@ -548,12 +564,17 @@ export default function RezerwacjaPage() {
                                     )}
                                 </div>
                             )}
-                        </section>
+                        </motion.section>
                     )}
 
                     {/* Step 4: Personal Information */}
                     {slot && (
-                        <section className="bg-zinc-900/50 rounded-2xl p-8 border border-zinc-800">
+                        <motion.section
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.5, delay: 0.3 }}
+                            className="bg-zinc-900/50 rounded-2xl p-8 border border-zinc-800"
+                        >
                             <h2 className="text-2xl font-bold text-white mb-6">Krok 4: Twoje Dane</h2>
 
                             <div className="space-y-4">
@@ -776,14 +797,20 @@ export default function RezerwacjaPage() {
                             >
                                 {submitting ? "Przetwarzanie..." : "💳 Przejdź do Płatności"}
                             </button>
-                        </section>
+                        </motion.section>
                     )}
                 </form>
 
                 {/* Testimonials */}
-                <div className="mt-20">
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6 }}
+                    viewport={{ once: true, margin: "-100px" }}
+                    className="mt-20"
+                >
                     <TestimonialsSection />
-                </div>
+                </motion.div>
             </div>
         </main>
     );

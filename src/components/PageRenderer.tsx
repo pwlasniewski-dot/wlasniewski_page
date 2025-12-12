@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { PageSection } from '@/components/admin/PageBuilder';
-import ParallaxBand from '@/components/ParallaxBand';
+import ParallaxSection from '@/components/ParallaxSection';
 import Link from 'next/link';
 
 export default function PageRenderer({ sections }: { sections: PageSection[] }) {
@@ -14,11 +14,11 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                 switch (section.type) {
                     case 'hero_parallax':
                         return (
-                            <ParallaxBand
+                            <ParallaxSection
                                 key={section.id}
-                                imageSrc={section.image || ''}
+                                image={section.image || ''}
                                 title={section.title || ''}
-                                height="70vh"
+                                height="min-h-[70vh]"
                             />
                         );
 
