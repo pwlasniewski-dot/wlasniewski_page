@@ -121,6 +121,7 @@ export default function Navbar() {
     const navbarFontFamily = settings.navbar_font_family || 'Montserrat';
     const isNavbarSticky = settings.navbar_sticky !== false; // default true
     const isNavbarTransparent = settings.navbar_transparent === true; // default false
+    const navbarLayout = settings.navbar_layout || 'logo_center_menu_split'; // ADDED THIS
 
     const isActive = (href: string) => pathname === href;
 
@@ -139,102 +140,303 @@ export default function Navbar() {
             >
             <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
                 <div className="flex items-center justify-between h-20 relative">
-                    {/* LEFT MENU - flex-1 to balanced spacing */}
-                    <div className="hidden md:flex items-center gap-8 flex-1">
-                        {menuItems.map((item) => (
-                            <div key={item.id} className="relative group">
-                                <Link
-                                    href={item.href}
-                                    className={`font-medium transition-colors py-2 ${isActive(item.href)
-                                            ? 'text-gold-500'
-                                            : isScrolled
-                                                ? 'text-zinc-700 hover:text-gold-500'
-                                                : 'text-white hover:text-gold-400'
-                                        } flex items-center gap-1`}
-                                    style={{
-                                        fontSize: `${navbarFontSize}px`
-                                    }}
-                                >
-                                    {item.label}
-                                    {item.children && item.children.length > 0 && <ChevronDown className="w-4 h-4" />}
-                                </Link>
-                                {item.children && item.children.length > 0 && (
-                                    <div className="absolute left-0 mt-0 w-48 bg-white shadow-lg rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 py-2 z-40">
-                                        {item.children.map((child) => (
-                                            <Link
-                                                key={child.id}
-                                                href={child.href}
-                                                className="block px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-50 hover:text-gold-500 transition-colors first:rounded-t-lg last:rounded-b-lg"
-                                            >
-                                                {child.label}
-                                            </Link>
-                                        ))}
+                    {navbarLayout === 'logo_center_menu_split' && (
+                        <>
+                            {/* LEFT MENU - flex-1 for balanced spacing */}
+                            <div className="hidden md:flex items-center gap-8 flex-1">
+                                {menuItems.map((item) => (
+                                    <div key={item.id} className="relative group">
+                                        <Link
+                                            href={item.href}
+                                            className={`font-medium transition-colors py-2 ${isActive(item.href)
+                                                    ? 'text-gold-500'
+                                                    : isScrolled
+                                                        ? 'text-zinc-700 hover:text-gold-500'
+                                                        : 'text-white hover:text-gold-400'
+                                                } flex items-center gap-1`}
+                                            style={{
+                                                fontSize: `${navbarFontSize}px`
+                                            }}
+                                        >
+                                            {item.label}
+                                            {item.children && item.children.length > 0 && <ChevronDown className="w-4 h-4" />}
+                                        </Link>
+                                        {item.children && item.children.length > 0 && (
+                                            <div className="absolute left-0 mt-0 w-48 bg-white shadow-lg rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 py-2 z-40">
+                                                {item.children.map((child) => (
+                                                    <Link
+                                                        key={child.id}
+                                                        href={child.href}
+                                                        className="block px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-50 hover:text-gold-500 transition-colors first:rounded-t-lg last:rounded-b-lg"
+                                                    >
+                                                        {child.label}
+                                                    </Link>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
-                                )}
+                                ))}
                             </div>
-                        ))}
-                    </div>
 
-                    {/* CENTER LOGO - Absolutely positioned for perfect centering */}
-                    {logoLoaded && (
-                        <Link
-                            href="/"
-                            className="absolute left-1/2 transform -translate-x-1/2 hover:opacity-80 transition-opacity"
-                            aria-label="Strona główna"
-                        >
-                            <div
-                                className="relative transition-all duration-300"
-                                style={{
-                                    width: isScrolled ? logoDisplaySize * 0.7 : logoDisplaySize,
-                                    height: isScrolled ? logoDisplaySize * 0.7 : logoDisplaySize
-                                }}
-                            >
-                                <Image
-                                    src={logoSrc}
-                                    alt="Logo"
-                                    fill
-                                    className="object-contain"
-                                    priority
-                                />
+                            {/* CENTER LOGO */}
+                            {logoLoaded && (
+                                <Link
+                                    href="/"
+                                    className="absolute left-1/2 transform -translate-x-1/2 hover:opacity-80 transition-opacity"
+                                    aria-label="Strona główna"
+                                >
+                                    <div
+                                        className="relative transition-all duration-300"
+                                        style={{
+                                            width: isScrolled ? logoDisplaySize * 0.7 : logoDisplaySize,
+                                            height: isScrolled ? logoDisplaySize * 0.7 : logoDisplaySize
+                                        }}
+                                    >
+                                        <Image
+                                            src={logoSrc}
+                                            alt="Logo"
+                                            fill
+                                            className="object-contain"
+                                            priority
+                                        />
+                                    </div>
+                                </Link>
+                            )}
+
+                            {/* RIGHT MENU - flex-1 for balanced spacing */}
+                            <div className="hidden md:flex items-center gap-8 flex-1 justify-end">
+                                {ctaItems.map((item) => (
+                                    <div key={item.id} className="relative group">
+                                        <Link
+                                            href={item.href}
+                                            className={`font-medium transition-colors py-2 ${isActive(item.href)
+                                                    ? 'text-gold-500'
+                                                    : isScrolled
+                                                        ? 'text-zinc-700 hover:text-gold-500'
+                                                        : 'text-white hover:text-gold-400'
+                                                } flex items-center gap-1`}
+                                            style={{
+                                                fontSize: `${navbarFontSize}px`
+                                            }}
+                                        >
+                                            {item.label}
+                                            {item.children && item.children.length > 0 && <ChevronDown className="w-4 h-4" />}
+                                        </Link>
+                                        {item.children && item.children.length > 0 && (
+                                            <div className="absolute right-0 mt-0 w-48 bg-white shadow-lg rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 py-2 z-40">
+                                                {item.children.map((child) => (
+                                                    <Link
+                                                        key={child.id}
+                                                        href={child.href}
+                                                        className="block px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-50 hover:text-gold-500 transition-colors first:rounded-t-lg last:rounded-b-lg"
+                                                    >
+                                                        {child.label}
+                                                    </Link>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
                             </div>
-                        </Link>
+                        </>
                     )}
 
-                    {/* RIGHT MENU - flex-1 for balanced spacing */}
-                    <div className="hidden md:flex items-center gap-8 flex-1 justify-end">
-                        {ctaItems.map((item) => (
-                            <div key={item.id} className="relative group">
+                    {navbarLayout === 'logo_left_menu_right' && (
+                        <>
+                            {/* LOGO LEFT */}
+                            {logoLoaded && (
                                 <Link
-                                    href={item.href}
-                                    className={`font-medium transition-colors py-2 ${isActive(item.href)
-                                            ? 'text-gold-500'
-                                            : isScrolled
-                                                ? 'text-zinc-700 hover:text-gold-500'
-                                                : 'text-white hover:text-gold-400'
-                                        } flex items-center gap-1`}
-                                    style={{
-                                        fontSize: `${navbarFontSize}px`
-                                    }}
+                                    href="/"
+                                    className="hover:opacity-80 transition-opacity"
+                                    aria-label="Strona główna"
                                 >
-                                    {item.label}
-                                    {item.children && item.children.length > 0 && <ChevronDown className="w-4 h-4" />}
-                                </Link>
-                                {item.children && item.children.length > 0 && (
-                                    <div className="absolute right-0 mt-0 w-48 bg-white shadow-lg rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 py-2 z-40">
-                                        {item.children.map((child) => (
-                                            <Link
-                                                key={child.id}
-                                                href={child.href}
-                                                className="block px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-50 hover:text-gold-500 transition-colors first:rounded-t-lg last:rounded-b-lg"
-                                            >
-                                                {child.label}
-                                            </Link>
-                                        ))}
+                                    <div
+                                        className="relative transition-all duration-300"
+                                        style={{
+                                            width: isScrolled ? logoDisplaySize * 0.7 : logoDisplaySize,
+                                            height: isScrolled ? logoDisplaySize * 0.7 : logoDisplaySize
+                                        }}
+                                    >
+                                        <Image
+                                            src={logoSrc}
+                                            alt="Logo"
+                                            fill
+                                            className="object-contain"
+                                            priority
+                                        />
                                     </div>
+                                </Link>
+                            )}
+
+                            {/* MENU LEFT-RIGHT */}
+                            <div className="hidden md:flex items-center gap-8 flex-1 justify-center">
+                                {menuItems.map((item) => (
+                                    <div key={item.id} className="relative group">
+                                        <Link
+                                            href={item.href}
+                                            className={`font-medium transition-colors py-2 ${isActive(item.href)
+                                                    ? 'text-gold-500'
+                                                    : isScrolled
+                                                        ? 'text-zinc-700 hover:text-gold-500'
+                                                        : 'text-white hover:text-gold-400'
+                                                } flex items-center gap-1`}
+                                            style={{
+                                                fontSize: `${navbarFontSize}px`
+                                            }}
+                                        >
+                                            {item.label}
+                                            {item.children && item.children.length > 0 && <ChevronDown className="w-4 h-4" />}
+                                        </Link>
+                                        {item.children && item.children.length > 0 && (
+                                            <div className="absolute left-0 mt-0 w-48 bg-white shadow-lg rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 py-2 z-40">
+                                                {item.children.map((child) => (
+                                                    <Link
+                                                        key={child.id}
+                                                        href={child.href}
+                                                        className="block px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-50 hover:text-gold-500 transition-colors first:rounded-t-lg last:rounded-b-lg"
+                                                    >
+                                                        {child.label}
+                                                    </Link>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* RIGHT CTA */}
+                            <div className="hidden md:flex items-center gap-8 flex-1 justify-end">
+                                {ctaItems.map((item) => (
+                                    <div key={item.id} className="relative group">
+                                        <Link
+                                            href={item.href}
+                                            className={`font-medium transition-colors py-2 ${isActive(item.href)
+                                                    ? 'text-gold-500'
+                                                    : isScrolled
+                                                        ? 'text-zinc-700 hover:text-gold-500'
+                                                        : 'text-white hover:text-gold-400'
+                                                } flex items-center gap-1`}
+                                            style={{
+                                                fontSize: `${navbarFontSize}px`
+                                            }}
+                                        >
+                                            {item.label}
+                                            {item.children && item.children.length > 0 && <ChevronDown className="w-4 h-4" />}
+                                        </Link>
+                                        {item.children && item.children.length > 0 && (
+                                            <div className="absolute right-0 mt-0 w-48 bg-white shadow-lg rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 py-2 z-40">
+                                                {item.children.map((child) => (
+                                                    <Link
+                                                        key={child.id}
+                                                        href={child.href}
+                                                        className="block px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-50 hover:text-gold-500 transition-colors first:rounded-t-lg last:rounded-b-lg"
+                                                    >
+                                                        {child.label}
+                                                    </Link>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        </>
+                    )}
+
+                    {navbarLayout === 'logo_center_menu_bottom' && (
+                        <>
+                            {/* CENTER LOGO ONLY ON TOP */}
+                            <div className="w-full flex justify-center">
+                                {logoLoaded && (
+                                    <Link
+                                        href="/"
+                                        className="hover:opacity-80 transition-opacity"
+                                        aria-label="Strona główna"
+                                    >
+                                        <div
+                                            className="relative transition-all duration-300"
+                                            style={{
+                                                width: isScrolled ? logoDisplaySize * 0.7 : logoDisplaySize,
+                                                height: isScrolled ? logoDisplaySize * 0.7 : logoDisplaySize
+                                            }}
+                                        >
+                                            <Image
+                                                src={logoSrc}
+                                                alt="Logo"
+                                                fill
+                                                className="object-contain"
+                                                priority
+                                            />
+                                        </div>
+                                    </Link>
                                 )}
                             </div>
-                        ))}
-                    </div>
+                        </>
+                    )}
+
+                    {navbarLayout === 'logo_right_menu_left' && (
+                        <>
+                            {/* LEFT MENU */}
+                            <div className="hidden md:flex items-center gap-8 flex-1">
+                                {[...menuItems, ...ctaItems].map((item) => (
+                                    <div key={item.id} className="relative group">
+                                        <Link
+                                            href={item.href}
+                                            className={`font-medium transition-colors py-2 ${isActive(item.href)
+                                                    ? 'text-gold-500'
+                                                    : isScrolled
+                                                        ? 'text-zinc-700 hover:text-gold-500'
+                                                        : 'text-white hover:text-gold-400'
+                                                } flex items-center gap-1`}
+                                            style={{
+                                                fontSize: `${navbarFontSize}px`
+                                            }}
+                                        >
+                                            {item.label}
+                                            {item.children && item.children.length > 0 && <ChevronDown className="w-4 h-4" />}
+                                        </Link>
+                                        {item.children && item.children.length > 0 && (
+                                            <div className="absolute left-0 mt-0 w-48 bg-white shadow-lg rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 py-2 z-40">
+                                                {item.children.map((child) => (
+                                                    <Link
+                                                        key={child.id}
+                                                        href={child.href}
+                                                        className="block px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-50 hover:text-gold-500 transition-colors first:rounded-t-lg last:rounded-b-lg"
+                                                    >
+                                                        {child.label}
+                                                    </Link>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* LOGO RIGHT - Absolutely positioned */}
+                            {logoLoaded && (
+                                <Link
+                                    href="/"
+                                    className="absolute right-4 sm:right-6 lg:right-8 hover:opacity-80 transition-opacity"
+                                    aria-label="Strona główna"
+                                >
+                                    <div
+                                        className="relative transition-all duration-300"
+                                        style={{
+                                            width: isScrolled ? logoDisplaySize * 0.7 : logoDisplaySize,
+                                            height: isScrolled ? logoDisplaySize * 0.7 : logoDisplaySize
+                                        }}
+                                    >
+                                        <Image
+                                            src={logoSrc}
+                                            alt="Logo"
+                                            fill
+                                            className="object-contain"
+                                            priority
+                                        />
+                                    </div>
+                                </Link>
+                            )}
+                        </>
+                    )}
 
                     {/* MOBILE MENU BUTTON */}
                     <button
