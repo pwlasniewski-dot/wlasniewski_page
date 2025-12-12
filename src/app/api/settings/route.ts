@@ -91,9 +91,25 @@ export async function POST(request: NextRequest) {
             const columnUpdates: Record<string, any> = {};
             const kvUpdates: Record<string, string> = {};
 
+            // Map of boolean fields that need type conversion
+            const booleanFields = [
+                'navbar_sticky', 'navbar_transparent',
+                'urgency_enabled', 'promo_code_discount_enabled',
+                'gift_card_promo_enabled', 'p24_test_mode',
+                'payu_test_mode'
+            ];
+
             for (const [key, value] of Object.entries(body)) {
                 if (columnFields.includes(key)) {
-                    columnUpdates[key] = value;
+                    // Convert string booleans to actual booleans
+                    if (booleanFields.includes(key)) {
+                        columnUpdates[key] = value === 'true' || value === true;
+                    } else if (key === 'navbar_font_size' || key === 'logo_size') {
+                        // Convert to number
+                        columnUpdates[key] = Number(value);
+                    } else {
+                        columnUpdates[key] = value;
+                    }
                 } else {
                     kvUpdates[key] = String(value);
                 }
