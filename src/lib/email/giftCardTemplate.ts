@@ -9,75 +9,66 @@ export function generateGiftCardEmail(
     cardTitle?: string,
     cardDescription?: string
 ): string {
-    // Match GiftCard.tsx theme configurations
+    // Match GiftCard.tsx theme configurations with proper gradients
     const themeConfigs: any = {
         christmas: {
-            bgColor1: '#8b0000',
-            bgColor2: '#228b22',
+            bgGradient: 'linear-gradient(135deg, #8b0000 0%, #dc143c 50%, #228b22 100%)',
             accentColor: '#ffd700',
             icon: '🎄',
             title: 'Boże Narodzenie',
             defaultDescription: 'Życzenia pięknego świąt'
         },
         wosp: {
-            bgColor1: '#dc143c',
-            bgColor2: '#b8860b',
+            bgGradient: 'linear-gradient(135deg, #dc143c 0%, #ff4500 50%, #b8860b 100%)',
             accentColor: '#ffd700',
             icon: '💛',
             title: 'Karta Pomocy',
             defaultDescription: 'Wspieraj co w Tobie dobre'
         },
         valentines: {
-            bgColor1: '#c71585',
-            bgColor2: '#8b0000',
+            bgGradient: 'linear-gradient(135deg, #c71585 0%, #ff69b4 50%, #8b0000 100%)',
             accentColor: '#ffb6c1',
             icon: '💝',
             title: 'Walentynki',
             defaultDescription: 'Z miłością'
         },
         easter: {
-            bgColor1: '#daa520',
-            bgColor2: '#ffd700',
+            bgGradient: 'linear-gradient(135deg, #ffd700 0%, #ffed4e 50%, #f0e68c 100%)',
             accentColor: '#9370db',
             icon: '🐰',
             title: 'Wielkanoc',
             defaultDescription: 'Wesołych Świąt'
         },
         halloween: {
-            bgColor1: '#ff8c00',
-            bgColor2: '#000000',
+            bgGradient: 'linear-gradient(135deg, #ff8c00 0%, #ff6347 50%, #000000 100%)',
             accentColor: '#ff8c00',
             icon: '👻',
             title: 'Halloween',
             defaultDescription: 'Straszna zniżka czeka!'
         },
         'mothers-day': {
-            bgColor1: '#9932cc',
-            bgColor2: '#ff1493',
+            bgGradient: 'linear-gradient(135deg, #9932cc 0%, #ff69b4 50%, #9932cc 100%)',
             accentColor: '#ffd700',
             icon: '💐',
             title: 'Dzień Matki',
             defaultDescription: 'Dla najwspanialszej mamy'
         },
         'childrens-day': {
-            bgColor1: '#1e90ff',
-            bgColor2: '#da70d6',
+            bgGradient: 'linear-gradient(135deg, #1e90ff 0%, #87ceeb 50%, #da70d6 100%)',
             accentColor: '#ffd700',
             icon: '🎈',
             title: 'Dzień Dziecka',
             defaultDescription: 'Dla małego uśmieszku'
         },
         wedding: {
-            bgColor1: '#dda0dd',
-            bgColor2: '#ffc0cb',
+            bgGradient: 'linear-gradient(135deg, #dda0dd 0%, #ffb6c1 50%, #dda0dd 100%)',
             accentColor: '#9932cc',
             icon: '💒',
             title: 'Ślub',
             defaultDescription: 'Życzenia szczęścia'
         },
         birthday: {
-            bgColor1: '#00ced1',
-            bgColor2: '#4169e1',
+            bgGradient: 'linear-gradient(135deg, #00ced1 0%, #87ceeb 50%, #4169e1 100%)',
             accentColor: '#ffd700',
             icon: '🎂',
             title: 'Urodziny',
@@ -176,7 +167,7 @@ export function generateGiftCardEmail(
                 border-radius: 28px;
                 overflow: hidden;
                 box-shadow: 0 18px 45px rgba(0,0,0,0.18);
-                background: linear-gradient(145deg, rgba(255,255,255,0.15) 0%, rgba(0,0,0,0.15) 100%), linear-gradient(135deg, ${config.bgColor1} 0%, ${config.bgColor2} 100%);
+                background: ${config.bgGradient};
                 padding: 32px 28px;
                 color: white;
                 display: flex;
@@ -319,7 +310,7 @@ export function generateGiftCardEmail(
             .info-title {
                 font-size: 16px;
                 font-weight: bold;
-                color: ${config.bgColor1};
+                color: #333;
                 margin-bottom: 15px;
                 text-align: center;
             }
@@ -332,7 +323,7 @@ export function generateGiftCardEmail(
             }
             
             .info-text strong {
-                color: ${config.bgColor1};
+                color: #1a1a1a;
             }
             
             .instructions {
@@ -345,7 +336,7 @@ export function generateGiftCardEmail(
             }
             
             .instructions h4 {
-                color: ${config.bgColor1};
+                color: #333;
                 font-size: 12px;
                 text-transform: uppercase;
                 letter-spacing: 1px;
