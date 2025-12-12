@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import { Cormorant_Garamond, Montserrat, Playfair_Display, Lato, Great_Vibes, Cinzel } from "next/font/google"; // Added fonts
 
+// PERFORMANCE: Enable ISR (Incremental Static Regeneration)
+// Revalidate every hour instead of on-demand rendering
+export const revalidate = 3600;
+
 // ... existing fonts ...
 
 const playfair = Playfair_Display({

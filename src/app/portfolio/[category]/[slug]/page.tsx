@@ -10,13 +10,29 @@ type Props = {
     params: Promise<{ category: string; slug: string }>;
 };
 
-// Force dynamic rendering to avoid build-time database access issues
-export const dynamic = 'force-dynamic';
-export const dynamicParams = true;
+// PERFORMANCE: Enable ISR instead of force-dynamic
+// Revalidate every hour for better performance
+export const revalidate = 3600;
 
-// Return empty array to prevent any build-time generation
 export async function generateStaticParams() {
-    return [];
+    try {
+        const prisma = (await import('@/lib/db/prisma')).default;
+        const sessions = await prisma.portfolioSession.findMany({
+            select: {
+                slug: true,
+                category: true
+            }
+        });
+
+        return sessions.map((session: any) => ({
+            category: session.category,
+            slug: session.slug
+        }));
+    } catch (error) {
+        console.error('Failed to generate static params:', error);
+        // Fallback - will use ISR for new pages
+        return [];
+    }
 }
 
 export default async function SessionPage({ params }: Props) {

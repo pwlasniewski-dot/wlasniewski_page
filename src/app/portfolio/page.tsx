@@ -8,7 +8,9 @@ export const metadata: Metadata = {
     description: "Zobacz moje portfolio. Fotografia ślubna, rodzinna, biznesowa i więcej.",
 };
 
-export const dynamic = 'force-dynamic';
+// PERFORMANCE: Enable ISR instead of force-dynamic (on-demand rendering)
+// Revalidate every 3600 seconds (1 hour) for much faster initial page loads
+export const revalidate = 3600;
 
 export default async function PortfolioHome() {
     const categories = await getPortfolioCategories();

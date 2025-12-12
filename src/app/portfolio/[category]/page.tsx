@@ -22,13 +22,21 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     };
 }
 
-// Completely disable static generation to prevent DB access during build
-export const dynamic = 'force-dynamic';
-export const dynamicParams = true;
+// PERFORMANCE: Enable ISR (revalidate every hour) instead of force-dynamic
+// This allows static generation at build time + revalidation
+export const revalidate = 3600;
 
-// Return empty array to prevent any build-time generation
 export async function generateStaticParams() {
-    return [];
+    try {
+        const categories = await getPortfolioCategories();
+        return categories.map((cat: any) => ({
+            category: cat.slug
+        }));
+    } catch (error) {
+        console.error('Failed to generate static params:', error);
+        // Fallback to empty array - new categories will be generated on first access (ISR)
+        return [];
+    }
 }
 
 export default async function CategoryPage({ params }: Props) {
