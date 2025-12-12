@@ -7,15 +7,17 @@ export const dynamic = 'force-dynamic';
 // GET - Fetch promo settings
 export async function GET() {
     try {
-        const promoEnabled = await prisma.setting.findFirst({
-            where: { setting_key: 'gift_card_promo_enabled' }
+        // Get the first settings record (where columns are stored)
+        const settings = await prisma.setting.findFirst({
+            orderBy: { id: 'asc' }
         });
 
-        if (!promoEnabled?.setting_value || promoEnabled.setting_value !== 'true') {
+        // Check if promo is enabled from column
+        if (!settings?.gift_card_promo_enabled) {
             return NextResponse.json({ enabled: false, messages: [] });
         }
 
-        // Fetch promo messages from settings
+        // Fetch promo messages from kv storage
         const messagesData = await prisma.setting.findFirst({
             where: { setting_key: 'gift_card_promo_messages' }
         });

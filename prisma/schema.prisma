@@ -109,6 +109,29 @@ model Setting {
   // Seasonal Decorations
   seasonal_effect   String? @default("none") // none, snow, lights, hearts, halloween
 
+  // Urgency Banner
+  urgency_enabled         Boolean @default(false)
+  urgency_slots_remaining Int?
+  urgency_month           String?
+
+  // Social Proof
+  social_proof_total_clients Int? @default(100)
+
+  // Promo Code Discount
+  promo_code_discount_enabled Boolean @default(false)
+  promo_code_discount_amount  Int?    @default(10)
+  promo_code_discount_type    String? @default("percentage") // percentage, fixed
+
+  // Gift Card Promo
+  gift_card_promo_enabled Boolean @default(false)
+
+  // SEO & Analytics
+  google_analytics_id      String?
+  google_tag_manager_id    String?
+  facebook_pixel_id        String?
+  meta_verification_google String?
+  meta_verification_facebook String?
+
   @@map("settings")
 }
 
