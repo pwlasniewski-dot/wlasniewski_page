@@ -139,8 +139,13 @@ export async function POST(request: NextRequest) {
                     if (booleanFields.includes(key)) {
                         columnUpdates[key] = value === 'true' || value === true;
                     } else if (numericFields.includes(key)) {
-                        // Convert to number
-                        columnUpdates[key] = Number(value);
+                        // Convert to number, but skip invalid/empty inputs
+                        if (value !== '' && value !== null && value !== undefined) {
+                            const numericValue = Number(value);
+                            if (!Number.isNaN(numericValue)) {
+                                columnUpdates[key] = numericValue;
+                            }
+                        }
                     } else {
                         columnUpdates[key] = value;
                     }
@@ -155,10 +160,12 @@ export async function POST(request: NextRequest) {
             });
 
             if (firstSetting) {
-                await prisma.setting.update({
-                    where: { id: firstSetting.id },
-                    data: columnUpdates
-                });
+                if (Object.keys(columnUpdates).length > 0) {
+                    await prisma.setting.update({
+                        where: { id: firstSetting.id },
+                        data: columnUpdates
+                    });
+                }
             } else {
                 // Should not happen usually, but create if empty
                 await prisma.setting.create({
