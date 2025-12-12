@@ -113,6 +113,13 @@ export async function POST(request: NextRequest) {
                 'booking_require_payment'
             ];
 
+            // Map of numeric fields that need type conversion
+            const numericFields = [
+                'navbar_font_size', 'logo_size', 'smtp_port',
+                'urgency_slots_remaining', 'social_proof_total_clients',
+                'booking_min_days_ahead', 'gift_card_promo_rotation_interval'
+            ];
+
             for (const [key, value] of Object.entries(body)) {
                 // Legacy PayU keys -> map to DB columns
                 if (key === 'payu_pos_id') {
@@ -130,7 +137,7 @@ export async function POST(request: NextRequest) {
                     // Convert string booleans to actual booleans
                     if (booleanFields.includes(key)) {
                         columnUpdates[key] = value === 'true' || value === true;
-                    } else if (key === 'navbar_font_size' || key === 'logo_size') {
+                    } else if (numericFields.includes(key)) {
                         // Convert to number
                         columnUpdates[key] = Number(value);
                     } else {
