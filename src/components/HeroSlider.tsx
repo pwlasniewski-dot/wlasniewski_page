@@ -143,11 +143,18 @@ export default function HeroSlider({ slides = [] }: HeroSliderProps) {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    transition={{ duration: 0.6 }}
-                    className="absolute inset-0"
+                    transition={{ duration: 1.5, ease: "easeInOut" }}
+                    className="absolute inset-0 w-full h-full overflow-hidden"
                 >
-                    <div
+                    <motion.div
                         className="w-full h-full bg-cover bg-center"
+                        initial={{ scale: 1 }}
+                        animate={{ scale: 1.15 }}
+                        transition={{
+                            duration: 12,
+                            ease: "linear",
+                            repeat: 0
+                        }}
                         style={{
                             backgroundImage: `url(${slideImage})`,
                             backgroundPosition: isMobile ? 'center' : 'center 30%'

@@ -2,8 +2,7 @@ import React from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCategory, getPortfolioCategories } from "@/lib/portfolio";
-import SessionGrid from "@/components/SessionGrid";
-import CategoryHeroSlider from "@/components/CategoryHeroSlider";
+
 import type { Metadata } from "next";
 
 type Props = {
@@ -39,51 +38,77 @@ export async function generateStaticParams() {
     }
 }
 
+import CategoryColumnView from "@/components/portfolio/CategoryColumnView";
+import CategoryFullSlider from "@/components/portfolio/CategoryFullSlider";
+
+import LightboxGallery from "@/components/LightboxGallery";
+import prisma from "@/lib/db/prisma";
+
 export default async function CategoryPage({ params }: Props) {
     const { category: categorySlug } = await params;
-    const category = await getCategory(categorySlug);
+
+    // Parallel data fetching
+    const [category, settings] = await Promise.all([
+        getCategory(categorySlug),
+        prisma.setting.findFirst({
+            orderBy: { id: 'asc' },
+            select: { portfolio_layout: true }
+        })
+    ]);
 
     if (!category) {
         notFound();
     }
 
+    const layout = settings?.portfolio_layout || 'slider';
+
+    // Aggregate Starred Photos for Level 2 Feed
+    const starredItems: Array<{ src: string; alt: string; link: string; linkLabel: string }> = [];
+
+    // Process sessions to find starred photos
+    category.sessions.forEach((session: any) => {
+        if (session.highlightedPhotos && session.highlightedPhotos.length > 0) {
+            session.highlightedPhotos.forEach((photoUrl: string) => {
+                starredItems.push({
+                    src: photoUrl,
+                    alt: session.title,
+                    link: `/portfolio/${session.category}/${session.slug}`,
+                    linkLabel: session.title
+                });
+            });
+        }
+    });
+
+    // If we have starred photos, show the "Best Of" Feed (Level 2)
+    if (starredItems.length > 0) {
+        // Generate indices array [0, 1, 2, ... length-1] to mark ALL as highlighted (Full Width)
+        const allIndices = Array.from({ length: starredItems.length }, (_, i) => i);
+
+        return (
+            <main className="min-h-screen bg-black">
+                <div className="w-full">
+                    <LightboxGallery
+                        photos={starredItems}
+                        highlightedIndices={allIndices}
+                        fitMode="blur"
+                    />
+                </div>
+            </main>
+        );
+    }
+
+    // Fallback: If no stars, show standard layout (Slider or Column)
     return (
-        <main className="min-h-screen bg-zinc-950 text-white selection:bg-amber-500 selection:text-black">
-            {/* Hero Slider */}
-            <CategoryHeroSlider
-                sessions={category.sessions}
-                title={category.title}
-                description={category.description}
-            />
-
-            <div className="mx-auto max-w-7xl px-4">
-                {/* Back Link */}
-                <div className="mb-12">
-                    <Link
-                        href="/portfolio"
-                        className="inline-flex items-center text-zinc-500 hover:text-gold-400 transition-colors group font-sans text-sm tracking-widest uppercase"
-                    >
-                        <svg className="w-4 h-4 mr-2 transform group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19l-7-7 7-7" />
-                        </svg>
-                        Powrót do portfolio
-                    </Link>
-                </div>
-
-                {/* Session Grid */}
-                <SessionGrid sessions={category.sessions} />
-
-                {/* CTA Footer */}
-                <div className="mt-20 pt-10 border-t border-zinc-800 text-center">
-                    <p className="text-zinc-400 mb-6">Podoba Ci się to co widzisz?</p>
-                    <Link
-                        href="/rezerwacja"
-                        className="inline-flex items-center gap-2 bg-white text-zinc-950 px-6 py-3 rounded-full font-bold hover:bg-amber-400 transition-colors"
-                    >
-                        Zapytaj o termin
-                    </Link>
-                </div>
-            </div>
+        <main className="min-h-screen bg-black">
+            {layout === 'column' ? (
+                <CategoryColumnView sessions={category.sessions} />
+            ) : (
+                <CategoryFullSlider
+                    sessions={category.sessions}
+                    title={category.title}
+                    description={category.description}
+                />
+            )}
         </main>
     );
 }

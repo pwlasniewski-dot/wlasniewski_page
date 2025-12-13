@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getApiUrl } from '@/lib/api-config';
-import { Save, ArrowLeft, Image as ImageIcon, X } from 'lucide-react';
+import { Save, ArrowLeft, Image as ImageIcon, X, Star } from 'lucide-react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import MediaPicker from '@/components/admin/MediaPicker';
@@ -17,13 +17,17 @@ export default function NewSessionPage() {
         description: '',
         cover_image: '',
         cover_image_id: 0,
+        cover_image_mobile: '',
+        cover_image_mobile_id: 0,
         media_ids: [] as number[],
+        highlighted_media_ids: [] as number[],
         session_date: new Date().toISOString().split('T')[0],
         is_published: false,
     });
     const [galleryUrls, setGalleryUrls] = useState<string[]>([]);
     const [saving, setSaving] = useState(false);
     const [showCoverPicker, setShowCoverPicker] = useState(false);
+    const [showMobileCoverPicker, setShowMobileCoverPicker] = useState(false);
     const [showGalleryPicker, setShowGalleryPicker] = useState(false);
 
     const [categories, setCategories] = useState<string[]>(['wedding', 'family', 'portrait', 'communion']);
@@ -38,14 +42,32 @@ export default function NewSessionPage() {
             const data = await res.json();
             if (data.success && data.settings.portfolio_categories) {
                 let cats: string[] = [];
-                if (typeof data.settings.portfolio_categories === 'string') {
-                    try {
-                        cats = JSON.parse(data.settings.portfolio_categories);
-                    } catch (e) {
-                        cats = data.settings.portfolio_categories.split(',').map((s: string) => s.trim());
+                const raw = data.settings.portfolio_categories;
+
+                if (Array.isArray(raw)) {
+                    cats = raw;
+                } else if (typeof raw === 'string') {
+                    const trimmed = raw.trim();
+                    if (trimmed.startsWith('[')) {
+                        // Try JSON parse safely
+                        try {
+                            const parsed = JSON.parse(trimmed);
+                            if (Array.isArray(parsed)) cats = parsed;
+                        } catch (e) {
+                            // Fallback for single quotes or bad JSON
+                            try {
+                                const fixed = trimmed.replace(/'/g, '"');
+                                const parsed = JSON.parse(fixed);
+                                if (Array.isArray(parsed)) cats = parsed;
+                            } catch (e2) {
+                                // Raw string fallback
+                                cats = trimmed.split(',').map(s => s.trim()).filter(Boolean);
+                            }
+                        }
+                    } else {
+                        // Simple comma separated
+                        cats = trimmed.split(',').map(s => s.trim()).filter(Boolean);
                     }
-                } else if (Array.isArray(data.settings.portfolio_categories)) {
-                    cats = data.settings.portfolio_categories;
                 }
 
                 if (cats.length > 0) {
@@ -89,14 +111,25 @@ export default function NewSessionPage() {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify(formData),
+                body: JSON.stringify({
+                    ...formData,
+                    cover_image_mobile_id: formData.cover_image_mobile_id || null
+                }),
             });
 
             if (res.ok) {
                 toast.success('Utworzono sesję');
                 router.push('/admin/portfolio');
             } else {
-                throw new Error('Failed to create session');
+                const data = await res.json();
+                const errorMessage = data.error || data.details || 'Failed to create session';
+
+                if (errorMessage.includes('Unique constraint') || errorMessage.includes('slug')) {
+                    toast.error('Sesja z tym tytułem/linkiem już istnieje.');
+                    setSaving(false);
+                    return;
+                }
+                throw new Error(errorMessage);
             }
         } catch (error) {
             toast.error('Błąd tworzenia sesji');
@@ -117,10 +150,27 @@ export default function NewSessionPage() {
 
     const removeGalleryImage = (index: number) => {
         setGalleryUrls(prev => prev.filter((_, i) => i !== index));
-        setFormData(prev => ({
-            ...prev,
-            media_ids: prev.media_ids.filter((_, i) => i !== index)
-        }));
+        setFormData(prev => {
+            const idToRemove = prev.media_ids[index];
+            return {
+                ...prev,
+                media_ids: prev.media_ids.filter((_, i) => i !== index),
+                highlighted_media_ids: prev.highlighted_media_ids.filter(id => id !== idToRemove)
+            };
+        });
+    };
+
+    const toggleHighlight = (index: number) => {
+        const id = formData.media_ids[index];
+        setFormData(prev => {
+            const isHighlighted = prev.highlighted_media_ids.includes(id);
+            return {
+                ...prev,
+                highlighted_media_ids: isHighlighted
+                    ? prev.highlighted_media_ids.filter(hid => hid !== id)
+                    : [...prev.highlighted_media_ids, id]
+            };
+        });
     };
 
     return (
@@ -193,22 +243,45 @@ export default function NewSessionPage() {
                     </div>
                 </div>
 
-                <div>
-                    <label className="block text-sm font-medium text-zinc-400 mb-1">Zdjęcie okładkowe</label>
-                    <div className="flex items-center gap-4">
-                        {formData.cover_image && (
-                            <div className="relative h-20 w-20 rounded-md overflow-hidden border border-zinc-700">
-                                <img src={formData.cover_image} alt="Cover" className="h-full w-full object-cover" />
-                            </div>
-                        )}
-                        <button
-                            type="button"
-                            onClick={() => setShowCoverPicker(true)}
-                            className="inline-flex items-center px-3 py-2 border border-zinc-700 shadow-sm text-sm leading-4 font-medium rounded-md text-zinc-300 bg-zinc-800 hover:bg-zinc-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gold-500"
-                        >
-                            <ImageIcon className="-ml-0.5 mr-2 h-4 w-4" />
-                            Wybierz okładkę
-                        </button>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label className="block text-sm font-medium text-zinc-400 mb-1">Zdjęcie okładkowe (Desktop)</label>
+                        <div className="flex items-center gap-4">
+                            {formData.cover_image && (
+                                <div className="relative h-20 w-20 rounded-md overflow-hidden border border-zinc-700">
+                                    <img src={formData.cover_image} alt="Cover" className="h-full w-full object-cover" />
+                                </div>
+                            )}
+                            <button
+                                type="button"
+                                onClick={() => setShowCoverPicker(true)}
+                                className="inline-flex items-center px-3 py-2 border border-zinc-700 shadow-sm text-sm leading-4 font-medium rounded-md text-zinc-300 bg-zinc-800 hover:bg-zinc-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gold-500"
+                            >
+                                <ImageIcon className="-ml-0.5 mr-2 h-4 w-4" />
+                                Wybierz okładkę
+                            </button>
+                        </div>
+                        <p className="mt-1 text-xs text-zinc-500">Główne zdjęcie widoczne na komputerach.</p>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-zinc-400 mb-1">Zdjęcie okładkowe (Mobile)</label>
+                        <div className="flex items-center gap-4">
+                            {formData.cover_image_mobile && (
+                                <div className="relative h-20 w-20 rounded-md overflow-hidden border border-zinc-700">
+                                    <img src={formData.cover_image_mobile} alt="Mobile Cover" className="h-full w-full object-cover" />
+                                </div>
+                            )}
+                            <button
+                                type="button"
+                                onClick={() => setShowMobileCoverPicker(true)}
+                                className="inline-flex items-center px-3 py-2 border border-zinc-700 shadow-sm text-sm leading-4 font-medium rounded-md text-zinc-300 bg-zinc-800 hover:bg-zinc-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gold-500"
+                            >
+                                <ImageIcon className="-ml-0.5 mr-2 h-4 w-4" />
+                                Wybierz wersję mobilną
+                            </button>
+                        </div>
+                        <p className="mt-1 text-xs text-zinc-500">Opcjonalnie: zdjęcie w pionie dla telefonów.</p>
                     </div>
                 </div>
 
@@ -218,13 +291,28 @@ export default function NewSessionPage() {
                         {galleryUrls.map((url, index) => (
                             <div key={index} className="relative aspect-square rounded-md overflow-hidden border border-zinc-700 group">
                                 <img src={url} alt={`Gallery ${index}`} className="h-full w-full object-cover" />
-                                <button
-                                    type="button"
-                                    onClick={() => removeGalleryImage(index)}
-                                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
-                                >
-                                    <X className="w-3 h-3" />
-                                </button>
+                                <div className="absolute top-1 right-1 flex gap-1 bg-black/40 rounded p-1 backdrop-blur-sm">
+                                    <button
+                                        type="button"
+                                        onClick={() => toggleHighlight(index)}
+                                        className={`p-1 rounded-full ${formData.highlighted_media_ids.includes(formData.media_ids[index]) ? 'bg-gold-500 text-black' : 'bg-black/50 text-gold-500 hover:bg-black/70'}`}
+                                        title={formData.highlighted_media_ids.includes(formData.media_ids[index]) ? "Usuń z wyróżnionych" : "Wyróżnij w sliderze"}
+                                    >
+                                        <Star className="w-3 h-3" fill={formData.highlighted_media_ids.includes(formData.media_ids[index]) ? "currentColor" : "none"} />
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => removeGalleryImage(index)}
+                                        className="bg-red-500 text-white rounded-full p-1"
+                                    >
+                                        <X className="w-3 h-3" />
+                                    </button>
+                                </div>
+                                {formData.highlighted_media_ids.includes(formData.media_ids[index]) && (
+                                    <div className="absolute bottom-1 right-1">
+                                        <Star className="w-3 h-3 text-gold-500 drop-shadow-md" fill="currentColor" />
+                                    </div>
+                                )}
                             </div>
                         ))}
                         <button
@@ -242,6 +330,12 @@ export default function NewSessionPage() {
                     isOpen={showCoverPicker}
                     onClose={() => setShowCoverPicker(false)}
                     onSelect={(url: string | string[], id: number | number[]) => setFormData({ ...formData, cover_image: url as string, cover_image_id: id as number })}
+                />
+
+                <MediaPicker
+                    isOpen={showMobileCoverPicker}
+                    onClose={() => setShowMobileCoverPicker(false)}
+                    onSelect={(url: string | string[], id: number | number[]) => setFormData({ ...formData, cover_image_mobile: url as string, cover_image_mobile_id: id as number })}
                 />
 
                 <MediaPicker

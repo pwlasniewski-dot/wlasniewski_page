@@ -56,11 +56,13 @@ export default function SettingsPage() {
         payu_test_mode: true,
         // Portfolio
         portfolio_categories: [] as string[] | string, // Can be array or JSON string
+        portfolio_layout: 'slider', // 'slider' | 'column'
         // Gift Card Promo
         gift_card_promo_enabled: 'false',
         gift_card_promo_title: 'Karty Podarunkowe',
         gift_card_promo_description: '',
         gift_card_promo_rotation_interval: '5',
+        gift_card_hero_image: '', // Store background image
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -119,12 +121,17 @@ export default function SettingsPage() {
             // Process portfolio categories if it's a string (from input)
             const settingsToSave = { ...settings };
             console.log('[Admin Settings] Saving settings with seasonal_effect:', settingsToSave.seasonal_effect);
-            
+
+            // Fix: ensure we don't double-stringify or corrupt data
             if (typeof settings.portfolio_categories === 'string') {
-                // Split by comma and trim
-                const cats = settings.portfolio_categories.split(',').map((s: string) => s.trim()).filter(Boolean);
+                // Split by comma and trim, removing empty entries
+                const cats = settings.portfolio_categories
+                    .split(',')
+                    .map((s: string) => s.trim())
+                    .filter((s: string) => s.length > 0);
                 settingsToSave.portfolio_categories = JSON.stringify(cats);
             } else if (Array.isArray(settings.portfolio_categories)) {
+                // If it's already an array, perfect
                 settingsToSave.portfolio_categories = JSON.stringify(settings.portfolio_categories);
             }
 
@@ -616,16 +623,14 @@ export default function SettingsPage() {
             <div className="bg-zinc-900 shadow rounded-lg border border-zinc-800 p-6">
                 <div className="flex items-center justify-between mb-4">
                     <h2 className="text-lg font-medium text-white">Konfiguracja Email (SMTP)</h2>
-                    <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${
-                        settings.smtp_host && settings.smtp_user && settings.smtp_password && settings.smtp_from
-                            ? 'bg-green-900/30 text-green-400 border border-green-900/50'
-                            : 'bg-red-900/30 text-red-400 border border-red-900/50'
-                    }`}>
-                        <div className={`w-2 h-2 rounded-full ${
-                            settings.smtp_host && settings.smtp_user && settings.smtp_password && settings.smtp_from
-                                ? 'bg-green-500'
-                                : 'bg-red-500'
-                        }`}></div>
+                    <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${settings.smtp_host && settings.smtp_user && settings.smtp_password && settings.smtp_from
+                        ? 'bg-green-900/30 text-green-400 border border-green-900/50'
+                        : 'bg-red-900/30 text-red-400 border border-red-900/50'
+                        }`}>
+                        <div className={`w-2 h-2 rounded-full ${settings.smtp_host && settings.smtp_user && settings.smtp_password && settings.smtp_from
+                            ? 'bg-green-500'
+                            : 'bg-red-500'
+                            }`}></div>
                         {settings.smtp_host && settings.smtp_user && settings.smtp_password && settings.smtp_from
                             ? '✅ Skonfigurowany'
                             : '⚠️ Niekompletny'}
@@ -904,25 +909,35 @@ export default function SettingsPage() {
                     <div className="flex gap-2">
                         <input
                             type="text"
-                            value={Array.isArray(settings.portfolio_categories)
-                                ? settings.portfolio_categories.join(', ')
-                                : typeof settings.portfolio_categories === 'string' && settings.portfolio_categories.trim().startsWith('[')
-                                    ? (() => {
+                            value={(() => {
+                                const val = settings.portfolio_categories;
+                                if (Array.isArray(val)) return val.join(', ');
+                                if (typeof val === 'string') {
+                                    const trimmed = val.trim();
+                                    // Try strict JSON parse first
+                                    if (trimmed.startsWith('[')) {
                                         try {
-                                            return JSON.parse(settings.portfolio_categories).join(', ');
-                                        } catch {
-                                            return '';
+                                            const parsed = JSON.parse(trimmed);
+                                            if (Array.isArray(parsed)) return parsed.join(', ');
+                                        } catch (e) {
+                                            // Fallback: try replacing single quotes with double quotes
+                                            try {
+                                                const fixed = trimmed.replace(/'/g, '"');
+                                                const parsed = JSON.parse(fixed);
+                                                if (Array.isArray(parsed)) return parsed.join(', ');
+                                            } catch (e2) {
+                                                // If all parsing fails, return raw string to allow editing
+                                                return val;
+                                            }
                                         }
-                                    })()
-                                    : (typeof settings.portfolio_categories === 'string' ? settings.portfolio_categories : '')}
+                                    }
+                                    // If not array-like, just return the string (it might be the comma list already)
+                                    return val;
+                                }
+                                return '';
+                            })()}
                             onChange={e => {
                                 const val = e.target.value;
-                                // We keep it as string in local state, but convert to array on save if needed, or simple string split
-                                // Let's simplify: settings state holds whatever API returns. 
-                                // On save, we should ideally format it. For now, let's treat it as a special field.
-                                // Actually, let's make it an array in state if we can.
-                                // For now, simple text input, will process in handleSave or useEffect?
-                                // Let's try raw string update:
                                 setSettings(s => ({ ...s, portfolio_categories: val }));
                             }}
                             placeholder="np. Ślub, Rodzina, Portret, Komunia"
@@ -930,6 +945,48 @@ export default function SettingsPage() {
                         />
                     </div>
                     <p className="text-xs text-zinc-500">Wpisz kategorie oddzielone przecinkami (np. Ślub, Rodzina, Biznes). Te kategorie pojawią się przy dodawaniu nowej sesji.</p>
+                </div>
+            </div>
+
+            {/* Portfolio Layout Settings */}
+            <div className="bg-zinc-900 shadow rounded-lg border border-zinc-800 p-6">
+                <h2 className="text-lg font-medium text-white mb-4">Układ Portfolio (Kategorie)</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <button
+                        onClick={() => setSettings(s => ({ ...s, portfolio_layout: 'slider' }))}
+                        className={`relative p-4 rounded-xl border-2 transition-all text-left group ${settings.portfolio_layout === 'slider'
+                            ? 'border-gold-500 bg-gold-500/10'
+                            : 'border-zinc-700 hover:border-zinc-600 bg-zinc-800'
+                            }`}
+                    >
+                        <div className="flex items-center justify-between mb-2">
+                            <span className={`font-semibold ${settings.portfolio_layout === 'slider' ? 'text-gold-400' : 'text-zinc-300'}`}>
+                                Pełny Ekran (Slider)
+                            </span>
+                            {settings.portfolio_layout === 'slider' && <div className="w-3 h-3 rounded-full bg-gold-500 shadow-[0_0_10px_rgba(234,179,8,0.5)]" />}
+                        </div>
+                        <p className="text-xs text-zinc-400">
+                            Zdjęcia wypełniają cały ekran. Użytkownik przesuwa slajdy w bok. Najlepsze dla efektu "wow".
+                        </p>
+                    </button>
+
+                    <button
+                        onClick={() => setSettings(s => ({ ...s, portfolio_layout: 'column' }))}
+                        className={`relative p-4 rounded-xl border-2 transition-all text-left group ${settings.portfolio_layout === 'column'
+                            ? 'border-gold-500 bg-gold-500/10'
+                            : 'border-zinc-700 hover:border-zinc-600 bg-zinc-800'
+                            }`}
+                    >
+                        <div className="flex items-center justify-between mb-2">
+                            <span className={`font-semibold ${settings.portfolio_layout === 'column' ? 'text-gold-400' : 'text-zinc-300'}`}>
+                                Kolumna (Scroll)
+                            </span>
+                            {settings.portfolio_layout === 'column' && <div className="w-3 h-3 rounded-full bg-gold-500 shadow-[0_0_10px_rgba(234,179,8,0.5)]" />}
+                        </div>
+                        <p className="text-xs text-zinc-400">
+                            Zdjęcia ułożone jedno pod drugim. Użytkownik przewija w dół. Klasyczny, czytelny układ.
+                        </p>
+                    </button>
                 </div>
             </div>
 
@@ -1018,20 +1075,23 @@ export default function SettingsPage() {
             </div>
 
             {/* Media Picker Modal */}
-            {showMediaPicker && (
-                <MediaPicker
-                    isOpen={showMediaPicker}
-                    onClose={() => {
-                        setShowMediaPicker(false);
-                        setCurrentImageField('');
-                    }}
-                    onSelect={(url: string | string[], id: number | number[]) => {
-                        if (typeof url === 'string') {
-                            handleImageSelect(url, typeof id === 'number' ? id : 0);
-                        }
-                    }}
-                />
-            )}
-        </div>
+            {
+                showMediaPicker && (
+                    <MediaPicker
+                        isOpen={showMediaPicker}
+                        onClose={() => {
+                            setShowMediaPicker(false);
+                            setCurrentImageField('');
+                        }}
+                        onSelect={(url: string | string[], id: number | number[]) => {
+                            if (typeof url === 'string') {
+                                handleImageSelect(url, typeof id === 'number' ? id : 0);
+                            }
+                        }}
+                    />
+                )
+            }
+        </div >
+
     );
 }

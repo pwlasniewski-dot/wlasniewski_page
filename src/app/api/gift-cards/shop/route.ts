@@ -71,7 +71,13 @@ export async function GET() {
             };
         });
 
-        return NextResponse.json(formattedCards);
+        return NextResponse.json({
+            cards: formattedCards,
+            settings: {
+                heroImage: shopSettings?.gift_card_hero_image || null,
+                rotationInterval: shopSettings?.gift_card_promo_rotation_interval || 5
+            }
+        });
     } catch (error: any) {
         console.error('Error fetching gift cards:', error);
         return NextResponse.json(

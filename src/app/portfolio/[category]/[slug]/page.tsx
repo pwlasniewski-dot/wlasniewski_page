@@ -112,8 +112,11 @@ export default async function SessionPage({ params }: Props) {
             <section className="relative h-[70vh] overflow-hidden">
                 {session.cover_image_url && (
                     <div
-                        className="absolute inset-0 bg-cover bg-center"
-                        style={{ backgroundImage: `url('${session.cover_image_url}')` }}
+                        className="absolute inset-0 bg-cover"
+                        style={{
+                            backgroundImage: `url('${session.cover_image_url}')`,
+                            backgroundPosition: '50% 25%'
+                        }}
                     />
                 )}
                 <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-black" />
@@ -139,18 +142,20 @@ export default async function SessionPage({ params }: Props) {
             </section>
 
             {/* Gallery Grid */}
-            <section className="py-16 px-6 md:px-8 max-w-[1920px] mx-auto">
+            <section className="py-16 mx-auto">
                 {galleryImages.length === 0 ? (
                     <div className="text-center py-32">
                         <p className="text-zinc-500 text-xl">Brak zdjęć w galerii</p>
                     </div>
                 ) : (
-                    <LightboxGallery
-                        photos={galleryImages.map(img => ({
-                            src: img.url,
-                            alt: session.title
-                        }))}
-                    />
+                    <div className="max-w-[1920px] mx-auto md:px-8">
+                        <LightboxGallery
+                            photos={galleryImages.map(img => ({
+                                src: img.url,
+                                alt: session.title
+                            }))}
+                        />
+                    </div>
                 )}
             </section>
 

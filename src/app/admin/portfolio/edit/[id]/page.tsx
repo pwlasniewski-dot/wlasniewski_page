@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { getApiUrl } from '@/lib/api-config';
-import { Save, ArrowLeft, Image as ImageIcon, X } from 'lucide-react';
+import { Save, ArrowLeft, Image as ImageIcon, X, Star, Check } from 'lucide-react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import MediaPicker from '@/components/admin/MediaPicker';
@@ -20,14 +20,20 @@ export default function EditSessionPage() {
         description: '',
         cover_image: '',
         cover_image_id: 0,
+        cover_image_mobile: '',
+        cover_image_mobile_id: 0,
         media_ids: [] as number[],
+        highlighted_media_ids: [] as number[],
         session_date: new Date().toISOString().split('T')[0],
         is_published: false,
+        is_category_hero: false,
+        display_order: 0,
     });
     const [galleryUrls, setGalleryUrls] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [showCoverPicker, setShowCoverPicker] = useState(false);
+    const [showMobileCoverPicker, setShowMobileCoverPicker] = useState(false);
     const [showGalleryPicker, setShowGalleryPicker] = useState(false);
 
     const [categories, setCategories] = useState<string[]>(['wedding', 'family', 'portrait', 'communion']);
@@ -71,6 +77,26 @@ export default function EditSessionPage() {
                 const session = data.sessions.find((s: any) => s.id === parseInt(id));
 
                 if (session) {
+                    let mediaIds: number[] = [];
+                    try {
+                        if (session.media_ids) {
+                            mediaIds = JSON.parse(session.media_ids);
+                        }
+                    } catch (e) {
+                        console.error('Error parsing media_ids', e);
+                    }
+
+                    let highlightedIds: number[] = [];
+                    try {
+                        if (session.highlighted_media_ids && typeof session.highlighted_media_ids === 'string' && session.highlighted_media_ids.trim().length > 0) {
+                            highlightedIds = JSON.parse(session.highlighted_media_ids);
+                        } else if (Array.isArray(session.highlighted_media_ids)) {
+                            highlightedIds = session.highlighted_media_ids;
+                        }
+                    } catch (e) {
+                        console.error('Error parsing highlighted_media_ids', e);
+                    }
+
                     setFormData({
                         title: session.title,
                         slug: session.slug,
@@ -78,9 +104,14 @@ export default function EditSessionPage() {
                         description: session.description || '',
                         cover_image: session.cover_image_url || '',
                         cover_image_id: session.cover_image_id || 0,
-                        media_ids: session.media_ids ? JSON.parse(session.media_ids) : [],
+                        cover_image_mobile: session.cover_image_mobile_url || '',
+                        cover_image_mobile_id: session.cover_image_mobile_id || 0,
+                        media_ids: mediaIds,
+                        highlighted_media_ids: highlightedIds,
                         session_date: session.session_date.split('T')[0],
                         is_published: session.is_published,
+                        is_category_hero: session.is_category_hero || false,
+                        display_order: session.display_order || 0,
                     });
 
                     // Load gallery images
@@ -152,7 +183,22 @@ export default function EditSessionPage() {
                 toast.success('Sesja zaktualizowana');
                 router.push('/admin/portfolio');
             } else {
-                throw new Error('Failed to update session');
+                const text = await res.text();
+                console.error(`Update failed: ${res.status} ${res.statusText}`, text);
+                let errorMessage = 'Failed to update session';
+                try {
+                    const data = JSON.parse(text);
+                    errorMessage = data.error || data.details || errorMessage;
+
+                    if (errorMessage.includes('Unique constraint') || errorMessage.includes('slug')) {
+                        toast.error('Sesja z tym tytułem/linkiem już istnieje. Zmień tytuł.');
+                        throw new Error('Duplicate slug');
+                    }
+                } catch (e) {
+                    if ((e as Error).message === 'Duplicate slug') throw e;
+                    errorMessage += `: ${text.slice(0, 100)}`;
+                }
+                throw new Error(errorMessage);
             }
         } catch (error) {
             console.error('Update error:', error);
@@ -174,10 +220,27 @@ export default function EditSessionPage() {
 
     const removeGalleryImage = (index: number) => {
         setGalleryUrls(prev => prev.filter((_, i) => i !== index));
-        setFormData(prev => ({
-            ...prev,
-            media_ids: prev.media_ids.filter((_, i) => i !== index)
-        }));
+        setFormData(prev => {
+            const idToRemove = prev.media_ids[index];
+            return {
+                ...prev,
+                media_ids: prev.media_ids.filter((_, i) => i !== index),
+                highlighted_media_ids: prev.highlighted_media_ids.filter(id => id !== idToRemove)
+            };
+        });
+    };
+
+    const toggleHighlight = (index: number) => {
+        const id = formData.media_ids[index];
+        setFormData(prev => {
+            const isHighlighted = prev.highlighted_media_ids.includes(id);
+            return {
+                ...prev,
+                highlighted_media_ids: isHighlighted
+                    ? prev.highlighted_media_ids.filter(hid => hid !== id)
+                    : [...prev.highlighted_media_ids, id]
+            };
+        });
     };
 
     if (loading) {
@@ -208,6 +271,25 @@ export default function EditSessionPage() {
             </div>
 
             <div className="bg-zinc-900 shadow rounded-lg border border-zinc-800 p-6 space-y-6">
+                <div className="flex items-center gap-3 p-4 bg-zinc-900 rounded-lg border border-zinc-800">
+                    <div className="relative flex items-center">
+                        <input
+                            type="checkbox"
+                            id="is_category_hero"
+                            className="peer h-5 w-5 cursor-pointer appearance-none rounded-md border border-zinc-600 bg-zinc-950 checked:border-gold-500 checked:bg-gold-500 transition-all"
+                            checked={formData.is_category_hero || false}
+                            onChange={(e) => setFormData({ ...formData, is_category_hero: e.target.checked })}
+                        />
+                        <Check className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 text-black opacity-0 peer-checked:opacity-100" />
+                    </div>
+                    <label htmlFor="is_category_hero" className="cursor-pointer">
+                        <span className="block text-sm font-medium text-white">Okładka kategorii</span>
+                        <span className="block text-xs text-zinc-400">
+                            Ustaw to zdjęcie jako główne tło dla całej kategorii "{formData.category}" w portfolio.
+                        </span>
+                    </label>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <label className="block text-sm font-medium text-zinc-400 mb-1">Tytuł sesji</label>
@@ -272,7 +354,33 @@ export default function EditSessionPage() {
                             className="inline-flex items-center px-3 py-2 border border-zinc-700 shadow-sm text-sm leading-4 font-medium rounded-md text-zinc-300 bg-zinc-800 hover:bg-zinc-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gold-500"
                         >
                             <ImageIcon className="-ml-0.5 mr-2 h-4 w-4" />
-                            Zmień okładkę
+                            Zmień okładkę (Desktop)
+                        </button>
+                    </div>
+                </div>
+
+                <div>
+                    <label className="block text-sm font-medium text-zinc-400 mb-1">Zdjęcie okładkowe (Mobilne - Pionowe)</label>
+                    <p className="text-xs text-zinc-500 mb-2">Opcjonalnie. Jeśli nie wybrane, zostanie użyte główne zdjęcie.</p>
+                    <div className="flex items-center gap-4">
+                        {formData.cover_image_mobile && (
+                            <div className="relative h-28 w-20 rounded-md overflow-hidden border border-zinc-700">
+                                <img src={formData.cover_image_mobile} alt="Mobile Cover" className="h-full w-full object-cover" />
+                                <button
+                                    onClick={() => setFormData({ ...formData, cover_image_mobile: '', cover_image_mobile_id: 0 })}
+                                    className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
+                                >
+                                    <X className="w-3 h-3" />
+                                </button>
+                            </div>
+                        )}
+                        <button
+                            type="button"
+                            onClick={() => setShowMobileCoverPicker(true)}
+                            className="inline-flex items-center px-3 py-2 border border-zinc-700 shadow-sm text-sm leading-4 font-medium rounded-md text-zinc-300 bg-zinc-800 hover:bg-zinc-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gold-500"
+                        >
+                            <ImageIcon className="-ml-0.5 mr-2 h-4 w-4" />
+                            {formData.cover_image_mobile ? 'Zmień okładkę mobilną' : 'Dodaj okładkę mobilną'}
                         </button>
                     </div>
                 </div>
@@ -283,13 +391,28 @@ export default function EditSessionPage() {
                         {galleryUrls.map((url, index) => (
                             <div key={index} className="relative aspect-square rounded-md overflow-hidden border border-zinc-700 group">
                                 <img src={url} alt={`Gallery ${index}`} className="h-full w-full object-cover" />
-                                <button
-                                    type="button"
-                                    onClick={() => removeGalleryImage(index)}
-                                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
-                                >
-                                    <X className="w-3 h-3" />
-                                </button>
+                                <div className="absolute top-1 right-1 flex gap-1 bg-black/40 rounded p-1 backdrop-blur-sm">
+                                    <button
+                                        type="button"
+                                        onClick={() => toggleHighlight(index)}
+                                        className={`p-1 rounded-full ${formData.highlighted_media_ids.includes(formData.media_ids[index]) ? 'bg-gold-500 text-black' : 'bg-black/50 text-gold-500 hover:bg-black/70'}`}
+                                        title={formData.highlighted_media_ids.includes(formData.media_ids[index]) ? "Usuń z wyróżnionych" : "Wyróżnij w sliderze"}
+                                    >
+                                        <Star className="w-3 h-3" fill={formData.highlighted_media_ids.includes(formData.media_ids[index]) ? "currentColor" : "none"} />
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => removeGalleryImage(index)}
+                                        className="bg-red-500 text-white rounded-full p-1"
+                                    >
+                                        <X className="w-3 h-3" />
+                                    </button>
+                                </div>
+                                {formData.highlighted_media_ids.includes(formData.media_ids[index]) && (
+                                    <div className="absolute bottom-1 right-1">
+                                        <Star className="w-3 h-3 text-gold-500 drop-shadow-md" fill="currentColor" />
+                                    </div>
+                                )}
                             </div>
                         ))}
                         <button
@@ -307,6 +430,13 @@ export default function EditSessionPage() {
                     isOpen={showCoverPicker}
                     onClose={() => setShowCoverPicker(false)}
                     onSelect={(url: string | string[], id: number | number[]) => setFormData({ ...formData, cover_image: url as string, cover_image_id: id as number })}
+                />
+
+                <MediaPicker
+                    isOpen={showMobileCoverPicker}
+                    onClose={() => setShowMobileCoverPicker(false)}
+                    onSelect={(url: string | string[], id: number | number[]) => setFormData({ ...formData, cover_image_mobile: url as string, cover_image_mobile_id: id as number })}
+                    inline={false}
                 />
 
                 <MediaPicker

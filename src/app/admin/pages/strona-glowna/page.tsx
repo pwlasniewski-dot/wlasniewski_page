@@ -13,6 +13,7 @@ import { Save, ArrowLeft, Plus, Trash2, Image as ImageIcon, Eye, EyeOff, MoveUp,
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import MediaPicker from '@/components/admin/MediaPicker';
+import RichTextEditor from '@/components/admin/RichTextEditor';
 import templates from '@/lib/homepageModuleTemplates';
 
 // --- Types ---
@@ -49,19 +50,34 @@ interface BaseSection {
     backgroundColor?: 'black' | 'zinc-900' | 'zinc-800' | 'gold-900' | 'white';
 }
 
-interface AboutSection extends BaseSection {
+interface AboutSection {
+    id: string;
     type: 'about';
+    label?: string;
+    enabled: boolean;
+    backgroundColor?: 'black' | 'zinc-900' | 'zinc-800' | 'gold-900' | 'white';
+    textVariant?: 'light' | 'dark';
     data: {
         title: string;
         content: string;
         image: string;
-        cta1Text: string;
-        cta1Link: string;
-        cta2Text: string;
-        cta2Link: string;
         imageShape?: 'square' | 'circle';
         imageSize?: number;
-        textPosition?: 'left' | 'center' | 'right';
+        position?: 'left' | 'center' | 'right';
+        cta1Text?: string;
+        cta1Link?: string;
+        cta2Text?: string;
+        cta2Link?: string;
+        // New structure for multiple blocks
+        blocks?: {
+            id: string;
+            title: string;
+            content: string;
+            image: string;
+            imageShape?: 'square' | 'circle';
+            imageSize?: number;
+            position: 'left' | 'right';
+        }[];
     };
 }
 
@@ -161,7 +177,7 @@ export default function HomepageManager() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
-    const [currentPickerTarget, setCurrentPickerTarget] = useState<{ type: 'hero' | 'section' | 'advanced' | 'advanced_challenge', index: number, field?: string, subIndex?: number } | null>(null);
+    const [currentPickerTarget, setCurrentPickerTarget] = useState<{ type: 'hero' | 'section' | 'advanced' | 'advanced_challenge' | 'rte', index: number, field?: string, subIndex?: number } | null>(null);
 
     useEffect(() => {
         fetchHomepage();
@@ -195,7 +211,18 @@ export default function HomepageManager() {
                             type: 'about',
                             label: 'Sekcja "O mnie"',
                             enabled: parsed.about_section.enabled ?? true,
-                            data: parsed.about_section
+                            data: {
+                                ...parsed.about_section,
+                                blocks: parsed.about_section.blocks || (parsed.about_section.image ? [{
+                                    id: Date.now().toString(),
+                                    title: parsed.about_section.title,
+                                    content: parsed.about_section.content,
+                                    image: parsed.about_section.image,
+                                    imageShape: parsed.about_section.imageShape || 'square',
+                                    imageSize: parsed.about_section.imageSize || 100,
+                                    position: parsed.about_section.position === 'right' ? 'right' : 'left'
+                                }] : [])
+                            }
                         });
                     }
 
@@ -287,6 +314,14 @@ export default function HomepageManager() {
             toast.error('Błąd ładowania danych');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const removeSection = (index: number) => {
+        if (confirm('Czy na pewno chcesz usunąć tę sekcję? Tej operacji nie można cofnąć.')) {
+            const newSections = [...sections];
+            newSections.splice(index, 1);
+            setSections(newSections);
         }
     };
 
@@ -398,7 +433,7 @@ export default function HomepageManager() {
 
     // --- Media Picker ---
 
-    const openMediaPicker = (type: 'hero' | 'section' | 'advanced' | 'advanced_challenge', index: number, field?: string, subIndex?: number) => {
+    const openMediaPicker = (type: 'hero' | 'section' | 'advanced' | 'advanced_challenge' | 'rte', index: number, field?: string, subIndex?: number) => {
         setCurrentPickerTarget({ type, index, field, subIndex });
         setMediaPickerOpen(true);
     };
@@ -440,13 +475,33 @@ export default function HomepageManager() {
                 updateBannerItem(currentPickerTarget.index, currentPickerTarget.subIndex, 'challengePhotos', newPhotos);
             }
             setSections(updated);
+        } else if (currentPickerTarget.type === 'rte') {
+            const updated = [...sections];
+            const section = updated[currentPickerTarget.index];
+            const fieldName = currentPickerTarget.field || 'content';
+
+            // Handle inserting image into content string
+            const imgTag = `<img src="${filePath}" alt="" class="max-w-full h-auto rounded-lg my-4" />`;
+
+            if (currentPickerTarget.subIndex !== undefined && (section.data as any).blocks) {
+                const currentBlockContent = (section.data as any).blocks[currentPickerTarget.subIndex].content || '';
+                (section.data as any).blocks[currentPickerTarget.subIndex].content = currentBlockContent + imgTag;
+            } else {
+                const currentContent = (section.data as any)[fieldName] || '';
+                (section.data as any)[fieldName] = currentContent + imgTag;
+            }
+
+            setSections(updated);
         } else {
             const updated = [...sections];
             const section = updated[currentPickerTarget.index];
 
             if (section.type === 'about' || section.type === 'parallax' || section.type === 'info_band') {
                 // Handle different image fields for sections
-                if (currentPickerTarget.field === 'image_desktop') {
+                if (currentPickerTarget.subIndex !== undefined && (section.data as any).blocks) {
+                    // Update specific block image
+                    (section.data as any).blocks[currentPickerTarget.subIndex].image = filePath;
+                } else if (currentPickerTarget.field === 'image_desktop') {
                     (section.data as any).image_desktop = filePath;
                 } else if (currentPickerTarget.field === 'image_mobile') {
                     (section.data as any).image_mobile = filePath;
@@ -484,6 +539,55 @@ export default function HomepageManager() {
         const newSections = [...sections];
         newSections[index].enabled = !newSections[index].enabled;
         setSections(newSections);
+    };
+
+    const addAboutBlock = (sectionIndex: number) => {
+        const updated = [...sections];
+        const section = updated[sectionIndex] as AboutSection;
+        if (!section.data.blocks) section.data.blocks = [];
+
+        section.data.blocks.push({
+            id: Date.now().toString(),
+            title: 'Nowy blok',
+            content: '',
+            image: '',
+            imageShape: 'square',
+            imageSize: 100,
+            position: section.data.blocks.length % 2 === 0 ? 'left' : 'right'
+        });
+        setSections(updated);
+    };
+
+    const removeAboutBlock = (sectionIndex: number, blockIndex: number) => {
+        const updated = [...sections];
+        const section = updated[sectionIndex] as AboutSection;
+        if (section.data.blocks) {
+            section.data.blocks.splice(blockIndex, 1);
+            setSections(updated);
+        }
+    };
+
+    const updateAboutBlock = (sectionIndex: number, blockIndex: number, field: string, value: any) => {
+        const updated = [...sections];
+        const section = updated[sectionIndex] as AboutSection;
+        if (section.data.blocks && section.data.blocks[blockIndex]) {
+            (section.data.blocks[blockIndex] as any)[field] = value;
+            setSections(updated);
+        }
+    };
+
+    const moveAboutBlock = (sectionIndex: number, blockIndex: number, direction: 'up' | 'down') => {
+        const updated = [...sections];
+        const section = updated[sectionIndex] as AboutSection;
+        if (!section.data.blocks) return;
+
+        const newIndex = direction === 'up' ? blockIndex - 1 : blockIndex + 1;
+        if (newIndex >= 0 && newIndex < section.data.blocks.length) {
+            const temp = section.data.blocks[blockIndex];
+            section.data.blocks[blockIndex] = section.data.blocks[newIndex];
+            section.data.blocks[newIndex] = temp;
+            setSections(updated);
+        }
     };
 
     const updateSectionData = (index: number, field: string, value: any) => {
@@ -804,8 +908,16 @@ export default function HomepageManager() {
                             <button
                                 onClick={() => toggleSection(index)}
                                 className={`px-3 py-2 rounded text-sm font-medium flex items-center gap-2 ${section.enabled ? 'bg-green-600/20 text-green-400' : 'bg-zinc-800 text-zinc-500'}`}
+                                title={section.enabled ? 'Ukryj sekcję' : 'Pokaż sekcję'}
                             >
-                                {section.enabled ? <><Eye className="w-4 h-4" /> Włączona</> : <><EyeOff className="w-4 h-4" /> Wyłączona</>}
+                                {section.enabled ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                            </button>
+                            <button
+                                onClick={() => removeSection(index)}
+                                className="px-3 py-2 bg-red-500/10 text-red-500 rounded text-sm font-medium hover:bg-red-500/20 transition-colors"
+                                title="Usuń sekcję całkowicie"
+                            >
+                                <Trash2 className="w-4 h-4" />
                             </button>
                         </div>
 
@@ -856,8 +968,8 @@ export default function HomepageManager() {
                                         <div>
                                             <label className="block text-sm text-zinc-400 mb-1">Pozycja tekstu</label>
                                             <select
-                                                value={section.data.textPosition || 'center'}
-                                                onChange={e => updateSectionData(index, 'textPosition', e.target.value)}
+                                                value={section.data.position || 'center'}
+                                                onChange={e => updateSectionData(index, 'position', e.target.value)}
                                                 className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-white"
                                             >
                                                 <option value="left">Lewo</option>
@@ -868,7 +980,12 @@ export default function HomepageManager() {
                                     </div>
                                     <div>
                                         <label className="block text-sm text-zinc-400 mb-1">Treść</label>
-                                        <textarea rows={4} value={section.data.content} onChange={e => updateSectionData(index, 'content', e.target.value)} className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-white" />
+                                        <RichTextEditor
+                                            value={section.data.content}
+                                            onChange={(val) => updateSectionData(index, 'content', val)}
+                                            placeholder="Opisz siebie..."
+                                            onImageRequest={() => openMediaPicker('rte', index, 'content')}
+                                        />
                                     </div>
                                 </div>
                             )}
@@ -1063,41 +1180,77 @@ export default function HomepageManager() {
 
                             {/* INFO BAND EDITOR */}
                             {section.type === 'info_band' && (
-                                <div className="space-y-4">
-                                    <div className="grid md:grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-sm text-zinc-400 mb-1">Tytuł</label>
-                                            <input type="text" value={section.data.title} onChange={e => updateSectionData(index, 'title', e.target.value)} className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-white" />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm text-zinc-400 mb-1">Zdjęcie</label>
-                                            <div className="flex gap-2">
-                                                {section.data.image && <img src={section.data.image} alt="" className="w-20 h-10 object-cover rounded" />}
-                                                <button onClick={() => openMediaPicker('section', index)} className="px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-sm text-white hover:bg-zinc-700 flex items-center gap-2">
-                                                    <ImageIcon className="w-4 h-4" /> Wybierz
-                                                </button>
+                                <div className="space-y-6">
+                                    <div className="bg-zinc-800/50 p-4 rounded-lg">
+                                        <p className="text-sm text-zinc-400 mb-2">Główne ustawienia sekcji</p>
+                                        <div className="grid md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-sm text-zinc-400 mb-1">Tytuł główny (opcjonalny)</label>
+                                                <input type="text" value={section.data.title || ''} onChange={e => updateSectionData(index, 'title', e.target.value)} className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-white" placeholder="np. O mnie" />
                                             </div>
                                         </div>
                                     </div>
-                                    <div>
-                                        <label className="block text-sm text-zinc-400 mb-1">Pozycja Zdjęcia</label>
-                                        <div className="flex gap-2">
-                                            {['left', 'center', 'right'].map(pos => (
-                                                <button
-                                                    key={pos}
-                                                    onClick={() => updateSectionData(index, 'position', pos)}
-                                                    className={`px-3 py-1 rounded text-sm border ${section.data.position === pos ? 'bg-gold-500 text-black border-gold-500' : 'bg-zinc-800 text-zinc-400 border-zinc-700'}`}
-                                                >
-                                                    {pos === 'left' && 'Lewa'}
-                                                    {pos === 'center' && 'Środek'}
-                                                    {pos === 'right' && 'Prawa'}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm text-zinc-400 mb-1">Treść (HTML)</label>
-                                        <textarea rows={4} value={section.data.content} onChange={e => updateSectionData(index, 'content', e.target.value)} className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-white font-mono text-sm" />
+
+                                    <div className="space-y-4">
+                                        {(section.data as any).blocks?.map((block: any, bIdx: number) => (
+                                            <div key={block.id || bIdx} className="bg-zinc-900 border border-zinc-700 rounded-lg p-4 space-y-4 relative group">
+                                                <div className="absolute top-2 right-2 flex gap-1 opacity-50 group-hover:opacity-100 transition-opacity">
+                                                    <button onClick={() => moveAboutBlock(index, bIdx, 'up')} disabled={bIdx === 0} className="p-1 text-zinc-400 hover:text-white"><MoveUp className="w-4 h-4" /></button>
+                                                    <button onClick={() => moveAboutBlock(index, bIdx, 'down')} disabled={bIdx === ((section.data as any).blocks?.length || 0) - 1} className="p-1 text-zinc-400 hover:text-white"><MoveDown className="w-4 h-4" /></button>
+                                                    <button onClick={() => removeAboutBlock(index, bIdx)} className="p-1 text-red-500 hover:text-red-400"><Trash2 className="w-4 h-4" /></button>
+                                                </div>
+
+                                                <div className="pr-12">
+                                                    <span className="text-xs font-mono text-gold-500 mb-2 block">BLOK #{bIdx + 1}</span>
+                                                    <div className="grid md:grid-cols-2 gap-4">
+                                                        <div>
+                                                            <label className="block text-sm text-zinc-400 mb-1">Tytuł bloku</label>
+                                                            <input type="text" value={block.title} onChange={e => updateAboutBlock(index, bIdx, 'title', e.target.value)} className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-white" />
+                                                        </div>
+                                                        <div>
+                                                            <label className="block text-sm text-zinc-400 mb-1">Zdjęcie</label>
+                                                            <div className="flex gap-2">
+                                                                {block.image && <img src={block.image} alt="" className="w-16 h-12 object-cover rounded" />}
+                                                                <button onClick={() => openMediaPicker('section', index, 'image', bIdx)} className="px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-sm text-white hover:bg-zinc-700 flex items-center gap-2">
+                                                                    <ImageIcon className="w-4 h-4" /> Wybierz
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="grid md:grid-cols-3 gap-4">
+                                                    <div>
+                                                        <label className="block text-xs text-zinc-400 mb-1">Układ</label>
+                                                        <div className="flex gap-1">
+                                                            <button onClick={() => updateAboutBlock(index, bIdx, 'position', 'left')} className={`flex-1 py-1 text-xs border rounded ${block.position === 'left' ? 'bg-gold-500 text-black border-gold-500' : 'bg-zinc-800 text-zinc-400 border-zinc-700'}`}>Zdjęcie Lewo</button>
+                                                            <button onClick={() => updateAboutBlock(index, bIdx, 'position', 'right')} className={`flex-1 py-1 text-xs border rounded ${block.position === 'right' ? 'bg-gold-500 text-black border-gold-500' : 'bg-zinc-800 text-zinc-400 border-zinc-700'}`}>Zdjęcie Prawo</button>
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-xs text-zinc-400 mb-1">Kształt</label>
+                                                        <select value={block.imageShape || 'square'} onChange={e => updateAboutBlock(index, bIdx, 'imageShape', e.target.value)} className="w-full px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-sm text-white">
+                                                            <option value="square">Kwadrat (Rounded)</option>
+                                                            <option value="circle">Koło</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+
+                                                <div>
+                                                    <label className="block text-sm text-zinc-400 mb-1">Treść</label>
+                                                    <RichTextEditor
+                                                        value={block.content}
+                                                        onChange={(val) => updateAboutBlock(index, bIdx, 'content', val)}
+                                                        placeholder="Treść bloku..."
+                                                        onImageRequest={() => openMediaPicker('rte', index, 'content', bIdx)}
+                                                    />
+                                                </div>
+                                            </div>
+                                        ))}
+
+                                        <button onClick={() => addAboutBlock(index)} className="w-full py-3 border-2 border-dashed border-zinc-700 rounded-lg text-zinc-400 hover:border-gold-500 hover:text-gold-500 transition-colors flex items-center justify-center gap-2">
+                                            <Plus className="w-5 h-5" /> Dodaj kolejny blok
+                                        </button>
                                     </div>
                                 </div>
                             )}

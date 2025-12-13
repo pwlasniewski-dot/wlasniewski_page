@@ -20,6 +20,7 @@ const nextConfig = {
     // Dla statycznego eksportu (jeśli chcesz wrzucić na zwykły hosting)
     // output: 'export',
     output: 'standalone',
+    compress: false, // Fix for controller[kState].transformAlgorithm error
 };
 
 export default nextConfig;

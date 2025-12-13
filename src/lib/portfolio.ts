@@ -8,20 +8,31 @@ export type PortfolioImage = {
 };
 
 export type PortfolioSession = {
+    id: number;
     slug: string;
     title: string;
     coverImage?: string;
     imageCount: number;
     photos: PortfolioImage[];
+    highlightedPhotos?: string[]; // URLs of highlighted photos
     category: string;
     date: string;
+    description?: string;
+    location?: string;
+    isCategoryHero?: boolean;
 };
 
-export type DynamicCategory = PortfolioCategory & {
+export type DynamicCategory = Omit<PortfolioCategory, 'sessions'> & {
     coverImage?: string;
     imageCount: number;
     sessions: PortfolioSession[];
 };
+// ... (skip unchanged function groupSessionsByCategory)
+
+// ... inside fetchLocalPortfolio map:
+
+
+
 
 // Helper to group flat sessions into categories
 function groupSessionsByCategory(sessions: any[]): DynamicCategory[] {
@@ -62,11 +73,13 @@ function groupSessionsByCategory(sessions: any[]): DynamicCategory[] {
         const photoCount = session.media_ids ? JSON.parse(session.media_ids).length : 0;
 
         category.sessions.push({
+            id: session.id,
             slug: session.slug,
             title: session.title,
             coverImage: session.cover_image_url || "/assets/placeholder.jpg",
             imageCount: photoCount,
             photos: [], // Loaded on detail page
+            highlightedPhotos: session.highlightedPhotos || [],
             category: finalSlug,
             date: session.date
         });
@@ -75,9 +88,15 @@ function groupSessionsByCategory(sessions: any[]): DynamicCategory[] {
     });
 
     // Set cover image for category (use first session's cover)
+    // Set cover image for category (prioritize isCategoryHero, else use first/newest session)
     for (const cat of categoriesMap.values()) {
         if (cat.sessions.length > 0) {
-            cat.coverImage = cat.sessions[0].coverImage;
+            const heroSession = cat.sessions.find(s => s.isCategoryHero);
+            if (heroSession) {
+                cat.coverImage = heroSession.coverImage;
+            } else {
+                cat.coverImage = cat.sessions[0].coverImage;
+            }
         }
     }
 
@@ -102,16 +121,43 @@ async function fetchLocalPortfolio(): Promise<DynamicCategory[]> {
                 cover_image: {
                     select: { file_path: true }
                 }
+                // We need to fetch ALL media to find the highlighted ones by ID, 
+                // but doing that for all sessions might be heavy.
+                // Better approach: MediaLibrary is a separate table, but we only store IDs in JSON.
+                // We can't join easily on JSON IDs.
+                // We should fetch all relevant media in a separate query or just fetch all media.
+                // Given the scale, fetching all MediaLibrary items might be okay or we filter by IDs on JS side if we fetch them.
+                // ACTUALLY, we can't easily JOIN. 
+                // Let's rely on the fact that `media_ids` relates to `MediaLibrary`.
             },
             orderBy: { session_date: 'desc' },
         });
 
-        const mappedSessions = sessions.map(s => ({
-            ...s,
-            id: Number(s.id),
-            cover_image_url: s.cover_image?.file_path || null,
-            date: s.session_date ? s.session_date.toISOString() : new Date().toISOString()
-        }));
+        // To get highlighted URLs, we need to query MediaLibrary where ID IN (all highlighted IDs).
+        const allHighlightedIds = sessions.flatMap(s =>
+            (s as any).highlighted_media_ids ? JSON.parse((s as any).highlighted_media_ids) as number[] : []
+        );
+
+        const highlightedMedia = await prisma.mediaLibrary.findMany({
+            where: { id: { in: allHighlightedIds } },
+            select: { id: true, file_path: true }
+        });
+
+        const mediaMap = new Map(highlightedMedia.map(m => [m.id, m.file_path]));
+
+        const mappedSessions = sessions.map(s => {
+            const hIds = (s as any).highlighted_media_ids ? JSON.parse((s as any).highlighted_media_ids) as number[] : [];
+            const hPhotos = hIds.map(id => mediaMap.get(id)).filter(Boolean) as string[];
+
+            return {
+                ...s,
+                id: Number(s.id),
+                cover_image_url: s.cover_image?.file_path || null,
+                highlightedPhotos: hPhotos,
+                date: s.session_date ? s.session_date.toISOString() : new Date().toISOString(),
+                isCategoryHero: (s as any).is_category_hero
+            };
+        });
 
         return groupSessionsByCategory(mappedSessions);
     } catch (error) {

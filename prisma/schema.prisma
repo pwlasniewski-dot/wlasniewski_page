@@ -105,6 +105,7 @@ model Setting {
 
   // Portfolio
   portfolio_categories String? // JSON array ["wedding", "family", ...]
+  portfolio_layout     String? @default("slider") // "slider", "column"
 
   // Seasonal Decorations
   seasonal_effect   String? @default("none") // none, snow, lights, hearts, halloween
@@ -127,6 +128,7 @@ model Setting {
   gift_card_promo_title   String?  @default("Karty Podarunkowe")
   gift_card_promo_description String? // Long description for the promo
   gift_card_promo_rotation_interval Int? @default(5) // seconds between card rotation
+  gift_card_hero_image    String?  // Background image for gift card shop
 
   // SEO & Analytics
   google_analytics_id      String?
@@ -134,7 +136,6 @@ model Setting {
   facebook_pixel_id        String?
   meta_verification_google String?
   meta_verification_facebook String?
-
   @@map("settings")
 }
 
@@ -182,6 +183,7 @@ model MediaLibrary {
   // Relations
   uploader           AdminUser?         @relation(fields: [uploaded_by], references: [id])
   portfolio_covers   PortfolioSession[]
+  portfolio_mobile_covers PortfolioSession[] @relation("MobileCover")
   blog_featured      BlogPost[]
   testimonial_photos Testimonial[]
   hero_slides        HeroSlide[]
@@ -201,15 +203,19 @@ model PortfolioSession {
   session_date     DateTime?
   cover_image_id   Int?
   media_ids        String?   // JSON string
+  highlighted_media_ids String? // JSON string
   meta_title       String?
   meta_description String?
   is_published     Boolean   @default(false)
+  is_category_hero Boolean   @default(false) // If true, this session's cover is used for the category card
   display_order    Int       @default(0)
   created_at       DateTime  @default(now())
   updated_at       DateTime  @default(now()) @updatedAt
 
   // Relations
   cover_image MediaLibrary? @relation(fields: [cover_image_id], references: [id])
+  mobile_cover_image MediaLibrary? @relation("MobileCover", fields: [cover_image_mobile_id], references: [id])
+  cover_image_mobile_id Int?
 
   @@map("portfolio_sessions")
 }

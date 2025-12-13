@@ -1,16 +1,21 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import { X, Check, Search } from 'lucide-react';
+import { X, Check, Search, Upload, FolderPlus, Folder, MoreHorizontal, Edit, Trash2, LayoutGrid, List as ListIcon, Move } from 'lucide-react';
 import { getApiUrl } from '@/lib/api-config';
+import { motion, AnimatePresence } from 'framer-motion';
+import toast from 'react-hot-toast';
 
 interface MediaItem {
     id: number;
     file_name: string;
     file_path: string;
+    mime_type: string;
     width: number | null;
     height: number | null;
+    alt_text?: string;
+    folder?: string;
 }
 
 interface MediaPickerProps {
@@ -18,26 +23,75 @@ interface MediaPickerProps {
     onClose: () => void;
     onSelect: (url: string | string[], id: number | number[]) => void;
     multiple?: boolean;
+    inline?: boolean;
 }
 
-export default function MediaPicker({ isOpen, onClose, onSelect, multiple = false }: MediaPickerProps) {
+export default function MediaPicker({ isOpen, onClose, onSelect, multiple = false, inline = false }: MediaPickerProps) {
     const [media, setMedia] = useState<MediaItem[]>([]);
+    const [folders, setFolders] = useState<{ name: string, count: number }[]>([]);
+    const [currentFolder, setCurrentFolder] = useState<string>(''); // '' = All
     const [loading, setLoading] = useState(true);
     const [selectedItems, setSelectedItems] = useState<MediaItem[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
+    const [isDraggingFile, setIsDraggingFile] = useState(false);
+    const [uploading, setUploading] = useState(false);
+
+    // Bulk Edit State
+    const [isSelectionMode, setIsSelectionMode] = useState(multiple || inline);
+    const [showAltModal, setShowAltModal] = useState(false);
+    const [altTextBuffer, setAltTextBuffer] = useState('');
+
+    // Drag to Move State
+    const [draggedMediaIds, setDraggedMediaIds] = useState<number[]>([]);
+
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         if (isOpen) {
+            fetchFolders();
             fetchMedia();
             setSelectedItems([]);
+            // In inline mode, we default to selection mode enabled for better UX
+            setIsSelectionMode(multiple || inline);
         }
     }, [isOpen]);
+
+    useEffect(() => {
+        // If inline, fetch immediately on mount
+        if (inline && !isOpen) {
+            fetchFolders();
+            fetchMedia();
+        }
+    }, [inline]);
+
+    useEffect(() => {
+        if (isOpen || inline) fetchMedia();
+    }, [currentFolder]);
+
+    const fetchFolders = async () => {
+        try {
+            const token = localStorage.getItem('admin_token');
+            const res = await fetch(`${getApiUrl('media')}?mode=folders`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            if (data.success) {
+                setFolders(data.folders);
+            }
+        } catch (error) {
+            console.error('Failed to fetch folders', error);
+        }
+    };
 
     const fetchMedia = async () => {
         setLoading(true);
         try {
             const token = localStorage.getItem('admin_token');
-            const res = await fetch(getApiUrl('media'), {
+            const url = currentFolder
+                ? `${getApiUrl('media')}?folder=${encodeURIComponent(currentFolder)}`
+                : getApiUrl('media');
+
+            const res = await fetch(url, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const data = await res.json();
@@ -51,109 +105,350 @@ export default function MediaPicker({ isOpen, onClose, onSelect, multiple = fals
         }
     };
 
-    const getOrientationBadge = (width: number | null, height: number | null) => {
-        if (!width || !height) return null;
-
-        if (width > height) {
-            return (
-                <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-sm text-white text-[10px] px-1.5 py-0.5 rounded border border-white/10">
-                    POZIOM
-                </div>
-            );
-        } else if (height > width) {
-            return (
-                <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-sm text-white text-[10px] px-1.5 py-0.5 rounded border border-white/10">
-                    PION
-                </div>
-            );
-        } else {
-            return (
-                <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-sm text-white text-[10px] px-1.5 py-0.5 rounded border border-white/10">
-                    KWADRAT
-                </div>
-            );
+    // --- Upload Logic ---
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+        // Only show file upload overlay if dragging files from OS
+        if (e.dataTransfer.types.includes('Files')) {
+            setIsDraggingFile(true);
         }
+    };
+
+    const handleDragLeave = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDraggingFile(false);
+    };
+
+    const handleDrop = async (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDraggingFile(false);
+
+        // Handle file upload
+        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            const files = Array.from(e.dataTransfer.files);
+            await handleUpload(files);
+        }
+    };
+
+    const handleUpload = async (files: File[]) => {
+        setUploading(true);
+        let targetFolder = currentFolder || 'uploads';
+        const uploadedIds: number[] = [];
+
+        for (const file of files) {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('folder', targetFolder);
+
+            try {
+                const token = localStorage.getItem('admin_token');
+                const res = await fetch(`${getApiUrl('media')}/upload`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: formData,
+                });
+                const data = await res.json();
+                if (data.success) {
+                    uploadedIds.push(data.media.id);
+                }
+            } catch (error) {
+                console.error('Upload failed', error);
+                toast.error(`Błąd wgrywania: ${file.name}`);
+            }
+        }
+
+        setUploading(false);
+        toast.success(`Wgrano pomyślnie`);
+        await fetchMedia();
+        await fetchFolders();
+    };
+
+    // --- Selection & Actions ---
+    const toggleSelection = (item: MediaItem) => {
+        setSelectedItems(prev => {
+            const isSelected = prev.some(i => i.id === item.id);
+            if (isSelected) {
+                return prev.filter(i => i.id !== item.id);
+            } else {
+                return [...prev, item];
+            }
+        });
     };
 
     const handleItemClick = (item: MediaItem) => {
-        if (multiple) {
-            setSelectedItems(prev => {
-                const isSelected = prev.some(i => i.id === item.id);
-                if (isSelected) {
-                    return prev.filter(i => i.id !== item.id);
-                } else {
-                    return [...prev, item];
-                }
-            });
+        if (isSelectionMode || multiple) {
+            toggleSelection(item);
         } else {
-            // Single selection mode - return immediate
             onSelect(item.file_path, item.id);
-            onClose();
+            if (!inline) onClose();
         }
     };
 
-    const handleConfirmMultiple = () => {
-        const urls = selectedItems.map(i => i.file_path);
-        const ids = selectedItems.map(i => i.id);
-        onSelect(urls, ids);
-        onClose();
+    const handleSelectAll = () => {
+        if (selectedItems.length === filteredMedia.length) {
+            setSelectedItems([]);
+        } else {
+            setSelectedItems([...filteredMedia]);
+        }
     };
 
+    // --- Delete Logic ---
+    const handleDelete = async (ids: number[]) => {
+        if (!confirm(`Czy na pewno chcesz usunąć ${ids.length} element(ów)?`)) return;
+
+        const token = localStorage.getItem('admin_token');
+        let successCount = 0;
+
+        for (const id of ids) {
+            try {
+                const res = await fetch(getApiUrl(`media/${id}`), {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) successCount++;
+            } catch (err) {
+                console.error('Delete failed', err);
+            }
+        }
+
+        if (successCount > 0) {
+            toast.success(`Usunięto ${successCount} zdjęć`);
+            setSelectedItems([]);
+            fetchMedia();
+            fetchFolders();
+        }
+    };
+
+    // --- Drag to Move Logic ---
+    const startDragMedia = (e: React.DragEvent, item: MediaItem) => {
+        // If the item is not selected, select it (and clear others if no modifier?)
+        // For simplicity: If item is selected, we drag all selected. If not, only this one.
+        let idsToDrag = [item.id];
+        if (selectedItems.some(i => i.id === item.id)) {
+            idsToDrag = selectedItems.map(i => i.id);
+        } else {
+            // We are dragging an unselected item.
+            // setDraggedMediaIds([item.id]); 
+        }
+
+        setDraggedMediaIds(idsToDrag);
+        e.dataTransfer.setData('application/json', JSON.stringify({ ids: idsToDrag, type: 'media_move' }));
+        e.dataTransfer.effectAllowed = 'move';
+    };
+
+    const onDropToFolder = async (e: React.DragEvent, targetFolderName: string) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        try {
+            const data = JSON.parse(e.dataTransfer.getData('application/json'));
+            if (data.type === 'media_move' && data.ids) {
+                await performBulkUpdate(data.ids, { folder: targetFolderName });
+                toast.success(`Przeniesiono do ${targetFolderName}`);
+            }
+        } catch (err) {
+            console.error('Drop failed', err);
+        }
+    };
+
+    // --- API Operations ---
+    const performBulkUpdate = async (ids: number[], updates: { folder?: string, alt_text?: string }) => {
+        if (ids.length === 0) return;
+
+        const token = localStorage.getItem('admin_token');
+        try {
+            const res = await fetch(`${getApiUrl('media')}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ ids, updates })
+            });
+            const data = await res.json();
+            if (data.success) {
+                // Success feedback?
+                // Refresh
+                await fetchMedia();
+                await fetchFolders();
+                setSelectedItems([]);
+                setDraggedMediaIds([]);
+            }
+        } catch (error) {
+            console.error('Bulk update failed', error);
+            toast.error('Błąd aktualizacji');
+        }
+    };
+
+    const handleBulkAltSave = async () => {
+        const ids = selectedItems.map(i => i.id);
+        await performBulkUpdate(ids, { alt_text: altTextBuffer });
+        setShowAltModal(false);
+        setAltTextBuffer('');
+        toast.success('Zapisano opisy ALT');
+    };
+
+    const handleCreateFolder = () => {
+        const name = prompt("Podaj nazwę nowego folderu:");
+        if (name && name.trim()) {
+            const cleanName = name.trim();
+            setCurrentFolder(cleanName);
+
+            // If folder doesn't exist in list, add it visually so we can drop to it
+            if (!folders.some(f => f.name === cleanName)) {
+                setFolders(prev => [...prev, { name: cleanName, count: 0 }].sort((a, b) => a.name.localeCompare(b.name)));
+                toast.success(`Utworzono folder "${cleanName}"`);
+            }
+        }
+    };
+
+    // --- Helpers ---
     const filteredMedia = media.filter(item =>
-        item.file_name.toLowerCase().includes(searchTerm.toLowerCase())
+        item.file_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (item.alt_text && item.alt_text.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
-    if (!isOpen) return null;
+    if (!isOpen && !inline) return null;
+
+    // --- RENDER HELPERS ---
+    const Container = inline ? 'div' : 'div';
+    const containerClasses = inline
+        ? 'w-full h-full flex flex-col bg-zinc-950'
+        : 'fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4';
+
+    const contentClasses = inline
+        ? 'flex-1 flex overflow-hidden border border-zinc-800 rounded-xl bg-zinc-900 shadow-sm'
+        : `bg-zinc-900 rounded-xl shadow-2xl w-full max-w-6xl h-[85vh] flex overflow-hidden border transition-colors ${isDraggingFile ? 'border-gold-500 ring-2 ring-gold-500/50' : 'border-zinc-800'}`;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-            <div className="bg-zinc-900 rounded-lg shadow-xl w-full max-w-4xl max-h-[80vh] flex flex-col border border-zinc-800">
-                <div className="flex items-center justify-between p-4 border-b border-zinc-800">
-                    <h2 className="text-xl font-bold text-white">Wybierz zdjęcie</h2>
-                    <button onClick={onClose} className="text-zinc-400 hover:text-white">
-                        <X className="w-6 h-6" />
-                    </button>
-                </div>
+        <Container
+            className={containerClasses}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+        >
+            <div className={contentClasses}>
 
-                <div className="p-4 border-b border-zinc-800 bg-zinc-900/50">
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
-                        <input
-                            type="text"
-                            placeholder="Szukaj zdjęć..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full bg-zinc-950 border border-zinc-700 rounded-lg pl-10 pr-4 py-2 text-white placeholder-zinc-500 focus:outline-none focus:border-gold-500 transition-colors"
-                        />
+                {/* --- Left Sidebar: Folders --- */}
+                <div className="w-16 md:w-64 bg-zinc-950 border-r border-zinc-800 flex flex-col transition-all duration-300">
+                    <div className="p-4 border-b border-zinc-800 flex justify-center md:justify-between items-center">
+                        <span className="font-medium text-zinc-400 hidden md:block">Foldery</span>
+                        <button onClick={handleCreateFolder} className="p-1 hover:bg-zinc-800 rounded" title="Nowy folder">
+                            <FolderPlus className="w-5 h-5 text-gold-500" />
+                        </button>
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-2 space-y-1">
+                        <button
+                            onClick={() => setCurrentFolder('')}
+                            onDragOver={(e) => e.preventDefault()}
+                            onDrop={(e) => onDropToFolder(e, 'uploads')}
+                            className={`w-full flex items-center justify-center md:justify-between px-2 md:px-3 py-2 rounded-lg text-sm transition-colors ${currentFolder === '' ? 'bg-gold-500/10 text-gold-500' : 'text-zinc-400 hover:bg-zinc-900 hover:text-white'}`}
+                            title="Wszystkie"
+                        >
+                            <span className="flex items-center gap-2">
+                                <LayoutGrid className="w-5 h-5" />
+                                <span className="hidden md:inline">Wszystkie</span>
+                            </span>
+                        </button>
+
+                        {folders.map(folder => (
+                            <button
+                                key={folder.name}
+                                onClick={() => setCurrentFolder(folder.name)}
+                                onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('bg-zinc-800'); }}
+                                onDragLeave={(e) => e.currentTarget.classList.remove('bg-zinc-800')}
+                                onDrop={(e) => {
+                                    e.currentTarget.classList.remove('bg-zinc-800');
+                                    onDropToFolder(e, folder.name);
+                                }}
+                                className={`w-full flex items-center justify-center md:justify-between px-2 md:px-3 py-2 rounded-lg text-sm transition-colors ${currentFolder === folder.name ? 'bg-gold-500/10 text-gold-500' : 'text-zinc-400 hover:bg-zinc-900 hover:text-white'}`}
+                                title={folder.name}
+                            >
+                                <span className="flex items-center gap-2 overflow-hidden">
+                                    <Folder className="w-5 h-5 shrink-0" />
+                                    <span className="truncate hidden md:inline">{folder.name}</span>
+                                </span>
+                                <span className="text-xs text-zinc-600 hidden md:inline">{folder.count}</span>
+                            </button>
+                        ))}
                     </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-4">
-                    {loading ? (
-                        <div className="text-center text-zinc-400 py-8">Ładowanie biblioteki...</div>
-                    ) : (
-                        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
-                            {filteredMedia.length === 0 ? (
-                                <div className="col-span-full text-center py-12">
-                                    <p className="text-zinc-400 mb-4">Brak zdjęć w bibliotece.</p>
-                                    <a
-                                        href="/admin/media"
-                                        className="text-gold-500 hover:text-gold-400 underline"
-                                        onClick={onClose}
-                                    >
-                                        Przejdź do Media Managera, aby wgrać zdjęcia
-                                    </a>
-                                </div>
-                            ) : (
-                                filteredMedia.map((item) => {
+                {/* --- Main Content --- */}
+                <div className="flex-1 flex flex-col min-w-0 bg-zinc-900 relative">
+
+                    {/* Header */}
+                    <div className="flex items-center justify-between p-4 border-b border-zinc-800">
+                        <h2 className="text-lg font-bold text-white flex items-center gap-2 truncate">
+                            {currentFolder || 'Biblioteka'}
+                            {uploading && <span className="text-xs font-normal text-gold-500 animate-pulse ml-2">• Wgrywanie...</span>}
+                        </h2>
+
+                        <div className="flex items-center gap-2">
+                            <div className="relative hidden sm:block">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                                <input
+                                    type="text"
+                                    placeholder="Szukaj..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="w-48 bg-zinc-950 border border-zinc-700 rounded-lg pl-10 pr-4 py-1.5 text-sm text-white focus:border-gold-500 focus:outline-none"
+                                />
+                            </div>
+                            {!inline && (
+                                <button onClick={onClose} className="p-2 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800">
+                                    <X className="w-5 h-5" />
+                                </button>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Toolbar */}
+                    <div className="p-3 bg-zinc-900/50 flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800/50">
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={handleSelectAll}
+                                className="px-3 py-1.5 text-xs font-medium text-zinc-400 hover:text-white bg-zinc-800 hover:bg-zinc-700 rounded-md transition-colors"
+                            >
+                                {selectedItems.length > 0 && selectedItems.length === filteredMedia.length ? 'Odznacz' : 'Zaznacz wszystkie'}
+                            </button>
+                            <button
+                                onClick={() => setIsSelectionMode(!isSelectionMode)}
+                                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${isSelectionMode ? 'bg-gold-500 text-black' : 'text-zinc-400 hover:text-white bg-zinc-800'}`}
+                            >
+                                {isSelectionMode ? 'Tryb: Wybór' : 'Tryb: Klik'}
+                            </button>
+                        </div>
+
+                        <label className="flex items-center gap-2 px-4 py-2 bg-gold-500 text-black text-xs font-bold rounded-md cursor-pointer hover:bg-gold-400 transition-colors shadow-lg shadow-gold-500/10">
+                            <Upload className="w-4 h-4" />
+                            <span>Wgraj Pliki</span>
+                            <input type="file" ref={fileInputRef} className="hidden" multiple accept="image/*" onChange={(e) => e.target.files && handleUpload(Array.from(e.target.files))} />
+                        </label>
+                    </div>
+
+                    {/* Grid */}
+                    <div className="flex-1 overflow-y-auto p-4 custom-scrollbar bg-zinc-900/30">
+                        {loading ? (
+                            <div className="text-center text-zinc-500 py-12">Ładowanie...</div>
+                        ) : filteredMedia.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center h-full text-zinc-500 border-2 border-dashed border-zinc-800 rounded-lg mx-4">
+                                <Upload className="w-12 h-12 mb-4 opacity-50" />
+                                <p>Przeciągnij pliki tutaj</p>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 pb-20">
+                                {filteredMedia.map((item) => {
                                     const isSelected = selectedItems.some(i => i.id === item.id);
                                     return (
-                                        <button
+                                        <div
                                             key={item.id}
+                                            draggable
+                                            onDragStart={(e) => startDragMedia(e, item)}
                                             onClick={() => handleItemClick(item)}
-                                            className={`group relative aspect-square bg-zinc-800 rounded-lg overflow-hidden border transition-all ${isSelected
-                                                ? 'border-gold-500 ring-2 ring-gold-500 ring-offset-2 ring-offset-zinc-900'
-                                                : 'border-zinc-700 hover:border-gold-500'
+                                            className={`group relative aspect-square rounded-lg overflow-hidden border cursor-pointer transition-all ${isSelected
+                                                ? 'border-gold-500 ring-2 ring-gold-500 ring-offset-1 ring-offset-zinc-900'
+                                                : 'border-zinc-800 hover:border-zinc-600'
                                                 }`}
                                         >
                                             <Image
@@ -161,44 +456,131 @@ export default function MediaPicker({ isOpen, onClose, onSelect, multiple = fals
                                                 alt={item.file_name}
                                                 fill
                                                 className="object-cover"
+                                                sizes="200px"
                                             />
-                                            <div className={`absolute inset-0 transition-colors ${isSelected ? 'bg-gold-500/20' : 'bg-black/0 group-hover:bg-black/20'}`} />
+                                            {/* Selection Overlay */}
+                                            <div className={`absolute inset-0 transition-colors ${isSelected ? 'bg-gold-500/20' : 'bg-black/0 group-hover:bg-black/10'}`} />
 
-                                            {getOrientationBadge(item.width, item.height)}
+                                            {/* Checkbox (Visual) */}
+                                            <div className={`absolute top-2 left-2 w-5 h-5 rounded border flex items-center justify-center transition-colors ${isSelected ? 'bg-gold-500 border-gold-500 text-black' : 'bg-black/40 border-white/30 text-transparent group-hover:bg-black/60'}`}>
+                                                <Check className="w-3.5 h-3.5" />
+                                            </div>
 
-                                            {isSelected && (
-                                                <div className="absolute top-2 right-2 bg-gold-500 text-black rounded-full p-1">
-                                                    <Check className="w-3 h-3" />
+                                            {/* Hover Actions (Delete / Edit Single) */}
+                                            <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); handleDelete([item.id]); }}
+                                                    className="p-1 bg-red-900/80 hover:bg-red-600 rounded text-white"
+                                                    title="Usuń"
+                                                >
+                                                    <Trash2 className="w-3 h-3" />
+                                                </button>
+                                            </div>
+
+                                            {/* Meta badges */}
+                                            {item.folder !== 'uploads' && (
+                                                <div className="absolute bottom-1 right-1 px-1.5 py-0.5 bg-black/60 backdrop-blur rounded text-[10px] text-zinc-300 truncate max-w-[80%]">
+                                                    {item.folder}
                                                 </div>
                                             )}
-
-                                            {/* Dimensions on hover */}
-                                            <div className="absolute bottom-0 left-0 right-0 p-1 bg-black/70 text-[10px] text-zinc-300 opacity-0 group-hover:opacity-100 transition-opacity text-center truncate">
-                                                {item.width && item.height ? `${item.width} x ${item.height}` : ''}
-                                            </div>
-                                        </button>
+                                        </div>
                                     );
-                                })
-                            )}
-                        </div>
-                    )}
+                                })}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Bottom Bar (Actions) */}
+                    <AnimatePresence>
+                        {selectedItems.length > 0 && (
+                            <motion.div
+                                initial={{ y: 100 }}
+                                animate={{ y: 0 }}
+                                exit={{ y: 100 }}
+                                className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-zinc-800 border border-zinc-700 shadow-2xl rounded-full px-6 py-3 flex items-center gap-4 z-50 min-w-[340px]"
+                            >
+                                <span className="text-zinc-300 text-sm font-medium mr-2">{selectedItems.length} wybrano</span>
+
+                                <div className="h-4 w-px bg-zinc-600 mx-2" />
+
+                                <button onClick={() => setShowAltModal(true)} className="flex items-center gap-2 text-sm text-white hover:text-gold-500 transition-colors">
+                                    <Edit className="w-4 h-4" /> <span className="hidden sm:inline">Edytuj ALT</span>
+                                </button>
+
+                                <button onClick={() => handleDelete(selectedItems.map(i => i.id))} className="flex items-center gap-2 text-sm text-red-400 hover:text-red-300 transition-colors ml-2">
+                                    <Trash2 className="w-4 h-4" /> <span className="hidden sm:inline">Usuń</span>
+                                </button>
+
+                                {(!inline && multiple) ? (
+                                    <button
+                                        onClick={() => { onSelect(selectedItems.map(i => i.file_path), selectedItems.map(i => i.id)); onClose(); }}
+                                        className="ml-auto bg-white text-black px-4 py-1.5 rounded-full text-sm font-bold hover:bg-gold-400 transition-colors"
+                                    >
+                                        Wstaw
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={() => { setSelectedItems([]) }}
+                                        className="ml-auto text-zinc-400 hover:text-white p-1"
+                                    >
+                                        <X className="w-5 h-5" />
+                                    </button>
+                                )}
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </div>
 
-                {multiple && (
-                    <div className="p-4 border-t border-zinc-800 flex justify-between items-center bg-zinc-900/50">
-                        <span className="text-zinc-400 text-sm">
-                            Wybrano: {selectedItems.length}
-                        </span>
+                {/* Footer for Modal Mode */}
+                {!inline && (
+                    <div className="p-4 border-t border-zinc-800 bg-zinc-950 flex justify-between items-center">
                         <button
-                            onClick={handleConfirmMultiple}
-                            disabled={selectedItems.length === 0}
-                            className="bg-gold-500 text-black px-6 py-2 rounded-lg font-semibold hover:bg-gold-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            onClick={onClose}
+                            className="px-4 py-2 text-zinc-400 hover:text-white text-sm font-medium"
                         >
-                            Wybierz zaznaczone
+                            Anuluj
                         </button>
+
+                        <div className="flex items-center gap-3">
+                            <span className="text-zinc-500 text-xs text-right">
+                                {selectedItems.length > 0 ? `Wybrano: ${selectedItems.length}` : 'Kliknij zdjęcie, aby wybrać'}
+                            </span>
+                            {/* Show "Wstaw" only if multiple items selected OR if we want to allow explicit confirm for single select (though single is usually instant) */}
+                            {multiple && selectedItems.length > 0 && (
+                                <button
+                                    onClick={() => { onSelect(selectedItems.map(i => i.file_path), selectedItems.map(i => i.id)); onClose(); }}
+                                    className="px-6 py-2 bg-gold-500 text-black font-bold rounded-md hover:bg-gold-400 transition-colors"
+                                >
+                                    Wstaw wybrane ({selectedItems.length})
+                                </button>
+                            )}
+                        </div>
                     </div>
                 )}
             </div>
-        </div>
+
+            {/* Alt Text Modal */}
+            {showAltModal && (
+                <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+                    <div className="bg-zinc-900 border border-zinc-700 p-6 rounded-lg w-full max-w-md shadow-xl">
+                        <h3 className="text-lg font-bold text-white mb-4">Edytuj tekst alternatywny (ALT)</h3>
+                        <p className="text-sm text-zinc-400 mb-4">
+                            Zmienisz tekst ALT dla <strong>{selectedItems.length}</strong> zaznaczonych elementów.
+                        </p>
+                        <input
+                            type="text"
+                            value={altTextBuffer}
+                            onChange={(e) => setAltTextBuffer(e.target.value)}
+                            placeholder="Wpisz opis zdjęcia..."
+                            className="w-full bg-zinc-950 border border-zinc-700 rounded-lg p-3 text-white focus:border-gold-500 mb-6"
+                        />
+                        <div className="flex justify-end gap-3">
+                            <button onClick={() => setShowAltModal(false)} className="px-4 py-2 text-zinc-400 hover:text-white">Anuluj</button>
+                            <button onClick={handleBulkAltSave} className="px-6 py-2 bg-gold-500 text-black rounded-lg font-medium hover:bg-gold-400">Zapisz</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </Container>
     );
 }

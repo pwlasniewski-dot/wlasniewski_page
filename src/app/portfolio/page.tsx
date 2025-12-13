@@ -36,12 +36,27 @@ export default async function PortfolioHome() {
                             href={`/portfolio/${category.slug}`}
                             className="group relative block w-full h-[60vh] md:h-[80vh] overflow-hidden"
                         >
-                            {/* Background Image with Parallax-like scaling */}
+                            {/* Background Image with Blur-Fit scaling */}
                             {category.coverImage ? (
-                                <div
-                                    className="absolute inset-0 bg-cover bg-center transition-transform duration-[1.5s] ease-out group-hover:scale-105 image-warm"
-                                    style={{ backgroundImage: `url('${category.coverImage}')` }}
-                                />
+                                <>
+                                    {/* Blurred Background */}
+                                    <div className="absolute inset-0 overflow-hidden bg-zinc-950">
+                                        <img
+                                            src={category.coverImage}
+                                            alt=""
+                                            className="absolute inset-0 w-full h-full object-cover blur-3xl scale-110 opacity-40 transition-opacity duration-700"
+                                        />
+                                    </div>
+
+                                    {/* Main Contain Image */}
+                                    <div className="absolute inset-0 flex items-center justify-center p-4 md:p-0">
+                                        <img
+                                            src={category.coverImage}
+                                            alt={category.title}
+                                            className="w-full h-full object-cover md:object-contain drop-shadow-2xl transition-transform duration-[1.5s] ease-out group-hover:scale-105"
+                                        />
+                                    </div>
+                                </>
                             ) : (
                                 <div className="absolute inset-0 bg-zinc-900" />
                             )}

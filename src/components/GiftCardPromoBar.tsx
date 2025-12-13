@@ -5,6 +5,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { X, ChevronRight, ChevronLeft } from 'lucide-react';
 import GiftCard from '@/components/GiftCard';
 
@@ -25,7 +26,7 @@ interface PromoSettings {
 }
 
 export default function GiftCardPromoBar() {
-    const [isVisible, setIsVisible] = useState(true);
+    const [isVisible, setIsVisible] = useState(false);
     const [cards, setCards] = useState<CardData[]>([]);
     const [currentCardIndex, setCurrentCardIndex] = useState(0);
     const [settings, setSettings] = useState<PromoSettings>({
@@ -34,8 +35,24 @@ export default function GiftCardPromoBar() {
         rotation_interval: 5
     });
     const [isLoading, setIsLoading] = useState(true);
+    const pathname = usePathname();
 
     useEffect(() => {
+        // Hide on gift card pages
+        if (pathname?.includes('/karta-podarunkowa') || pathname?.includes('/sklep')) {
+            setIsVisible(false);
+            setIsLoading(false);
+            return;
+        }
+
+        // Check if previously closed
+        const isClosed = localStorage.getItem('giftCardPromoClosed');
+        if (isClosed === 'true') {
+            setIsVisible(false);
+            setIsLoading(false);
+            return;
+        }
+
         const fetchPromoData = async () => {
             try {
                 const res = await fetch('/api/admin/gift-card-promo');
@@ -57,7 +74,7 @@ export default function GiftCardPromoBar() {
         };
 
         fetchPromoData();
-    }, []);
+    }, [pathname]);
 
     // Auto-rotate cards
     useEffect(() => {
@@ -106,7 +123,10 @@ export default function GiftCardPromoBar() {
                                 )}
                             </div>
                             <button
-                                onClick={() => setIsVisible(false)}
+                                onClick={() => {
+                                    setIsVisible(false);
+                                    localStorage.setItem('giftCardPromoClosed', 'true');
+                                }}
                                 className="p-1 text-white/50 hover:text-white transition-colors"
                                 aria-label="Close promo bar"
                             >

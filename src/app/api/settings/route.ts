@@ -98,7 +98,8 @@ export async function POST(request: NextRequest) {
                 // Portfolio
                 'portfolio_categories',
                 // Seasonal
-                'seasonal_effect'
+                'seasonal_effect',
+                'portfolio_layout'
             ];
 
             const columnUpdates: Record<string, any> = {};

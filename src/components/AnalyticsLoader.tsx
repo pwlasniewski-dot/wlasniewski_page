@@ -8,24 +8,17 @@ export default async function AnalyticsLoader() {
     }
 
     try {
-        const settings = await prisma.setting.findMany({
-            where: {
-                setting_key: {
-                    in: ['google_analytics_id', 'google_tag_manager_id', 'facebook_pixel_id']
-                }
-            }
+        const settings = await prisma.setting.findFirst({
+            orderBy: { id: 'asc' }
         });
 
-        const analyticsSettings = settings.reduce((acc, curr) => {
-            acc[curr.setting_key] = curr.setting_value;
-            return acc;
-        }, {} as Record<string, string | null>);
+        if (!settings) return null;
 
         return (
             <AnalyticsIntegration
-                googleAnalyticsId={analyticsSettings.google_analytics_id || undefined}
-                googleTagManagerId={analyticsSettings.google_tag_manager_id || undefined}
-                facebookPixelId={analyticsSettings.facebook_pixel_id || undefined}
+                googleAnalyticsId={settings.google_analytics_id || undefined}
+                googleTagManagerId={settings.google_tag_manager_id || undefined}
+                facebookPixelId={settings.facebook_pixel_id || undefined}
             />
         );
     } catch (error) {

@@ -36,14 +36,24 @@ export default function GiftCardShop() {
     const [selectedTheme, setSelectedTheme] = useState<string | null>(null);
     const [favorites, setFavorites] = useState<number[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [heroImage, setHeroImage] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchCards = async () => {
             try {
                 const res = await fetch('/api/gift-cards/shop');
                 const data = await res.json();
-                setCards(data);
-                setFilteredCards(data);
+
+                // Handle new response format { cards, settings } or fallback to array
+                const cardsData = Array.isArray(data) ? data : data.cards;
+                const settingsData = !Array.isArray(data) ? data.settings : null;
+
+                setCards(cardsData || []);
+                setFilteredCards(cardsData || []);
+
+                if (settingsData?.heroImage) {
+                    setHeroImage(settingsData.heroImage);
+                }
             } catch (error) {
                 console.error('Failed to fetch gift cards');
             } finally {
@@ -63,7 +73,7 @@ export default function GiftCardShop() {
     }, [selectedTheme, cards]);
 
     const toggleFavorite = (id: number) => {
-        setFavorites(prev => 
+        setFavorites(prev =>
             prev.includes(id) ? prev.filter(fav => fav !== id) : [...prev, id]
         );
     };
@@ -87,20 +97,33 @@ export default function GiftCardShop() {
     }
 
     return (
-        <main className="min-h-screen bg-black text-white pt-40">
-            {/* Header */}
-            <section className="py-20 px-6 border-b border-zinc-800">
-                <div className="max-w-7xl mx-auto text-center">
+        <main className="min-h-screen bg-black text-white">
+            {/* Hero Section with Background */}
+            <section className="relative h-[60vh] min-h-[500px] flex items-center justify-center overflow-hidden">
+                {/* Background Image */}
+                {heroImage ? (
+                    <>
+                        <div
+                            className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-[10s] hover:scale-105"
+                            style={{ backgroundImage: `url(${heroImage})` }}
+                        />
+                        <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px]" />
+                    </>
+                ) : (
+                    <div className="absolute inset-0 bg-gradient-to-b from-zinc-900 to-black" />
+                )}
+
+                <div className="relative z-10 max-w-7xl mx-auto px-6 text-center pt-20">
                     <motion.div
-                        initial={{ opacity: 0, y: 20 }}
+                        initial={{ opacity: 0, y: 30 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6 }}
+                        transition={{ duration: 0.8 }}
                     >
-                        <h1 className="text-5xl md:text-6xl font-display font-bold mb-6">
-                            🎁 <span className="bg-gradient-to-r from-gold-400 to-gold-600 bg-clip-text text-transparent">Karty Podarunkowe</span>
+                        <h1 className="text-5xl md:text-7xl font-display font-bold mb-6 drop-shadow-2xl">
+                            🎁 <span className="bg-gradient-to-r from-gold-300 via-gold-500 to-gold-300 bg-clip-text text-transparent">Karty Podarunkowe</span>
                         </h1>
-                        <p className="text-xl text-zinc-300 mb-8 max-w-2xl mx-auto">
-                            Spersonalizowana karta podarunkowa na każdą okazję. Wyślij mailem, wydrukuj lub udostępnij bezpośrednio.
+                        <p className="text-xl md:text-2xl text-zinc-100 mb-8 max-w-2xl mx-auto drop-shadow-lg font-light">
+                            Spersonalizowana sesja fotograficzna to prezent, który zostanie na zawsze.
                         </p>
                     </motion.div>
                 </div>
@@ -115,11 +138,10 @@ export default function GiftCardShop() {
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
                             onClick={() => setSelectedTheme(null)}
-                            className={`px-4 py-2 rounded-lg font-semibold transition-all ${
-                                selectedTheme === null
-                                    ? 'bg-gold-500 text-black'
-                                    : 'bg-zinc-800 text-white hover:bg-zinc-700'
-                            }`}
+                            className={`px-4 py-2 rounded-lg font-semibold transition-all ${selectedTheme === null
+                                ? 'bg-gold-500 text-black'
+                                : 'bg-zinc-800 text-white hover:bg-zinc-700'
+                                }`}
                         >
                             Wszystkie
                         </motion.button>
@@ -129,11 +151,10 @@ export default function GiftCardShop() {
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                                 onClick={() => setSelectedTheme(key)}
-                                className={`px-4 py-2 rounded-lg font-semibold transition-all flex items-center justify-center gap-1 text-sm ${
-                                    selectedTheme === key
-                                        ? 'bg-gold-500 text-black'
-                                        : 'bg-zinc-800 text-white hover:bg-zinc-700'
-                                }`}
+                                className={`px-4 py-2 rounded-lg font-semibold transition-all flex items-center justify-center gap-1 text-sm ${selectedTheme === key
+                                    ? 'bg-gold-500 text-black'
+                                    : 'bg-zinc-800 text-white hover:bg-zinc-700'
+                                    }`}
                                 title={name}
                             >
                                 <span>{icon}</span>
@@ -225,11 +246,10 @@ export default function GiftCardShop() {
                                                     whileHover={{ scale: 1.05 }}
                                                     whileTap={{ scale: 0.95 }}
                                                     onClick={() => toggleFavorite(card.id)}
-                                                    className={`flex-1 px-4 py-2 rounded-lg border transition-all font-semibold flex items-center justify-center gap-2 ${
-                                                        favorites.includes(card.id)
-                                                            ? 'bg-red-500/20 border-red-500 text-red-400'
-                                                            : 'border-zinc-700 text-zinc-400 hover:border-zinc-600'
-                                                    }`}
+                                                    className={`flex-1 px-4 py-2 rounded-lg border transition-all font-semibold flex items-center justify-center gap-2 ${favorites.includes(card.id)
+                                                        ? 'bg-red-500/20 border-red-500 text-red-400'
+                                                        : 'border-zinc-700 text-zinc-400 hover:border-zinc-600'
+                                                        }`}
                                                 >
                                                     <Heart
                                                         className="w-4 h-4"

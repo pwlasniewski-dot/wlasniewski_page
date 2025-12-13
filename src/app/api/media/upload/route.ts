@@ -7,7 +7,8 @@ export async function POST(request: NextRequest) {
     return withAuth(request, async (req) => {
         try {
             const formData = await req.formData();
-            const file = formData.get('file') as File;
+            const folder = (formData.get('folder') as string) || 'uploads';
+            const file = formData.get('file') as File | null;
 
             if (!file) {
                 return NextResponse.json(
@@ -32,7 +33,7 @@ export async function POST(request: NextRequest) {
                     file_path: publicUrl, // Saves full URL from S3
                     file_size: file.size,
                     mime_type: file.type,
-                    folder: 'uploads',
+                    folder: folder,
                     uploaded_by: req.user?.id,
                 },
             });

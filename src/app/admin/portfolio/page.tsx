@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { getApiUrl } from '@/lib/api-config';
-import { Plus, Edit, Trash2, Image as ImageIcon } from 'lucide-react';
+import { Plus, Edit, Trash2, Image as ImageIcon, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 
@@ -12,6 +12,8 @@ interface PortfolioSession {
     category: string;
     session_date: string;
     is_published: boolean;
+    is_category_hero?: boolean;
+    media_ids?: string | number[];
 }
 
 export default function PortfolioPage() {
@@ -104,9 +106,14 @@ export default function PortfolioPage() {
                             <li key={session.id}>
                                 <div className="px-4 py-4 sm:px-6 flex items-center justify-between hover:bg-zinc-800/50 transition-colors">
                                     <div className="flex-1 min-w-0">
-                                        <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
                                             <p className="text-sm font-medium text-gold-400 truncate">{session.title}</p>
-                                            <div className="ml-2 flex-shrink-0 flex">
+                                            {session.is_category_hero && (
+                                                <div title="Okładka kategorii (główne zdjęcie na stronie portfolio)" className="flex items-center text-green-500">
+                                                    <CheckCircle2 className="h-4 w-4" />
+                                                </div>
+                                            )}
+                                            <div className="flex-shrink-0 flex">
                                                 <p className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${session.is_published ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
                                                     }`}>
                                                     {session.is_published ? 'Opublikowana' : 'Szkic'}
@@ -114,10 +121,22 @@ export default function PortfolioPage() {
                                             </div>
                                         </div>
                                         <div className="mt-2 sm:flex sm:justify-between">
-                                            <div className="sm:flex">
+                                            <div className="sm:flex gap-4">
                                                 <p className="flex items-center text-sm text-zinc-500">
                                                     {session.category}
                                                 </p>
+                                                <div className="flex items-center text-sm text-zinc-500 gap-1" title="Liczba zdjęć w galerii">
+                                                    <ImageIcon className="h-3.5 w-3.5" />
+                                                    <span>
+                                                        {(() => {
+                                                            try {
+                                                                if (Array.isArray(session.media_ids)) return session.media_ids.length;
+                                                                if (typeof session.media_ids === 'string') return JSON.parse(session.media_ids).length;
+                                                                return 0;
+                                                            } catch { return 0; }
+                                                        })()}
+                                                    </span>
+                                                </div>
                                             </div>
                                             <div className="mt-2 flex items-center text-sm text-zinc-500 sm:mt-0">
                                                 <p>
