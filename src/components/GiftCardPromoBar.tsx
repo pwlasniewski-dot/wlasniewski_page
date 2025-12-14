@@ -107,7 +107,7 @@ export default function GiftCardPromoBar() {
                     animate={{ x: 0, opacity: 1 }}
                     exit={{ x: -400, opacity: 0 }}
                     transition={{ type: 'spring', stiffness: 80, damping: 25 }}
-                    className="fixed left-0 top-32 z-[100] w-80"
+                    className="fixed left-0 top-32 z-[9999] w-80"
                 >
                     <div className="bg-gradient-to-b from-zinc-900 to-black rounded-r-2xl shadow-2xl border border-gold-500/30 overflow-hidden">
                         {/* Header */}
