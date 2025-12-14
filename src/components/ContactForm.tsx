@@ -164,7 +164,7 @@ export default function ContactForm() {
                             className="mt-4 text-red-400 text-sm"
                         >
                             Nie udało się wysłać wiadomości. Spróbuj ponownie lub skontaktuj się pod: <br />
-                            <a href={`mailto:${errorEmail || 'kontakt@wlasniewski.pl'}`} className="hover:underline">{errorEmail || 'kontakt@wlasniewski.pl'}</a>
+                            {errorEmail ? <a href={`mailto:${errorEmail}`} className="hover:underline">{errorEmail}</a> : null}
                         </motion.p>
                     )}
                 </div>

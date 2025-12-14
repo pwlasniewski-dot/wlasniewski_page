@@ -96,9 +96,9 @@ ${message}
             console.error('Failed to log contact error:', logError);
         }
 
-        const fallbackEmail = await getAdminEmail().catch(() => 'kontakt@wlasniewski.pl');
+        const fallbackEmail = await getAdminEmail().catch(() => undefined);
         return NextResponse.json(
-            { error: `Błąd wysyłania. Spróbuj ponownie lub skontaktuj się pod: ${fallbackEmail}` },
+            { error: fallbackEmail ? `Błąd wysyłania. Spróbuj ponownie lub skontaktuj się pod: ${fallbackEmail}` : 'Błąd wysyłania wiadomości. Spróbuj ponownie później.' },
             { status: 500 }
         );
     }

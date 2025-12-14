@@ -34,7 +34,7 @@ const defaultSettings: FooterSettings = {
     brand_name: 'Przemysław Właśniewski — Fotograf',
     tagline: 'Naturalne zdjęcia rodzinne, ślubne, portretowe i komunijne. Toruń, Lisewo, Wąbrzeźno, Płużnica i okolice.',
     phone: '+48 530 788 694',
-    email: process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'kontakt@wlasniewski.pl',
+    email: process.env.NEXT_PUBLIC_CONTACT_EMAIL || '',
     facebook_url: 'https://www.facebook.com/przemyslaw.wlasniewski.fotografia',
     instagram_url: 'https://www.instagram.com/wlasniewski.pl/',
     sections: {

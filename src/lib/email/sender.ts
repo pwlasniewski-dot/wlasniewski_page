@@ -42,12 +42,12 @@ export async function getSMTPConfig() {
 export async function getAdminEmail() {
     try {
         const config = await getSMTPConfig();
-        const adminEmail = process.env.ADMIN_EMAIL || config.user || config.from || 'kontakt@wlasniewski.pl';
+        const adminEmail = process.env.ADMIN_EMAIL || config.user || config.from;
         console.log('🔍 getAdminEmail:', { fromEnv: process.env.ADMIN_EMAIL, fromConfig: config.user, final: adminEmail });
         return adminEmail;
     } catch (error) {
         console.error('❌ getAdminEmail error:', error);
-        return process.env.ADMIN_EMAIL || 'kontakt@wlasniewski.pl';
+        return process.env.ADMIN_EMAIL || undefined;
     }
 }
 
@@ -124,7 +124,7 @@ export async function sendEmail(emailData: EmailData) {
 
         // Get SMTP config (from database or env vars)
         const config = await getSMTPConfig();
-        console.log('🔍 SMTP Config loaded:', { 
+        console.log('🔍 SMTP Config loaded:', {
             host: config.host ? '✓' : '✗',
             port: config.port,
             user: config.user ? '✓ (masked)' : '✗',
@@ -144,7 +144,7 @@ export async function sendEmail(emailData: EmailData) {
 
         const transport = await getTransporter(); // This might throw SMTP config error
         console.log('📤 Sending email via SMTP to:', to);
-        
+
         const result = await transport.sendMail({
             from: config.from,
             to,
