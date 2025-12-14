@@ -162,11 +162,11 @@ export default function GiftCard({
             />
 
             {/* Content */}
-            <div className={`relative h-full p-3 sm:p-6 flex flex-col justify-between ${config.textColor}`}>
+            <div className={`relative h-full p-4 sm:p-6 flex flex-col justify-between ${config.textColor} z-10`}>
                 {/* Top section - Logo and theme */}
                 <div className="flex items-start justify-between">
                     {logoUrl && (
-                        <div className="relative w-12 h-12 sm:w-20 sm:h-20">
+                        <div className="relative w-10 h-10 sm:w-20 sm:h-20">
                             <Image
                                 src={logoUrl}
                                 alt="Logo"
@@ -176,64 +176,43 @@ export default function GiftCard({
                             />
                         </div>
                     )}
-                    <div className="text-4xl sm:text-6xl">{config.icon}</div>
+                    <div className="text-3xl sm:text-6xl">{config.icon}</div>
                 </div>
 
                 {/* Center section - Card title and message */}
-                <div className="flex flex-col items-center justify-center text-center flex-1 my-2 sm:my-4">
-                    <h2 className="text-xl sm:text-3xl font-bold mb-1 sm:mb-2 drop-shadow-lg">
+                <div className="flex-1 flex flex-col justify-center items-center text-center -mt-2">
+                    <h2 className="text-lg sm:text-3xl font-bold mb-1 drop-shadow-lg leading-tight">
                         {displayTitle}
                     </h2>
-                    <p className={`text-xs sm:text-base opacity-90 mb-2 sm:mb-4 drop-shadow`}>
+                    <p className={`text-xs sm:text-base opacity-90 mb-2 drop-shadow leading-tight`}>
                         {displayDescription}
                     </p>
 
                     {recipientName && (
-                        <p className="text-xs sm:text-base italic opacity-75 mb-1 sm:mb-2">
+                        <p className="text-xs sm:text-base italic opacity-75 mb-1">
                             Dla: <span className="font-semibold">{recipientName}</span>
-                        </p>
-                    )}
-
-                    {message && (
-                        <p className="text-[10px] sm:text-sm italic opacity-70 max-w-xs px-2 break-words">
-                            {message}
                         </p>
                     )}
                 </div>
 
-                {/* Value and Code section */}
-                <div className="flex flex-col items-center gap-2 sm:gap-4">
+                {/* Value and Code section - compacted for mobile */}
+                <div className="flex flex-col items-center gap-1 sm:gap-4 mt-auto">
                     {/* Value */}
                     <div className="text-center">
-                        <p className="text-[10px] sm:text-sm opacity-75 mb-0.5 sm:mb-1">Wartość karty</p>
-                        <p className="text-3xl sm:text-5xl font-bold drop-shadow-lg">
+                        <p className="text-[10px] sm:text-sm opacity-75 mb-0.5">Wartość karty</p>
+                        <p className="text-2xl sm:text-5xl font-bold drop-shadow-lg leading-none">
                             {value} zł
                         </p>
                     </div>
 
                     {/* Code */}
-                    <div className="w-full bg-white/20 backdrop-blur-sm rounded-xl p-2 sm:p-4 border-2 border-white/40">
-                        <p className="text-[10px] opacity-75 text-center mb-0.5 sm:mb-1">KOD PROMOCYJNY</p>
-                        <p className="font-mono text-lg sm:text-2xl font-bold text-center tracking-widest drop-shadow-lg">
+                    <div className="w-full bg-white/20 backdrop-blur-sm rounded-lg sm:rounded-xl p-1.5 sm:p-4 border border-white/40 mt-1 sm:mt-0">
+                        <p className="text-[9px] sm:text-xs opacity-75 text-center mb-0.5">KOD PROMOCYJNY</p>
+                        <p className="font-mono text-base sm:text-2xl font-bold text-center tracking-widest drop-shadow-md">
                             {code}
                         </p>
                     </div>
-
-                    {/* Sender info if provided */}
-                    {senderName && !isPrint && (
-                        <p className="text-[10px] opacity-60 text-center mt-1 sm:mt-2">
-                            Od: {senderName}
-                        </p>
-                    )}
                 </div>
-
-                {/* Footer - Brand */}
-                {!isPrint && (
-                    <div className="text-center text-[10px] opacity-75 mt-2 sm:mt-4">
-                        <p className="font-semibold">Przemysław Właśniewski</p>
-                        <p className="text-[10px] opacity-60">Fotografia</p>
-                    </div>
-                )}
             </div>
 
             {/* Corner decorations for non-print view */}

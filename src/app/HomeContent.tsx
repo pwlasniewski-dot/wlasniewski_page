@@ -7,6 +7,8 @@ import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { ArrowRight, Star, Check, Camera } from 'lucide-react';
 import HeroSlider from '@/components/HeroSlider';
+
+import ContactForm from '@/components/ContactForm';
 import ParallaxSection from '@/components/ParallaxSection';
 import CarouselGallery from '@/components/VisualEffects/CarouselGallery';
 import MasonryGallery from '@/components/VisualEffects/MasonryGallery';
@@ -601,6 +603,43 @@ export default function HomeContent({ homeData, orderedSections, testimonials }:
 
             {/* Dynamic Sections */}
             {orderedSections.map(section => renderSection(section))}
+
+            {/* CTA Section and Contact Form */}
+            <section className="py-24 px-6 bg-gradient-to-br from-zinc-900 via-black to-zinc-900 border-t border-white/5 relative overflow-hidden group">
+                <div className="absolute inset-0 bg-[url('/noise.png')] opacity-20 mix-blend-overlay" />
+
+                {/* Animated background glow */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-gold-500/10 rounded-full blur-[100px] group-hover:bg-gold-500/20 transition-all duration-1000" />
+
+                <div className="relative container mx-auto text-center max-w-3xl">
+                    <h2 className="text-4xl md:text-5xl font-bold mb-6 font-display">
+                        Stwórzmy coś <span className="text-gold-400">wyjątkowego</span>
+                    </h2>
+                    <p className="text-xl text-zinc-400 mb-10 leading-relaxed">
+                        Szukasz fotografa, który uchwyci Twoją historię?
+                        <br />
+                        Napisz do mnie i porozmawiajmy o Twojej sesji.
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-5 justify-center">
+                        <Link
+                            href="/rezerwacja"
+                            className="bg-gold-500 hover:bg-gold-400 text-black px-8 py-4 rounded-full font-bold text-lg transition-all transform hover:scale-105 shadow-lg shadow-gold-500/20"
+                        >
+                            Zarezerwuj termin
+                        </Link>
+                        <Link
+                            href="/kontakt"
+                            className="bg-white/5 hover:bg-white/10 text-white px-8 py-4 rounded-full font-bold text-lg border border-white/10 hover:border-white/20 transition-all backdrop-blur-sm"
+                        >
+                            Napisz do mnie
+                        </Link>
+                    </div>
+                </div>
+            </section>
+
+            <div className="bg-black py-20 border-t border-zinc-900">
+                <ContactForm />
+            </div>
         </main>
     );
 }

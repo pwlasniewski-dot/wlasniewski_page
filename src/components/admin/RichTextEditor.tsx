@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useEffect, useState } from 'react';
-import { Bold, Italic, Underline, List, ListOrdered, Link as LinkIcon, Image as ImageIcon, Heading1, Heading2, AlignLeft, AlignCenter, AlignRight, Palette } from 'lucide-react';
+import { Bold, Italic, Underline, List, ListOrdered, Link as LinkIcon, Image as ImageIcon, Heading1, Heading2, AlignLeft, AlignCenter, AlignRight, Palette, Type } from 'lucide-react';
 
 interface RichTextEditorProps {
     value: string;
@@ -14,6 +14,8 @@ export default function RichTextEditor({ value, onChange, placeholder, onImageRe
     const editorRef = useRef<HTMLDivElement>(null);
     const [activeFormats, setActiveFormats] = useState<string[]>([]);
     const [showColorPicker, setShowColorPicker] = useState(false);
+    const [showFontSizePicker, setShowFontSizePicker] = useState(false);
+    const [showFontFamilyPicker, setShowFontFamilyPicker] = useState(false);
 
     useEffect(() => {
         if (editorRef.current && editorRef.current.innerHTML !== value) {
@@ -90,6 +92,33 @@ export default function RichTextEditor({ value, onChange, placeholder, onImageRe
         const url = prompt('Wpisz URL obrazu:');
         if (url) {
             execCommand('insertImage', url);
+        }
+    };
+
+    const applyFontFamily = (fontVar: string) => {
+        const selection = window.getSelection();
+        if (!selection || selection.rangeCount === 0) return;
+
+        const range = selection.getRangeAt(0);
+        if (range.collapsed) return; // Don't wrap empty selection
+
+        const span = document.createElement('span');
+        span.style.fontFamily = `var(${fontVar})`;
+
+        try {
+            const content = range.extractContents();
+            span.appendChild(content);
+            range.insertNode(span);
+
+            // Clean up: Reset selection to include the new span
+            const newRange = document.createRange();
+            newRange.selectNodeContents(span);
+            selection.removeAllRanges();
+            selection.addRange(newRange);
+
+            handleInput();
+        } catch (e) {
+            console.error('Failed to apply font family', e);
         }
     };
 
@@ -173,6 +202,76 @@ export default function RichTextEditor({ value, onChange, placeholder, onImageRe
                 >
                     <ImageIcon className="w-4 h-4" />
                 </button>
+
+                <div className="relative">
+                    <button
+                        type="button"
+                        onClick={() => setShowFontSizePicker(!showFontSizePicker)}
+                        className={`p-2 rounded transition-colors text-zinc-400 hover:bg-zinc-700 hover:text-gold-400 ${showFontSizePicker ? 'bg-zinc-700 text-gold-400' : ''}`}
+                        title="Rozmiar czcionki"
+                    >
+                        <span className="font-serif font-bold text-sm">Size</span>
+                    </button>
+                    {showFontSizePicker && (
+                        <div className="absolute top-full left-0 mt-2 p-1 bg-zinc-900 border border-zinc-700 rounded shadow-xl min-w-[120px] z-50 flex flex-col gap-1">
+                            {[
+                                { label: 'Mały', size: '1' },
+                                { label: 'Normalny', size: '3' },
+                                { label: 'Duży', size: '5' },
+                                { label: 'Ogromny', size: '7' },
+                            ].map(opt => (
+                                <button
+                                    key={opt.size}
+                                    type="button"
+                                    onClick={() => {
+                                        execCommand('fontSize', opt.size);
+                                        setShowFontSizePicker(false);
+                                    }}
+                                    className="px-3 py-2 text-left text-sm text-zinc-300 hover:bg-zinc-800 hover:text-gold-400 rounded transition-colors"
+                                >
+                                    {opt.label}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                <div className="relative">
+                    <button
+                        type="button"
+                        onClick={() => setShowFontFamilyPicker(!showFontFamilyPicker)}
+                        className={`p-2 rounded transition-colors text-zinc-400 hover:bg-zinc-700 hover:text-gold-400 ${showFontFamilyPicker ? 'bg-zinc-700 text-gold-400' : ''}`}
+                        title="Krój czcionki (Font)"
+                    >
+                        <Type className="w-4 h-4" />
+                    </button>
+                    {showFontFamilyPicker && (
+                        <div className="absolute top-full left-0 mt-2 p-1 bg-zinc-900 border border-zinc-700 rounded shadow-xl min-w-[200px] z-50 flex flex-col gap-1 max-h-[300px] overflow-y-auto w-auto min-w-[220px]">
+                            {[
+                                { label: 'Montserrat (Tekst)', var: '--font-sans', font: 'Montserrat, sans-serif' },
+                                { label: 'Cormorant (Nagłówki)', var: '--font-display', font: 'Cormorant Garamond, serif' },
+                                { label: 'Playfair Display', var: '--font-playfair', font: 'Playfair Display, serif' },
+                                { label: 'Lato', var: '--font-lato', font: 'Lato, sans-serif' },
+                                { label: 'Great Vibes (Ozdobny)', var: '--font-great-vibes', font: 'Great Vibes, cursive' },
+                                { label: 'Cinzel (Filmowy)', var: '--font-cinzel', font: 'Cinzel, serif' },
+                            ].map(opt => (
+                                <button
+                                    key={opt.var}
+                                    type="button"
+                                    onClick={() => {
+                                        applyFontFamily(opt.var);
+                                        setShowFontFamilyPicker(false);
+                                    }}
+                                    className="px-4 py-3 text-left text-lg text-zinc-200 hover:bg-zinc-800 hover:text-gold-400 rounded transition-colors"
+                                    style={{ fontFamily: `var(${opt.var})` }}
+                                    title={opt.label}
+                                >
+                                    {opt.label}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
 
                 <div className="w-px h-6 bg-zinc-700 mx-1 self-center" />
 

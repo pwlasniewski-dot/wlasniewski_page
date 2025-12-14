@@ -4,6 +4,7 @@ import React from "react";
 import Link from "next/link";
 import ParallaxSection from "@/components/ParallaxSection";
 import { motion } from "framer-motion";
+import ContactForm from '@/components/ContactForm';
 
 interface OMnieContentProps {
     pageData: any;
@@ -91,33 +92,12 @@ export default function OMnieContent({ pageData, parallaxSections, contentCards 
                     </div>
                 ))}
 
-                {/* CTA */}
-                <motion.div
-                    initial={{ opacity: 0, y: 30 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.6 }}
-                    className="text-center bg-gradient-to-br from-zinc-900 to-black border border-white/10 p-12 rounded-lg"
-                >
-                    <h2 className="text-4xl font-bold mb-4">Stwórzmy coś razem</h2>
-                    <p className="text-zinc-400 text-lg mb-8 max-w-2xl mx-auto">
-                        Skontaktuj się, aby porozmawiać o Twojej sesji
-                    </p>
-                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                        <Link
-                            href="/rezerwacja"
-                            className="inline-flex items-center gap-3 bg-gold-400 hover:bg-gold-500 text-black font-bold px-8 py-4 rounded-full text-lg"
-                        >
-                            Zarezerwuj sesję →
-                        </Link>
-                        <Link
-                            href="/kontakt"
-                            className="inline-flex items-center gap-3 bg-transparent hover:bg-white/5 text-white font-bold px-8 py-4 rounded-full text-lg border-2 border-white/20 hover:border-gold-400/50"
-                        >
-                            Napisz do mnie
-                        </Link>
-                    </div>
-                </motion.div>
+
+                {/* Contact Form */}
+                <div className="mt-20">
+                    <ContactForm />
+                </div>
+
             </div>
         </main>
     );

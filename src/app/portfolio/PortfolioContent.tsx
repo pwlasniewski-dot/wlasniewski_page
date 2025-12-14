@@ -1,0 +1,208 @@
+'use client';
+
+import React from 'react';
+import Link from 'next/link';
+import Image from 'next/image';
+import { Camera, ArrowRight, Check } from 'lucide-react';
+import HeroSlider from '@/components/HeroSlider';
+import ParallaxSection from '@/components/ParallaxSection';
+import WhiteInfoBand from '@/components/WhiteInfoBand';
+import CarouselGallery from '@/components/VisualEffects/CarouselGallery';
+import MasonryGallery from '@/components/VisualEffects/MasonryGallery';
+import PuzzleGallery from '@/components/VisualEffects/PuzzleGallery';
+import PhotoChallengeBanner from '@/components/PhotoChallengeBanner';
+import CreativeSlider from '@/components/CreativeSlider';
+
+interface PortfolioContentProps {
+    categories: any[];
+    sections: any[];
+    fallbackHeroSlides: any[];
+}
+
+export default function PortfolioContent({ categories, sections, fallbackHeroSlides }: PortfolioContentProps) {
+
+    // Helper to render dynamic sections (reused logic)
+    const renderSection = (section: any) => {
+        if (!section.enabled) return null;
+
+        // Common text styles helper
+        const getTextColorClass = (variant?: string, bgColor?: string) => {
+            if (variant === 'dark') return { heading: 'text-zinc-900', body: 'text-zinc-700' };
+            if (variant === 'light') return { heading: 'text-gold-400', body: 'text-zinc-300' };
+            if (bgColor === 'white') return { heading: 'text-zinc-900', body: 'text-zinc-700' };
+            return { heading: 'text-gold-400', body: 'text-zinc-300' };
+        };
+
+        const bgClass = section.backgroundColor === 'white' ? 'bg-white' :
+            section.backgroundColor === 'zinc-800' ? 'bg-zinc-800' :
+                section.backgroundColor === 'zinc-900' ? 'bg-zinc-900' : 'bg-black';
+
+        const textColors = getTextColorClass(section.textVariant, section.backgroundColor);
+
+        switch (section.type) {
+            case 'hero_parallax': // Custom type from page builder
+            case 'parallax':
+                return (
+                    <ParallaxSection
+                        key={section.id}
+                        {...section.data}
+                        imageSrc={section.data.image}
+                        height="min-h-[60vh] md:min-h-[80vh]"
+                    />
+                );
+
+            case 'text':
+            case 'about':
+                return (
+                    <section key={section.id} className={`py-20 px-6 ${bgClass}`}>
+                        <div className="max-w-4xl mx-auto text-center">
+                            {section.data.title && (
+                                <h2 className={`text-3xl md:text-5xl font-display font-bold ${textColors.heading} mb-8`}>
+                                    {section.data.title}
+                                </h2>
+                            )}
+                            <div
+                                className={`prose prose-invert lg:prose-xl mx-auto ${textColors.body}`}
+                                dangerouslySetInnerHTML={{ __html: section.data.content }}
+                            />
+                        </div>
+                    </section>
+                );
+
+            case 'creative_slider':
+                return section.data.slides && section.data.slides.length > 0 ? (
+                    <CreativeSlider
+                        key={section.id}
+                        slides={section.data.slides}
+                        config={section.data.config}
+                    />
+                ) : null;
+
+            default:
+                return null;
+        }
+    };
+
+    // Decide what to show at the top:
+    // 1. If we have sections, show them.
+    // 2. If NO sections, use the Fallback Hero Slider (Homepage Slides).
+    // Note: The user said "dodaj opcje, korzystaj z załadowanych zdjęć albo jak nie jest zaznaczona to z głownej strony".
+    // Interpreting this as: If no custom content (sections) is provided, fallback to Homepage Hero.
+
+    // Check if there are any "Hero" like sections
+    const hasHero = sections.some(s => s.type === 'hero_parallax' || s.type === 'parallax' || s.type === 'creative_slider');
+
+    return (
+        <main className="min-h-screen bg-black text-white selection:bg-gold-500 selection:text-black">
+
+            {/* Dynamic Sections (Top) */}
+            {sections.length > 0 && (
+                <div>
+                    {sections.map(section => renderSection(section))}
+                </div>
+            )}
+
+            {/* Fallback Hero (Only if no sections or explicit choice - simplified for now: if no sections) */}
+            {sections.length === 0 && fallbackHeroSlides.length > 0 && (
+                <HeroSlider slides={fallbackHeroSlides} />
+            )}
+
+            {/* Fallback Static Header (If no sections AND no fallback slides, e.g. clean start) */}
+            {sections.length === 0 && fallbackHeroSlides.length === 0 && (
+                <section className="pt-40 pb-20 px-6 text-center">
+                    <h1 className="text-6xl md:text-8xl font-extrabold tracking-tighter mb-6 font-display text-white">
+                        PORTFOLIO
+                    </h1>
+                    <p className="text-zinc-400 text-lg md:text-xl max-w-2xl mx-auto font-light tracking-wide uppercase font-sans">
+                        Wybrane historie
+                    </p>
+                </section>
+            )}
+
+            {/* Cinematic List (The Core Portfolio) */}
+            <section className="pb-32 px-0 md:px-8 max-w-[1920px] mx-auto pt-12">
+                {/* Optional divider if sections exist */}
+                {sections.length > 0 && <div className="mb-16 border-t border-white/10" />}
+
+                <div className="flex flex-col gap-1">
+                    {categories.map((category, index) => (
+                        <Link
+                            key={category.slug}
+                            href={`/portfolio/${category.slug}`}
+                            className="group relative block w-full h-[60vh] md:h-[80vh] overflow-hidden"
+                        >
+                            {/* Background Image with Blur-Fit scaling */}
+                            {category.coverImage ? (
+                                <>
+                                    {/* Blurred Background */}
+                                    <div className="absolute inset-0 overflow-hidden bg-zinc-950">
+                                        <img
+                                            src={category.coverImage}
+                                            alt=""
+                                            className="absolute inset-0 w-full h-full object-cover blur-3xl scale-110 opacity-40 transition-opacity duration-700"
+                                        />
+                                    </div>
+
+                                    {/* Main Contain Image */}
+                                    <div className="absolute inset-0 flex items-center justify-center p-4 md:p-0">
+                                        <img
+                                            src={category.coverImage}
+                                            alt={category.title}
+                                            className="w-full h-full object-cover md:object-contain drop-shadow-2xl transition-transform duration-[1.5s] ease-out group-hover:scale-105"
+                                        />
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="absolute inset-0 bg-zinc-900" />
+                            )}
+
+                            {/* Dark Overlay - lighter on hover */}
+                            <div className="absolute inset-0 bg-black/50 group-hover:bg-black/30 transition-colors duration-700" />
+
+                            {/* Content - Centered */}
+                            <div className="absolute inset-0 flex flex-col items-center justify-center p-8 z-10">
+                                {/* Decorative Line */}
+                                <div className="w-px h-16 bg-gold-400 mb-6 transform origin-top scale-y-0 group-hover:scale-y-100 transition-transform duration-700 delay-100" />
+
+                                <h2 className="text-5xl md:text-8xl font-medium text-white mb-4 font-display tracking-tight uppercase text-center opacity-90 group-hover:opacity-100 transition-opacity duration-500">
+                                    {category.title}
+                                </h2>
+
+                                <p className="text-gold-200 text-sm md:text-lg tracking-[0.3em] uppercase opacity-0 transform translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-700 delay-200 font-sans">
+                                    Zobacz Galerię
+                                </p>
+
+                                {/* Image Count Badge - Subtle */}
+                                <div className="absolute bottom-8 right-8 text-xs font-mono text-gold-500/50">
+                                    {category.imageCount} ZDJĘĆ
+                                </div>
+                            </div>
+                        </Link>
+                    ))}
+                </div>
+
+                {/* Empty State */}
+                {categories.length === 0 && (
+                    <div className="text-center py-32">
+                        <p className="text-zinc-500 text-xl">Ładowanie portfolio...</p>
+                    </div>
+                )}
+            </section>
+
+            {/* CTA Section (Always visible) */}
+            <section className="py-32 bg-zinc-950 border-t border-white/10">
+                <div className="mx-auto max-w-4xl text-center px-6">
+                    <h2 className="text-4xl md:text-6xl font-bold text-white mb-8 font-display">
+                        Stwórzmy razem coś pięknego
+                    </h2>
+                    <Link
+                        href="/rezerwacja"
+                        className="inline-block bg-white text-black px-10 py-4 rounded-full text-lg font-bold tracking-wide hover:bg-gold-400 transition-colors duration-300 font-sans"
+                    >
+                        ZAREZERWUJ TERMIN
+                    </Link>
+                </div>
+            </section>
+        </main>
+    );
+}
