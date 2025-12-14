@@ -155,8 +155,17 @@ export default function AdminLogsPage() {
                                     <td className="px-6 py-4 text-zinc-200">
                                         {log.message}
                                     </td>
-                                    <td className="px-6 py-4 max-w-xs truncate text-zinc-500 font-mono text-xs">
-                                        {log.metadata}
+                                    <td className="px-6 py-4 max-w-2xl text-zinc-500 font-mono text-xs">
+                                        {log.metadata ? (
+                                            <details className="cursor-pointer group">
+                                                <summary className="truncate hover:text-gold-400 select-none">📋 {log.metadata.length} chars</summary>
+                                                <pre className="mt-2 bg-zinc-950 p-3 rounded text-xs overflow-auto max-h-64 border border-zinc-700 text-zinc-300 whitespace-pre-wrap break-words">
+                                                    {log.metadata}
+                                                </pre>
+                                            </details>
+                                        ) : (
+                                            <span className="text-zinc-700">-</span>
+                                        )}
                                     </td>
                                     <td className="px-6 py-4 text-zinc-500 whitespace-nowrap">
                                         {new Date(log.created_at).toLocaleString('pl-PL')}

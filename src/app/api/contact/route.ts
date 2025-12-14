@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 import { getSMTPConfig } from "@/lib/email/sender";
+import { logSystem } from "@/lib/logger";
 
 export async function POST(request: Request) {
     let body: any = {};
@@ -11,6 +12,7 @@ export async function POST(request: Request) {
 
         // Validation
         if (!name || !email || !message) {
+            await logSystem('WARN', 'CONTACT', 'Contact form validation failed', { name, email, hasMessage: !!message });
             return NextResponse.json(
                 { error: "Wszystkie pola są wymagane" },
                 { status: 400 }
@@ -18,15 +20,40 @@ export async function POST(request: Request) {
         }
 
         const config = await getSMTPConfig();
-        // @ts-ignore
-        const adminEmail = config.auth?.user || config.from;
+        const adminEmail = config.user || config.from;
 
-        const transporter = nodemailer.createTransport(config as any);
+        // Verify SMTP config
+        if (!config.host || !config.user || !config.pass) {
+            const missing = {
+                host: !config.host ? 'MISSING' : 'OK',
+                user: !config.user ? 'MISSING' : 'OK',
+                pass: !config.pass ? 'MISSING' : 'OK',
+                from: config.from
+            };
+            await logSystem('ERROR', 'CONTACT', 'SMTP configuration incomplete', missing);
+            return NextResponse.json(
+                { error: "Email nie jest skonfigurowany. Kontakt: p.wlasniewski.foto@gmail.com" },
+                { status: 500 }
+            );
+        }
+
+        const transporter = nodemailer.createTransport({
+            host: config.host,
+            port: config.port || 587,
+            secure: config.port === 465,
+            auth: {
+                user: config.user,
+                pass: config.pass,
+            },
+        });
+
+        // Verify connection
+        await transporter.verify();
 
         // Notify Admin
-        await transporter.sendMail({
+        const result = await transporter.sendMail({
             from: config.from,
-            to: adminEmail, // Send to admin
+            to: adminEmail,
             replyTo: email,
             subject: `Nowa wiadomość od: ${name}`,
             text: `
@@ -46,24 +73,31 @@ ${message}
             `,
         });
 
+        await logSystem('INFO', 'CONTACT', 'Contact form email sent successfully', {
+            messageId: result.messageId,
+            to: adminEmail,
+            from: email,
+            name: name
+        });
+
         return NextResponse.json({ success: true });
     } catch (error: any) {
         console.error("Error sending contact email:", error);
 
         try {
-            const { logSystem } = await import('@/lib/logger');
             await logSystem('ERROR', 'CONTACT', 'Email sending failed', {
-                error: error.message,
-                stack: error.stack,
-                name: body.name,
-                email: body.email
+                errorMessage: error.message || 'Unknown error',
+                errorCode: error.code || 'NO_CODE',
+                errorCommand: error.command || 'NO_COMMAND',
+                senderEmail: body.email || 'NO_EMAIL',
+                senderName: body.name || 'NO_NAME'
             });
         } catch (logError) {
-            console.error('Failed to log system error', logError);
+            console.error('Failed to log contact error:', logError);
         }
 
         return NextResponse.json(
-            { error: "Wystąpił błąd podczas wysyłania wiadomości. Sprawdź logi systemowe." },
+            { error: "Błąd wysyłania. Spróbuj ponownie lub skontaktuj się pod: p.wlasniewski.foto@gmail.com" },
             { status: 500 }
         );
     }

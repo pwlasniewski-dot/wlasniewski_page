@@ -24,11 +24,17 @@ export default function ContactForm() {
                 body: JSON.stringify(formData),
             });
 
-            if (!res.ok) throw new Error('Failed to send');
+            const data = await res.json();
+
+            if (!res.ok) {
+                console.error('Contact form error:', data);
+                throw new Error(data.error || 'Failed to send');
+            }
 
             setStatus('success');
             setFormData({ name: '', email: '', message: '' });
-        } catch (error) {
+        } catch (error: any) {
+            console.error('Contact form error:', error);
             setStatus('error');
         }
     };
@@ -139,6 +145,17 @@ export default function ContactForm() {
                             className="mt-4 text-green-400"
                         >
                             Dziękuję za wiadomość! Odpiszę najszybciej jak to możliwe.
+                        </motion.p>
+                    )}
+
+                    {status === 'error' && (
+                        <motion.p
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="mt-4 text-red-400 text-sm"
+                        >
+                            Nie udało się wysłać wiadomości. Spróbuj ponownie lub skontaktuj się pod: <br />
+                            <a href="mailto:p.wlasniewski.foto@gmail.com" className="hover:underline">p.wlasniewski.foto@gmail.com</a>
                         </motion.p>
                     )}
                 </div>
