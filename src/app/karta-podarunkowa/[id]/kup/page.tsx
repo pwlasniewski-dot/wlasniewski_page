@@ -39,7 +39,7 @@ export default function BuyGiftCardPage() {
     const [card, setCard] = useState<GiftCardProduct | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isProcessing, setIsProcessing] = useState(false);
-    
+
     // Customer info
     const [customerName, setCustomerName] = useState('');
     const [customerEmail, setCustomerEmail] = useState('');
@@ -51,16 +51,14 @@ export default function BuyGiftCardPage() {
     useEffect(() => {
         const fetchCard = async () => {
             try {
-                const res = await fetch('/api/gift-cards/shop');
-                const cards: GiftCardProduct[] = await res.json();
-                const found = cards.find(c => c.id === parseInt(cardId));
-                if (found) {
-                    setCard(found);
-                } else {
-                    router.push('/karta-podarunkowa');
-                }
+                const res = await fetch(`/api/gift-cards/${cardId}`);
+                if (!res.ok) throw new Error('Card not found');
+
+                const data = await res.json();
+                setCard(data);
             } catch (error) {
-                console.error('Failed to fetch card');
+                console.error('Failed to fetch card:', error);
+                router.push('/karta-podarunkowa');
             } finally {
                 setIsLoading(false);
             }
@@ -98,7 +96,7 @@ export default function BuyGiftCardPage() {
             });
 
             const data = await res.json();
-            
+
             if (data.success && data.checkoutUrl) {
                 // Redirect to Stripe checkout
                 window.location.href = data.checkoutUrl;
@@ -255,7 +253,7 @@ export default function BuyGiftCardPage() {
                         {/* Customer Form */}
                         <div className="bg-zinc-900 rounded-xl p-6 border border-zinc-800 space-y-4">
                             <h3 className="font-bold text-lg mb-4">Twoje dane</h3>
-                            
+
                             <input
                                 type="text"
                                 placeholder="Twoje imię"
@@ -263,7 +261,7 @@ export default function BuyGiftCardPage() {
                                 onChange={(e) => setCustomerName(e.target.value)}
                                 className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-gold-500"
                             />
-                            
+
                             <input
                                 type="email"
                                 placeholder="Twój email"
@@ -276,7 +274,7 @@ export default function BuyGiftCardPage() {
                         {/* Recipient Form */}
                         <div className="bg-zinc-900 rounded-xl p-6 border border-zinc-800 space-y-4">
                             <h3 className="font-bold text-lg mb-4">Dane odbiorcy (opcjonalnie)</h3>
-                            
+
                             <input
                                 type="text"
                                 placeholder="Imię odbiorcy"
@@ -284,7 +282,7 @@ export default function BuyGiftCardPage() {
                                 onChange={(e) => setRecipientName(e.target.value)}
                                 className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-gold-500"
                             />
-                            
+
                             <input
                                 type="email"
                                 placeholder="Email odbiorcy"
@@ -300,7 +298,7 @@ export default function BuyGiftCardPage() {
                                 onChange={(e) => setSenderName(e.target.value)}
                                 className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-gold-500"
                             />
-                            
+
                             <textarea
                                 placeholder="Wiadomość na karcie..."
                                 value={message}
