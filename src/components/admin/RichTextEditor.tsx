@@ -103,7 +103,7 @@ export default function RichTextEditor({ value, onChange, placeholder, onImageRe
         if (range.collapsed) return; // Don't wrap empty selection
 
         const span = document.createElement('span');
-        span.style.fontFamily = `var(${fontVar})`;
+        span.style.setProperty('font-family', `var(${fontVar})`, 'important');
 
         try {
             const content = range.extractContents();
@@ -246,13 +246,13 @@ export default function RichTextEditor({ value, onChange, placeholder, onImageRe
                         <Type className="w-4 h-4" />
                     </button>
                     {showFontFamilyPicker && (
-                        <div className="absolute top-full left-0 mt-2 p-1 bg-zinc-900 border border-zinc-700 rounded shadow-xl min-w-[200px] z-50 flex flex-col gap-1 max-h-[300px] overflow-y-auto w-auto min-w-[220px]">
+                        <div className="absolute top-full left-0 mt-2 p-1 bg-zinc-900 border border-zinc-700 rounded shadow-xl z-50 flex flex-col gap-1 max-h-[400px] overflow-y-auto w-72">
                             {[
                                 { label: 'Montserrat (Tekst)', var: '--font-sans', font: 'Montserrat, sans-serif' },
-                                { label: 'Cormorant (Nagłówki)', var: '--font-display', font: 'Cormorant Garamond, serif' },
+                                { label: 'Cormorant (Nagłówki)', var: '--font-display', font: 'Cormorant Garamond, serif', weight: '700' },
                                 { label: 'Playfair Display', var: '--font-playfair', font: 'Playfair Display, serif' },
                                 { label: 'Lato', var: '--font-lato', font: 'Lato, sans-serif' },
-                                { label: 'Great Vibes (Ozdobny)', var: '--font-great-vibes', font: 'Great Vibes, cursive' },
+                                { label: 'Great Vibes (Ozdobny)', var: '--font-great-vibes', font: 'Great Vibes, cursive', size: '1.2em' },
                                 { label: 'Cinzel (Filmowy)', var: '--font-cinzel', font: 'Cinzel, serif' },
                             ].map(opt => (
                                 <button
@@ -262,8 +262,12 @@ export default function RichTextEditor({ value, onChange, placeholder, onImageRe
                                         applyFontFamily(opt.var);
                                         setShowFontFamilyPicker(false);
                                     }}
-                                    className="px-4 py-3 text-left text-lg text-zinc-200 hover:bg-zinc-800 hover:text-gold-400 rounded transition-colors"
-                                    style={{ fontFamily: `var(${opt.var})` }}
+                                    className="px-4 py-3 text-left text-lg text-zinc-200 hover:bg-zinc-800 hover:text-gold-400 rounded transition-colors block w-full"
+                                    style={{
+                                        fontFamily: `var(${opt.var})`,
+                                        fontWeight: opt.weight || 'normal',
+                                        fontSize: opt.size || '1.125rem'
+                                    }}
                                     title={opt.label}
                                 >
                                     {opt.label}
