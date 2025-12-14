@@ -20,21 +20,28 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             return NextResponse.json({ error: 'Gift card not found' }, { status: 404 });
         }
 
-        // Calculate price (logic shared with shop API)
+        // Calculate price based on Global Discount Settings
         const settings = await prisma.setting.findMany({
             where: {
-                setting_key: { contains: 'gift_card_price_' }
+                setting_key: { in: ['gift_card_global_discount_enabled', 'gift_card_global_discount_value', 'gift_card_global_discount_type'] }
             }
         });
 
-        const priceMap: Record<string, number> = {};
-        settings.forEach(setting => {
-            const themeValue = setting.setting_key.replace('gift_card_price_', '');
-            priceMap[themeValue] = parseInt(setting.setting_value || '0');
-        });
+        const getSetting = (key: string) => settings.find(s => s.setting_key === key)?.setting_value;
 
-        const theme = (card.theme || card.card_template || 'christmas') as string;
-        const basePrice = priceMap[theme] || card.value || 0;
+        const discountEnabled = getSetting('gift_card_global_discount_enabled') === 'true';
+        const discountValue = parseInt(getSetting('gift_card_global_discount_value') || '0');
+        const discountType = getSetting('gift_card_global_discount_type') || 'percentage';
+
+        let basePrice = card.value || 0;
+
+        if (discountEnabled && basePrice > 0) {
+            if (discountType === 'percentage') {
+                basePrice = Math.round(basePrice * (1 - discountValue / 100));
+            } else {
+                basePrice = Math.max(0, basePrice - discountValue);
+            }
+        }
 
         const response = {
             id: card.id,

@@ -42,7 +42,14 @@ export default function GiftCardsAdmin() {
     const [logoUrl, setLogoUrl] = useState('');
     const [isAuthorized, setIsAuthorized] = useState(false);
     const [promoBarEnabled, setPromoBarEnabled] = useState(false);
-    
+
+    // Global Discount Settings
+    const [globalDiscount, setGlobalDiscount] = useState({
+        enabled: false,
+        value: 10,
+        type: 'percentage' as 'percentage' | 'fixed'
+    });
+
     const [formData, setFormData] = useState({
         code: '',
         value: 100,
@@ -65,7 +72,9 @@ export default function GiftCardsAdmin() {
         setIsAuthorized(true);
         fetchCards();
         fetchLogo();
+        fetchLogo();
         fetchPromoBarStatus();
+        fetchGlobalDiscount();
     }, [router]);
 
     const fetchCards = async () => {
@@ -79,14 +88,14 @@ export default function GiftCardsAdmin() {
             const res = await fetch(getApiUrl('gift-cards'), {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            
+
             if (res.status === 401) {
                 toast.error('Sesja wygasła - zaloguj się ponownie');
                 localStorage.removeItem('admin_token');
                 router.push('/admin/login');
                 return;
             }
-            
+
             const data = await res.json();
             if (data.success) {
                 setGiftCards(data.cards || []);
@@ -103,17 +112,17 @@ export default function GiftCardsAdmin() {
         try {
             const token = localStorage.getItem('admin_token');
             if (!token) return;
-            
+
             const res = await fetch(getApiUrl('settings'), {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            
+
             if (res.status === 401) {
                 localStorage.removeItem('admin_token');
                 router.push('/admin/login');
                 return;
             }
-            
+
             const data = await res.json();
             if (data.success) {
                 setLogoUrl(data.settings?.logo_url || '');
@@ -138,153 +147,197 @@ export default function GiftCardsAdmin() {
         }
     };
 
-    const togglePromoBar = async () => {
-        const newValue = !promoBarEnabled;
-        setPromoBarEnabled(newValue);
-        try {
-            const token = localStorage.getItem('admin_token');
-            await fetch(getApiUrl('settings'), {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    gift_card_promo_enabled: newValue ? 'true' : 'false'
-                })
+    console.error('Error fetching promo bar status:', error);
+}
+    };
+
+const fetchGlobalDiscount = async () => {
+    try {
+        const token = localStorage.getItem('admin_token');
+        const res = await fetch(getApiUrl('settings'), {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (data.success && data.settings) {
+            setGlobalDiscount({
+                enabled: data.settings.gift_card_global_discount_enabled === 'true',
+                value: parseInt(data.settings.gift_card_global_discount_value || '10'),
+                type: (data.settings.gift_card_global_discount_type as 'percentage' | 'fixed') || 'percentage'
             });
-            toast.success(newValue ? 'Bajerek włączony!' : 'Bajerek wyłączony');
-        } catch (e) {
-            toast.error('Błąd ustawienia');
-            setPromoBarEnabled(!newValue);
         }
-    };
+    } catch (error) {
+        console.error('Error fetching global discount:', error);
+    }
+};
 
-    const generateCode = () => {
-        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-        let code = '';
-        for (let i = 0; i < 8; i++) {
-            code += chars.charAt(Math.floor(Math.random() * chars.length));
-        }
-        setFormData(prev => ({ ...prev, code }));
-    };
+const saveGlobalDiscount = async () => {
+    try {
+        const token = localStorage.getItem('admin_token');
+        await fetch(getApiUrl('settings'), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                gift_card_global_discount_enabled: globalDiscount.enabled ? 'true' : 'false',
+                gift_card_global_discount_value: globalDiscount.value.toString(),
+                gift_card_global_discount_type: globalDiscount.type
+            })
+        });
+        toast.success('Ustawienia promocji zapisane');
+    } catch (e) {
+        toast.error('Błąd zapisu promocji');
+    }
+};
 
-    const createCard = async () => {
-        if (!formData.code || !formData.value || !formData.recipientEmail) {
-            toast.error('Wypełnij wszystkie wymagane pola (kod, wartość, email)');
+const togglePromoBar = async () => {
+    const newValue = !promoBarEnabled;
+    setPromoBarEnabled(newValue);
+    try {
+        const token = localStorage.getItem('admin_token');
+        await fetch(getApiUrl('settings'), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                gift_card_promo_enabled: newValue ? 'true' : 'false'
+            })
+        });
+        toast.success(newValue ? 'Bajerek włączony!' : 'Bajerek wyłączony');
+    } catch (e) {
+        toast.error('Błąd ustawienia');
+        setPromoBarEnabled(!newValue);
+    }
+};
+
+const generateCode = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let code = '';
+    for (let i = 0; i < 8; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setFormData(prev => ({ ...prev, code }));
+};
+
+const createCard = async () => {
+    if (!formData.code || !formData.value || !formData.recipientEmail) {
+        toast.error('Wypełnij wszystkie wymagane pola (kod, wartość, email)');
+        return;
+    }
+
+    setLoading(true);
+    try {
+        const token = localStorage.getItem('admin_token');
+        if (!token) {
+            toast.error('Brak tokenu - zaloguj się ponownie');
+            router.push('/admin/login');
             return;
         }
 
-        setLoading(true);
-        try {
-            const token = localStorage.getItem('admin_token');
-            if (!token) {
-                toast.error('Brak tokenu - zaloguj się ponownie');
-                router.push('/admin/login');
-                return;
-            }
-            
-            const res = await fetch(getApiUrl('gift-cards'), {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(formData)
-            });
+        const res = await fetch(getApiUrl('gift-cards'), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(formData)
+        });
 
-            if (res.status === 401) {
-                toast.error('Sesja wygasła - zaloguj się ponownie');
-                localStorage.removeItem('admin_token');
-                router.push('/admin/login');
-                return;
-            }
-
-            const data = await res.json();
-            if (data.success) {
-                toast.success('Karta podarunkowa utworzona');
-                setFormData({
-                    code: '',
-                    value: 100,
-                    theme: 'christmas',
-                    recipientEmail: '',
-                    recipientName: '',
-                    senderName: '',
-                    message: '',
-                    card_title: '',
-                    card_description: ''
-                });
-                setShowCreateModal(false);
-                fetchCards();
-            } else {
-                toast.error(data.error || 'Błąd');
-            }
-        } catch (error) {
-            console.error('Error:', error);
-            toast.error('Błąd serwera');
-        } finally {
-            setLoading(false);
+        if (res.status === 401) {
+            toast.error('Sesja wygasła - zaloguj się ponownie');
+            localStorage.removeItem('admin_token');
+            router.push('/admin/login');
+            return;
         }
-    };
 
-    const deleteCard = async (id: string) => {
-        if (!confirm('Usunąć kartę?')) return;
-
-        try {
-            const token = localStorage.getItem('admin_token');
-            if (!token) {
-                toast.error('Brak tokenu - zaloguj się ponownie');
-                router.push('/admin/login');
-                return;
-            }
-            
-            const res = await fetch(getApiUrl(`gift-cards/${id}`), {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${token}` }
+        const data = await res.json();
+        if (data.success) {
+            toast.success('Karta podarunkowa utworzona');
+            setFormData({
+                code: '',
+                value: 100,
+                theme: 'christmas',
+                recipientEmail: '',
+                recipientName: '',
+                senderName: '',
+                message: '',
+                card_title: '',
+                card_description: ''
             });
-
-            if (res.status === 401) {
-                toast.error('Sesja wygasła');
-                localStorage.removeItem('admin_token');
-                router.push('/admin/login');
-                return;
-            }
-
-            if (res.ok) {
-                toast.success('Karta usunięta');
-                fetchCards();
-            } else {
-                toast.error('Błąd usuwania');
-            }
-        } catch (error) {
-            console.error('Error:', error);
-            toast.error('Błąd');
+            setShowCreateModal(false);
+            fetchCards();
+        } else {
+            toast.error(data.error || 'Błąd');
         }
-    };
+    } catch (error) {
+        console.error('Error:', error);
+        toast.error('Błąd serwera');
+    } finally {
+        setLoading(false);
+    }
+};
 
-    const copyCode = (code: string) => {
-        navigator.clipboard.writeText(code);
-        toast.success('Kod skopiowany');
-    };
+const deleteCard = async (id: string) => {
+    if (!confirm('Usunąć kartę?')) return;
 
-    const printCard = (card: GiftCard) => {
-        const printWindow = window.open('', '', 'width=1000,height=700');
-        if (printWindow) {
-            const themes: any = {
-                christmas: { bg: 'linear-gradient(135deg, #c41e3a 0%, #165b33 100%)', emoji: '🎄' },
-                wosp: { bg: 'linear-gradient(135deg, #e63946 0%, #a4161a 100%)', emoji: '❤️' },
-                valentines: { bg: 'linear-gradient(135deg, #e01e5a 0%, #c5192d 100%)', emoji: '💝' },
-                easter: { bg: 'linear-gradient(135deg, #ffd60a 0%, #ffc300 100%)', emoji: '🐰' },
-                halloween: { bg: 'linear-gradient(135deg, #ff6b35 0%, #f7931e 100%)', emoji: '👻' },
-                'mothers-day': { bg: 'linear-gradient(135deg, #ff69b4 0%, #ff1493 100%)', emoji: '💐' },
-                'childrens-day': { bg: 'linear-gradient(135deg, #00d4ff 0%, #0099ff 100%)', emoji: '🎈' },
-                wedding: { bg: 'linear-gradient(135deg, #fff5ee 0%, #ffe4e1 100%)', emoji: '💒' },
-                birthday: { bg: 'linear-gradient(135deg, #ff6b9d 0%, #c44569 100%)', emoji: '🎂' }
-            };
-            
-            const theme = themes[card.theme] || themes.christmas;
-            
-            printWindow.document.write(`
+    try {
+        const token = localStorage.getItem('admin_token');
+        if (!token) {
+            toast.error('Brak tokenu - zaloguj się ponownie');
+            router.push('/admin/login');
+            return;
+        }
+
+        const res = await fetch(getApiUrl(`gift-cards/${id}`), {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (res.status === 401) {
+            toast.error('Sesja wygasła');
+            localStorage.removeItem('admin_token');
+            router.push('/admin/login');
+            return;
+        }
+
+        if (res.ok) {
+            toast.success('Karta usunięta');
+            fetchCards();
+        } else {
+            toast.error('Błąd usuwania');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        toast.error('Błąd');
+    }
+};
+
+const copyCode = (code: string) => {
+    navigator.clipboard.writeText(code);
+    toast.success('Kod skopiowany');
+};
+
+const printCard = (card: GiftCard) => {
+    const printWindow = window.open('', '', 'width=1000,height=700');
+    if (printWindow) {
+        const themes: any = {
+            christmas: { bg: 'linear-gradient(135deg, #c41e3a 0%, #165b33 100%)', emoji: '🎄' },
+            wosp: { bg: 'linear-gradient(135deg, #e63946 0%, #a4161a 100%)', emoji: '❤️' },
+            valentines: { bg: 'linear-gradient(135deg, #e01e5a 0%, #c5192d 100%)', emoji: '💝' },
+            easter: { bg: 'linear-gradient(135deg, #ffd60a 0%, #ffc300 100%)', emoji: '🐰' },
+            halloween: { bg: 'linear-gradient(135deg, #ff6b35 0%, #f7931e 100%)', emoji: '👻' },
+            'mothers-day': { bg: 'linear-gradient(135deg, #ff69b4 0%, #ff1493 100%)', emoji: '💐' },
+            'childrens-day': { bg: 'linear-gradient(135deg, #00d4ff 0%, #0099ff 100%)', emoji: '🎈' },
+            wedding: { bg: 'linear-gradient(135deg, #fff5ee 0%, #ffe4e1 100%)', emoji: '💒' },
+            birthday: { bg: 'linear-gradient(135deg, #ff6b9d 0%, #c44569 100%)', emoji: '🎂' }
+        };
+
+        const theme = themes[card.theme] || themes.christmas;
+
+        printWindow.document.write(`
                 <!DOCTYPE html>
                 <html>
                 <head>
@@ -438,12 +491,12 @@ export default function GiftCardsAdmin() {
                 </body>
                 </html>
             `);
-            printWindow.document.close();
-        }
-    };
+        printWindow.document.close();
+    }
+};
 
-    const generateShareText = (card: GiftCard) => {
-        return `🎁 KARTA PODARUNKOWA - ${card.value}zł
+const generateShareText = (card: GiftCard) => {
+    return `🎁 KARTA PODARUNKOWA - ${card.value}zł
 
 Otrzymałeś kartę podarunkową na sesję fotograficzną!
 
@@ -460,106 +513,106 @@ Otrzymałeś kartę podarunkową na sesję fotograficzną!
 ✉️ Zarezerwuj swoją sesję: www.wlasniewski.pl/rezerwacja
 
 #fotograf #kartapodarunkowa #sesjasfotograficzna`;
-    };
+};
 
-    const shareOnFacebook = (card: GiftCard) => {
-        const text = generateShareText(card);
-        const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent('https://www.wlasniewski.pl')}&quote=${encodeURIComponent(text)}`;
-        window.open(url, 'facebook-share', 'width=600,height=400');
-        toast.success('Otwórz Facebooka aby udostępnić');
-    };
+const shareOnFacebook = (card: GiftCard) => {
+    const text = generateShareText(card);
+    const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent('https://www.wlasniewski.pl')}&quote=${encodeURIComponent(text)}`;
+    window.open(url, 'facebook-share', 'width=600,height=400');
+    toast.success('Otwórz Facebooka aby udostępnić');
+};
 
-    const shareOnInstagram = (card: GiftCard) => {
-        const text = generateShareText(card);
-        navigator.clipboard.writeText(text);
-        toast.success('Tekst skopiowany! Otwórz Instagrama i wklej w Stories lub Feed');
-        window.open('https://instagram.com', '_blank');
-    };
+const shareOnInstagram = (card: GiftCard) => {
+    const text = generateShareText(card);
+    navigator.clipboard.writeText(text);
+    toast.success('Tekst skopiowany! Otwórz Instagrama i wklej w Stories lub Feed');
+    window.open('https://instagram.com', '_blank');
+};
 
-    const shareOnWhatsApp = (card: GiftCard) => {
-        const text = generateShareText(card);
-        const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
-        window.open(url, '_blank');
-    };
+const shareOnWhatsApp = (card: GiftCard) => {
+    const text = generateShareText(card);
+    const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+    window.open(url, '_blank');
+};
 
-    const shareOnTelegram = (card: GiftCard) => {
-        const text = generateShareText(card);
-        const url = `https://t.me/share/url?url=${encodeURIComponent('https://www.wlasniewski.pl')}&text=${encodeURIComponent(text)}`;
-        window.open(url, '_blank');
-    };
+const shareOnTelegram = (card: GiftCard) => {
+    const text = generateShareText(card);
+    const url = `https://t.me/share/url?url=${encodeURIComponent('https://www.wlasniewski.pl')}&text=${encodeURIComponent(text)}`;
+    window.open(url, '_blank');
+};
 
-    const copyShareText = (card: GiftCard) => {
-        const text = generateShareText(card);
-        navigator.clipboard.writeText(text);
-        toast.success('Tekst skopiowany do schowka!');
-    };
+const copyShareText = (card: GiftCard) => {
+    const text = generateShareText(card);
+    navigator.clipboard.writeText(text);
+    toast.success('Tekst skopiowany do schowka!');
+};
 
-    const sendEmail = async (card: GiftCard) => {
-        try {
-            // Validate email first
-            if (!card.recipient_email) {
-                toast.error('❌ Brak adresu email odbiorcy - uzupełnij dane karty');
-                return;
-            }
-
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(card.recipient_email)) {
-                toast.error(`❌ Błędny adres email: "${card.recipient_email}"`);
-                return;
-            }
-
-            toast.loading('Wysyłanie emaila...');
-            const token = localStorage.getItem('admin_token');
-            const res = await fetch(getApiUrl(`gift-cards/${card.id}/send-email`), {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ 
-                    email: card.recipient_email,
-                    logoUrl 
-                })
-            });
-
-            const data = await res.json();
-
-            if (res.ok) {
-                toast.dismiss();
-                toast.success('✅ Email wysłany! Admin dostał potwierdzenie');
-            } else {
-                toast.dismiss();
-                console.error('Email send error:', data);
-                toast.error(`❌ ${data.details || data.error || 'Błąd wysyłania'}`);
-                
-                // Show suggestions if available
-                if (data.suggestions) {
-                    setTimeout(() => {
-                        toast('💡 ' + data.suggestions[0], {
-                            icon: 'ℹ️',
-                            duration: 5000
-                        });
-                    }, 500);
-                }
-            }
-        } catch (error) {
-            toast.dismiss();
-            console.error('Network error:', error);
-            toast.error('❌ Błąd połączenia - spróbuj ponownie');
+const sendEmail = async (card: GiftCard) => {
+    try {
+        // Validate email first
+        if (!card.recipient_email) {
+            toast.error('❌ Brak adresu email odbiorcy - uzupełnij dane karty');
+            return;
         }
-    };
 
-    return (
-        <div className="min-h-screen bg-zinc-950 p-6">
-            {!isAuthorized && (
-                <div className="flex items-center justify-center min-h-screen">
-                    <div className="text-center">
-                        <p className="text-zinc-400">Ładowanie...</p>
-                    </div>
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(card.recipient_email)) {
+            toast.error(`❌ Błędny adres email: "${card.recipient_email}"`);
+            return;
+        }
+
+        toast.loading('Wysyłanie emaila...');
+        const token = localStorage.getItem('admin_token');
+        const res = await fetch(getApiUrl(`gift-cards/${card.id}/send-email`), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                email: card.recipient_email,
+                logoUrl
+            })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+            toast.dismiss();
+            toast.success('✅ Email wysłany! Admin dostał potwierdzenie');
+        } else {
+            toast.dismiss();
+            console.error('Email send error:', data);
+            toast.error(`❌ ${data.details || data.error || 'Błąd wysyłania'}`);
+
+            // Show suggestions if available
+            if (data.suggestions) {
+                setTimeout(() => {
+                    toast('💡 ' + data.suggestions[0], {
+                        icon: 'ℹ️',
+                        duration: 5000
+                    });
+                }, 500);
+            }
+        }
+    } catch (error) {
+        toast.dismiss();
+        console.error('Network error:', error);
+        toast.error('❌ Błąd połączenia - spróbuj ponownie');
+    }
+};
+
+return (
+    <div className="min-h-screen bg-zinc-950 p-6">
+        {!isAuthorized && (
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="text-center">
+                    <p className="text-zinc-400">Ładowanie...</p>
                 </div>
-            )}
+            </div>
+        )}
 
-            {isAuthorized && (
+        {isAuthorized && (
             <div className="max-w-7xl mx-auto">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-8">
@@ -585,11 +638,10 @@ Otrzymałeś kartę podarunkową na sesję fotograficzną!
                         </div>
                         <button
                             onClick={togglePromoBar}
-                            className={`ml-6 px-6 py-3 font-bold rounded-lg transition-all flex items-center gap-2 whitespace-nowrap ${
-                                promoBarEnabled
+                            className={`ml-6 px-6 py-3 font-bold rounded-lg transition-all flex items-center gap-2 whitespace-nowrap ${promoBarEnabled
                                     ? 'bg-green-500 hover:bg-green-600 text-white'
                                     : 'bg-zinc-700 hover:bg-zinc-600 text-zinc-200'
-                            }`}
+                                }`}
                         >
                             {promoBarEnabled ? (
                                 <>✅ Włączony</>
@@ -600,11 +652,75 @@ Otrzymałeś kartę podarunkową na sesję fotograficzną!
                     </div>
                 </div>
 
+                {/* Global Discount Settings */}
+                <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6 mb-8">
+                    <div className="flex items-center justify-between mb-6">
+                        <div>
+                            <h2 className="text-xl font-bold text-white">💰 Globalna Promocja na Karty</h2>
+                            <p className="text-zinc-400 mt-1">Ustaw automatyczną zniżkę na wszystkie kupowane karty podarunkowe.</p>
+                        </div>
+                        <button
+                            onClick={() => {
+                                const newEnabled = !globalDiscount.enabled;
+                                setGlobalDiscount(prev => ({ ...prev, enabled: newEnabled }));
+                                // Auto-save on toggle? Check below. Saving explicitly via button is safer.
+                            }}
+                            className={`px-4 py-2 rounded-full text-sm font-bold transition-all ${globalDiscount.enabled
+                                    ? 'bg-green-500/20 text-green-400 border border-green-500/50'
+                                    : 'bg-zinc-800 text-zinc-400 border border-zinc-700'
+                                }`}
+                        >
+                            {globalDiscount.enabled ? 'PROMOCJA AKTYWNA' : 'PROMOCJA WYŁĄCZONA'}
+                        </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+                        <div>
+                            <label className="block text-sm font-medium text-zinc-400 mb-2">Wartość zniżki</label>
+                            <input
+                                type="number"
+                                value={globalDiscount.value}
+                                onChange={e => setGlobalDiscount(prev => ({ ...prev, value: parseInt(e.target.value) || 0 }))}
+                                className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:border-gold-500 focus:outline-none"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-zinc-400 mb-2">Rodzaj zniżki</label>
+                            <select
+                                value={globalDiscount.type}
+                                onChange={e => setGlobalDiscount(prev => ({ ...prev, type: e.target.value as 'percentage' | 'fixed' }))}
+                                className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:border-gold-500 focus:outline-none"
+                            >
+                                <option value="percentage">Procent (%)</option>
+                                <option value="fixed">Kwota (PLN)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <button
+                                onClick={saveGlobalDiscount}
+                                className="w-full px-6 py-2 bg-gold-500 hover:bg-gold-400 text-black font-bold rounded-lg transition-all"
+                            >
+                                Zapisz Ustawienia Promocji
+                            </button>
+                        </div>
+                    </div>
+                    {globalDiscount.enabled && (
+                        <div className="mt-4 p-4 bg-green-900/20 border border-green-900/50 rounded-lg text-green-400 text-sm">
+                            <span className="font-bold">Przykład:</span> Karta o wartości 300 zł będzie kosztować{' '}
+                            <span className="font-bold text-white">
+                                {globalDiscount.type === 'percentage'
+                                    ? `${300 * (1 - globalDiscount.value / 100)} zł`
+                                    : `${Math.max(0, 300 - globalDiscount.value)} zł`}
+                            </span>.
+                        </div>
+                    )}
+                </div>
+
                 {/* Create Form */}
                 {showCreateModal && (
                     <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6 mb-8">
                         <h2 className="text-xl font-bold text-white mb-6">Stwórz Nową Kartę</h2>
-                        
+
                         <div className="grid md:grid-cols-2 gap-8">
                             {/* Form */}
                             <div className="space-y-4">
@@ -897,7 +1013,7 @@ Otrzymałeś kartę podarunkową na sesję fotograficzną!
                     </div>
                 )}
             </div>
-            )}
-        </div>
-    );
+        )}
+    </div>
+);
 }

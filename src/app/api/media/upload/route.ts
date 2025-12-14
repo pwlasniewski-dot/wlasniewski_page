@@ -6,7 +6,18 @@ import { uploadToS3 } from '@/lib/storage/s3';
 export async function POST(request: NextRequest) {
     return withAuth(request, async (req) => {
         try {
-            const formData = await req.formData();
+            let formData;
+            try {
+                formData = await req.formData();
+            } catch (e) {
+                const parseErr = e instanceof Error ? e.message : String(e);
+                console.error('FormData parse error:', parseErr);
+                return NextResponse.json(
+                    { error: 'Invalid form data', details: parseErr },
+                    { status: 400 }
+                );
+            }
+
             const folder = (formData.get('folder') as string) || 'uploads';
             const file = formData.get('file') as File | null;
 
@@ -49,8 +60,9 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ success: true, media: serializedMedia });
         } catch (error: any) {
             console.error('Upload error:', error);
+            const errorMessage = error instanceof Error ? error.message : String(error);
             return NextResponse.json(
-                { error: 'Upload failed: ' + error.message },
+                { error: 'Upload failed', details: errorMessage },
                 { status: 500 }
             );
         }

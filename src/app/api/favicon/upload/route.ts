@@ -7,7 +7,18 @@ import { uploadToS3 } from '@/lib/storage/s3';
 export async function POST(request: NextRequest) {
     return withAuth(request, async (req) => {
         try {
-            const formData = await req.formData();
+            let formData;
+            try {
+                formData = await req.formData();
+            } catch (e) {
+                const parseErr = e instanceof Error ? e.message : String(e);
+                console.error('FormData parse error:', parseErr);
+                return NextResponse.json(
+                    { error: 'Invalid form data', details: parseErr },
+                    { status: 400 }
+                );
+            }
+
             const file = formData.get('file') as File;
 
             if (!file) {
@@ -37,7 +48,11 @@ export async function POST(request: NextRequest) {
             });
         } catch (error) {
             console.error('Favicon upload error:', error);
-            return NextResponse.json({ error: 'Upload failed' }, { status: 500 });
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            return NextResponse.json(
+                { error: 'Upload failed', details: errorMessage },
+                { status: 500 }
+            );
         }
     });
 }
