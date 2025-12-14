@@ -34,7 +34,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         });
 
         const theme = (card.theme || card.card_template || 'christmas') as string;
-        const basePrice = priceMap[theme] || (card.value ? Math.round(card.value * 0.1) : 50);
+        const basePrice = priceMap[theme] || card.value || 0;
 
         const response = {
             id: card.id,

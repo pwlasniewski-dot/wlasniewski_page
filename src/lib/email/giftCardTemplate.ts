@@ -276,10 +276,12 @@ export function generateGiftCardEmail(
             }
             
             .code-section {
-                background: rgba(255,255,255,0.2);
-                border-radius: 16px;
+                background: rgba(255,255,255,0.95);
+                border-radius: 12px;
                 padding: 14px 18px;
-                border: 1px solid rgba(255,255,255,0.35);
+                border: 2px solid rgba(255,255,255,1);
+                color: #000;
+                box-shadow: 0 4px 10px rgba(0,0,0,0.1);
             }
             
             .code-label {
@@ -455,6 +457,13 @@ export function generateGiftCardEmail(
                             <div class="code-value">${code}</div>
                         </div>
                     </div>
+
+            <!-- Clear Code Section -->
+            <div style="background-color: #ffffff; border: 2px dashed #444; padding: 25px; text-align: center; margin: 0 20px 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+                 <p style="font-size: 13px; color: #666; text-transform: uppercase; margin-bottom: 8px; font-weight: 600; letter-spacing: 1px;">Twój Kod Rabatowy</p>
+                 <p style="font-size: 28px; font-weight: 800; color: #000; letter-spacing: 3px; font-family: 'Courier New', monospace; margin: 10px 0; background: #f0f0f0; display: inline-block; padding: 5px 15px; border-radius: 6px;">${code}</p>
+                 <p style="font-size: 15px; color: #444; margin-top: 10px;">Wartość karty: <strong style="color: #000;">${value} zł</strong></p>
+            </div>
                 </div>
             </div>
             
