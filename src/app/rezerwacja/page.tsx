@@ -221,6 +221,12 @@ export default function RezerwacjaPage() {
         setCodeMessage("");
 
         try {
+            const res = await fetch('/api/promo-codes/check', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code: promoCode })
+            });
+
             if (res.ok) {
                 const data = await res.json();
                 if (data.success && data.discount) {
