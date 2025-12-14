@@ -167,6 +167,7 @@ export default function BuyGiftCardPage() {
                                 theme={card.theme as any}
                                 cardTitle={card.card_title}
                                 cardDescription={card.card_description}
+                                hideCode={true}
                             />
                         </div>
                         <p className="text-center text-sm text-zinc-500 mt-4">

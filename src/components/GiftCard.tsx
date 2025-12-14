@@ -14,8 +14,7 @@ interface GiftCardProps {
     message?: string;
     cardTitle?: string;
     cardDescription?: string;
-    isPrint?: boolean;
-}
+    isPrint?: boolean;    hideCode?: boolean; // Hide code until after payment}
 
 type ThemeConfig = {
     bgGradient: string;
@@ -121,7 +120,8 @@ export default function GiftCard({
     message,
     cardTitle,
     cardDescription,
-    isPrint = false
+    isPrint = false,
+    hideCode = false
 }: GiftCardProps) {
     const config = themeConfigs[theme] || themeConfigs.christmas;
     const displayTitle = cardTitle || 'KARTA PODARUNKOWA';
@@ -206,12 +206,21 @@ export default function GiftCard({
                     </div>
 
                     {/* Code */}
-                    <div className="w-full bg-white/20 backdrop-blur-sm rounded-lg sm:rounded-xl p-1.5 sm:p-4 border border-white/40 mt-1 sm:mt-0">
-                        <p className="text-[9px] sm:text-xs opacity-75 text-center mb-0.5">KOD PROMOCYJNY</p>
-                        <p className="font-mono text-base sm:text-2xl font-bold text-center tracking-widest drop-shadow-md">
-                            {code}
-                        </p>
-                    </div>
+                    {!hideCode ? (
+                        <div className="w-full bg-white/20 backdrop-blur-sm rounded-lg sm:rounded-xl p-1.5 sm:p-4 border border-white/40 mt-1 sm:mt-0">
+                            <p className="text-[9px] sm:text-xs opacity-75 text-center mb-0.5">KOD PROMOCYJNY</p>
+                            <p className="font-mono text-base sm:text-2xl font-bold text-center tracking-widest drop-shadow-md">
+                                {code}
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="w-full bg-blue-500/10 backdrop-blur-sm rounded-lg sm:rounded-xl p-1.5 sm:p-4 border border-blue-400/30 mt-1 sm:mt-0">
+                            <p className="text-[9px] sm:text-xs opacity-75 text-center mb-0.5 text-blue-300">KOD WYSŁANY NA EMAIL</p>
+                            <p className="font-mono text-base sm:text-lg font-bold text-center text-blue-300 opacity-75">
+                                Po potwierddzeniu płatności
+                            </p>
+                        </div>
+                    )}
                 </div>
             </div>
 
