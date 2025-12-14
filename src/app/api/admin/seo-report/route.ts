@@ -31,11 +31,7 @@ export async function GET(request: Request) {
 
         // 3. Fetch Portfolio Sessions (Dynamic)
         // We need to fetch sessions to generate their URLs
-        const sessions = await prisma.portfolioSession.findMany({
-            include: {
-                category: true // We need category slug to build URL
-            }
-        });
+        const sessions = await prisma.portfolioSession.findMany();
 
         // Format Pages
         const formattedPages = pages.map(page => ({
@@ -51,11 +47,11 @@ export async function GET(request: Request) {
         // Format Sessions
         const formattedSessions = sessions.map(session => ({
             type: 'Session',
-            url: `/portfolio/${session.category?.slug || 'unknown'}/${session.slug}`,
+            url: `/portfolio/${session.category || 'unknown'}/${session.slug}`,
             title: session.title,
-            meta_title: `${session.title} | ${session.category?.slug || 'Portfolio'}`,
-            meta_description: session.description || `Sesja: ${session.title}`,
-            updated_at: session.date
+            meta_title: session.meta_title || `${session.title} | ${session.category || 'Portfolio'}`,
+            meta_description: session.meta_description || session.description || `Sesja: ${session.title}`,
+            updated_at: session.session_date || session.created_at
         }));
 
         // Combine All
