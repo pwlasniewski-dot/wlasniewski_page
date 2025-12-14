@@ -133,7 +133,7 @@ export default function RootLayout({
                     <AnalyticsTracker />
                     <AnalyticsLoader />
                 </Suspense>
-                <SeasonalEffects />
+                {/* <SeasonalEffects /> */}
                 <AppShell>
                     {children}
                 </AppShell>
