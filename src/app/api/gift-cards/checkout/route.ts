@@ -10,7 +10,7 @@ async function getPayUToken() {
     const clientId = process.env.PAYU_CLIENT_ID;
     const clientSecret = process.env.PAYU_CLIENT_SECRET;
     const baseUrl = process.env.PAYU_TEST_MODE === 'true'
-        ? 'https://secure.sandbox.payu.com'
+        ? 'https://secure.snd.payu.com'
         : 'https://secure.payu.com';
 
     const response = await fetch(`${baseUrl}/pl/standard/user/oauth/authorize`, {
@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
             },
             body: JSON.stringify({
                 notifyUrl: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://wlasniewski.pl'}/api/payu/notify`,
-                customerIp: request.headers.get('x-forwarded-for') || '127.0.0.1',
+                customerIp: (request.headers.get('x-forwarded-for') || '127.0.0.1').split(',')[0].trim(),
                 merchantPosId: process.env.PAYU_POS_ID,
                 description: `Karta Podarunkowa - ${theme} (${value} PLN)`,
                 currencyCode: 'PLN',
