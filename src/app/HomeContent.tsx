@@ -17,6 +17,7 @@ import AdvancedBanner from '@/components/AdvancedBanner';
 import CreativeSlider from '@/components/CreativeSlider';
 import WhiteInfoBand from '@/components/WhiteInfoBand';
 import PhotoChallengeBanner from '@/components/PhotoChallengeBanner';
+import GiftCardPromoBar from '@/components/GiftCardPromoBar';
 
 interface Testimonial {
     id: number;
@@ -640,6 +641,9 @@ export default function HomeContent({ homeData, orderedSections, testimonials }:
             <div className="bg-black py-20 border-t border-zinc-900">
                 <ContactForm />
             </div>
+
+            {/* Promo Bar */}
+            <GiftCardPromoBar />
         </main>
     );
 }
