@@ -147,11 +147,7 @@ export default function GiftCardsAdmin() {
         }
     };
 
-    console.error('Error fetching promo bar status:', error);
-}
-    };
-
-const fetchGlobalDiscount = async () => {
+    const fetchGlobalDiscount = async () => {
     try {
         const token = localStorage.getItem('admin_token');
         const res = await fetch(getApiUrl('settings'), {

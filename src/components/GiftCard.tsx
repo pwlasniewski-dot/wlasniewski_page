@@ -14,7 +14,9 @@ interface GiftCardProps {
     message?: string;
     cardTitle?: string;
     cardDescription?: string;
-    isPrint?: boolean;    hideCode?: boolean; // Hide code until after payment}
+    isPrint?: boolean;
+    hideCode?: boolean; // Hide code until after payment
+}
 
 type ThemeConfig = {
     bgGradient: string;

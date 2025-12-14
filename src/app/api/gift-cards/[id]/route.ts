@@ -47,7 +47,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             id: card.id,
             code: card.code,
             value: card.value || card.amount,
-            theme: theme,
+            theme: card.theme || card.card_template || 'christmas',
             price: basePrice,
             description: card.card_description || `Karta podarunkowa o wartości ${card.value || card.amount} zł`,
             available: ['active', 'available', 'sent'].includes(card.status),

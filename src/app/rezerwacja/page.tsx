@@ -124,7 +124,6 @@ export default function RezerwacjaPage() {
                         if (settings.promo_code_discount_enabled === 'true' || settings.promo_code_discount_enabled === true) {
                             setPromoSettings({
                                 enabled: true,
-                                enabled: true,
                                 code: settings.promo_code, // Removed fallback
                                 discount: parseInt(settings.promo_code_discount_amount || '10'),
                                 discountType: settings.promo_code_discount_type || 'percentage',
