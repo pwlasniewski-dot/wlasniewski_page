@@ -91,7 +91,7 @@ export default function LightboxGallery({ photos, highlightedIndices = [], fitMo
                   const isLink = !!photo.link;
 
                   const Content = (
-                    <figure className="relative w-full h-[92vh] overflow-hidden bg-zinc-950">
+                    <figure className="relative w-full h-[60vh] md:h-[92vh] overflow-hidden bg-zinc-950">
                       {/* Blur Background for Contain Mode */}
                       <img
                         src={photo.src}
@@ -124,14 +124,14 @@ export default function LightboxGallery({ photos, highlightedIndices = [], fitMo
                   );
 
                   return isLink ? (
-                    <Link href={photo.link!} className="group relative w-full block h-[92vh] cursor-pointer">
+                    <Link href={photo.link!} className="group relative w-full block h-[60vh] md:h-[92vh] cursor-pointer">
                       {Content}
                     </Link>
                   ) : (
                     <button
                       type="button"
                       onClick={() => openAt(item.globalIndex)}
-                      className="group relative w-full block h-[92vh] cursor-zoom-in"
+                      className="group relative w-full block h-[60vh] md:h-[92vh] cursor-zoom-in"
                     >
                       {Content}
                     </button>
@@ -140,7 +140,7 @@ export default function LightboxGallery({ photos, highlightedIndices = [], fitMo
               </div>
             ) : (
               // Grid Layout
-              <div className="columns-1 sm:columns-2 md:columns-3 gap-4 space-y-4">
+              <div className="columns-1 sm:columns-2 md:columns-3 gap-2 space-y-2 md:gap-4 md:space-y-4">
                 {chunk.items.map((item) => (
                   <div key={item.globalIndex} className="break-inside-avoid">
                     <GridCard photo={item.photo} onClick={() => openAt(item.globalIndex)} />
