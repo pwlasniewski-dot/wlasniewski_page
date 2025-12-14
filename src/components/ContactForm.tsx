@@ -7,6 +7,7 @@ import { Send, CheckCircle, AlertCircle } from "lucide-react";
 
 export default function ContactForm() {
     const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+    const [errorEmail, setErrorEmail] = useState<string | null>(null);
     const [formData, setFormData] = useState({
         name: '',
         email: '',
@@ -28,7 +29,15 @@ export default function ContactForm() {
 
             if (!res.ok) {
                 console.error('Contact form error:', data);
-                throw new Error(data.error || 'Failed to send');
+                // Wyodrębnij email z komunikatu błędu - jeśli zawiera "Kontakt:"
+                if (data.error && data.error.includes('Kontakt:')) {
+                    const emailMatch = data.error.match(/Kontakt:\s*(.+?)$/);
+                    if (emailMatch) {
+                        setErrorEmail(emailMatch[1].trim());
+                    }
+                }
+                setStatus('error');
+                return;
             }
 
             setStatus('success');
@@ -155,7 +164,7 @@ export default function ContactForm() {
                             className="mt-4 text-red-400 text-sm"
                         >
                             Nie udało się wysłać wiadomości. Spróbuj ponownie lub skontaktuj się pod: <br />
-                            <a href="mailto:p.wlasniewski.foto@gmail.com" className="hover:underline">p.wlasniewski.foto@gmail.com</a>
+                            <a href={`mailto:${errorEmail || 'kontakt@wlasniewski.pl'}`} className="hover:underline">{errorEmail || 'kontakt@wlasniewski.pl'}</a>
                         </motion.p>
                     )}
                 </div>

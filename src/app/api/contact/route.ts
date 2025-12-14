@@ -1,7 +1,7 @@
 
 import { NextResponse } from "next/server";
 import nodemailer from "nodemailer";
-import { getSMTPConfig } from "@/lib/email/sender";
+import { getSMTPConfig, getAdminEmail } from "@/lib/email/sender";
 import { logSystem } from "@/lib/logger";
 
 export async function POST(request: Request) {
@@ -20,7 +20,7 @@ export async function POST(request: Request) {
         }
 
         const config = await getSMTPConfig();
-        const adminEmail = config.user || config.from;
+        const adminEmail = await getAdminEmail();
 
         // Verify SMTP config
         if (!config.host || !config.user || !config.pass) {
@@ -32,7 +32,7 @@ export async function POST(request: Request) {
             };
             await logSystem('ERROR', 'CONTACT', 'SMTP configuration incomplete', missing);
             return NextResponse.json(
-                { error: "Email nie jest skonfigurowany. Kontakt: p.wlasniewski.foto@gmail.com" },
+                { error: `Email nie jest skonfigurowany. Kontakt: ${adminEmail}` },
                 { status: 500 }
             );
         }
@@ -96,8 +96,9 @@ ${message}
             console.error('Failed to log contact error:', logError);
         }
 
+        const fallbackEmail = await getAdminEmail().catch(() => 'kontakt@wlasniewski.pl');
         return NextResponse.json(
-            { error: "Błąd wysyłania. Spróbuj ponownie lub skontaktuj się pod: p.wlasniewski.foto@gmail.com" },
+            { error: `Błąd wysyłania. Spróbuj ponownie lub skontaktuj się pod: ${fallbackEmail}` },
             { status: 500 }
         );
     }
