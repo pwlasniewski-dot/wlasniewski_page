@@ -1,7 +1,7 @@
 import prisma from '@/lib/db/prisma';
 
 export type LogLevel = 'INFO' | 'WARN' | 'ERROR';
-export type LogModule = 'AUTH' | 'PAYMENT' | 'EMAIL' | 'SYSTEM' | 'CHALLENGE' | 'BOOKING';
+export type LogModule = 'AUTH' | 'PAYMENT' | 'EMAIL' | 'SYSTEM' | 'CHALLENGE' | 'BOOKING' | 'CONTACT';
 
 export async function logSystem(
     level: LogLevel,

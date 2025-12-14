@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getApiUrl } from '@/lib/api-config';
-import { Save, ArrowLeft, Plus, Trash2, Image as ImageIcon, Eye, EyeOff, MoveUp, MoveDown } from 'lucide-react';
+import { Save, ArrowLeft, Plus, Trash2, Image as ImageIcon, Eye, EyeOff, MoveUp, MoveDown, X } from 'lucide-react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import MediaPicker from '@/components/admin/MediaPicker';
@@ -75,6 +75,10 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
     const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
     const [currentPickerTarget, setCurrentPickerTarget] = useState<string | null>(null);
 
+    // Portfolio Slider State
+    const [portfolioHeroSlides, setPortfolioHeroSlides] = useState<{ id: number; url: string }[]>([]);
+    const [showPortfolioHeroPicker, setShowPortfolioHeroPicker] = useState(false);
+
     useEffect(() => {
         params.then(p => {
             setResolvedParams(p);
@@ -126,7 +130,16 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
                         try { setContentCards(JSON.parse(page.content_cards)); } catch { }
                     }
                     if (page.about_photo) setAboutPhoto(page.about_photo);
+                    if (page.about_photo) setAboutPhoto(page.about_photo);
                     if (page.about_text_side) setAboutTextSide(page.about_text_side);
+
+                    // Load Portfolio Hero Slides
+                    if (page.slug === 'portfolio' && page.content_images) {
+                        try {
+                            const parsed = JSON.parse(page.content_images);
+                            if (Array.isArray(parsed)) setPortfolioHeroSlides(parsed);
+                        } catch (e) { console.error('Failed to parse portfolio slides', e); }
+                    }
                 }
             } catch (error) {
                 toast.error('Błąd pobierania strony');
@@ -160,6 +173,11 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
                 if (resolvedParams?.slug === 'o-mnie') {
                     dataToSave.content_cards = JSON.stringify(contentCards);
                 }
+            }
+
+            // Portfolio Custom Slides
+            if (resolvedParams?.slug === 'portfolio') {
+                dataToSave.content_images = JSON.stringify(portfolioHeroSlides);
             }
 
             const res = await fetch(getApiUrl('pages'), {
@@ -204,6 +222,24 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
 
         setMediaPickerOpen(false);
         setCurrentPickerTarget(null);
+        setCurrentPickerTarget(null);
+    };
+
+    // Portfolio Hero Functions
+    const handlePortfolioHeroSelect = (url: string | string[], id?: number | number[]) => {
+        const urls = Array.isArray(url) ? url : [url];
+        const ids = Array.isArray(id) ? id : (id ? [id] : []);
+
+        const newSlides = urls.map((u, i) => ({
+            id: ids[i] || Date.now() + i,
+            url: u
+        }));
+
+        setPortfolioHeroSlides(prev => [...prev, ...newSlides]);
+    };
+
+    const removePortfolioSlide = (index: number) => {
+        setPortfolioHeroSlides(prev => prev.filter((_, i) => i !== index));
     };
 
     // Helper for reordering
@@ -297,6 +333,7 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
     const isJakSieUbrac = resolvedParams?.slug === 'jak-sie-ubrac';
     const isOMnie = resolvedParams?.slug === 'o-mnie';
     const isHomePage = resolvedParams?.slug === 'strona-glowna';
+    const isPortfolio = resolvedParams?.slug === 'portfolio';
 
     return (
         <div className="max-w-6xl">
@@ -342,6 +379,73 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
                         />
                     </div>
                 </div>
+
+                {/* Portfolio Specific Settings */}
+                {isPortfolio && (
+                    <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6 space-y-4 border-l-4 border-l-gold-500">
+                        <h2 className="text-lg font-semibold text-white">Ustawienia Portfolio</h2>
+                        <div className="flex items-start gap-3">
+                            <input
+                                type="checkbox"
+                                id="use_home_hero"
+                                checked={formData.hero_subtitle === '1'}
+                                onChange={e => setFormData({ ...formData, hero_subtitle: e.target.checked ? '1' : '0' })}
+                                className="mt-1 w-5 h-5 rounded border-zinc-700 bg-zinc-950 text-gold-500 focus:ring-gold-500"
+                            />
+                            <div>
+                                <label htmlFor="use_home_hero" className="text-sm font-medium text-white cursor-pointer select-none block">
+                                    Pokaż Hero Slider ze Strony Głównej (gdy brak własnych)
+                                </label>
+                                <p className="text-xs text-zinc-400 mt-1">
+                                    Jeśli zaznaczone, a <b>nie dodasz żadnych własnych zdjęć poniżej</b>, wyświetli się slider ze strony głównej.
+                                    Własne zdjęcia w sekcji poniżej zawsze mają priorytet.
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Custom Portfolio Slider Images - Always visible */}
+                        <div className="mt-6 pt-6 border-t border-zinc-800 animate-in fade-in slide-in-from-top-4">
+                            <label className="block text-sm font-medium text-white mb-3">
+                                Własne zdjęcia w nagłówku Portfolio (Priorytet)
+                            </label>
+                            <p className="text-xs text-zinc-400 mb-4">
+                                Dodaj zdjęcia, aby stworzyć unikalny slider dla tej strony. Te zdjęcia <b>zastąpią</b> slider ze strony głównej.
+                                Zostaw puste, aby użyć slidera głównego (jeśli zaznaczono powyżej) lub minimalistycznego nagłówka.
+                            </p>
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                                {portfolioHeroSlides.map((slide, index) => (
+                                    <div key={index} className="group relative aspect-video rounded-md overflow-hidden border border-zinc-700 bg-zinc-800">
+                                        <img src={slide.url} alt="" className="h-full w-full object-cover" />
+                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                            <button
+                                                type="button"
+                                                onClick={() => removePortfolioSlide(index)}
+                                                className="bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-colors"
+                                            >
+                                                <X className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPortfolioHeroPicker(true)}
+                                    className="aspect-video flex flex-col items-center justify-center border-2 border-dashed border-zinc-700 rounded-md hover:border-gold-500 hover:text-gold-500 text-zinc-400 transition-colors bg-zinc-900/50"
+                                >
+                                    <ImageIcon className="h-8 w-8 mb-2" />
+                                    <span className="text-xs font-medium uppercase tracking-wider">Dodaj zdjęcie</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                <MediaPicker
+                    isOpen={showPortfolioHeroPicker}
+                    onClose={() => setShowPortfolioHeroPicker(false)}
+                    onSelect={handlePortfolioHeroSelect}
+                    multiple={true}
+                />
 
                 {/* SEO Settings */}
                 <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6 space-y-4">
@@ -785,6 +889,6 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
                 onSelect={handleMediaSelect}
                 multiple={false}
             />
-        </div>
+        </div >
     );
 }

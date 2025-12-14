@@ -17,9 +17,11 @@ interface PortfolioContentProps {
     categories: any[];
     sections: any[];
     fallbackHeroSlides: any[];
+    showFallbackHero?: boolean;
+    customHeroSlides?: any[];
 }
 
-export default function PortfolioContent({ categories, sections, fallbackHeroSlides }: PortfolioContentProps) {
+export default function PortfolioContent({ categories, sections, fallbackHeroSlides, showFallbackHero = false, customHeroSlides = [] }: PortfolioContentProps) {
 
     // Helper to render dynamic sections (reused logic)
     const renderSection = (section: any) => {
@@ -102,13 +104,19 @@ export default function PortfolioContent({ categories, sections, fallbackHeroSli
                 </div>
             )}
 
-            {/* Fallback Hero (Only if no sections or explicit choice - simplified for now: if no sections) */}
-            {sections.length === 0 && fallbackHeroSlides.length > 0 && (
+            {/* Hero Slider Logic
+                1. Custom Portfolio Slides (Priority 1)
+                2. Fallback Home Slider (Priority 2 - if enabled)
+                3. Minimal Header (Fallback if nothing else)
+            */}
+            {(customHeroSlides.length > 0) ? (
+                <HeroSlider slides={customHeroSlides} />
+            ) : (showFallbackHero) && fallbackHeroSlides.length > 0 ? (
                 <HeroSlider slides={fallbackHeroSlides} />
-            )}
+            ) : null}
 
-            {/* Fallback Static Header (If no sections AND no fallback slides, e.g. clean start) */}
-            {sections.length === 0 && fallbackHeroSlides.length === 0 && (
+            {/* Fallback Static Header (If no sections AND no slider shown) */}
+            {sections.length === 0 && customHeroSlides.length === 0 && !showFallbackHero && (
                 <section className="pt-40 pb-20 px-6 text-center">
                     <h1 className="text-6xl md:text-8xl font-extrabold tracking-tighter mb-6 font-display text-white">
                         PORTFOLIO
@@ -120,7 +128,7 @@ export default function PortfolioContent({ categories, sections, fallbackHeroSli
             )}
 
             {/* Cinematic List (The Core Portfolio) */}
-            <section className="pb-32 px-0 md:px-8 max-w-[1920px] mx-auto pt-12">
+            <section id="portfolio-content" className="pb-32 px-0 md:px-8 max-w-[1920px] mx-auto pt-12">
                 {/* Optional divider if sections exist */}
                 {sections.length > 0 && <div className="mb-16 border-t border-white/10" />}
 
@@ -132,26 +140,16 @@ export default function PortfolioContent({ categories, sections, fallbackHeroSli
                             className="group relative block w-full h-[60vh] md:h-[80vh] overflow-hidden"
                         >
                             {/* Background Image with Blur-Fit scaling */}
+                            {/* Background Image with Blur-Fit scaling */}
                             {category.coverImage ? (
-                                <>
-                                    {/* Blurred Background */}
-                                    <div className="absolute inset-0 overflow-hidden bg-zinc-950">
-                                        <img
-                                            src={category.coverImage}
-                                            alt=""
-                                            className="absolute inset-0 w-full h-full object-cover blur-3xl scale-110 opacity-40 transition-opacity duration-700"
-                                        />
-                                    </div>
-
-                                    {/* Main Contain Image */}
-                                    <div className="absolute inset-0 flex items-center justify-center p-4 md:p-0">
-                                        <img
-                                            src={category.coverImage}
-                                            alt={category.title}
-                                            className="w-full h-full object-cover md:object-contain drop-shadow-2xl transition-transform duration-[1.5s] ease-out group-hover:scale-105"
-                                        />
-                                    </div>
-                                </>
+                                /* Main Image - Always Cover (Full Width/Fill) */
+                                <div className="absolute inset-0">
+                                    <img
+                                        src={category.coverImage}
+                                        alt={category.title}
+                                        className="w-full h-full object-cover transition-transform duration-[1.5s] ease-out group-hover:scale-105"
+                                    />
+                                </div>
                             ) : (
                                 <div className="absolute inset-0 bg-zinc-900" />
                             )}

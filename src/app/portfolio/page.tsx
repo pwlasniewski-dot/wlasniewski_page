@@ -16,9 +16,8 @@ export async function generateMetadata(): Promise<Metadata> {
     };
 }
 
-// PERFORMANCE: Enable ISR instead of force-dynamic (on-demand rendering)
-// Revalidate every 3600 seconds (1 hour) for much faster initial page loads
-export const revalidate = 3600;
+// PERFORMANCE: Use force-dynamic for Portfolio to ensure instant updates for settings
+export const dynamic = 'force-dynamic';
 
 export default async function PortfolioHome() {
     // 1. Fetch Categories
@@ -47,6 +46,29 @@ export default async function PortfolioHome() {
         }
     }
 
+    // Parse Custom Portfolio Hero Slides (saved in content_images via Admin)
+    let customHeroSlides: any[] = [];
+    if (portfolioPage?.content_images) {
+        try {
+            const parsed = JSON.parse(portfolioPage.content_images);
+            if (Array.isArray(parsed)) {
+                customHeroSlides = parsed.map((s: any, i: number) => ({
+                    id: s.id || `custom-${i}`,
+                    image: s.url || s.image,
+                    title: s.title || "",
+                    subtitle: "",
+                    buttonText: s.buttonText || "Zobacz Galerię",
+                    buttonLink: "#portfolio-content",
+                    buttonStyle: s.buttonStyle || 'gold',
+                    enabled: true,
+                    textAnimation: 'fade'
+                }));
+            }
+        } catch (e) {
+            console.error("Failed to parse custom portfolio slides", e);
+        }
+    }
+
     // Parse Homepage Data for Fallback Helper
     let homeData: any = null;
     if (homePage?.home_sections) {
@@ -60,6 +82,8 @@ export default async function PortfolioHome() {
             categories={categories}
             sections={portfolioSections}
             fallbackHeroSlides={homeData?.hero_slider || []}
+            showFallbackHero={portfolioPage?.hero_subtitle === '1'}
+            customHeroSlides={customHeroSlides}
         />
     );
 }

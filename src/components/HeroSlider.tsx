@@ -15,6 +15,7 @@ interface HeroSlide {
     description?: string;
     buttonText?: string;
     buttonLink?: string;
+    buttonStyle?: 'gold' | 'white' | 'transparent';
     enabled?: boolean;
     order?: number;
     textAnimation?: 'fade' | 'slide-up' | 'slide-down' | 'scale' | 'bounce' | 'zoom-in';
@@ -163,8 +164,10 @@ export default function HeroSlider({ slides = [] }: HeroSliderProps) {
                 </motion.div>
             </AnimatePresence>
 
-            {/* Gradient Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/40 to-black/60 z-10" />
+            {/* Gradient Overlays */}
+            <div className="absolute inset-0 bg-black/20 z-10" />
+            {/* Strong bottom fade for seamless transition */}
+            <div className="absolute bottom-0 left-0 w-full h-[60vh] bg-gradient-to-t from-black via-black/80 to-transparent z-10" />
 
             {/* Content */}
             <div className="relative z-20 w-full h-full flex flex-col items-center justify-center px-4 sm:px-6 text-center">
@@ -196,7 +199,12 @@ export default function HeroSlider({ slides = [] }: HeroSliderProps) {
                             >
                                 <Link
                                     href={slide.buttonLink || '/portfolio'}
-                                    className="inline-block px-6 sm:px-8 py-2 sm:py-3 bg-gold-500 text-black font-semibold rounded-lg hover:bg-gold-400 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105"
+                                    className={`inline-block px-6 sm:px-8 py-2 sm:py-3 font-semibold rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 ${(slide.buttonStyle === 'white')
+                                            ? 'bg-transparent border-2 border-white text-white hover:bg-white/10'
+                                            : (slide.buttonStyle === 'transparent')
+                                                ? 'bg-transparent border-2 border-transparent text-white hover:bg-white/10 hover:border-white/20'
+                                                : 'bg-gold-500 text-black hover:bg-gold-400'
+                                        }`}
                                 >
                                     {slide.buttonText}
                                 </Link>

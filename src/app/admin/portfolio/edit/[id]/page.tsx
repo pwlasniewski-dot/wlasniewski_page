@@ -51,13 +51,31 @@ export default function EditSessionPage() {
                 let cats: string[] = [];
                 if (typeof data.settings.portfolio_categories === 'string') {
                     try {
-                        cats = JSON.parse(data.settings.portfolio_categories);
+                        // Attempt to parse JSON
+                        const parsed = JSON.parse(data.settings.portfolio_categories);
+                        if (Array.isArray(parsed)) {
+                            // If it's an array, it might be ["Category 1", "Category 2"]
+                            cats = parsed;
+                        } else {
+                            // If it's not an array, treat as split string
+                            cats = data.settings.portfolio_categories.split(',').map((s: string) => s.trim());
+                        }
                     } catch (e) {
+                        // Fallback: split by comma if not valid JSON
                         cats = data.settings.portfolio_categories.split(',').map((s: string) => s.trim());
                     }
                 } else if (Array.isArray(data.settings.portfolio_categories)) {
                     cats = data.settings.portfolio_categories;
                 }
+
+                // Clean up artifacts (e.g. if some categories are still stringified arrays like '["Slub"]')
+                cats = cats.map(c => {
+                    if (typeof c === 'string') {
+                        // Remove [" and "] and " characters if they were incorrectly saved
+                        return c.replace(/^\["|"\]$/g, '').replace(/"/g, '').trim();
+                    }
+                    return String(c);
+                });
 
                 if (cats.length > 0) {
                     setCategories(cats);

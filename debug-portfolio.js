@@ -1,16 +1,21 @@
+
 const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 
 async function main() {
-    const prisma = new PrismaClient();
-    
-    const sessions = await prisma.portfolioSession.findMany({
-        select: { id: true, title: true, slug: true, category: true, is_published: true }
+    const page = await prisma.page.findUnique({
+        where: { slug: 'portfolio' }
     });
-    
-    console.log('All Portfolio Sessions:');
-    console.log(JSON.stringify(sessions, null, 2));
-    
-    await prisma.$disconnect();
+    console.log('Portfolio Page:', page);
+    if (page && page.sections) {
+        console.log('Sections:', page.sections);
+    } else {
+        console.log('No sections data found.');
+    }
 }
 
-main().catch(console.error);
+main()
+    .catch(e => console.error(e))
+    .finally(async () => {
+        await prisma.$disconnect();
+    });

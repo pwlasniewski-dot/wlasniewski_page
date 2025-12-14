@@ -4,8 +4,9 @@ import nodemailer from "nodemailer";
 import { getSMTPConfig } from "@/lib/email/sender";
 
 export async function POST(request: Request) {
+    let body: any = {};
     try {
-        const body = await request.json();
+        body = await request.json();
         const { name, email, message } = body;
 
         // Validation
@@ -46,10 +47,23 @@ ${message}
         });
 
         return NextResponse.json({ success: true });
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error sending contact email:", error);
+
+        try {
+            const { logSystem } = await import('@/lib/logger');
+            await logSystem('ERROR', 'CONTACT', 'Email sending failed', {
+                error: error.message,
+                stack: error.stack,
+                name: body.name,
+                email: body.email
+            });
+        } catch (logError) {
+            console.error('Failed to log system error', logError);
+        }
+
         return NextResponse.json(
-            { error: "Wystąpił błąd podczas wysyłania wiadomości." },
+            { error: "Wystąpił błąd podczas wysyłania wiadomości. Sprawdź logi systemowe." },
             { status: 500 }
         );
     }

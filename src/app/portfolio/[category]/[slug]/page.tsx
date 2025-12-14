@@ -109,47 +109,50 @@ export default async function SessionPage({ params }: Props) {
 
     return (
         <main className="min-h-screen bg-black text-white">
-            {/* Hero Section */}
-            <HeroSlider
-                slides={[
-                    // Cover Image as first slide
-                    ...(session.cover_image_url ? [{
-                        id: 'cover',
-                        image: session.cover_image_url,
-                        title: session.title,
-                        subtitle: category,
-                        description: session.description || undefined,
-                        enabled: true,
-                        order: 0,
-                        textAnimation: 'fade' as const,
-                        buttonText: 'Zobacz Zdjęcia',
-                        buttonLink: '#gallery' // smooth scroll anchor
-                    }] : []),
-                    // First 5 gallery images as subsequent slides
-                    ...galleryImages.slice(0, 5).map((img, index) => ({
-                        id: img.id,
-                        image: img.url,
-                        title: session.title,
-                        subtitle: category,
-                        description: session.description || undefined,
-                        enabled: true,
-                        order: index + 1,
-                        textAnimation: 'fade' as const,
-                        buttonText: 'Zobacz Zdjęcia',
-                        buttonLink: '#gallery'
-                    }))
-                ]}
-            />
+            EMPTY_STRING
+            {/* Hero Section Wrapper for Overlay */}
+            <div className="relative">
+                <HeroSlider
+                    slides={[
+                        // Cover Image as first slide
+                        ...(session.cover_image_url ? [{
+                            id: 'cover',
+                            image: session.cover_image_url,
+                            title: session.title,
+                            subtitle: category,
+                            description: session.description || undefined,
+                            enabled: true,
+                            order: 0,
+                            textAnimation: 'fade' as const,
+                            buttonText: 'Zobacz Zdjęcia',
+                            buttonLink: '#gallery' // smooth scroll anchor
+                        }] : []),
+                        // First 5 gallery images as subsequent slides
+                        ...galleryImages.slice(0, 5).map((img, index) => ({
+                            id: img.id,
+                            image: img.url,
+                            title: session.title,
+                            subtitle: category,
+                            description: session.description || undefined,
+                            enabled: true,
+                            order: index + 1,
+                            textAnimation: 'fade' as const,
+                            buttonText: 'Zobacz Zdjęcia',
+                            buttonLink: '#gallery'
+                        }))
+                    ]}
+                />
 
-            {/* Back Link Overlay (Absolute positioning over slider) */}
-            <div className="absolute top-24 left-4 md:left-8 z-30">
-                <Link
-                    href={`/portfolio/${category}`}
-                    className="inline-flex items-center text-white/80 hover:text-gold-400 transition-colors bg-black/20 backdrop-blur-sm px-4 py-2 rounded-full"
-                >
-                    <ArrowLeft className="mr-2 h-5 w-5" />
-                    Powrót do {category}
-                </Link>
+                {/* Back Link Overlay (Bottom Center) */}
+                <div className="absolute bottom-32 sm:bottom-24 left-1/2 -translate-x-1/2 z-30 w-full flex justify-center pointer-events-none">
+                    <Link
+                        href={`/portfolio/${category}`}
+                        className="pointer-events-auto inline-flex items-center text-white/90 hover:text-gold-400 transition-all bg-black/40 backdrop-blur-md px-6 py-3 rounded-full border border-white/10 hover:border-gold-500/50 hover:bg-black/60 shadow-lg group"
+                    >
+                        <ArrowLeft className="mr-2 h-4 w-4 group-hover:-translate-x-1 transition-transform" />
+                        <span className="uppercase tracking-widest text-xs font-medium">Powrót</span>
+                    </Link>
+                </div>
             </div>
 
             {/* Gallery Grid Anchor */}
