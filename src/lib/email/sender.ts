@@ -40,8 +40,15 @@ export async function getSMTPConfig() {
 
 // Helper to get Admin Email (defaults to SMTP user)
 export async function getAdminEmail() {
-    const config = await getSMTPConfig();
-    return process.env.ADMIN_EMAIL || config.user || 'kontakt@wlasniewski.pl';
+    try {
+        const config = await getSMTPConfig();
+        const adminEmail = process.env.ADMIN_EMAIL || config.user || config.from || 'kontakt@wlasniewski.pl';
+        console.log('🔍 getAdminEmail:', { fromEnv: process.env.ADMIN_EMAIL, fromConfig: config.user, final: adminEmail });
+        return adminEmail;
+    } catch (error) {
+        console.error('❌ getAdminEmail error:', error);
+        return process.env.ADMIN_EMAIL || 'kontakt@wlasniewski.pl';
+    }
 }
 
 import { logSystem } from '@/lib/logger';
@@ -69,7 +76,7 @@ async function getTransporter() {
             throw new Error('SMTP not configured. Configure settings in Admin → Settings → Email');
         }
 
-        // ... (console code)
+        console.log('🔌 Creating SMTP transporter:', { host: config.host, port: config.port, user: config.user });
 
         transporter = nodemailer.createTransport({
             host: config.host,
@@ -80,6 +87,22 @@ async function getTransporter() {
                 pass: config.pass,
             },
         });
+
+        // Try to verify connection
+        try {
+            await transporter.verify();
+            console.log('✅ SMTP connection verified successfully');
+        } catch (verifyError: any) {
+            console.error('❌ SMTP connection verification failed:', verifyError.message);
+            await logSystem('ERROR', 'EMAIL', 'SMTP connection verification failed', {
+                error: verifyError.message,
+                code: verifyError.code,
+                host: config.host,
+                port: config.port
+            });
+            transporter = null;
+            throw verifyError;
+        }
     }
     return transporter;
 }
@@ -101,6 +124,13 @@ export async function sendEmail(emailData: EmailData) {
 
         // Get SMTP config (from database or env vars)
         const config = await getSMTPConfig();
+        console.log('🔍 SMTP Config loaded:', { 
+            host: config.host ? '✓' : '✗',
+            port: config.port,
+            user: config.user ? '✓ (masked)' : '✗',
+            pass: config.pass ? '✓ (masked)' : '✗',
+            from: config.from
+        });
 
         // Use provided HTML or render from template
         let emailHtml = html;
@@ -113,6 +143,8 @@ export async function sendEmail(emailData: EmailData) {
         }
 
         const transport = await getTransporter(); // This might throw SMTP config error
+        console.log('📤 Sending email via SMTP to:', to);
+        
         const result = await transport.sendMail({
             from: config.from,
             to,
@@ -125,11 +157,15 @@ export async function sendEmail(emailData: EmailData) {
         return { success: true, messageId: result.messageId };
     } catch (error: any) {
         console.error('❌ Email send error:', error);
-        await logSystem('ERROR', 'EMAIL', 'Email send failed', {
-            error: error.message,
+        const errorDetails = {
+            message: error.message,
+            code: error.code,
+            command: error.command,
             to: emailData.to,
             subject: emailData.subject
-        });
+        };
+        console.error('📋 Error details:', errorDetails);
+        await logSystem('ERROR', 'EMAIL', 'Email send failed', errorDetails);
         throw error;
     }
 }
