@@ -317,7 +317,7 @@ export default function RezerwacjaPage() {
                 start: slot.start,
                 end: slot.end,
                 attendeeEmail: email,
-                organizerEmail: "przemyslaw@wlasniewski.pl",
+                organizerEmail: process.env.NEXT_PUBLIC_CONTACT_EMAIL || "kontakt@wlasniewski.pl",
                 location,
             });
 

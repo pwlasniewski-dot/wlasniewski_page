@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 async function getPayUToken() {
     const clientId = process.env.PAYU_CLIENT_ID;
     const clientSecret = process.env.PAYU_CLIENT_SECRET;
-    const baseUrl = process.env.PAYU_TEST_MODE === 'true' 
+    const baseUrl = process.env.PAYU_TEST_MODE === 'true'
         ? 'https://secure.sandbox.payu.com'
         : 'https://secure.payu.com';
 
@@ -194,7 +194,7 @@ export async function POST(request: NextRequest) {
                             <p style="color: #d4af37; font-weight: bold;">⏳ Czekamy na potwierdzenie płatności...</p>
 
                             <div class="footer">
-                                <p>Jeśli masz pytania, skontaktuj się z nami: <strong>kontakt@wlasniewski.pl</strong></p>
+                                <p>Jeśli masz pytania, skontaktuj się z nami: <strong>{process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'kontakt@wlasniewski.pl'}</strong></p>
                                 <p>© Fotograf Wlasniewski - Wszystkie prawa zastrzeżone</p>
                             </div>
                         </div>
@@ -222,10 +222,10 @@ export async function POST(request: NextRequest) {
     } catch (error: any) {
         console.error('Checkout error:', error);
         return NextResponse.json(
-            { 
-                error: 'Checkout failed', 
-                details: error.message, 
-                success: false 
+            {
+                error: 'Checkout failed',
+                details: error.message,
+                success: false
             },
             { status: 500 }
         );

@@ -95,7 +95,8 @@ export async function POST(request: NextRequest) {
 
                     // Send admin notification email
                     try {
-                        const adminEmail = process.env.ADMIN_EMAIL || 'kontakt@wlasniewski.pl';
+                        const { getAdminEmail } = await import('@/lib/email/sender');
+                        const adminEmail = await getAdminEmail();
                         const amountPLN = (giftCardOrder.amount_paid / 100).toFixed(2);
                         const adminHtml = `
     < html >

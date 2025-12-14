@@ -158,7 +158,7 @@ export function generateClientEmail(data: BookingEmailData): string {
         <div class="footer">
             <div class="footer-text">
                 Przemysław Właśniewski — Fotografia<br>
-                Tel: +48 530 788 694 | Email: przemyslaw@wlasniewski.pl
+                Tel: +48 530 788 694 | Email: ${process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'kontakt@wlasniewski.pl'}
             </div>
             <div class="social-links">
                 <a href="https://www.facebook.com/przemyslaw.wlasniewski.fotografia" class="social-link">Facebook</a>

@@ -6,7 +6,7 @@ import { generateGiftCardEmail } from '@/lib/email/giftCardTemplate';
 
 export const dynamic = 'force-dynamic';
 
-const ADMIN_EMAIL = 'przemyslaw@wlasniewski.pl';
+// const ADMIN_EMAIL = 'przemyslaw@wlasniewski.pl'; // Moved to dynamic fetching
 
 // Simple email validation
 function isValidEmail(email: string): boolean {
@@ -34,8 +34,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             if (!recipientEmail) {
                 // Notify admin about error
                 try {
+                    const { getAdminEmail } = await import('@/lib/email/sender');
+                    const adminEmail = await getAdminEmail();
                     await sendEmail({
-                        to: ADMIN_EMAIL,
+                        to: adminEmail,
                         subject: `❌ Błąd wysyłania karty podarunkowej #${card.id}`,
                         html: `
                             <h2>Błąd wysyłania karty</h2>
@@ -48,8 +50,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
                 } catch (e) {
                     console.error('Failed to send error notification:', e);
                 }
-                
-                return NextResponse.json({ 
+
+                return NextResponse.json({
                     error: 'No recipient email provided',
                     details: 'Uzupełnij email odbiorcy w karcie'
                 }, { status: 400 });
@@ -59,8 +61,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             if (!isValidEmail(recipientEmail)) {
                 // Notify admin about invalid email
                 try {
+                    const { getAdminEmail } = await import('@/lib/email/sender');
+                    const adminEmail = await getAdminEmail();
                     await sendEmail({
-                        to: ADMIN_EMAIL,
+                        to: adminEmail,
                         subject: `⚠️ Błędny adres email - karta #${card.id}`,
                         html: `
                             <h2>Błędny format adresu email</h2>
@@ -73,8 +77,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
                 } catch (e) {
                     console.error('Failed to send validation error notification:', e);
                 }
-                
-                return NextResponse.json({ 
+
+                return NextResponse.json({
                     error: 'Invalid email format',
                     details: `Email "${recipientEmail}" jest nieprawidłowy`
                 }, { status: 400 });
@@ -87,7 +91,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
             // Use provided logoUrl first, fallback to settings, then fallback to default
             let logoUrl = body.logoUrl || (settings as any)?.logo_url;
-            
+
             // Ensure it's an absolute URL
             if (logoUrl && !logoUrl.startsWith('http')) {
                 const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://wlasniewski.pl';
@@ -120,24 +124,17 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
                 data: { status: 'sent', updated_at: new Date() }
             });
 
-            // Send confirmation to admin
+            // Send confirmation (COPY) to admin
             try {
+                const { getAdminEmail } = await import('@/lib/email/sender');
+                const adminEmail = await getAdminEmail();
                 await sendEmail({
-                    to: ADMIN_EMAIL,
-                    subject: `✅ Karta podarunkowa wysłana - #${card.id}`,
-                    html: `
-                        <h2>✅ Karta podarunkowa wysłana pomyślnie</h2>
-                        <p><strong>Karta:</strong> #${card.id}</p>
-                        <p><strong>Kod:</strong> ${card.code}</p>
-                        <p><strong>Wartość:</strong> ${card.value || card.amount} PLN</p>
-                        <p><strong>Odbiorca:</strong> ${card.recipient_name || 'Nie podane'}</p>
-                        <p><strong>Email:</strong> ${recipientEmail}</p>
-                        <p><strong>Wysłano:</strong> ${new Date().toLocaleString('pl-PL')}</p>
-                    `
+                    to: adminEmail,
+                    subject: `[KOPIA] 🎁 Karta wysłana do ${card.recipient_name || recipientEmail}`,
+                    html: emailHtml // Send the EXACT same HTML as the client received
                 });
             } catch (e) {
                 console.error('Failed to send confirmation to admin:', e);
-                // Don't fail the request if admin notification fails
             }
 
             return NextResponse.json({ success: true });
@@ -149,11 +146,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
                 response: error?.response,
                 stack: error?.stack,
             });
-            
+
             // Send error notification to admin
             try {
+                const { getAdminEmail } = await import('@/lib/email/sender');
+                const adminEmail = await getAdminEmail();
                 await sendEmail({
-                    to: ADMIN_EMAIL,
+                    to: adminEmail,
                     subject: `❌ Błąd wysyłania karty podarunkowej`,
                     html: `
                         <h2>❌ Błąd wysyłania karty podarunkowej</h2>
@@ -172,9 +171,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             } catch (notifyError) {
                 console.error('Failed to send error notification:', notifyError);
             }
-            
+
             // Return detailed error information for debugging
-            return NextResponse.json({ 
+            return NextResponse.json({
                 error: 'Failed to send email',
                 details: error?.message || 'Unknown error',
                 code: error?.code,

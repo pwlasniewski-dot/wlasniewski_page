@@ -2,7 +2,7 @@ import nodemailer from 'nodemailer';
 import prisma from '@/lib/db/prisma';
 
 // Get SMTP configuration from database or environment variables
-async function getSMTPConfig() {
+export async function getSMTPConfig() {
     try {
         // Try to get from database first
         const settings = await prisma.setting.findMany({
@@ -18,7 +18,7 @@ async function getSMTPConfig() {
             config[s.setting_key] = s.setting_value;
         });
 
-        // Use database settings if available, fallback to environment variables
+        // Use database settings if available, otherwise fallback to env
         return {
             host: config.smtp_host || process.env.SMTP_HOST,
             port: parseInt(config.smtp_port || process.env.SMTP_PORT || '587'),
@@ -36,6 +36,12 @@ async function getSMTPConfig() {
             from: process.env.SMTP_FROM || process.env.SMTP_USER,
         };
     }
+}
+
+// Helper to get Admin Email (defaults to SMTP user)
+export async function getAdminEmail() {
+    const config = await getSMTPConfig();
+    return process.env.ADMIN_EMAIL || config.user || 'kontakt@wlasniewski.pl';
 }
 
 import { logSystem } from '@/lib/logger';

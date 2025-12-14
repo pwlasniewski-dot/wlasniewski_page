@@ -25,7 +25,7 @@ export function generateLocalBusinessSchema(data?: Partial<LocalBusinessSchema>)
         "description": data?.description || "Profesjonalna fotografia rodzinna, ślubna, portretowa i komunijna. Naturalne zdjęcia w Toruniu, Wąbrzeźnie, Płużnicy i okolicach.",
         "image": data?.image || "https://wlasniewski.pl/og-image.jpg",
         "telephone": data?.telephone || "+48 530 788 694",
-        "email": data?.email || "przemyslaw@wlasniewski.pl",
+        "email": data?.email || process.env.NEXT_PUBLIC_CONTACT_EMAIL || "kontakt@wlasniewski.pl",
         "url": data?.url || "https://wlasniewski.pl",
         "priceRange": data?.priceRange || "$$",
         "address": {
@@ -110,7 +110,7 @@ export function generatePersonSchema(): string {
         "image": "https://wlasniewski.pl/og-image.jpg",
         "url": "https://wlasniewski.pl",
         "telephone": "+48 530 788 694",
-        "email": "przemyslaw@wlasniewski.pl",
+        "email": process.env.NEXT_PUBLIC_CONTACT_EMAIL || "kontakt@wlasniewski.pl",
         "sameAs": [
             "https://www.facebook.com/przemyslaw.wlasniewski.fotografia",
             "https://www.instagram.com/wlasniewski.pl/"

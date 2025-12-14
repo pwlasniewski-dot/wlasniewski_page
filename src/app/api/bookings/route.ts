@@ -7,7 +7,8 @@ import { logSystem } from "@/lib/logger";
 import prisma from '@/lib/db/prisma';
 
 // Photographer's email for admin notifications
-const ADMIN_EMAIL = "przemyslaw@wlasniewski.pl";
+// Photographer's email for admin notifications
+// const ADMIN_EMAIL = "przemyslaw@wlasniewski.pl"; // Moved to dynamic fetching
 
 export async function POST(request: Request) {
     try {
@@ -108,8 +109,10 @@ export async function POST(request: Request) {
 
         // Send notification email to photographer/admin
         try {
+            const { getAdminEmail } = await import('@/lib/email/sender');
+            const adminEmail = await getAdminEmail();
             await sendEmail({
-                to: ADMIN_EMAIL,
+                to: adminEmail,
                 subject: `🎉 Nowa rezerwacja: ${name} - ${service} (${formattedDate})`,
                 html: generateAdminEmail(emailData)
             });

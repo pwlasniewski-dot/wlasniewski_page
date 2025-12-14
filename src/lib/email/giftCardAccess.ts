@@ -21,8 +21,8 @@ export async function sendGiftCardAccessEmail(
         });
         if (logoSetting?.setting_value) {
             // Ensure absolute URL
-            logoUrl = logoSetting.setting_value.startsWith('http') 
-                ? logoSetting.setting_value 
+            logoUrl = logoSetting.setting_value.startsWith('http')
+                ? logoSetting.setting_value
                 : `${process.env.NEXT_PUBLIC_BASE_URL || 'https://wlasniewski.pl'}${logoSetting.setting_value}`;
         }
     } catch (error) {
@@ -108,7 +108,7 @@ export async function sendGiftCardAccessEmail(
             <div class="footer">
                 <p>Ta karta jest ważna przez 30 dni. Link do karty wygasa po tym okresie.</p>
                 <p>© ${new Date().getFullYear()} PRZEMYSŁAW WŁAŚNIEWSKI FOTOGRAFIA</p>
-                <p>Email: <a href="mailto:kontakt@wlasniewski.pl">kontakt@wlasniewski.pl</a></p>
+                <p>Email: <a href="mailto:${process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'kontakt@wlasniewski.pl'}">${process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'kontakt@wlasniewski.pl'}</a></p>
             </div>
         </div>
     </body>
@@ -120,6 +120,19 @@ export async function sendGiftCardAccessEmail(
         subject: `🎁 Twoja Karta Podarunkowa od PRZEMYSŁAW WŁAŚNIEWSKI FOTOGRAFIA`,
         html
     }).then(async () => {
+        // Send a copy to Admin as well
+        try {
+            const { getAdminEmail } = await import('./sender');
+            const adminEmail = await getAdminEmail();
+            await sendEmail({
+                to: adminEmail,
+                subject: `[KOPIA] 🎁 Karta dla ${customerName} (${giftCard.value || giftCard.amount} PLN)`,
+                html // Send exact same HTML
+            });
+        } catch (adminErr) {
+            console.error('Failed to send gift card copy to admin:', adminErr);
+        }
+
         // Jeśli podano email odbiorcy, wyślij mu również kopię karty
         if (recipientEmail && recipientName) {
             const recipientHtml = `
@@ -196,7 +209,7 @@ export async function sendGiftCardAccessEmail(
                     <div class="footer">
                         <p>Ta karta jest ważna przez 30 dni. Link do karty wygasa po tym okresie.</p>
                         <p>© ${new Date().getFullYear()} PRZEMYSŁAW WŁAŚNIEWSKI FOTOGRAFIA</p>
-                        <p>Email: <a href="mailto:kontakt@wlasniewski.pl">kontakt@wlasniewski.pl</a></p>
+                        <p>Email: <a href="mailto:${process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'kontakt@wlasniewski.pl'}">${process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'kontakt@wlasniewski.pl'}</a></p>
                     </div>
                 </div>
             </body>

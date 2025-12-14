@@ -25,7 +25,7 @@ export default function PolitykaPrywatnosciPage() {
                             prowadzący działalność gospodarczą pod nazwą "Przemysław Właśniewski - Fotograf".
                         </p>
                         <p className="text-zinc-300 mb-4">
-                            Kontakt: <a href="mailto:przemyslaw@wlasniewski.pl" className="text-gold-400 hover:underline">przemyslaw@wlasniewski.pl</a>,
+                            Kontakt: <a href={`mailto:${process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'kontakt@wlasniewski.pl'}`} className="text-gold-400 hover:underline">{process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'kontakt@wlasniewski.pl'}</a>,
                             tel. <a href="tel:+48530788694" className="text-gold-400 hover:underline">+48 530 788 694</a>
                         </p>
                     </section>
@@ -97,7 +97,7 @@ export default function PolitykaPrywatnosciPage() {
                         <h2 className="text-2xl font-display font-semibold text-gold-400 mb-4">7. Kontakt</h2>
                         <p className="text-zinc-300 mb-4">
                             W sprawach związanych z przetwarzaniem danych osobowych prosimy o kontakt:<br />
-                            Email: <a href="mailto:przemyslaw@wlasniewski.pl" className="text-gold-400 hover:underline">przemyslaw@wlasniewski.pl</a>
+                            Email: <a href={`mailto:${process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'kontakt@wlasniewski.pl'}`} className="text-gold-400 hover:underline">{process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'kontakt@wlasniewski.pl'}</a>
                         </p>
                     </section>
                 </div>

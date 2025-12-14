@@ -76,7 +76,7 @@ function SuccessContent() {
                 </div>
 
                 <p className="text-zinc-500 text-sm mt-8">
-                    Jeśli masz pytania, skontaktuj się z nami na: kontakt@wlasniewski.pl
+                    Jeśli masz pytania, skontaktuj się z nami na: {process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'kontakt@wlasniewski.pl'}
                 </p>
             </motion.div>
         </main>
