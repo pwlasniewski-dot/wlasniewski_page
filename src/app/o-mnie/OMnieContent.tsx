@@ -8,9 +8,20 @@ import { motion } from "framer-motion";
 interface OMnieContentProps {
     pageData: any;
     parallaxSections: any[];
+    contentCards?: any[];
 }
 
-export default function OMnieContent({ pageData, parallaxSections }: OMnieContentProps) {
+export default function OMnieContent({ pageData, parallaxSections, contentCards }: OMnieContentProps) {
+    // Legacy hardcoded stats as fallback
+    const defaultStats = [
+        { title: "500+", description: "Sesji zdjęciowych" },
+        { title: "10+", description: "Lat doświadczenia" },
+        { title: "100%", description: "Zadowolonych klientów" },
+        { title: "∞", description: "Pięknych wspomnień" },
+    ];
+
+    const statsToRender = (contentCards && contentCards.length > 0) ? contentCards : defaultStats;
+
     return (
         <main className="min-h-screen bg-black text-white">
             {/* Hero Parallax */}
@@ -85,21 +96,16 @@ export default function OMnieContent({ pageData, parallaxSections }: OMnieConten
                     transition={{ duration: 0.6 }}
                     className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-20"
                 >
-                    {[
-                        { number: "500+", label: "Sesji zdjęciowych" },
-                        { number: "10+", label: "Lat doświadczenia" },
-                        { number: "100%", label: "Zadowolonych klientów" },
-                        { number: "∞", label: "Pięknych wspomnień" },
-                    ].map((stat, index) => (
+                    {statsToRender.map((stat, index) => (
                         <div
                             key={index}
                             className="text-center p-6 bg-zinc-900 border border-white/5 hover:border-gold-400/30 transition-colors rounded-lg"
                         >
                             <div className="text-4xl font-bold text-gold-400 mb-2 font-display">
-                                {stat.number}
+                                {stat.title}
                             </div>
                             <div className="text-sm text-zinc-400 font-sans tracking-wide uppercase">
-                                {stat.label}
+                                {stat.description}
                             </div>
                         </div>
                     ))}

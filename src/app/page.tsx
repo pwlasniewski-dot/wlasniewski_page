@@ -1,14 +1,22 @@
-import { prisma } from "@/lib/prisma";
+
 import HomeContent from "./HomeContent";
 import { Metadata } from "next";
 
 export const revalidate = 3600; // Cache for 1 hour
 
-export const metadata: Metadata = {
-    title: "Paweł Wwaśniewski - Fotograf Kujawsko-Pomorskie | Śluby, Rodzina, Biznes",
-    description: "Profesjonalny fotograf z Płużnicy. Sesje ślubne, rodzinne i wizerunkowe w Toruniu, Grudziądzu i całym województwie. Naturalne zdjęcia i ujęcia z drona.",
-    keywords: "fotograf toruń, fotograf grudziądz, fotograf płużnica, zdjęcia ślubne, sesja rodzinna, fotograf biznesowy, dron kujawsko pomorskie"
-};
+import prisma from "@/lib/db/prisma";
+
+export async function generateMetadata(): Promise<Metadata> {
+    const page = await prisma.page.findUnique({
+        where: { slug: 'strona-glowna' }
+    });
+
+    return {
+        title: page?.meta_title || "Przemysław Właśniewski - Fotograf Kujawsko-Pomorskie | Śluby, Rodzina, Biznes",
+        description: page?.meta_description || "Profesjonalny fotograf z Płużnicy. Sesje ślubne, rodzinne i wizerunkowe w Toruniu, Grudziądzu i całym województwie. Naturalne zdjęcia i ujęcia z drona.",
+        keywords: page?.meta_keywords || "fotograf toruń, fotograf grudziądz, fotograf płużnica, zdjęcia ślubne, sesja rodzinna, fotograf biznesowy, dron kujawsko pomorskie"
+    };
+}
 
 async function getHomePageData() {
     const page = await prisma.page.findUnique({

@@ -54,42 +54,7 @@ export default function GuideContent({ pageData, parallaxSections, contentCards,
                     />
                 </div>
 
-                {/* Content Cards */}
-                {contentCards.length > 0 && (
-                    <div className="mb-24">
-                        <div className="text-center mb-12">
-                            <h2 className="text-4xl font-bold mb-4">Wskazówki stylizacyjne</h2>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                            {contentCards.map((card, index) => (
-                                <motion.div
-                                    key={card.id || index}
-                                    initial={{ opacity: 0, y: 30 }}
-                                    whileInView={{ opacity: 1, y: 0 }}
-                                    viewport={{ once: true }}
-                                    transition={{ duration: 0.6, delay: index * 0.1 }}
-                                    className="bg-zinc-900 border border-white/5 p-8 rounded-lg hover:border-gold-400/30 transition-all"
-                                >
-                                    <div className="text-5xl mb-4">{ICON_MAP[card.icon] || '📷'}</div>
-                                    <h3 className="text-2xl font-bold mb-3">{card.title}</h3>
-                                    <p className="text-zinc-400">{card.description}</p>
-                                </motion.div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                {/* Main Content */}
-                {pageData?.content && (
-                    <div className="mb-24 prose prose-invert prose-lg max-w-none">
-                        <div
-                            className="text-zinc-300 leading-relaxed"
-                            dangerouslySetInnerHTML={{ __html: pageData.content }}
-                        />
-                    </div>
-                )}
-
-                {/* Color Palettes */}
+                {/* Color Palettes - Moved to top */}
                 {colorPalettes.length > 0 && (
                     <div className="mb-24">
                         <div className="text-center mb-12">
@@ -153,6 +118,43 @@ export default function GuideContent({ pageData, parallaxSections, contentCards,
                         `}</style>
                     </div>
                 )}
+
+                {/* Content Cards */}
+                {contentCards.length > 0 && (
+                    <div className="mb-24">
+                        <div className="text-center mb-12">
+                            <h2 className="text-4xl font-bold mb-4">Wskazówki stylizacyjne</h2>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                            {contentCards.map((card, index) => (
+                                <motion.div
+                                    key={card.id || index}
+                                    initial={{ opacity: 0, y: 30 }}
+                                    whileInView={{ opacity: 1, y: 0 }}
+                                    viewport={{ once: true }}
+                                    transition={{ duration: 0.6, delay: index * 0.1 }}
+                                    className="bg-zinc-900 border border-white/5 p-8 rounded-lg hover:border-gold-400/30 transition-all"
+                                >
+                                    <div className="text-5xl mb-4">{ICON_MAP[card.icon] || '📷'}</div>
+                                    <h3 className="text-2xl font-bold mb-3">{card.title}</h3>
+                                    <p className="text-zinc-400">{card.description}</p>
+                                </motion.div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Main Content */}
+                {pageData?.content && (
+                    <div className="mb-24 prose prose-invert prose-lg max-w-none">
+                        <div
+                            className="text-zinc-300 leading-relaxed"
+                            dangerouslySetInnerHTML={{ __html: pageData.content }}
+                        />
+                    </div>
+                )}
+
+
 
                 {/* Additional Parallax Sections */}
                 {parallaxSections.slice(1).map((section, index) => (

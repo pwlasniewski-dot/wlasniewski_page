@@ -157,6 +157,9 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
                 dataToSave.parallax_sections = JSON.stringify(parallaxSections);
                 dataToSave.about_photo = aboutPhoto;
                 dataToSave.about_text_side = aboutTextSide;
+                if (resolvedParams?.slug === 'o-mnie') {
+                    dataToSave.content_cards = JSON.stringify(contentCards);
+                }
             }
 
             const res = await fetch(getApiUrl('pages'), {
@@ -525,8 +528,8 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
                     </div>
                 )}
 
-                {/* Content Cards - tylko dla "jak-sie-ubrac" i "strona-glowna" */}
-                {(isJakSieUbrac || isHomePage) && (
+                {/* Content Cards - tylko dla "jak-sie-ubrac", "strona-glowna" i "o-mnie" */}
+                {(isJakSieUbrac || isHomePage || isOMnie) && (
                     <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6 space-y-4">
                         <div className="flex items-center justify-between">
                             <h2 className="text-lg font-semibold text-white">Kafelki z treścią (Legacy)</h2>

@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { getApiUrl } from '@/lib/api-config';
-import { AlertCircle, CheckCircle, Info, RefreshCw } from 'lucide-react';
+import { AlertCircle, CheckCircle, Info, RefreshCw, Download } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 interface SystemLog {
     id: number;
@@ -16,6 +17,7 @@ interface SystemLog {
 export default function AdminLogsPage() {
     const [logs, setLogs] = useState<SystemLog[]>([]);
     const [loading, setLoading] = useState(true);
+    const [isGenerating, setIsGenerating] = useState(false);
     const [filterLevel, setFilterLevel] = useState<string>('ALL');
 
     const fetchLogs = async () => {
@@ -33,6 +35,38 @@ export default function AdminLogsPage() {
             console.error('Failed to fetch logs', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const downloadReport = async () => {
+        setIsGenerating(true);
+        try {
+            const token = localStorage.getItem('admin_token');
+            const res = await fetch('/api/admin/seo-report', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!res.ok) throw new Error('Failed to generate report');
+
+            const data = await res.json();
+
+            // Create Blob and Download
+            const blob = new Blob([JSON.stringify(data.report, null, 2)], { type: 'application/json' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `seo-report-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+
+            toast.success(`Wygenerowano raport (${data.count} stron)`);
+        } catch (error) {
+            toast.error('Błąd generowania raportu');
+            console.error(error);
+        } finally {
+            setIsGenerating(false);
         }
     };
 
@@ -54,13 +88,23 @@ export default function AdminLogsPage() {
         <div className="max-w-6xl mx-auto p-6">
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-bold text-white">Logi Systemowe</h1>
-                <button
-                    onClick={fetchLogs}
-                    className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded transition"
-                >
-                    <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                    Odśwież
-                </button>
+                <div className="flex gap-3">
+                    <button
+                        onClick={downloadReport}
+                        disabled={isGenerating}
+                        className="flex items-center gap-2 px-4 py-2 bg-gold-500 hover:bg-gold-400 text-black rounded transition font-medium disabled:opacity-50"
+                    >
+                        <Download className={`w-4 h-4 ${isGenerating ? 'animate-bounce' : ''}`} />
+                        {isGenerating ? 'Generowanie...' : 'Raport SEO'}
+                    </button>
+                    <button
+                        onClick={fetchLogs}
+                        className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded transition"
+                    >
+                        <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                        Odśwież
+                    </button>
+                </div>
             </div>
 
             <div className="mb-6 flex gap-2">
@@ -69,8 +113,8 @@ export default function AdminLogsPage() {
                         key={level}
                         onClick={() => setFilterLevel(level)}
                         className={`px-4 py-1.5 rounded-full text-sm font-medium transition ${filterLevel === level
-                                ? 'bg-gold-500 text-black'
-                                : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
+                            ? 'bg-gold-500 text-black'
+                            : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
                             }`}
                     >
                         {level === 'ALL' ? 'Wszystkie' : level}
@@ -97,7 +141,7 @@ export default function AdminLogsPage() {
                                         <div className="flex items-center gap-2">
                                             {getIcon(log.level)}
                                             <span className={`font-semibold ${log.level === 'ERROR' ? 'text-red-400' :
-                                                    log.level === 'WARN' ? 'text-yellow-400' : 'text-blue-400'
+                                                log.level === 'WARN' ? 'text-yellow-400' : 'text-blue-400'
                                                 }`}>
                                                 {log.level}
                                             </span>

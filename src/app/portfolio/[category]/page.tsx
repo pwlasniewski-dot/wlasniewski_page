@@ -13,7 +13,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const { category: categorySlug } = await params;
 
     // Use slug directly for metadata to avoid DB calls during build
-    const title = categorySlug.charAt(0).toUpperCase() + categorySlug.slice(1);
+    const decodedSlug = decodeURIComponent(categorySlug);
+    const title = decodedSlug.charAt(0).toUpperCase() + decodedSlug.slice(1);
 
     return {
         title: `${title} | Portfolio`,
@@ -60,7 +61,7 @@ export default async function CategoryPage({ params }: Props) {
         notFound();
     }
 
-    const layout = settings?.portfolio_layout || 'slider';
+    const layout = (settings as any)?.portfolio_layout || 'slider';
 
     // Aggregate Starred Photos for Level 2 Feed
     const starredItems: Array<{ src: string; alt: string; link: string; linkLabel: string }> = [];
