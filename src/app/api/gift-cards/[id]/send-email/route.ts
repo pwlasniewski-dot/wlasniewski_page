@@ -31,22 +31,24 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
             // Check if recipient email is available
             const recipientEmail = body.email || card.recipient_email;
+            // 1. Error notification
             if (!recipientEmail) {
-                // Notify admin about error
                 try {
                     const { getAdminEmail } = await import('@/lib/email/sender');
                     const adminEmail = await getAdminEmail();
-                    await sendEmail({
-                        to: adminEmail,
-                        subject: `❌ Błąd wysyłania karty podarunkowej #${card.id}`,
-                        html: `
-                            <h2>Błąd wysyłania karty</h2>
-                            <p><strong>Karta:</strong> #${card.id}</p>
-                            <p><strong>Kod:</strong> ${card.code}</p>
-                            <p><strong>Błąd:</strong> Brak adresu email odbiorcy</p>
-                            <p>Uzupełnij email odbiorcy w formularzu karty.</p>
-                        `
-                    });
+                    if (adminEmail) {
+                        await sendEmail({
+                            to: adminEmail,
+                            subject: `❌ Błąd wysyłania karty podarunkowej #${card.id}`,
+                            html: `
+                                <h2>Błąd wysyłania karty</h2>
+                                <p><strong>Karta:</strong> #${card.id}</p>
+                                <p><strong>Kod:</strong> ${card.code}</p>
+                                <p><strong>Błąd:</strong> Brak adresu email odbiorcy</p>
+                                <p>Uzupełnij email odbiorcy w formularzu karty.</p>
+                            `
+                        });
+                    }
                 } catch (e) {
                     console.error('Failed to send error notification:', e);
                 }
@@ -59,21 +61,23 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
             // Validate email format
             if (!isValidEmail(recipientEmail)) {
-                // Notify admin about invalid email
+                // 2. Validation error notification
                 try {
                     const { getAdminEmail } = await import('@/lib/email/sender');
                     const adminEmail = await getAdminEmail();
-                    await sendEmail({
-                        to: adminEmail,
-                        subject: `⚠️ Błędny adres email - karta #${card.id}`,
-                        html: `
-                            <h2>Błędny format adresu email</h2>
-                            <p><strong>Karta:</strong> #${card.id}</p>
-                            <p><strong>Kod:</strong> ${card.code}</p>
-                            <p><strong>Email:</strong> ${recipientEmail}</p>
-                            <p>Adres email jest nieprawidłowy. Sprawdź i spróbuj ponownie.</p>
-                        `
-                    });
+                    if (adminEmail) {
+                        await sendEmail({
+                            to: adminEmail,
+                            subject: `⚠️ Błędny adres email - karta #${card.id}`,
+                            html: `
+                                <h2>Błędny format adresu email</h2>
+                                <p><strong>Karta:</strong> #${card.id}</p>
+                                <p><strong>Kod:</strong> ${card.code}</p>
+                                <p><strong>Email:</strong> ${recipientEmail}</p>
+                                <p>Adres email jest nieprawidłowy. Sprawdź i spróbuj ponownie.</p>
+                            `
+                        });
+                    }
                 } catch (e) {
                     console.error('Failed to send validation error notification:', e);
                 }
@@ -124,15 +128,17 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
                 data: { status: 'sent', updated_at: new Date() }
             });
 
-            // Send confirmation (COPY) to admin
+            // 3. Send confirmation (COPY) to admin
             try {
                 const { getAdminEmail } = await import('@/lib/email/sender');
                 const adminEmail = await getAdminEmail();
-                await sendEmail({
-                    to: adminEmail,
-                    subject: `[KOPIA] 🎁 Karta wysłana do ${card.recipient_name || recipientEmail}`,
-                    html: emailHtml // Send the EXACT same HTML as the client received
-                });
+                if (adminEmail) {
+                    await sendEmail({
+                        to: adminEmail,
+                        subject: `[KOPIA] 🎁 Karta wysłana do ${card.recipient_name || recipientEmail}`,
+                        html: emailHtml // Send the EXACT same HTML as the client received
+                    });
+                }
             } catch (e) {
                 console.error('Failed to send confirmation to admin:', e);
             }
@@ -147,14 +153,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
                 stack: error?.stack,
             });
 
-            // Send error notification to admin
+            // 4. Send error notification to admin
             try {
                 const { getAdminEmail } = await import('@/lib/email/sender');
                 const adminEmail = await getAdminEmail();
-                await sendEmail({
-                    to: adminEmail,
-                    subject: `❌ Błąd wysyłania karty podarunkowej`,
-                    html: `
+                if (adminEmail) {
+                    await sendEmail({
+                        to: adminEmail,
+                        subject: `❌ Błąd wysyłania karty podarunkowej`,
+                        html: `
                         <h2>❌ Błąd wysyłania karty podarunkowej</h2>
                         <p><strong>Błąd:</strong> ${error?.message || 'Nieznany błąd'}</p>
                         <p><strong>Kod błędu:</strong> ${error?.code || 'N/A'}</p>
@@ -167,7 +174,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
                             <li>Sprawdź czy serwer mailowy jest dostępny</li>
                         </ul>
                     `
-                });
+                    });
+                }
             } catch (notifyError) {
                 console.error('Failed to send error notification:', notifyError);
             }

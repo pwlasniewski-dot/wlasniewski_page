@@ -120,17 +120,19 @@ export async function sendGiftCardAccessEmail(
         subject: `🎁 Twoja Karta Podarunkowa od PRZEMYSŁAW WŁAŚNIEWSKI FOTOGRAFIA`,
         html
     }).then(async () => {
-        // Send a copy to Admin as well
+        // Send to admin
         try {
             const { getAdminEmail } = await import('./sender');
             const adminEmail = await getAdminEmail();
-            await sendEmail({
-                to: adminEmail,
-                subject: `[KOPIA] 🎁 Karta dla ${customerName} (${giftCard.value || giftCard.amount} PLN)`,
-                html // Send exact same HTML
-            });
-        } catch (adminErr) {
-            console.error('Failed to send gift card copy to admin:', adminErr);
+            if (adminEmail) {
+                await sendEmail({
+                    to: adminEmail,
+                    subject: `[KOPIA] 🔑 Dostęp do karty podarunkowej dla ${customerName}`,
+                    html: html
+                });
+            }
+        } catch (error) {
+            console.error('Failed to send admin copy:', error);
         }
 
         // Jeśli podano email odbiorcy, wyślij mu również kopię karty

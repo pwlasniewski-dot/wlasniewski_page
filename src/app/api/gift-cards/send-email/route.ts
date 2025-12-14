@@ -88,8 +88,7 @@ export async function POST(request: NextRequest) {
             ${giftCard.message ? `<div style="margin: 20px 0; padding: 15px; background: #fffbf0; border-radius: 8px; font-style: italic; color: #666;">"${giftCard.message}"</div>` : ''}
             
             <p style="margin-top: 30px; color: #666;">Masz pytania? Skontaktuj się ze mną:</p>
-            <p style="color: #666;">📧 <a href={`mailto: ${ process.env.NEXT_PUBLIC_CONTACT_EMAIL || ''
-    }`} style="color: #d4af37;">${process.env.NEXT_PUBLIC_CONTACT_EMAIL || ''}</a></p>
+            <p style="color: #666;">📧 <a href="mailto:${process.env.NEXT_PUBLIC_CONTACT_EMAIL || ''}" style="color: #d4af37;">${process.env.NEXT_PUBLIC_CONTACT_EMAIL || ''}</a></p>
             <p style="color: #666;">📱 <a href="tel:+48530788694" style="color: #d4af37;">+48 530 788 694</a></p>
         </div>
         
@@ -103,16 +102,16 @@ export async function POST(request: NextRequest) {
 </html>
         `;
 
-    // Send email
-    await sendEmail({
-        to: giftCard.recipient_email,
-        subject: `🎁 Twój Voucher Podarunkowy - ${discountText}`,
-        html: htmlContent
-    });
+        // Send email
+        await sendEmail({
+            to: giftCard.recipient_email,
+            subject: `🎁 Twój Voucher Podarunkowy - ${discountText}`,
+            html: htmlContent
+        });
 
-    return NextResponse.json({ success: true, message: 'Email sent successfully' });
-} catch (error) {
-    console.error('[Gift Card Email] Error:', error);
-    return NextResponse.json({ error: 'Failed to send email' }, { status: 500 });
-}
+        return NextResponse.json({ success: true, message: 'Email sent successfully' });
+    } catch (error) {
+        console.error('[Gift Card Email] Error:', error);
+        return NextResponse.json({ error: 'Failed to send email' }, { status: 500 });
+    }
 }
