@@ -12,15 +12,6 @@ interface OMnieContentProps {
 }
 
 export default function OMnieContent({ pageData, parallaxSections, contentCards }: OMnieContentProps) {
-    // Legacy hardcoded stats as fallback
-    const defaultStats = [
-        { title: "500+", description: "Sesji zdjęciowych" },
-        { title: "10+", description: "Lat doświadczenia" },
-        { title: "100%", description: "Zadowolonych klientów" },
-        { title: "∞", description: "Pięknych wspomnień" },
-    ];
-
-    const statsToRender = (contentCards && contentCards.length > 0) ? contentCards : defaultStats;
 
     return (
         <main className="min-h-screen bg-black text-white">
@@ -87,29 +78,6 @@ export default function OMnieContent({ pageData, parallaxSections, contentCards 
                         </div>
                     </motion.div>
                 )}
-
-                {/* Stats Grid */}
-                <motion.div
-                    initial={{ opacity: 0, y: 30 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.6 }}
-                    className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-20"
-                >
-                    {statsToRender.map((stat, index) => (
-                        <div
-                            key={index}
-                            className="text-center p-6 bg-zinc-900 border border-white/5 hover:border-gold-400/30 transition-colors rounded-lg"
-                        >
-                            <div className="text-4xl font-bold text-gold-400 mb-2 font-display">
-                                {stat.title}
-                            </div>
-                            <div className="text-sm text-zinc-400 font-sans tracking-wide uppercase">
-                                {stat.description}
-                            </div>
-                        </div>
-                    ))}
-                </motion.div>
 
                 {/* Additional Parallax Sections */}
                 {parallaxSections.slice(1).map((section, index) => (

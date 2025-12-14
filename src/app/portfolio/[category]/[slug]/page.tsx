@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import LightboxGallery from '@/components/LightboxGallery';
+import HeroSlider from '@/components/HeroSlider';
 
 type Props = {
     params: Promise<{ category: string; slug: string }>;
@@ -109,37 +110,50 @@ export default async function SessionPage({ params }: Props) {
     return (
         <main className="min-h-screen bg-black text-white">
             {/* Hero Section */}
-            <section className="relative h-[70vh] overflow-hidden">
-                {session.cover_image_url && (
-                    <div
-                        className="absolute inset-0 bg-cover"
-                        style={{
-                            backgroundImage: `url('${session.cover_image_url}')`,
-                            backgroundPosition: '50% 25%'
-                        }}
-                    />
-                )}
-                <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-black" />
+            <HeroSlider
+                slides={[
+                    // Cover Image as first slide
+                    ...(session.cover_image_url ? [{
+                        id: 'cover',
+                        image: session.cover_image_url,
+                        title: session.title,
+                        subtitle: category,
+                        description: session.description || undefined,
+                        enabled: true,
+                        order: 0,
+                        textAnimation: 'fade' as const,
+                        buttonText: 'Zobacz Zdjęcia',
+                        buttonLink: '#gallery' // smooth scroll anchor
+                    }] : []),
+                    // First 5 gallery images as subsequent slides
+                    ...galleryImages.slice(0, 5).map((img, index) => ({
+                        id: img.id,
+                        image: img.url,
+                        title: session.title,
+                        subtitle: category,
+                        description: session.description || undefined,
+                        enabled: true,
+                        order: index + 1,
+                        textAnimation: 'fade' as const,
+                        buttonText: 'Zobacz Zdjęcia',
+                        buttonLink: '#gallery'
+                    }))
+                ]}
+            />
 
-                <div className="relative h-full flex flex-col justify-end p-8 md:p-16 max-w-7xl mx-auto">
-                    <Link
-                        href={`/portfolio/${category}`}
-                        className="inline-flex items-center text-gold-400 hover:text-gold-300 mb-8 transition-colors"
-                    >
-                        <ArrowLeft className="mr-2 h-5 w-5" />
-                        Powrót do {category}
-                    </Link>
+            {/* Back Link Overlay (Absolute positioning over slider) */}
+            <div className="absolute top-24 left-4 md:left-8 z-30">
+                <Link
+                    href={`/portfolio/${category}`}
+                    className="inline-flex items-center text-white/80 hover:text-gold-400 transition-colors bg-black/20 backdrop-blur-sm px-4 py-2 rounded-full"
+                >
+                    <ArrowLeft className="mr-2 h-5 w-5" />
+                    Powrót do {category}
+                </Link>
+            </div>
 
-                    <h1 className="text-5xl md:text-7xl font-bold font-display mb-4">
-                        {session.title}
-                    </h1>
-                    {session.description && (
-                        <p className="text-xl text-zinc-300 max-w-3xl">
-                            {session.description}
-                        </p>
-                    )}
-                </div>
-            </section>
+            {/* Gallery Grid Anchor */}
+            <div id="gallery" />
 
             {/* Gallery Grid */}
             <section className="py-16 mx-auto">
