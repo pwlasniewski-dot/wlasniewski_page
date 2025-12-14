@@ -51,7 +51,7 @@ export default function AdminLogsPage() {
             const data = await res.json();
 
             // Create Blob and Download
-            const blob = new Blob([JSON.stringify(data.report, null, 2)], { type: 'application/json' });
+            const blob = new Blob(['\uFEFF' + JSON.stringify(data.report, null, 2)], { type: 'application/json' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;

@@ -2,10 +2,8 @@
 // Admin endpoint for managing challenges
 
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/db/prisma';
 import { withAuth } from '@/lib/auth/middleware';
-
-const prisma = new PrismaClient();
 
 // GET - Fetch challenge details with timeline
 export async function GET(

@@ -1,6 +1,4 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '@/lib/db/prisma';
 
 // Cache settings for 5 minutes
 let settingsCache: Record<string, any> | null = null;

@@ -4,7 +4,7 @@ import { sendEmail } from "@/lib/email/sender";
 import { generateClientEmail, generateAdminEmail } from "@/lib/email-templates";
 import { logSystem } from "@/lib/logger";
 
-const prisma = new PrismaClient();
+import prisma from '@/lib/db/prisma';
 
 // Photographer's email for admin notifications
 const ADMIN_EMAIL = "przemyslaw@wlasniewski.pl";
@@ -38,7 +38,7 @@ export async function POST(request: Request) {
 
         // Basic validation
         if (!service || !packageName || !date || !name || !email) {
-            await logSystem('WARN', 'BOOKING', 'Booking attempt failed: Missing required data', { email, name });
+            await logSystem('WARN', 'BOOKING', 'Booking attempt failed: Missing required data', { email, name, missing: 'service/package/date/name/email' });
             return NextResponse.json(
                 { ok: false, message: "Brak wymaganych danych" },
                 { status: 400 }
@@ -65,7 +65,7 @@ export async function POST(request: Request) {
             },
         });
 
-        await logSystem('INFO', 'BOOKING', `New booking created: #${booking.id} - ${service}`, { bookingId: booking.id, email });
+        await logSystem('INFO', 'BOOKING', `New booking created: #${booking.id} - ${service}`, { bookingId: booking.id, email, service });
 
         // Prepare email data
         const formattedDate = new Date(date).toLocaleDateString('pl-PL', {
@@ -265,9 +265,12 @@ export async function PATCH(request: Request) {
             data: updateData,
         });
 
+        await logSystem('INFO', 'BOOKING', `Booking #${id} updated`, { bookingId: id, updates: updateData });
+
         return NextResponse.json({ ok: true, booking });
     } catch (error) {
         console.error("Error updating booking:", error);
+        await logSystem('ERROR', 'BOOKING', `Booking #${id} update failed`, { error: String(error) });
         return NextResponse.json(
             { ok: false, message: "Błąd podczas aktualizacji" },
             { status: 500 }

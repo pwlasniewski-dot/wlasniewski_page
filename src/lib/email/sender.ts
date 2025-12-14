@@ -38,30 +38,32 @@ async function getSMTPConfig() {
     }
 }
 
+import { logSystem } from '@/lib/logger';
+
+// ... (imports)
+
+// ... (getSMTPConfig function remains same)
+
 // Email transporter configuration (will be initialized lazily)
 let transporter: any = null;
 
 async function getTransporter() {
     if (!transporter) {
         const config = await getSMTPConfig();
-        
+
         // Validate SMTP config
         if (!config.host || !config.user || !config.pass) {
-            console.error('❌ SMTP not configured! Missing:', {
+            const missing = {
                 host: !config.host ? 'MISSING' : '✓',
                 user: !config.user ? 'MISSING' : '✓',
                 pass: !config.pass ? 'MISSING' : '✓'
-            });
+            };
+            console.error('❌ SMTP not configured! Missing:', missing);
+            await logSystem('ERROR', 'EMAIL', 'SMTP Configuration Missing', missing);
             throw new Error('SMTP not configured. Configure settings in Admin → Settings → Email');
         }
-        
-        console.log('📧 Initializing SMTP transporter with config:', {
-            host: config.host,
-            port: config.port,
-            user: config.user,
-            hasPassword: !!config.pass,
-            from: config.from,
-        });
+
+        // ... (console code)
 
         transporter = nodemailer.createTransport({
             host: config.host,
@@ -88,17 +90,11 @@ export async function sendEmail(emailData: EmailData) {
     try {
         const { to, subject, template, data, html } = emailData;
 
-        console.log('📧 Sending email to:', to);
+        // Log attempt
+        await logSystem('INFO', 'EMAIL', 'Attempting to send email', { to, subject });
 
         // Get SMTP config (from database or env vars)
         const config = await getSMTPConfig();
-        console.log('📧 SMTP Config:', {
-            host: config.host,
-            port: config.port,
-            user: config.user,
-            hasPass: !!config.pass,
-            from: config.from,
-        });
 
         // Use provided HTML or render from template
         let emailHtml = html;
@@ -110,7 +106,7 @@ export async function sendEmail(emailData: EmailData) {
             throw new Error('Either html or template+data must be provided');
         }
 
-        const transport = await getTransporter();
+        const transport = await getTransporter(); // This might throw SMTP config error
         const result = await transport.sendMail({
             from: config.from,
             to,
@@ -119,14 +115,14 @@ export async function sendEmail(emailData: EmailData) {
         });
 
         console.log('✅ Email sent successfully:', result.messageId);
+        await logSystem('INFO', 'EMAIL', 'Email sent successfully', { messageId: result.messageId, to, subject });
         return { success: true, messageId: result.messageId };
     } catch (error: any) {
-        console.error('❌ Email send error:', {
-            message: error.message,
-            code: error.code,
-            commandsupported: error.commandsupported,
-            responseCode: error.responseCode,
+        console.error('❌ Email send error:', error);
+        await logSystem('ERROR', 'EMAIL', 'Email send failed', {
+            error: error.message,
             to: emailData.to,
+            subject: emailData.subject
         });
         throw error;
     }

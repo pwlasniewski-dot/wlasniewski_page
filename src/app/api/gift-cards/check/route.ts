@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import prisma from '@/lib/db/prisma';
 
 // GET /api/gift-cards/check?code=XXX - Check if gift card is valid and available
 export async function GET(req: Request) {

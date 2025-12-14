@@ -1,7 +1,6 @@
-import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
 
-const prisma = new PrismaClient();
+import { NextResponse } from "next/server";
+import prisma from '@/lib/db/prisma';
 
 // GET: Fetch menu tree
 export async function GET() {
@@ -50,7 +49,7 @@ export async function GET() {
             const fallback = pages.map(p => ({
                 id: p.id,
                 title: p.menu_title || p.title,
-                url: p.slug === 'strona-glowna' ? '/' : `/${p.slug}`,
+                url: p.slug === 'strona-glowna' ? '/' : `/ ${p.slug} `,
                 page_id: p.id,
                 parent_id: null,
                 order: p.menu_order || 0,

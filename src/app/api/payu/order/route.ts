@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import prisma from '@/lib/db/prisma';
 import { createPayUOrder, OrderRequest } from "@/lib/payu";
 import { headers } from "next/headers";
-
-const prisma = new PrismaClient();
 
 export async function POST(request: NextRequest) {
     try {
@@ -12,7 +10,7 @@ export async function POST(request: NextRequest) {
             amount, // in PLN (full units), or passed as grosze? Let's expect PLN for simplicity or handle consistent. 
             // Better expect grosze (integers) to avoid float issues, but frontend creates challenge with logic. 
             // challenge_price is Int (usually PLN in this DB? schema says Int. If 200 PLN is 200, then it's PLN units. If 20000, it's grosze.)
-            // Looking at `PhotoChallenge` model: `challenge_price Int`. `ClientGallery` has `price_per_premium Int @default(2000)` = 20PLN.
+            // Looking at `PhotoChallenge` model: `challenge_price Int`. `ClientGallery` has `price_per_premium Int @default (2000)` = 20PLN.
             // So DB uses GRAOSZE (cents). 
             // But `ChallengePackage` might store PLN?
             // "challenge_price: 200" on frontend usually means 200 PLN.
@@ -35,13 +33,13 @@ export async function POST(request: NextRequest) {
 
         // Generate unique extOrderId
         // Format: TYPE_ID_TIMESTAMP to allow parsing in Notify
-        let extOrderId = `ORDER_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        let extOrderId = `ORDER_${Date.now()}_${Math.floor(Math.random() * 1000)} `;
         if (challengeId) {
             // We need to fetch the challenge unique_link or use ID. unique_link is safer public ID but ID is internal.
             // If we use ID, we parse it back. 
-            extOrderId = `CHALLENGE_${challengeId}_${Date.now()}`;
+            extOrderId = `CHALLENGE_${challengeId}_${Date.now()} `;
         } else if (bookingId) {
-            extOrderId = `BOOKING_${bookingId}_${Date.now()}`;
+            extOrderId = `BOOKING_${bookingId}_${Date.now()} `;
         }
 
         const orderData: OrderRequest = {

@@ -1,9 +1,8 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/db/prisma';
 import { requireAuth, AuthenticatedRequest } from '@/lib/auth/middleware';
 import type { NextRequest } from 'next/server';
 
-const prisma = new PrismaClient();
 
 // Route segment config for Next.js
 export const dynamic = 'force-dynamic';

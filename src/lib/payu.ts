@@ -1,7 +1,5 @@
-import { PrismaClient } from "@prisma/client";
+import prisma from '@/lib/db/prisma';
 import { headers } from "next/headers";
-
-const prisma = new PrismaClient();
 
 interface PayUSettings {
     merchantPosId: string;

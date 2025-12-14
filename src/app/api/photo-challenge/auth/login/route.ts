@@ -2,11 +2,9 @@
 // Logowanie użytkownika wyzwania
 
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/db/prisma';
 import { verifyPassword, createUserToken } from '@/lib/photo-challenge/auth';
 import type { ChallengeUserLoginRequest, ChallengeAuthResponse } from '@/types/photo-challenge';
-
-const prisma = new PrismaClient();
 
 export async function POST(request: NextRequest) {
     try {
