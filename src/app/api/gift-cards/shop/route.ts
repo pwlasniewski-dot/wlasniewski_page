@@ -75,6 +75,7 @@ export async function GET() {
             cards: formattedCards,
             settings: {
                 heroImage: (settings as any)?.gift_card_hero_image || null,
+                heroOpacity: (settings as any)?.gift_card_hero_opacity || 0.6,
                 rotationInterval: (settings as any)?.gift_card_promo_rotation_interval || 5
             }
         });

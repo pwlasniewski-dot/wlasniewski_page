@@ -359,6 +359,14 @@ export default function RezerwacjaPage() {
                 throw new Error("No booking ID returned");
             }
 
+            // If price is 0, skip payment
+            if (finalPrice === 0) {
+                // Optionally update booking status to confirmed/paid here if needed
+                // For now just redirect to confirmation
+                window.location.href = "/rezerwacja/potwierdzenie";
+                return;
+            }
+
             // Redirect to Stripe checkout
             const checkoutRes = await fetch(getApiUrl('checkout'), {
                 method: "POST",

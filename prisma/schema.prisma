@@ -129,6 +129,7 @@ model Setting {
   gift_card_promo_description String? // Long description for the promo
   gift_card_promo_rotation_interval Int? @default(5) // seconds between card rotation
   gift_card_hero_image    String?  // Background image for gift card shop
+  gift_card_hero_opacity  Float?   @default(0.6) // Opacity of the dark overlay (0.0 - 1.0)
 
   // SEO & Analytics
   google_analytics_id      String?

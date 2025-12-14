@@ -311,6 +311,65 @@ export default function SettingsPage() {
                             </button>
                         </div>
 
+                        {/* Gift Card Shop Hero Settings */}
+                        <div className="mt-6 pt-6 border-t border-zinc-700">
+                            <h3 className="text-md font-medium text-white mb-4">Tło Sklepu</h3>
+
+                            <div className="mb-6">
+                                <label className="block text-sm font-medium text-zinc-400 mb-2">Zdjęcie w tle</label>
+                                <div className="flex gap-4 items-start">
+                                    <div className="relative w-32 h-20 bg-zinc-950 rounded-lg border border-zinc-700 overflow-hidden flex-shrink-0">
+                                        {(settings as any).gift_card_hero_image ? (
+                                            <img
+                                                src={(settings as any).gift_card_hero_image}
+                                                alt="Hero"
+                                                className="w-full h-full object-cover"
+                                            />
+                                        ) : (
+                                            <div className="flex items-center justify-center h-full text-zinc-600 text-xs">Brak</div>
+                                        )}
+                                    </div>
+                                    <div className="flex flex-col gap-2">
+                                        <button
+                                            onClick={() => openImagePicker('gift_card_hero_image')}
+                                            className="px-3 py-2 bg-zinc-800 hover:bg-zinc-700 rounded text-sm transition-colors border border-zinc-600"
+                                        >
+                                            Wybierz zdjęcie
+                                        </button>
+                                        {(settings as any).gift_card_hero_image && (
+                                            <button
+                                                onClick={() => setSettings(s => ({ ...s, gift_card_hero_image: '' }))}
+                                                className="px-3 py-2 bg-red-900/30 text-red-400 hover:bg-red-900/50 rounded text-sm transition-colors border border-red-900/50"
+                                            >
+                                                Usuń
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <div className="flex justify-between mb-2">
+                                    <label className="block text-sm font-medium text-zinc-400">Przezroczystość tła (przyciemnienie)</label>
+                                    <span className="text-gold-400 font-bold">
+                                        {Math.round(((settings as any).gift_card_hero_opacity || 0.6) * 100)}%
+                                    </span>
+                                </div>
+                                <input
+                                    type="range"
+                                    min="0"
+                                    max="1"
+                                    step="0.05"
+                                    value={(settings as any).gift_card_hero_opacity !== undefined ? (settings as any).gift_card_hero_opacity : 0.6}
+                                    onChange={(e) => setSettings(s => ({ ...s, gift_card_hero_opacity: parseFloat(e.target.value) }))}
+                                    className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-gold-500"
+                                />
+                                <p className="mt-1 text-xs text-zinc-500">
+                                    0% = brak przyciemnienia (jasne), 100% = pełna czerń (ciemne). Ustaw ok 60-80% dla czytelności tekstu.
+                                </p>
+                            </div>
+                        </div>
+
                         {String(settings.gift_card_promo_enabled) === 'true' && (
                             <div className="grid grid-cols-1 gap-4 mt-4 pt-4 border-t border-zinc-700">
                                 <div>

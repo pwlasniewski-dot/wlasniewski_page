@@ -27,6 +27,7 @@ export default function CreateChallengePage() {
 
     // Form state
     const [inviterName, setInviterName] = useState('');
+    const [inviterPhone, setInviterPhone] = useState('');
     const [inviteeName, setInviteeName] = useState('');
     const [inviteeEmail, setInviteeEmail] = useState('');
     const [selectedPackage, setSelectedPackage] = useState<number | null>(null);
@@ -59,7 +60,7 @@ export default function CreateChallengePage() {
     const selectedPkg = packages.find(p => p.id === selectedPackage);
     const selectedLoc = locations.find(l => l.id === selectedLocation);
 
-    const canProceedStep1 = inviterName.trim() && inviteeName.trim() && inviteeEmail.trim();
+    const canProceedStep1 = inviterName.trim() && inviterPhone.trim() && inviteeName.trim() && inviteeEmail.trim();
     const canProceedStep2 = selectedPackage !== null && selectedLocation !== null;
 
     const handlePayment = async () => {
@@ -73,6 +74,7 @@ export default function CreateChallengePage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     inviter_name: inviterName,
+                    inviter_phone: inviterPhone,
                     invitee_name: inviteeName,
                     invitee_email: inviteeEmail,
                     package_id: selectedPackage,
@@ -80,6 +82,7 @@ export default function CreateChallengePage() {
                     channel: 'email' // default to email
                 })
             });
+
 
             const data = await response.json();
 
@@ -124,9 +127,8 @@ export default function CreateChallengePage() {
                     {[1, 2, 3].map((s) => (
                         <div
                             key={s}
-                            className={`flex-1 h-1 mx-2 rounded ${
-                                s <= step ? 'bg-gold-500' : 'bg-zinc-700'
-                            }`}
+                            className={`flex-1 h-1 mx-2 rounded ${s <= step ? 'bg-gold-500' : 'bg-zinc-700'
+                                }`}
                         />
                     ))}
                 </div>
@@ -183,11 +185,10 @@ export default function CreateChallengePage() {
                         <button
                             onClick={() => setStep(2)}
                             disabled={!canProceedStep1}
-                            className={`w-full py-3 rounded-lg font-bold flex items-center justify-center gap-2 transition-colors ${
-                                canProceedStep1
-                                    ? 'bg-gold-500 hover:bg-gold-600 text-black'
-                                    : 'bg-zinc-700 text-zinc-500 cursor-not-allowed'
-                            }`}
+                            className={`w-full py-3 rounded-lg font-bold flex items-center justify-center gap-2 transition-colors ${canProceedStep1
+                                ? 'bg-gold-500 hover:bg-gold-600 text-black'
+                                : 'bg-zinc-700 text-zinc-500 cursor-not-allowed'
+                                }`}
                         >
                             Dalej <ArrowRight size={20} />
                         </button>
@@ -209,11 +210,10 @@ export default function CreateChallengePage() {
                                     <div
                                         key={pkg.id}
                                         onClick={() => setSelectedPackage(pkg.id)}
-                                        className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                                            selectedPackage === pkg.id
-                                                ? 'border-gold-500 bg-gold-500/10'
-                                                : 'border-zinc-600 bg-zinc-900 hover:border-zinc-500'
-                                        }`}
+                                        className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${selectedPackage === pkg.id
+                                            ? 'border-gold-500 bg-gold-500/10'
+                                            : 'border-zinc-600 bg-zinc-900 hover:border-zinc-500'
+                                            }`}
                                     >
                                         <div className="flex justify-between items-start">
                                             <div>
@@ -247,11 +247,10 @@ export default function CreateChallengePage() {
                                     <div
                                         key={loc.id}
                                         onClick={() => setSelectedLocation(loc.id)}
-                                        className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                                            selectedLocation === loc.id
-                                                ? 'border-gold-500 bg-gold-500/10'
-                                                : 'border-zinc-600 bg-zinc-900 hover:border-zinc-500'
-                                        }`}
+                                        className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${selectedLocation === loc.id
+                                            ? 'border-gold-500 bg-gold-500/10'
+                                            : 'border-zinc-600 bg-zinc-900 hover:border-zinc-500'
+                                            }`}
                                     >
                                         <h3 className="font-bold text-lg">{loc.location_name}</h3>
                                         {loc.location_description && (
@@ -274,11 +273,10 @@ export default function CreateChallengePage() {
                             <button
                                 onClick={() => setStep(3)}
                                 disabled={!canProceedStep2}
-                                className={`flex-1 py-3 rounded-lg font-bold flex items-center justify-center gap-2 transition-colors ${
-                                    canProceedStep2
-                                        ? 'bg-gold-500 hover:bg-gold-600 text-black'
-                                        : 'bg-zinc-700 text-zinc-500 cursor-not-allowed'
-                                }`}
+                                className={`flex-1 py-3 rounded-lg font-bold flex items-center justify-center gap-2 transition-colors ${canProceedStep2
+                                    ? 'bg-gold-500 hover:bg-gold-600 text-black'
+                                    : 'bg-zinc-700 text-zinc-500 cursor-not-allowed'
+                                    }`}
                             >
                                 Dalej <ArrowRight size={20} />
                             </button>
@@ -295,6 +293,10 @@ export default function CreateChallengePage() {
                             <div className="flex justify-between">
                                 <span className="text-zinc-400">Od:</span>
                                 <span className="font-bold">{inviterName}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-zinc-400">Telefon:</span>
+                                <span className="font-bold">{inviterPhone}</span>
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-zinc-400">Dla:</span>
@@ -335,11 +337,10 @@ export default function CreateChallengePage() {
                             <button
                                 onClick={handlePayment}
                                 disabled={processingPayment}
-                                className={`flex-1 py-4 rounded-lg font-bold text-lg flex items-center justify-center gap-2 transition-colors ${
-                                    processingPayment
-                                        ? 'bg-zinc-700 text-zinc-500 cursor-not-allowed'
-                                        : 'bg-green-600 hover:bg-green-700 text-white'
-                                }`}
+                                className={`flex-1 py-4 rounded-lg font-bold text-lg flex items-center justify-center gap-2 transition-colors ${processingPayment
+                                    ? 'bg-zinc-700 text-zinc-500 cursor-not-allowed'
+                                    : 'bg-green-600 hover:bg-green-700 text-white'
+                                    }`}
                             >
                                 {processingPayment ? 'Przetwarzanie...' : `Zapłać ${selectedPkg?.challenge_price}zł`}
                             </button>

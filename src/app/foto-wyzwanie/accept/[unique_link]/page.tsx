@@ -8,6 +8,8 @@ import { Calendar, Clock, Check, ChevronLeft, ChevronRight } from 'lucide-react'
 interface ChallengeData {
     id: number;
     inviter_name: string;
+    inviter_contact: string;
+    inviter_contact_type: string;
     invitee_name: string;
     package_id: number;
     location_id?: number;
@@ -176,9 +178,8 @@ export default function AcceptChallengePage() {
                     {[1, 2, 3].map((s) => (
                         <div
                             key={s}
-                            className={`flex-1 h-1 mx-2 rounded ${
-                                s <= step ? 'bg-gold-500' : 'bg-zinc-700'
-                            }`}
+                            className={`flex-1 h-1 mx-2 rounded ${s <= step ? 'bg-gold-500' : 'bg-zinc-700'
+                                }`}
                         />
                     ))}
                 </div>
@@ -188,9 +189,28 @@ export default function AcceptChallengePage() {
                     <div className="bg-zinc-800/50 rounded-xl p-8 border border-zinc-700 mb-8">
                         <h2 className="text-2xl font-bold mb-6">Potwierdzenie danych</h2>
 
+                        {/* Trust / Verification Section */}
+                        <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-6 mb-8 text-center">
+                            <h3 className="text-lg font-bold text-amber-500 mb-2">
+                                🛡️ Weryfikacja bezpieczeństwa
+                            </h3>
+                            <p className="text-zinc-300 mb-4">
+                                Zaproszenie otrzymałeś/aś od:
+                            </p>
+                            <div className="text-2xl font-bold text-white mb-1">
+                                {challenge?.inviter_name}
+                            </div>
+                            <div className="text-xl text-gold-400 mb-6 font-mono">
+                                {challenge?.inviter_contact}
+                            </div>
+                            <p className="text-sm text-zinc-400">
+                                ⚠️ Dla bezpieczeństwa, zanim zaakceptujesz wyzwanie, skontaktuj się z osobą zapraszającą telefonicznie, aby potwierdzić to zaproszenie.
+                            </p>
+                        </div>
+
                         <div className="mb-8">
                             <label className="block text-sm font-medium text-zinc-300 mb-2">
-                                Imię (możesz zmienić)
+                                Twoje imię (możesz edytować)
                             </label>
                             <input
                                 type="text"
@@ -204,13 +224,12 @@ export default function AcceptChallengePage() {
                         <button
                             onClick={() => setStep(2)}
                             disabled={!name.trim()}
-                            className={`w-full py-3 rounded-lg font-bold transition-colors ${
-                                name.trim()
-                                    ? 'bg-gold-500 hover:bg-gold-600 text-black'
-                                    : 'bg-zinc-700 text-zinc-500 cursor-not-allowed'
-                            }`}
+                            className={`w-full py-3 rounded-lg font-bold transition-colors ${name.trim()
+                                ? 'bg-gold-500 hover:bg-gold-600 text-black'
+                                : 'bg-zinc-700 text-zinc-500 cursor-not-allowed'
+                                }`}
                         >
-                            Dalej
+                            Potwierdzam tożsamość i przechodzę dalej
                         </button>
                     </div>
                 )}
@@ -236,11 +255,10 @@ export default function AcceptChallengePage() {
                                     <button
                                         key={dateStr}
                                         onClick={() => handleDateSelect(dateStr)}
-                                        className={`p-3 rounded-lg border-2 transition-all text-center ${
-                                            isSelected
-                                                ? 'border-gold-500 bg-gold-500/10'
-                                                : 'border-zinc-600 bg-zinc-900 hover:border-zinc-500'
-                                        }`}
+                                        className={`p-3 rounded-lg border-2 transition-all text-center ${isSelected
+                                            ? 'border-gold-500 bg-gold-500/10'
+                                            : 'border-zinc-600 bg-zinc-900 hover:border-zinc-500'
+                                            }`}
                                     >
                                         <div className="text-xs text-zinc-400 uppercase">{dayName}</div>
                                         <div className="text-lg font-bold">{dayNum}</div>
@@ -259,11 +277,10 @@ export default function AcceptChallengePage() {
                             <button
                                 onClick={() => setStep(3)}
                                 disabled={!selectedDate}
-                                className={`flex-1 py-3 rounded-lg font-bold transition-colors ${
-                                    selectedDate
-                                        ? 'bg-gold-500 hover:bg-gold-600 text-black'
-                                        : 'bg-zinc-700 text-zinc-500 cursor-not-allowed'
-                                }`}
+                                className={`flex-1 py-3 rounded-lg font-bold transition-colors ${selectedDate
+                                    ? 'bg-gold-500 hover:bg-gold-600 text-black'
+                                    : 'bg-zinc-700 text-zinc-500 cursor-not-allowed'
+                                    }`}
                             >
                                 Dalej
                             </button>
@@ -292,13 +309,12 @@ export default function AcceptChallengePage() {
                                             onClick={() => setSelectedHour(slot.hour)}
                                             disabled={!slot.available}
                                             title={!slot.available ? `Zajęte: ${slot.reason}` : ''}
-                                            className={`p-3 rounded-lg font-bold transition-all text-sm ${
-                                                selectedHour === slot.hour && slot.available
-                                                    ? 'border-2 border-gold-500 bg-gold-500/10 text-white'
-                                                    : slot.available
+                                            className={`p-3 rounded-lg font-bold transition-all text-sm ${selectedHour === slot.hour && slot.available
+                                                ? 'border-2 border-gold-500 bg-gold-500/10 text-white'
+                                                : slot.available
                                                     ? 'border-2 border-zinc-600 bg-zinc-900 hover:border-zinc-500 text-white'
                                                     : 'border-2 border-red-500/50 bg-red-500/10 text-red-400 cursor-not-allowed'
-                                            }`}
+                                                }`}
                                         >
                                             {String(slot.hour).padStart(2, '0')}:00
                                         </button>
@@ -315,11 +331,10 @@ export default function AcceptChallengePage() {
                                     <button
                                         onClick={handleSubmit}
                                         disabled={selectedHour === null || submitting}
-                                        className={`flex-1 py-3 rounded-lg font-bold flex items-center justify-center gap-2 transition-colors ${
-                                            selectedHour !== null && !submitting
-                                                ? 'bg-green-600 hover:bg-green-700 text-white'
-                                                : 'bg-zinc-700 text-zinc-500 cursor-not-allowed'
-                                        }`}
+                                        className={`flex-1 py-3 rounded-lg font-bold flex items-center justify-center gap-2 transition-colors ${selectedHour !== null && !submitting
+                                            ? 'bg-green-600 hover:bg-green-700 text-white'
+                                            : 'bg-zinc-700 text-zinc-500 cursor-not-allowed'
+                                            }`}
                                     >
                                         <Check size={20} />
                                         {submitting ? 'Rezerwowanie...' : 'Potwierdź rezerwację'}

@@ -9,6 +9,7 @@ export async function POST(request: NextRequest) {
 
         const {
             inviter_name,
+            inviter_phone,
             invitee_name,
             invitee_email,
             package_id,
@@ -17,7 +18,7 @@ export async function POST(request: NextRequest) {
         } = body;
 
         // Validate required fields
-        if (!inviter_name || !invitee_name || !invitee_email || !package_id) {
+        if (!inviter_name || !inviter_phone || !invitee_name || !invitee_email || !package_id) {
             return NextResponse.json(
                 { success: false, error: 'Missing required fields' },
                 { status: 400 }
@@ -42,8 +43,8 @@ export async function POST(request: NextRequest) {
             data: {
                 unique_link: uniqueLink,
                 inviter_name,
-                inviter_contact: '', // Will be set from session/auth later
-                inviter_contact_type: 'email',
+                inviter_contact: inviter_phone,
+                inviter_contact_type: 'phone',   // Set type to phone
                 invitee_name,
                 invitee_contact: invitee_email,
                 invitee_contact_type: 'email',

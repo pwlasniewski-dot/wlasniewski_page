@@ -37,6 +37,7 @@ export default function GiftCardShop() {
     const [favorites, setFavorites] = useState<number[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [heroImage, setHeroImage] = useState<string | null>(null);
+    const [heroOpacity, setHeroOpacity] = useState(0.6);
 
     useEffect(() => {
         const fetchCards = async () => {
@@ -53,6 +54,9 @@ export default function GiftCardShop() {
 
                 if (settingsData?.heroImage) {
                     setHeroImage(settingsData.heroImage);
+                }
+                if (settingsData?.heroOpacity !== undefined) {
+                    setHeroOpacity(settingsData.heroOpacity);
                 }
             } catch (error) {
                 console.error('Failed to fetch gift cards');
@@ -107,24 +111,38 @@ export default function GiftCardShop() {
                             className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-[10s] hover:scale-105"
                             style={{ backgroundImage: `url(${heroImage})` }}
                         />
-                        <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px]" />
+                        <div
+                            className="absolute inset-0 bg-black transition-opacity duration-700"
+                            style={{ opacity: heroOpacity }}
+                        />
                     </>
                 ) : (
-                    <div className="absolute inset-0 bg-gradient-to-b from-zinc-900 to-black" />
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-zinc-900 via-black to-black" />
                 )}
 
                 <div className="relative z-10 max-w-7xl mx-auto px-6 text-center pt-20">
                     <motion.div
                         initial={{ opacity: 0, y: 30 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.8 }}
+                        transition={{ duration: 1, ease: "easeOut" }}
+                        className="flex flex-col items-center"
                     >
-                        <h1 className="text-5xl md:text-7xl font-display font-bold mb-6 drop-shadow-2xl">
-                            🎁 <span className="bg-gradient-to-r from-gold-300 via-gold-500 to-gold-300 bg-clip-text text-transparent">Karty Podarunkowe</span>
+                        <div className="w-px h-16 bg-gradient-to-b from-transparent via-gold-400 to-transparent mb-8" />
+
+                        <h2 className="text-gold-400 tracking-[0.2em] text-sm uppercase mb-4 font-medium">
+                            Premium Gift Cards
+                        </h2>
+
+                        <h1 className="text-5xl md:text-7xl font-display font-light text-white mb-8 tracking-wide">
+                            Karty <span className="italic font-serif text-gold-200">Podarunkowe</span>
                         </h1>
-                        <p className="text-xl md:text-2xl text-zinc-100 mb-8 max-w-2xl mx-auto drop-shadow-lg font-light">
-                            Spersonalizowana sesja fotograficzna to prezent, który zostanie na zawsze.
+
+                        <p className="text-lg md:text-xl text-zinc-300 max-w-xl mx-auto font-light leading-relaxed">
+                            Podaruj bliskim coś więcej niż przedmiot.
+                            <span className="block text-white mt-1">Podaruj niezapomniane wspomnienia.</span>
                         </p>
+
+                        <div className="w-px h-16 bg-gradient-to-b from-gold-400 via-transparent to-transparent mt-12" />
                     </motion.div>
                 </div>
             </section>
