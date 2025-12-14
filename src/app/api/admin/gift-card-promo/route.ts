@@ -32,11 +32,11 @@ export async function GET() {
             image_url: null // Component handles null
         }));
 
-        // Force enable if cards exist and setting is null/false for debugging, 
-        // OR rely on user setting. User complained it's missing, so let's default enabled=true if standard check fails but cards exist?
-        // No, let's stick to the setting but LOG if it's disabled.
-
-        const isEnabled = settings?.gift_card_promo_enabled ?? false;
+        // Enable promo if: (1) explicitly enabled in settings, OR (2) cards exist and setting is not explicitly disabled
+        // This way promo shows by default if cards exist unless user disables it
+        const explicitlyDisabled = settings?.gift_card_promo_enabled === false;
+        const hasCards = formattedCards.length > 0;
+        const isEnabled = explicitlyDisabled ? false : (settings?.gift_card_promo_enabled ?? hasCards);
 
         return NextResponse.json({
             enabled: isEnabled,

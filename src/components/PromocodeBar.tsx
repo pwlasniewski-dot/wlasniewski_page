@@ -13,7 +13,7 @@ interface PromoBarProps {
 }
 
 export default function PromocodeBar({
-    code = 'ZIMA2024',
+    code,
     discount = 20,
     discountType = 'percentage',
     expiryDate,
@@ -28,16 +28,20 @@ export default function PromocodeBar({
     };
 
     const handleCopy = () => {
-        navigator.clipboard.writeText(code);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
+        if (code) {
+            navigator.clipboard.writeText(code);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        }
     };
 
     useEffect(() => {
         // Auto-dismiss if localStorage has a marker for this code
-        const dismissed = localStorage.getItem(`promo-${code}-dismissed`);
-        if (dismissed) {
-            setIsVisible(false);
+        if (code) {
+            const dismissed = localStorage.getItem(`promo-${code}-dismissed`);
+            if (dismissed) {
+                setIsVisible(false);
+            }
         }
     }, [code]);
 
@@ -52,7 +56,7 @@ export default function PromocodeBar({
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
                 transition={{ duration: 0.3 }}
-                className="fixed top-32 left-4 right-4 sm:left-auto sm:right-8 z-40 max-w-sm"
+                className="fixed top-32 left-4 right-4 sm:left-auto sm:right-8 z-[100] max-w-sm"
             >
                 <div className="relative overflow-hidden rounded-2xl shadow-2xl">
                     {/* Background gradient */}

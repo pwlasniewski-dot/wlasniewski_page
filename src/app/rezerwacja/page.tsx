@@ -124,7 +124,8 @@ export default function RezerwacjaPage() {
                         if (settings.promo_code_discount_enabled === 'true' || settings.promo_code_discount_enabled === true) {
                             setPromoSettings({
                                 enabled: true,
-                                code: settings.promo_code || 'WELCOME',
+                                enabled: true,
+                                code: settings.promo_code, // Removed fallback
                                 discount: parseInt(settings.promo_code_discount_amount || '10'),
                                 discountType: settings.promo_code_discount_type || 'percentage',
                                 expiryDate: settings.promo_code_expiry_date
@@ -220,31 +221,40 @@ export default function RezerwacjaPage() {
         setCodeMessage("");
 
         try {
-            const res = await fetch(getApiUrl('promo-codes'), {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ code: promoCode })
-            });
-
             if (res.ok) {
                 const data = await res.json();
-                if (data.promo_code) {
+                if (data.success && data.discount) {
                     setDiscount({
-                        code: promoCode,
-                        value: data.promo_code.discount_value,
-                        type: data.promo_code.discount_type
+                        code: data.discount.code,
+                        value: data.discount.value,
+                        type: data.discount.type
                     });
                     setCodeMessage(`✅ Kod "${promoCode}" zastosowany!`);
                 } else {
-                    setCodeMessage("❌ Kod nie znaleziony lub wygasł");
+                    // Fallback to Settings Promo Code
+                    checkSettingsCode();
                 }
             } else {
-                setCodeMessage("❌ Kod nie znaleziony");
+                // Fallback to Settings Promo Code
+                checkSettingsCode();
             }
         } catch (error) {
-            setCodeMessage("❌ Błąd sprawdzania kodu");
+            checkSettingsCode();
         } finally {
             setCheckingCode(false);
+        }
+    };
+
+    const checkSettingsCode = () => {
+        if (promoSettings && promoSettings.enabled && promoSettings.code === promoCode) {
+            setDiscount({
+                code: promoSettings.code,
+                value: promoSettings.discount,
+                type: promoSettings.discountType
+            });
+            setCodeMessage(`✅ Kod "${promoCode}" zastosowany!`);
+        } else {
+            setCodeMessage("❌ Kod nie znaleziony lub wygasł");
         }
     };
 
