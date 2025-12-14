@@ -194,7 +194,7 @@ export async function POST(request: NextRequest) {
                             <p style="color: #d4af37; font-weight: bold;">⏳ Czekamy na potwierdzenie płatności...</p>
 
                             <div class="footer">
-                                <p>Jeśli masz pytania, skontaktuj się z nami: <strong>{process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'kontakt@wlasniewski.pl'}</strong></p>
+                                <p>Jeśli masz pytania, skontaktuj się z nami: <strong>{process.env.NEXT_PUBLIC_CONTACT_EMAIL || ''}</strong></p>
                                 <p>© Fotograf Wlasniewski - Wszystkie prawa zastrzeżone</p>
                             </div>
                         </div>

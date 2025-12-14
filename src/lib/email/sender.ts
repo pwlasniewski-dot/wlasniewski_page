@@ -4,27 +4,31 @@ import prisma from '@/lib/db/prisma';
 // Get SMTP configuration from database or environment variables
 export async function getSMTPConfig() {
     try {
-        // Try to get from database first
-        const settings = await prisma.setting.findMany({
-            where: {
-                setting_key: {
-                    in: ['smtp_host', 'smtp_port', 'smtp_user', 'smtp_password', 'smtp_from']
-                }
-            }
+        // Try to get from database first - lookup the main settings record (same as Admin API)
+        const mainSettings = await prisma.setting.findFirst({
+            orderBy: { id: 'asc' }
         });
 
-        const config: any = {};
-        settings.forEach(s => {
-            config[s.setting_key] = s.setting_value;
-        });
+        if (mainSettings) {
+            // Use database settings if available
+            // We check if at least one critical field is set in DB to prefer it over Env
+            // But usually we can just fallback individually or prefer DB.
+            return {
+                host: mainSettings.smtp_host || process.env.SMTP_HOST,
+                port: mainSettings.smtp_port || parseInt(process.env.SMTP_PORT || '587'),
+                user: mainSettings.smtp_user || process.env.SMTP_USER,
+                pass: mainSettings.smtp_password || process.env.SMTP_PASS || process.env.SMTP_PASSWORD,
+                from: mainSettings.smtp_from || process.env.SMTP_FROM || process.env.SMTP_USER,
+            };
+        }
 
-        // Use database settings if available, otherwise fallback to env
+        // Fallback to env if no DB record found
         return {
-            host: config.smtp_host || process.env.SMTP_HOST,
-            port: parseInt(config.smtp_port || process.env.SMTP_PORT || '587'),
-            user: config.smtp_user || process.env.SMTP_USER,
-            pass: config.smtp_password || process.env.SMTP_PASS || process.env.SMTP_PASSWORD,
-            from: config.smtp_from || process.env.SMTP_FROM || process.env.SMTP_USER,
+            host: process.env.SMTP_HOST,
+            port: parseInt(process.env.SMTP_PORT || '587'),
+            user: process.env.SMTP_USER,
+            pass: process.env.SMTP_PASS || process.env.SMTP_PASSWORD,
+            from: process.env.SMTP_FROM || process.env.SMTP_USER,
         };
     } catch (error) {
         console.warn('⚠️ Could not load SMTP config from database, using environment variables:', error);
@@ -110,6 +114,8 @@ async function getTransporter() {
 interface EmailData {
     to: string;
     subject: string;
+    replyTo?: string;
+    text?: string;
     template?: string;
     data?: Record<string, any>;
     html?: string; // Direct HTML support
@@ -117,10 +123,10 @@ interface EmailData {
 
 export async function sendEmail(emailData: EmailData) {
     try {
-        const { to, subject, template, data, html } = emailData;
+        const { to, subject, replyTo, text, template, data, html } = emailData;
 
         // Log attempt
-        await logSystem('INFO', 'EMAIL', 'Attempting to send email', { to, subject });
+        await logSystem('INFO', 'EMAIL', 'Attempting to send email', { to, subject, replyTo });
 
         // Get SMTP config (from database or env vars)
         const config = await getSMTPConfig();

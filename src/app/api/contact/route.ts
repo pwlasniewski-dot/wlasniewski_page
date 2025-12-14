@@ -1,7 +1,7 @@
 
 import { NextResponse } from "next/server";
-import nodemailer from "nodemailer";
-import { getSMTPConfig, getAdminEmail } from "@/lib/email/sender";
+
+import { getAdminEmail, sendEmail } from "@/lib/email/sender";
 import { logSystem } from "@/lib/logger";
 
 export async function POST(request: Request) {
@@ -19,40 +19,13 @@ export async function POST(request: Request) {
             );
         }
 
-        const config = await getSMTPConfig();
         const adminEmail = await getAdminEmail();
-
-        // Verify SMTP config
-        if (!config.host || !config.user || !config.pass) {
-            const missing = {
-                host: !config.host ? 'MISSING' : 'OK',
-                user: !config.user ? 'MISSING' : 'OK',
-                pass: !config.pass ? 'MISSING' : 'OK',
-                from: config.from
-            };
-            await logSystem('ERROR', 'CONTACT', 'SMTP configuration incomplete', missing);
-            return NextResponse.json(
-                { error: `Email nie jest skonfigurowany. Kontakt: ${adminEmail}` },
-                { status: 500 }
-            );
+        if (!adminEmail) {
+            throw new Error("Admin email is not configured");
         }
 
-        const transporter = nodemailer.createTransport({
-            host: config.host,
-            port: config.port || 587,
-            secure: config.port === 465,
-            auth: {
-                user: config.user,
-                pass: config.pass,
-            },
-        });
-
-        // Verify connection
-        await transporter.verify();
-
-        // Notify Admin
-        const result = await transporter.sendMail({
-            from: config.from,
+        // Send email using shared utility
+        const result = await sendEmail({
             to: adminEmail,
             replyTo: email,
             subject: `Nowa wiadomość od: ${name}`,

@@ -144,6 +144,7 @@ export async function POST(request: NextRequest) {
                     } else {
                         columnUpdates[key] = value;
                     }
+                    // DO NOT add to kvUpdates - keep single source of truth in columns
                 } else {
                     kvUpdates[key] = String(value);
                 }
