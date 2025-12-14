@@ -101,7 +101,7 @@ export default function BuyGiftCardPage() {
                 // Redirect to Stripe checkout
                 window.location.href = data.checkoutUrl;
             } else {
-                alert('Błąd przy tworzeniu sesji płatności: ' + (data.error || 'Nieznany błąd'));
+                alert('Błąd przy tworzeniu sesji płatności: ' + (data.details || data.error || 'Nieznany błąd'));
             }
         } catch (error) {
             console.error('Checkout error:', error);
