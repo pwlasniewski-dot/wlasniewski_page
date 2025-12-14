@@ -111,11 +111,16 @@ export async function POST(request: Request) {
         try {
             const { getAdminEmail } = await import('@/lib/email/sender');
             const adminEmail = await getAdminEmail();
-            await sendEmail({
-                to: adminEmail,
-                subject: `🎉 Nowa rezerwacja: ${name} - ${service} (${formattedDate})`,
-                html: generateAdminEmail(emailData)
-            });
+
+            if (!adminEmail) {
+                console.warn('⚠️ Admin email not set, skipping notification.');
+            } else {
+                await sendEmail({
+                    to: adminEmail,
+                    subject: `🎉 Nowa rezerwacja: ${name} - ${service} (${formattedDate})`,
+                    html: generateAdminEmail(emailData)
+                });
+            }
         } catch (adminEmailError) {
             await logSystem('ERROR', 'EMAIL', `Failed to send admin notification email`, { bookingId: booking.id, error: String(adminEmailError) });
         }
