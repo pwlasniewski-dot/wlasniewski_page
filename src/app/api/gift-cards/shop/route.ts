@@ -5,14 +5,14 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
     try {
-        // Get gift card shop settings
-        const shopSettings = await prisma.setting.findFirst({
-            where: { setting_key: 'gift_card_shop_enabled' }
+        // Get main settings
+        const settings = await prisma.setting.findFirst({
+            orderBy: { id: 'asc' }
         });
 
-        if (!shopSettings?.setting_value || shopSettings.setting_value !== 'true') {
-            return NextResponse.json({ message: 'Shop is disabled', cards: [] });
-        }
+        // Note: We're not blocking on 'gift_card_shop_enabled' anymore as it's not a standard column.
+        // If we need a toggle, we should use gift_card_promo_enabled or add a new column.
+        // For now, allow access.
 
         // Get all gift cards that are not used (available for reference)
         // In production, these would be product templates from admin
@@ -74,8 +74,8 @@ export async function GET() {
         return NextResponse.json({
             cards: formattedCards,
             settings: {
-                heroImage: shopSettings?.gift_card_hero_image || null,
-                rotationInterval: shopSettings?.gift_card_promo_rotation_interval || 5
+                heroImage: (settings as any)?.gift_card_hero_image || null,
+                rotationInterval: (settings as any)?.gift_card_promo_rotation_interval || 5
             }
         });
     } catch (error: any) {

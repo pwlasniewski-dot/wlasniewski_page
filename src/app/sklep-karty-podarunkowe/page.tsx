@@ -24,7 +24,7 @@ export default function GiftCardShop() {
                 // Fetch cards
                 const cardsRes = await fetch('/api/gift-cards/shop');
                 const cardsData = await cardsRes.json();
-                setCards(cardsData);
+                setCards(cardsData.cards || []);
 
                 // Fetch logo
                 const settingsRes = await fetch('/api/settings/public');
