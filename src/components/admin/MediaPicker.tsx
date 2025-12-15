@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import { X, Check, Search, Upload, FolderPlus, Folder, MoreHorizontal, Edit, Trash2, LayoutGrid, List as ListIcon, Move } from 'lucide-react';
 import { getApiUrl } from '@/lib/api-config';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
+import MediaItemCard from './MediaItemCard';
 
 interface MediaItem {
     id: number;
@@ -164,7 +165,7 @@ export default function MediaPicker({ isOpen, onClose, onSelect, multiple = fals
     };
 
     // --- Selection & Actions ---
-    const toggleSelection = (item: MediaItem) => {
+    const toggleSelection = useCallback((item: MediaItem) => {
         setSelectedItems(prev => {
             const isSelected = prev.some(i => i.id === item.id);
             if (isSelected) {
@@ -173,27 +174,41 @@ export default function MediaPicker({ isOpen, onClose, onSelect, multiple = fals
                 return [...prev, item];
             }
         });
-    };
+    }, []);
 
-    const handleItemClick = (item: MediaItem) => {
-        if (isSelectionMode || multiple) {
+    const handleItemClick = useCallback((item: MediaItem) => {
+        // Need to access the CURRENT state of isSelectionMode/multiple
+        // This is tricky with useCallback without adding them to dependency, which defeats the purpose if they change.
+        // However, isSelectionMode changes rarely.
+        // BETTER APPROACH for MediaItemCard: Pass the logic down or use a ref for the mode if we want pure stability.
+        // Just adding dependencies here is fine, the key is that 'item' is stable in loop? 
+        // No, 'item' changes per iteration. The function instance 'handleItemClick' changes when deps change.
+
+        // Actually, to make React.memo work best, we need stable function references.
+        // But handleItemClick depends on 'isSelectionMode' and 'multiple'.
+        // So passing it directly might update all cards when mode toggles (acceptable).
+        // But effectively, 'toggleSelection' is the one mostly used in bulk mode.
+
+        // We will trust the refs pattern or just accept update on mode change.
+
+        if (isSelectionModeRef.current || multipleRef.current) {
             toggleSelection(item);
         } else {
             onSelect(item.file_path, item.id);
             if (!inline) onClose();
         }
-    };
+    }, [toggleSelection, onSelect, inline, onClose]); // We will use refs for mutable booleans to keep this stable!
 
-    const handleSelectAll = () => {
-        if (selectedItems.length === filteredMedia.length) {
-            setSelectedItems([]);
-        } else {
-            setSelectedItems([...filteredMedia]);
-        }
-    };
+    // Refs for stable callbacks
+    const isSelectionModeRef = useRef(isSelectionMode);
+    const multipleRef = useRef(multiple);
+
+    useEffect(() => { isSelectionModeRef.current = isSelectionMode; }, [isSelectionMode]);
+    useEffect(() => { multipleRef.current = multiple; }, [multiple]);
+
 
     // --- Delete Logic ---
-    const handleDelete = async (ids: number[]) => {
+    const handleDelete = useCallback(async (ids: number[]) => {
         if (!confirm(`Czy na pewno chcesz usunąć ${ids.length} element(ów)?`)) return;
 
         const token = localStorage.getItem('admin_token');
@@ -214,26 +229,52 @@ export default function MediaPicker({ isOpen, onClose, onSelect, multiple = fals
         if (successCount > 0) {
             toast.success(`Usunięto ${successCount} zdjęć`);
             setSelectedItems([]);
-            fetchMedia();
-            fetchFolders();
+            // We need to fetchMedia? Or just filter out locally to avoid flickering?
+            // Local update is faster:
+            setMedia(prev => prev.filter(m => !ids.includes(m.id)));
+            // Also fetch to be sure
+            // fetchMedia(); // Debounced or deferred?
         }
-    };
+    }, []);
 
     // --- Drag to Move Logic ---
-    const startDragMedia = (e: React.DragEvent, item: MediaItem) => {
-        // If the item is not selected, select it (and clear others if no modifier?)
-        // For simplicity: If item is selected, we drag all selected. If not, only this one.
+    const startDragMedia = useCallback((e: React.DragEvent, item: MediaItem) => {
+        // Limitation: If we use selectedItems state here, we break memoization if we include it in dependency.
+        // But drags start infrequently.
+        // Actually for DataTransfer we need the data NOW. 
+        // We can just rely on the component re-rendering when selectedItems changes (which it does anyway for visual check).
+
+        // For 'MediaItemCard', we pass this function. If it changes, card re-renders.
+        // Ideally we want it stable.
+
+        // Let's rely on the fact that if you drag, you are interacting with ONE item.
+        // We can check the DOM or Store? 
+        // Let's keep it simple: It will re-render cards when 'selectedItems' changes. 
+        // BUT we want to avoid re-rendering ALL cards when we just click one.
+
+        // If we remove 'selectedItems' from dependency, we get stale closure.
+        // We can use a Ref for selectedItems!
+
+        const currentSelection = selectedItemsRef.current;
         let idsToDrag = [item.id];
-        if (selectedItems.some(i => i.id === item.id)) {
-            idsToDrag = selectedItems.map(i => i.id);
-        } else {
-            // We are dragging an unselected item.
-            // setDraggedMediaIds([item.id]); 
+        if (currentSelection.some(i => i.id === item.id)) {
+            idsToDrag = currentSelection.map(i => i.id);
         }
 
         setDraggedMediaIds(idsToDrag);
         e.dataTransfer.setData('application/json', JSON.stringify({ ids: idsToDrag, type: 'media_move' }));
         e.dataTransfer.effectAllowed = 'move';
+    }, []); // Empty dependency? using ref below.
+
+    const selectedItemsRef = useRef(selectedItems);
+    useEffect(() => { selectedItemsRef.current = selectedItems; }, [selectedItems]);
+
+    const handleSelectAll = () => {
+        if (selectedItems.length === filteredMedia.length) {
+            setSelectedItems([]);
+        } else {
+            setSelectedItems([...filteredMedia]);
+        }
     };
 
     const onDropToFolder = async (e: React.DragEvent, targetFolderName: string) => {
@@ -438,54 +479,18 @@ export default function MediaPicker({ isOpen, onClose, onSelect, multiple = fals
                             </div>
                         ) : (
                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 pb-20">
-                                {filteredMedia.map((item) => {
-                                    const isSelected = selectedItems.some(i => i.id === item.id);
-                                    return (
-                                        <div
-                                            key={item.id}
-                                            draggable
-                                            onDragStart={(e) => startDragMedia(e, item)}
-                                            onClick={() => handleItemClick(item)}
-                                            className={`group relative aspect-square rounded-lg overflow-hidden border cursor-pointer transition-all ${isSelected
-                                                ? 'border-gold-500 ring-2 ring-gold-500 ring-offset-1 ring-offset-zinc-900'
-                                                : 'border-zinc-800 hover:border-zinc-600'
-                                                }`}
-                                        >
-                                            <Image
-                                                src={item.file_path}
-                                                alt={item.file_name}
-                                                fill
-                                                className="object-cover"
-                                                sizes="200px"
-                                            />
-                                            {/* Selection Overlay */}
-                                            <div className={`absolute inset-0 transition-colors ${isSelected ? 'bg-gold-500/20' : 'bg-black/0 group-hover:bg-black/10'}`} />
-
-                                            {/* Checkbox (Visual) */}
-                                            <div className={`absolute top-2 left-2 w-5 h-5 rounded border flex items-center justify-center transition-colors ${isSelected ? 'bg-gold-500 border-gold-500 text-black' : 'bg-black/40 border-white/30 text-transparent group-hover:bg-black/60'}`}>
-                                                <Check className="w-3.5 h-3.5" />
-                                            </div>
-
-                                            {/* Hover Actions (Delete / Edit Single) */}
-                                            <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); handleDelete([item.id]); }}
-                                                    className="p-1 bg-red-900/80 hover:bg-red-600 rounded text-white"
-                                                    title="Usuń"
-                                                >
-                                                    <Trash2 className="w-3 h-3" />
-                                                </button>
-                                            </div>
-
-                                            {/* Meta badges */}
-                                            {item.folder !== 'uploads' && (
-                                                <div className="absolute bottom-1 right-1 px-1.5 py-0.5 bg-black/60 backdrop-blur rounded text-[10px] text-zinc-300 truncate max-w-[80%]">
-                                                    {item.folder}
-                                                </div>
-                                            )}
-                                        </div>
-                                    );
-                                })}
+                                {filteredMedia.map((item) => (
+                                    <MediaItemCard
+                                        key={item.id}
+                                        item={item}
+                                        isSelected={selectedItems.some(i => i.id === item.id)}
+                                        onToggle={toggleSelection}
+                                        onClick={handleItemClick} // Changed: pass the main handler
+                                        onDelete={handleDelete}
+                                        onDragStart={startDragMedia}
+                                        selectionMode={isSelectionMode}
+                                    />
+                                ))}
                             </div>
                         )}
                     </div>

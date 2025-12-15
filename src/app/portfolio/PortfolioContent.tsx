@@ -132,47 +132,51 @@ export default function PortfolioContent({ categories, sections, fallbackHeroSli
                 {/* Optional divider if sections exist */}
                 {sections.length > 0 && <div className="mb-16 border-t border-white/10" />}
 
-                <div className="flex flex-col gap-1">
+                <div className="flex flex-col gap-0">
                     {categories.map((category, index) => (
                         <Link
                             key={category.slug}
                             href={`/portfolio/${category.slug}`}
-                            className="group relative block w-full h-[60vh] md:h-[80vh] overflow-hidden"
+                            className="group relative block w-full overflow-hidden"
                         >
-                            {/* Background Image with Blur-Fit scaling */}
-                            {/* Background Image with Blur-Fit scaling */}
-                            {category.coverImage ? (
-                                /* Main Image - Always Cover (Full Width/Fill) */
-                                <div className="absolute inset-0">
-                                    <img
-                                        src={category.coverImage}
-                                        alt={category.title}
-                                        className="w-full h-full object-cover transition-transform duration-[1.5s] ease-out group-hover:scale-105"
-                                    />
-                                </div>
-                            ) : (
-                                <div className="absolute inset-0 bg-zinc-900" />
-                            )}
+                            {/* Wrapper for aspect ratio / sizing */}
+                            <div className="relative w-full">
+                                {category.coverImage ? (
+                                    /* Image - Full Width, Auto Height (No Crop) */
+                                    <div className="relative w-full overflow-hidden">
+                                        <img
+                                            src={category.coverImage}
+                                            alt={category.title}
+                                            className="w-full h-auto object-contain min-h-[50vh] transition-transform duration-[3s] ease-out group-hover:scale-110"
+                                        />
+                                    </div>
+                                ) : (
+                                    <div className="w-full h-[60vh] bg-zinc-900 flex items-center justify-center">
+                                        <Camera className="w-16 h-16 text-zinc-800" />
+                                    </div>
+                                )}
+                            </div>
 
-                            {/* Dark Overlay - lighter on hover */}
-                            <div className="absolute inset-0 bg-black/50 group-hover:bg-black/30 transition-colors duration-700" />
+                            {/* Bottom Fade & Blur Overlay */}
+                            <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-black via-black/60 to-transparent backdrop-blur-[2px] opacity-90 transition-opacity duration-500" />
 
-                            {/* Content - Centered */}
-                            <div className="absolute inset-0 flex flex-col items-center justify-center p-8 z-10">
-                                {/* Decorative Line */}
-                                <div className="w-px h-16 bg-gold-400 mb-6 transform origin-top scale-y-0 group-hover:scale-y-100 transition-transform duration-700 delay-100" />
+                            {/* Content - Bottom Right */}
+                            <div className="absolute inset-0 flex flex-col items-end justify-end p-8 md:p-12 z-10">
+                                <div className="text-right max-w-3xl transform translate-y-4 group-hover:translate-y-0 transition-transform duration-700">
+                                    {/* Image Count - Top Right of text block */}
+                                    <div className="text-xs font-mono text-gold-500 mb-2 uppercase tracking-widest opacity-80">
+                                        {category.imageCount} zdjęć
+                                    </div>
 
-                                <h2 className="text-5xl md:text-8xl font-medium text-white mb-4 font-display tracking-tight uppercase text-center opacity-90 group-hover:opacity-100 transition-opacity duration-500">
-                                    {category.title}
-                                </h2>
+                                    <h2 className="text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-2 font-display tracking-tight uppercase drop-shadow-lg">
+                                        {category.title}
+                                    </h2>
 
-                                <p className="text-gold-200 text-sm md:text-lg tracking-[0.3em] uppercase opacity-0 transform translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-700 delay-200 font-sans">
-                                    Zobacz Galerię
-                                </p>
-
-                                {/* Image Count Badge - Subtle */}
-                                <div className="absolute bottom-8 right-8 text-xs font-mono text-gold-500/50">
-                                    {category.imageCount} ZDJĘĆ
+                                    <div className="flex justify-end mt-4 opacity-0 group-hover:opacity-100 transition-opacity duration-500 delay-100">
+                                        <span className="flex items-center gap-2 text-gold-400 text-sm md:text-base font-bold tracking-widest uppercase">
+                                            Zobacz sesję <ArrowRight className="w-4 h-4" />
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         </Link>
