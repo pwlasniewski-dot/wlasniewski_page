@@ -19,9 +19,10 @@ interface PortfolioContentProps {
     fallbackHeroSlides: any[];
     showFallbackHero?: boolean;
     customHeroSlides?: any[];
+    isSessionMode?: boolean;
 }
 
-export default function PortfolioContent({ categories, sections, fallbackHeroSlides, showFallbackHero = false, customHeroSlides = [] }: PortfolioContentProps) {
+export default function PortfolioContent({ categories, sections, fallbackHeroSlides, showFallbackHero = false, customHeroSlides = [], isSessionMode = false }: PortfolioContentProps) {
 
     // Helper to render dynamic sections (reused logic)
     const renderSection = (section: any) => {
@@ -136,7 +137,7 @@ export default function PortfolioContent({ categories, sections, fallbackHeroSli
                     {categories.map((category, index) => (
                         <Link
                             key={category.slug}
-                            href={`/portfolio/${category.slug}`}
+                            href={isSessionMode ? `/portfolio/sesja/${category.slug}` : `/portfolio/${category.slug}`}
                             className="group relative block w-full overflow-hidden"
                         >
                             {/* Wrapper for aspect ratio / sizing */}

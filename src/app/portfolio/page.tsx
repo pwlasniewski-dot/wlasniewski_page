@@ -20,8 +20,29 @@ export async function generateMetadata(): Promise<Metadata> {
 export const dynamic = 'force-dynamic';
 
 export default async function PortfolioHome() {
-    // 1. Fetch Categories
+    // 1. Fetch Categories and Flatten to Hero Sessions
     const categories = await getPortfolioCategories();
+
+    // Flatten logic: Extract all sessions that are marked as hero
+    // We Map them to a structure compatible with the view
+    const heroSessions = categories.flatMap(cat => cat.sessions)
+        .filter(session => session.isCategoryHero === true) // Strict check
+        .map(session => ({
+            slug: session.slug, // Link to session, not category
+            title: session.title,
+            coverImage: session.coverImage,
+            imageCount: session.imageCount,
+            id: session.id
+        }));
+
+    // Fallback: If no hero sessions defined, maybe show categories?
+    // User requirement: "If 10 sessions, show 10". If 0, show 0?
+    // Let's assume if 0 hero sessions, we might fall back to categories to not show empty page.
+    // BUT user was specific about "Okładka kategorii".
+    // If heroSessions is empty, we fall back to old behavior?
+    // Let's keep it consistent: always pass the items list.
+    const displayItems = heroSessions.length > 0 ? heroSessions : categories;
+    const isSessionMode = heroSessions.length > 0;
 
     // 2. Fetch Page Logic (Portfolio & Homepage for fallback)
     const prisma = (await import("@/lib/db/prisma")).default;
@@ -79,11 +100,12 @@ export default async function PortfolioHome() {
 
     return (
         <PortfolioContent
-            categories={categories}
+            categories={displayItems}
             sections={portfolioSections}
             fallbackHeroSlides={homeData?.hero_slider || []}
             showFallbackHero={portfolioPage?.hero_subtitle === '1'}
             customHeroSlides={customHeroSlides}
+            isSessionMode={isSessionMode}
         />
     );
 }
