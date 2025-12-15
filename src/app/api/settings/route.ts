@@ -64,6 +64,13 @@ export async function POST(request: NextRequest) {
     return withAuth(request, async (req) => {
         try {
             const body = await request.json();
+            console.log('[API Settings POST] Received body:', {
+                payu_client_id: body.payu_client_id,
+                payu_client_secret: body.payu_client_secret,
+                payu_pos_id: body.payu_pos_id,
+                payu_md5_key: body.payu_md5_key,
+                payu_test_mode: body.payu_test_mode
+            });
 
             // Separate specific columns from generic key/value pairs
             const columnFields = [
@@ -125,6 +132,7 @@ export async function POST(request: NextRequest) {
                 // Legacy PayU keys -> map to DB columns
                 if (key === 'payu_pos_id') {
                     columnUpdates.payu_merchant_pos_id = value;
+                    console.log('[API Settings POST] Mapping payu_pos_id to payu_merchant_pos_id:', value);
                     // kvUpdates.payu_pos_id = String(value); // Don't create zombie row
                     continue;
                 }
@@ -132,6 +140,7 @@ export async function POST(request: NextRequest) {
                     // Handle boolean or string inputs robustly
                     const isSandbox = value === 'true' || value === true || value === '1' || value === 1;
                     columnUpdates.payu_environment = isSandbox ? 'sandbox' : 'secure';
+                    console.log('[API Settings POST] Mapping payu_test_mode to payu_environment:', columnUpdates.payu_environment);
                     // Do NOT save payu_test_mode as a separate row, rely on column payu_environment
                     continue;
                 }
@@ -155,6 +164,14 @@ export async function POST(request: NextRequest) {
             // 1. Update columns on the first record (or create if none)
             const firstSetting = await prisma.setting.findFirst({
                 orderBy: { id: 'asc' }
+            });
+
+            console.log('[API Settings POST] Column updates to apply:', {
+                payu_merchant_pos_id: columnUpdates.payu_merchant_pos_id,
+                payu_client_id: columnUpdates.payu_client_id,
+                payu_client_secret: columnUpdates.payu_client_secret,
+                payu_md5_key: columnUpdates.payu_md5_key,
+                payu_environment: columnUpdates.payu_environment
             });
 
             if (firstSetting) {

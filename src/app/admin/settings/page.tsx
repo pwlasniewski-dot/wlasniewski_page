@@ -137,6 +137,14 @@ export default function SettingsPage() {
 
             // Process portfolio categories if it's a string (from input)
             const settingsToSave = { ...settings };
+            console.log('[Admin Settings] Saving settings:', {
+                payu_client_id: settingsToSave.payu_client_id,
+                payu_client_secret: settingsToSave.payu_client_secret,
+                payu_pos_id: settingsToSave.payu_pos_id,
+                payu_md5_key: settingsToSave.payu_md5_key,
+                payu_test_mode: settingsToSave.payu_test_mode,
+                seasonal_effect: settingsToSave.seasonal_effect
+            });
             console.log('[Admin Settings] Saving settings with seasonal_effect:', settingsToSave.seasonal_effect);
 
             // Fix: ensure we don't double-stringify or corrupt data
