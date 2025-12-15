@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getApiUrl } from '@/lib/api-config';
-import { Save, ArrowLeft, Image as ImageIcon, X, Star } from 'lucide-react';
+import { Save, ArrowLeft, Image as ImageIcon, X, Star, Check } from 'lucide-react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import MediaPicker from '@/components/admin/MediaPicker';
@@ -23,6 +23,7 @@ export default function NewSessionPage() {
         highlighted_media_ids: [] as number[],
         session_date: new Date().toISOString().split('T')[0],
         is_published: false,
+        is_category_hero: false,
     });
     const [galleryUrls, setGalleryUrls] = useState<string[]>([]);
     const [saving, setSaving] = useState(false);
@@ -344,6 +345,25 @@ export default function NewSessionPage() {
                     onSelect={handleGallerySelect}
                     multiple={true}
                 />
+
+                <div className="flex items-center gap-3 p-4 bg-zinc-900 rounded-lg border border-zinc-800">
+                    <div className="relative flex items-center">
+                        <input
+                            type="checkbox"
+                            id="is_category_hero"
+                            className="peer h-5 w-5 cursor-pointer appearance-none rounded-md border border-zinc-600 bg-zinc-950 checked:border-gold-500 checked:bg-gold-500 transition-all"
+                            checked={formData.is_category_hero}
+                            onChange={(e) => setFormData({ ...formData, is_category_hero: e.target.checked } as any)}
+                        />
+                        <Check className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 text-black opacity-0 peer-checked:opacity-100" />
+                    </div>
+                    <label htmlFor="is_category_hero" className="cursor-pointer">
+                        <span className="block text-sm font-medium text-white">Okładka kategorii</span>
+                        <span className="block text-xs text-zinc-400">
+                            Ustaw to zdjęcie jako główne tło dla całej kategorii "{formData.category}" w portfolio.
+                        </span>
+                    </label>
+                </div>
 
                 <div>
                     <label className="block text-sm font-medium text-zinc-400 mb-1">Opis</label>

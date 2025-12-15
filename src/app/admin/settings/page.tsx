@@ -95,7 +95,23 @@ export default function SettingsPage() {
             const data = await res.json();
             console.log('[Admin Settings] Fetched settings:', data.settings);
             if (data.success) {
-                setSettings(prev => ({ ...prev, ...data.settings }));
+                setSettings(prev => {
+                    const newSettings = { ...prev, ...data.settings };
+
+                    // Parse portfolio_categories if it's a string
+                    if (typeof newSettings.portfolio_categories === 'string') {
+                        try {
+                            const parsed = JSON.parse(newSettings.portfolio_categories);
+                            if (Array.isArray(parsed)) {
+                                newSettings.portfolio_categories = parsed;
+                            }
+                        } catch (e) {
+                            // If parse fails, leave as string (might be comma separated legacy)
+                            console.warn('Failed to parse portfolio_categories JSON', e);
+                        }
+                    }
+                    return newSettings;
+                });
                 console.log('[Admin Settings] Updated state with seasonal_effect:', data.settings.seasonal_effect);
             }
 
@@ -124,12 +140,30 @@ export default function SettingsPage() {
 
             // Fix: ensure we don't double-stringify or corrupt data
             if (typeof settings.portfolio_categories === 'string') {
-                // Split by comma and trim, removing empty entries
-                const cats = settings.portfolio_categories
-                    .split(',')
-                    .map((s: string) => s.trim())
-                    .filter((s: string) => s.length > 0);
-                settingsToSave.portfolio_categories = JSON.stringify(cats);
+                const rawVal = settings.portfolio_categories.trim();
+
+                // If it looks like a JSON array, try parsing it first
+                if (rawVal.startsWith('[') && rawVal.endsWith(']')) {
+                    try {
+                        // It's likely already a JSON string (user didn't touch it, or fetchSettings failed to parse)
+                        // Verify if it parses to array
+                        const parsed = JSON.parse(rawVal);
+                        if (Array.isArray(parsed)) {
+                            settingsToSave.portfolio_categories = rawVal; // It's already good
+                        } else {
+                            // Not an array? Treat as string list
+                            throw new Error('Not an array');
+                        }
+                    } catch (e) {
+                        // Parse failed, treat as comma-separated list
+                        const cats = rawVal.split(',').map(s => s.trim()).filter(s => s.length > 0);
+                        settingsToSave.portfolio_categories = JSON.stringify(cats);
+                    }
+                } else {
+                    // Standard comma-separated string (from user input)
+                    const cats = rawVal.split(',').map(s => s.trim()).filter(s => s.length > 0);
+                    settingsToSave.portfolio_categories = JSON.stringify(cats);
+                }
             } else if (Array.isArray(settings.portfolio_categories)) {
                 // If it's already an array, perfect
                 settingsToSave.portfolio_categories = JSON.stringify(settings.portfolio_categories);

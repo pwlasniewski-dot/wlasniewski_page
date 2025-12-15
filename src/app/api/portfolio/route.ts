@@ -100,6 +100,7 @@ export async function POST(request: NextRequest) {
                     is_published: body.is_published || false,
                     meta_title: body.meta_title || body.title,
                     meta_description: body.meta_description || body.description || '',
+                    is_category_hero: body.is_category_hero || false,
                 } as any,
             });
 
