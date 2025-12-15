@@ -125,12 +125,14 @@ export async function POST(request: NextRequest) {
                 // Legacy PayU keys -> map to DB columns
                 if (key === 'payu_pos_id') {
                     columnUpdates.payu_merchant_pos_id = value;
-                    kvUpdates.payu_pos_id = String(value);
+                    // kvUpdates.payu_pos_id = String(value); // Don't create zombie row
                     continue;
                 }
                 if (key === 'payu_test_mode') {
-                    columnUpdates.payu_environment = value === 'true' || value === true ? 'sandbox' : 'secure';
-                    kvUpdates.payu_test_mode = (value === 'true' || value === true).toString();
+                    // Handle boolean or string inputs robustly
+                    const isSandbox = value === 'true' || value === true || value === '1' || value === 1;
+                    columnUpdates.payu_environment = isSandbox ? 'sandbox' : 'secure';
+                    // Do NOT save payu_test_mode as a separate row, rely on column payu_environment
                     continue;
                 }
 
