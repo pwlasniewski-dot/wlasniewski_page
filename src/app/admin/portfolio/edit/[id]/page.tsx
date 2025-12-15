@@ -201,6 +201,13 @@ export default function EditSessionPage() {
                 toast.success('Sesja zaktualizowana');
                 router.push('/admin/portfolio');
             } else {
+                if (res.status === 401) {
+                    localStorage.removeItem('admin_token');
+                    toast.error('Sesja wygasła. Zaloguj się ponownie.');
+                    router.push('/admin/login');
+                    return;
+                }
+
                 const text = await res.text();
                 console.error(`Update failed: ${res.status} ${res.statusText}`, text);
                 let errorMessage = 'Failed to update session';
