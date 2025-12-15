@@ -28,6 +28,15 @@ export async function GET(request: NextRequest) {
             const mainSettings = settings[0];
             const excludedKeys = ['id', 'setting_key', 'setting_value', 'updated_at'];
 
+            console.log('[API Settings GET] PayU fields from DB:', {
+                payu_client_id: (mainSettings as any).payu_client_id,
+                payu_client_secret: (mainSettings as any).payu_client_secret,
+                payu_merchant_pos_id: (mainSettings as any).payu_merchant_pos_id,
+                payu_md5_key: (mainSettings as any).payu_md5_key,
+                payu_notify_url: (mainSettings as any).payu_notify_url,
+                payu_environment: (mainSettings as any).payu_environment
+            });
+
             Object.keys(mainSettings).forEach(key => {
                 if (!excludedKeys.includes(key)) {
                     const val = (mainSettings as any)[key];
