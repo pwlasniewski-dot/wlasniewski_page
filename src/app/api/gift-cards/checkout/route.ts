@@ -2,43 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { nanoid } from 'nanoid';
 import { sendEmail } from '@/lib/email/sender';
+import { createPayUOrder, OrderRequest } from '@/lib/payu';
 
 export const dynamic = 'force-dynamic';
-
-// Get OAuth token from PayU
-async function getPayUToken() {
-    const clientId = process.env.PAYU_CLIENT_ID;
-    const clientSecret = process.env.PAYU_CLIENT_SECRET;
-    const baseUrl = process.env.PAYU_TEST_MODE === 'true'
-        ? 'https://secure.snd.payu.com'
-        : 'https://secure.payu.com';
-
-    const response = await fetch(`${baseUrl}/pl/standard/user/oauth/authorize`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: new URLSearchParams({
-            grant_type: 'client_credentials',
-            client_id: clientId || '',
-            client_secret: clientSecret || '',
-        }).toString(),
-    });
-
-    if (!response.ok) {
-        throw new Error('Failed to get PayU OAuth token');
-    }
-
-    const data = await response.json();
-    return data.access_token;
-}
-
-export async function GET() {
-    return NextResponse.json(
-        { error: 'Method not allowed', success: false },
-        { status: 405 }
-    );
-}
 
 interface CheckoutRequest {
     cardId: number;
@@ -107,53 +73,54 @@ export async function POST(request: NextRequest) {
             }
         });
 
-        // Create PayU order
-        const oauthToken = await getPayUToken();
-        const baseUrl = process.env.PAYU_TEST_MODE === 'true'
-            ? 'https://secure.sandbox.payu.com'
-            : 'https://secure.payu.com';
+        // Prepare PayU Order Data
+        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://wlasniewski.pl';
+        const clientIp = (request.headers.get('x-forwarded-for') || '127.0.0.1').split(',')[0].trim();
 
-        const payuResponse = await fetch(`${baseUrl}/api/v2_1/orders`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${oauthToken}`,
+        const orderRequest: OrderRequest = {
+            description: `Karta Podarunkowa - ${theme} (${value} PLN)`,
+            currencyCode: 'PLN',
+            totalAmount: Math.round(price * 100),
+            extOrderId: order.id.toString(),
+            buyer: {
+                email: customerEmail,
+                firstName: customerName.split(' ')[0],
+                lastName: customerName.split(' ').slice(1).join(' ') || 'N/A',
+                language: 'pl',
             },
-            body: JSON.stringify({
-                notifyUrl: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://wlasniewski.pl'}/api/payu/notify`,
-                customerIp: (request.headers.get('x-forwarded-for') || '127.0.0.1').split(',')[0].trim(),
-                merchantPosId: process.env.PAYU_POS_ID,
-                description: `Karta Podarunkowa - ${theme} (${value} PLN)`,
-                currencyCode: 'PLN',
-                totalAmount: Math.round(price * 100),
-                extOrderId: order.id.toString(),
-                buyer: {
-                    email: customerEmail,
-                    firstName: customerName.split(' ')[0],
-                    lastName: customerName.split(' ').slice(1).join(' ') || 'N/A',
-                    language: 'pl',
-                },
-                products: [
-                    {
-                        name: `Karta Podarunkowa - ${theme}`,
-                        unitPrice: Math.round(price * 100),
-                        quantity: 1,
-                    }
-                ]
-            }),
-        });
+            products: [
+                {
+                    name: `Karta Podarunkowa - ${theme}`,
+                    unitPrice: Math.round(price * 100),
+                    quantity: 1,
+                }
+            ],
+            // PayU requires a continue URL, ensuring user comes back to the site
+            redirectUri: `${baseUrl}/karta-podarunkowa/podziekowanie?orderId=${order.id}`,
+        };
 
-        if (!payuResponse.ok) {
-            throw new Error('Failed to create PayU order');
+        // Execute PayU Call via Library (uses DB settings)
+        let payuData;
+        try {
+            payuData = await createPayUOrder(orderRequest, clientIp);
+        } catch (payuError: any) {
+            console.error('PayU Library Error:', payuError);
+            // Return 500 but detail looks like "PayU settings not configured" or "PayU Auth Failed"
+            return NextResponse.json(
+                { error: 'Payment initialization failed', details: payuError.message },
+                { status: 500 }
+            );
         }
 
-        const payuData = await payuResponse.json();
         const payuOrderId = payuData.orders[0].orderId;
 
         // Update order with PayU order ID
         await prisma.giftCardOrder.update({
             where: { id: order.id },
-            data: { stripe_session_id: payuOrderId } // Reuse field for PayU order ID
+            data: {
+                payu_order_id: payuOrderId, // Use correct field for PayU
+                stripe_session_id: payuOrderId // Legacy/Fallback compatibility if needed
+            }
         });
 
         // Send confirmation email to customer
@@ -189,12 +156,12 @@ export async function POST(request: NextRequest) {
                                 <p><strong>Numer zamówienia:</strong> ${order.id}</p>
                             </div>
 
-                            <p>Po potwierddzeniu płatności otrzymasz wiadomość email z dostępem do karty podarunkowej.</p>
+                            <p>Po potwierdzeniu płatności otrzymasz wiadomość email z dostępem do karty podarunkowej.</p>
 
                             <p style="color: #d4af37; font-weight: bold;">⏳ Czekamy na potwierdzenie płatności...</p>
 
                             <div class="footer">
-                                <p>Jeśli masz pytania, skontaktuj się z nami: <strong>{process.env.NEXT_PUBLIC_CONTACT_EMAIL || ''}</strong></p>
+                                <p>Jeśli masz pytania, skontaktuj się z nami: <strong>${process.env.NEXT_PUBLIC_CONTACT_EMAIL || ''}</strong></p>
                                 <p>© Fotograf Wlasniewski - Wszystkie prawa zastrzeżone</p>
                             </div>
                         </div>
