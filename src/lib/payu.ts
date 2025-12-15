@@ -26,7 +26,9 @@ async function getPayUSettings(): Promise<PayUSettings | null> {
 }
 
 async function getAccessToken(settings: PayUSettings): Promise<string> {
-    const url = `https://${settings.environment}.payu.com/pl/standard/user/oauth/authorize`;
+    const domain = settings.environment === 'secure' ? 'secure.payu.com' : 'secure.snd.payu.com';
+    const url = `https://${domain}/pl/standard/user/oauth/authorize`;
+
     const body = new URLSearchParams({
         grant_type: 'client_credentials',
         client_id: settings.clientId,
@@ -75,7 +77,12 @@ export async function createPayUOrder(orderData: OrderRequest, clientIp: string)
     if (!settings) throw new Error("PayU settings not configured");
 
     const token = await getAccessToken(settings);
-    const url = `https://${settings.environment}.payu.com/api/v2_1/orders`;
+
+    // Correct PayU URLs
+    // Sandbox: secure.snd.payu.com
+    // Production: secure.payu.com
+    const domain = settings.environment === 'secure' ? 'secure.payu.com' : 'secure.snd.payu.com';
+    const url = `https://${domain}/api/v2_1/orders`;
 
     const payload = {
         notifyUrl: settings.notifyUrl, // Our backend webhook

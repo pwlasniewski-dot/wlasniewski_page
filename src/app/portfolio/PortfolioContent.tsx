@@ -96,7 +96,8 @@ export default function PortfolioContent({ categories, sections, fallbackHeroSli
     const hasHero = sections.some(s => s.type === 'hero_parallax' || s.type === 'parallax' || s.type === 'creative_slider');
 
     return (
-        <main className="min-h-screen bg-black text-white selection:bg-gold-500 selection:text-black">
+        <main className="min-h-screen bg-black text-white selection:bg-gold-500 selection:text-black relative z-0">
+
 
             {/* Dynamic Sections (Top) */}
             {sections.length > 0 && (

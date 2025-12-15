@@ -187,11 +187,11 @@ export async function POST(request: NextRequest) {
             accessToken: accessToken
         });
     } catch (error: any) {
-        console.error('Checkout error:', error);
+        console.error('Checkout error [FATAL]:', error);
         return NextResponse.json(
             {
                 error: 'Checkout failed',
-                details: error.message,
+                details: error.message || 'Unknown error',
                 success: false
             },
             { status: 500 }
