@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
                 'p24_merchant_id', 'p24_pos_id', 'p24_crc_key', 'p24_api_key',
                 'p24_test_mode', 'p24_method_blik', 'p24_method_card', 'p24_method_transfer',
                 // PayU Config (stored as merchant_pos_id/environment in DB)
-                'payu_client_id', 'payu_client_secret', 'payu_merchant_pos_id', 'payu_environment',
+                'payu_client_id', 'payu_client_secret', 'payu_merchant_pos_id', 'payu_md5_key', 'payu_environment',
                 // Booking Settings
                 'booking_require_payment', 'booking_payment_method', 'booking_currency', 'booking_min_days_ahead',
                 // Email SMTP

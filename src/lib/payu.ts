@@ -5,6 +5,7 @@ interface PayUSettings {
     merchantPosId: string;
     clientId: string;
     clientSecret: string;
+    md5Key: string;
     notifyUrl: string;
     environment: 'sandbox' | 'secure';
 }
@@ -18,6 +19,7 @@ async function getPayUSettings(): Promise<PayUSettings | null> {
         merchantPosId: settings.payu_merchant_pos_id,
         clientId: settings.payu_client_id,
         clientSecret: settings.payu_client_secret,
+        md5Key: settings.payu_md5_key || '',
         notifyUrl: settings.payu_notify_url || '',
         environment: (settings.payu_environment as 'sandbox' | 'secure') || 'sandbox',
     };

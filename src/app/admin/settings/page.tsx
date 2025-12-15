@@ -53,6 +53,7 @@ export default function SettingsPage() {
         payu_client_id: '',
         payu_client_secret: '',
         payu_pos_id: '',
+        payu_md5_key: '',
         payu_test_mode: true,
         // Portfolio
         portfolio_categories: [] as string[] | string, // Can be array or JSON string
@@ -951,7 +952,26 @@ export default function SettingsPage() {
                 <div className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-sm font-medium text-zinc-400 mb-1">Client ID</label>
+                            <label className="block text-sm font-medium text-zinc-400 mb-1">Id punktu płatności (pos_id)</label>
+                            <input
+                                type="text"
+                                value={settings.payu_pos_id || ''}
+                                onChange={e => setSettings(s => ({ ...s, payu_pos_id: e.target.value }))}
+                                className="block w-full rounded-md border-zinc-700 bg-zinc-800 text-white shadow-sm focus:border-gold-500 focus:ring-gold-500 sm:text-sm px-3 py-2"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-zinc-400 mb-1">Drugi klucz (MD5)</label>
+                            <input
+                                type="password"
+                                value={settings.payu_md5_key || ''}
+                                onChange={e => setSettings(s => ({ ...s, payu_md5_key: e.target.value }))}
+                                className="block w-full rounded-md border-zinc-700 bg-zinc-800 text-white shadow-sm focus:border-gold-500 focus:ring-gold-500 sm:text-sm px-3 py-2"
+                            />
+                            <p className="mt-1 text-xs text-zinc-500">W panelu PayU: Klucze Konfiguracji &rarr; Drugi klucz (MD5)</p>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-zinc-400 mb-1">Protokół OAuth - client_id</label>
                             <input
                                 type="text"
                                 value={settings.payu_client_id || ''}
@@ -960,20 +980,11 @@ export default function SettingsPage() {
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-zinc-400 mb-1">Client Secret</label>
+                            <label className="block text-sm font-medium text-zinc-400 mb-1">Protokół OAuth - client_secret</label>
                             <input
                                 type="password"
                                 value={settings.payu_client_secret || ''}
                                 onChange={e => setSettings(s => ({ ...s, payu_client_secret: e.target.value }))}
-                                className="block w-full rounded-md border-zinc-700 bg-zinc-800 text-white shadow-sm focus:border-gold-500 focus:ring-gold-500 sm:text-sm px-3 py-2"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-zinc-400 mb-1">POS ID</label>
-                            <input
-                                type="text"
-                                value={settings.payu_pos_id || ''}
-                                onChange={e => setSettings(s => ({ ...s, payu_pos_id: e.target.value }))}
                                 className="block w-full rounded-md border-zinc-700 bg-zinc-800 text-white shadow-sm focus:border-gold-500 focus:ring-gold-500 sm:text-sm px-3 py-2"
                             />
                         </div>

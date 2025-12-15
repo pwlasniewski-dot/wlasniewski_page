@@ -63,6 +63,7 @@ model Setting {
   payu_client_secret                String?
   payu_environment                  String   @default("sandbox")
   payu_merchant_pos_id              String?
+  payu_md5_key                      String?
   payu_notify_url                   String?
   portfolio_categories              String?
   seasonal_effect                   String?  @default("none")
