@@ -92,7 +92,7 @@ export default function SettingsPage() {
             };
 
             // Fetch main settings
-            const res = await fetch(getApiUrl('settings'), { headers });
+            const res = await fetch(getApiUrl('settings'), { headers, cache: 'no-store' });
 
             if (res.status === 401) {
                 console.error('Unauthorized (401) during fetch - redirecting to login');
@@ -133,7 +133,7 @@ export default function SettingsPage() {
             }
 
             // Fetch challenge settings
-            const challengeRes = await fetch('/api/photo-challenge/settings', { headers });
+            const challengeRes = await fetch('/api/photo-challenge/settings', { headers, cache: 'no-store' });
             const challengeData = await challengeRes.json();
             if (challengeData.success) {
                 setChallengeSettings(prev => ({ ...prev, ...challengeData.settings }));
@@ -184,6 +184,11 @@ export default function SettingsPage() {
                 // If it's already an array, perfect
                 settingsToSave.portfolio_categories = JSON.stringify(settings.portfolio_categories);
             }
+
+            // Ensure PayU test mode logic in backend isn't overwritten by stale payu_environment
+            // The backend calculates 'payu_environment' based on 'payu_test_mode'
+            // If we send 'payu_environment', it overrides the calculation because it's a direct column match
+            delete (settingsToSave as any).payu_environment;
 
             // Save main settings
             const res = await fetch(getApiUrl('settings'), {

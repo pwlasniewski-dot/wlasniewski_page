@@ -13,42 +13,50 @@ export interface AuthenticatedRequest extends NextRequest {
 }
 // Middleware to check authentication
 export async function requireAuth(request: NextRequest) {
-    const authHeader = request.headers.get('authorization');
-    const token = extractToken(authHeader);
+    try {
+        const authHeader = request.headers.get('authorization');
+        const token = extractToken(authHeader);
 
-    if (!token) {
+        if (!token) {
+            return NextResponse.json(
+                { error: 'Unauthorized - No token provided' },
+                { status: 401 }
+            );
+        }
+
+        const payload = await verifyToken(token);
+
+        if (!payload) {
+            return NextResponse.json(
+                { error: 'Unauthorized - Invalid token' },
+                { status: 401 }
+            );
+        }
+
+        // Verify user exists in database
+        const user = await prisma.adminUser.findUnique({
+            where: { id: payload.id },
+            select: { id: true, email: true, name: true }
+        });
+
+        if (!user) {
+            return NextResponse.json(
+                { error: 'Unauthorized - User not found' },
+                { status: 401 }
+            );
+        }
+
+        // Attach user to request (for TypeScript typing)
+        (request as AuthenticatedRequest).user = user;
+
+        return null; // null = authorized, continue
+    } catch (error) {
+        console.error('[requireAuth] Error:', error);
         return NextResponse.json(
-            { error: 'Unauthorized - No token provided' },
-            { status: 401 }
+            { error: 'Internal Authentication Error' },
+            { status: 500 }
         );
     }
-
-    const payload = await verifyToken(token);
-
-    if (!payload) {
-        return NextResponse.json(
-            { error: 'Unauthorized - Invalid token' },
-            { status: 401 }
-        );
-    }
-
-    // Verify user exists in database
-    const user = await prisma.adminUser.findUnique({
-        where: { id: payload.id },
-        select: { id: true, email: true, name: true }
-    });
-
-    if (!user) {
-        return NextResponse.json(
-            { error: 'Unauthorized - User not found' },
-            { status: 401 }
-        );
-    }
-
-    // Attach user to request (for TypeScript typing)
-    (request as AuthenticatedRequest).user = user;
-
-    return null; // null = authorized, continue
 }
 
 // Helper to use in API routes
