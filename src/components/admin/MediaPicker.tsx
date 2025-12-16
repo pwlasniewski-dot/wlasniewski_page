@@ -516,7 +516,7 @@ export default function MediaPicker({ isOpen, onClose, onSelect, multiple = fals
                                     <Trash2 className="w-4 h-4" /> <span className="hidden sm:inline">Usuń</span>
                                 </button>
 
-                                {(!inline && multiple) ? (
+                                {(!inline) ? (
                                     <button
                                         onClick={() => { onSelect(selectedItems.map(i => i.file_path), selectedItems.map(i => i.id)); onClose(); }}
                                         className="ml-auto bg-white text-black px-4 py-1.5 rounded-full text-sm font-bold hover:bg-gold-400 transition-colors"
@@ -550,8 +550,8 @@ export default function MediaPicker({ isOpen, onClose, onSelect, multiple = fals
                             <span className="text-zinc-500 text-xs text-right">
                                 {selectedItems.length > 0 ? `Wybrano: ${selectedItems.length}` : 'Kliknij zdjęcie, aby wybrać'}
                             </span>
-                            {/* Show "Wstaw" only if multiple items selected OR if we want to allow explicit confirm for single select (though single is usually instant) */}
-                            {multiple && selectedItems.length > 0 && (
+                            {/* Show "Wstaw" if any items selected (even single mode manually) */}
+                            {selectedItems.length > 0 && (
                                 <button
                                     onClick={() => { onSelect(selectedItems.map(i => i.file_path), selectedItems.map(i => i.id)); onClose(); }}
                                     className="px-6 py-2 bg-gold-500 text-black font-bold rounded-md hover:bg-gold-400 transition-colors"

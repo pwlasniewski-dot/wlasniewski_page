@@ -93,6 +93,8 @@ export async function POST(request: NextRequest) {
                 'promo_code_discount_enabled', 'promo_code_discount_amount', 'promo_code_discount_type',
                 // Gift Card Promo
                 'gift_card_promo_enabled', 'gift_card_promo_title', 'gift_card_promo_description', 'gift_card_promo_rotation_interval',
+                // Gift Card Hero
+                'gift_card_hero_image', 'gift_card_hero_opacity',
                 // Portfolio
                 'portfolio_categories',
                 // Seasonal
@@ -116,7 +118,8 @@ export async function POST(request: NextRequest) {
             const numericFields = [
                 'navbar_font_size', 'logo_size', 'smtp_port',
                 'urgency_slots_remaining', 'social_proof_total_clients',
-                'booking_min_days_ahead', 'gift_card_promo_rotation_interval'
+                'booking_min_days_ahead', 'gift_card_promo_rotation_interval',
+                'gift_card_hero_opacity'
             ];
 
             for (const [key, value] of Object.entries(body)) {

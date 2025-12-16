@@ -44,7 +44,7 @@ export default function Navbar() {
     useEffect(() => {
         const fetchSettings = async () => {
             try {
-                const res = await fetch('/api/settings/public');
+                const res = await fetch('/api/settings/public', { cache: 'no-store' });
                 const data = await res.json();
                 if (data.success && data.settings) {
                     setSettings(data.settings);
