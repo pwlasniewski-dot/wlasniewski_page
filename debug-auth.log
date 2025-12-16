@@ -1,0 +1,3 @@
+[2025-12-16T17:16:33.618Z] [Middleware] Auth Header: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJwd2xhc25pZXdza2lAZ21haWwuY29tIiwiaWF0IjoxNzY0NDE2MjIyLCJleHAiOjE3NjUwMjEwMjJ9.yn_9cngS9Qm7WZV2FOAc5gJzeNXdLjgok0z-RMfWfho
+[2025-12-16T17:16:33.619Z] [Middleware] Extracted Token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJwd2xhc25pZXdza2lAZ21haWwuY29tIiwiaWF0IjoxNzY0NDE2MjIyLCJleHAiOjE3NjUwMjEwMjJ9.yn_9cngS9Qm7WZV2FOAc5gJzeNXdLjgok0z-RMfWfho
+[2025-12-16T17:16:33.625Z] [JWT] Verification failed: signature verification failed (Code: ERR_JWS_SIGNATURE_VERIFICATION_FAILED)

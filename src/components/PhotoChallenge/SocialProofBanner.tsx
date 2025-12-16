@@ -19,38 +19,67 @@ export default function SocialProofBanner({ stats, message }: SocialProofBannerP
         accepted: 0,
         completed: 0,
     });
+    const [localStats, setLocalStats] = useState<any>(null);
 
     useEffect(() => {
         if (stats) {
-            // Animate numbers counting up
-            const duration = 1500;
-            const steps = 60;
-            const interval = duration / steps;
+            // Animate numbers counting up (existing logic)
+            animateStats(stats);
+        } else {
+            // Fetch from API if stats not provided
+            const fetchSettings = async () => {
+                try {
+                    const res = await fetch('/api/settings/public');
+                    const data = await res.json();
+                    if (data.success && data.settings) {
+                        const total = parseInt(data.settings.social_proof_total_clients || '100');
+                        const slots = parseInt(data.settings.urgency_slots_remaining || '5');
 
-            let step = 0;
-            const timer = setInterval(() => {
-                step++;
-                const progress = step / steps;
-
-                setDisplayStats({
-                    accepted: Math.floor((stats.accepted_this_month || 0) * progress),
-                    completed: Math.floor((stats.completed_sessions || 0) * progress),
-                });
-
-                if (step >= steps) {
-                    clearInterval(timer);
-                    setDisplayStats({
-                        accepted: stats.accepted_this_month || 0,
-                        completed: stats.completed_sessions || 0,
-                    });
+                        const fetchedStats = {
+                            accepted_this_month: Math.floor(total / 12) + 2, // Approximate
+                            completed_sessions: total,
+                            remaining_monthly_slots: slots
+                        };
+                        animateStats(fetchedStats);
+                    }
+                } catch (error) {
+                    console.error('Failed to fetch social stats', error);
                 }
-            }, interval);
-
-            return () => clearInterval(timer);
+            };
+            fetchSettings();
         }
     }, [stats]);
 
-    if (!stats) return null;
+    const animateStats = (targetStats: any) => {
+        setLocalStats(targetStats); // Store fully for render access
+
+        const duration = 1500;
+        const steps = 60;
+        const interval = duration / steps;
+
+        let step = 0;
+        const timer = setInterval(() => {
+            step++;
+            const progress = step / steps;
+
+            setDisplayStats({
+                accepted: Math.floor((targetStats.accepted_this_month || 0) * progress),
+                completed: Math.floor((targetStats.completed_sessions || 0) * progress),
+            });
+
+            if (step >= steps) {
+                clearInterval(timer);
+                setDisplayStats({
+                    accepted: targetStats.accepted_this_month || 0,
+                    completed: targetStats.completed_sessions || 0,
+                });
+            }
+        }, interval);
+        return () => clearInterval(timer);
+    };
+
+    const activeStats = stats || localStats;
+    if (!activeStats) return null;
 
     const defaultMessage = `W tym miesiącu ${displayStats.accepted} par przyjęło wyzwanie`;
     const displayMessage = message?.replace('{count}', String(displayStats.accepted)) || defaultMessage;
@@ -85,7 +114,7 @@ export default function SocialProofBanner({ stats, message }: SocialProofBannerP
                     </div>
 
                     {/* Remaining Slots (if enabled) */}
-                    {stats.remaining_monthly_slots !== undefined && (
+                    {activeStats.remaining_monthly_slots !== undefined && (
                         <>
                             <div className="hidden md:block w-px h-8 bg-gold-400/30" />
                             <div className="flex items-center gap-2">
@@ -93,7 +122,7 @@ export default function SocialProofBanner({ stats, message }: SocialProofBannerP
                                 <p className="text-gray-300">
                                     Zostało tylko{' '}
                                     <span className="text-gold-400 font-bold text-xl">
-                                        {stats.remaining_monthly_slots}
+                                        {activeStats.remaining_monthly_slots}
                                     </span>
                                     {' '}miejsc w tym miesiącu
                                 </p>

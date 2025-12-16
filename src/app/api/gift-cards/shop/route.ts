@@ -60,7 +60,7 @@ export async function GET() {
 
             return {
                 id: card.id,
-                code: card.code,
+                code: 'PREVIEW', // MASKED for security - do not leak real codes
                 value: card.value || card.amount,
                 theme: theme,
                 price: basePrice,

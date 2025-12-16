@@ -17,8 +17,10 @@ import AdvancedBanner from '@/components/AdvancedBanner';
 import CreativeSlider from '@/components/CreativeSlider';
 import WhiteInfoBand from '@/components/WhiteInfoBand';
 import PhotoChallengeBanner from '@/components/PhotoChallengeBanner';
-
-
+import UrgencyBanner from '@/components/UrgencyBanner';
+import PromocodeBar from '@/components/PromocodeBar';
+import GiftCardPromoBar from '@/components/GiftCardPromoBar';
+import SocialProofBanner from '@/components/PhotoChallenge/SocialProofBanner';
 interface Testimonial {
     id: number;
     client_name: string;
@@ -601,6 +603,18 @@ export default function HomeContent({ homeData, orderedSections, testimonials }:
 
             {/* Hero Slider - Always First */}
             <HeroSlider slides={homeData?.hero_slider || []} />
+
+            {/* Urgency / Promo Bar below Hero */}
+            <UrgencyBanner />
+
+            {/* Social Proof (Socio Paski) */}
+            <SocialProofBanner />
+
+            {/* Global Promo Pop-up (Fixed position) */}
+            <PromocodeBar />
+
+            {/* Gift Card Side Promo (Fixed position) */}
+            <GiftCardPromoBar />
 
             {/* Dynamic Sections */}
             {orderedSections.map(section => renderSection(section))}

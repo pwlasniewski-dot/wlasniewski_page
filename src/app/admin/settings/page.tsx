@@ -93,11 +93,28 @@ export default function SettingsPage() {
 
             // Fetch main settings
             const res = await fetch(getApiUrl('settings'), { headers });
+
+            if (res.status === 401) {
+                console.error('Unauthorized (401) during fetch - redirecting to login');
+                localStorage.removeItem('admin_token');
+                window.location.href = '/admin/login';
+                return;
+            }
+
             const data = await res.json();
-            console.log('[Admin Settings] Fetched settings:', data.settings);
             if (data.success) {
                 setSettings(prev => {
                     const newSettings = { ...prev, ...data.settings };
+
+                    // Helper to safely convert to string for frontend state
+                    const normalizeBoolean = (val: any) => String(val) === 'true' || val === true ? 'true' : 'false';
+
+                    // Normalize specific boolean fields that differ in DB type vs Frontend state
+                    if (newSettings.urgency_enabled !== undefined) newSettings.urgency_enabled = normalizeBoolean(newSettings.urgency_enabled);
+                    if (newSettings.promo_code_discount_enabled !== undefined) newSettings.promo_code_discount_enabled = normalizeBoolean(newSettings.promo_code_discount_enabled);
+                    if (newSettings.gift_card_promo_enabled !== undefined) newSettings.gift_card_promo_enabled = normalizeBoolean(newSettings.gift_card_promo_enabled);
+                    if (newSettings.navbar_sticky !== undefined) newSettings.navbar_sticky = normalizeBoolean(newSettings.navbar_sticky);
+                    if (newSettings.navbar_transparent !== undefined) newSettings.navbar_transparent = normalizeBoolean(newSettings.navbar_transparent);
 
                     // Parse portfolio_categories if it's a string
                     if (typeof newSettings.portfolio_categories === 'string') {
@@ -113,7 +130,6 @@ export default function SettingsPage() {
                     }
                     return newSettings;
                 });
-                console.log('[Admin Settings] Updated state with seasonal_effect:', data.settings.seasonal_effect);
             }
 
             // Fetch challenge settings
@@ -137,15 +153,6 @@ export default function SettingsPage() {
 
             // Process portfolio categories if it's a string (from input)
             const settingsToSave = { ...settings };
-            console.log('[Admin Settings] Saving settings:', {
-                payu_client_id: settingsToSave.payu_client_id,
-                payu_client_secret: settingsToSave.payu_client_secret,
-                payu_pos_id: settingsToSave.payu_pos_id,
-                payu_md5_key: settingsToSave.payu_md5_key,
-                payu_test_mode: settingsToSave.payu_test_mode,
-                seasonal_effect: settingsToSave.seasonal_effect
-            });
-            console.log('[Admin Settings] Saving settings with seasonal_effect:', settingsToSave.seasonal_effect);
 
             // Fix: ensure we don't double-stringify or corrupt data
             if (typeof settings.portfolio_categories === 'string') {
@@ -189,7 +196,13 @@ export default function SettingsPage() {
             });
 
             const resData = await res.json();
-            console.log('[Admin Settings] Save response:', { status: res.status, ok: res.ok, data: resData });
+
+            if (res.status === 401) {
+                toast.error('Sesja wygasła. Zaloguj się ponownie.');
+                localStorage.removeItem('admin_token');
+                window.location.href = '/admin/login';
+                return;
+            }
 
             if (!res.ok || !resData.success) {
                 throw new Error(resData.error || 'Nie udało się zapisać ustawień');
@@ -206,7 +219,6 @@ export default function SettingsPage() {
             });
 
             const challengeResData = await challengeRes.json();
-            console.log('[Admin Settings] Challenge settings response:', { status: challengeRes.status, ok: challengeRes.ok, data: challengeResData });
 
             if (!challengeRes.ok || !challengeResData.success) {
                 throw new Error(challengeResData.error || 'Nie udało się zapisać ustawień wyzwania');
@@ -214,7 +226,6 @@ export default function SettingsPage() {
 
             toast.success('Zapisano wszystkie ustawienia');
         } catch (error: any) {
-            console.error('[Admin Settings] Save error:', error);
             toast.error(error?.message || 'Błąd zapisu');
         } finally {
             setSaving(false);

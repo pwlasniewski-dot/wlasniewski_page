@@ -139,6 +139,21 @@ export default function AnalyticsPage() {
 
     if (!data) return null;
 
+    const handleReset = async () => {
+        if (!confirm('Czy na pewno chcesz wyczyścić WSZYSTKIE statystyki? Tej operacji nie można cofnąć.')) return;
+        try {
+            const res = await fetch('/api/analytics', { method: 'DELETE' });
+            const data = await res.json();
+            if (data.success) {
+                alert('Statystyki zostały wyczyszczone.');
+                fetchAnalytics();
+            }
+        } catch (e) {
+            console.error(e);
+            alert('Błąd resetowania.');
+        }
+    };
+
     return (
         <div className="max-w-7xl mx-auto pb-20">
             {/* Header */}
@@ -148,24 +163,35 @@ export default function AnalyticsPage() {
                     <p className="text-zinc-400 text-sm mt-1">Szczegółowe statystyki Twojej strony</p>
                 </div>
 
-                {/* Date Range Selector */}
-                <div className="flex gap-2">
-                    {[
-                        { value: '7d', label: '7 dni' },
-                        { value: '30d', label: '30 dni' },
-                        { value: '90d', label: '90 dni' },
-                    ].map(range => (
-                        <button
-                            key={range.value}
-                            onClick={() => setDateRange(range.value)}
-                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${dateRange === range.value
+                <div className="flex gap-2 items-center">
+                    {/* Reset Button */}
+                    <button
+                        onClick={handleReset}
+                        className="px-3 py-2 rounded-lg text-xs font-medium bg-red-900/30 text-red-400 hover:bg-red-900/50 border border-red-900/50 transition-colors mr-4"
+                    >
+                        Resetuj dane
+                    </button>
+
+                    {/* Date Range Selector */}
+                    <div className="flex gap-2">
+                        {[
+                            { value: '24h', label: '24h' },
+                            { value: '7d', label: '7 dni' },
+                            { value: '30d', label: '30 dni' },
+                            { value: '90d', label: '90 dni' },
+                        ].map(range => (
+                            <button
+                                key={range.value}
+                                onClick={() => setDateRange(range.value)}
+                                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${dateRange === range.value
                                     ? 'bg-gold-500 text-black'
                                     : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
-                                }`}
-                        >
-                            {range.label}
-                        </button>
-                    ))}
+                                    }`}
+                            >
+                                {range.label}
+                            </button>
+                        ))}
+                    </div>
                 </div>
             </div>
 
@@ -176,8 +202,8 @@ export default function AnalyticsPage() {
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
                         className={`flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-medium transition-all flex-shrink-0 ${activeTab === tab.id
-                                ? 'bg-gold-500 text-black'
-                                : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
+                            ? 'bg-gold-500 text-black'
+                            : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
                             }`}
                     >
                         <tab.icon className="w-4 h-4" />

@@ -38,6 +38,8 @@ export async function GET(request: NextRequest) {
             gift_card_promo_title: settings.gift_card_promo_title,
             gift_card_promo_description: settings.gift_card_promo_description,
             gift_card_hero_image: settings.gift_card_hero_image,
+            // Social Proof
+            social_proof_total_clients: settings.social_proof_total_clients,
             // Photo Challenge
             challenge: await getChallengeSettings()
         };

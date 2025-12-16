@@ -28,26 +28,65 @@ export default function PromocodeBar({
     };
 
     const handleCopy = () => {
-        if (code) {
-            navigator.clipboard.writeText(code);
+        const targetCode = code || fetchedSettings?.code;
+        if (targetCode) {
+            navigator.clipboard.writeText(targetCode);
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
         }
     };
 
+    const [fetchedSettings, setFetchedSettings] = useState<any>(null);
+
     useEffect(() => {
-        // Auto-dismiss if localStorage has a marker for this code
-        if (code) {
-            const dismissed = localStorage.getItem(`promo-${code}-dismissed`);
+        // If code is provided as prop, use it (manual mode)
+        if (code) return;
+
+        // Otherwise fetch value from API (automatic mode)
+        const fetchSettings = async () => {
+            try {
+                const res = await fetch('/api/settings/public'); // Using public endpoint used by Navbar
+                const data = await res.json();
+                if (data && data.promo_code && data.promo_code_discount_enabled === 'true') {
+                    // Check expiry
+                    if (data.promo_code_expiry && new Date(data.promo_code_expiry) < new Date()) {
+                        return; // Expired
+                    }
+
+                    setFetchedSettings({
+                        code: data.promo_code,
+                        discount: data.promo_code_discount_amount || 10,
+                        discountType: data.promo_code_discount_type || 'percentage',
+                        expiryDate: data.promo_code_expiry
+                    });
+                }
+            } catch (error) {
+                console.error('Failed to fetch promo settings', error);
+            }
+        };
+
+        fetchSettings();
+    }, [code]);
+
+    // Use props or fetched settings
+    const activeCode = code || fetchedSettings?.code;
+    const activeDiscount = discount || fetchedSettings?.discount;
+    const activeDiscountType = discountType || fetchedSettings?.discountType;
+    const activeExpiry = expiryDate || fetchedSettings?.expiryDate;
+
+    // Auto-dismiss if localStorage has a marker for this code
+    useEffect(() => {
+        if (activeCode) {
+            const dismissed = localStorage.getItem(`promo-${activeCode}-dismissed`);
             if (dismissed) {
                 setIsVisible(false);
             }
         }
-    }, [code]);
+    }, [activeCode]);
 
-    if (!isVisible || !code) return null;
+    if (!isVisible || !activeCode) return null;
 
-    const discountText = discountType === 'percentage' ? `${discount}%` : `${discount} zł`;
+    const discountText = activeDiscountType === 'percentage' ? `${activeDiscount}%` : `${activeDiscount} zł`;
 
     return (
         <AnimatePresence>
@@ -100,7 +139,7 @@ export default function PromocodeBar({
                                     whileTap={{ scale: 0.98 }}
                                     className="w-full px-4 py-3 bg-white/20 hover:bg-white/30 border-2 border-white/40 rounded-xl text-white font-mono font-bold text-lg sm:text-xl mb-3 transition-all flex items-center justify-between gap-2"
                                 >
-                                    <span>{code}</span>
+                                    <span>{activeCode}</span>
                                     <motion.div
                                         animate={{ scale: copied ? 1.2 : 1 }}
                                         transition={{ duration: 0.2 }}
@@ -114,9 +153,9 @@ export default function PromocodeBar({
                                 </motion.button>
 
                                 {/* Expiry date if provided */}
-                                {expiryDate && (
+                                {activeExpiry && (
                                     <p className="text-white/80 text-xs sm:text-sm">
-                                        ⏰ Ważny do: <strong>{expiryDate}</strong>
+                                        ⏰ Ważny do: <strong>{activeExpiry}</strong>
                                     </p>
                                 )}
                             </div>

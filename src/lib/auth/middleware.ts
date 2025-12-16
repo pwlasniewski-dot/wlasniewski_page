@@ -11,7 +11,6 @@ export interface AuthenticatedRequest extends NextRequest {
         name: string | null;
     };
 }
-
 // Middleware to check authentication
 export async function requireAuth(request: NextRequest) {
     const authHeader = request.headers.get('authorization');
@@ -58,7 +57,11 @@ export async function withAuth(
     handler: (request: AuthenticatedRequest) => Promise<NextResponse>
 ) {
     const authError = await requireAuth(request);
-    if (authError) return authError;
+    if (authError) {
+        console.error('[withAuth] Auth failed:', authError);
+        return authError;
+    }
 
+    console.log('[withAuth] Auth success, executing handler');
     return handler(request as AuthenticatedRequest);
 }

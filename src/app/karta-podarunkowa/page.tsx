@@ -210,6 +210,7 @@ export default function GiftCardShop() {
                                                     theme={card.theme as any}
                                                     cardTitle={card.card_title}
                                                     cardDescription={card.card_description}
+                                                    hideCode={true}
                                                 />
                                             </div>
                                         </div>

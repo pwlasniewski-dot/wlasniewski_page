@@ -137,3 +137,13 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Failed to fetch stats' }, { status: 500 });
     }
 }
+
+export async function DELETE(request: NextRequest) {
+    try {
+        await prisma.analyticsEvent.deleteMany({});
+        return NextResponse.json({ success: true, message: 'Analytics Reset' });
+    } catch (error) {
+        console.error('Analytics reset error:', error);
+        return NextResponse.json({ error: 'Failed to reset analytics' }, { status: 500 });
+    }
+}
