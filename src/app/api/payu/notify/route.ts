@@ -85,7 +85,8 @@ export async function POST(request: NextRequest) {
                                 giftCardOrder.recipient_name || undefined,
                                 giftCardOrder.recipient_email || undefined,
                                 giftCardOrder.sender_name || undefined,
-                                giftCardOrder.message || undefined
+                                giftCardOrder.message || undefined,
+                                giftCardOrder.id
                             );
                             console.log(`Gift card email sent for order ${resourceId}`);
                         }

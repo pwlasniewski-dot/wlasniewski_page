@@ -16,6 +16,7 @@ interface GiftCardProps {
     cardDescription?: string;
     isPrint?: boolean;
     hideCode?: boolean; // Hide code until after payment
+    orderId?: string; // Unique reference number
 }
 
 type ThemeConfig = {
@@ -123,7 +124,8 @@ export default function GiftCard({
     cardTitle,
     cardDescription,
     isPrint = false,
-    hideCode = false
+    hideCode = false,
+    orderId
 }: GiftCardProps) {
     const config = themeConfigs[theme] || themeConfigs.christmas;
     const displayTitle = cardTitle || 'KARTA PODARUNKOWA';
@@ -199,6 +201,11 @@ export default function GiftCard({
 
                 {/* Value and Code section - compacted for mobile */}
                 <div className="flex flex-col items-center gap-1 sm:gap-4 mt-auto">
+                    {orderId && (
+                        <div className="absolute bottom-2 right-4 text-[8px] sm:text-[10px] opacity-40 font-mono">
+                            REF: {orderId}
+                        </div>
+                    )}
                     {/* Value */}
                     <div className="text-center">
                         <p className="text-[10px] sm:text-sm opacity-75 mb-0.5">Wartość karty</p>

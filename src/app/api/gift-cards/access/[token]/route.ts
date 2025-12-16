@@ -54,7 +54,21 @@ export async function GET(
             data: { accessed_at: new Date() },
         });
 
-        return NextResponse.json(order);
+        // Fetch Logo URL
+        const logoSetting = await prisma.setting.findFirst({
+            where: { setting_key: 'logo_url' }
+        });
+
+        let logoUrl = '';
+        if (logoSetting?.setting_value) {
+            const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://wlasniewski.pl';
+            logoUrl = logoSetting.setting_value.startsWith('http')
+                ? logoSetting.setting_value
+                : `${baseUrl}${logoSetting.setting_value}`;
+        }
+
+        // Return order combined with logoUrl
+        return NextResponse.json({ ...order, logoUrl });
     } catch (error) {
         console.error('Error fetching gift card:', error);
         return NextResponse.json(

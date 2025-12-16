@@ -75,9 +75,10 @@ export async function POST(request: NextRequest) {
                         order.recipient_name || undefined,
                         order.recipient_email || undefined,
                         order.sender_name || undefined,
-                        order.message || undefined
+                        order.message || undefined,
+                        order.id
                     );
-                    
+
                     console.log('📧 Email sent to:', order.customer_email);
 
                     // Mark as email sent
@@ -96,7 +97,7 @@ export async function POST(request: NextRequest) {
         // Handle payment_intent.payment_failed
         if (event.type === 'payment_intent.payment_failed') {
             const paymentIntent = event.data.object as Stripe.PaymentIntent;
-            
+
             // Find order by payment intent
             const order = await prisma.giftCardOrder.findFirst({
                 where: { stripe_payment_id: paymentIntent.id }
@@ -117,7 +118,7 @@ export async function POST(request: NextRequest) {
         // Handle charge.refunded
         if (event.type === 'charge.refunded') {
             const charge = event.data.object as Stripe.Charge;
-            
+
             // Find order by charge
             const order = await prisma.giftCardOrder.findFirst({
                 where: { stripe_payment_id: charge.payment_intent as string }

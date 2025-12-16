@@ -74,7 +74,8 @@ export async function POST(request: NextRequest) {
         });
 
         // Prepare PayU Order Data
-        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://wlasniewski.pl';
+        const origin = request.headers.get('origin');
+        const baseUrl = origin || process.env.NEXT_PUBLIC_BASE_URL || 'https://wlasniewski.pl';
         const clientIp = (request.headers.get('x-forwarded-for') || '127.0.0.1').split(',')[0].trim();
 
         const orderRequest: OrderRequest = {
@@ -96,7 +97,7 @@ export async function POST(request: NextRequest) {
                 }
             ],
             // PayU requires a continue URL, ensuring user comes back to the site
-            redirectUri: `${baseUrl}/karta-podarunkowa/podziekowanie?orderId=${order.id}`,
+            continueUrl: `${baseUrl}/karta-podarunkowa/podziekowanie?orderId=${order.id}`,
         };
 
         // Execute PayU Call via Library (uses DB settings)
@@ -112,14 +113,21 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const payuOrderId = payuData.orders[0].orderId;
+        // Check for redirectUri (302 response) or standard links (201 response)
+        const checkoutUrl = payuData.redirectUri || payuData.links?.find((link: any) => link.rel === 'redirect_uri')?.href;
+        // In 302 response, orderId is at root. In 201 response, it's in orders[0].
+        const payuOrderId = payuData.orderId || payuData.orders?.[0]?.orderId || 'UNKNOWN';
+
+        if (!checkoutUrl) {
+            throw new Error("Failed to retrieve PayU redirect URL");
+        }
 
         // Update order with PayU order ID
         await prisma.giftCardOrder.update({
             where: { id: order.id },
             data: {
-                payu_order_id: payuOrderId, // Use correct field for PayU
-                stripe_session_id: payuOrderId // Legacy/Fallback compatibility if needed
+                payu_order_id: payuOrderId,
+                stripe_session_id: payuOrderId
             }
         });
 
@@ -181,7 +189,7 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json({
             success: true,
-            checkoutUrl: payuData.links.find((link: any) => link.rel === 'redirect_uri')?.href,
+            checkoutUrl: checkoutUrl,
             payuOrderId: payuOrderId,
             orderId: order.id,
             accessToken: accessToken

@@ -85,7 +85,8 @@ export async function POST(request: NextRequest) {
                     virtual: true
                 }
             ],
-            extOrderId: String(bookingId) // Use booking ID as external order ID
+            extOrderId: String(bookingId), // Use booking ID as external order ID
+            continueUrl: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://wlasniewski.pl'}/podziekowanie?bookingId=${bookingId}`
         };
 
         const orderRes = await fetch(`${payuBaseUrl}/api/v2_1/orders`, {

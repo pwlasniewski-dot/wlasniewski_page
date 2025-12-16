@@ -100,7 +100,7 @@ export async function POST(
                         quantity: photo_count
                     }
                 ],
-                redirectUri: continueUrl
+                continueUrl: continueUrl
             }, ip);
 
             paymentUrl = payuResponse.redirectUri;

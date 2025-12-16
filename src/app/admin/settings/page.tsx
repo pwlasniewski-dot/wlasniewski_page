@@ -290,7 +290,7 @@ export default function SettingsPage() {
                                     <label className="block text-sm font-medium text-zinc-400 mb-1">Wartość rabatu</label>
                                     <input
                                         type="number"
-                                        value={settings.promo_code_discount_amount}
+                                        value={settings.promo_code_discount_amount || ''}
                                         onChange={e => setSettings(s => ({ ...s, promo_code_discount_amount: e.target.value }))}
                                         className="block w-full rounded-md border-zinc-700 bg-zinc-800 text-white shadow-sm focus:border-gold-500 focus:ring-gold-500 sm:text-sm px-3 py-2"
                                     />
@@ -334,7 +334,7 @@ export default function SettingsPage() {
                                 <label className="block text-sm font-medium text-zinc-400 mb-1">Liczba wolnych miejsc</label>
                                 <input
                                     type="number"
-                                    value={settings.urgency_slots_remaining}
+                                    value={settings.urgency_slots_remaining || ''}
                                     onChange={e => setSettings(s => ({ ...s, urgency_slots_remaining: e.target.value }))}
                                     className="block w-full rounded-md border-zinc-700 bg-zinc-800 text-white shadow-sm focus:border-gold-500 focus:ring-gold-500 sm:text-sm px-3 py-2"
                                 />
@@ -343,7 +343,7 @@ export default function SettingsPage() {
                                 <label className="block text-sm font-medium text-zinc-400 mb-1">Miesiąc (np. Styczeń)</label>
                                 <input
                                     type="text"
-                                    value={settings.urgency_month}
+                                    value={settings.urgency_month || ''}
                                     onChange={e => setSettings(s => ({ ...s, urgency_month: e.target.value }))}
                                     className="block w-full rounded-md border-zinc-700 bg-zinc-800 text-white shadow-sm focus:border-gold-500 focus:ring-gold-500 sm:text-sm px-3 py-2"
                                 />
@@ -435,7 +435,7 @@ export default function SettingsPage() {
                                     <label className="block text-sm font-medium text-zinc-400 mb-1">Tytuł sekcji</label>
                                     <input
                                         type="text"
-                                        value={settings.gift_card_promo_title}
+                                        value={settings.gift_card_promo_title || ''}
                                         onChange={e => setSettings(s => ({ ...s, gift_card_promo_title: e.target.value }))}
                                         className="block w-full rounded-md border-zinc-700 bg-zinc-800 text-white shadow-sm focus:border-gold-500 focus:ring-gold-500 sm:text-sm px-3 py-2"
                                         placeholder="np. Karty Podarunkowe"
@@ -445,7 +445,7 @@ export default function SettingsPage() {
                                 <div>
                                     <label className="block text-sm font-medium text-zinc-400 mb-1">Opis (opcjonalny)</label>
                                     <textarea
-                                        value={settings.gift_card_promo_description}
+                                        value={settings.gift_card_promo_description || ''}
                                         onChange={e => setSettings(s => ({ ...s, gift_card_promo_description: e.target.value }))}
                                         className="block w-full rounded-md border-zinc-700 bg-zinc-800 text-white shadow-sm focus:border-gold-500 focus:ring-gold-500 sm:text-sm px-3 py-2 resize-none h-20"
                                         placeholder="Dodaj opis który będzie widoczny pod tytułem"
@@ -458,7 +458,7 @@ export default function SettingsPage() {
                                         type="number"
                                         min="2"
                                         max="30"
-                                        value={settings.gift_card_promo_rotation_interval}
+                                        value={settings.gift_card_promo_rotation_interval || ''}
                                         onChange={e => setSettings(s => ({ ...s, gift_card_promo_rotation_interval: e.target.value }))}
                                         className="block w-full rounded-md border-zinc-700 bg-zinc-800 text-white shadow-sm focus:border-gold-500 focus:ring-gold-500 sm:text-sm px-3 py-2"
                                     />

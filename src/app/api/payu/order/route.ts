@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
                     quantity: 1
                 }
             ],
-            redirectUri: redirectUrl || "https://wlasniewski.pl/dziekujemy"
+            continueUrl: redirectUrl || "https://wlasniewski.pl/dziekujemy"
         };
 
         const result = await createPayUOrder(orderData, clientIp);

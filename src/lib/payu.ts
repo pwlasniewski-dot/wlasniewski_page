@@ -69,7 +69,7 @@ export interface OrderRequest {
         unitPrice: number;
         quantity: number;
     }[];
-    redirectUri: string; // where to redirect user after payment
+    continueUrl: string; // where to redirect user after payment
 }
 
 export async function createPayUOrder(orderData: OrderRequest, clientIp: string) {
@@ -102,7 +102,9 @@ export async function createPayUOrder(orderData: OrderRequest, clientIp: string)
         redirect: 'manual', // Prevent auto-following redirects if any
     });
 
-    if (!response.ok) {
+    // PayU V2.1 API returns 302 (Found) when redirecting to payment page.
+    // We treat 302 as success if it contains the redirect URL.
+    if (!response.ok && response.status !== 302) {
         const errorText = await response.text();
         console.error("PayU Order Create Error:", errorText);
         throw new Error(`PayU Order Failed: ${response.status} ${errorText}`);

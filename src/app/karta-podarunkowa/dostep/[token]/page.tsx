@@ -24,6 +24,7 @@ interface OrderData {
     expires_at: string;
     created_at: string;
     paid_at?: string;
+    logoUrl?: string;
 }
 
 export default function AccessPage() {
@@ -141,10 +142,11 @@ export default function AccessPage() {
                 <div className="grid lg:grid-cols-2 gap-12 mb-12">
                     {/* Card Preview */}
                     <motion.div
+                        id="printable-area"
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ duration: 0.6, delay: 0.1 }}
-                        className="flex items-center justify-center"
+                        className="flex flex-col items-center justify-center p-8 bg-zinc-900/50 rounded-2xl border border-zinc-800/50"
                     >
                         <div className="w-full max-w-sm">
                             <GiftCard
@@ -153,7 +155,15 @@ export default function AccessPage() {
                                 theme={(order.gift_card.theme as any) || 'birthday'}
                                 cardTitle={order.gift_card.card_title}
                                 cardDescription={order.gift_card.card_description}
+                                logoUrl={order.logoUrl}
+                                orderId={`ORD-${order.id}`}
                             />
+                        </div>
+                        <div className="hidden print:block text-black text-center mt-8 space-y-2">
+                            <p className="font-bold text-xl">Kod Promocyjny: {order.gift_card.code}</p>
+                            <p className="border-b border-black pb-1 inline-block">Ref: ORD-{order.id}</p>
+                            <p className="text-sm">Zrealizuj na: wlasniewski.pl/rezerwacja</p>
+                            <p className="text-xs text-gray-500">Ważny do: {new Date(order.expires_at).toLocaleDateString()}</p>
                         </div>
                     </motion.div>
 
@@ -170,10 +180,9 @@ export default function AccessPage() {
                                 <Clock className="w-5 h-5 text-orange-400" />
                                 <h3 className="font-bold text-lg">Ważność Karty</h3>
                             </div>
-                            <p className={`text-2xl font-bold ${
-                                daysRemaining > 7 ? 'text-green-400' :
+                            <p className={`text-2xl font-bold ${daysRemaining > 7 ? 'text-green-400' :
                                 daysRemaining > 0 ? 'text-orange-400' : 'text-red-400'
-                            }`}>
+                                }`}>
                                 {daysRemaining} dni
                             </p>
                             <p className="text-zinc-400 text-sm mt-2">
@@ -190,11 +199,10 @@ export default function AccessPage() {
                                 </code>
                                 <button
                                     onClick={copyCode}
-                                    className={`p-3 rounded-lg transition-all ${
-                                        copied
-                                            ? 'bg-green-500/20 text-green-400'
-                                            : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300'
-                                    }`}
+                                    className={`p-3 rounded-lg transition-all ${copied
+                                        ? 'bg-green-500/20 text-green-400'
+                                        : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300'
+                                        }`}
                                     title="Skopiuj kod"
                                 >
                                     <Copy className="w-5 h-5" />
@@ -235,14 +243,33 @@ export default function AccessPage() {
                         </div>
 
                         {/* Info */}
-                        <div className="bg-zinc-900/50 rounded-lg p-4 border border-zinc-800 text-sm text-zinc-400">
-                            <p className="font-bold text-white mb-2">Jak użyć karty?</p>
-                            <ul className="space-y-2">
-                                <li>• Wydrukuj kartę i wysyłaj mailem</li>
-                                <li>• Użyj kodu do rabatu na sesję</li>
-                                <li>• Skontaktuj się z fotografem</li>
-                                <li>• Ustal datę sesji fotograficznej</li>
-                            </ul>
+                        <div className="bg-zinc-900/80 rounded-lg p-6 border border-zinc-800 text-zinc-300">
+                            <h3 className="font-bold text-white text-lg mb-4">Jak zrealizować kartę?</h3>
+                            <div className="space-y-4">
+                                <p><strong>Opcja A: Samodzielna Rezerwacja</strong></p>
+                                <ol className="space-y-2 list-decimal list-inside marker:text-gold-500 text-sm">
+                                    <li>Skopiuj kod promocyjny.</li>
+                                    <li>Przejdź do zakładki <Link href="/rezerwacja" className="text-gold-400 hover:underline">Rezerwacja</Link>.</li>
+                                    <li>Wybierz termin i wpisz kod w podsumowaniu.</li>
+                                </ol>
+
+                                <p><strong>Opcja B: Prezent / Pomoc</strong></p>
+                                <ul className="space-y-2 list-disc list-inside marker:text-gold-500 text-sm">
+                                    <li>Możesz przekazać ten link lub wydrukowaną kartę jako prezent.</li>
+                                    <li>Osoba obdarowana użyje kodu tak samo jak Ty.</li>
+                                    <li><strong>Masz problem?</strong> Napisz do mnie maila z kodem karty, a ja ręcznie zarezerwuję termin dla Ciebie lub obdarowanej osoby! 📸</li>
+                                </ul>
+                            </div>
+
+                            <div className="mt-6 pt-6 border-t border-zinc-700">
+                                <Link
+                                    href="/rezerwacja"
+                                    className="block w-full py-4 text-center bg-gold-500 hover:bg-gold-400 text-black font-bold rounded-xl transition-all shadow-[0_0_20px_rgba(212,175,55,0.2)] hover:shadow-[0_0_30px_rgba(212,175,55,0.4)]"
+                                >
+                                    📅 Zarezerwuj Termin Online
+                                </Link>
+                                <p className="text-center text-xs text-zinc-500 mt-2">Ważność kodu: 12 miesięcy</p>
+                            </div>
                         </div>
                     </motion.div>
                 </div>
@@ -264,15 +291,23 @@ export default function AccessPage() {
 
             <style>{`
                 @media print {
-                    body {
-                        background: white !important;
+                    @page { margin: 0; size: auto; }
+                    body { visibility: hidden; background: white !important; }
+                    #printable-area { 
+                        visibility: visible; 
+                        position: absolute; 
+                        left: 50%; 
+                        top: 50%; 
+                        transform: translate(-50%, -50%); 
+                        width: 100%; 
+                        max-width: 600px;
+                        border: 4px solid #d4af37 !important;
+                        padding: 40px !important;
                     }
-                    main > * {
-                        display: none !important;
-                    }
-                    main > div > div:first-child {
-                        display: block !important;
-                    }
+                    #printable-area * { visibility: visible; }
+                    
+                    /* Hide everything else */
+                    header, footer, nav, button, a { display: none !important; }
                 }
             `}</style>
         </main>
