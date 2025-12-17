@@ -58,12 +58,13 @@ interface HomeData {
 // Interfaces
 interface HomeContentProps {
     heroSlides: any[]; // Explicitly passed hero slides array
+    sections: Section[]; // Explicitly passed sections array
     homeData: HomeData | null;
     orderedSections: Section[];
     testimonials: Testimonial[];
 }
 
-export default function HomeContent({ heroSlides, homeData, orderedSections, testimonials }: HomeContentProps) {
+export default function HomeContent({ heroSlides, sections, homeData, orderedSections, testimonials }: HomeContentProps) {
     const [currentTestimonial, setCurrentTestimonial] = useState(0);
 
 
@@ -617,7 +618,7 @@ export default function HomeContent({ heroSlides, homeData, orderedSections, tes
             <GiftCardPromoBar />
 
             {/* Dynamic Sections */}
-            {orderedSections.map(section => renderSection(section))}
+            {sections.map(section => renderSection(section))}
 
             {/* CTA Section and Contact Form */}
             <section className="py-24 px-6 bg-gradient-to-br from-zinc-900 via-black to-zinc-900 border-t border-white/5 relative overflow-hidden group">
