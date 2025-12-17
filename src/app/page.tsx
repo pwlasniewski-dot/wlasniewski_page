@@ -88,6 +88,12 @@ export default async function HomePage() {
     // Extract hero_slider explicitly to ensure proper serialization
     const heroSlides = homeData?.hero_slider || [];
 
+    // DEBUG: Check sections
+    console.log('[SERVER page.tsx] orderedSections length:', orderedSections.length);
+    if (orderedSections.length > 0) {
+        console.log('[SERVER page.tsx] First section:', orderedSections[0].type, orderedSections[0].id);
+    }
+
     return (
         <HomeContent
             heroSlides={heroSlides}
