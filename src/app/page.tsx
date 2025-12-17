@@ -85,16 +85,12 @@ export default async function HomePage() {
         }
     }
 
-    // DEBUG: Server-side check
-    console.log('[SERVER page.tsx] homeData exists:', !!homeData);
-    console.log('[SERVER page.tsx] homeData.hero_slider exists:', !!homeData?.hero_slider);
-    console.log('[SERVER page.tsx] hero_slider length:', homeData?.hero_slider?.length);
-    if (homeData?.hero_slider) {
-        console.log('[SERVER page.tsx] First slide sample:', JSON.stringify(homeData.hero_slider[0] || {}).substring(0, 100));
-    }
+    // Extract hero_slider explicitly to ensure proper serialization
+    const heroSlides = homeData?.hero_slider || [];
 
     return (
         <HomeContent
+            heroSlides={heroSlides}
             homeData={homeData}
             orderedSections={orderedSections}
             testimonials={testimonials}
