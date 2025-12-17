@@ -11,75 +11,79 @@ function ThankYouContent() {
     const orderId = searchParams.get('orderId');
     const token = searchParams.get('token');
 
+
     return (
-        <main className="min-h-screen bg-black text-white pt-40 flex items-center justify-center">
+        <div className="min-h-screen bg-black text-white pt-32 px-4 flex flex-col items-center">
             <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.6 }}
-                className="max-w-2xl mx-auto px-6 text-center"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="max-w-2xl w-full text-center"
             >
-                <motion.div
-                    animate={{ scale: [1, 1.1, 1] }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                    className="mb-8"
-                >
-                    <CheckCircle className="w-24 h-24 text-green-400 mx-auto" />
-                </motion.div>
+                <div className="w-20 h-20 bg-green-900/20 text-green-500 rounded-full flex items-center justify-center mx-auto mb-6 border border-green-500/30">
+                    <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                </div>
 
-                <h1 className="text-5xl font-display font-bold mb-4">
-                    Płatność Zakończona! 🎉
-                </h1>
-
+                <h1 className="text-4xl font-display font-bold text-gold-400 mb-4">Dziękujemy za zamówienie!</h1>
                 <p className="text-xl text-zinc-300 mb-8">
-                    Dziękujemy za zakup! Twoja karta podarunkowa jest teraz dostępna.
+                    Twoje zamówienie {orderId ? `#${orderId}` : ''} zostało przyjęte.
                 </p>
 
-                <div className="bg-zinc-900 rounded-xl p-8 border border-zinc-800 mb-8">
-                    <p className="text-zinc-400 mb-2">Email potwierdzający został wysłany na adres email podany przy zakupie.</p>
-                    <p className="text-zinc-400 mb-6">Możesz teraz wydrukować, wysłać lub udostępnić kartę.</p>
+                <div className="bg-zinc-900 border border-zinc-800 p-8 rounded-2xl mb-8 text-left">
+                    <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-gold-400"></span>
+                        Co teraz?
+                    </h3>
+                    <ul className="space-y-4 text-zinc-400">
+                        <li className="flex gap-3">
+                            <span className="text-gold-500 font-bold">1.</span>
+                            <span>Na Twój adres email wysłaliśmy potwierdzenie zamówienia.</span>
+                        </li>
+                        <li className="flex gap-3">
+                            <span className="text-gold-500 font-bold">2.</span>
+                            <span>Gdy płatność zostanie zaksięgowana, otrzymasz drugi email z linkiem do Twojej karty.</span>
+                        </li>
+                        <li className="flex gap-3">
+                            <span className="text-gold-500 font-bold">3.</span>
+                            <span>Możesz też pobrać kartę bezpośrednio tutaj (jeśli płatność przeszła).</span>
+                        </li>
+                    </ul>
+                </div>
 
-                    <div className="space-y-3 text-left">
-                        <p className="flex items-start gap-3">
-                            <span className="text-green-400 font-bold">✓</span>
-                            <span>Karta jest dostępna przez 30 dni</span>
-                        </p>
-                        <p className="flex items-start gap-3">
-                            <span className="text-green-400 font-bold">✓</span>
-                            <span>Możesz wydrukować kartę w najlepszej jakości</span>
-                        </p>
-                        <p className="flex items-start gap-3">
-                            <span className="text-green-400 font-bold">✓</span>
-                            <span>Możesz wysłać kartę mailem komuś bliskim</span>
-                        </p>
-                        <p className="flex items-start gap-3">
-                            <span className="text-green-400 font-bold">✓</span>
-                            <span>Kod promocyjny jest ważny przez 12 miesięcy</span>
-                        </p>
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                    <Link
+                        href="/"
+                        className="px-8 py-3 bg-zinc-800 text-white rounded-full font-semibold hover:bg-zinc-700 transition-colors"
+                    >
+                        Wróć na stronę główną
+                    </Link>
+
+                    {token && (
+                        <Link
+                            href={`/karta-podarunkowa/dostep/${token}`}
+                            className="px-8 py-3 bg-gold-500 text-black rounded-full font-semibold hover:bg-gold-400 transition-colors flex items-center justify-center gap-2"
+                        >
+                            <span>Przejdź do Mojej Karty</span>
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                            </svg>
+                        </Link>
+                    )}
+                </div>
+
+                <div className="mt-12 pt-8 border-t border-zinc-800">
+                    <h3 className="text-xl font-bold text-white mb-4">Chcesz mieć dostęp do swoich kart w jednym miejscu?</h3>
+                    <p className="text-zinc-400 mb-6">Załóż darmowe konto klienta, aby przeglądać historię zamówień i pobierać karty w dowolnym momencie.</p>
+                    <div className="flex justify-center gap-4">
+                        <Link href="/rejestracja" className="text-gold-400 hover:text-gold-300 font-semibold underline underline-offset-4">Załóż konto</Link>
+                        <span className="text-zinc-600">lub</span>
+                        <Link href="/logowanie" className="text-white hover:text-zinc-300 font-semibold">Zaloguj się</Link>
                     </div>
                 </div>
 
-                <div className="space-y-4">
-                    <Link
-                        href={token ? `/karta-podarunkowa/dostep/${token}` : '/karta-podarunkowa'}
-                        className="block px-8 py-4 bg-gold-500 hover:bg-gold-400 text-black font-bold rounded-xl transition-all transform hover:scale-105"
-                    >
-                        Przejdź do Mojej Karty →
-                    </Link>
-
-                    <Link
-                        href="/karta-podarunkowa"
-                        className="block px-8 py-4 border border-gold-500 text-gold-500 hover:bg-gold-500/10 font-bold rounded-xl transition-all"
-                    >
-                        Powróć do Sklepu
-                    </Link>
-                </div>
-
-                <p className="text-zinc-500 text-sm mt-8">
-                    Jeśli masz pytania, skontaktuj się z nami na: {process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'kontakt@wlasniewski.pl'}
-                </p>
             </motion.div>
-        </main>
+        </div>
     );
 }
 

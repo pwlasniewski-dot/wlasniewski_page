@@ -58,11 +58,6 @@ export async function POST(
             order.gift_card.theme || 'christmas' // Passed theme
         );
 
-        // Update delivery status
-        await prisma.giftCardOrder.update({
-            where: { id: orderId },
-            data: { delivery_status: 'sent' }
-        });
 
         return NextResponse.json({ success: true, message: 'Email sent successfully' });
 

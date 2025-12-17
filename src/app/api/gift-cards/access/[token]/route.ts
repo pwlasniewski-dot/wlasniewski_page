@@ -32,13 +32,7 @@ export async function GET(
             );
         }
 
-        // Check if order is expired
-        if (!order.expires_at || new Date() > order.expires_at) {
-            return NextResponse.json(
-                { error: 'Karta wygasła' },
-                { status: 403 }
-            );
-        }
+
 
         // Check if order is paid
         if (order.payment_status !== 'completed') {
@@ -48,11 +42,7 @@ export async function GET(
             );
         }
 
-        // Update accessed_at
-        await prisma.giftCardOrder.update({
-            where: { id: order.id },
-            data: { accessed_at: new Date() },
-        });
+
 
         // Fetch Logo URL
         const logoSetting = await prisma.setting.findFirst({

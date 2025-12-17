@@ -34,7 +34,6 @@ export async function GET(request: NextRequest) {
             amount: order.amount_paid,
             currency: order.currency,
             status: order.payment_status,
-            deliveryStatus: order.delivery_status,
             createdAt: order.created_at,
             payuOrderId: order.payu_order_id,
             stripeSessionId: order.stripe_session_id,

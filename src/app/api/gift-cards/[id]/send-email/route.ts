@@ -104,10 +104,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
             // Generate email HTML
             const emailHtml = generateGiftCardEmail(
-                card.recipient_name,
+                card.recipient_name || 'Odbiorca',
                 card.code,
                 card.value || card.amount,
-                card.theme || card.card_template,
+                card.theme || card.card_template || 'christmas',
                 card.sender_name || 'Fotograf',
                 card.message || '',
                 logoUrl,
@@ -125,7 +125,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             // Update card status
             await prisma.giftCard.update({
                 where: { id: parseInt(id) },
-                data: { status: 'sent', updated_at: new Date() }
+                data: { status: 'sent' }
             });
 
             // 3. Send confirmation (COPY) to admin

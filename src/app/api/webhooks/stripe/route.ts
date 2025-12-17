@@ -66,15 +66,14 @@ export async function POST(request: NextRequest) {
                         code: uniqueCode,
                         amount: originalOrder.gift_card.amount,
                         value: originalOrder.gift_card.value,
-                        theme: originalOrder.gift_card.theme,
-                        card_template: originalOrder.gift_card.card_template,
+                        theme: originalOrder.gift_card.theme || 'christmas',
+                        card_template: originalOrder.gift_card.card_template || 'standard',
                         card_title: originalOrder.gift_card.card_title,
                         card_description: originalOrder.gift_card.card_description,
                         recipient_email: originalOrder.recipient_email || originalOrder.customer_email,
                         recipient_name: originalOrder.recipient_name || originalOrder.customer_name,
                         sender_name: originalOrder.sender_name,
                         message: originalOrder.message,
-                        created_by: originalOrder.gift_card.created_by,
                         status: 'active'
                     }
                 });
@@ -95,7 +94,6 @@ export async function POST(request: NextRequest) {
                 where: { id: parseInt(orderId) },
                 data: {
                     payment_status: 'completed',
-                    stripe_payment_id: session.payment_intent as string,
                     paid_at: new Date()
                 },
                 include: {
@@ -106,7 +104,7 @@ export async function POST(request: NextRequest) {
             console.log('✅ Order paid:', order.id);
 
             // Send email with access
-            if (order.customer_email) {
+            if (order.customer_email && order.gift_card) {
                 try {
                     await sendGiftCardAccessEmail(
                         order.customer_email,
@@ -124,10 +122,7 @@ export async function POST(request: NextRequest) {
                     console.log('📧 Email sent to:', order.customer_email);
 
                     // Mark as email sent
-                    await prisma.giftCardOrder.update({
-                        where: { id: order.id },
-                        data: { delivery_status: 'email_sent' }
-                    });
+
                 } catch (emailError) {
                     console.error('❌ Error sending email:', emailError);
                 }
@@ -139,11 +134,15 @@ export async function POST(request: NextRequest) {
         // Handle payment_intent.payment_failed
         if (event.type === 'payment_intent.payment_failed') {
             const paymentIntent = event.data.object as Stripe.PaymentIntent;
+            const orderId = paymentIntent.metadata?.order_id;
 
-            // Find order by payment intent
-            const order = await prisma.giftCardOrder.findFirst({
-                where: { stripe_payment_id: paymentIntent.id }
-            });
+            // Find order by ID
+            let order = null;
+            if (orderId) {
+                order = await prisma.giftCardOrder.findUnique({
+                    where: { id: parseInt(orderId) }
+                });
+            }
 
             if (order) {
                 await prisma.giftCardOrder.update({
@@ -160,11 +159,15 @@ export async function POST(request: NextRequest) {
         // Handle charge.refunded
         if (event.type === 'charge.refunded') {
             const charge = event.data.object as Stripe.Charge;
+            const orderId = charge.metadata?.order_id;
 
-            // Find order by charge
-            const order = await prisma.giftCardOrder.findFirst({
-                where: { stripe_payment_id: charge.payment_intent as string }
-            });
+            // Find order by ID
+            let order = null;
+            if (orderId) {
+                order = await prisma.giftCardOrder.findUnique({
+                    where: { id: parseInt(orderId) }
+                });
+            }
 
             if (order) {
                 await prisma.giftCardOrder.update({

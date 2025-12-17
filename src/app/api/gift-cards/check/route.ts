@@ -24,7 +24,7 @@ export async function GET(req: Request) {
             giftCard: {
                 code: giftCard.code,
                 amount: giftCard.amount,
-                is_used: giftCard.is_used,
+                is_used: !!giftCard.redeemed_at,
             },
         });
     } catch (error) {

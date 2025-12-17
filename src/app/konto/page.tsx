@@ -2,111 +2,101 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
+import Link from 'next/link';
 
 export default function AccountPage() {
     const router = useRouter();
     const [loading, setLoading] = useState(true);
     const [user, setUser] = useState<any>(null);
-    const [token, setToken] = useState<string | null>(null);
+    const [giftCards, setGiftCards] = useState<any[]>([]);
 
     useEffect(() => {
-        // Simple auth check assuming token is stored in localStorage 'authToken'
-        // Adjust key if different in existing auth logic
-        const storedToken = localStorage.getItem('token'); // or 'authToken'? Need to verify
-        // checking AcceptChallengePage auth logic... it didn't save token to localStorage explicitly in the snippet I wrote?
-        // Wait, AcceptChallengePage:
-        // const authData = await authResponse.json();
-        // if (authData.success) { ... }
-        // It uses `authData.token` immediately for the next request.
-        // It does NOT seem to save it to localStorage in that file!
-        // I need to check how Auth is persisted. If it isn't, users aren't "logged in" after leaving the page?
-        // The user requirement says "Inviter creates account".
-        // If auth is not persisted, they can't access a dashboard.
-
-        // Let's assume for now I need to persist it.
-        // OR check if other files use cookies/session.
-
-        const t = localStorage.getItem('token');
-        if (t) {
-            setToken(t);
-            // Verify token / get user info
-            fetch('/api/image/user', { // Assuming some user endpoint exists or use dummy for now?
-                // I don't have a /api/user/me endpoint.
-                // I'll skip fetching user details for now and just show the button if token exists.
-                headers: { 'Authorization': `Bearer ${t}` }
-            }).then(() => {
-                // assume valid for now
-                setLoading(false);
-            }).catch(() => {
-                setLoading(false);
-                // router.push('/foto-wyzwanie/auth'); // No auth page exists yet
-            });
-            setLoading(false);
-        } else {
-            setLoading(false);
-            router.push('/foto-wyzwanie');
-        }
-    }, [router]);
-
-    const handleDeleteAccount = async () => {
-        if (!confirm('Czy NA PEWNO chcesz usunąć swoje konto? Ta operacja jest nieodwracalna. Utracisz dostęp do wszystkich wyzwań i zdjęć.')) {
+        const token = localStorage.getItem('user_token');
+        if (!token) {
+            router.push('/logowanie');
             return;
         }
 
-        // Double confirm
-        const confirmation = prompt('Wpisz "USUŃ" aby potwierdzić usunięcie konta');
-        if (confirmation !== 'USUŃ') return;
-
-        try {
-            const response = await fetch('/api/user/delete', {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${token}`
+        // Fetch user data & cards
+        async function fetchData() {
+            try {
+                const res = await fetch('/api/user/me', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    setUser(data.user);
+                    setGiftCards(data.user.gift_cards || []);
+                    // also orders?
+                } else {
+                    localStorage.removeItem('user_token');
+                    router.push('/logowanie');
                 }
-            });
-
-            const data = await response.json();
-
-            if (data.success) {
-                alert('Twoje konto zostało usunięte.');
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
-                router.push('/');
-            } else {
-                alert(data.error || 'Wystąpił błąd');
+            } catch (e) {
+                console.error(e);
+            } finally {
+                setLoading(false);
             }
-        } catch (error) {
-            console.error('Delete account error:', error);
-            alert('Wystąpił błąd połączenia');
         }
+        fetchData();
+    }, [router]);
+
+    const handleLogout = () => {
+        localStorage.removeItem('user_token');
+        localStorage.removeItem('user_info');
+        router.push('/logowanie');
     };
 
     if (loading) return <div className="min-h-screen bg-black text-white flex items-center justify-center">Ładowanie...</div>;
 
-    if (!token) return null;
-
     return (
         <div className="min-h-screen bg-black text-white pt-32 px-4">
-            <div className="max-w-2xl mx-auto">
-                <h1 className="text-4xl font-display font-bold text-gold-400 mb-8">Twoje Konto</h1>
+            <div className="max-w-4xl mx-auto">
+                <div className="flex justify-between items-center mb-8">
+                    <h1 className="text-4xl font-display font-bold text-gold-400">Twoje Konto</h1>
+                    <button onClick={handleLogout} className="text-zinc-500 hover:text-white transition-colors">Wyloguj</button>
+                </div>
 
-                <div className="premium-card p-8 rounded-xl border border-zinc-800">
-                    <h2 className="text-xl font-semibold mb-4 text-white">Ustawienia</h2>
-
-                    <div className="space-y-6">
-                        <div className="p-4 bg-red-900/10 border border-red-900/30 rounded-lg">
-                            <h3 className="text-red-400 font-bold mb-2">Strefa Niebezpieczna</h3>
-                            <p className="text-zinc-400 text-sm mb-4">
-                                Usunięcie konta spowoduje trwałą utratę dostępu do wszystkich Twoich danych, historii wyzwań oraz galerii zdjęć.
-                            </p>
-                            <button
-                                onClick={handleDeleteAccount}
-                                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded transition-colors text-sm font-semibold"
-                            >
-                                Usuń konto
-                            </button>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    {/* Sidebar / Profile Info */}
+                    <div className="md:col-span-1 space-y-6">
+                        <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-xl">
+                            <h2 className="text-xl font-bold text-white mb-4">Profil</h2>
+                            <p className="text-zinc-400 mb-1">Imię: <span className="text-white">{user?.name}</span></p>
+                            <p className="text-zinc-400">Email: <span className="text-white">{user?.email}</span></p>
                         </div>
+                    </div>
+
+                    {/* Main Content */}
+                    <div className="md:col-span-2 space-y-8">
+
+                        {/* Gift Cards Section */}
+                        <section>
+                            <h2 className="text-2xl font-bold text-gold-400 mb-4">Twoje Karty Podarunkowe</h2>
+                            {giftCards.length === 0 ? (
+                                <div className="bg-zinc-900 border border-zinc-800 p-8 rounded-xl text-center">
+                                    <p className="text-zinc-500 mb-4">Nie masz jeszcze żadnych kart podarunkowych.</p>
+                                    <Link href="/karta-podarunkowa" className="inline-block px-6 py-2 bg-gold-600/20 text-gold-400 border border-gold-600/50 rounded-full hover:bg-gold-600/30 transition-colors">
+                                        Kup kartę
+                                    </Link>
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    {giftCards.map((card) => (
+                                        <div key={card.id} className="bg-zinc-900 border border-zinc-800 p-6 rounded-xl flex justify-between items-center group hover:border-gold-500/50 transition-colors">
+                                            <div>
+                                                <div className="text-gold-400 font-bold uppercase tracking-wider text-sm mb-1">{card.card_title || 'Karta Podarunkowa'}</div>
+                                                <div className="text-2xl font-bold text-white mb-2">{card.value} PLN</div>
+                                                <div className="text-zinc-500 text-sm">Kod: <span className="font-mono text-zinc-300">{card.code}</span></div>
+                                            </div>
+                                            <Link href={`/karta-podarunkowa/dostep/${card.access_token || ''}`} className="px-4 py-2 bg-white text-black font-bold rounded hover:bg-zinc-200 transition-colors">
+                                                Otwórz
+                                            </Link>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </section>
                     </div>
                 </div>
             </div>

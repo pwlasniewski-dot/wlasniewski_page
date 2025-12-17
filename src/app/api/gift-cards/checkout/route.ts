@@ -59,7 +59,8 @@ export async function POST(request: NextRequest) {
         const accessToken = nanoid(32);
         const order = await prisma.giftCardOrder.create({
             data: {
-                gift_card_id: cardId,
+                card_id: Number(cardId),
+                gift_card_id: Number(cardId),
                 customer_email: customerEmail,
                 customer_name: customerName,
                 recipient_name: recipientName,
@@ -67,16 +68,24 @@ export async function POST(request: NextRequest) {
                 message: message,
                 sender_name: senderName,
                 payment_method: 'payu',
-                amount_paid: Math.round(price * 100), // Convert to groszy
+                amount_paid: Math.round(Number(price) * 100), // Convert to groszy
                 access_token: accessToken,
-                expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
             }
         });
 
         // Prepare PayU Order Data
         const origin = request.headers.get('origin');
         const baseUrl = origin || process.env.NEXT_PUBLIC_BASE_URL || 'https://wlasniewski.pl';
-        const clientIp = (request.headers.get('x-forwarded-for') || '127.0.0.1').split(',')[0].trim();
+
+        let clientIp = '127.0.0.1';
+        try {
+            const forwarded = request.headers.get('x-forwarded-for');
+            clientIp = forwarded ? forwarded.split(',')[0].trim() : '127.0.0.1';
+        } catch (e) {
+            console.error('Error parsing IP:', e);
+        }
+
+        console.log(`[Checkout] Processing order for Card ${card.id}. IP: ${clientIp}`);
 
         const orderRequest: OrderRequest = {
             description: `Karta Podarunkowa - ${theme} (${value} PLN)`,
@@ -106,9 +115,9 @@ export async function POST(request: NextRequest) {
             payuData = await createPayUOrder(orderRequest, clientIp);
         } catch (payuError: any) {
             console.error('PayU Library Error:', payuError);
-            // Return 500 but detail looks like "PayU settings not configured" or "PayU Auth Failed"
+            console.error(payuError?.stack);
             return NextResponse.json(
-                { error: 'Payment initialization failed', details: payuError.message },
+                { error: 'Payment initialization failed', details: payuError.message, stack: payuError.stack },
                 { status: 500 }
             );
         }

@@ -20,6 +20,10 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Gift card not found' }, { status: 404 });
         }
 
+        if (!giftCard.recipient_email) {
+            return NextResponse.json({ error: 'Recipient email is missing' }, { status: 400 });
+        }
+
         // Prepare email content
         const discountText = giftCard.discount_type === 'percentage'
             ? `${giftCard.amount}% zniżki`
@@ -46,10 +50,10 @@ export async function POST(request: NextRequest) {
         const { generateGiftCardEmail } = await import('@/lib/email/giftCardTemplate');
 
         const htmlContent = generateGiftCardEmail(
-            giftCard.recipient_name,
+            giftCard.recipient_name || 'Odbiorca',
             giftCard.code,
-            giftCard.amount,
-            giftCard.theme || 'christmas', // Default theme
+            giftCard.value || giftCard.amount,
+            giftCard.theme || giftCard.card_template || 'christmas', // Default theme
             'Przemysław Właśniewski Fotografia',
             giftCard.message || '',
             logoUrl,

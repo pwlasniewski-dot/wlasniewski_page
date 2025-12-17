@@ -1,25 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
-import { verifyPassword, generateToken } from '@/lib/auth/jwt';
+import { hashPassword, generateToken } from '@/lib/auth/jwt';
 
 export async function POST(req: NextRequest) {
     try {
-        const { email, password } = await req.json();
+        const { name, email, password } = await req.json();
 
         if (!email || !password) {
             return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
         }
 
-        const user = await prisma.user.findUnique({ where: { email } });
-        if (!user) {
-            return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+        const existingUser = await prisma.user.findUnique({ where: { email } });
+        if (existingUser) {
+            return NextResponse.json({ error: 'User already exists' }, { status: 409 });
         }
 
-        const isValid = await verifyPassword(password, user.password_hash);
-        if (!isValid) {
-            return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
-        }
+        const hashedPassword = await hashPassword(password);
 
+        const user = await prisma.user.create({
+            data: {
+                name,
+                email,
+                password_hash: hashedPassword,
+            },
+        });
+
+        // Auto-login logic
         const token = await generateToken({ id: user.id, email: user.email });
 
         return NextResponse.json({
@@ -29,7 +35,7 @@ export async function POST(req: NextRequest) {
         });
 
     } catch (error) {
-        console.error('Login error:', error);
+        console.error('Registration error:', error);
         return NextResponse.json({ error: 'Server error' }, { status: 500 });
     }
 }

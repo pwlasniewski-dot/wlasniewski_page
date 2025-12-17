@@ -382,62 +382,77 @@ model Package {
   @@map("packages")
 }
 
+model GiftCardOrder {
+  id                Int           @id @default(autoincrement())
+  order_number      String?       @unique
+  customer_name     String
+  customer_email    String
+  amount_paid       Int
+  currency          String        @default("PLN")
+  payment_status    String        @default("pending")
+  payment_method    String?
+  stripe_session_id String?
+  created_at        DateTime      @default(now())
+  paid_at           DateTime?
+  card_id           Int
+  gift_card_id      Int?
+  gift_card         GiftCard?     @relation(fields: [gift_card_id], references: [id])
+  template_id       Int?
+  recipient_email   String?
+  recipient_name    String?
+  sender_name       String?
+  message           String?
+  access_token      String?       @unique // For accessing without login
+  payu_order_id     String?
+  user_id           Int?
+  user              User?         @relation(fields: [user_id], references: [id])
+
+  @@map("gift_card_orders")
+}
+
 model GiftCard {
   id               Int             @id @default(autoincrement())
   code             String          @unique
   amount           Int
-  recipient_email  String
-  recipient_name   String
-  message          String?
-  is_used          Boolean         @default(false)
-  created_at       DateTime        @default(now())
-  used_at          DateTime?
-  card_template    String          @default("gold")
-  created_by       Int?
-  discount_type    String          @default("percentage")
-  notes            String?
+  value            Int
+  currency         String          @default("PLN")
   valid_until      DateTime?
+  is_active        Boolean         @default(true)
+  created_at       DateTime        @default(now())
+  redeemed_at      DateTime?
+  recipient_email  String?
+  recipient_name   String?
+  notes            String?
+  card_template    String?         @default("standard")
+  theme            String?         @default("christmas")
+  discount_type    String?         @default("amount")
+  sender_name      String?
+  message          String?
   card_description String?
   card_title       String?
-  sender_name      String?
-  status           String          @default("active")
-  theme            String?
-  updated_at       DateTime        @updatedAt
-  value            Int?
   orders           GiftCardOrder[]
+  status           String          @default("active")
+  owner_id         Int?
+  owner            User?           @relation("UserGiftCards", fields: [owner_id], references: [id])
 
   @@map("gift_cards")
 }
 
-model GiftCardOrder {
-  id                Int       @id @default(autoincrement())
-  gift_card_id      Int
-  customer_email    String
-  customer_name     String
-  recipient_name    String?
-  recipient_email   String?
-  message           String?
-  sender_name       String?
-  payment_method    String
-  stripe_session_id String?   @unique
-  stripe_payment_id String?
-  payu_order_id     String?   @unique
-  amount_paid       Int
-  currency          String    @default("PLN")
-  payment_status    String    @default("pending")
-  delivery_status   String    @default("not_sent")
-  created_at        DateTime  @default(now())
-  updated_at        DateTime  @updatedAt
-  paid_at           DateTime?
-  expires_at        DateTime?
-  accessed_at       DateTime?
-  access_token      String?   @unique
-  gift_card         GiftCard  @relation(fields: [gift_card_id], references: [id], onDelete: Cascade)
 
-  @@index([customer_email])
-  @@index([stripe_session_id])
-  @@index([payment_status])
-  @@map("gift_card_orders")
+
+model User {
+  id            Int             @id @default(autoincrement())
+  email         String          @unique
+  password_hash String
+  name          String?
+  phone         String?
+  created_at    DateTime        @default(now())
+  updated_at    DateTime        @updatedAt
+  
+  orders        GiftCardOrder[]
+  gift_cards    GiftCard[]      @relation("UserGiftCards")
+
+  @@map("users")
 }
 
 model SessionInvite {
