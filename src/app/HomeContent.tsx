@@ -65,6 +65,12 @@ interface HomeContentProps {
 export default function HomeContent({ homeData, orderedSections, testimonials }: HomeContentProps) {
     const [currentTestimonial, setCurrentTestimonial] = useState(0);
 
+    // DEBUG: Check what data we're receiving
+    useEffect(() => {
+        console.log('[HomeContent] homeData:', homeData);
+        console.log('[HomeContent] homeData.hero_slider:', homeData?.hero_slider);
+        console.log('[HomeContent] hero_slider length:', homeData?.hero_slider?.length);
+    }, [homeData]);
 
 
     // Auto-rotate testimonials
@@ -602,7 +608,18 @@ export default function HomeContent({ homeData, orderedSections, testimonials }:
             />
 
             {/* Hero Slider - Always First */}
-            <HeroSlider slides={homeData?.hero_slider || []} />
+            <HeroSlider slides={homeData?.hero_slider?.length ? homeData.hero_slider : [
+                {
+                    id: 'test-1',
+                    title: 'TEST SLIDE',
+                    subtitle: 'Jeżeli to widzisz - komponenent działa',
+                    image: 'https://wlasniewski-photo-storage.s3.eu-north-1.amazonaws.com/1765998439093-portret-torun-06.webp',
+                    image_desktop: 'https://wlasniewski-photo-storage.s3.eu-north-1.amazonaws.com/1765998439093-portret-torun-06.webp',
+                    enabled: true,
+                    buttonText: 'Test',
+                    buttonLink: '/portfolio'
+                }
+            ]} />
 
             {/* Urgency / Promo Bar below Hero */}
             <UrgencyBanner />
