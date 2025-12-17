@@ -9,6 +9,7 @@ import { CheckCircle } from 'lucide-react';
 function ThankYouContent() {
     const searchParams = useSearchParams();
     const orderId = searchParams.get('orderId');
+    const token = searchParams.get('token');
 
     return (
         <main className="min-h-screen bg-black text-white pt-40 flex items-center justify-center">
@@ -60,7 +61,7 @@ function ThankYouContent() {
 
                 <div className="space-y-4">
                     <Link
-                        href={orderId ? `/karta-podarunkowa/dostep/${orderId}` : '/karta-podarunkowa'}
+                        href={token ? `/karta-podarunkowa/dostep/${token}` : '/karta-podarunkowa'}
                         className="block px-8 py-4 bg-gold-500 hover:bg-gold-400 text-black font-bold rounded-xl transition-all transform hover:scale-105"
                     >
                         Przejdź do Mojej Karty →

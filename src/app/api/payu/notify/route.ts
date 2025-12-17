@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from '@/lib/db/prisma';
 import { sendGiftCardAccessEmail } from "@/lib/email/giftCardAccess";
+import { logSystem } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
+    console.log('[PayU NOTIFY] Webhook triggered');
     try {
         const bodyText = await request.text();
         const body = JSON.parse(bodyText);
@@ -105,8 +107,10 @@ export async function POST(request: NextRequest) {
                     });
 
                     // Send gift card access email
+                    console.log(`[PayU] Attempting to send access email for Order #${updatedOrder?.id}`);
                     try {
                         if (updatedOrder && updatedOrder.customer_name && updatedOrder.access_token) {
+                            console.log(`[PayU] Sending access email to: ${updatedOrder.customer_email} using theme: ${updatedOrder.gift_card.theme}`);
                             await sendGiftCardAccessEmail(
                                 updatedOrder.customer_email,
                                 updatedOrder.customer_name,
@@ -119,10 +123,12 @@ export async function POST(request: NextRequest) {
                                 updatedOrder.id,
                                 updatedOrder.gift_card.theme || 'christmas'
                             );
-                            console.log(`Gift card email sent for order ${resourceId}`);
+                            console.log(`✅ [PayU] Gift card email sent successfully for order ${resourceId}`);
+                        } else {
+                            console.warn(`[PayU] Skipping email - missing data. Order: ${!!updatedOrder}, Name: ${!!updatedOrder?.customer_name}, Token: ${!!updatedOrder?.access_token}`);
                         }
                     } catch (err) {
-                        console.error('Failed to send gift card email:', err);
+                        console.error('❌ [PayU] Failed to send gift card email:', err);
                     }
 
                     // Send admin notification email

@@ -57,38 +57,40 @@ export async function sendGiftCardAccessEmail(
             body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: #000000; color: #ffffff; margin: 0; padding: 0; }
             .wrapper { width: 100%; background-color: #050505; padding: 40px 0; }
             .container { max-width: 600px; margin: 0 auto; background: #111111; border: 1px solid #333; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.8); }
-            .header { background: #000; padding: 40px; text-align: center; border-bottom: 1px solid #222; }
-            .logo img { max-width: 140px; height: auto; }
-            .title { color: #d4af37; font-size: 24px; font-weight: 300; letter-spacing: 2px; text-transform: uppercase; margin-top: 20px; }
+            .header { background: #000; padding: 40px; text-align: center; border-bottom: 2px solid #222; }
+            .logo img { max-width: 160px; height: auto; display: block; margin: 0 auto; }
+            .title { color: #d4af37; font-size: 28px; font-weight: bold; letter-spacing: 2px; text-transform: uppercase; margin-top: 25px; }
             .content { padding: 40px; text-align: center; }
-            .greeting { font-size: 18px; color: #fff; margin-bottom: 20px; }
-            .text { color: #aaa; line-height: 1.6; margin-bottom: 30px; }
+            .greeting { font-size: 22px; color: #ffffff; margin-bottom: 25px; font-weight: 500; }
+            .text { color: #dddddd; font-size: 16px; line-height: 1.8; margin-bottom: 35px; }
             
             /* Virtual Card Design */
             .gift-card {
                 background: ${config.bgGradient};
-                border: 1px solid #333;
+                border: 2px solid rgba(255,255,255,0.1);
                 border-radius: 16px;
-                padding: 30px;
+                padding: 40px;
                 text-align: center;
-                margin: 30px 0;
+                margin: 35px 0;
                 position: relative;
-                box-shadow: 0 5px 20px rgba(0,0,0, 0.3);
+                box-shadow: 0 10px 30px rgba(0,0,0, 0.4);
                 color: ${config.textColor};
             }
-            .gift-card-title { color: ${config.textColor}; opacity: 0.8; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px; }
-            .gift-card-value { color: ${config.accentColor}; font-size: 42px; font-weight: bold; margin: 10px 0; text-shadow: 0 0 10px rgba(0,0,0,0.2); }
+            .gift-card-title { color: ${config.textColor}; opacity: 0.9; font-size: 14px; letter-spacing: 3px; text-transform: uppercase; font-weight: bold; margin-bottom: 15px; }
+            .gift-card-value { color: ${config.accentColor}; font-size: 56px; font-weight: 800; margin: 15px 0; text-shadow: 0 2px 15px rgba(0,0,0,0.3); }
             .gift-card-code { 
-                background: rgba(0,0,0,0.4); 
-                color: #fff; 
-                font-family: monospace; 
-                font-size: 24px; 
-                letter-spacing: 3px; 
-                padding: 15px; 
-                border-radius: 8px; 
-                border: 1px dashed ${config.accentColor};
+                background: rgba(0,0,0,0.6); 
+                color: #ffffff; 
+                font-family: 'Consolas', 'Monaco', monospace; 
+                font-size: 28px; 
+                font-weight: bold;
+                letter-spacing: 4px; 
+                padding: 20px; 
+                border-radius: 12px; 
+                border: 2px dashed ${config.accentColor};
                 display: inline-block;
-                margin-top: 15px;
+                margin-top: 20px;
+                box-shadow: 0 4px 10px rgba(0,0,0,0.2);
             }
 
             /* Button */
@@ -96,25 +98,27 @@ export async function sendGiftCardAccessEmail(
                 display: inline-block; 
                 background: #d4af37; 
                 color: #000000; 
-                padding: 18px 40px; 
-                font-size: 16px; 
-                font-weight: bold; 
+                padding: 20px 50px; 
+                font-size: 18px; 
+                font-weight: 800; 
                 text-decoration: none; 
                 border-radius: 50px; 
                 text-transform: uppercase; 
                 letter-spacing: 1px;
                 transition: all 0.3s;
-                box-shadow: 0 5px 20px rgba(212, 175, 55, 0.4);
+                box-shadow: 0 5px 25px rgba(212, 175, 55, 0.4);
+                margin-top: 20px;
             }
+            .button:hover { background: #eeca56; box-shadow: 0 8px 30px rgba(212, 175, 55, 0.6); transform: translateY(-2px); }
             
-            .info-box { background: #1a1a1a; border-radius: 8px; padding: 20px; text-align: left; margin-bottom: 30px; border-left: 3px solid #d4af37; }
-            .info-row { display: flex; justify-content: space-between; margin-bottom: 8px; border-bottom: 1px solid #333; padding-bottom: 8px; }
+            .info-box { background: #1a1a1a; border-radius: 12px; padding: 25px; text-align: left; margin: 40px 0; border-left: 4px solid #d4af37; }
+            .info-row { display: flex; justify-content: space-between; margin-bottom: 12px; border-bottom: 1px solid #333; padding-bottom: 12px; }
             .info-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
-            .info-label { color: #666; font-size: 12px; text-transform: uppercase; }
-            .info-val { color: #fff; font-size: 14px; }
+            .info-label { color: #888; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+            .info-val { color: #fff; font-size: 16px; font-weight: 500; }
             
-            .footer { background: #050505; padding: 30px; text-align: center; color: #444; font-size: 12px; border-top: 1px solid #222; }
-            .footer a { color: #666; text-decoration: none; }
+            .footer { background: #050505; padding: 30px; text-align: center; color: #666; font-size: 14px; border-top: 1px solid #222; line-height: 1.6; }
+            .footer a { color: #888; text-decoration: none; border-bottom: 1px dotted #666; }
         </style>
     </head>
     <body style="background-color: #050505;">

@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
                 }
             ],
             // PayU requires a continue URL, ensuring user comes back to the site
-            continueUrl: `${baseUrl}/karta-podarunkowa/podziekowanie?orderId=${order.id}`,
+            continueUrl: `${baseUrl}/karta-podarunkowa/podziekowanie?orderId=${order.id}&token=${order.access_token}`,
         };
 
         // Execute PayU Call via Library (uses DB settings)
@@ -138,39 +138,75 @@ export async function POST(request: NextRequest) {
                     <head>
                         <meta charset="utf-8">
                         <style>
-                            body { font-family: Arial, sans-serif; background: #0f0f0f; color: #fff; }
-                            .container { max-width: 600px; margin: 0 auto; background: #1a1a1a; padding: 40px; border-radius: 12px; }
-                            .header { text-align: center; margin-bottom: 30px; }
-                            .info { background: #2a2a2a; padding: 20px; border-radius: 8px; margin: 20px 0; }
-                            .button { display: inline-block; background: #d4af37; color: #000; padding: 12px 30px; border-radius: 6px; text-decoration: none; font-weight: bold; margin-top: 20px; }
-                            .footer { text-align: center; margin-top: 40px; border-top: 1px solid #333; padding-top: 20px; font-size: 12px; color: #888; }
+                            body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: #000000; color: #ffffff; margin: 0; padding: 0; }
+                            .container { max-width: 600px; margin: 0 auto; background: #111111; border: 1px solid #333; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.8); }
+                            .header { background: #000; padding: 40px; text-align: center; border-bottom: 2px solid #222; }
+                            .title { color: #d4af37; font-size: 24px; font-weight: bold; letter-spacing: 2px; text-transform: uppercase; margin: 0; }
+                            .content { padding: 40px; text-align: center; }
+                            .greeting { font-size: 20px; color: #ffffff; margin-bottom: 20px; font-weight: 500; }
+                            .text { color: #dddddd; font-size: 16px; line-height: 1.6; margin-bottom: 30px; }
+                            
+                            .info-box { background: #1a1a1a; border-radius: 12px; padding: 25px; text-align: left; margin: 30px 0; border-left: 4px solid #d4af37; }
+                            .info-row { display: flex; justify-content: space-between; margin-bottom: 12px; border-bottom: 1px solid #333; padding-bottom: 12px; }
+                            .info-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+                            .info-label { color: #888; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+                            .info-val { color: #fff; font-size: 16px; font-weight: 500; }
+                            
+                            .status-badge { 
+                                display: inline-block; 
+                                background: #222; 
+                                color: #d4af37; 
+                                padding: 10px 20px; 
+                                border-radius: 50px; 
+                                border: 1px solid #d4af37;
+                                font-weight: bold;
+                                text-transform: uppercase;
+                                font-size: 12px;
+                                letter-spacing: 1px;
+                                margin-top: 20px;
+                            }
+                            
+                            .footer { background: #050505; padding: 30px; text-align: center; color: #666; font-size: 14px; border-top: 1px solid #222; line-height: 1.6; }
                         </style>
                     </head>
                     <body>
                         <div class="container">
                             <div class="header">
-                                <h1 style="color: #d4af37; margin: 0;">🎁 Potwierdzenie Zamówienia</h1>
-                                <p style="color: #aaa;">Karta Podarunkowa</p>
+                                <h1 class="title">🎁 Potwierdzenie Zamówienia</h1>
                             </div>
+                            
+                            <div class="content">
+                                <div class="greeting">Cześć ${customerName.split(' ')[0]}!</div>
+                                <div class="text">
+                                    Dziękujemy za złożenie zamówienia na Kartę Podarunkową.
+                                    <br>Twoja płatność jest obecnie przetwarzana.
+                                </div>
 
-                            <p>Cześć ${customerName.split(' ')[0]},</p>
+                                <div class="info-box">
+                                    <div class="info-row">
+                                        <span class="info-label">Numer zamówienia</span>
+                                        <span class="info-val">#${order.id}</span>
+                                    </div>
+                                    <div class="info-row">
+                                        <span class="info-label">Wartość karty</span>
+                                        <span class="info-val">${value} PLN</span>
+                                    </div>
+                                    <div class="info-row">
+                                        <span class="info-label">Do zapłaty</span>
+                                        <span class="info-val">${(price / 100).toFixed(2)} PLN</span>
+                                    </div>
+                                </div>
 
-                            <p>Dziękujemy za złożenie zamówienia karty podarunkowej! Twoja płatność jest w toku.</p>
+                                <div class="text">
+                                    Gdy tylko otrzymamy potwierdzenie płatności, wyślemy do Ciebie kolejną wiadomość z linkiem do Twojej karty.
+                                </div>
 
-                            <div class="info">
-                                <h3 style="margin-top: 0; color: #d4af37;">📋 Szczegóły Zamówienia</h3>
-                                <p><strong>Wartość karty:</strong> ${value} PLN</p>
-                                <p><strong>Cena:</strong> ${(price / 100).toFixed(2)} PLN</p>
-                                <p><strong>Numer zamówienia:</strong> ${order.id}</p>
+                                <div class="status-badge">⏳ Oczekiwanie na płatność</div>
                             </div>
-
-                            <p>Po potwierdzeniu płatności otrzymasz wiadomość email z dostępem do karty podarunkowej.</p>
-
-                            <p style="color: #d4af37; font-weight: bold;">⏳ Czekamy na potwierdzenie płatności...</p>
 
                             <div class="footer">
-                                <p>Jeśli masz pytania, skontaktuj się z nami: <strong>${process.env.NEXT_PUBLIC_CONTACT_EMAIL || ''}</strong></p>
-                                <p>© Fotograf Wlasniewski - Wszystkie prawa zastrzeżone</p>
+                                <p>Jeśli masz pytania, skontaktuj się z nami: ${process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'kontakt@wlasniewski.pl'}</p>
+                                <p>© Fotograf Wlasniewski</p>
                             </div>
                         </div>
                     </body>
