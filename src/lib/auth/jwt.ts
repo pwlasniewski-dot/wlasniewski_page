@@ -19,7 +19,7 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
 }
 
 // Generate JWT token
-export async function generateToken(payload: { id: number; email: string }): Promise<string> {
+export async function generateToken(payload: { id: number; email: string; role?: string; type?: string }): Promise<string> {
     return new SignJWT(payload)
         .setProtectedHeader({ alg: 'HS256' })
         .setIssuedAt()
