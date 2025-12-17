@@ -38,7 +38,7 @@ import { Suspense } from "react";
 import { AnalyticsTracker } from "@/hooks/useAnalytics";
 import AnalyticsLoader from "@/components/AnalyticsLoader";
 import FloatingContact from "@/components/FloatingContact";
-import SeasonalEffects from "@/components/effects/SeasonalEffects";
+import SeasonalEffectsWrapper from "@/components/effects/SeasonalEffectsWrapper";
 
 const cormorant = Cormorant_Garamond({
     subsets: ["latin"],
@@ -133,7 +133,7 @@ export default function RootLayout({
                     <AnalyticsTracker />
                     <AnalyticsLoader />
                 </Suspense>
-                <SeasonalEffects />
+                <SeasonalEffectsWrapper />
                 <AppShell>
                     {children}
                 </AppShell>

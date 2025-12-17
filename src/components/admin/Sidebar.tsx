@@ -93,7 +93,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                             const isActive = pathname.startsWith(item.href);
                             const isGiftCards = item.name === 'Karty podarunkowe';
                             const isExpanded = expandedMenu === 'gift-cards';
-                            
+
                             if (isGiftCards) {
                                 return (
                                     <div key={item.name}>
@@ -138,12 +138,22 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                                                 >
                                                     Sklep
                                                 </Link>
+                                                <Link
+                                                    href="/admin/gift-cards/orders"
+                                                    onClick={() => setIsOpen?.(false)}
+                                                    className={`block px-2 py-2 text-sm rounded-md transition-colors ${pathname === '/admin/gift-cards/orders'
+                                                        ? 'bg-zinc-800 text-gold-400'
+                                                        : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
+                                                        }`}
+                                                >
+                                                    Zamówienia
+                                                </Link>
                                             </div>
                                         )}
                                     </div>
                                 );
                             }
-                            
+
                             return (
                                 <Link
                                     key={item.name}

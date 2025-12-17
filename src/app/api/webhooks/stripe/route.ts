@@ -49,6 +49,47 @@ export async function POST(request: NextRequest) {
                 return NextResponse.json({ success: false });
             }
 
+            // Verify and Clone Gift Card (Template -> Instance)
+            const originalOrder = await prisma.giftCardOrder.findUnique({
+                where: { id: parseInt(orderId) },
+                include: { gift_card: true }
+            });
+
+            if (originalOrder && originalOrder.gift_card) {
+                // If the card is a template (or just the product card), we create a unique copy for this user
+                // We use the 'generateGiftCardCode' to ensure uniqueness
+                const { generateGiftCardCode } = await import('@/lib/gift-cards');
+                const uniqueCode = generateGiftCardCode();
+
+                const newCard = await prisma.giftCard.create({
+                    data: {
+                        code: uniqueCode,
+                        amount: originalOrder.gift_card.amount,
+                        value: originalOrder.gift_card.value,
+                        theme: originalOrder.gift_card.theme,
+                        card_template: originalOrder.gift_card.card_template,
+                        card_title: originalOrder.gift_card.card_title,
+                        card_description: originalOrder.gift_card.card_description,
+                        recipient_email: originalOrder.recipient_email || originalOrder.customer_email,
+                        recipient_name: originalOrder.recipient_name || originalOrder.customer_name,
+                        sender_name: originalOrder.sender_name,
+                        message: originalOrder.message,
+                        created_by: originalOrder.gift_card.created_by,
+                        status: 'active'
+                    }
+                });
+
+                // Update order to point to the new unique card
+                await prisma.giftCardOrder.update({
+                    where: { id: parseInt(orderId) },
+                    data: {
+                        gift_card_id: newCard.id
+                    }
+                });
+
+                console.log(`✅ Cloned GiftCard Template #${originalOrder.gift_card.id} to New Instance #${newCard.id} (${uniqueCode})`);
+            }
+
             // Update order status
             const order = await prisma.giftCardOrder.update({
                 where: { id: parseInt(orderId) },
@@ -70,13 +111,14 @@ export async function POST(request: NextRequest) {
                     await sendGiftCardAccessEmail(
                         order.customer_email,
                         order.customer_name,
-                        order.gift_card,
+                        order.gift_card, // Now points to the NEW card
                         order.access_token || '',
                         order.recipient_name || undefined,
                         order.recipient_email || undefined,
                         order.sender_name || undefined,
                         order.message || undefined,
-                        order.id
+                        order.id,
+                        order.gift_card.theme || 'christmas'
                     );
 
                     console.log('📧 Email sent to:', order.customer_email);

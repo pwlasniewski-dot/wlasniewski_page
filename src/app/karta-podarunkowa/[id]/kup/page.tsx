@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import GiftCard from '@/components/GiftCard';
-import { ArrowLeft, Loader } from 'lucide-react';
+import { ArrowLeft, Loader, Check } from 'lucide-react';
 
 interface GiftCardProduct {
     id: number;
@@ -47,6 +47,8 @@ export default function BuyGiftCardPage() {
     const [recipientEmail, setRecipientEmail] = useState('');
     const [senderName, setSenderName] = useState('');
     const [message, setMessage] = useState('');
+    const [acceptTerms, setAcceptTerms] = useState(false);
+    const [acceptPrivacy, setAcceptPrivacy] = useState(false);
 
     useEffect(() => {
         const fetchCard = async () => {
@@ -72,6 +74,16 @@ export default function BuyGiftCardPage() {
     const handleCheckout = async () => {
         if (!card || !customerName || !customerEmail) {
             alert('Uzupełnij wymagane pola');
+            return;
+        }
+
+        if (!acceptTerms) {
+            alert('Wymagana akceptacja Regulaminu');
+            return;
+        }
+
+        if (!acceptPrivacy) {
+            alert('Wymagana akceptacja Polityki Prywatności');
             return;
         }
 
@@ -308,6 +320,40 @@ export default function BuyGiftCardPage() {
                                 rows={3}
                             />
                         </div>
+
+                        {/* GDPR Checkboxes */}
+                        <div className="space-y-4 py-4 border-t border-zinc-800 mt-4">
+                            <label className="flex items-start gap-3 cursor-pointer group p-2 hover:bg-zinc-800/50 rounded-lg transition-colors">
+                                <div className="relative flex items-center mt-0.5">
+                                    <input
+                                        type="checkbox"
+                                        checked={acceptTerms}
+                                        onChange={e => setAcceptTerms(e.target.checked)}
+                                        className="peer appearance-none w-6 h-6 border-2 border-zinc-500 rounded bg-zinc-900 checked:bg-gold-500 checked:border-gold-500 transition-all hover:border-gold-500/50"
+                                    />
+                                    <Check className="absolute top-1 left-1 w-4 h-4 text-black opacity-0 peer-checked:opacity-100 transition-opacity" strokeWidth={3} />
+                                </div>
+                                <span className="text-sm text-zinc-300 group-hover:text-white transition-colors select-none leading-tight pt-1">
+                                    Oświadczam, że znam i akceptuję <Link href="/regulamin" className="text-gold-500 hover:underline font-bold" target="_blank">Regulamin</Link> sklepu <span className="text-red-500">*</span>
+                                </span>
+                            </label>
+
+                            <label className="flex items-start gap-3 cursor-pointer group p-2 hover:bg-zinc-800/50 rounded-lg transition-colors">
+                                <div className="relative flex items-center mt-0.5">
+                                    <input
+                                        type="checkbox"
+                                        checked={acceptPrivacy}
+                                        onChange={e => setAcceptPrivacy(e.target.checked)}
+                                        className="peer appearance-none w-6 h-6 border-2 border-zinc-500 rounded bg-zinc-900 checked:bg-gold-500 checked:border-gold-500 transition-all hover:border-gold-500/50"
+                                    />
+                                    <Check className="absolute top-1 left-1 w-4 h-4 text-black opacity-0 peer-checked:opacity-100 transition-opacity" strokeWidth={3} />
+                                </div>
+                                <span className="text-sm text-zinc-300 group-hover:text-white transition-colors select-none leading-tight pt-1">
+                                    Zapoznałem się z <Link href="/polityka-prywatnosci" className="text-gold-500 hover:underline font-bold" target="_blank">Polityką Prywatności</Link> i akceptuję jej postanowienia <span className="text-red-500">*</span>
+                                </span>
+                            </label>
+                        </div>
+
                         <button
                             onClick={handleCheckout}
                             disabled={isProcessing}

@@ -1,6 +1,19 @@
 import { sendEmail } from './sender';
 import prisma from '@/lib/db/prisma';
 
+const themeConfigs: Record<string, { bgGradient: string; accentColor: string; textColor: string }> = {
+    christmas: { bgGradient: 'linear-gradient(135deg, #7f1d1d 0%, #064e3b 100%)', accentColor: '#fca5a5', textColor: '#ffffff' },
+    wosp: { bgGradient: 'linear-gradient(135deg, #dc2626 0%, #b45309 100%)', accentColor: '#fcd34d', textColor: '#ffffff' },
+    valentines: { bgGradient: 'linear-gradient(135deg, #831843 0%, #7f1d1d 100%)', accentColor: '#fbcfe8', textColor: '#ffffff' },
+    easter: { bgGradient: 'linear-gradient(135deg, #ca8a04 0%, #a16207 100%)', accentColor: '#9333ea', textColor: '#ffffff' },
+    halloween: { bgGradient: 'linear-gradient(135deg, #7c2d12 0%, #000000 50%, #7c2d12 100%)', accentColor: '#fdba74', textColor: '#ffffff' },
+    'mothers-day': { bgGradient: 'linear-gradient(135deg, #7e22ce 0%, #db2777 100%)', accentColor: '#fef08a', textColor: '#ffffff' },
+    'childrens-day': { bgGradient: 'linear-gradient(135deg, #2563eb 0%, #a855f7 50%, #db2777 100%)', accentColor: '#fde047', textColor: '#ffffff' },
+    wedding: { bgGradient: 'linear-gradient(135deg, #d8b4fe 0%, #fbcfe8 100%)', accentColor: '#7e22ce', textColor: '#1f2937' },
+    birthday: { bgGradient: 'linear-gradient(135deg, #06b6d4 0%, #3b82f6 50%, #9333ea 100%)', accentColor: '#fef08a', textColor: '#ffffff' },
+    gold: { bgGradient: 'linear-gradient(135deg, #1a1a1a 0%, #000000 100%)', accentColor: '#d4af37', textColor: '#ffffff' } // Default
+};
+
 export async function sendGiftCardAccessEmail(
     customerEmail: string,
     customerName: string,
@@ -10,9 +23,14 @@ export async function sendGiftCardAccessEmail(
     recipientEmail?: string,
     senderName?: string,
     message?: string,
-    orderId?: number
+    orderId?: number,
+    theme: string = 'gold'
 ) {
     const accessUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'https://wlasniewski.pl'}/karta-podarunkowa/dostep/${accessToken}`;
+
+    // Resolve theme config
+    const safeTheme = theme && themeConfigs[theme] ? theme : 'gold';
+    const config = themeConfigs[safeTheme];
 
     // Fetch logo from settings
     let logoUrl = '';
@@ -48,26 +66,27 @@ export async function sendGiftCardAccessEmail(
             
             /* Virtual Card Design */
             .gift-card {
-                background: linear-gradient(135deg, #1a1a1a 0%, #000000 100%);
+                background: ${config.bgGradient};
                 border: 1px solid #333;
                 border-radius: 16px;
                 padding: 30px;
                 text-align: center;
                 margin: 30px 0;
                 position: relative;
-                box-shadow: 0 5px 20px rgba(212, 175, 55, 0.15);
+                box-shadow: 0 5px 20px rgba(0,0,0, 0.3);
+                color: ${config.textColor};
             }
-            .gift-card-title { color: #666; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px; }
-            .gift-card-value { color: #d4af37; font-size: 42px; font-weight: bold; margin: 10px 0; text-shadow: 0 0 20px rgba(212, 175, 55, 0.3); }
+            .gift-card-title { color: ${config.textColor}; opacity: 0.8; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px; }
+            .gift-card-value { color: ${config.accentColor}; font-size: 42px; font-weight: bold; margin: 10px 0; text-shadow: 0 0 10px rgba(0,0,0,0.2); }
             .gift-card-code { 
-                background: #222; 
+                background: rgba(0,0,0,0.4); 
                 color: #fff; 
                 font-family: monospace; 
                 font-size: 24px; 
                 letter-spacing: 3px; 
                 padding: 15px; 
                 border-radius: 8px; 
-                border: 1px dashed #d4af37;
+                border: 1px dashed ${config.accentColor};
                 display: inline-block;
                 margin-top: 15px;
             }

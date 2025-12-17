@@ -1,13 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { withAuth } from '@/lib/auth/middleware';
-
-// Generate unique gift card code
-function generateGiftCardCode(): string {
-    const timestamp = Date.now().toString(36).toUpperCase();
-    const random = Math.random().toString(36).substring(2, 8).toUpperCase();
-    return `GIFT${timestamp}${random}`;
-}
+import { generateGiftCardCode } from '@/lib/gift-cards';
 
 // GET: List all gift cards (with optional filtering)
 export async function GET(request: NextRequest) {
@@ -16,31 +10,31 @@ export async function GET(request: NextRequest) {
             const { searchParams } = new URL(request.url);
             const status = searchParams.get('status'); // 'active' | 'used' | 'expired' | 'all'
 
-        const where: any = {};
+            const where: any = {};
 
-        if (status === 'used') {
-            where.is_used = true;
-        } else if (status === 'active') {
-            where.is_used = false;
-            where.OR = [
-                { valid_until: null },
-                { valid_until: { gte: new Date() } }
-            ];
-        } else if (status === 'expired') {
-            where.is_used = false;
-            where.valid_until = { lt: new Date() };
+            if (status === 'used') {
+                where.is_used = true;
+            } else if (status === 'active') {
+                where.is_used = false;
+                where.OR = [
+                    { valid_until: null },
+                    { valid_until: { gte: new Date() } }
+                ];
+            } else if (status === 'expired') {
+                where.is_used = false;
+                where.valid_until = { lt: new Date() };
+            }
+
+            const giftCards = await prisma.giftCard.findMany({
+                where,
+                orderBy: { created_at: 'desc' }
+            });
+
+            return NextResponse.json({ success: true, cards: giftCards });
+        } catch (error) {
+            console.error('[Gift Cards API] GET error:', error);
+            return NextResponse.json({ error: 'Failed to fetch gift cards' }, { status: 500 });
         }
-
-        const giftCards = await prisma.giftCard.findMany({
-            where,
-            orderBy: { created_at: 'desc' }
-        });
-
-        return NextResponse.json({ success: true, cards: giftCards });
-    } catch (error) {
-        console.error('[Gift Cards API] GET error:', error);
-        return NextResponse.json({ error: 'Failed to fetch gift cards' }, { status: 500 });
-    }
     });
 }
 
@@ -126,26 +120,26 @@ export async function PATCH(request: NextRequest) {
             }
 
             const updateData: any = {};
-        if (typeof is_used === 'boolean') {
-            updateData.is_used = is_used;
-            if (is_used) {
-                updateData.used_at = new Date();
+            if (typeof is_used === 'boolean') {
+                updateData.is_used = is_used;
+                if (is_used) {
+                    updateData.used_at = new Date();
+                }
             }
-        }
-        if (notes !== undefined) {
-            updateData.notes = notes;
-        }
+            if (notes !== undefined) {
+                updateData.notes = notes;
+            }
 
-        const giftCard = await prisma.giftCard.update({
-            where: { id: parseInt(id) },
-            data: updateData
-        });
+            const giftCard = await prisma.giftCard.update({
+                where: { id: parseInt(id) },
+                data: updateData
+            });
 
-        return NextResponse.json({ success: true, giftCard });
-    } catch (error) {
-        console.error('[Gift Cards API] PATCH error:', error);
-        return NextResponse.json({ error: 'Failed to update gift card' }, { status: 500 });
-    }
+            return NextResponse.json({ success: true, giftCard });
+        } catch (error) {
+            console.error('[Gift Cards API] PATCH error:', error);
+            return NextResponse.json({ error: 'Failed to update gift card' }, { status: 500 });
+        }
     });
 }
 
@@ -155,7 +149,7 @@ export async function DELETE(request: NextRequest) {
         try {
             const { searchParams } = new URL(request.url);
             let id = searchParams.get('id');
-            
+
             // If no id in searchParams, try to extract from path
             if (!id) {
                 const pathParts = request.nextUrl.pathname.split('/');

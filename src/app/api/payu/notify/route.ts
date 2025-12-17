@@ -66,27 +66,58 @@ export async function POST(request: NextRequest) {
                 }).catch(() => null);
 
                 if (giftCardOrder) {
+
+                    // Clone capability (verify if cloning needed)
+                    // If we want unique codes for every purchase, we clone here.
+                    const { generateGiftCardCode } = await import('@/lib/gift-cards');
+                    const uniqueCode = generateGiftCardCode();
+
+                    const newCard = await prisma.giftCard.create({
+                        data: {
+                            code: uniqueCode,
+                            amount: giftCardOrder.gift_card.amount,
+                            value: giftCardOrder.gift_card.value,
+                            theme: giftCardOrder.gift_card.theme,
+                            card_template: giftCardOrder.gift_card.card_template,
+                            card_title: giftCardOrder.gift_card.card_title,
+                            card_description: giftCardOrder.gift_card.card_description,
+                            recipient_email: giftCardOrder.recipient_email || giftCardOrder.customer_email,
+                            recipient_name: giftCardOrder.recipient_name || giftCardOrder.customer_name,
+                            sender_name: giftCardOrder.sender_name,
+                            message: giftCardOrder.message,
+                            status: 'active'
+                        }
+                    });
+
                     await prisma.giftCardOrder.update({
                         where: { id: resourceId },
                         data: {
                             payment_status: 'completed',
                             paid_at: new Date(),
+                            gift_card_id: newCard.id // Retarget to new card
                         },
+                    });
+
+                    // Refetch with new card relation for email
+                    const updatedOrder = await prisma.giftCardOrder.findUnique({
+                        where: { id: resourceId },
+                        include: { gift_card: true }
                     });
 
                     // Send gift card access email
                     try {
-                        if (giftCardOrder.customer_name && giftCardOrder.access_token) {
+                        if (updatedOrder && updatedOrder.customer_name && updatedOrder.access_token) {
                             await sendGiftCardAccessEmail(
-                                giftCardOrder.customer_email,
-                                giftCardOrder.customer_name,
-                                giftCardOrder.gift_card,
-                                giftCardOrder.access_token,
-                                giftCardOrder.recipient_name || undefined,
-                                giftCardOrder.recipient_email || undefined,
-                                giftCardOrder.sender_name || undefined,
-                                giftCardOrder.message || undefined,
-                                giftCardOrder.id
+                                updatedOrder.customer_email,
+                                updatedOrder.customer_name,
+                                updatedOrder.gift_card,
+                                updatedOrder.access_token,
+                                updatedOrder.recipient_name || undefined,
+                                updatedOrder.recipient_email || undefined,
+                                updatedOrder.sender_name || undefined,
+                                updatedOrder.message || undefined,
+                                updatedOrder.id,
+                                updatedOrder.gift_card.theme || 'christmas'
                             );
                             console.log(`Gift card email sent for order ${resourceId}`);
                         }
