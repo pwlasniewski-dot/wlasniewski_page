@@ -20,7 +20,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 async function getHomePageData() {
     const page = await prisma.page.findUnique({
-        where: { id: 1 }
+        where: { slug: 'strona-glowna' }
     });
 
     // Testimonials

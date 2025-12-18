@@ -618,7 +618,7 @@ Otrzymałeś kartę podarunkową na sesję fotograficzną!
                         </div>
                         <div className="flex gap-4">
                             <button
-                                onClick={() => router.push('/admin/gift-cards/orders')}
+                                onClick={() => router.push('/admin/bookings/orders')}
                                 className="inline-flex items-center gap-2 px-6 py-3 bg-zinc-800 hover:bg-zinc-700 text-white font-bold rounded-lg transition-all"
                             >
                                 <ShoppingBag className="w-5 h-5" />

@@ -8,7 +8,7 @@ import { Plus, Trash2, GripVertical, Image as ImageIcon, Type, Layout, MoveUp, M
 import RichTextEditor from './RichTextEditor';
 import MediaPicker from './MediaPicker';
 
-export type SectionType = 'hero_parallax' | 'rich_text' | 'image_text' | 'gallery';
+export type SectionType = 'hero_parallax' | 'hero' | 'rich_text' | 'image_text' | 'gallery' | 'contact';
 
 export interface PageSection {
     id: string;
@@ -19,6 +19,9 @@ export interface PageSection {
     subtitle?: string;
     layout?: 'left' | 'right'; // For image_text
     images?: string[]; // For gallery
+    tag?: string; // For hero
+    buttonText?: string; // For contact/hero
+    buttonLink?: string; // For contact/hero
 }
 
 interface PageBuilderProps {
@@ -174,6 +177,107 @@ function SortableSection({ section, index, onRemove, onUpdate }: {
                         </div>
                     </div>
                 )}
+                {/* HERO */}
+                {section.type === 'hero' && (
+                    <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs text-zinc-400 mb-1">Tytuł</label>
+                                <input
+                                    type="text"
+                                    value={section.title || ''}
+                                    onChange={(e) => onUpdate(section.id, { title: e.target.value })}
+                                    className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-zinc-400 mb-1">Podtytuł</label>
+                                <input
+                                    type="text"
+                                    value={section.subtitle || ''}
+                                    onChange={(e) => onUpdate(section.id, { subtitle: e.target.value })}
+                                    className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
+                                />
+                            </div>
+                        </div>
+                        <div>
+                            <label className="block text-xs text-zinc-400 mb-1">Tag (mały napis nad tytułem)</label>
+                            <input
+                                type="text"
+                                value={section.tag || ''}
+                                onChange={(e) => onUpdate(section.id, { tag: e.target.value })}
+                                className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
+                                placeholder="np. fotograf toruń"
+                            />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs text-zinc-400 mb-1">Tekst przycisku</label>
+                                <input
+                                    type="text"
+                                    value={section.buttonText || ''}
+                                    onChange={(e) => onUpdate(section.id, { buttonText: e.target.value })}
+                                    className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-zinc-400 mb-1">Link przycisku</label>
+                                <input
+                                    type="text"
+                                    value={section.buttonLink || ''}
+                                    onChange={(e) => onUpdate(section.id, { buttonLink: e.target.value })}
+                                    className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* CONTACT / CTA */}
+                {section.type === 'contact' && (
+                    <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs text-zinc-400 mb-1">Tytuł sekcji</label>
+                                <input
+                                    type="text"
+                                    value={section.title || ''}
+                                    onChange={(e) => onUpdate(section.id, { title: e.target.value })}
+                                    className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-zinc-400 mb-1">Podtytuł</label>
+                                <input
+                                    type="text"
+                                    value={section.subtitle || ''}
+                                    onChange={(e) => onUpdate(section.id, { subtitle: e.target.value })}
+                                    className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
+                                />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs text-zinc-400 mb-1">Tekst przycisku</label>
+                                <input
+                                    type="text"
+                                    value={section.buttonText || ''}
+                                    onChange={(e) => onUpdate(section.id, { buttonText: e.target.value })}
+                                    className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-zinc-400 mb-1">Link przycisku</label>
+                                <input
+                                    type="text"
+                                    value={section.buttonLink || ''}
+                                    onChange={(e) => onUpdate(section.id, { buttonLink: e.target.value })}
+                                    className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
 
             <MediaPicker
@@ -236,6 +340,12 @@ export default function PageBuilder({ sections, onChange }: PageBuilderProps) {
                 </button>
                 <button onClick={() => addSection('gallery')} className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded text-sm text-white transition-colors">
                     <ImageIcon className="w-4 h-4" /> Galeria
+                </button>
+                <button onClick={() => addSection('hero')} className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded text-sm text-white transition-colors">
+                    <Layout className="w-4 h-4" /> Prosty Hero
+                </button>
+                <button onClick={() => addSection('contact')} className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded text-sm text-white transition-colors">
+                    <MoveUp className="w-4 h-4" /> CTA / Kontakt
                 </button>
             </div>
 

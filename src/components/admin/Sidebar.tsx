@@ -28,8 +28,16 @@ const navigation = [
     { name: 'Media', href: '/admin/media', icon: Image },
     { name: 'Portfolio', href: '/admin/portfolio', icon: Camera },
     { name: 'Strony', href: '/admin/pages', icon: FileText },
-    { name: 'Złożone rezerwacje', href: '/admin/bookings', icon: Calendar },
-    { name: 'Pakiety rezerwacji', href: '/admin/rezerwacja', icon: Sparkles },
+    {
+        name: 'Rezerwacje',
+        href: '/admin/bookings',
+        icon: Calendar,
+        children: [
+            { name: 'Złożone rezerwacje', href: '/admin/bookings' },
+            { name: 'Zamówienia (Sklep)', href: '/admin/bookings/orders' },
+            { name: 'Pakiety rezerwacji', href: '/admin/rezerwacja' },
+        ]
+    },
     { name: 'Galerie', href: '/admin/galleries', icon: Image },
     { name: 'Multimedia', href: '/admin/multimedia', icon: Sparkles },
     { name: 'Menu', href: '/admin/menu', icon: Menu },
@@ -38,7 +46,15 @@ const navigation = [
     { name: 'Kody rabatowe', href: '/admin/socio', icon: Megaphone },
     { name: 'Kody promocyjne', href: '/admin/promo-codes', icon: Sparkles },
     { name: 'Opinie', href: '/admin/testimonials', icon: MessageSquare },
-    { name: 'Karty podarunkowe', href: '/admin/gift-cards', icon: FileText },
+    {
+        name: 'Karty podarunkowe',
+        href: '/admin/gift-cards',
+        icon: FileText,
+        children: [
+            { name: 'Karty', href: '/admin/gift-cards' },
+            { name: 'Sklep', href: '/admin/gift-cards/sklep' },
+        ]
+    },
     { name: 'Zapytania', href: '/admin/inquiries', icon: MessageSquare },
     { name: 'Użytkownicy', href: '/admin/users', icon: Users },
     { name: 'Analityka', href: '/admin/analytics', icon: BarChart3 },
@@ -91,14 +107,14 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                     <nav className="mt-2 flex-1 space-y-1 px-2">
                         {navigation.map((item) => {
                             const isActive = pathname.startsWith(item.href);
-                            const isGiftCards = item.name === 'Karty podarunkowe';
-                            const isExpanded = expandedMenu === 'gift-cards';
+                            const hasChildren = 'children' in item && item.children;
+                            const isExpanded = expandedMenu === item.name;
 
-                            if (isGiftCards) {
+                            if (hasChildren) {
                                 return (
                                     <div key={item.name}>
                                         <button
-                                            onClick={() => setExpandedMenu(isExpanded ? null : 'gift-cards')}
+                                            onClick={() => setExpandedMenu(isExpanded ? null : item.name)}
                                             className={`w-full group flex items-center justify-between px-2 py-3 text-base font-medium rounded-md transition-colors ${isActive
                                                 ? 'bg-zinc-800 text-gold-400'
                                                 : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
@@ -118,36 +134,19 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                                         </button>
                                         {isExpanded && (
                                             <div className="ml-6 space-y-1 mt-1">
-                                                <Link
-                                                    href="/admin/gift-cards"
-                                                    onClick={() => setIsOpen?.(false)}
-                                                    className={`block px-2 py-2 text-sm rounded-md transition-colors ${pathname === '/admin/gift-cards'
-                                                        ? 'bg-zinc-800 text-gold-400'
-                                                        : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
-                                                        }`}
-                                                >
-                                                    Karty
-                                                </Link>
-                                                <Link
-                                                    href="/admin/gift-cards/sklep"
-                                                    onClick={() => setIsOpen?.(false)}
-                                                    className={`block px-2 py-2 text-sm rounded-md transition-colors ${pathname === '/admin/gift-cards/sklep'
-                                                        ? 'bg-zinc-800 text-gold-400'
-                                                        : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
-                                                        }`}
-                                                >
-                                                    Sklep
-                                                </Link>
-                                                <Link
-                                                    href="/admin/gift-cards/orders"
-                                                    onClick={() => setIsOpen?.(false)}
-                                                    className={`block px-2 py-2 text-sm rounded-md transition-colors ${pathname === '/admin/gift-cards/orders'
-                                                        ? 'bg-zinc-800 text-gold-400'
-                                                        : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
-                                                        }`}
-                                                >
-                                                    Zamówienia
-                                                </Link>
+                                                {item.children.map((child: any) => (
+                                                    <Link
+                                                        key={child.href}
+                                                        href={child.href}
+                                                        onClick={() => setIsOpen?.(false)}
+                                                        className={`block px-2 py-2 text-sm rounded-md transition-colors ${pathname === child.href
+                                                            ? 'bg-zinc-800 text-gold-400'
+                                                            : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
+                                                            }`}
+                                                    >
+                                                        {child.name}
+                                                    </Link>
+                                                ))}
                                             </div>
                                         )}
                                     </div>

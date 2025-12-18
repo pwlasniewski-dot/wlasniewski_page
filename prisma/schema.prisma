@@ -383,29 +383,29 @@ model Package {
 }
 
 model GiftCardOrder {
-  id                Int           @id @default(autoincrement())
-  order_number      String?       @unique
+  id                Int       @id @default(autoincrement())
+  order_number      String?   @unique
   customer_name     String
   customer_email    String
   amount_paid       Int
-  currency          String        @default("PLN")
-  payment_status    String        @default("pending")
+  currency          String    @default("PLN")
+  payment_status    String    @default("pending")
   payment_method    String?
   stripe_session_id String?
-  created_at        DateTime      @default(now())
+  created_at        DateTime  @default(now())
   paid_at           DateTime?
   card_id           Int
   gift_card_id      Int?
-  gift_card         GiftCard?     @relation(fields: [gift_card_id], references: [id])
   template_id       Int?
   recipient_email   String?
   recipient_name    String?
   sender_name       String?
   message           String?
-  access_token      String?       @unique // For accessing without login
+  access_token      String?   @unique
   payu_order_id     String?
   user_id           Int?
-  user              User?         @relation(fields: [user_id], references: [id])
+  gift_card         GiftCard? @relation(fields: [gift_card_id], references: [id])
+  user              User?     @relation(fields: [user_id], references: [id])
 
   @@map("gift_card_orders")
 }
@@ -430,15 +430,13 @@ model GiftCard {
   message          String?
   card_description String?
   card_title       String?
-  orders           GiftCardOrder[]
   status           String          @default("active")
   owner_id         Int?
+  orders           GiftCardOrder[]
   owner            User?           @relation("UserGiftCards", fields: [owner_id], references: [id])
 
   @@map("gift_cards")
 }
-
-
 
 model User {
   id            Int             @id @default(autoincrement())
@@ -448,7 +446,6 @@ model User {
   phone         String?
   created_at    DateTime        @default(now())
   updated_at    DateTime        @updatedAt
-  
   orders        GiftCardOrder[]
   gift_cards    GiftCard[]      @relation("UserGiftCards")
 

@@ -80,6 +80,50 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                             </section>
                         );
 
+                    case 'hero':
+                        return (
+                            <section key={section.id} className="relative py-24 px-4 bg-zinc-950 flex flex-col items-center text-center overflow-hidden">
+                                <div className="absolute inset-0 bg-gradient-to-b from-gold-500/5 to-transparent pointer-events-none" />
+                                <div className="relative z-10 max-w-4xl space-y-6">
+                                    {section.tag && (
+                                        <span className="inline-block px-4 py-1.5 bg-gold-500/10 text-gold-500 text-sm font-bold tracking-widest uppercase rounded-full border border-gold-500/20">
+                                            {section.tag}
+                                        </span>
+                                    )}
+                                    <h1 className="text-5xl md:text-7xl font-display font-bold text-white leading-tight">
+                                        {section.title}
+                                    </h1>
+                                    <p className="text-xl md:text-2xl text-zinc-400 font-light">
+                                        {section.subtitle}
+                                    </p>
+                                </div>
+                            </section>
+                        );
+
+                    case 'contact':
+                        return (
+                            <section key={section.id} className="py-20 px-4 bg-black">
+                                <div className="max-w-4xl mx-auto bg-zinc-900 border border-zinc-800 rounded-3xl p-12 text-center space-y-8">
+                                    <div className="space-y-4">
+                                        <h2 className="text-3xl md:text-4xl font-display font-bold text-white">
+                                            {section.title}
+                                        </h2>
+                                        <p className="text-lg text-zinc-400">
+                                            {section.subtitle}
+                                        </p>
+                                    </div>
+                                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                                        <Link
+                                            href={section.buttonLink || '/kontakt'}
+                                            className="px-8 py-4 bg-gold-500 hover:bg-gold-400 text-black font-bold rounded-xl transition-all transform hover:scale-105"
+                                        >
+                                            {section.buttonText || 'Skontaktuj się'}
+                                        </Link>
+                                    </div>
+                                </div>
+                            </section>
+                        );
+
                     default:
                         return null;
                 }

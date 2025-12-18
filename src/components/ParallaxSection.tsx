@@ -85,12 +85,13 @@ export default function ParallaxSection({
     // With 120% height, we have plenty of buffer.
 
     const springY = useSpring(scrollYProgress, {
-        stiffness: 100,
-        damping: 30,
+        stiffness: 80, // Lower stiffness for smoother transitions
+        damping: 30,  // Balanced damping
         restDelta: 0.001
     });
 
-    const y = useTransform(springY, [0, 1], ["-30%", "30%"]);
+    const yRange = isMobile ? ["-15%", "15%"] : ["-25%", "25%"];
+    const y = useTransform(springY, [0, 1], yRange);
 
     // Text Animations
     const textVariants = {
@@ -111,7 +112,7 @@ export default function ParallaxSection({
             <div className="absolute inset-x-0 -top-[30%] h-[160%] z-0 pointer-events-none">
                 {finalImage && (
                     <motion.div
-                        style={{ y }}
+                        style={{ y, willChange: 'transform' }}
                         className="relative w-full h-full"
                     >
                         <div

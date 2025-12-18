@@ -136,7 +136,7 @@ export default function HeroSlider({ slides = [] }: HeroSliderProps) {
     };
 
     return (
-        <div className="relative w-full bg-black overflow-hidden" style={{ aspectRatio: isMobile ? '9/16' : '16/9', minHeight: isMobile ? '100vh' : '100vh' }}>
+        <div className="relative w-full bg-black overflow-hidden" style={{ height: '100vh', minHeight: '600px' }}>
             {/* Background Images */}
             <AnimatePresence mode="wait">
                 <motion.div
@@ -157,7 +157,7 @@ export default function HeroSlider({ slides = [] }: HeroSliderProps) {
                             repeat: 0
                         }}
                         style={{
-                            backgroundImage: `url(${slideImage})`,
+                            backgroundImage: `url("${slideImage}")`,
                             backgroundPosition: isMobile ? 'center' : 'center 30%'
                         }}
                     />
@@ -200,10 +200,10 @@ export default function HeroSlider({ slides = [] }: HeroSliderProps) {
                                 <Link
                                     href={slide.buttonLink || '/portfolio'}
                                     className={`inline-block px-6 sm:px-8 py-2 sm:py-3 font-semibold rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 ${(slide.buttonStyle === 'white')
-                                            ? 'bg-transparent border-2 border-white text-white hover:bg-white/10'
-                                            : (slide.buttonStyle === 'transparent')
-                                                ? 'bg-transparent border-2 border-transparent text-white hover:bg-white/10 hover:border-white/20'
-                                                : 'bg-gold-500 text-black hover:bg-gold-400'
+                                        ? 'bg-transparent border-2 border-white text-white hover:bg-white/10'
+                                        : (slide.buttonStyle === 'transparent')
+                                            ? 'bg-transparent border-2 border-transparent text-white hover:bg-white/10 hover:border-white/20'
+                                            : 'bg-gold-500 text-black hover:bg-gold-400'
                                         }`}
                                 >
                                     {slide.buttonText}

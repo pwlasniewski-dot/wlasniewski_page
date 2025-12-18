@@ -23,7 +23,7 @@ async function checkHomeSections() {
                     } else {
                         console.log("❌ 'hero_slider' key missing in home_sections");
                     }
-                } catch (e) {
+                } catch (e: any) {
                     console.log("❌ Error parsing home_sections JSON:", e.message);
                     console.log("Raw:", page.home_sections);
                 }

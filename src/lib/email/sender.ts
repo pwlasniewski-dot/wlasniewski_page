@@ -4,25 +4,30 @@ import prisma from '@/lib/db/prisma';
 // Get SMTP configuration from database or environment variables
 export async function getSMTPConfig() {
     try {
-        // Try to get from database first - lookup the main settings record (same as Admin API)
+        // Find the settings record with SMTP configuration
+        // We prioritize columns: smtp_host, smtp_user, smtp_password
         const mainSettings = await prisma.setting.findFirst({
+            where: {
+                OR: [
+                    { smtp_host: { not: null } },
+                    { smtp_user: { not: null } }
+                ]
+            },
             orderBy: { id: 'asc' }
         });
 
         if (mainSettings) {
-            // Use database settings if available
-            // We check if at least one critical field is set in DB to prefer it over Env
-            // But usually we can just fallback individually or prefer DB.
+            console.log('📬 Loaded SMTP config from DB record ID:', mainSettings.id);
             return {
                 host: mainSettings.smtp_host || process.env.SMTP_HOST,
                 port: mainSettings.smtp_port || parseInt(process.env.SMTP_PORT || '587'),
                 user: mainSettings.smtp_user || process.env.SMTP_USER,
                 pass: mainSettings.smtp_password || process.env.SMTP_PASS || process.env.SMTP_PASSWORD,
-                from: mainSettings.smtp_from || process.env.SMTP_FROM || process.env.SMTP_USER,
+                from: mainSettings.smtp_from || process.env.SMTP_FROM || mainSettings.smtp_user || process.env.SMTP_USER,
             };
         }
 
-        // Fallback to env if no DB record found
+        console.warn('⚠️ No SMTP settings found in database, falling back to environment variables.');
         return {
             host: process.env.SMTP_HOST,
             port: parseInt(process.env.SMTP_PORT || '587'),
@@ -31,7 +36,7 @@ export async function getSMTPConfig() {
             from: process.env.SMTP_FROM || process.env.SMTP_USER,
         };
     } catch (error) {
-        console.warn('⚠️ Could not load SMTP config from database, using environment variables:', error);
+        console.error('❌ Error loading SMTP config:', error);
         return {
             host: process.env.SMTP_HOST,
             port: parseInt(process.env.SMTP_PORT || '587'),

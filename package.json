@@ -10,9 +10,7 @@
     "migrate": "prisma migrate deploy",
     "seed": "npx prisma db seed",
     "prisma:generate": "prisma generate",
-    "prisma:push": "prisma generate && prisma db push",
-    "db:clean": "node cleanup-database.js",
-    "db:clean:full": "node cleanup-database-full.js"
+    "prisma:push": "prisma generate && prisma db push"
   },
   "prisma": {
     "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"

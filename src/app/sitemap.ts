@@ -18,17 +18,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         '/reklamacje',
     ];
 
-    // City pages
-    const cityPages = [
-        '/fotograf-torun',
-        '/fotograf-grudziadz',
-        '/fotograf-lisewo',
-        '/fotograf-pluznica',
-        '/fotograf-wabrzezno',
-        '/fotograf-powiat-torunski',
-        '/fotograf-powiat-wabrzeski',
-    ];
-
     let dbPages: Array<{ slug: string; updated_at: Date }> = [];
     let portfolioSessions: Array<{ slug: string; category: string; updated_at: Date }> = [];
     let blogPosts: Array<{ slug: string; updated_at: Date }> = [];
@@ -48,7 +37,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             select: { slug: true, updated_at: true }
         });
     } catch (error) {
-        console.error('[sitemap] Failed to load dynamic entries, returning static fallback:', error);
+        console.error('[sitemap] Failed to load dynamic entries:', error);
     }
 
     const sitemap: MetadataRoute.Sitemap = [
@@ -60,21 +49,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             priority: route === '' ? 1.0 : 0.8,
         })),
 
-        // City pages - high priority for local SEO
-        ...cityPages.map(route => ({
-            url: `${baseUrl}${route}`,
-            lastModified: new Date(),
-            changeFrequency: 'monthly' as const,
-            priority: 0.9,
-        })),
-
-        // Dynamic pages from database
-        ...dbPages.map(page => ({
-            url: `${baseUrl}/${page.slug}`,
-            lastModified: page.updated_at,
-            changeFrequency: 'monthly' as const,
-            priority: 0.7,
-        })),
+        // Dynamic pages from database (includes city landing pages)
+        ...dbPages.map(page => {
+            const isCityPage = page.slug.startsWith('fotograf-');
+            return {
+                url: `${baseUrl}/${page.slug}`,
+                lastModified: page.updated_at,
+                changeFrequency: 'monthly' as const,
+                priority: isCityPage ? 0.9 : 0.7,
+            };
+        }),
 
         // Portfolio sessions
         ...portfolioSessions.map(session => ({
