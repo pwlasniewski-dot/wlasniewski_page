@@ -719,3 +719,69 @@ model ErrorNote {
 
   @@map("error_notes")
 }
+
+model BusinessGoal {
+  id            Int      @id @default(autoincrement())
+  title         String
+  target_amount Float
+  current_amount Float    @default(0)
+  category      String   @default("revenue")
+  start_date    DateTime
+  end_date      DateTime
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  @@map("business_goals")
+}
+
+model ScrumTask {
+  id          Int       @id @default(autoincrement())
+  title       String
+  content     String?
+  status      String    @default("TODO") // TODO, DOING, DONE
+  priority    String    @default("MEDIUM") // LOW, MEDIUM, HIGH
+  due_date    DateTime?
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @updatedAt
+
+  @@map("scrum_tasks")
+}
+
+model MarketingAction {
+  id          Int      @id @default(autoincrement())
+  client_name String
+  action_type String
+  date        DateTime @default(now())
+  notes       String?
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  @@map("marketing_actions")
+}
+
+model DroneOrder {
+  id           Int      @id @default(autoincrement())
+  client_name  String
+  company_name String?
+  email        String
+  phone        String?
+  service_type String
+  details      String?
+  status       String   @default("NEW")
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  @@map("drone_orders")
+}
+
+model AnalyticsSnapshot {
+  id              Int      @id @default(autoincrement())
+  snapshot_date   DateTime @default(now())
+  total_revenue   Float
+  bookings_count  Int
+  conversion_rate Float?
+  metadata        String?
+  created_at      DateTime @default(now())
+
+  @@map("analytics_snapshots")
+}

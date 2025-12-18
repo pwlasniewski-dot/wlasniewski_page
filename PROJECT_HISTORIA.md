@@ -12,9 +12,9 @@ Ten plik służy do ścisłego monitorowania wszystkich zmian wprowadzanych w pr
 
 ## Log Zmian
 
-### [2025-12-18] Inicjalizacja audytu i naprawy
-- **Zadanie**: Naprawa flow maili, konsolidacja Admina, audyt utraconych danych, plan stabilizacji.
+### [2025-12-18] Faza 2: Rozbudowa (Analityka & Drony)
+- **Zadanie**: Implementacja dashboardu analitycznego, tablicy Scrum oraz strony usług dronowych/termowizyjnych.
 - **Działania**:
-    - Usunięcie destrukcyjnych skryptów `db:clean` z `package.json`.
-    - Rozpoczęcie konsolidacji logiki SMTP.
-- **Status**: W trakcie realizacji.
+    - Dodanie nowych modeli do `prisma/schema.prisma` (BusinessGoal, Task, MarketingAction, DroneOrder, AnalyticsSnapshot).
+    - Rozpoczęcie prac nad API dla analityki.
+- **Status**: W trakcie realizacji (Execution).
