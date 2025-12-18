@@ -8,8 +8,9 @@ async function seedServices() {
         console.log('Seeding default services...');
 
         // 1. Sesja Zdjęciowa
-        const session = await prisma.serviceType.create({
-            data: {
+        await prisma.serviceType.upsert({
+            where: { name: 'Sesja' },
+            create: {
                 name: 'Sesja',
                 description: 'Sesje portretowe, rodzinne, narzeczeńskie',
                 icon: '📸',
@@ -22,13 +23,19 @@ async function seedServices() {
                         { name: 'Premium', hours: 3, price: 120000, description: '30 zdjęć, album, wizaż', order: 3, is_active: true },
                     ]
                 }
+            },
+            update: {
+                description: 'Sesje portretowe, rodzinne, narzeczeńskie',
+                icon: '📸',
+                is_active: true
             }
         });
-        console.log('Created Sesja');
+        console.log('Upserted Sesja');
 
         // 2. Ślub
-        const wedding = await prisma.serviceType.create({
-            data: {
+        await prisma.serviceType.upsert({
+            where: { name: 'Ślub' },
+            create: {
                 name: 'Ślub',
                 description: 'Pełny reportaż ślubny',
                 icon: '💍',
@@ -41,13 +48,19 @@ async function seedServices() {
                         { name: 'Full Day', hours: 14, price: 500000, description: 'Pełny dzień + sesja plenerowa', order: 3, is_active: true },
                     ]
                 }
+            },
+            update: {
+                description: 'Pełny reportaż ślubny',
+                icon: '💍',
+                is_active: true
             }
         });
-        console.log('Created Ślub');
+        console.log('Upserted Ślub');
 
         // 3. Przyjęcie
-        const event = await prisma.serviceType.create({
-            data: {
+        await prisma.serviceType.upsert({
+            where: { name: 'Przyjęcie' },
+            create: {
                 name: 'Przyjęcie',
                 description: 'Urodziny, rocznice, eventy',
                 icon: '🎉',
@@ -58,9 +71,39 @@ async function seedServices() {
                         { name: 'Reportaż', hours: 4, price: 120000, description: 'Dokumentacja wydarzenia', order: 1, is_active: true },
                     ]
                 }
+            },
+            update: {
+                description: 'Urodziny, rocznice, eventy',
+                icon: '🎉',
+                is_active: true
             }
         });
-        console.log('Created Przyjęcie');
+        console.log('Upserted Przyjęcie');
+
+        // 4. Dron / B2B
+        await prisma.serviceType.upsert({
+            where: { name: 'Dron' },
+            create: {
+                name: 'Dron',
+                description: 'Usługi techniczne i wizualne z powietrza',
+                icon: '🛸',
+                order: 4,
+                is_active: true,
+                packages: {
+                    create: [
+                        { name: 'Panoramy 360', hours: 1, price: 50000, description: 'Sesja zdjęciowa z powietrza, panoramy sferyczne dla deweloperów', order: 1, is_active: true },
+                        { name: 'Inspekcja PV', hours: 3, price: 120000, description: 'Przegląd farmy fotowoltaicznej, raport z Hot-Spotów', order: 2, is_active: true },
+                        { name: 'Audyt Termo', hours: 4, price: 180000, description: 'Pełna termowizja budynku, ITC Level 1 certified', order: 3, is_active: true },
+                    ]
+                }
+            },
+            update: {
+                description: 'Usługi techniczne i wizualne z powietrza',
+                icon: '🛸',
+                is_active: true
+            }
+        });
+        console.log('Upserted Dron service with packages');
 
     } catch (error) {
         console.error('Error seeding services:', error);

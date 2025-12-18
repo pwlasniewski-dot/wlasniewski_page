@@ -4,6 +4,7 @@ import React from 'react';
 import { PageSection } from '@/components/admin/PageBuilder';
 import ParallaxSection from '@/components/ParallaxSection';
 import Link from 'next/link';
+import ThermalSlider from '@/components/ThermalSlider';
 
 export default function PageRenderer({ sections }: { sections: PageSection[] }) {
     if (!sections || sections.length === 0) return null;
@@ -120,6 +121,32 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                             {section.buttonText || 'Skontaktuj się'}
                                         </Link>
                                     </div>
+                                </div>
+                            </section>
+                        );
+
+                    case 'thermal_slider':
+                        return (
+                            <section key={section.id} className="py-20 bg-zinc-950 overflow-hidden">
+                                <div className="max-w-6xl mx-auto px-4">
+                                    <div className="mb-12 text-center">
+                                        {section.title && <h2 className="text-3xl md:text-5xl font-display font-bold text-white mb-4">{section.title}</h2>}
+                                        {section.subtitle && <p className="text-zinc-400 max-w-2xl mx-auto">{section.subtitle}</p>}
+                                    </div>
+                                    <div className="rounded-2xl overflow-hidden shadow-2xl border border-white/5 bg-zinc-900/50 p-2">
+                                        <ThermalSlider
+                                            visualImage={section.image || '/images/thermal-standard.jpg'}
+                                            thermalImage={section.thermalImage || '/images/thermal-heat.jpg'}
+                                            labelLeft={section.labelLeft || 'Widok Standardowy'}
+                                            labelRight={section.labelRight || 'Termowizja'}
+                                        />
+                                    </div>
+                                    {section.content && (
+                                        <div
+                                            className="mt-12 prose prose-invert prose-lg mx-auto"
+                                            dangerouslySetInnerHTML={{ __html: section.content }}
+                                        />
+                                    )}
                                 </div>
                             </section>
                         );

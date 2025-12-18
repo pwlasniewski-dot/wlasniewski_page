@@ -8,13 +8,14 @@ import { Plus, Trash2, GripVertical, Image as ImageIcon, Type, Layout, MoveUp, M
 import RichTextEditor from './RichTextEditor';
 import MediaPicker from './MediaPicker';
 
-export type SectionType = 'hero_parallax' | 'hero' | 'rich_text' | 'image_text' | 'gallery' | 'contact';
+export type SectionType = 'hero_parallax' | 'hero' | 'rich_text' | 'image_text' | 'gallery' | 'contact' | 'thermal_slider';
 
 export interface PageSection {
     id: string;
     type: SectionType;
     content?: string;
     image?: string;
+    thermalImage?: string; // For thermal_slider
     title?: string;
     subtitle?: string;
     layout?: 'left' | 'right'; // For image_text
@@ -22,6 +23,8 @@ export interface PageSection {
     tag?: string; // For hero
     buttonText?: string; // For contact/hero
     buttonLink?: string; // For contact/hero
+    labelLeft?: string; // For thermal_slider
+    labelRight?: string; // For thermal_slider
 }
 
 interface PageBuilderProps {
@@ -39,10 +42,19 @@ function SortableSection({ section, index, onRemove, onUpdate }: {
     const style = { transform: CSS.Transform.toString(transform), transition };
     const [showMediaPicker, setShowMediaPicker] = useState(false);
     const [mediaPickerTarget, setMediaPickerTarget] = useState<'single' | 'gallery'>('single');
+    const [mediaPickerContext, setMediaPickerContext] = useState<'visual' | 'thermal' | null>(null);
 
     const handleImageSelect = (url: string | string[]) => {
-        if (mediaPickerTarget === 'single') {
-            onUpdate(section.id, { image: Array.isArray(url) ? url[0] : url });
+        const imageUrl = Array.isArray(url) ? url[0] : url;
+
+        if (section.type === 'thermal_slider') {
+            if (mediaPickerContext === 'visual') {
+                onUpdate(section.id, { image: imageUrl });
+            } else if (mediaPickerContext === 'thermal') {
+                onUpdate(section.id, { thermalImage: imageUrl });
+            }
+        } else if (mediaPickerTarget === 'single') {
+            onUpdate(section.id, { image: imageUrl });
         } else {
             // Gallery
             const newImages = Array.isArray(url) ? url : [url];
@@ -278,6 +290,56 @@ function SortableSection({ section, index, onRemove, onUpdate }: {
                         </div>
                     </div>
                 )}
+
+                {/* THERMAL SLIDER */}
+                {section.type === 'thermal_slider' && (
+                    <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-8">
+                            <div>
+                                <label className="block text-xs text-zinc-400 mb-2 font-bold uppercase tracking-tight">Zdjęcie Wizualne (Lewe)</label>
+                                {section.image ? (
+                                    <img src={section.image} alt="Visual" className="w-full aspect-video object-cover rounded-lg border border-zinc-700 mb-2 shadow-lg" />
+                                ) : (
+                                    <div className="w-full aspect-video bg-zinc-800 rounded-lg border-2 border-dashed border-zinc-700 mb-2 flex items-center justify-center text-zinc-600 font-medium">Standardowy Widok</div>
+                                )}
+                                <button
+                                    onClick={() => { setMediaPickerTarget('single'); setMediaPickerContext('visual'); setShowMediaPicker(true); }}
+                                    className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-700 transition-all flex items-center justify-center gap-2"
+                                >
+                                    <ImageIcon className="w-4 h-4" /> Wybierz Zdjęcie
+                                </button>
+                                <input
+                                    type="text"
+                                    placeholder="Etykieta (np. Widok Standardowy)"
+                                    value={section.labelLeft || ''}
+                                    onChange={(e) => onUpdate(section.id, { labelLeft: e.target.value })}
+                                    className="w-full mt-3 bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-xs text-white"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-zinc-400 mb-2 font-bold uppercase tracking-tight">Zdjęcie Termowizyjne (Prawe)</label>
+                                {section.thermalImage ? (
+                                    <img src={section.thermalImage} alt="Thermal" className="w-full aspect-video object-cover rounded-lg border border-zinc-700 mb-2 shadow-lg" />
+                                ) : (
+                                    <div className="w-full aspect-video bg-zinc-800 rounded-lg border-2 border-dashed border-zinc-700 mb-2 flex items-center justify-center text-zinc-600 font-medium italic">Widok Termo</div>
+                                )}
+                                <button
+                                    onClick={() => { setMediaPickerTarget('single'); setMediaPickerContext('thermal'); setShowMediaPicker(true); }}
+                                    className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-700 transition-all flex items-center justify-center gap-2"
+                                >
+                                    <ImageIcon className="w-4 h-4" /> Wybierz Zdjęcie
+                                </button>
+                                <input
+                                    type="text"
+                                    placeholder="Etykieta (np. Termowizja)"
+                                    value={section.labelRight || ''}
+                                    onChange={(e) => onUpdate(section.id, { labelRight: e.target.value })}
+                                    className="w-full mt-3 bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-xs text-white"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
 
             <MediaPicker
@@ -346,6 +408,9 @@ export default function PageBuilder({ sections, onChange }: PageBuilderProps) {
                 </button>
                 <button onClick={() => addSection('contact')} className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded text-sm text-white transition-colors">
                     <MoveUp className="w-4 h-4" /> CTA / Kontakt
+                </button>
+                <button onClick={() => addSection('thermal_slider')} className="flex items-center gap-2 px-4 py-2 bg-gold-600/20 hover:bg-gold-600/30 border border-gold-500/30 rounded text-sm text-gold-400 transition-colors">
+                    <Layout className="w-4 h-4" /> Thermal Slider
                 </button>
             </div>
 
