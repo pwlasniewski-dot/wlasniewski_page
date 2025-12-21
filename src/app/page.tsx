@@ -41,6 +41,15 @@ export default async function HomePage() {
     let homeData: any = null;
     let orderedSections: any[] = [];
 
+    // Always parse legacy home_sections when present (it contains hero_slider used on the homepage).
+    if (page?.home_sections) {
+        try {
+            homeData = JSON.parse(page.home_sections);
+        } catch (e) {
+            console.error('Failed to parse home_sections', e);
+        }
+    }
+
     // Prefer new PageBuilder sections when present; fallback to legacy home_sections.
     if (page?.sections) {
         try {
@@ -53,47 +62,41 @@ export default async function HomePage() {
         }
     }
 
-    if (orderedSections.length === 0 && page && page.home_sections) {
-        try {
-            homeData = JSON.parse(page.home_sections);
-
-            // Logic replicated from previous client component
-            if (homeData.sections && Array.isArray(homeData.sections)) {
-                orderedSections = homeData.sections;
-            } else {
-                // Fallback / Migration logic for old structure
-                const legacySections = [];
-                if (homeData.about_section) {
-                    legacySections.push({ id: 'about', type: 'about', enabled: homeData.about_section.enabled ?? true, data: homeData.about_section });
-                }
-                if (homeData.features) {
-                    legacySections.push({ id: 'features', type: 'features', enabled: true, data: { features: homeData.features } });
-                }
-                if (homeData.challenge_banner || homeData.foto_wyzwanie_effect) {
-                    legacySections.push({
-                        id: 'challenge',
-                        type: 'challenge_banner',
-                        enabled: homeData.challenge_banner?.enabled ?? true,
-                        data: {
-                            ...homeData.challenge_banner,
-                            effect: homeData.foto_wyzwanie_effect || 'none',
-                            photos: homeData.foto_wyzwanie_photos || []
-                        }
-                    });
-                }
-                if (homeData.parallax1) {
-                    legacySections.push({ id: 'parallax1', type: 'parallax', enabled: homeData.parallax1.enabled ?? true, data: homeData.parallax1 });
-                }
-                if (homeData.info_band) {
-                    legacySections.push({ id: 'info_band', type: 'info_band', enabled: homeData.info_band.enabled ?? true, data: homeData.info_band });
-                }
-                if (homeData.parallax2) {
-                    legacySections.push({ id: 'parallax2', type: 'parallax', enabled: homeData.parallax2.enabled ?? true, data: homeData.parallax2 });
-                }
-                orderedSections = legacySections;
+    if (orderedSections.length === 0 && homeData) {
+        // Logic replicated from previous client component
+        if (homeData.sections && Array.isArray(homeData.sections)) {
+            orderedSections = homeData.sections;
+        } else {
+            // Fallback / Migration logic for old structure
+            const legacySections = [];
+            if (homeData.about_section) {
+                legacySections.push({ id: 'about', type: 'about', enabled: homeData.about_section.enabled ?? true, data: homeData.about_section });
             }
-        } catch (e) {
-            console.error('Failed to parse home_sections', e);
+            if (homeData.features) {
+                legacySections.push({ id: 'features', type: 'features', enabled: true, data: { features: homeData.features } });
+            }
+            if (homeData.challenge_banner || homeData.foto_wyzwanie_effect) {
+                legacySections.push({
+                    id: 'challenge',
+                    type: 'challenge_banner',
+                    enabled: homeData.challenge_banner?.enabled ?? true,
+                    data: {
+                        ...homeData.challenge_banner,
+                        effect: homeData.foto_wyzwanie_effect || 'none',
+                        photos: homeData.foto_wyzwanie_photos || []
+                    }
+                });
+            }
+            if (homeData.parallax1) {
+                legacySections.push({ id: 'parallax1', type: 'parallax', enabled: homeData.parallax1.enabled ?? true, data: homeData.parallax1 });
+            }
+            if (homeData.info_band) {
+                legacySections.push({ id: 'info_band', type: 'info_band', enabled: homeData.info_band.enabled ?? true, data: homeData.info_band });
+            }
+            if (homeData.parallax2) {
+                legacySections.push({ id: 'parallax2', type: 'parallax', enabled: homeData.parallax2.enabled ?? true, data: homeData.parallax2 });
+            }
+            orderedSections = legacySections;
         }
     }
 
