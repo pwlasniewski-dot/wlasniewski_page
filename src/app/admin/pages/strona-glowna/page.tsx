@@ -346,7 +346,8 @@ export default function HomepageManager() {
                     title: 'Strona główna',
                     content: '',
                     is_published: true,
-                    home_sections: JSON.stringify(homeSections)
+                    home_sections: JSON.stringify(homeSections),
+                    sections: JSON.stringify(sections)  // Also send sections separately for new system
                 }),
             });
 
