@@ -41,7 +41,19 @@ export default async function HomePage() {
     let homeData: any = null;
     let orderedSections: any[] = [];
 
-    if (page && page.home_sections) {
+    // Prefer new PageBuilder sections when present; fallback to legacy home_sections.
+    if (page?.sections) {
+        try {
+            const parsedSections = JSON.parse(page.sections);
+            if (Array.isArray(parsedSections)) {
+                orderedSections = parsedSections;
+            }
+        } catch (e) {
+            console.error('Failed to parse page.sections', e);
+        }
+    }
+
+    if (orderedSections.length === 0 && page && page.home_sections) {
         try {
             homeData = JSON.parse(page.home_sections);
 

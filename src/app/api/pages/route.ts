@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { withAuth } from '@/lib/auth/middleware';
+import { revalidatePath } from 'next/cache';
 
 // GET all pages or specific page by slug or id
 export async function GET(request: NextRequest) {
@@ -142,6 +143,11 @@ export async function POST(request: NextRequest) {
             }
 
             // Menu jest teraz oparte TYLKO na pages.is_in_menu - bez synchronizacji z menu_items
+
+            // Ensure homepage changes are visible immediately (ISR cache invalidation)
+            if (page.slug === 'strona-glowna') {
+                revalidatePath('/');
+            }
 
             return NextResponse.json({ success: true, page });
         } catch (error) {

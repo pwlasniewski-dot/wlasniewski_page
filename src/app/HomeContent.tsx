@@ -127,7 +127,7 @@ export default function HomeContent({ heroSlides, sections, homeData, orderedSec
     };
 
     const renderSection = (section: Section) => {
-        if (!section.enabled) return null;
+        if (section.enabled === false) return null;
         const bgClass = getBackgroundClass(section.backgroundColor);
         const textColors = getTextColorClass(section.textVariant, section.backgroundColor);
 
