@@ -17,10 +17,7 @@ import AdvancedBanner from '@/components/AdvancedBanner';
 import CreativeSlider from '@/components/CreativeSlider';
 import WhiteInfoBand from '@/components/WhiteInfoBand';
 import PhotoChallengeBanner from '@/components/PhotoChallengeBanner';
-import UrgencyBanner from '@/components/UrgencyBanner';
-import PromocodeBar from '@/components/PromocodeBar';
-import GiftCardPromoBar from '@/components/GiftCardPromoBar';
-import SocialProofBanner from '@/components/PhotoChallenge/SocialProofBanner';
+// Banners are rendered in AppShell
 interface Testimonial {
     id: number;
     client_name: string;

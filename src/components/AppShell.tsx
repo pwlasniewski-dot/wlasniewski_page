@@ -12,19 +12,25 @@ import PromocodeBar from "@/components/PromocodeBar";
 export default function AppShell({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
     const isAdmin = pathname?.startsWith('/admin');
+    const isHome = pathname === '/';
 
     return (
         <>
             {!isAdmin && <GiftCardPromoBar />}
             {!isAdmin && <PromocodeBar />}
             {!isAdmin && <Navbar />}
-            <div className="flex-1 pt-48">
-                {!isAdmin && <SocialProofBanner />}
-                {!isAdmin && <UrgencyBanner />}
+            <div className={`flex-1 ${isAdmin ? '' : (isHome ? 'pt-0' : 'pt-32')} ${isAdmin ? '' : 'pb-24'}`}>
+                {!isAdmin && !isHome && <UrgencyBanner />}
                 {children}
+                {!isAdmin && <Footer />}
             </div>
-            {!isAdmin && <Footer />}
             {!isAdmin && <CookieBanner />}
+
+            {!isAdmin && (
+                <div className="fixed bottom-0 left-0 right-0 z-[60]">
+                    <SocialProofBanner />
+                </div>
+            )}
         </>
     );
 }

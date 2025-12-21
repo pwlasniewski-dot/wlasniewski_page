@@ -30,6 +30,7 @@ interface NavbarSettings {
 
 export default function Navbar() {
     const pathname = usePathname();
+    const isHome = pathname === '/';
     const [isOpen, setIsOpen] = useState(false);
     const [settings, setSettings] = useState<NavbarSettings>({});
     const [menuItems, setMenuItems] = useState<MenuItem[]>(MENU_ITEMS);
@@ -98,6 +99,13 @@ export default function Navbar() {
                 setIsScrolled(isScrolledDown);
             }
 
+            // Home: keep navbar visible (transparent overlay over hero)
+            if (isHome) {
+                if (!isNavbarVisible) setIsNavbarVisible(true);
+                setLastScrollY(currentScrollY);
+                return;
+            }
+
             // Always show navbar at the very top (fix for flash/hiding glitches)
             if (currentScrollY <= 0) {
                 if (!isNavbarVisible) setIsNavbarVisible(true);
@@ -122,7 +130,7 @@ export default function Navbar() {
 
         window.addEventListener('scroll', handleScroll, { passive: true });
         return () => window.removeEventListener('scroll', handleScroll);
-    }, [lastScrollY, isNavbarVisible, isScrolled]);
+    }, [lastScrollY, isNavbarVisible, isScrolled, isHome]);
 
     const logoSize = settings.logo_size || 140; // Use full value from settings
     const logoDisplaySize = logoSize; // Removed Math.min(logoSize, 100) cap to respect slider
@@ -132,6 +140,12 @@ export default function Navbar() {
     const isNavbarSticky = settings.navbar_sticky !== false; // default true
     const isNavbarTransparent = settings.navbar_transparent === true; // default false
     const navbarLayout = settings.navbar_layout || 'logo_center_menu_split';
+
+    // Homepage requirement: transparent navbar over full-screen hero
+    const forceTransparent = isHome;
+    const linkColorClass = forceTransparent
+        ? 'text-white hover:text-gold-400'
+        : (isScrolled ? 'text-zinc-700 hover:text-gold-500' : 'text-white hover:text-gold-400');
 
     // Helper to calculate menu split
     const getSplitMenuItems = () => {
@@ -149,15 +163,17 @@ export default function Navbar() {
 
     return (
         <header
-            className={`${isNavbarSticky ? 'fixed left-0 right-0 top-0' : 'absolute top-0'} w-full z-[100] transition-all duration-300 ${isNavbarSticky
-                ? (isNavbarTransparent && !isScrolled
-                    ? 'bg-transparent py-6'
-                    : 'bg-black/90 backdrop-blur-md py-4 border-b border-white/10 shadow-lg shadow-black/50')
-                : 'bg-transparent py-8'
-                } ${!isNavbarVisible && isNavbarSticky ? '-translate-y-full' : 'translate-y-0'}`}
+            className={`${(forceTransparent || isNavbarSticky) ? 'fixed left-0 right-0 top-0' : 'absolute top-0'} w-full z-[100] transition-all duration-300 ${forceTransparent
+                ? 'bg-transparent py-6'
+                : (isNavbarSticky
+                    ? (isNavbarTransparent && !isScrolled
+                        ? 'bg-transparent py-6'
+                        : 'bg-black/90 backdrop-blur-md py-4 border-b border-white/10 shadow-lg shadow-black/50')
+                    : 'bg-transparent py-8')
+                } ${!isNavbarVisible && (forceTransparent || isNavbarSticky) ? '-translate-y-full' : 'translate-y-0'}`}
             style={{
                 fontFamily: navbarFontFamily,
-                transform: !isNavbarVisible && isNavbarSticky ? 'translateY(-100%)' : 'translateY(0)'
+                transform: !isNavbarVisible && (forceTransparent || isNavbarSticky) ? 'translateY(-100%)' : 'translateY(0)'
             }}
         >
             <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative transition-all duration-300">
@@ -175,9 +191,7 @@ export default function Navbar() {
                                             href={item.href}
                                             className={`font-medium transition-colors py-2 ${isActive(item.href)
                                                 ? 'text-gold-500'
-                                                : isScrolled
-                                                    ? 'text-zinc-700 hover:text-gold-500'
-                                                    : 'text-white hover:text-gold-400'
+                                                : linkColorClass
                                                 } flex items-center gap-1`}
                                             style={{
                                                 fontSize: `${navbarFontSize}px`
@@ -236,9 +250,7 @@ export default function Navbar() {
                                             href={item.href}
                                             className={`font-medium transition-colors py-2 ${isActive(item.href)
                                                 ? 'text-gold-500'
-                                                : isScrolled
-                                                    ? 'text-zinc-700 hover:text-gold-500'
-                                                    : 'text-white hover:text-gold-400'
+                                                : linkColorClass
                                                 } flex items-center gap-1`}
                                             style={{
                                                 fontSize: `${navbarFontSize}px`
@@ -301,9 +313,7 @@ export default function Navbar() {
                                             href={item.href}
                                             className={`font-medium transition-colors py-2 ${isActive(item.href)
                                                 ? 'text-gold-500'
-                                                : isScrolled
-                                                    ? 'text-zinc-700 hover:text-gold-500'
-                                                    : 'text-white hover:text-gold-400'
+                                                : linkColorClass
                                                 } flex items-center gap-1`}
                                             style={{
                                                 fontSize: `${navbarFontSize}px`
@@ -337,9 +347,7 @@ export default function Navbar() {
                                             href={item.href}
                                             className={`font-medium transition-colors py-2 ${isActive(item.href)
                                                 ? 'text-gold-500'
-                                                : isScrolled
-                                                    ? 'text-zinc-700 hover:text-gold-500'
-                                                    : 'text-white hover:text-gold-400'
+                                                : linkColorClass
                                                 } flex items-center gap-1`}
                                             style={{
                                                 fontSize: `${navbarFontSize}px`
@@ -404,9 +412,7 @@ export default function Navbar() {
                                             href={item.href}
                                             className={`font-medium transition-colors py-2 ${isActive(item.href)
                                                 ? 'text-gold-500'
-                                                : isScrolled
-                                                    ? 'text-zinc-700 hover:text-gold-500'
-                                                    : 'text-white hover:text-gold-400'
+                                                : linkColorClass
                                                 } flex items-center gap-1`}
                                             style={{
                                                 fontSize: `${navbarFontSize}px`
@@ -444,9 +450,7 @@ export default function Navbar() {
                                             href={item.href}
                                             className={`font-medium transition-colors py-2 ${isActive(item.href)
                                                 ? 'text-gold-500'
-                                                : isScrolled
-                                                    ? 'text-zinc-700 hover:text-gold-500'
-                                                    : 'text-white hover:text-gold-400'
+                                                : linkColorClass
                                                 } flex items-center gap-1`}
                                             style={{
                                                 fontSize: `${navbarFontSize}px`
@@ -506,9 +510,9 @@ export default function Navbar() {
                         aria-label="Otwórz menu"
                     >
                         {isOpen ? (
-                            <X className={`w-6 h-6 ${isScrolled ? 'text-zinc-700' : 'text-white'}`} />
+                            <X className={`w-6 h-6 ${forceTransparent ? 'text-white' : (isScrolled ? 'text-zinc-700' : 'text-white')}`} />
                         ) : (
-                            <Menu className={`w-6 h-6 ${isScrolled ? 'text-zinc-700' : 'text-white'}`} />
+                            <Menu className={`w-6 h-6 ${forceTransparent ? 'text-white' : (isScrolled ? 'text-zinc-700' : 'text-white')}`} />
                         )}
                     </button>
                 </div>
