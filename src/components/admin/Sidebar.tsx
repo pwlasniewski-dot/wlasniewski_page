@@ -20,7 +20,8 @@ import {
     Sparkles,
     Menu,
     Users,
-    ChevronDown
+    ChevronDown,
+    Zap
 } from 'lucide-react';
 
 const navigation = [
@@ -55,6 +56,7 @@ const navigation = [
             { name: 'Sklep', href: '/admin/gift-cards/sklep' },
         ]
     },
+    { name: 'Zlecenia Dronowe', href: '/admin/drone-orders', icon: Zap },
     { name: 'Zapytania', href: '/admin/inquiries', icon: MessageSquare },
     { name: 'Użytkownicy', href: '/admin/users', icon: Users },
     { name: 'Analityka', href: '/admin/analytics', icon: BarChart3 },

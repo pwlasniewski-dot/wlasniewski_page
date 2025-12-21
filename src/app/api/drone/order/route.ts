@@ -21,7 +21,7 @@ export async function POST(req: Request) {
 
         // Optional: Trigger email notification here
 
-        return NextResponse.json({ success: true, orderId: order.id });
+        return NextResponse.json({ success: true, id: order.id });
     } catch (error) {
         console.error('Drone Order API error:', error);
         return NextResponse.json({ error: 'Failed to submit order' }, { status: 500 });

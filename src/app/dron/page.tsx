@@ -1,6 +1,7 @@
 
 import React from 'react';
 import ThermalSlider from '@/components/ThermalSlider';
+import DroneOrderForm from '@/components/DroneOrderForm';
 import {
     Zap,
     ShieldCheck,
@@ -114,17 +115,7 @@ export default function DronePage() {
                     <p className="text-zinc-400 mb-10 leading-relaxed">
                         Opisz swój projekt, a my dobierzemy odpowiedni sprzęt i przygotujemy ofertę w ciągu 24h.
                     </p>
-                    <form className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <input type="text" placeholder="Imię i nazwisko" className="w-full bg-black border border-white/10 rounded-xl px-5 py-3 focus:border-yellow-500 outline-none transition-colors" />
-                            <input type="text" placeholder="Nazwa firmy" className="w-full bg-black border border-white/10 rounded-xl px-5 py-3 focus:border-yellow-500 outline-none transition-colors" />
-                        </div>
-                        <input type="email" placeholder="Email służbowy" className="w-full bg-black border border-white/10 rounded-xl px-5 py-3 focus:border-yellow-500 outline-none transition-colors" />
-                        <textarea placeholder="Szczegóły zapytania (lokalizacja, zakres prac...)" rows={4} className="w-full bg-black border border-white/10 rounded-xl px-5 py-3 focus:border-yellow-500 outline-none transition-colors"></textarea>
-                        <button className="w-full bg-yellow-500 hover:bg-yellow-400 text-black font-bold py-4 rounded-xl transition-all uppercase tracking-widest text-sm shadow-xl shadow-yellow-900/20">
-                            Wyślij Zapytanie B2B
-                        </button>
-                    </form>
+                    <DroneOrderForm />
                 </div>
             </section>
         </div>

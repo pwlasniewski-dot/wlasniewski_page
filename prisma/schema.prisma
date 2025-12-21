@@ -330,7 +330,7 @@ model Booking {
   start_time        String?
   end_time          String?
   client_name       String
-  email             String
+  email             String   @unique
   phone             String?
   venue_city        String?
   venue_place       String?
