@@ -14,7 +14,15 @@ export interface AuthenticatedRequest extends NextRequest {
 // Middleware to check authentication
 export async function requireAuth(request: NextRequest) {
     try {
-        const authHeader = request.headers.get('authorization');
+        // Try multiple header names - case variations
+        let authHeader = request.headers.get('authorization');
+        if (!authHeader) {
+            authHeader = request.headers.get('Authorization');
+        }
+        if (!authHeader) {
+            authHeader = request.headers.get('AUTHORIZATION');
+        }
+        
         const token = extractToken(authHeader);
 
         if (!token) {
