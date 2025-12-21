@@ -1307,6 +1307,51 @@ NEXT_PUBLIC_SITE_URL="https://wlasniewski.pl"
 
 ---
 
+### 12. Marketing Automation & CEO Dashboard
+
+**Nowy moduł (Grudzień 2025)** integrujący narzędzia dla zarządu i marketingu.
+
+**Tabele:**
+- `MarketingTemplate` - Szablony wiadomości email
+- `MarketingAction` - Logi wysłanych ofert
+- `SystemLog` - Logi techniczne
+
+**Schema - MarketingTemplate:**
+```prisma
+model MarketingTemplate {
+  id          Int      @id @default(autoincrement())
+  title       String
+  subject     String
+  content     String   @db.Text
+  category    String   @default("GENERAL") // DRONE_OFFER, DISCOUNT, FOLLOW_UP
+  variables   String?  // JSON list ["client_name", "company"]
+  created_at  DateTime @default(now())
+}
+```
+
+**Przepływ Marketingowy:**
+```
+1. Admin wybiera szablon w CEO Dashboard
+2. Wybiera klienta (wpisuje email + nazwę firmy)
+3. Frontend podstawia zmienne (np. {{company}})
+4. Admin edytuje finalną treść
+5. POST /api/admin/marketing/send
+   ↓
+6. Backend:
+   - Weryfikuje dane
+   - Wysyła e-mail do klienta
+   - Wysyła ukrytą kopię (BCC) do admina (kontakt@wlasniewski.pl)
+   - Loguje akcję w MarketingAction
+   - Loguje sukces w SystemLog
+```
+
+**CEO Dashboard Logic:**
+- **Steve Radzi**: Losowe porady biznesowe (frontend-only logic)
+- **Goals Tracking**: Wizualizacja postępu `BusinessGoal`
+- **One-Click Actions**: Szybki dostęp do wysyłki ofert
+
+---
+
 ## ✨ PODSUMOWANIE
 
 **Kluczowe Nauki:**
