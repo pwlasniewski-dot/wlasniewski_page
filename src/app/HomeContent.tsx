@@ -34,11 +34,21 @@ interface Testimonial {
 
 interface Section {
     id: string;
-    type: 'about' | 'features' | 'parallax' | 'info_band' | 'challenge_banner' | 'testimonials' | 'creative_slider';
-    enabled: boolean;
+    type: 'about' | 'features' | 'parallax' | 'info_band' | 'challenge_banner' | 'testimonials' | 'creative_slider' | 'hero' | 'rich_text' | 'image_text' | 'gallery' | 'contact' | 'thermal_slider' | 'hero_parallax';
+    enabled?: boolean;
     backgroundColor?: 'black' | 'zinc-900' | 'zinc-800' | 'gold-900' | 'white';
     textVariant?: 'light' | 'dark';
-    data: any;
+    data?: any;
+    // PageBuilder fields
+    image?: string;
+    title?: string;
+    subtitle?: string;
+    tag?: string;
+    content?: string;
+    buttonText?: string;
+    buttonLink?: string;
+    layout?: 'left' | 'right';
+    images?: string[];
 }
 
 interface HomeData {
@@ -491,6 +501,95 @@ export default function HomeContent({ heroSlides, sections, homeData, orderedSec
                         config={section.data.config}
                     />
                 ) : null;
+
+            // === PageBuilder Section Types ===
+            case 'hero':
+                return section.image ? (
+                    <section key={section.id} className="relative w-full bg-black overflow-hidden" style={{ height: '100vh', minHeight: '600px' }}>
+                        {/* Background Image */}
+                        <div className="absolute inset-0 w-full h-full bg-cover bg-center" style={{ backgroundImage: `url("${section.image}")`, backgroundPosition: 'center 30%' }} />
+                        <div className="absolute inset-0 bg-black/20" />
+                        <div className="absolute bottom-0 left-0 w-full h-[60vh] bg-gradient-to-t from-black via-black/80 to-transparent" />
+                        
+                        {/* Content */}
+                        <div className="relative z-20 w-full h-full flex flex-col items-center justify-center px-4 sm:px-6 text-center">
+                            <div className="space-y-3 sm:space-y-4 md:space-y-6 max-w-4xl">
+                                {section.tag && <p className="text-sm md:text-base text-gold-400 font-semibold tracking-wide uppercase">{section.tag}</p>}
+                                {section.title && <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-8xl font-extrabold text-white tracking-tighter drop-shadow-2xl leading-tight">{section.title}</h1>}
+                                {section.subtitle && <p className="text-sm sm:text-base md:text-lg lg:text-xl text-zinc-200 drop-shadow-lg">{section.subtitle}</p>}
+                                {section.buttonText && (
+                                    <div className="pt-4">
+                                        <Link href={section.buttonLink || '#'} className="inline-block px-6 sm:px-8 py-2 sm:py-3 bg-gold-500 text-black font-semibold rounded hover:bg-gold-400 transition-colors shadow-lg">
+                                            {section.buttonText}
+                                        </Link>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </section>
+                ) : null;
+
+            case 'rich_text':
+                return (
+                    <section key={section.id} className={`py-20 px-6 ${getBackgroundClass('black')}`}>
+                        <div className="max-w-3xl mx-auto">
+                            {section.title && <h2 className="text-4xl font-bold text-gold-400 mb-6">{section.title}</h2>}
+                            {section.content && (
+                                <div className="prose prose-invert max-w-none text-zinc-300" dangerouslySetInnerHTML={{ __html: section.content }} />
+                            )}
+                        </div>
+                    </section>
+                );
+
+            case 'image_text':
+                return (
+                    <section key={section.id} className={`py-20 px-6 ${getBackgroundClass('black')}`}>
+                        <div className="max-w-6xl mx-auto">
+                            <div className={`grid md:grid-cols-2 gap-12 items-center ${section.layout === 'right' ? 'md:grid-flow-dense' : ''}`}>
+                                {section.image && (
+                                    <div className={`relative h-96 md:h-[500px] rounded-2xl overflow-hidden ${section.layout === 'right' ? 'md:col-start-2' : ''}`}>
+                                        <Image src={section.image} alt={section.title || ''} fill className="object-cover" />
+                                    </div>
+                                )}
+                                <div className={section.layout === 'right' ? 'md:col-start-1 md:row-start-1' : ''}>
+                                    {section.title && <h2 className="text-3xl md:text-4xl font-bold text-gold-400 mb-6">{section.title}</h2>}
+                                    {section.content && <p className="text-lg text-zinc-300 leading-relaxed mb-8">{section.content}</p>}
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                );
+
+            case 'gallery':
+                return (
+                    <section key={section.id} className={`py-20 px-6 ${getBackgroundClass('black')}`}>
+                        <div className="max-w-6xl mx-auto">
+                            {section.title && <h2 className="text-4xl font-bold text-gold-400 mb-12 text-center">{section.title}</h2>}
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {section.images?.map((img, idx) => (
+                                    <div key={idx} className="relative h-64 rounded-lg overflow-hidden">
+                                        <Image src={img} alt={`Galeria ${idx + 1}`} fill className="object-cover hover:scale-105 transition-transform duration-300" />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </section>
+                );
+
+            case 'contact':
+                return (
+                    <section key={section.id} className={`py-20 px-6 ${getBackgroundClass('black')}`}>
+                        <div className="max-w-3xl mx-auto text-center">
+                            {section.title && <h2 className="text-4xl font-bold text-gold-400 mb-6">{section.title}</h2>}
+                            {section.subtitle && <p className="text-lg text-zinc-300 mb-10">{section.subtitle}</p>}
+                            {section.buttonText && (
+                                <Link href={section.buttonLink || '/kontakt'} className="inline-block px-8 py-3 bg-gold-500 text-black font-semibold rounded-lg hover:bg-gold-400 transition-colors">
+                                    {section.buttonText}
+                                </Link>
+                            )}
+                        </div>
+                    </section>
+                );
 
             default:
                 return null;

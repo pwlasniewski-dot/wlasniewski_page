@@ -216,6 +216,31 @@ function SortableSection({ section, index, onRemove, onUpdate }: {
                 {/* HERO */}
                 {section.type === 'hero' && (
                     <div className="space-y-4">
+                        {/* Background Image */}
+                        <div>
+                            <label className="block text-xs text-zinc-400 mb-2">Zdjęcie tła</label>
+                            <div className="flex gap-3">
+                                {section.image && (
+                                    <div className="relative w-24 h-24 rounded border border-zinc-700 overflow-hidden bg-zinc-800">
+                                        <img src={section.image} alt="" className="w-full h-full object-cover" />
+                                        <button
+                                            onClick={() => onUpdate(section.id, { image: '' })}
+                                            className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center"
+                                        >
+                                            <Trash2 className="w-4 h-4 text-red-400" />
+                                        </button>
+                                    </div>
+                                )}
+                                <button
+                                    onClick={() => { setMediaPickerTarget('single'); setShowMediaPicker(true); }}
+                                    className="flex-1 flex items-center justify-center border-2 border-dashed border-zinc-700 rounded hover:border-zinc-500 text-zinc-500 hover:text-zinc-300 transition-colors text-sm"
+                                >
+                                    <ImageIcon className="w-4 h-4 inline mr-2" />
+                                    {section.image ? 'Zmień' : 'Wybierz zdjęcie'}
+                                </button>
+                            </div>
+                        </div>
+
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-xs text-zinc-400 mb-1">Tytuł</label>
