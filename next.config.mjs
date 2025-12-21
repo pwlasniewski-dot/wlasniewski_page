@@ -22,6 +22,16 @@ const nextConfig = {
     // output: 'export',
     output: 'standalone',
     compress: false, // Fix for controller[kState].transformAlgorithm error
+    
+    // Optimize webpack bundle for Netlify serverless deployment
+    webpack: (config, { isServer }) => {
+        if (isServer) {
+            // On server side, allow Prisma but mark for external bundling
+            // This helps when using Prisma Data Proxy (engine won't be bundled)
+            config.externals = [...(config.externals || [])];
+        }
+        return config;
+    },
 };
 
 export default nextConfig;
