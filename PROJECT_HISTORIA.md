@@ -12,6 +12,22 @@ Ten plik służy do ścisłego monitorowania wszystkich zmian wprowadzanych w pr
 
 ## Log Zmian
 
+### [2025-12-21] Stabilizacja deploymentu (Netlify) + naprawy CMS homepage ✅
+
+**Cel**: doprowadzić projekt do stanu „build → deploy → edycja treści działa” po problemach z limitem Netlify i niespójnym CMS.
+
+**Najważniejsze zmiany**:
+- **Netlify bundle limits**: dostosowanie projektu do ograniczeń Netlify Functions (rozmiar handlera i limit per-function).
+- **Prisma (serverless)**: użycie Prisma Data Proxy/Accelerate w produkcji (zmiana `DATABASE_URL` na `prisma+postgres://...`) aby uniknąć dołączania ciężkich silników Prisma do bundla.
+- **S3 download route**: endpoint pobierania zdjęć z galerii przestał czytać pliki z filesystemu w funkcji serverless; zamiast tego zwraca redirect do URL w S3.
+- **Admin/Auth**: utwardzenie autoryzacji (obsługa różnych casing nagłówka Authorization) oraz dopięcie autoryzacji w Media Library.
+- **Homepage CMS (widoczność treści)**: wyrównanie zapisu/renderowania pomiędzy starym `pages.home_sections` (legacy homepage editor) a nowszym `pages.sections` (PageBuilder).
+- **Homepage save 500**: naprawa błędu zapisu wynikającego z założenia `id=1` dla strony głównej; edytor pobiera stronę po `slug=strona-glowna` i zapisuje po rzeczywistym `id`.
+
+**Efekt**:
+- `npm run build` przechodzi.
+- Zapis strony głównej nie kończy się błędem „Failed to update page” z powodu złego ID.
+
 ### [2025-12-18]#### Faza 2: Rozbudowa (Analytics, Scrum, Dron) [DONE]
 - Implementacja Dashboardu Analitycznego z sugerowaniem działań AI.
 - Wprowadzenie tablicy Kanban (Scrum) do zarządzania operacjami.

@@ -173,6 +173,7 @@ export default function HomepageManager() {
     const router = useRouter();
     const [heroSlides, setHeroSlides] = useState<HeroSlide[]>([]);
     const [sections, setSections] = useState<Section[]>([]);
+    const [pageId, setPageId] = useState<number | null>(null);
 
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -186,13 +187,16 @@ export default function HomepageManager() {
     const fetchHomepage = async () => {
         try {
             const token = localStorage.getItem('admin_token');
-            // Always fetch homepage by ID (homepage is always id=1)
-            const res = await fetch(`${getApiUrl('pages')}?id=1`, {
+            // Fetch homepage by slug (ID can differ between environments)
+            const res = await fetch(`${getApiUrl('pages')}?slug=strona-glowna`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const data = await res.json();
 
             if (data.success && data.page?.home_sections) {
+                if (typeof data.page.id === 'number') {
+                    setPageId(data.page.id);
+                }
                 const parsed = JSON.parse(data.page.home_sections);
 
                 // Load Hero Slides
@@ -334,6 +338,8 @@ export default function HomepageManager() {
                 sections: sections
             };
 
+            const effectivePageId = pageId ?? undefined;
+
             const res = await fetch(getApiUrl('pages'), {
                 method: 'POST',
                 headers: {
@@ -341,8 +347,8 @@ export default function HomepageManager() {
                     'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({
-                    id: 1,
-                    slug: '',
+                    ...(effectivePageId ? { id: effectivePageId } : { slug: 'strona-glowna' }),
+                    slug: 'strona-glowna',
                     title: 'Strona główna',
                     content: '',
                     is_published: true,

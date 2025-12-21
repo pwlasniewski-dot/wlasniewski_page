@@ -28,7 +28,7 @@ OK PO KROKU jak działa cała strona, od frontendu do bazy danych.
 - **Next.js 15** - Framework React do budowy stron
   - SSR (Server-Side Rendering) - Strona renderuje się na serwerze
   - Static Generation - Niektóre strony są pre-renderowane
-- **React 19** - Biblioteka do budowy interfejsów
+- **React 18** - Biblioteka do budowy interfejsów
 - **Tailwind CSS** - Klasy CSS do stylowania
 - **TypeScript** - JavaScript z typami (bezpieczniejszy kod)
 
@@ -39,8 +39,10 @@ OK PO KROKU jak działa cała strona, od frontendu do bazy danych.
 
 ### Hosting & Deployment
 - **Netlify** - Hosting strony (automatyczny build z Git)
+- **Netlify Functions** - Serverless runtime dla SSR/API (obowiązują limity rozmiaru bundli)
 - **AWS S3** - Przechowywanie zdjęć/plików
 - **Neon PostgreSQL** - Baza danych
+- **Prisma Accelerate (Data Proxy)** - zalecane dla serverless (redukuje rozmiar bundla i upraszcza połączenia)
 
 ---
 
@@ -168,35 +170,37 @@ wlasniewski.pl/
 **Co Robi:**
 - Pozwala tworzyć i edytować strony dynamicznie
 - Obsługuje różne typy bloków (hero, galeria, tekst)
-- Zapisuje dane do tabeli `Page` i `PageSection`
+- Zapisuje strukturę strony jako JSON w tabeli `Page` (pole `sections`)
 
-**Jak Działa:**
+**Jak Działa (aktualny model):**
 ```typescript
-// 1. Użytkownik edytuje stronę w admin
-// 2. Dane zapisywane do bazy:
+// 1. Admin buduje tablicę sekcji (PageBuilder)
+// 2. Zapis do DB jako JSON string
 await prisma.page.update({
-  where: { slug: 'oferta' },
-  data: {
-    sections: {
-      create: [
-        { type: 'HERO', content: {...} },
-        { type: 'GALLERY', content: {...} }
-      ]
-    }
-  }
+   where: { slug: 'oferta' },
+   data: {
+      sections: JSON.stringify([
+         { id: '...', type: 'hero', heading: '...', image: 'https://...' },
+         { id: '...', type: 'rich_text', content: '<p>...</p>' }
+      ])
+   }
 });
 
-// 3. Frontend pobiera dane:
-const page = await prisma.page.findUnique({
-  where: { slug: 'oferta' },
-  include: { sections: true }
-});
+// 3. Frontend pobiera rekord Page
+const page = await prisma.page.findUnique({ where: { slug: 'oferta' } });
 
-// 4. Renderuje sekcje:
-{page.sections.map(section => (
-  <SectionRenderer type={section.type} data={section.content} />
-))}
+// 4. Renderowanie: parse JSON i switch po `type`
+const sections = page?.sections ? JSON.parse(page.sections) : [];
 ```
+
+### 1a. Strona główna (legacy editor vs PageBuilder)
+
+Strona główna historycznie korzysta z osobnego edytora (`/admin/pages/strona-glowna`) i pola `Page.home_sections`.
+
+- **Legacy**: `Page.home_sections` (JSON string) zawiera m.in. `hero_slider` oraz tablicę `sections` w starszym formacie.
+- **Nowy PageBuilder**: `Page.sections` (JSON string) w nowszym formacie sekcji.
+
+Ważne: **nie zakładać stałego `id=1` dla homepage** — rekord należy identyfikować po `slug=strona-glowna` i pracować na faktycznym `id` zwróconym z bazy.
 
 ### 2. Gift Card System
 

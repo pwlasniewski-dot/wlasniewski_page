@@ -146,6 +146,10 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ success: true, page });
         } catch (error) {
             console.error('Error updating page:', error);
+            const prismaCode = (error as { code?: string } | null)?.code;
+            if (prismaCode === 'P2025') {
+                return NextResponse.json({ error: 'Page not found' }, { status: 404 });
+            }
             return NextResponse.json({ error: 'Failed to update page' }, { status: 500 });
         }
     });
