@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { Metadata } from 'next';
 import ThermalSlider from '@/components/ThermalSlider';
 import DroneOrderForm from '@/components/DroneOrderForm';
 import {
@@ -13,7 +14,7 @@ import {
     ArrowRight
 } from 'lucide-react';
 
-export const metadata = {
+export const metadata: Metadata = {
     title: 'Usługi Dronem i Termowizja B2B - wlasniewski.pl',
     description: 'Profesjonalne inspekcje termowizyjne dronem. Przeglądy fotowoltaiki, dachów i budynków przemysłowych. Precyzja i bezpieczeństwo.',
 };

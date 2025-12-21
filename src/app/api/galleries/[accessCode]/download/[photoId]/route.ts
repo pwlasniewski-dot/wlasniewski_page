@@ -41,8 +41,7 @@ export async function GET(
             select: {
                 id: true,
                 is_standard: true,
-                file_url: true,
-                s3_url: true
+                file_url: true
             }
         });
 
@@ -81,11 +80,9 @@ export async function GET(
         }
 
         // Read file from S3
-        // Photos are stored in S3, redirect to the S3 URL for download
-        const downloadUrl = photo.s3_url || photo.file_url;
-        
-        // Return redirect to S3 with download parameter
-        return NextResponse.redirect(downloadUrl, {
+        // file_url is the full S3 URL where photo is stored
+        // Redirect directly to S3 for download
+        return NextResponse.redirect(photo.file_url, {
             headers: {
                 'Content-Disposition': `attachment; filename="photo-${photo.id}.jpg"`,
             }
