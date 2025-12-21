@@ -1,10 +1,17 @@
 [build]
   command = "npm run build"
   base = "."
+  functions = "netlify/functions"
+  publish = ".next"
+
+[functions]
+  node_bundler = "esbuild"
+  external_node_modules = ["@prisma/client"]
 
 # Netlify Next.js Runtime - required for Next.js apps with SSR/ISR
 [[plugins]]
   package = "@netlify/plugin-nextjs"
+  inputs.skipBuildServerless = true
 
 # Cache headers for static assets
 [[headers]]
