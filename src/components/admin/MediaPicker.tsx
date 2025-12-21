@@ -136,13 +136,20 @@ export default function MediaPicker({ isOpen, onClose, onSelect, multiple = fals
         let targetFolder = currentFolder || 'uploads';
         const uploadedIds: number[] = [];
 
+        // Check if token exists
+        const token = localStorage.getItem('admin_token');
+        if (!token) {
+            toast.error('Nie jesteś zalogowany. Zaloguj się do panelu admina.');
+            setUploading(false);
+            return;
+        }
+
         for (const file of files) {
             const formData = new FormData();
             formData.append('file', file);
             formData.append('folder', targetFolder);
 
             try {
-                const token = localStorage.getItem('admin_token');
                 const res = await fetch(`${getApiUrl('media')}/upload`, {
                     method: 'POST',
                     headers: { 'Authorization': `Bearer ${token}` },
@@ -151,6 +158,8 @@ export default function MediaPicker({ isOpen, onClose, onSelect, multiple = fals
                 const data = await res.json();
                 if (data.success) {
                     uploadedIds.push(data.media.id);
+                } else {
+                    toast.error(`Błąd: ${data.error || 'Unknown error'}`);
                 }
             } catch (error) {
                 console.error('Upload failed', error);
