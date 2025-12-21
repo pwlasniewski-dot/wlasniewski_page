@@ -1,5 +1,6 @@
 generator client {
   provider = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 
 datasource db {
@@ -330,7 +331,7 @@ model Booking {
   start_time        String?
   end_time          String?
   client_name       String
-  email             String   @unique
+  email             String
   phone             String?
   venue_city        String?
   venue_place       String?
@@ -721,28 +722,28 @@ model ErrorNote {
 }
 
 model BusinessGoal {
-  id            Int      @id @default(autoincrement())
-  title         String
-  target_amount Float
+  id             Int      @id @default(autoincrement())
+  title          String
+  target_amount  Float
   current_amount Float    @default(0)
-  category      String   @default("revenue")
-  start_date    DateTime
-  end_date      DateTime
-  created_at    DateTime @default(now())
-  updated_at    DateTime @updatedAt
+  category       String   @default("revenue")
+  start_date     DateTime
+  end_date       DateTime
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
 
   @@map("business_goals")
 }
 
 model ScrumTask {
-  id          Int       @id @default(autoincrement())
-  title       String
-  content     String?
-  status      String    @default("TODO") // TODO, DOING, DONE
-  priority    String    @default("MEDIUM") // LOW, MEDIUM, HIGH
-  due_date    DateTime?
-  created_at  DateTime  @default(now())
-  updated_at  DateTime  @updatedAt
+  id         Int       @id @default(autoincrement())
+  title      String
+  content    String?
+  status     String    @default("TODO")
+  priority   String    @default("MEDIUM")
+  due_date   DateTime?
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
 
   @@map("scrum_tasks")
 }
@@ -784,4 +785,16 @@ model AnalyticsSnapshot {
   created_at      DateTime @default(now())
 
   @@map("analytics_snapshots")
+}
+model MarketingTemplate {
+  id          Int      @id @default(autoincrement())
+  title       String
+  subject     String
+  content     String   @db.Text
+  category    String   @default("GENERAL") // DRONE_OFFER, DISCOUNT, FOLLOW_UP
+  variables   String?  // JSON list of variables e.g. ["client_name", "company"]
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  @@map("marketing_templates")
 }

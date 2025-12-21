@@ -428,14 +428,6 @@ export default function RezerwacjaPage() {
     return (
         <main className="min-h-screen bg-gradient-to-b from-zinc-950 via-black to-zinc-950 py-20 px-4">
             {/* Promocode Bar */}
-            {promoSettings?.enabled && (
-                <PromocodeBar
-                    code={promoSettings.code}
-                    discount={promoSettings.discount}
-                    discountType={promoSettings.discountType}
-                    expiryDate={promoSettings.expiryDate}
-                />
-            )}
             <div className="max-w-4xl mx-auto pt-8">
                 <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 text-center">
                     📸 Zarezerwuj Sesję

@@ -19,11 +19,54 @@ export const metadata = {
 };
 
 export default function DronePage() {
+    const thermalSections = [
+        {
+            id: '1',
+            category: 'Fotowoltaika',
+            visualImage: 'https://images.unsplash.com/photo-1613665813671-0b34b838d5a1?auto=format&fit=crop&q=80&w=1200',
+            thermalImage: 'https://images.unsplash.com/photo-1581092916056-0c4c3acd3789?auto=format&fit=crop&q=80&w=1200',
+            labelLeft: 'Widok Standardowy',
+            labelRight: 'Termowizja'
+        },
+        {
+            id: '2',
+            category: 'Inspekcja Dachu',
+            visualImage: 'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&q=80&w=1200',
+            thermalImage: 'https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?auto=format&fit=crop&q=80&w=1200',
+            labelLeft: 'Widok Standardowy',
+            labelRight: 'Analiza Ciepła'
+        },
+        {
+            id: '3',
+            category: 'Linie Energetyczne',
+            visualImage: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&q=80&w=1200',
+            thermalImage: 'https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?auto=format&fit=crop&q=80&w=1200',
+            labelLeft: 'Widok Standardowy',
+            labelRight: 'Detekcja Anomalii'
+        },
+        {
+            id: '4',
+            category: 'Budynki Komercyjne',
+            visualImage: 'https://images.unsplash.com/photo-1486325212027-8081e485255e?auto=format&fit=crop&q=80&w=1200',
+            thermalImage: 'https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?auto=format&fit=crop&q=80&w=1200',
+            labelLeft: 'Widok Standardowy',
+            labelRight: 'Izolacja Cieplna'
+        },
+        {
+            id: '5',
+            category: 'Ortofotomapy',
+            visualImage: 'https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&q=80&w=1200',
+            thermalImage: 'https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?auto=format&fit=crop&q=80&w=1200',
+            labelLeft: 'Widok Standardowy',
+            labelRight: 'Analiza Spektralna'
+        }
+    ];
+
     return (
         <div className="bg-black text-zinc-100 min-h-screen">
             {/* Hero Section */}
-            <section className="relative py-24 px-6 max-w-7xl mx-auto overflow-hidden">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            <section className="relative py-16 px-6 max-w-7xl mx-auto overflow-hidden">
+                <div className="space-y-12">
                     <div>
                         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 text-[10px] font-bold uppercase tracking-[0.2em] mb-6">
                             <Zap size={12} /> Rozwiązania B2B
@@ -44,10 +87,11 @@ export default function DronePage() {
                         </div>
                     </div>
 
+                    {/* Thermal Slider with Multiple Sections */}
                     <div className="relative">
                         <ThermalSlider
-                            visualImage="https://images.unsplash.com/photo-1542332213-9b5a5a3fad35?auto=format&fit=crop&q=80&w=1200"
-                            thermalImage="https://images.unsplash.com/photo-1579546678181-7f311c1d0b3e?auto=format&fit=crop&q=80&w=1200" // Placeholder for thermal
+                            sections={thermalSections}
+                            title="Galeria Badań Termowizyjnych"
                         />
                         <div className="absolute -bottom-6 -left-6 bg-zinc-900 p-6 rounded-2xl border border-white/5 shadow-2xl hidden md:block">
                             <div className="flex items-center gap-4">

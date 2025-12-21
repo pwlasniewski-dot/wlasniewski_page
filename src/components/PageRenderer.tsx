@@ -129,16 +129,18 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                         return (
                             <section key={section.id} className="py-20 bg-zinc-950 overflow-hidden">
                                 <div className="max-w-6xl mx-auto px-4">
-                                    <div className="mb-12 text-center">
-                                        {section.title && <h2 className="text-3xl md:text-5xl font-display font-bold text-white mb-4">{section.title}</h2>}
-                                        {section.subtitle && <p className="text-zinc-400 max-w-2xl mx-auto">{section.subtitle}</p>}
+                                    <div className="mb-12">
+                                        {section.title && <h2 className="text-3xl md:text-5xl font-display font-bold text-white mb-4 text-center">{section.title}</h2>}
+                                        {section.subtitle && <p className="text-zinc-400 max-w-2xl mx-auto text-center">{section.subtitle}</p>}
                                     </div>
                                     <div className="rounded-2xl overflow-hidden shadow-2xl border border-white/5 bg-zinc-900/50 p-2">
                                         <ThermalSlider
-                                            visualImage={section.image || '/images/thermal-standard.jpg'}
-                                            thermalImage={section.thermalImage || '/images/thermal-heat.jpg'}
+                                            visualImage={section.image}
+                                            thermalImage={section.thermalImage}
                                             labelLeft={section.labelLeft || 'Widok Standardowy'}
                                             labelRight={section.labelRight || 'Termowizja'}
+                                            sections={section.thermalSections}
+                                            title={section.showCategoryTitle ? section.title : undefined}
                                         />
                                     </div>
                                     {section.content && (

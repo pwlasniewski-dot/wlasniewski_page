@@ -9,6 +9,7 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import SocialProofBanner from '@/components/PhotoChallenge/SocialProofBanner';
 import EffectWrapper from '@/components/VisualEffects/EffectWrapper';
+import PromocodeBar from '@/components/PromocodeBar';
 
 interface Settings {
     module_enabled: boolean;
@@ -82,13 +83,10 @@ export default function FotoWyzwaniePage() {
 
     return (
         <div className="min-h-screen bg-black text-white">
-            {/* Social Proof Banner */}
-            {settings?.social_proof_enabled && stats && (
-                <SocialProofBanner stats={stats} />
-            )}
+            <PromocodeBar code="WYZWANIE20" discount={20} discountType="percentage" />
 
             {/* Hero Section */}
-            <section className="relative py-20 px-4 challenge-gradient">
+            <section className="relative pt-48 pb-20 px-4 challenge-gradient">
                 <div className="max-w-6xl mx-auto text-center">
                     <motion.h1
                         initial={{ opacity: 0, y: 30 }}

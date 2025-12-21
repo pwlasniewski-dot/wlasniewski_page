@@ -1,0 +1,32 @@
+﻿
+--- FAZA 1: ADMIN ---
+✅ [ADMIN] 1.1 Admin exists
+✅ [ADMIN] 1.2 Create booking
+✅ [ADMIN] 1.3 Edit booking
+✅ [ADMIN] 1.5 Delete booking
+
+--- FAZA 2: CLIENT ---
+✅ [CLIENT] 2.2 Create booking
+✅ [CLIENT] 2.7 Persistence
+
+--- FAZA 3: PAYMENT ---
+✅ [PAYMENT] 3.3 Status Update
+
+--- FAZA 4: DATABASE ---
+✅ [DATABASE] 4.1 Count
+❌ [DATABASE] 4.3 Unique Constraint: Duplicate created
+
+--- FAZA 5: ANALYTICS ---
+✅ [ANALYTICS] 5.1 Track
+
+--- FAZA 8: SCRUM ---
+✅ [SCRUM] 8.1 Create task
+✅ [SCRUM] 8.2 Move task
+✅ [SCRUM] 8.3 Delete task
+
+--- SUMMARY ---
+PASSED: 12/13
+FAILED: 1/13
+
+--- FAILED DETAILS ---
+[DATABASE] 4.3 Unique Constraint: Duplicate created

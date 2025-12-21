@@ -605,17 +605,6 @@ export default function HomeContent({ heroSlides, sections, homeData, orderedSec
             {/* Hero Slider - Always First */}
             <HeroSlider slides={heroSlides} />
 
-            {/* Urgency / Promo Bar below Hero */}
-            <UrgencyBanner />
-
-            {/* Social Proof (Socio Paski) */}
-            <SocialProofBanner />
-
-            {/* Global Promo Pop-up (Fixed position) */}
-            <PromocodeBar />
-
-            {/* Gift Card Side Promo (Fixed position) */}
-            <GiftCardPromoBar />
 
             {/* Dynamic Sections */}
             {sections.map(section => renderSection(section))}

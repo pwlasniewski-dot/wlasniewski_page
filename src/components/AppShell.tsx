@@ -6,6 +6,8 @@ import Footer from "@/components/Footer";
 import UrgencyBanner from "@/components/UrgencyBanner";
 import CookieBanner from "@/components/CookieBanner";
 import GiftCardPromoBar from "@/components/GiftCardPromoBar";
+import SocialProofBanner from "@/components/PhotoChallenge/SocialProofBanner";
+import PromocodeBar from "@/components/PromocodeBar";
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
@@ -14,12 +16,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     return (
         <>
             {!isAdmin && <GiftCardPromoBar />}
-            {!isAdmin && <UrgencyBanner />}
+            {!isAdmin && <PromocodeBar />}
             {!isAdmin && <Navbar />}
-            {/* Use a div wrapper instead of <main> so page-level <main> elements are not nested.
-                Add top padding to offset the fixed header (header height ~20 = 80px).
-                Set position:relative so absolute positioned children stay within bounds. */}
-            <div className="flex-1 pt-20">
+            <div className="flex-1 pt-48">
+                {!isAdmin && <SocialProofBanner />}
+                {!isAdmin && <UrgencyBanner />}
                 {children}
             </div>
             {!isAdmin && <Footer />}

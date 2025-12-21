@@ -89,7 +89,7 @@ export default function SocialProofBanner({ stats, message }: SocialProofBannerP
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="w-full bg-gradient-to-r from-black via-gold-900/20 to-black border-y border-gold-400/30 py-4 px-6"
+            className="relative w-full bg-gradient-to-r from-black via-gold-900/20 to-black border-y border-gold-400/30 py-4 px-6 z-[40]"
         >
             <div className="max-w-6xl mx-auto">
                 <div className="flex flex-col md:flex-row items-center justify-center gap-6 text-center">

@@ -31,12 +31,21 @@ export function useAnalytics() {
     }, []);
 
     const trackEvent = useCallback(async (eventType: string, metadata?: any) => {
-        if (!sessionId) return; // Wait for initialization
+        if (!sessionId) return;
 
-        // EXCLUDE ADMIN PATHS - tylko prawdziwi użytkownicy
+        // EXCLUDE IF FLAG SET (Admin device)
+        const isExcluded = typeof window !== 'undefined' && localStorage.getItem('analytics_exclude') === 'true';
+        if (isExcluded) {
+            return;
+        }
+
+        // EXCLUDE ADMIN PATHS
         const isAdminPath = pathname.startsWith('/admin');
         if (isAdminPath) {
-            console.log('[Analytics] Skipping admin path:', pathname);
+            // If they are in admin, ensure this device is excluded in the future too
+            if (typeof window !== 'undefined') {
+                localStorage.setItem('analytics_exclude', 'true');
+            }
             return;
         }
 

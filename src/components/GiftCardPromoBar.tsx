@@ -67,7 +67,6 @@ export default function GiftCardPromoBar() {
                 }
             } catch (error) {
                 console.error('Failed to fetch gift card promo data:', error);
-                setIsVisible(false);
             } finally {
                 setIsLoading(false);
             }

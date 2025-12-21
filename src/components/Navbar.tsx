@@ -149,11 +149,11 @@ export default function Navbar() {
 
     return (
         <header
-            className={`${isNavbarSticky ? 'fixed left-0 right-0 top-0' : 'absolute top-0'} w-full z-50 transition-all duration-300 ${isScrolled
-                ? 'bg-white/95 backdrop-blur-md shadow-lg'
-                : isNavbarTransparent
-                    ? 'bg-transparent'
-                    : 'bg-white/10 backdrop-blur-sm'
+            className={`${isNavbarSticky ? 'fixed left-0 right-0 top-0' : 'absolute top-0'} w-full z-[100] transition-all duration-300 ${isNavbarSticky
+                ? (isNavbarTransparent && !isScrolled
+                    ? 'bg-transparent py-6'
+                    : 'bg-black/90 backdrop-blur-md py-4 border-b border-white/10 shadow-lg shadow-black/50')
+                : 'bg-transparent py-8'
                 } ${!isNavbarVisible && isNavbarSticky ? '-translate-y-full' : 'translate-y-0'}`}
             style={{
                 fontFamily: navbarFontFamily,

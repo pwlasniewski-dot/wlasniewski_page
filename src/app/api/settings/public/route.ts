@@ -20,6 +20,8 @@ export async function GET(request: NextRequest) {
             navbar_transparent: settings.navbar_transparent,
             navbar_font_size: settings.navbar_font_size,
             navbar_font_family: settings.navbar_font_family,
+            p24_pos_id: settings.p24_pos_id,
+            p24_test_mode: settings.p24_test_mode,
             favicon_url: settings.favicon_url,
             logo_url: settings.logo_url,
             logo_dark_url: settings.logo_dark_url,
@@ -38,6 +40,12 @@ export async function GET(request: NextRequest) {
             gift_card_promo_title: settings.gift_card_promo_title,
             gift_card_promo_description: settings.gift_card_promo_description,
             gift_card_hero_image: settings.gift_card_hero_image,
+            gift_card_promo_rotation_interval: settings.gift_card_promo_rotation_interval,
+            // Promo Code
+            promo_code_discount_enabled: settings.promo_code_discount_enabled,
+            promo_code_discount_amount: settings.promo_code_discount_amount,
+            promo_code_discount_type: settings.promo_code_discount_type,
+            promo_code: "WYZWANIE20", // Hardcode for now as it's missing from schema but expected
             // Social Proof
             social_proof_total_clients: settings.social_proof_total_clients,
             // Photo Challenge

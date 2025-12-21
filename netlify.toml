@@ -6,8 +6,7 @@
   package = "@netlify/plugin-nextjs"
 
 [functions]
-  node_bundler = "zisi"
-  included_files = ["node_modules/**"]
+  included_files = ["prisma/schema.prisma"]
   external_node_modules = [
     "@aws-sdk/client-s3",
     "@aws-sdk/lib-storage",

@@ -10,12 +10,22 @@ import MediaPicker from './MediaPicker';
 
 export type SectionType = 'hero_parallax' | 'hero' | 'rich_text' | 'image_text' | 'gallery' | 'contact' | 'thermal_slider';
 
+export interface ThermalSectionData {
+    id: string;
+    category: string;
+    visualImage: string;
+    thermalImage: string;
+    labelLeft?: string;
+    labelRight?: string;
+}
+
 export interface PageSection {
     id: string;
     type: SectionType;
     content?: string;
     image?: string;
-    thermalImage?: string; // For thermal_slider
+    thermalImage?: string; // For thermal_slider (single)
+    thermalSections?: ThermalSectionData[]; // For thermal_slider (multiple)
     title?: string;
     subtitle?: string;
     layout?: 'left' | 'right'; // For image_text
@@ -25,6 +35,7 @@ export interface PageSection {
     buttonLink?: string; // For contact/hero
     labelLeft?: string; // For thermal_slider
     labelRight?: string; // For thermal_slider
+    showCategoryTitle?: boolean; // For thermal_slider - show title above sections
 }
 
 interface PageBuilderProps {
@@ -43,15 +54,28 @@ function SortableSection({ section, index, onRemove, onUpdate }: {
     const [showMediaPicker, setShowMediaPicker] = useState(false);
     const [mediaPickerTarget, setMediaPickerTarget] = useState<'single' | 'gallery'>('single');
     const [mediaPickerContext, setMediaPickerContext] = useState<'visual' | 'thermal' | null>(null);
+    const [sectionEditIndex, setSectionEditIndex] = useState(-1);
 
     const handleImageSelect = (url: string | string[]) => {
         const imageUrl = Array.isArray(url) ? url[0] : url;
 
         if (section.type === 'thermal_slider') {
-            if (mediaPickerContext === 'visual') {
-                onUpdate(section.id, { image: imageUrl });
-            } else if (mediaPickerContext === 'thermal') {
-                onUpdate(section.id, { thermalImage: imageUrl });
+            if (sectionEditIndex >= 0) {
+                // Editing thermal section in array
+                const updated = [...(section.thermalSections || [])];
+                if (mediaPickerContext === 'visual') {
+                    updated[sectionEditIndex] = { ...updated[sectionEditIndex], visualImage: imageUrl };
+                } else if (mediaPickerContext === 'thermal') {
+                    updated[sectionEditIndex] = { ...updated[sectionEditIndex], thermalImage: imageUrl };
+                }
+                onUpdate(section.id, { thermalSections: updated });
+            } else {
+                // Fallback single image
+                if (mediaPickerContext === 'visual') {
+                    onUpdate(section.id, { image: imageUrl });
+                } else if (mediaPickerContext === 'thermal') {
+                    onUpdate(section.id, { thermalImage: imageUrl });
+                }
             }
         } else if (mediaPickerTarget === 'single') {
             onUpdate(section.id, { image: imageUrl });
@@ -293,49 +317,192 @@ function SortableSection({ section, index, onRemove, onUpdate }: {
 
                 {/* THERMAL SLIDER */}
                 {section.type === 'thermal_slider' && (
-                    <div className="space-y-4">
-                        <div className="grid grid-cols-2 gap-8">
+                    <div className="space-y-6">
+                        {/* Basic Settings */}
+                        <div className="space-y-4">
                             <div>
-                                <label className="block text-xs text-zinc-400 mb-2 font-bold uppercase tracking-tight">Zdjęcie Wizualne (Lewe)</label>
-                                {section.image ? (
-                                    <img src={section.image} alt="Visual" className="w-full aspect-video object-cover rounded-lg border border-zinc-700 mb-2 shadow-lg" />
-                                ) : (
-                                    <div className="w-full aspect-video bg-zinc-800 rounded-lg border-2 border-dashed border-zinc-700 mb-2 flex items-center justify-center text-zinc-600 font-medium">Standardowy Widok</div>
-                                )}
-                                <button
-                                    onClick={() => { setMediaPickerTarget('single'); setMediaPickerContext('visual'); setShowMediaPicker(true); }}
-                                    className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-700 transition-all flex items-center justify-center gap-2"
-                                >
-                                    <ImageIcon className="w-4 h-4" /> Wybierz Zdjęcie
-                                </button>
+                                <label className="block text-xs text-zinc-400 mb-2 font-bold uppercase tracking-tight">Tytuł Sekcji</label>
                                 <input
                                     type="text"
-                                    placeholder="Etykieta (np. Widok Standardowy)"
-                                    value={section.labelLeft || ''}
-                                    onChange={(e) => onUpdate(section.id, { labelLeft: e.target.value })}
-                                    className="w-full mt-3 bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-xs text-white"
+                                    placeholder="Np. Galeria Badań Termowizyjnych"
+                                    value={section.title || ''}
+                                    onChange={(e) => onUpdate(section.id, { title: e.target.value })}
+                                    className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white"
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs text-zinc-400 mb-2 font-bold uppercase tracking-tight">Zdjęcie Termowizyjne (Prawe)</label>
-                                {section.thermalImage ? (
-                                    <img src={section.thermalImage} alt="Thermal" className="w-full aspect-video object-cover rounded-lg border border-zinc-700 mb-2 shadow-lg" />
-                                ) : (
-                                    <div className="w-full aspect-video bg-zinc-800 rounded-lg border-2 border-dashed border-zinc-700 mb-2 flex items-center justify-center text-zinc-600 font-medium italic">Widok Termo</div>
-                                )}
+                                <label className="block text-xs text-zinc-400 mb-2 font-bold uppercase tracking-tight">Pokaż Tytuł w Sliderze</label>
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={section.showCategoryTitle || false}
+                                        onChange={(e) => onUpdate(section.id, { showCategoryTitle: e.target.checked })}
+                                        className="w-4 h-4 rounded border-zinc-600 text-yellow-500"
+                                    />
+                                    <span className="text-sm text-zinc-300">Wyświetl nagłówek i kategorię w komponencie</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        {/* Thermal Sections Manager */}
+                        <div className="border-t border-zinc-700 pt-6">
+                            <div className="flex items-center justify-between mb-4">
+                                <h4 className="text-sm font-bold text-white uppercase tracking-wider">Kategorie Termowizji</h4>
                                 <button
-                                    onClick={() => { setMediaPickerTarget('single'); setMediaPickerContext('thermal'); setShowMediaPicker(true); }}
-                                    className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-700 transition-all flex items-center justify-center gap-2"
+                                    onClick={() => {
+                                        const newSection: ThermalSectionData = {
+                                            id: Math.random().toString(36).substr(2, 9),
+                                            category: 'Nowa Kategoria',
+                                            visualImage: '',
+                                            thermalImage: '',
+                                            labelLeft: 'Widok Standardowy',
+                                            labelRight: 'Termowizja'
+                                        };
+                                        onUpdate(section.id, {
+                                            thermalSections: [...(section.thermalSections || []), newSection]
+                                        });
+                                    }}
+                                    className="px-3 py-1.5 bg-yellow-500/20 border border-yellow-500/30 text-yellow-400 text-xs font-bold rounded hover:bg-yellow-500/30 transition-all flex items-center gap-1"
                                 >
-                                    <ImageIcon className="w-4 h-4" /> Wybierz Zdjęcie
+                                    <Plus size={14} /> Dodaj kategorię
                                 </button>
-                                <input
-                                    type="text"
-                                    placeholder="Etykieta (np. Termowizja)"
-                                    value={section.labelRight || ''}
-                                    onChange={(e) => onUpdate(section.id, { labelRight: e.target.value })}
-                                    className="w-full mt-3 bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-xs text-white"
-                                />
+                            </div>
+
+                            {section.thermalSections && section.thermalSections.length > 0 ? (
+                                <div className="space-y-6">
+                                    {section.thermalSections.map((ts, tsIndex) => (
+                                        <div key={ts.id} className="bg-zinc-800/50 p-4 rounded-lg border border-zinc-700 space-y-4">
+                                            <div className="flex items-center justify-between mb-4">
+                                                <input
+                                                    type="text"
+                                                    value={ts.category}
+                                                    onChange={(e) => {
+                                                        const updated = [...(section.thermalSections || [])];
+                                                        updated[tsIndex] = { ...ts, category: e.target.value };
+                                                        onUpdate(section.id, { thermalSections: updated });
+                                                    }}
+                                                    className="flex-1 bg-zinc-700 border border-zinc-600 rounded px-3 py-1.5 text-sm text-white font-medium"
+                                                    placeholder="Nazwa kategorii"
+                                                />
+                                                <button
+                                                    onClick={() => {
+                                                        const updated = section.thermalSections!.filter((_, i) => i !== tsIndex);
+                                                        onUpdate(section.id, { thermalSections: updated });
+                                                    }}
+                                                    className="ml-2 p-1.5 text-red-400 hover:bg-red-500/10 rounded transition-all"
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-4">
+                                                {/* Visual Image */}
+                                                <div>
+                                                    <label className="text-xs text-zinc-400 mb-1.5 block font-bold">Widok Standardowy</label>
+                                                    {ts.visualImage ? (
+                                                        <img src={ts.visualImage} alt="Visual" className="w-full aspect-video object-cover rounded mb-2 border border-zinc-600" />
+                                                    ) : (
+                                                        <div className="w-full aspect-video bg-zinc-700 rounded border-2 border-dashed border-zinc-600 flex items-center justify-center text-zinc-500 text-xs mb-2">
+                                                            Brak zdjęcia
+                                                        </div>
+                                                    )}
+                                                    <button
+                                                        onClick={() => { setMediaPickerTarget('single'); setMediaPickerContext('visual'); setSectionEditIndex(tsIndex); setShowMediaPicker(true); }}
+                                                        className="w-full px-3 py-1.5 bg-zinc-700 border border-zinc-600 rounded text-xs font-medium text-zinc-300 hover:bg-zinc-600 transition-all"
+                                                    >
+                                                        Wybierz zdjęcie
+                                                    </button>
+                                                </div>
+
+                                                {/* Thermal Image */}
+                                                <div>
+                                                    <label className="text-xs text-zinc-400 mb-1.5 block font-bold">Widok Termowizyjny</label>
+                                                    {ts.thermalImage ? (
+                                                        <img src={ts.thermalImage} alt="Thermal" className="w-full aspect-video object-cover rounded mb-2 border border-zinc-600" />
+                                                    ) : (
+                                                        <div className="w-full aspect-video bg-zinc-700 rounded border-2 border-dashed border-zinc-600 flex items-center justify-center text-zinc-500 text-xs mb-2">
+                                                            Brak zdjęcia
+                                                        </div>
+                                                    )}
+                                                    <button
+                                                        onClick={() => { setMediaPickerTarget('single'); setMediaPickerContext('thermal'); setSectionEditIndex(tsIndex); setShowMediaPicker(true); }}
+                                                        className="w-full px-3 py-1.5 bg-zinc-700 border border-zinc-600 rounded text-xs font-medium text-zinc-300 hover:bg-zinc-600 transition-all"
+                                                    >
+                                                        Wybierz zdjęcie
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <input
+                                                    type="text"
+                                                    value={ts.labelLeft || ''}
+                                                    onChange={(e) => {
+                                                        const updated = [...(section.thermalSections || [])];
+                                                        updated[tsIndex] = { ...ts, labelLeft: e.target.value };
+                                                        onUpdate(section.id, { thermalSections: updated });
+                                                    }}
+                                                    placeholder="Etykieta lewej strony"
+                                                    className="bg-zinc-700 border border-zinc-600 rounded px-3 py-1.5 text-xs text-white"
+                                                />
+                                                <input
+                                                    type="text"
+                                                    value={ts.labelRight || ''}
+                                                    onChange={(e) => {
+                                                        const updated = [...(section.thermalSections || [])];
+                                                        updated[tsIndex] = { ...ts, labelRight: e.target.value };
+                                                        onUpdate(section.id, { thermalSections: updated });
+                                                    }}
+                                                    placeholder="Etykieta prawej strony"
+                                                    className="bg-zinc-700 border border-zinc-600 rounded px-3 py-1.5 text-xs text-white"
+                                                />
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="text-center py-8 border-2 border-dashed border-zinc-700 rounded-lg">
+                                    <p className="text-zinc-500 text-sm">Dodaj pierwszą kategorię termowizji</p>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Single Section Fallback */}
+                        <div className="border-t border-zinc-700 pt-6">
+                            <h4 className="text-xs text-zinc-400 mb-4 font-bold uppercase">Fallback dla pojedynczej sekcji</h4>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-xs text-zinc-400 mb-2 block font-bold">Zdjęcie Standardowe</label>
+                                    {section.image ? (
+                                        <img src={section.image} alt="Visual" className="w-full aspect-video object-cover rounded mb-2 border border-zinc-700" />
+                                    ) : (
+                                        <div className="w-full aspect-video bg-zinc-800 rounded border-2 border-dashed border-zinc-700 flex items-center justify-center text-zinc-600 text-xs mb-2">
+                                            Brak zdjęcia
+                                        </div>
+                                    )}
+                                    <button
+                                        onClick={() => { setMediaPickerTarget('single'); setMediaPickerContext('visual'); setSectionEditIndex(-1); setShowMediaPicker(true); }}
+                                        className="w-full px-3 py-1.5 bg-zinc-800 border border-zinc-700 rounded text-xs font-medium text-zinc-300 hover:bg-zinc-700 transition-all"
+                                    >
+                                        Wybierz zdjęcie
+                                    </button>
+                                </div>
+                                <div>
+                                    <label className="text-xs text-zinc-400 mb-2 block font-bold">Zdjęcie Termowizyjne</label>
+                                    {section.thermalImage ? (
+                                        <img src={section.thermalImage} alt="Thermal" className="w-full aspect-video object-cover rounded mb-2 border border-zinc-700" />
+                                    ) : (
+                                        <div className="w-full aspect-video bg-zinc-800 rounded border-2 border-dashed border-zinc-700 flex items-center justify-center text-zinc-600 text-xs mb-2">
+                                            Brak zdjęcia
+                                        </div>
+                                    )}
+                                    <button
+                                        onClick={() => { setMediaPickerTarget('single'); setMediaPickerContext('thermal'); setSectionEditIndex(-1); setShowMediaPicker(true); }}
+                                        className="w-full px-3 py-1.5 bg-zinc-800 border border-zinc-700 rounded text-xs font-medium text-zinc-300 hover:bg-zinc-700 transition-all"
+                                    >
+                                        Wybierz zdjęcie
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>

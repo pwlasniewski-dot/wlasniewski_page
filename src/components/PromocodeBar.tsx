@@ -45,19 +45,23 @@ export default function PromocodeBar({
         // Otherwise fetch value from API (automatic mode)
         const fetchSettings = async () => {
             try {
-                const res = await fetch('/api/settings/public'); // Using public endpoint used by Navbar
+                const res = await fetch('/api/settings/public');
                 const data = await res.json();
-                if (data && data.promo_code && data.promo_code_discount_enabled === 'true') {
+                const settings = data?.settings;
+
+                if (settings && (settings.promo_code_discount_enabled === true || settings.promo_code_discount_enabled === 'true')) {
                     // Check expiry
-                    if (data.promo_code_expiry && new Date(data.promo_code_expiry) < new Date()) {
+                    if (settings.promo_code_expiry && new Date(settings.promo_code_expiry) < new Date()) {
                         return; // Expired
                     }
 
+                    const codeToUse = settings.promo_code || 'WYZWANIE20';
+
                     setFetchedSettings({
-                        code: data.promo_code,
-                        discount: data.promo_code_discount_amount || 10,
-                        discountType: data.promo_code_discount_type || 'percentage',
-                        expiryDate: data.promo_code_expiry
+                        code: codeToUse,
+                        discount: settings.promo_code_discount_amount || 10,
+                        discountType: settings.promo_code_discount_type || 'percentage',
+                        expiryDate: settings.promo_code_expiry
                     });
                 }
             } catch (error) {
@@ -95,7 +99,7 @@ export default function PromocodeBar({
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
                 transition={{ duration: 0.3 }}
-                className="fixed top-32 left-4 right-4 sm:left-auto sm:right-8 z-[100] max-w-sm"
+                className="fixed top-40 left-4 right-4 sm:left-auto sm:right-8 z-[9999] max-w-sm"
             >
                 <div className="relative overflow-hidden rounded-2xl shadow-2xl">
                     {/* Background gradient */}

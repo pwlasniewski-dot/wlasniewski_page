@@ -120,6 +120,7 @@ interface EmailData {
     to: string;
     subject: string;
     replyTo?: string;
+    bcc?: string;
     text?: string;
     template?: string;
     data?: Record<string, any>;
@@ -128,10 +129,10 @@ interface EmailData {
 
 export async function sendEmail(emailData: EmailData) {
     try {
-        const { to, subject, replyTo, text, template, data, html } = emailData;
+        const { to, subject, replyTo, bcc, text, template, data, html } = emailData;
 
         // Log attempt
-        await logSystem('INFO', 'EMAIL', 'Attempting to send email', { to, subject, replyTo });
+        await logSystem('INFO', 'EMAIL', 'Attempting to send email', { to, subject, replyTo, bcc });
 
         // Get SMTP config (from database or env vars)
         const config = await getSMTPConfig();
@@ -159,6 +160,7 @@ export async function sendEmail(emailData: EmailData) {
         const result = await transport.sendMail({
             from: config.from,
             to,
+            bcc,
             subject,
             html: emailHtml,
         });
