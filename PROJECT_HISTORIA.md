@@ -349,4 +349,21 @@ Business Insights
 *   **Construction Progress** (Dokumentacja budowy)
 *   **Seasonal Discounts** (Zima z Dronem)
 
-**Status**: COMPLETE & PUSHED TO MAIN
+
+### [2025-12-21] FIX: Netlify Bundle Size & Homepage Recovery
+
+**Problem (1):** Netlify Deployment Failed (Function size > 250MB).
+- **Przyczyna**: Bundle zawierał 3 silniki Prisma (Windows, Linux, Native) oraz zbędne biblioteki.
+- **Rozwiązanie**:
+  - Usunięto `aws-sdk` (v2) z `package.json` i `netlify.toml` (oszczędność ~80MB).
+  - Usunięto `mysql2` (zbędna libka).
+  - Zmieniono `binaryTargets` w `schema.prisma` na `["native"]` (Netlify pobiera tylko Linux).
+
+**Problem (2):** Strona Główna pusta po awarii bazy.
+- **Przyczyna**: Tabela `Page` (slug: `strona-glowna`) została wyczyszczona, brakowało struktury JSON (`home_sections`).
+- **Rozwiązanie**:
+  - Uruchomiono skrypt `recover_homepage.js`.
+  - Odtworzono domyślną strukturę (slider, o mnie, funkcje).
+  - Wymaga ponownego wyboru zdjęć w Panelu Admina.
+
+**Status**: Kod gotowy do wypchnięcia (Build pending verification).
