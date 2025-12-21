@@ -1,6 +1,6 @@
 generator client {
   provider = "prisma-client-js"
-  binaryTargets = ["native"]
+  // binaryTargets removed - using Prisma Data Proxy for serverless deployment
 }
 
 datasource db {

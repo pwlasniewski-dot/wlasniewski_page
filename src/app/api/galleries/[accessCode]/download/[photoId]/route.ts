@@ -1,10 +1,8 @@
 // API Route: GET /api/galleries/[accessCode]/download/[photoId]
-// Download a standard photo
+// Download a photo - redirect to S3 URL
 
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
-import fs from 'fs/promises';
-import path from 'path';
 
 export async function GET(
     request: NextRequest,
@@ -39,6 +37,12 @@ export async function GET(
             where: {
                 id: Number(photoId),
                 gallery_id: gallery.id
+            },
+            select: {
+                id: true,
+                is_standard: true,
+                file_url: true,
+                s3_url: true
             }
         });
 
@@ -76,16 +80,14 @@ export async function GET(
             }
         }
 
-        // Read file
-        const filePath = path.join(process.cwd(), 'public', photo.file_url);
-        const fileBuffer = await fs.readFile(filePath);
-
-        // Return file
-        return new NextResponse(fileBuffer, {
+        // Read file from S3
+        // Photos are stored in S3, redirect to the S3 URL for download
+        const downloadUrl = photo.s3_url || photo.file_url;
+        
+        // Return redirect to S3 with download parameter
+        return NextResponse.redirect(downloadUrl, {
             headers: {
-                'Content-Type': 'image/jpeg',
                 'Content-Disposition': `attachment; filename="photo-${photo.id}.jpg"`,
-                'Content-Length': fileBuffer.length.toString(),
             }
         });
     } catch (error) {
