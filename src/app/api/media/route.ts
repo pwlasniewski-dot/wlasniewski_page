@@ -3,52 +3,54 @@ import prisma from '@/lib/db/prisma';
 import { withAuth } from '@/lib/auth/middleware';
 
 export async function GET(request: NextRequest) {
-    try {
-        const { searchParams } = new URL(request.url);
-        const mode = searchParams.get('mode');
-        const folder = searchParams.get('folder');
+    return withAuth(request, async (req) => {
+        try {
+            const { searchParams } = new URL(request.url);
+            const mode = searchParams.get('mode');
+            const folder = searchParams.get('folder');
 
-        // Mode: Get distinct folders
-        if (mode === 'folders') {
-            const folders = await prisma.mediaLibrary.groupBy({
-                by: ['folder'],
-                _count: {
-                    id: true
-                }
+            // Mode: Get distinct folders
+            if (mode === 'folders') {
+                const folders = await prisma.mediaLibrary.groupBy({
+                    by: ['folder'],
+                    _count: {
+                        id: true
+                    }
+                });
+
+                return NextResponse.json({
+                    success: true,
+                    folders: folders.map(f => ({ name: f.folder, count: f._count.id }))
+                });
+            }
+
+            // Standard: Get media with optional folder filter
+            const whereClause: any = {};
+            if (folder) {
+                whereClause.folder = folder;
+            }
+
+            const media = await prisma.mediaLibrary.findMany({
+                where: whereClause,
+                orderBy: { created_at: 'desc' },
             });
 
-            return NextResponse.json({
-                success: true,
-                folders: folders.map(f => ({ name: f.folder, count: f._count.id }))
-            });
+            // Convert BigInt to Number for JSON serialization
+            const serializedMedia = media.map(item => ({
+                ...item,
+                id: Number(item.id),
+                file_size: Number(item.file_size),
+                uploaded_by: item.uploaded_by ? Number(item.uploaded_by) : null,
+            }));
+
+            return NextResponse.json({ success: true, media: serializedMedia });
+        } catch (error: any) {
+            return NextResponse.json(
+                { error: 'Failed to fetch media' },
+                { status: 500 }
+            );
         }
-
-        // Standard: Get media with optional folder filter
-        const whereClause: any = {};
-        if (folder) {
-            whereClause.folder = folder;
-        }
-
-        const media = await prisma.mediaLibrary.findMany({
-            where: whereClause,
-            orderBy: { created_at: 'desc' },
-        });
-
-        // Convert BigInt to Number for JSON serialization
-        const serializedMedia = media.map(item => ({
-            ...item,
-            id: Number(item.id),
-            file_size: Number(item.file_size),
-            uploaded_by: item.uploaded_by ? Number(item.uploaded_by) : null,
-        }));
-
-        return NextResponse.json({ success: true, media: serializedMedia });
-    } catch (error: any) {
-        return NextResponse.json(
-            { error: 'Failed to fetch media' },
-            { status: 500 }
-        );
-    }
+    });
 }
 
 export async function PATCH(request: NextRequest) {
