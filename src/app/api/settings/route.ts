@@ -151,29 +151,41 @@ export async function POST(request: NextRequest) {
                 } else {
                     kvUpdates[key] = String(value);
                 }
-                console.log('[API] Computed columnUpdates:', JSON.stringify(columnUpdates, null, 2));
-
             }
+
+            // ✅ FIX: Moved console.log OUTSIDE the for loop
+            console.log('[API] Computed columnUpdates:', JSON.stringify(columnUpdates, null, 2));
+
 
             // 1. Update columns on the first record (or create if none)
             const firstSetting = await prisma.setting.findFirst({
                 orderBy: { id: 'asc' }
             });
 
-            if (firstSetting) {
-                const updated = await prisma.setting.update({
-                    where: { id: firstSetting.id },
-                    data: columnUpdates
-                });
-            } else {
-                // Should not happen usually, but create if empty
-                await prisma.setting.create({
-                    data: {
-                        setting_key: 'system_init',
-                        setting_value: 'true',
-                        ...columnUpdates
-                    }
-                });
+            try {
+                if (firstSetting) {
+                    const updated = await prisma.setting.update({
+                        where: { id: firstSetting.id },
+                        data: columnUpdates
+                    });
+                    console.log('[API] Settings updated successfully. Record ID:', updated.id);
+                } else {
+                    // Should not happen usually, but create if empty
+                    const created = await prisma.setting.create({
+                        data: {
+                            setting_key: 'system_init',
+                            setting_value: 'true',
+                            ...columnUpdates
+                        }
+                    });
+                    console.log('[API] Settings record created. ID:', created.id);
+                }
+            } catch (error: any) {
+                console.error('[API] Failed to update settings in database:', error);
+                return NextResponse.json({
+                    success: false,
+                    error: `Database update failed: ${error.message}`
+                }, { status: 500 });
             }
 
             // 2. Upsert Key/Value pairs
