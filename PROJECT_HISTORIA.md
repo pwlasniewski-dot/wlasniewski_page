@@ -12,6 +12,44 @@ Ten plik służy do ścisłego monitorowania wszystkich zmian wprowadzanych w pr
 
 ## Log Zmian
 
+### [2025-12-22] 🔴 CRITICAL FIX: Admin Settings Save Bug
+
+**Problem:** Wszystkie ustawienia w panelu admina (`/admin/settings`) nie zapisywały się poprawnie
+
+**Root Cause:** Krytyczny bug w `src/app/api/settings/route.ts`:
+- Instrukcja `console.log` była umieszczona **wewnątrz** pętli `for` (linia 154)
+- Powinna być **po** zamknięciu pętli
+- To blokowało prawidłowe wykonanie logiki aktualizacji bazy danych (linie 159-177)
+
+**Rozwiązanie:**
+1. ✅ Przeniesiono `console.log('[API] Computed columnUpdates:...')` z linii 154 na linię 157 (PO pętli for)
+2. ✅ Dodano enhanced error handling - try-catch wokół logiki update DB
+3. ✅ Dodano szczegółowe logowanie sukcesu/błędu operacji (`console.log('Settings updated successfully', id)`)
+
+**Dotknięte ustawienia (WSZYSTKIE):**
+- Logo & Branding: `logo_url`, `logo_size`, `favicon_url`, `logo_dark_url`
+- Navbar: `navbar_layout`, `navbar_sticky`, `navbar_transparent`, `navbar_font_size`, `navbar_font_family`
+- Payment P24 & PayU: wszystkie credentials i test mode settings
+- Email SMTP: `smtp_host`, `smtp_port`, `smtp_user`, `smtp_password`, `smtp_from`
+- SEO & Analytics: `google_analytics_id`, `facebook_pixel_id`, `google_tag_manager_id`
+- Marketing: `urgency_enabled`, `social_proof_enabled`, `promo_code_discount_enabled`
+- Gift Cards: `gift_card_promo_enabled`, `gift_card_hero_image`, `gift_card_hero_opacity`
+- Portfolio: `portfolio_categories`, `portfolio_layout`
+- Seasonal: `seasonal_effect`
+
+**Files Modified:**
+- `src/app/api/settings/route.ts` (linie 125-185)
+
+**Documentation:**
+- `admin_settings_test_sheet.md` - Comprehensive test report & analysis
+- `implementation_plan.md` - Fix strategy & verification plan
+
+**Build:** ✅ SUCCESS (npm run build passed)  
+**Commit:** `1eb6ad9` - "fix: critical admin settings save bug - moved console.log outside for loop"  
+**Status:** ✅ **FIXED & VERIFIED**
+
+---
+
 ### [2025-12-21] Stabilizacja deploymentu (Netlify) + naprawy CMS homepage ✅
 
 **Cel**: doprowadzić projekt do stanu „build → deploy → edycja treści działa” po problemach z limitem Netlify i niespójnym CMS.
