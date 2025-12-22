@@ -102,6 +102,11 @@ export default function SettingsPage() {
                 return;
             }
 
+            if (!res.ok) {
+                console.error(`Failed to fetch settings: ${res.status} ${res.statusText}`);
+                throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+            }
+
             const data = await res.json();
             if (data.success) {
                 setSettings(prev => {
@@ -116,6 +121,7 @@ export default function SettingsPage() {
                     if (newSettings.gift_card_promo_enabled !== undefined) newSettings.gift_card_promo_enabled = normalizeBoolean(newSettings.gift_card_promo_enabled);
                     if (newSettings.navbar_sticky !== undefined) newSettings.navbar_sticky = normalizeBoolean(newSettings.navbar_sticky);
                     if (newSettings.navbar_transparent !== undefined) newSettings.navbar_transparent = normalizeBoolean(newSettings.navbar_transparent);
+                    if (newSettings.social_proof_enabled !== undefined) newSettings.social_proof_enabled = normalizeBoolean(newSettings.social_proof_enabled);
 
                     // Parse portfolio_categories if it's a string
                     if (typeof newSettings.portfolio_categories === 'string') {
@@ -135,6 +141,11 @@ export default function SettingsPage() {
 
             // Fetch challenge settings
             const challengeRes = await fetch('/api/photo-challenge/settings', { headers, cache: 'no-store' });
+            if (!challengeRes.ok) {
+                console.error(`Failed to fetch challenge settings: ${challengeRes.status}`);
+                // Don't throw, just skip challenge settings
+                return;
+            }
             const challengeData = await challengeRes.json();
             if (challengeData.success) {
                 setChallengeSettings(prev => ({ ...prev, ...challengeData.settings }));
