@@ -12,6 +12,37 @@ Ten plik służy do ścisłego monitorowania wszystkich zmian wprowadzanych w pr
 
 ## Log Zmian
 
+### [2025-12-22] 🚨 PRODUCTION EMERGENCY FIX: Settings API 500 Error
+
+**Problem:** `/api/settings` i `/api/settings/public` zwracały 500 Internal Server Error na produkcji (wlasniewski.pl)
+
+**Root Cause:** Prisma error P2022 - brakująca kolumna `social_proof_enabled` w produkcyjnej bazie danych
+```
+PrismaClientKnownRequestError: P2022
+meta: { modelName: 'Setting', column: 'settings.social_proof_enabled' }
+```
+
+**Analiza:**
+- Wcześniejszy database wipe (2025-12-21) usunął dane + niektóre kolumny
+- Schema lokalna zawierała `social_proof_enabled: Boolean`
+- Produkcyjna baza NIE MIAŁA tej kolumny
+- Kod lokalnie działał, produkcja crashowała
+
+**Rozwiązanie:**
+1. ✅ Diagnoza: `node scripts/emergency-seed-settings.js` → P2022 error
+2. ✅ SQL Fix: `ALTER TABLE settings ADD COLUMN IF NOT EXISTS social_proof_enabled BOOLEAN DEFAULT true`
+3. ✅ Wykonanie: `npx prisma db execute --file scripts/fix-production-settings-columns.sql`
+4. ✅ Weryfikacja: `/api/settings/public` zwraca `success: true`
+
+**Files Created:**
+- `scripts/emergency-seed-settings.js` - Seed script (settings rekord już istniał)
+- `scripts/fix-production-settings-columns.sql` - SQL fix dla brakującej kolumny
+- `production_emergency_fix.md` - Szczegółowa dokumentacja incydentu
+
+**Status:** ✅ **FIXED** - Production API endpoints działają poprawnie
+
+---
+
 ### [2025-12-22] 🔴 CRITICAL FIX: Admin Settings Save Bug
 
 **Problem:** Wszystkie ustawienia w panelu admina (`/admin/settings`) nie zapisywały się poprawnie
