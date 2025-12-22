@@ -114,56 +114,56 @@ export default function SocialProofBanner({ stats, message }: SocialProofBannerP
                     className="relative w-full bg-gradient-to-r from-black via-gold-900/20 to-black border-y border-gold-400/30 py-2 md:py-4 px-4 md:px-6 z-[40]"
                 >
                     <div className="max-w-6xl mx-auto">
-                        <div className="flex flex-col md:flex-row items-center justify-between gap-4 md:gap-6">
-                            <div className="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-6 text-center flex-1">
-                    {/* Main Message */}
-                    <div className="flex items-center gap-2">
-                        <span className="text-2xl">🎉</span>
-                        <p className="text-gold-100 text-lg md:text-xl font-semibold">
-                            {displayMessage}
-                        </p>
-                    </div>
-
-                    {/* Divider */}
-                    <div className="hidden md:block w-px h-8 bg-gold-400/30" />
-
-                    {/* Completed Sessions */}
-                    <div className="flex items-center gap-2">
-                        <span className="text-2xl">📸</span>
-                        <p className="text-gray-300">
-                            <span className="text-gold-400 font-bold text-xl">{displayStats.completed}</span>
-                            {' '}zakończonych sesji
-                        </p>
-                    </div>
-
-                    {/* Remaining Slots (if enabled) */}
-                    {activeStats.remaining_monthly_slots !== undefined && (
-                        <>
-                            <div className="hidden md:block w-px h-8 bg-gold-400/30" />
-                            <div className="flex items-center gap-2">
-                                <span className="text-2xl">⚡</span>
-                                <p className="text-gray-300">
-                                    Zostało tylko{' '}
-                                    <span className="text-gold-400 font-bold text-xl">
-                                        {activeStats.remaining_monthly_slots}
-                                    </span>
-                                    {' '}miejsc w tym miesiącu
-                                </p>
-                            </div>
-                        </>
-                    )}
-                            </div>
-                            
-                            {/* Close Button */}
+                        <div className="flex items-center gap-2 md:gap-4">
+                            {/* Close Button - LEFT SIDE to avoid chat widget overlap */}
                             <button
                                 onClick={handleClose}
-                                className="flex-shrink-0 p-1.5 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-colors self-start md:self-center"
+                                className="flex-shrink-0 p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
                                 aria-label="Zamknij banner"
                             >
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                 </svg>
                             </button>
+
+                            <div className="flex flex-col md:flex-row items-center justify-center gap-2 md:gap-6 text-center flex-1 min-w-0">
+                                {/* Main Message */}
+                                <div className="flex items-center gap-2">
+                                    <span className="text-2xl">🎉</span>
+                                    <p className="text-gold-100 text-sm md:text-xl font-semibold">
+                                        {displayMessage}
+                                    </p>
+                                </div>
+
+                                {/* Divider */}
+                                <div className="hidden md:block w-px h-8 bg-gold-400/30" />
+
+                                {/* Completed Sessions */}
+                                <div className="flex items-center gap-2">
+                                    <span className="text-2xl">📸</span>
+                                    <p className="text-gray-300">
+                                        <span className="text-gold-400 font-bold text-xl">{displayStats.completed}</span>
+                                        {' '}zakończonych sesji
+                                    </p>
+                                </div>
+
+                                {/* Remaining Slots (if enabled) */}
+                                {activeStats.remaining_monthly_slots !== undefined && (
+                                    <>
+                                        <div className="hidden md:block w-px h-8 bg-gold-400/30" />
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-2xl">⚡</span>
+                                            <p className="text-gray-300">
+                                                Zostało tylko{' '}
+                                                <span className="text-gold-400 font-bold text-xl">
+                                                    {activeStats.remaining_monthly_slots}
+                                                </span>
+                                                {' '}miejsc w tym miesiącu
+                                            </p>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </motion.div>

@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
                 'navbar_font_size', 'logo_size', 'smtp_port',
                 'urgency_slots_remaining', 'social_proof_total_clients',
                 'booking_min_days_ahead', 'gift_card_promo_rotation_interval',
-                'gift_card_hero_opacity'
+                'gift_card_hero_opacity', 'promo_code_discount_amount'
             ];
 
             for (const [key, value] of Object.entries(body)) {
@@ -142,8 +142,12 @@ export async function POST(request: NextRequest) {
                     if (booleanFields.includes(key)) {
                         columnUpdates[key] = value === 'true' || value === true;
                     } else if (numericFields.includes(key)) {
-                        // Convert to number
-                        columnUpdates[key] = Number(value);
+                        // Convert to number, but handle empty strings
+                        if (value === '' || value === null || value === undefined) {
+                            columnUpdates[key] = null;
+                        } else {
+                            columnUpdates[key] = Number(value);
+                        }
                     } else {
                         columnUpdates[key] = value;
                     }

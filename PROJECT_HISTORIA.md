@@ -12,6 +12,37 @@ Ten plik służy do ścisłego monitorowania wszystkich zmian wprowadzanych w pr
 
 ## Log Zmian
 
+### [2025-12-22] 🎨 FIX: GiftCardPromoBar Visibility Issue
+
+**Problem:** Banerek z kartami podarunkowymi (floating sidebar z lewej strony) nie wyświetlał się na stronie, mimo że był poprawnie załadowany i renderowany
+
+**Root Cause:** 
+1. Tailwind CSS nie ma domyślnej klasy `z-60` - używanie jej powodowało że z-index nie był aplikowany
+2. Banerek był renderowany ale niewidoczny (z-index: 0 lub niski)
+
+**Rozwiązanie:**
+- ✅ Zmieniono z Tailwind `z-60` na inline style `zIndex: 9998`
+- ✅ Dodano debug logging do diagnozowania (później usunięte)
+- ✅ Usunięto localStorage block poprzez `/clear-promo` page
+
+**Lokalizacja:** `src/components/GiftCardPromoBar.tsx` - linia 115
+
+**Verification:** 
+- Banerek pojawia się z lewej strony na `localhost:3000`
+- Pokazuje 5 kart podarunkowych z auto-rotacją co 5s
+- Działa przycisk zamknięcia i nawigacja
+
+**Files Modified:**
+- `src/components/GiftCardPromoBar.tsx`
+- `src/components/PromocodeBar.tsx` (z-index lowered to z-50)
+- `src/app/clear-promo/page.tsx` (narzędzie debug do czyszczenia localStorage)
+
+**Lesson Learned:** Tailwind nie ma wszystkich klas z-index (np. z-60, z-70). Dla niestandardowych wartości używaj inline `style={{ zIndex: value }}`.
+
+**Status:** ✅ **FIXED** - Banerek działa poprawnie
+
+---
+
 ### [2025-12-22] 🚨 PRODUCTION EMERGENCY FIX: Settings API 500 Error
 
 **Problem:** `/api/settings` i `/api/settings/public` zwracały 500 Internal Server Error na produkcji (wlasniewski.pl)

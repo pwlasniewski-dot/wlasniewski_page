@@ -9,6 +9,7 @@ import {
     Camera,
     FileText,
     Megaphone,
+    Tag,
     MessageSquare,
     BarChart3,
     Settings,
@@ -46,6 +47,7 @@ const navigation = [
     { name: 'Blog', href: '/admin/blog', icon: FileText },
     { name: 'Kody rabatowe', href: '/admin/socio', icon: Megaphone },
     { name: 'Kody promocyjne', href: '/admin/promo-codes', icon: Sparkles },
+    { name: 'Banery', href: '/admin/banners', icon: Tag },
     { name: 'Opinie', href: '/admin/testimonials', icon: MessageSquare },
     {
         name: 'Karty podarunkowe',

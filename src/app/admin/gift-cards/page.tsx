@@ -634,29 +634,6 @@ Otrzymałeś kartę podarunkową na sesję fotograficzną!
                         </div>
                     </div>
 
-                    {/* Gift Card Promo Bar Toggle */}
-                    <div className="bg-gradient-to-r from-blue-900 to-blue-800 border border-blue-700 rounded-lg p-6 mb-8">
-                        <div className="flex items-center justify-between">
-                            <div className="flex-1">
-                                <h3 className="text-lg font-bold text-white mb-2">📢 Pasek Promocyjny Kart Podarunkowych</h3>
-                                <p className="text-blue-200">Włącz pasek na górze strony aby promować karty podarunkowe (widoczny dla wszystkich odwiedzających)</p>
-                            </div>
-                            <button
-                                onClick={togglePromoBar}
-                                className={`ml-6 px-6 py-3 font-bold rounded-lg transition-all flex items-center gap-2 whitespace-nowrap ${promoBarEnabled
-                                    ? 'bg-green-500 hover:bg-green-600 text-white'
-                                    : 'bg-zinc-700 hover:bg-zinc-600 text-zinc-200'
-                                    }`}
-                            >
-                                {promoBarEnabled ? (
-                                    <>✅ Włączony</>
-                                ) : (
-                                    <>⭕ Wyłączony</>
-                                )}
-                            </button>
-                        </div>
-                    </div>
-
                     {/* Global Discount Settings */}
                     <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6 mb-8">
                         <div className="flex items-center justify-between mb-6">

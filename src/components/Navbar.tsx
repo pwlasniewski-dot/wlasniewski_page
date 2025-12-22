@@ -99,13 +99,6 @@ export default function Navbar() {
                 setIsScrolled(isScrolledDown);
             }
 
-            // Home: keep navbar visible (transparent overlay over hero)
-            if (isHome) {
-                if (!isNavbarVisible) setIsNavbarVisible(true);
-                setLastScrollY(currentScrollY);
-                return;
-            }
-
             // Always show navbar at the very top (fix for flash/hiding glitches)
             if (currentScrollY <= 0) {
                 if (!isNavbarVisible) setIsNavbarVisible(true);

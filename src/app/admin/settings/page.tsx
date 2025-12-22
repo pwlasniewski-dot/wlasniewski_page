@@ -167,10 +167,10 @@ export default function SettingsPage() {
             const settingsToSave = { ...settings } as Record<string, any>;
 
             // Convert boolean fields to actual booleans
-            const booleanFields = ['urgency_enabled', 'promo_code_discount_enabled', 'gift_card_promo_enabled', 
-                                   'navbar_sticky', 'navbar_transparent', 'p24_test_mode', 'social_proof_enabled',
-                                   'p24_method_blik', 'p24_method_card', 'p24_method_transfer', 'booking_require_payment'];
-            
+            const booleanFields = ['urgency_enabled', 'promo_code_discount_enabled', 'gift_card_promo_enabled',
+                'navbar_sticky', 'navbar_transparent', 'p24_test_mode', 'social_proof_enabled',
+                'p24_method_blik', 'p24_method_card', 'p24_method_transfer', 'booking_require_payment'];
+
             for (const field of booleanFields) {
                 if (field in settingsToSave) {
                     settingsToSave[field] = settingsToSave[field] === 'true' || settingsToSave[field] === true;
@@ -179,8 +179,8 @@ export default function SettingsPage() {
 
             // Convert numeric fields to numbers
             const numericFields = ['navbar_font_size', 'logo_size', 'smtp_port', 'urgency_slots_remaining',
-                                   'social_proof_total_clients', 'booking_min_days_ahead', 'gift_card_promo_rotation_interval', 'gift_card_hero_opacity'];
-            
+                'social_proof_total_clients', 'booking_min_days_ahead', 'gift_card_promo_rotation_interval', 'gift_card_hero_opacity'];
+
             for (const field of numericFields) {
                 if (field in settingsToSave && settingsToSave[field] !== '' && settingsToSave[field] !== null) {
                     settingsToSave[field] = Number(settingsToSave[field]);
@@ -413,123 +413,6 @@ export default function SettingsPage() {
                             />
                             <p className="mt-1 text-xs text-zinc-500">Liczba sfinalizowanych sesji fotograficznych (używana do obliczenia statystyk w pasku)</p>
                         </div>
-                    </div>
-                </div>
-
-                {/* Gift Card Promo Settings */}
-                <div className="bg-zinc-900 shadow rounded-lg border border-zinc-800 p-6">
-                    <h2 className="text-lg font-medium text-white mb-4">Promo Bar Kart Podarunkowych</h2>
-                    <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                            <label className="text-zinc-300">Włącz pasek promocyjny</label>
-                            <button
-                                onClick={() => setSettings(s => ({ ...s, gift_card_promo_enabled: s.gift_card_promo_enabled === 'true' ? 'false' : 'true' }))}
-                                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${String(settings.gift_card_promo_enabled) === 'true' ? 'bg-gold-500' : 'bg-zinc-700'
-                                    }`}
-                            >
-                                <span
-                                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${String(settings.gift_card_promo_enabled) === 'true' ? 'translate-x-5' : 'translate-x-0'
-                                        }`}
-                                />
-                            </button>
-                        </div>
-
-                        {/* Gift Card Shop Hero Settings */}
-                        <div className="mt-6 pt-6 border-t border-zinc-700">
-                            <h3 className="text-md font-medium text-white mb-4">Tło Sklepu</h3>
-
-                            <div className="mb-6">
-                                <label className="block text-sm font-medium text-zinc-400 mb-2">Zdjęcie w tle</label>
-                                <div className="flex gap-4 items-start">
-                                    <div className="relative w-32 h-20 bg-zinc-950 rounded-lg border border-zinc-700 overflow-hidden flex-shrink-0">
-                                        {(settings as any).gift_card_hero_image ? (
-                                            <img
-                                                src={(settings as any).gift_card_hero_image}
-                                                alt="Hero"
-                                                className="w-full h-full object-cover"
-                                            />
-                                        ) : (
-                                            <div className="flex items-center justify-center h-full text-zinc-600 text-xs">Brak</div>
-                                        )}
-                                    </div>
-                                    <div className="flex flex-col gap-2">
-                                        <button
-                                            onClick={() => openImagePicker('gift_card_hero_image')}
-                                            className="px-3 py-2 bg-zinc-800 hover:bg-zinc-700 rounded text-sm transition-colors border border-zinc-600"
-                                        >
-                                            Wybierz zdjęcie
-                                        </button>
-                                        {(settings as any).gift_card_hero_image && (
-                                            <button
-                                                onClick={() => setSettings(s => ({ ...s, gift_card_hero_image: '' }))}
-                                                className="px-3 py-2 bg-red-900/30 text-red-400 hover:bg-red-900/50 rounded text-sm transition-colors border border-red-900/50"
-                                            >
-                                                Usuń
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div>
-                                <div className="flex justify-between mb-2">
-                                    <label className="block text-sm font-medium text-zinc-400">Przezroczystość tła (przyciemnienie)</label>
-                                    <span className="text-gold-400 font-bold">
-                                        {Math.round(((settings as any).gift_card_hero_opacity || 0.6) * 100)}%
-                                    </span>
-                                </div>
-                                <input
-                                    type="range"
-                                    min="0"
-                                    max="1"
-                                    step="0.05"
-                                    value={(settings as any).gift_card_hero_opacity !== undefined ? (settings as any).gift_card_hero_opacity : 0.6}
-                                    onChange={(e) => setSettings(s => ({ ...s, gift_card_hero_opacity: parseFloat(e.target.value) }))}
-                                    className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-gold-500"
-                                />
-                                <p className="mt-1 text-xs text-zinc-500">
-                                    0% = brak przyciemnienia (jasne), 100% = pełna czerń (ciemne). Ustaw ok 60-80% dla czytelności tekstu.
-                                </p>
-                            </div>
-                        </div>
-
-                        {String(settings.gift_card_promo_enabled) === 'true' && (
-                            <div className="grid grid-cols-1 gap-4 mt-4 pt-4 border-t border-zinc-700">
-                                <div>
-                                    <label className="block text-sm font-medium text-zinc-400 mb-1">Tytuł sekcji</label>
-                                    <input
-                                        type="text"
-                                        value={settings.gift_card_promo_title || ''}
-                                        onChange={e => setSettings(s => ({ ...s, gift_card_promo_title: e.target.value }))}
-                                        className="block w-full rounded-md border-zinc-700 bg-zinc-800 text-white shadow-sm focus:border-gold-500 focus:ring-gold-500 sm:text-sm px-3 py-2"
-                                        placeholder="np. Karty Podarunkowe"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-zinc-400 mb-1">Opis (opcjonalny)</label>
-                                    <textarea
-                                        value={settings.gift_card_promo_description || ''}
-                                        onChange={e => setSettings(s => ({ ...s, gift_card_promo_description: e.target.value }))}
-                                        className="block w-full rounded-md border-zinc-700 bg-zinc-800 text-white shadow-sm focus:border-gold-500 focus:ring-gold-500 sm:text-sm px-3 py-2 resize-none h-20"
-                                        placeholder="Dodaj opis który będzie widoczny pod tytułem"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-zinc-400 mb-1">Interwał rotacji kart (sekundy)</label>
-                                    <input
-                                        type="number"
-                                        min="2"
-                                        max="30"
-                                        value={settings.gift_card_promo_rotation_interval || ''}
-                                        onChange={e => setSettings(s => ({ ...s, gift_card_promo_rotation_interval: e.target.value }))}
-                                        className="block w-full rounded-md border-zinc-700 bg-zinc-800 text-white shadow-sm focus:border-gold-500 focus:ring-gold-500 sm:text-sm px-3 py-2"
-                                    />
-                                    <p className="mt-1 text-xs text-zinc-500">Po ile sekund zmienić wyświetlaną kartę</p>
-                                </div>
-                            </div>
-                        )}
                     </div>
                 </div>
 

@@ -99,7 +99,7 @@ export default function PromocodeBar({
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
                 transition={{ duration: 0.3 }}
-                className="fixed top-40 left-4 right-4 sm:left-auto sm:right-8 z-[9999] max-w-sm"
+                className="fixed top-40 left-4 right-4 sm:left-auto sm:right-8 z-50 max-w-sm"
             >
                 <div className="relative overflow-hidden rounded-2xl shadow-2xl">
                     {/* Background gradient */}
