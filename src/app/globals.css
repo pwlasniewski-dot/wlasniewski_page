@@ -126,6 +126,10 @@ body {
     overflow: hidden;
     border: 3px solid #000;
     transition: border-color 0.3s ease, transform 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 1;
   }
 
   .circular-frame:hover {

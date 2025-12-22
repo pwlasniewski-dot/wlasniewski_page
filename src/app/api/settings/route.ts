@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
                 'urgency_enabled', 'promo_code_discount_enabled',
                 'gift_card_promo_enabled', 'p24_test_mode',
                 'p24_method_blik', 'p24_method_card', 'p24_method_transfer',
-                'booking_require_payment'
+                'booking_require_payment', 'social_proof_enabled'
             ];
 
             // Map of numeric fields that need type conversion

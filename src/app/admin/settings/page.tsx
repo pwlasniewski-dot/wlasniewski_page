@@ -153,7 +153,28 @@ export default function SettingsPage() {
             const token = localStorage.getItem('admin_token');
 
             // Process portfolio categories if it's a string (from input)
-            const settingsToSave = { ...settings };
+            const settingsToSave = { ...settings } as Record<string, any>;
+
+            // Convert boolean fields to actual booleans
+            const booleanFields = ['urgency_enabled', 'promo_code_discount_enabled', 'gift_card_promo_enabled', 
+                                   'navbar_sticky', 'navbar_transparent', 'p24_test_mode', 'social_proof_enabled',
+                                   'p24_method_blik', 'p24_method_card', 'p24_method_transfer', 'booking_require_payment'];
+            
+            for (const field of booleanFields) {
+                if (field in settingsToSave) {
+                    settingsToSave[field] = settingsToSave[field] === 'true' || settingsToSave[field] === true;
+                }
+            }
+
+            // Convert numeric fields to numbers
+            const numericFields = ['navbar_font_size', 'logo_size', 'smtp_port', 'urgency_slots_remaining',
+                                   'social_proof_total_clients', 'booking_min_days_ahead', 'gift_card_promo_rotation_interval', 'gift_card_hero_opacity'];
+            
+            for (const field of numericFields) {
+                if (field in settingsToSave && settingsToSave[field] !== '' && settingsToSave[field] !== null) {
+                    settingsToSave[field] = Number(settingsToSave[field]);
+                }
+            }
 
             // Fix: ensure we don't double-stringify or corrupt data
             if (typeof settings.portfolio_categories === 'string') {
