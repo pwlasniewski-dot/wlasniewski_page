@@ -3,7 +3,7 @@
 // Social Proof Banner with animated stats
 
 import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface SocialProofBannerProps {
     stats?: {
@@ -20,6 +20,16 @@ export default function SocialProofBanner({ stats, message }: SocialProofBannerP
         completed: 0,
     });
     const [localStats, setLocalStats] = useState<any>(null);
+    const [isVisible, setIsVisible] = useState(true);
+    const [isEnabled, setIsEnabled] = useState(true);
+
+    useEffect(() => {
+        // Check if user dismissed this banner
+        const isDismissed = localStorage.getItem('social-proof-banner-dismissed');
+        if (isDismissed === 'true') {
+            setIsVisible(false);
+        }
+    }, []);
 
     useEffect(() => {
         if (stats) {
@@ -32,6 +42,10 @@ export default function SocialProofBanner({ stats, message }: SocialProofBannerP
                     const res = await fetch('/api/settings/public');
                     const data = await res.json();
                     if (data.success && data.settings) {
+                        // Check if enabled in settings
+                        const enabled = data.settings.social_proof_enabled !== 'false';
+                        setIsEnabled(enabled);
+
                         const total = parseInt(data.settings.social_proof_total_clients || '100');
                         const slots = parseInt(data.settings.urgency_slots_remaining || '5');
 
@@ -79,20 +93,29 @@ export default function SocialProofBanner({ stats, message }: SocialProofBannerP
     };
 
     const activeStats = stats || localStats;
-    if (!activeStats) return null;
+    if (!activeStats || !isVisible || !isEnabled) return null;
 
     const defaultMessage = `W tym miesiącu ${displayStats.accepted} par przyjęło wyzwanie`;
     const displayMessage = message?.replace('{count}', String(displayStats.accepted)) || defaultMessage;
 
+    const handleClose = () => {
+        setIsVisible(false);
+        localStorage.setItem('social-proof-banner-dismissed', 'true');
+    };
+
     return (
-        <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="relative w-full bg-gradient-to-r from-black via-gold-900/20 to-black border-y border-gold-400/30 py-4 px-6 z-[40]"
-        >
-            <div className="max-w-6xl mx-auto">
-                <div className="flex flex-col md:flex-row items-center justify-center gap-6 text-center">
+        <AnimatePresence>
+            {isVisible && (
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 20 }}
+                    transition={{ duration: 0.6 }}
+                    className="relative w-full bg-gradient-to-r from-black via-gold-900/20 to-black border-y border-gold-400/30 py-2 md:py-4 px-4 md:px-6 z-[40]"
+                >
+                    <div className="max-w-6xl mx-auto">
+                        <div className="flex flex-col md:flex-row items-center justify-between gap-4 md:gap-6">
+                            <div className="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-6 text-center flex-1">
                     {/* Main Message */}
                     <div className="flex items-center gap-2">
                         <span className="text-2xl">🎉</span>
@@ -129,8 +152,22 @@ export default function SocialProofBanner({ stats, message }: SocialProofBannerP
                             </div>
                         </>
                     )}
-                </div>
-            </div>
-        </motion.div>
+                            </div>
+                            
+                            {/* Close Button */}
+                            <button
+                                onClick={handleClose}
+                                className="flex-shrink-0 p-1.5 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-colors self-start md:self-center"
+                                aria-label="Zamknij banner"
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </motion.div>
+            )}
+        </AnimatePresence>
     );
 }

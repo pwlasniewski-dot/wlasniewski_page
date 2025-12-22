@@ -19,7 +19,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             {!isAdmin && <GiftCardPromoBar />}
             {!isAdmin && <PromocodeBar />}
             {!isAdmin && <Navbar />}
-            <div className={`flex-1 ${isAdmin ? '' : (isHome ? 'pt-0' : 'pt-32')} ${isAdmin ? '' : 'pb-24'}`}>
+            <div className={`flex-1 ${isAdmin ? '' : (isHome ? 'pt-0' : 'pt-32')} ${isAdmin ? '' : 'pb-20 md:pb-24'}`}>
                 {!isAdmin && !isHome && <UrgencyBanner />}
                 {children}
                 {!isAdmin && <Footer />}

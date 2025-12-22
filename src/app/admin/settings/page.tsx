@@ -12,6 +12,7 @@ export default function SettingsPage() {
         urgency_enabled: 'false',
         urgency_slots_remaining: '5',
         urgency_month: 'Styczeń',
+        social_proof_enabled: 'true',
         social_proof_total_clients: '100',
         promo_code_discount_enabled: 'false',
         promo_code_discount_amount: '10',
@@ -348,6 +349,37 @@ export default function SettingsPage() {
                                     className="block w-full rounded-md border-zinc-700 bg-zinc-800 text-white shadow-sm focus:border-gold-500 focus:ring-gold-500 sm:text-sm px-3 py-2"
                                 />
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Social Proof Banner Settings */}
+                <div className="bg-zinc-900 shadow rounded-lg border border-zinc-800 p-6">
+                    <h2 className="text-lg font-medium text-white mb-4">Pasek Społeczny (Social Proof)</h2>
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                            <label className="text-zinc-300">Włącz pasek na stronie głównej (na dole)</label>
+                            <button
+                                onClick={() => setSettings(s => ({ ...s, social_proof_enabled: s.social_proof_enabled === 'true' ? 'false' : 'true' }))}
+                                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${settings.social_proof_enabled === 'true' ? 'bg-gold-500' : 'bg-zinc-700'
+                                    }`}
+                            >
+                                <span
+                                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${settings.social_proof_enabled === 'true' ? 'translate-x-5' : 'translate-x-0'
+                                        }`}
+                                />
+                            </button>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-zinc-400 mb-1">Całkowita liczba sesji (dla statystyk)</label>
+                            <input
+                                type="number"
+                                value={settings.social_proof_total_clients || ''}
+                                onChange={e => setSettings(s => ({ ...s, social_proof_total_clients: e.target.value }))}
+                                className="block w-full rounded-md border-zinc-700 bg-zinc-800 text-white shadow-sm focus:border-gold-500 focus:ring-gold-500 sm:text-sm px-3 py-2"
+                            />
+                            <p className="mt-1 text-xs text-zinc-500">Liczba sfinalizowanych sesji fotograficznych (używana do obliczenia statystyk w pasku)</p>
                         </div>
                     </div>
                 </div>

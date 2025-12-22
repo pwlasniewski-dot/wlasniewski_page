@@ -47,6 +47,7 @@ export async function GET(request: NextRequest) {
             promo_code_discount_type: settings.promo_code_discount_type,
             promo_code: "WYZWANIE20", // Hardcode for now as it's missing from schema but expected
             // Social Proof
+            social_proof_enabled: settings.social_proof_enabled,
             social_proof_total_clients: settings.social_proof_total_clients,
             // Photo Challenge
             challenge: await getChallengeSettings()

@@ -86,6 +86,7 @@ model Setting {
   promo_code_discount_amount        Int?     @default(10)
   promo_code_discount_enabled       Boolean  @default(false)
   promo_code_discount_type          String?  @default("percentage")
+  social_proof_enabled              Boolean  @default(true)
   social_proof_total_clients        Int?     @default(100)
   urgency_enabled                   Boolean  @default(false)
   urgency_month                     String?
