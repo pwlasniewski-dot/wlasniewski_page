@@ -38,9 +38,9 @@ export async function GET(request: Request) {
             type: 'Page',
             url: page.slug === 'strona-glowna' ? '/' : `/${page.slug}`,
             title: page.title,
-            meta_title: page.meta_title || page.title,
-            meta_description: page.meta_description || 'Brak opisu',
-            meta_keywords: page.meta_keywords || '',
+            meta_title: page.meta_title || page.title || 'Untitled Page',
+            meta_description: page.meta_description || '⚠️ Brak opisu meta (SEO Error)',
+            meta_keywords: page.meta_keywords || '⚠️ Brak słów kluczowych',
             updated_at: page.updated_at
         }));
 
@@ -50,7 +50,7 @@ export async function GET(request: Request) {
             url: `/portfolio/${session.category || 'unknown'}/${session.slug}`,
             title: session.title,
             meta_title: session.meta_title || `${session.title} | ${session.category || 'Portfolio'}`,
-            meta_description: session.meta_description || session.description || `Sesja: ${session.title}`,
+            meta_description: session.meta_description || session.description?.substring(0, 160) || `Sesja zdjęciowa: ${session.title}`,
             updated_at: session.session_date || session.created_at
         }));
 

@@ -15,8 +15,9 @@ import {
 } from 'lucide-react';
 
 export const metadata: Metadata = {
-    title: 'Usługi Dronem i Termowizja B2B - wlasniewski.pl',
-    description: 'Profesjonalne inspekcje termowizyjne dronem. Przeglądy fotowoltaiki, dachów i budynków przemysłowych. Precyzja i bezpieczeństwo.',
+    title: 'FOTO-DRON Przemysław Właśniewski | Termowizja Mavic 3 Thermal | Toruń, Bydgoszcz',
+    description: 'Specjalistyczne usługi dronem: termowizja Mavic 3 Thermal, inspekcje dachów, timeline budowy, koła łowieckie. Profesjonalne raporty B2B w kujawsko-pomorskim. NIP: 8781430365.',
+    keywords: ['Mavic 3 Thermal', 'Air 2 S', 'termowizja dronem toruń', 'inspekcja dachu bydgoszcz', 'analiza paneli fotowoltaicznych', 'zdjęcia okolicznościowe z drona', 'koła łowieckie termowizja'],
 };
 
 export default function DronePage() {
@@ -73,10 +74,10 @@ export default function DronePage() {
                             <Zap size={12} /> Rozwiązania B2B
                         </div>
                         <h1 className="text-5xl lg:text-7xl font-bold mb-8 leading-[1.1] tracking-tight">
-                            Zobacz to, czego <span className="text-yellow-500">niedostrzega</span> oko.
+                            Specjalistyczne <span className="text-yellow-500">usługi dronem</span> i termowizja.
                         </h1>
-                        <p className="text-zinc-400 text-lg mb-10 leading-relaxed max-w-xl">
-                            Wykorzystujemy zaawansowane drony z kamerami termowizyjnymi radiometrycznymi do inspekcji technicznych, audytów energetycznych i monitorowania infrastruktury.
+                        <p className="text-zinc-400 text-lg mb-10 leading-relaxed max-w-2xl">
+                            Jako **FOTO-DRON Przemysław Właśniewski** oferuję zaawansowaną diagnostykę z powietrza. Wykorzystujemy drona **Mavic 3 Thermal** (termowizja radiometryczna) oraz **Air 2 S** do precyzyjnych zdjęć technicznych i okolicznościowych na terenie Torunia, Bydgoszczy i całego województwa.
                         </p>
                         <div className="flex flex-wrap gap-4">
                             <a href="#kontakt" className="bg-yellow-500 hover:bg-yellow-400 text-black font-bold px-8 py-4 rounded-full transition-all flex items-center gap-2 group">
@@ -120,33 +121,33 @@ export default function DronePage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                         <ServiceCard
                             icon={<Zap />}
-                            title="Fotowoltaika"
-                            description="Wykrywanie hot-spotów, uszkodzonych ogniw i problemów z okablowaniem na farmach i instalacjach domowych."
+                            title="Termowizja Mavic 3 Thermal"
+                            description="Profesjonalne badanie farm fotowoltaicznych, linii energetycznych i ciepłowniczych z użyciem sensora radiometrycznego."
                         />
                         <ServiceCard
                             icon={<Building2 />}
-                            title="Inspekcje Dachów"
-                            description="Bezinwazyjne sprawdzanie szczelności izolacji, wykrywanie zawilgoceń i uszkodzeń mechanicznych."
+                            title="Analiza Dachów i Budynków"
+                            description="Bezinwazyjne sprawdzanie szczelności izolacji, wykrywanie zawilgoceń oraz szczegółowa dokumentacja stanu technicznego."
                         />
                         <ServiceCard
                             icon={<Droplets />}
-                            title="Ciepłownictwo"
-                            description="Lokalizacja wycieków w sieciach przesyłowych oraz analiza strat ciepła w budynkach komercyjnych."
+                            title="Ciepłownictwo i Energetyka"
+                            description="Lokalizacja wycieków w sieciach przesyłowych oraz analiza strat ciepła w obiektach przemysłowych i biurowych."
                         />
                         <ServiceCard
                             icon={<Search />}
-                            title="Przemysł"
-                            description="Regularne przeglądy kominów, masztów i linii energetycznych bez konieczności wstrzymywania pracy."
+                            title="Nadzór i Timeline Budowy"
+                            description="Regularne zdjęcia poklatkowe i dokumentacja postępu prac. Idealne do monitorowania dużych inwestycji w regionie."
                         />
                         <ServiceCard
                             icon={<Camera />}
-                            title="Ortofotomapy"
-                            description="Mapowanie terenu w wysokiej rozdzielczości do celów geodezyjnych i planistycznych."
+                            title="Zdjęcia i Filmy 4K (Air 2 S)"
+                            description="Wysokiej jakości ujęcia z drona dla firm, deweloperów oraz na wydarzenia okolicznościowe w Toruniu i Bydgoszczy."
                         />
                         <ServiceCard
                             icon={<ShieldCheck />}
-                            title="Nadzór Budowlany"
-                            description="Dokumentacja postępów prac i weryfikacja poprawności wykonania detali konstrukcyjnych."
+                            title="Koła Łowieckie i Rolnictwo"
+                            description="Monitoring zwierzyny, szacowanie szkód łowieckich oraz analiza upraw z wykorzystaniem termowizji."
                         />
                     </div>
                 </div>

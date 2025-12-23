@@ -171,6 +171,97 @@ export function generateClientEmail(data: BookingEmailData): string {
     `;
 }
 
+export function generateBookingConfirmedEmail(data: BookingEmailData): string {
+    const hasDiscount = data.originalPrice && data.originalPrice > data.price;
+
+    return `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rezerwacja Potwierdzona</title>
+    <style>${baseStyles}</style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">Przemysław <span class="logo-accent">Właśniewski</span></div>
+            <div class="tagline">Fotografia</div>
+        </div>
+        
+        <div class="content">
+            <div class="greeting">
+                <span class="greeting-name">${data.clientName}</span>, Twoja rezerwacja jest ✅ <span class="greeting-name">POTWIERDZONA</span>!
+            </div>
+            
+            <p class="message" style="color: #ffffff; font-weight: 500;">
+                Świetne wieści! Oficjalnie potwierdziłem Twój termin. 
+                Wszystko jest już przygotowane na nasze spotkanie. 
+                Poniżej znajdziesz ostateczne podsumowanie.
+            </p>
+            
+            <div class="details-box" style="border-color: #22c55e;">
+                <div class="details-title" style="color: #22c55e;">✅ Potwierdzone Szczegóły</div>
+                
+                <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
+                    <tr>
+                        <td style="color: ${brandColors.lightGray}; font-size: 14px; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">Usługa</td>
+                        <td style="color: ${brandColors.white}; font-size: 14px; font-weight: 500; text-align: right; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">${data.service}</td>
+                    </tr>
+                    <tr>
+                        <td style="color: ${brandColors.lightGray}; font-size: 14px; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">Pakiet</td>
+                        <td style="color: ${brandColors.white}; font-size: 14px; font-weight: 500; text-align: right; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">${data.packageName}</td>
+                    </tr>
+                    <tr>
+                        <td style="color: ${brandColors.lightGray}; font-size: 14px; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">📅 Data</td>
+                        <td style="color: #22c55e; font-size: 14px; font-weight: 600; text-align: right; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">${data.date}</td>
+                    </tr>
+                    ${data.time ? `
+                    <tr>
+                        <td style="color: ${brandColors.lightGray}; font-size: 14px; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">🕐 Godzina</td>
+                        <td style="color: ${brandColors.white}; font-size: 14px; font-weight: 500; text-align: right; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">${data.time}</td>
+                    </tr>
+                    ` : ''}
+                    ${data.location ? `
+                    <tr>
+                        <td style="color: ${brandColors.lightGray}; font-size: 14px; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">📍 Miejsce</td>
+                        <td style="color: ${brandColors.white}; font-size: 14px; font-weight: 500; text-align: right; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">${data.location}</td>
+                    </tr>
+                    ` : ''}
+                    <tr>
+                        <td style="color: ${brandColors.lightGray}; font-size: 14px; padding: 15px 0;">💰 Status Płatności</td>
+                        <td style="text-align: right; padding: 15px 0;">
+                            <span style="color: #22c55e; font-size: 16px; font-weight: 600;">Rozliczenie na miejscu / Przelew</span>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            
+            <div class="divider"></div>
+            
+            <p class="message" style="font-size: 14px;">
+                Do zobaczenia! Jeśli masz jakieś pytania przed sesją, 
+                jestem do Twojej dyspozycji pod telefonem.
+            </p>
+            
+            <div class="cta-section">
+                <a href="tel:+48530788694" class="cta-button">📞 Kontakt: 530 788 694</a>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <div class="footer-text">
+                Przemysław Właśniewski — Fotografia<br>
+                Zatwierdzono przez system rezerwacji
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+    `;
+}
+
 export function generateAdminEmail(data: BookingEmailData): string {
     const hasDiscount = data.originalPrice && data.originalPrice > data.price;
 

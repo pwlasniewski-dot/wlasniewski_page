@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import { sendEmail } from "@/lib/email/sender";
-import { generateClientEmail, generateAdminEmail } from "@/lib/email-templates";
+import { generateClientEmail, generateAdminEmail, generateBookingConfirmedEmail } from "@/lib/email-templates";
 import { logSystem } from "@/lib/logger";
 
 import prisma from '@/lib/db/prisma';
@@ -272,6 +272,40 @@ export async function PATCH(request: Request) {
             where: { id: parseInt(id) },
             data: updateData,
         });
+
+        // [STABLE: 2025-12-23] Notify client when status is updated to confirmed
+        if (updateData.status === "confirmed") {
+            try {
+                const formattedDate = new Date(booking.date).toLocaleDateString('pl-PL', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+
+                const emailData = {
+                    clientName: booking.client_name,
+                    service: booking.service,
+                    packageName: booking.package,
+                    date: formattedDate,
+                    time: booking.start_time ? (booking.end_time ? `${booking.start_time} - ${booking.end_time}` : booking.start_time) : undefined,
+                    location: booking.venue_city ? (booking.venue_place ? `${booking.venue_city}, ${booking.venue_place}` : booking.venue_city) : undefined,
+                    price: Number(booking.price),
+                    email: booking.email,
+                };
+
+                await sendEmail({
+                    to: booking.email,
+                    subject: `✅ Twoja rezerwacja została POTWIERDZONA! - ${booking.service}`,
+                    html: generateBookingConfirmedEmail(emailData)
+                });
+
+                await logSystem('INFO', 'EMAIL', `Booking confirmation email sent to client after admin action`, { bookingId: id, email: booking.email });
+            } catch (emailError) {
+                console.error("Failed to send status update email:", emailError);
+                await logSystem('ERROR', 'EMAIL', `Failed to send client status update email`, { bookingId: id, error: String(emailError) });
+            }
+        }
 
         await logSystem('INFO', 'BOOKING', `Booking #${id} updated`, { bookingId: id, updates: updateData });
 

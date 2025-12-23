@@ -63,16 +63,22 @@ export const metadata: Metadata = {
     description: 'Profesjonalna fotografia rodzinna, ślubna, portretowa i komunijna. Naturalne zdjęcia w Toruniu, Wąbrzeźnie, Płużnicy i okolicach. Galeria online, odbitki premium.',
     keywords: [
         'fotograf toruń',
-        'fotografia rodzinna toruń',
+        'fotografia rodzina toruń',
         'fotograf ślubny toruń',
         'sesja zdjęciowa toruń',
-        'fotograf wąbrzeźno',
-        'fotograf płużnica',
-        'fotograf lisewo',
-        'sesja rodzinna',
-        'fotografia komunijna',
-        'zdjęcia ślubne',
-        'fotograf kujawsko-pomorskie'
+        'fotograf bydgoszcz',
+        'fotograf grudziądz',
+        'fotograf chełmno',
+        'fotograf kujawsko-pomorskie',
+        'FOTO-DRON Przemysław Właśniewski',
+        'inspekcje dronem toruń',
+        'termowizja dronem',
+        'Mavic 3 Thermal',
+        'zdjęcia z drona bydgoszcz',
+        'analiza dachów dronem',
+        'timeline budowy',
+        'koła łowieckie dron',
+        'Sony A7'
     ],
     authors: [{ name: 'Przemysław Właśniewski' }],
     creator: 'Przemysław Właśniewski',
@@ -128,6 +134,40 @@ export default function RootLayout({
 }>) {
     return (
         <html lang="pl" className={`${cormorant.variable} ${montserrat.variable} ${playfair.variable} ${lato.variable} ${greatVibes.variable} ${cinzel.variable}`} suppressHydrationWarning>
+            <head>
+                <script
+                    type="application/ld+json"
+                    dangerouslySetInnerHTML={{
+                        __html: JSON.stringify({
+                            "@context": "https://schema.org",
+                            "@type": "LocalBusiness",
+                            "name": "FOTO-DRON Przemysław Właśniewski",
+                            "alternateName": "Przemysław Właśniewski Fotografia",
+                            "image": "https://wlasniewski.pl/og-image.jpg",
+                            "description": "Profesjonalne usługi dronem (termowizja Mavic 3 Thermal, inspekcje dachów, timeline budowy) oraz fotografia artystyczna Sony A7.",
+                            "url": "https://wlasniewski.pl",
+                            "telephone": "+48530788694",
+                            "taxID": "8781430365",
+                            "address": {
+                                "@type": "PostalAddress",
+                                "addressRegion": "Kujawsko-Pomorskie",
+                                "addressLocality": "Toruń / Płużnica",
+                                "addressCountry": "PL"
+                            },
+                            "geo": {
+                                "@type": "GeoCoordinates",
+                                "latitude": 53.01379,
+                                "longitude": 18.59844
+                            },
+                            "areaServed": ["Toruń", "Bydgoszcz", "Grudziądz", "Chełmno", "Wąbrzeźno"],
+                            "sameAs": [
+                                "https://www.facebook.com/przemyslaw.wlasniewski.fotografia",
+                                "https://www.instagram.com/wlasniewski.pl/"
+                            ]
+                        })
+                    }}
+                />
+            </head>
             <body className="antialiased bg-zinc-950 text-zinc-100 min-h-screen flex flex-col" suppressHydrationWarning>
                 <Suspense fallback={null}>
                     <AnalyticsTracker />

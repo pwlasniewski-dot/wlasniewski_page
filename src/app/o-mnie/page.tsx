@@ -12,8 +12,8 @@ export async function generateMetadata(): Promise<Metadata> {
     });
 
     return {
-        title: page?.meta_title || "O mnie - Przemysław Właśniewski | Fotograf Płużnica, Toruń, Grudziądz",
-        description: page?.meta_description || "Poznaj mnie lepiej. Fotograf ślubny i rodzinny z pasją. Inżynier z duszą artysty. Działam w Płużnicy i całym kujawsko-pomorskim.",
+        title: page?.meta_title || "Przemysław Właśniewski — Fotograf Sony A7 Full Frame | Toruń, Bydgoszcz",
+        description: page?.meta_description || "Poznaj moją pasję. Profesjonalny fotograf Sony A7 pełna klatka. Sesje rodzinne i biznesowe: Toruń, Bydgoszcz, Grudziądz i Chełmno.",
     };
 }
 

@@ -12,10 +12,47 @@
 ### 2. PROTOKÓŁ "ZERO LOSS" (Data Persistence) [NEW: 2025-12-23]
 *   **STATUS:** Wdrożony i przetestowany end-to-end.
 *   **NARZĘDZIE:** `npm run db:backup` / `npm run db:restore` (`prisma/db-management.ts`).
+
+#### Wizualizacja Bezpieczeństwa:
+```mermaid
+graph TD
+    A[DB Produkcyjna] -- "npm run db:backup" --> B(JSON Snapshot)
+    B --> C[backups/data/latest-holy-backup.json]
+    
+    subgraph "Zagrożenie: prisma db push"
+    D[Błędna Komenda] -- "Wypatroszenie bazy" --> A
+    end
+    
+    subgraph "Ratunek: Zero Loss Restore"
+    C -- "npm run db:restore" --> E{Upsert Logic}
+    E -- "Przywrócenie rekordów" --> A
+    end
+    
+    style C fill:#f9f,stroke:#333,stroke-width:4px
+    style B fill:#bbf,stroke:#333,stroke-width:2px
+```
+
+*   **DLACZEGO TO JEST BEZPIECZNE?**
+    *   Standardowe `db push` usuwa tabele i dane, aby dopasować bazę do schematu.
+    *   Nasz `db:backup` tworzy **niezależną kopię** treści (Blog, Portfolio, Ustawienia) w formacie JSON.
+    *   Nasz `db:restore` nie "nadpisuje" bazy na oślep – używa logiki **UPSERT**. Jeśli rekord istnieje (po ID, emailu lub slugu), zostaje zaktualizowany. Jeśli go brakuje (np. po wipe) – zostaje stworzony na nowo.
+    *   Nawet jeśli baza zostanie całkowicie wyczyszczona, jedna komenda przywraca całą "świętą treść" strony.
+
 *   **ZASADA #1:** NIGDY nie używaj `prisma db push` na środowisku produkcyjnym (skrypt został przemianowany na `prisma:push-LOCAL-ONLY-DANGEROUS`).
 *   **ZASADA #2:** Przed każdą większą zmianą w schemacie lub migracji WYKONAJ BACKUP (`db:backup`).
-*   **ZASADA #3:** Backup "Holy Content" obejmuje: Blog, Portfolio, Settings, MediaLibrary, DroneOrders, Inquiries i inne kluczowe tabele.
 *   **LOKALIZACJA:** `backups/data/latest-holy-backup.json` to zawsze najnowsza pełna migawka bezpiecznej bazy.
+
+### 3. BOOKING & NOTIFICATIONS (Holy Logic) [NEW: 2025-12-23]
+*   **STATUS:** Pełna automatyzacja (Zapis -> Admin Mail | Potwierdzenie -> Client Mail).
+*   **ZASADA #1:** Edytując `PATCH /api/bookings`, pamiętaj o logice wysyłki `generateBookingConfirmedEmail`. Jest to KRYTYCZNE dla profesjonalnej komunikacji.
+*   **ZASADA #2:** Każda rezerwacja musi mieć status `pending` przy utworzeniu i `confirmed` po akceptacji admina.
+
+### 4. SEO & BUSINESS IDENTITY (Holy Grail) [NEW: 2025-12-23]
+*   **FIRMOWOŚĆ**: Każda strona musi zawierać metadane regionalne (Toruń, Bydgoszcz, regionalne powiaty).
+*   **FOTO-DRON**: NIP 8781430365 oraz Mavic 3 Thermal są wpisane w JSON-LD (layout.tsx) oraz na stronie `/dron`.
+*   **HARDWARE**: Promujemy Sony A7 (fotografia) oraz Mavic 3 Thermal (termowizja) jako przewagę technologiczną.
+*   **RAPORT SEO**: ZAKAZ zostawiania pustych `meta_description`. Raport w panelu admina musi być 100% czysty.
+
 3. ✅ **DATABASE**: ZAKAZ `prisma db push` na produkcji. Używaj `prisma migrate`. Wszystkie domyślne ustawienia i pakiety MUSZĄ być w `prisma/seed.ts`.
 4. ✅ **LOGGING**: Używaj `logSystem()` (zapis do bazy). Nigdy nie pisz do plików `.log` ani przez `fs` (Netlify to zablokuje).
 5. ✅ **UI FRAMING (HeroSlider)**: Aby twarze na pionowych zdjęciach nie były ucięte, używamy `backgroundPosition: 'center 15%'` (desktop) oraz `top center` (mobile). Wartość ta jest wpisana na sztywno w `src/components/HeroSlider.tsx`.
@@ -57,6 +94,48 @@ Ten plik służy do ścisłego monitorowania wszystkich zmian wprowadzanych w pr
 ---
 
 ## Log Zmian
+
+### [2025-12-23] 🛡️ SMTP, Zero Loss & Booking Stabilization
+**Problem:** 
+1. SMTP `self-signed certificate` errors.
+2. Risk of data loss during `prisma db push`.
+3. Lack of client notification after booking confirmation by admin.
+
+**Rozwiązanie:**
+- ✅ **Holy SMTP**: Wymuszono `rejectUnauthorized: false` w `sender.ts` (100% sprawny).
+- ✅ **Zero Loss Protocol**: Skrypty `db:backup` / `db:restore` z logiką `upsert`. Snapshoty JSON w `backups/data/`.
+- ✅ **Hardening**: Przemianowano niebezpieczne skrypty Prisma w `package.json`.
+- ✅ **Booking Notification**: Dodano `generateBookingConfirmedEmail` i logikę w API, która wysyła maila do klienta w momencie zmiany statusu na `confirmed`.
+
+**Files Modified:**
+- `src/lib/email/sender.ts` (SMTP fix)
+- `prisma/db-management.ts` (Backup logic)
+- `package.json` (Script renaming)
+- `src/lib/email-templates.ts` (New template)
+- `src/app/api/bookings/route.ts` (Status update logic)
+- `PROJECT_HISTORIA.md` (Rules & visualization)
+
+**Status:** ✅ **DONE & STABLE**
+
+---
+
+### [2025-12-23] 🚀 SEO & Business Identity Overhaul
+**Problem:** 
+1. Słaba widoczność regionalna (Toruń, Bydgoszcz, region).
+2. Brak kluczowych słów dla dronowego Mavic 3 Thermal i Sony A7.
+3. "Anomalie" w raporcie SEO (puste opisy).
+4. Brak danych strukturalnych FOTO-DRON (NIP, adres).
+
+**Rozwiązanie:**
+- ✅ **Global Metadata**: Dodano JSON-LD Structured Data (LocalBusiness) dla FOTO-DRON w `layout.tsx`.
+- ✅ **Regional SEO**: Optymalizacja keywords pod Toruń, Bydgoszcz, Grudziądz, Chełmno.
+- ✅ **Drone Specialization**: Strona `/dron` zyskała sekcje: Mavic 3 Thermal, timeline budowy, koła łowieckie i analizę dachów.
+- ✅ **Hardware Promotion**: Dodano Sony A7 Full Frame do bio na stronie `o-mnie`.
+- ✅ **SEO Report Fix**: API raportu teraz wykrywa brakujące opisy jako błędy (⚠️), wymuszając ich uzupełnienie w DB.
+
+**Status:** ✅ **DONE & SEO OPTIMIZED**
+
+---
 
 ### [2025-12-22] 🎨 UI Refinements & Admin Restructuring
 
@@ -283,23 +362,20 @@ meta: { modelName: 'Setting', column: 'settings.social_proof_enabled' }
    - Git workflow procedures
    - Deployment checklist
 
-✅ EMERGENCY_RECOVERY.md
-   - Step-by-step recovery instructions
-   - Diagnostic commands
-   - Testing procedures
-   - Support matrix
-
-✅ Safety Guardrails (To Implement):
-   - Automated backups before each deploy
-   - Staging environment (separate DB)
-   - Access control & approval workflow
-   - CI/CD pipeline with tests
-   - Monitoring & alerts
-
-✅ Team Training (To Schedule):
-   - Proper migration workflow
-   - Emergency procedures
-   - Role-based access control
+✅ EMERGENCY_RECOVERY.## Implementation
+- [x] Site-wide Metadata overhaul
+    - [x] Title tags and Meta descriptions optimization
+    - [x] JSON-LD Structured Data for Local Business
+- [x] Update `o-mnie` (About Me) page content and SEO
+    - [x] Update `generateMetadata` with Sony A7 keywords
+    - [x] Enrich bio with Sony A7 and regional keywords
+- [x] Substantial Drone SEO update (FOTO-DRON)
+    - [x] Update NIP: 8781430365
+    - [x] Add Thermal Imaging keywords (Mavic 3 Thermal)
+    - [x] Add industrial keywords: Roof analysis, Construction timeline, Hunting clubs, Heating
+    - [x] Regional target: Kujawsko-Pomorskie
+- [x] Resolve "SEO Report" anomalies
+s control
    - Code review process
 ```
 

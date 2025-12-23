@@ -36,6 +36,13 @@ export default function OMnieContent({ pageData, parallaxSections, contentCards 
             )}
 
             <div className="mx-auto max-w-5xl px-6 py-20">
+                <div className="mb-12 p-8 bg-zinc-900/50 rounded-2xl border border-white/5 backdrop-blur-sm">
+                    <h2 className="text-gold-400 text-sm tracking-[0.3em] uppercase mb-4">Mój Warsztat</h2>
+                    <p className="text-zinc-300 text-xl leading-relaxed italic">
+                        Pracuję na pełnoklatkowym systemie **Sony A7**, który pozwala mi uchwycić najdrobniejsze detale i naturalne światło kujawsko-pomorskich plenerów – od Torunia, przez Bydgoszcz, aż po Grudziądz. Każda sesja to dla mnie poszukiwanie idealnego kadru.
+                    </p>
+                </div>
+
                 <div className="mb-12">
                     <Link href="/" className="text-zinc-400 hover:text-gold-400">← Powrót</Link>
                 </div>
