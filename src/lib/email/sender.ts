@@ -2,6 +2,9 @@ import nodemailer from 'nodemailer';
 import prisma from '@/lib/db/prisma';
 
 // Get SMTP configuration from database or environment variables
+// [STABLE: 2025-12-23] ŚWIĘTA KONFIGURACJA SMTP
+// Dlaczego: Obsługuje mail.wlasniewski.pl z certyfikatem self-signed.
+// Zmiana: Dodano tls.rejectUnauthorized: false
 export async function getSMTPConfig() {
     try {
         // Find the settings record with SMTP configuration
@@ -87,6 +90,8 @@ async function getTransporter() {
 
         console.log('🔌 Creating SMTP transporter:', { host: config.host, port: config.port, user: config.user });
 
+        // [STABLE: 2025-12-23] UNIKALNA KONFIGURACJA TLS
+        // Bez rejectUnauthorized: false pakiety SMTP są odrzucane (Error: ESOCKET).
         transporter = nodemailer.createTransport({
             host: config.host,
             port: config.port,
@@ -95,15 +100,19 @@ async function getTransporter() {
                 user: config.user,
                 pass: config.pass,
             },
+            tls: {
+                rejectUnauthorized: false
+            }
         });
 
         // Try to verify connection
         try {
             await transporter.verify();
             console.log('✅ SMTP connection verified successfully');
+            await logSystem('INFO', 'EMAIL', 'Połączenie SMTP zweryfikowane', { host: config.host, port: config.port });
         } catch (verifyError: any) {
             console.error('❌ SMTP connection verification failed:', verifyError.message);
-            await logSystem('ERROR', 'EMAIL', 'SMTP connection verification failed', {
+            await logSystem('ERROR', 'EMAIL', 'Weryfikacja połączenia SMTP nieudana', {
                 error: verifyError.message,
                 code: verifyError.code,
                 host: config.host,

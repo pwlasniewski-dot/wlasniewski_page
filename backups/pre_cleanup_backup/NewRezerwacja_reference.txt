@@ -1,0 +1,770 @@
+// src/pages/NewRezerwacja.tsx
+import React, { useMemo, useState } from "react";
+import BookingCalendar from "@/components/BookingCalendar";
+import { buildICS, downloadICS } from "@/utils/ics";
+
+type ServiceType = "Sesja" | "Ślub" | "Przyjęcie" | "Urodziny";
+/** Urodziny potrzebują własnych nazw pakietów: Foto, Standard */
+type PackageType = "Ekonomiczny" | "Złoty" | "Platynowy" | "Foto" | "Standard";
+
+/* ────────────────────────────────────────────────────────────
+   CENNIKI (Bez zmian)
+   ──────────────────────────────────────────────────────────── */
+const packages: Record<ServiceType, { name: PackageType; hours: number; price: number }[]> = {
+  Sesja: [
+    { name: "Ekonomiczny", hours: 1, price: 400 },
+    { name: "Złoty",       hours: 2, price: 800 },
+    { name: "Platynowy",   hours: 2, price: 1400 },
+  ],
+  Ślub: [
+    { name: "Ekonomiczny", hours: 6,  price: 2500 },
+    { name: "Złoty",       hours: 6,  price: 3500 },
+    { name: "Platynowy",   hours: 12, price: 5500 },
+  ],
+  Przyjęcie: [
+    { name: "Ekonomiczny", hours: 4, price: 800 },
+    { name: "Złoty",       hours: 6, price: 1200 },
+    { name: "Platynowy",   hours: 6, price: 1500 },
+  ],
+  Urodziny: [
+    { name: "Ekonomiczny", hours: 4, price: 850 },
+    { name: "Foto",        hours: 6, price: 1000 },
+    { name: "Standard",    hours: 4, price: 1300 },
+  ],
+};
+
+/* ────────────────────────────────────────────────────────────
+   OPISY – SESJA (Finalne, Zoptymalizowane)
+   ──────────────────────────────────────────────────────────── */
+const sessionDetails: Record<
+  Exclude<PackageType, "Foto" | "Standard">,
+  { subtitle: string; bullets: string[]; turnaround?: string }
+> = {
+  Ekonomiczny: {
+    subtitle: "Szybka Pamiątka.",
+    bullets: [
+      "Lekki spacer, gdzie złapiemy naturalne emocje",
+      "1 lokalizacja (np. starówka, park, plener)",
+      "20 zdjęć po autorskiej obróbce",
+      "Galeria online (wybór i pobieranie)",
+      "Eleganckie pudełko z odbitkami",
+      "Wsparcie w doborze ubrań",
+    ],
+    turnaround: "do 10 dni roboczych",
+  },
+  Złoty: {
+    subtitle: "Zainwestuj w pamiątkę uszytą na miarę Twoich oczekiwań.",
+    bullets: [
+      "Dojazd do Torunia w cenie",
+      "Pełen Reportaż z 2–3 Lokalizacji (np. Starówka, Zamek, Bulwar)",
+      "40 autorsko obrobionych zdjęć w pełnej rozdzielczości",
+      "Pendrive z plikami",
+      "Galeria online (wybór i pobieranie)",
+      "Gwarancja 1 Daty Rezerwowej (na wypadek deszczu)",
+      "Historia opowiedziana Waszymi emocjami",
+    ],
+  },
+  Platynowy: {
+    subtitle: "Pekiet prestiżowy z ekspresową realizcją oraz profesjonalnym wsparciem.",
+    bullets: [
+        "Indywidualna Konsultacja Wizerunkowa i Stylizacyjna (online lub przy kawie) – pełne wsparcie przed sesją.",
+        "GWARANCJA Dostawy Galeri w 72 Godziny", 
+        "50 autorsko obrobionych ujęć w najwyższej rozdzielczości.",
+        "2-3 Ekskluzywne Lokalizacje (w tym opcjonalne ujęcia nocne na starym moście lub plenerze)",
+        "Album Premium (projektowany indywidualnie, 20 rozkładówek 30x30 cm) wraz z Pendrivem.", 
+        "Galeria online (wybór i pobieranie)",
+        "Rezerwowa data w pakiecie (Twój czas jest zbyt cenny na ryzyko pogodowe).",
+    ],
+  },
+};
+
+/* ────────────────────────────────────────────────────────────
+   OPISY – ŚLUB / PRZYJĘCIE / URODZINY (Finalne, Zoptymalizowane)
+   ──────────────────────────────────────────────────────────── */
+const serviceDetails: Partial<
+  Record<ServiceType, Record<PackageType, { subtitle?: string; bullets?: string[]; note?: string }>>
+> = {
+  Ślub: {
+    Ekonomiczny: { // Reportaż 6 godzin (2500 zł)
+      subtitle: "ESENCJA CHWILI | Reportaż 6 godzin.",
+      bullets: [
+        "ok. 250 profesjonalnie obrobionych zdjęć.",
+        "Dokumentacja Przygotowań i Ceremonii (styl swobodny).",
+        "Mini-sesja pary w dniu ślubu.",
+        "Galeria online + Pendrive.",
+      ],
+    },
+    Złoty: { // Reportaż 6 godzin (3500 zł) - POLECANY
+      subtitle: "TWÓRCZE SPOJRZENIE | Reportaż 6 godzin – historia z naciskiem na detale i Wasze pasje.",
+      bullets: [
+        "ok. 250 profesjonalnie obrobionych zdjęć.",
+        "Rozszerzona sesja plenerowa w dniu ślubu.",
+        "Fotoalbum 20 rozkładówek (format 25x25).",
+        "Galeria online + Pendrive + 10 wydruków.",
+      ],
+    },
+    Platynowy: { // Reportaż 12 godzin (5500 zł) - CAŁY DZIEŃ
+      subtitle: "HISTORIA W OBRAZACH | Kompleksowy reportaż 12 godzin – od przygotowań do oczepin.",
+      bullets: [
+        "ok. 300 profesjonalnie obrobionych zdjęć.",
+        "Reportaż z Kolacji/Uroczystego Obiadu.",
+        "Sesja plenerowa w innym terminie (z inspiracją Waszymi zainteresowaniami).",
+        "Fotoalbum 50 stron (format 30x30).",
+        "Galeria online + Pendrive.",
+      ],
+    },
+  },
+
+  // NOWY PAKIET KOMUNIA - CENY ZA DZIECKO
+  Przyjęcie: {
+    Ekonomiczny: { // Reportaż 4h (100 zł za dziecko)
+      subtitle: "WSPÓLNY REPORTAŻ | Opłata za dziecko – esencja ceremonii. TYLKO GALERIA ONLINE.",
+      bullets: [
+        "Reportaż z ceremonii w kościele (4h).",
+        "Dla każdego dziecka ok. 20 ujęć z mszy i portretów grupowych.",
+        "Galeria online (zdjęcia do pobrania) DLA RODZICÓW.",
+      ],
+      note: "Uwaga: Cena 100 zł dotyczy reportażu z mszy i jest opłatą od dziecka. Cena nie obejmuje sesji indywidualnej.",
+    },
+    Złoty: { // Reportaż 6h (150 zł za dziecko)
+      subtitle: "PEŁNA PAMIĄTKA | Reportaż z ceremonii, pendrive i odbitki.",
+      bullets: [
+        "Reportaż z ceremonii w kościele (do 6h).",
+        "Dla każdego dziecka ok. 30 ujęć z ceremonii.",
+        "Pendrive z plikami cyfrowymi DLA RODZICÓW.",
+        "5 odbitek w eleganckim pudełku DLA KAŻDEGO DZIECKA.",
+        "Galeria online (zdjęcia do pobrania).",
+      ],
+    },
+    Platynowy: { // Reportaż 6h + Sesja Indywidualna (350 zł za dziecko)
+      subtitle: "PREMIUM INDYWIDUALNIE | Reportaż + Prywatna sesja plenerowa/studyjna + Album.",
+      bullets: [
+        "Reportaż z ceremonii w kościele (do 6h) – najlepsze ujęcia.",
+        "INDYWIDUALNA SESJA PORTRETOWA dla dziecka (poza godzinami mszy, termin do ustalenia).",
+        "Elegancki Album Premium (20x20 cm) z wybranymi zdjęciami.",
+        "Pendrive z plikami cyfrowymi + Galeria online.",
+      ],
+    },
+  },
+
+  Urodziny: {
+    Ekonomiczny: { // 4 godziny (850 zł)
+      subtitle: "4-GODZINNA PAMIĄTKA | Skoncentrowany reportaż z początku uroczystości.",
+      bullets: [
+        "150 zdjęć po profesjonalnej obróbce plus odbitki.",
+        "Zdjęcia z zabawy, gości i momentu tortu.",
+        "Galeria online + Pendrive.",
+      ],
+    },
+    Foto: { // 6 godzin (1000 zł)
+      subtitle: "DŁUŻSZY REPORTAŻ | 6 godzin – więcej luzu i detali uroczystości.",
+      bullets: [
+        "200 zdjęć po profesjonalnej obróbce plus odbitki.",
+        "Pełna dokumentacja gości.",
+        "Galeria online + Pendrive.",
+      ],
+    },
+    Standard: { // 4 godziny (1300 zł) - Z FILMEM
+      subtitle: "REPORTAŻ Z FILMEM | 4 godziny reportażu + Film do 10 minut.",
+      bullets: [
+        "200 zdjęć po profesjonalnej obróbce plus odbitki",
+        "Film podsumowujący (do 10 minut).",
+        "Galeria online + Pendrive z całym materiałem.",
+        ,
+      ],
+    },
+  },
+};
+
+/* ────────────────────────────────────────────────────────────
+   Motywy kafelków (bez zmian)
+   ──────────────────────────────────────────────────────────── */
+type Theme = {
+  container: string;
+  bullet: string;
+  ring: string;
+  hoverFloat?: string;
+  badge?: { text: string; className: string } | null;
+};
+
+const neutralTheme: Theme = {
+  container: "bg-white border border-zinc-200 hover:border-zinc-300",
+  bullet: "bg-zinc-900",
+  ring: "ring-2 ring-zinc-400",
+  hoverFloat: "hover:-translate-y-[2px]",
+  badge: null,
+};
+
+const sessionThemes: Record<Exclude<PackageType, "Foto" | "Standard">, Theme> = {
+  Ekonomiczny: {
+    container: "bg-white border border-zinc-200 hover:border-zinc-300",
+    bullet: "bg-zinc-900",
+    ring: "ring-2 ring-zinc-400",
+    hoverFloat: "hover:-translate-y-[2px]",
+    badge: null,
+  },
+  Złoty: {
+    container:
+      "bg-gradient-to-br from-amber-50 via-amber-50 to-amber-100 border border-amber-300 hover:border-amber-400",
+    bullet: "bg-amber-800",
+    ring: "ring-2 ring-amber-400",
+    hoverFloat: "hover:-translate-y-[3px]",
+    badge: { text: "Polecany", className: "bg-amber-600 text-white" },
+  },
+  Platynowy: {
+    container:
+      "bg-gradient-to-br from-slate-50 via-zinc-50 to-slate-100 border border-slate-300 hover:border-slate-400",
+    bullet: "bg-slate-800",
+    ring: "ring-2 ring-slate-400",
+    hoverFloat: "hover:-translate-y-[3px]",
+    badge: { text: "Platyna", className: "bg-slate-700 text-white" },
+  },
+};
+
+/** Motywy per usługa */
+const serviceThemes: Partial<Record<ServiceType, Partial<Record<PackageType, Theme>>>> = {
+  Sesja: sessionThemes,
+
+  Ślub: {
+    Ekonomiczny: {
+      container: "bg-gradient-to-br from-rose-50 to-amber-50 border border-rose-200 hover:border-rose-300",
+      bullet: "bg-rose-800",
+      ring: "ring-2 ring-rose-300",
+      hoverFloat: "hover:-translate-y-[2px]",
+      badge: null,
+    },
+    Złoty: {
+      container: "bg-gradient-to-br from-amber-50 via-amber-100 to-rose-50 border border-amber-300 hover:border-amber-400",
+      bullet: "bg-amber-800",
+      ring: "ring-2 ring-amber-400",
+      hoverFloat: "hover:-translate-y-[3px]",
+      badge: { text: "Najczęściej wybierany", className: "bg-amber-600 text-white" },
+    },
+    Platynowy: {
+      container: "bg-gradient-to-br from-rose-50 via-zinc-50 to-amber-50 border border-rose-300 hover:border-rose-400",
+      bullet: "bg-zinc-900",
+      ring: "ring-2 ring-rose-400",
+      hoverFloat: "hover:-translate-y-[3px]",
+      badge: { text: "Cały dzień", className: "bg-rose-700 text-white" },
+    },
+  },
+
+  Przyjęcie: {
+    Ekonomiczny: {
+      container: "bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200 hover:border-emerald-300",
+      bullet: "bg-emerald-800",
+      ring: "ring-2 ring-emerald-300",
+      hoverFloat: "hover:-translate-y-[2px]",
+      badge: null,
+    },
+    Złoty: {
+      container: "bg-gradient-to-br from-teal-50 via-emerald-50 to-teal-100 border border-teal-300 hover:border-teal-400",
+      bullet: "bg-teal-800",
+      ring: "ring-2 ring-teal-400",
+      hoverFloat: "hover:-translate-y-[3px]",
+      badge: { text: "Więcej ujęć", className: "bg-teal-600 text-white" },
+    },
+    Platynowy: {
+      container: "bg-gradient-to-br from-emerald-50 via-zinc-50 to-teal-50 border border-emerald-300 hover:border-emerald-400",
+      bullet: "bg-emerald-900",
+      ring: "ring-2 ring-emerald-400",
+      hoverFloat: "hover:-translate-y-[3px]",
+      badge: null,
+    },
+  },
+
+  Urodziny: {
+    Ekonomiczny: {
+      container: "bg-gradient-to-br from-fuchsia-50 to-violet-50 border border-violet-200 hover:border-violet-300",
+      bullet: "bg-violet-800",
+      ring: "ring-2 ring-violet-300",
+      hoverFloat: "hover:-translate-y-[2px]",
+      badge: null,
+    },
+    Foto: {
+      container: "bg-gradient-to-br from-violet-50 via-fuchsia-50 to-violet-100 border border-fuchsia-300 hover:border-fuchsia-400",
+      bullet: "bg-fuchsia-800",
+      ring: "ring-2 ring-fuchsia-400",
+      hoverFloat: "hover:-translate-y-[3px]",
+      badge: { text: "Dłużej + więcej zdjęć", className: "bg-fuchsia-600 text-white" },
+    },
+    Standard: {
+      container: "bg-gradient-to-br from-violet-50 via-zinc-50 to-fuchsia-50 border border-violet-300 hover:border-violet-400",
+      bullet: "bg-violet-900",
+      ring: "ring-2 ring-violet-400",
+      hoverFloat: "hover:-translate-y-[3px]",
+      badge: { text: "Z filmem", className: "bg-violet-700 text-white" },
+    },
+  },
+};
+
+/* ──────────────────────────────────────────────────────────── */
+function ThemedPackageCard({
+  title,
+  subtitle,
+  bullets,
+  price,
+  hours,
+  turnaround,
+  selected,
+  onSelect,
+  theme,
+}: {
+  title: string;
+  subtitle?: string;
+  bullets?: string[];
+  price: number;
+  hours: number;
+  turnaround?: string;
+  selected?: boolean;
+  onSelect: () => void;
+  theme: Theme;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      aria-pressed={selected}
+      className={[
+        "group relative flex min-h-[440px] flex-col justify-between text-left",
+        "rounded-2xl p-6 shadow-sm transition duration-200",
+        theme.container,
+        theme.hoverFloat || "",
+        selected ? `${theme.ring} ring-offset-2 shadow-md` : "shadow-sm",
+      ].join(" ")}
+    >
+      {theme.badge && (
+        <span className={`absolute right-4 top-4 rounded-full px-2.5 py-1 text-xs font-medium ${theme.badge.className}`}>
+          {theme.badge.text}
+        </span>
+      )}
+
+      <div className="flex-1">
+        <h3 className="text-xl font-semibold leading-snug tracking-tight">{title}</h3>
+        {subtitle && <p className="mt-1 text-[15px] leading-relaxed text-zinc-800">{subtitle}</p>}
+
+        {bullets && bullets.length > 0 && (
+          <ul className="mt-4 space-y-2 text-[15px]">
+            {bullets.map((b, i) => (
+              <li key={i} className="relative pl-6 leading-relaxed">
+                <span className={`absolute left-0 top-2 h-2 w-2 rounded-full ${theme.bullet}`} />
+                {b}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <div className="mt-6 flex items-end justify-between">
+        <div className="leading-none">
+          <div className="text-3xl md:text-4xl font-semibold tracking-tight">{price} zł</div>
+        </div>
+        <div className="text-xs md:text-sm text-zinc-700 pl-3">
+          Czas trwania: ok. {hours} h{turnaround ? ` · Termin oddania: ${turnaround}` : ""}
+        </div>
+      </div>
+    </button>
+  );
+}
+
+/* ──────────────────────────────────────────────────────────── */
+const NewRezerwacja: React.FC = () => {
+  const [service, setService] = useState<ServiceType>("Sesja");
+  const [pack, setPack] = useState<PackageType | null>(null);
+  const [slot, setSlot] = useState<{ date: string; start?: string; end?: string } | null>(null);
+
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+
+  const [venueCity, setVenueCity] = useState("");
+  const [venuePlace, setVenuePlace] = useState("");
+
+  const [notes, setNotes] = useState("");
+  const [rodo, setRodo] = useState(false);
+
+  const needsVenue = service === "Ślub" || service === "Przyjęcie" || service === "Urodziny";
+
+  const chosenPackage = useMemo(
+    () => (pack ? packages[service].find((p) => p.name === pack) ?? null : null),
+    [service, pack]
+  );
+
+  const sessionDuration: 1 | 2 | undefined =
+    service === "Sesja" ? (chosenPackage?.hours === 2 ? 2 : 1) : undefined;
+
+  const isReadyToSubmit =
+    !!chosenPackage &&
+    !!name &&
+    !!email &&
+    !!rodo &&
+    !!slot?.date &&
+    (service !== "Sesja" || (!!slot?.start && !!slot?.end)) &&
+    (!needsVenue || (!!venueCity && !!venuePlace));
+
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+
+  // GA4 - kliknięcie przycisku rezerwacji
+  if (typeof gtag !== "undefined") {
+    gtag("event", "reservation_submit", {
+      event_category: "Rezerwacja",
+      event_label: "Kliknięto przycisk Potwierdź rezerwację",
+    });
+  }
+
+  if (!isReadyToSubmit || !slot || !chosenPackage) {
+    alert("Uzupełnij wszystkie wymagane pola i wybierz termin!");
+    return;
+  }
+
+    const title = `${service} — ${chosenPackage.name}`;
+    const location =
+      needsVenue && venueCity && venuePlace
+        ? `${venuePlace}, ${venueCity}`
+        : "Studio / wg ustaleń";
+
+    const descLines = [
+      `Usługa: ${service}`,
+      `Pakiet: ${chosenPackage.name} (${chosenPackage.hours}h)`,
+      `Cena: ${chosenPackage.price} zł`,
+      `Klient: ${name}`,
+      `Email: ${email}`,
+      `Telefon: ${phone || "-"}`,
+      needsVenue ? `Miejsce: ${venuePlace || "-"}, ${venueCity || "-"}` : undefined,
+      slot.start && slot.end ? `Godziny: ${slot.start}–${slot.end}` : "Rezerwacja całodniowa",
+      `Uwagi: ${notes || "-"}`,
+    ].filter(Boolean) as string[];
+
+    const ics = buildICS({
+      uid: `booking-${Date.now()}@wlasniewski.pl`,
+      title,
+      description: descLines.join("\n"),
+      date: slot.date,
+      start: slot.start,
+      end: slot.end,
+      attendeeEmail: email,
+      organizerEmail: "przemyslaw@wlasniewski.pl",
+      location,
+    });
+
+    const payload = {
+      service,
+      date: slot.date,
+      start: slot.start ?? null,
+      end: slot.end ?? null,
+      name,
+      email,
+      phone,
+      venueCity: needsVenue ? venueCity : "",
+      venuePlace: needsVenue ? venuePlace : "",
+      notes,
+      package: chosenPackage.name,
+      hours: chosenPackage.hours,
+      price: chosenPackage.price,
+      ics,
+    };
+
+    try {
+      const res = await fetch("/api/booking.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+
+      if (!data?.ok) {
+        alert(data?.message || "Nie udało się zapisać rezerwacji. Spróbuj ponownie.");
+        return;
+      }
+
+      alert(
+        `✅ Rezerwacja potwierdzona!
+Usługa: ${service}
+Termin: ${slot.date}${slot.start ? ` ${slot.start}–${slot.end}` : " (cały dzień)"}
+Pakiet: ${chosenPackage.name} (${chosenPackage.hours}h)
+Cena: ${chosenPackage.price} zł
+${needsVenue ? `Miejsce: ${venuePlace}, ${venueCity}\n` : ""}Potwierdzenie wysłano na e-mail.`
+      );
+
+      downloadICS(`rezerwacja-${slot.date}.ics`, ics);
+    } catch (err) {
+      console.error(err);
+      alert("Wystąpił błąd sieci. Spróbuj ponownie.");
+    }
+  };
+
+  const detailSet = serviceDetails[service] || {};
+  const themeSet = serviceThemes[service] || {};
+
+  return (
+    <main className="mx-auto max-w-4xl p-6 space-y-8">
+      <div className="flex items-center justify-between gap-4">
+        <h1 className="text-3xl font-bold">Rezerwacja terminu</h1>
+        <a
+          href="/"
+          className="inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium hover:bg-indigo-50"
+        >
+          <span aria-hidden>←</span> Wróć na stronę główną
+        </a>
+      </div>
+
+
+      {/* SEKCJA FILOZOFII (Zaktualizowana) */}
+      <section id="philosophy" className="py-6 border-b border-zinc-200">
+        <h1 className="text-2xl font-semibold text-zinc-800">Zapraszam do rezerwacji sesji w plenerze, kościele i na sali.</h1>
+        <h2 className="mt-2 text-xl font-medium text-zinc-700">Twoja historia zaczyna się od kawy z fotografem :).</h2>
+        <p className="mt-3 text-base text-zinc-600">
+          Jeżeli szukasz sesji, która jest <b>prawdziwą przygodą</b>, a nie stresem, trafiłeś idealnie. Moja praktyka udowodniła, że podstawą jest dobra atmosfera, rozmowa i kawa. To właśnie dobra i przyjazna atmosfera gwarantuje nam finalny efekt: naturalne, pełne emocji zdjęcia.
+        </p>
+
+        <h2 className="mt-4 text-xl font-medium text-zinc-700">Dlaczego naturalne zdjęcia są moją obsesją?</h2>
+        <p className="mt-3 text-base text-zinc-600">
+          W moim rozumieniu <b>pozowanie to zło</b>, które gasi bliskość. Skupiamy się na miłości, bliskości i zabawie, które prowadzą do szczerego uśmiechu. Naturalne zdjęcia to takie, które <b>opowiadają historię</b> – Waszą historię.
+        </p>
+        
+        <p className="mt-3 text-base text-zinc-600">
+          Moje 5-letnie doświadczenie pozwoliło mi dostrzegać miejsca, które tworzą <b>nierozłączną harmonię między otoczeniem i człowiekiem.</b> Moją rolą jest zachęcić Was do szczerych gestów – do zabawy z dziećmi, do patrzenia sobie w oczy, do biegania, szukania kamieni czy wspólnego liczenia ptaków. To Ty się bawisz, a ja – jako dyskretny reporter – gwarantuję, że uchwycę miłość i bliskość, która gasi potrzebę pozowania.
+        </p>
+
+        {/* LISTA OPINII (NOWY FONT SIZE: text-base) */}
+        <div className="mt-8 pt-4 border-t border-zinc-200">
+            <h3 className="text-xl font-semibold text-zinc-800 mb-4">Co mówią klienci?</h3>
+            <div className="space-y-4 text-base text-zinc-700"> {/* TUTAJ ZMIANA: text-sm -> text-base */}
+                <p>
+                    <span className="text-amber-500 mr-1">★★★★★</span>
+                    Sympatyczna atmosfera na sesji zdjęciowej, a efekty przeszły nasze oczekiwania. Polecam z całego serduszka, jeśli chcecie mieć wspaniałe i przepiękne wspomnienia. <span className="font-semibold">— Agnieszka P., Lisewo</span>
+                </p>
+                <p>
+                    <span className="text-amber-500 mr-1">★★★★★</span>
+                    Wielokrotnie Przemek swoim profesjonalnym okiem, uwieczniał nasze wydarzenia wiejskie jaki i moje uroczystości rodzinne. Jest profesjonalistą. Zdjęcia przepiękne. Polecam gorąco i jeszcze nie raz na pewno skorzystam z jego osoby😉😄... <span className="font-semibold">— Małgorzata S., Płużnica</span>
+                </p>
+                <p>
+                    <span className="text-amber-500 mr-1">★★★★★</span>
+                    Rewelacja i profesjonalizm 😊 <span className="font-semibold">— Marzena K., Wąbrzeźno</span>
+                </p>
+                <p>
+                    <span className="text-amber-500 mr-1">★★★★★</span>
+                    Portrety biznesowe i rodzinne... <span className="font-semibold">— Monika S., Toruń</span>
+                </p>
+                <p>
+                    <span className="text-amber-500 mr-1">★★★★★</span>
+                    Pan Przemek od trzech lat współpracuje z nami przy organizacji biegu wykonując przecudowne zdjęcia 😍 Polecamy!
+                </p>
+            </div>
+        </div>
+      </section>
+      {/* KONIEC SEKCJI FILOZOFII */}
+
+
+      {/* 1) Usługa */}
+      <section>
+        <h2 className="text-xl font-semibold mb-2">1) Wybierz usługę</h2>
+        <div className="flex flex-wrap gap-3">
+          {(["Sesja", "Ślub", "Przyjęcie", "Urodziny"] as ServiceType[]).map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => {
+                setService(s);
+                setPack(null);
+                setSlot(null);
+              }}
+              aria-pressed={service === s}
+              className={`px-4 py-2 rounded-md border ${
+                service === s ? "bg-zinc-900 text-white border-zinc-900" : "hover:bg-zinc-50"
+              }`}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {/* 2) Pakiet */}
+      <section>
+        <h2 className="text-xl font-semibold mb-2">2) Pakiet</h2>
+
+        {service === "Sesja" ? (
+          <div className="grid md:grid-cols-3 gap-6">
+            {packages.Sesja.map((p) => {
+              const d = sessionDetails[p.name as Exclude<PackageType,"Foto"|"Standard">];
+              const selected = pack === p.name;
+              const theme = (serviceThemes.Sesja || {})[p.name] || neutralTheme;
+              return (
+                <ThemedPackageCard
+                  key={p.name}
+                  title={`Pakiet ${p.name} — ${p.hours} ${p.hours === 1 ? "godzina" : "godziny"}`}
+                  subtitle={d?.subtitle}
+                  bullets={d?.bullets}
+                  price={p.price}
+                  hours={p.hours}
+                  turnaround={d?.turnaround}
+                  selected={selected}
+                  onSelect={() => setPack(p.name)}
+                  theme={theme}
+                />
+              );
+            })}
+          </div>
+        ) : (
+          <div className="grid md:grid-cols-3 gap-6">
+            {packages[service].map((p) => {
+              const d = (detailSet as any)[p.name] as { subtitle?: string; bullets?: string[] } | undefined;
+              const selected = pack === p.name;
+              const theme = (themeSet as any)[p.name] || neutralTheme;
+              return (
+                <ThemedPackageCard
+                  key={p.name}
+                  title={`Pakiet ${p.name} — ${p.hours} ${p.hours === 1 ? "godzina" : "godzin"}`}
+                  subtitle={d?.subtitle}
+                  bullets={d?.bullets}
+                  price={p.price}
+                  hours={p.hours}
+                  selected={selected}
+                  onSelect={() => setPack(p.name)}
+                  theme={theme}
+                />
+              );
+            })}
+          </div>
+        )}
+
+        {!pack && <p className="mt-2 text-xs text-red-600">* Wybór pakietu jest wymagany.</p>}
+      </section>
+
+      {/* 3) Termin */}
+      <section>
+        <h2 className="text-xl font-semibold mb-2">3) Termin</h2>
+        <div className="rounded-lg border p-2">
+            <BookingCalendar
+            service={service}
+            value={slot}
+            onChange={(val) => {
+              setSlot(val);
+
+              // GA4 - użytkownik otworzył / użył kalendarza
+              if (typeof gtag !== "undefined") {
+                gtag("event", "calendar_open", {
+                  event_category: "Rezerwacja",
+                  event_label: "Użytkownik wybrał termin w kalendarzu",
+                });
+              }
+            }}
+            {...(service === "Sesja" && packages.Sesja.some((x) => x.name === pack && x.hours === 2)
+              ? ({ durationHours: 2 } as const)
+              : service === "Sesja"
+              ? ({ durationHours: 1 } as const)
+              : ({} as const))}
+          />
+        </div>
+        <p className="mt-2 text-xs text-zinc-500">
+          {service === "Sesja"
+            ? "Wybierz dzień i godzinę. Zajęte sloty są wyszarzone."
+            : "Dla wydarzeń rezerwujesz cały dzień – zajęte dni są wyszarzone."}
+        </p>
+      </section>
+
+      {/* 4) Dane klienta */}
+      <section>
+        <h2 className="text-xl font-semibold mb-2">4) Dane klienta</h2>
+        <form className="space-y-4" onSubmit={handleSubmit} noValidate>
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium">Imię i nazwisko *</label>
+              <input
+                className="border rounded-md px-3 py-2 w-full"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium">E-mail *</label>
+              <input
+                type="email"
+                className="border rounded-md px-3 py-2 w-full"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+          </div>
+
+          {(service === "Ślub" || service === "Przyjęcie" || service === "Urodziny") && (
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium">Miejscowość *</label>
+                <input
+                  className="border rounded-md px-3 py-2 w-full"
+                  value={venueCity}
+                  onChange={(e) => setVenueCity(e.target.value)}
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium">Lokal / miejsce imprezy *</label>
+                <input
+                  className="border rounded-md px-3 py-2 w-full"
+                  value={venuePlace}
+                  onChange={(e) => setVenuePlace(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+          )}
+
+          <div>
+            <label className="block text-sm font-medium">Telefon</label>
+            <input
+              className="border rounded-md px-3 py-2 w-full"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              inputMode="tel"
+            />
+            <p className="mt-1 text-xs text-zinc-500">Pomoże to w ewentualnej, szybkiej konsultacji.</p>
+          </div>
+
+
+          <div className="pt-2">
+            <label className="block text-sm font-medium">
+              Uwagi do rezerwacji <span className="text-xs text-zinc-500">(do 500 znaków)</span>
+            </label>
+            <textarea
+              className="border rounded-md px-3 py-2 w-full"
+              rows={5}
+              maxLength={500}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Dodatkowe informacje, preferencje, itp."
+            />
+            <div className="mt-1 text-xs text-zinc-500">Pozostało znaków: {Math.max(0, 500 - notes.length)}</div>
+          </div>
+          
+          <label className="flex items-start gap-2 text-sm">
+            <input type="checkbox" checked={rodo} onChange={(e) => setRodo(e.target.checked)} required />
+            <span>Zgadzam się na przetwarzanie danych osobowych (RODO) *</span>
+          </label>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="submit"
+              disabled={!isReadyToSubmit}
+              className="bg-zinc-900 text-white px-4 py-2 rounded-md hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Potwierdź rezerwację
+            </button>
+            <a
+              href="/"
+              className="inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium hover:bg-zinc-50"
+            >
+              <span aria-hidden>←</span> Wróć na stronę główną
+            </a>
+          </div>
+        </form>
+      </section>
+    </main>
+  );
+};
+
+export default NewRezerwacja;

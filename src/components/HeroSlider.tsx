@@ -156,6 +156,9 @@ export default function HeroSlider({ slides = [] }: HeroSliderProps) {
                             ease: "linear",
                             repeat: 0
                         }}
+                        // [STABLE: 2025-12-23] KRYTYCZNE KADROWANIE (FRAMING)
+                        // center 15% na desktop oraz top center na mobile gwarantują,
+                        // że twarze na pionowych zdjęciach (wedding/portraits) nie są ucięte.
                         style={{
                             backgroundImage: `url("${slideImage}")`,
                             backgroundPosition: isMobile ? 'top center' : 'center 15%',

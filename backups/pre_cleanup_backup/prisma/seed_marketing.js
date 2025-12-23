@@ -1,0 +1,146 @@
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
+
+const templates = [
+    {
+        title: "Termowizja - Audyt Energetyczny Budynków",
+        subject: "Gdzie uciekają Twoje pieniądze? Profesjonalny audyt termowizyjny dla {{company}}",
+        content: "<p>Szanowni Państwo, <br/><br/> W dobie rosnących cen energii, każda nieszczelność w budynku to realna strata finansowa. <br/><br/> Oferuję <strong>profesjonalny audyt energetyczny z powietrza</strong> przy użyciu najnowocześniejszego flagowca <strong>DJI Mavic 3 Thermal</strong>. <br/><br/> <strong>Co zyskujesz?</strong> <br/> ✅ Lokalizację mostków termicznych i miejsc ucieczki ciepła. <br/> ✅ Precyzyjną ocenę stanu izolacji dachu i elewacji. <br/> ✅ Wykrycie zawilgoceń niewidocznych gołym okiem. <br/><br/> Moja kamera termowizyjna o wysokiej rozdzielczości (640x512) pozwala na wykrycie różnic temperatur rzędu dziesiątych części stopnia. <br/><br/> Zainwestuj w wiedzę, która zwróci się w jeden sezon grzewczy. <br/><br/> Z poważaniem, <br/> Przemysław Właśniewski</p>",
+        category: "DRONE_OFFER",
+        variables: JSON.stringify(["company"])
+    },
+    {
+        title: "Termowizja - Inspekcja Paneli PV",
+        subject: "Zmaksymalizuj uzysk ze swojej farmy fotowoltaicznej - inspekcja Thermal",
+        content: "<p>Dzień dobry, <br/><br/> Czy wiesz, że jeden uszkodzony hot-spot może obniżyć wydajność całego stringu paneli nawet o 30%? <br/><br/> Proponuję szybką i bezinwazyjną inspekcję Twojej instalacji PV dronem <strong>Mavic 3 Thermal</strong>. <br/><br/> <strong>Jak to działa?</strong> <br/> Przelatuję nad instalacją, a kamera termowizyjna natychmiast wykrywa przegrzewające się ogniwa, diody bypass czy uszkodzenia mechaniczne. Otrzymujesz raport z dokładną lokalizacją usterek. <br/><br/> To najtańszy sposób na zapewnienie 100% sprawności Twojej inwestycji. <br/><br/> Zapraszam do kontaktu. <br/> Przemysław Właśniewski</p>",
+        category: "DRONE_OFFER",
+        variables: JSON.stringify([])
+    },
+    {
+        title: "Termowizja - Sieci Ciepłownicze",
+        subject: "Monitoring sieci ciepłowniczych z powietrza - wykrywanie awarii",
+        content: "<p>Szanowni Państwo, <br/><br/> Oferuję wsparcie dla przedsiębiorstw komunalnych w zakresie monitoringu podziemnych i naziemnych sieci ciepłowniczych. <br/><br/> Dzięki zaawansowanej termowizji drona <strong>Mavic 3 Thermal</strong>, jestem w stanie szybko zlokalizować wycieki czynnika grzewczego, nawet pod powierzchnią gruntu. Pozwala to na: <br/> - Szybką reakcję awaryjną. <br/> - Precyzyjne planowanie remontów (wymiana tylko uszkodzonych odcinków). <br/> - Oszczędność wody i energii. <br/><br/> Dołącz do grona nowoczesnych zarządców sieci. <br/><br/> Pozdrawiam, <br/> Przemysław Właśniewski</p>",
+        category: "DRONE_OFFER",
+        variables: JSON.stringify([])
+    },
+    {
+        title: "Dron - Rolnictwo i Szkody Łowieckie",
+        subject: "Ochrona upraw i szacowanie szkód z precyzją drona",
+        content: "<p>Dzień dobry, <br/><br/> Nowoczesne rolnictwo to dane. Oferuję usługi, które pomagają chronić Twoje plony. <br/><br/> Wykorzystując <strong>Mavic 3 Thermal</strong> (termowizja + zoom x56), realizuję: <br/> 1. <strong>Wykrywanie zwierzyny</strong> w uprawach przed żniwami (ochrona saren/dzików). <br/> 2. <strong>Precyzyjne szacowanie szkód łowieckich</strong> - ortofotomapy z dokładnym wyliczeniem powierzchni zniszczeń. <br/> 3. Monitorowanie nawodnienia gleby. <br/><br/> Działam szybko i precyzyjnie. Dowód dla ubezpieczyciela lub Koła Łowieckiego \"czarno na białym\". <br/><br/> Zadzwoń po wycenę. <br/> Przemysław Właśniewski</p>",
+        category: "DRONE_OFFER",
+        variables: JSON.stringify([])
+    },
+    {
+        title: "Dron - Nieruchomości Premium (Dzień/Noc)",
+        subject: "Pokaż nieruchomość w nowym świetle - Wideo 4K + Nocne Ujęcia",
+        content: "<p>Szanowni Państwo, <br/><br/> Standardowe zdjęcia to już za mało, by wyróżnić ofertę Premium. <br/><br/> Oferuję kompleksową oprawę wizualną nieruchomości z użyciem drona klasy Enterprise. <br/> - <strong>Dzień:</strong> Krystalicznie czyste wideo 4K/60fps, pokazujące atuty lokalizacji. <br/> - <strong>Noc:</strong> Klimatyczne ujęcia nocne, podkreślające oświetlenie zewnętrzne i charakter rezydencji. <br/><br/> Moje materiały budują prestiż oferty i przyciągają najbardziej wymagających klientów. <br/><br/> Sprawdź moje portfolio na wlasniewski.pl. <br/><br/> Z poważaniem, <br/> Przemysław Właśniewski</p>",
+        category: "DRONE_OFFER",
+        variables: JSON.stringify(["company"])
+    },
+    {
+        title: "Dron - Security & Monitoring",
+        subject: "Wsparcie ochrony obiektu - Patrole z powietrza (Termowizja)",
+        content: "<p>Dzień dobry, <br/><br/> Bezpieczeństwo dużych obiektów (place budowy, magazyny, tereny przemysłowe) wymaga nowoczesnych rozwiązań. <br/><br/> Oferuję cykliczne lub interwencyjne patrole z drona wyposażonego w kamerę termowizyjną. <br/> <strong>Możliwości Mavic 3 Thermal:</strong> <br/> - Widoczność w całkowitej ciemności (wykrywanie intruzów z kilkuset metrów). <br/> - Dyskretna obserwacja z dużej wysokości (zoom hybrydowy x56). <br/> - Transmisja obrazu na żywo do centrum dowodzenia. <br/><br/> To tańsza i skuteczniejsza alternatywa dla tradycyjnych obchodów fizycznych. <br/><br/> Porozmawiajmy o bezpieczeństwie Twojego obiektu. <br/><br/> Pozdrawiam, <br/> Przemysław Właśniewski</p>",
+        category: "DRONE_OFFER",
+        variables: JSON.stringify([])
+    },
+    {
+        title: "Follow-up - Audyt Termowizyjny",
+        subject: "Re: Audyt energetyczny - oszczędności czekają",
+        content: "<p>Dzień dobry, <br/><br/> Wracam do Państwa z pytaniem o zainteresowanie audytem termowizyjnym. Zima zbliża się wielkimi krokami (lub: sezon grzewczy w pełni), a to najlepszy czas na weryfikację stanu budynku. <br/><br/> Przypomnę, że koszt audytu to ułamek potencjalnych oszczędności na ogrzewaniu. <br/><br/> Czy mogę zaproponować krótki telefon w tym tygodniu? <br/><br/> Pozdrawiam, <br/> Przemysław Właśniewski</p>",
+        category: "FOLLOW_UP",
+        variables: JSON.stringify([])
+    },
+    {
+        title: "Dron - Archeologia i Wykopaliska",
+        subject: "Dokumentacja archeologiczna z powietrza - precyzja i kontekst",
+        content: "<p>Szanowni Państwo, <br/><br/> Prace archeologiczne wymagają precyzyjnej dokumentacji kontekstowej. <br/><br/> Oferuję wsparcie dla ekspedycji archeologicznych przy użyciu drona. <br/> - Ortofotomapy stanowisk. <br/> - Modele 3D wykopów. <br/> - Dokumentacja postępów prac odkrywkowych. <br/><br/> Moje materiały stanowią doskonałe uzupełnienie dokumentacji rysunkowej i pomiarowej. Posiadam doświadczenie w pracy na stanowiskach historycznych. <br/><br/> Zapraszam do kontaktu. <br/> Przemysław Właśniewski</p>",
+        category: "DRONE_OFFER",
+        variables: JSON.stringify([])
+    },
+    {
+        title: "Dron - Ubezpieczenia (Szkody)",
+        subject: "Likwidacja szkód majątkowych - dokumentacja dronowa",
+        content: "<p>Dzień dobry, <br/><br/> Szybka i precyzyjna wycena szkody to klucz do zadowolenia klienta ubezpieczalni. <br/><br/> Wspieram likwidatorów szkód dostarczając materiał dowodowy z drona po: <br/> - Wichurach (uszkodzenia dachu). <br/> - Powodziach (zasięg zalania). <br/> - Pożarach. <br/><br/> Działam w trybie awaryjnym 24/7. Wysoka jakość zdjęć pozwala na zdalną ocenę rozmiaru szkody bez konieczności wizji lokalnej na dachu. <br/><br/> Polecam się do współpracy. <br/> Przemysław Właśniewski</p>",
+        category: "DRONE_OFFER",
+        variables: JSON.stringify([])
+    },
+    {
+        title: "Dron - Gminy i Promocja Regionu",
+        subject: "Pokażmy piękno Twojej Gminy - film promocyjny z drona",
+        content: "<p>Szanowny Panie Wójcie / Szanowna Pani Burmistrz, <br/><br/> Region {{company}} posiada niewykorzystany potencjał turystyczny. <br/><br/> Specjalizuję się w tworzeniu profesjonalnych filmów promujących miasta i gminy. Dynamiczne ujęcia z lotu ptaka, połączone z naziemnymi (z życia mieszkańców), tworzą historię, która przyciąga turystów i inwestorów. <br/><br/> Moje ostatnie realizacje osiągają tysiące wyświetleń w Social Mediach. Stwórzmy razem wizytówkę, z której będą dumni mieszkańcy. <br/><br/> Z poważaniem, <br/> Przemysław Właśniewski</p>",
+        category: "DRONE_OFFER",
+        variables: JSON.stringify(["company"])
+    },
+    {
+        title: "Termowizja - Fotowoltaika (Serwisanci)",
+        subject: "Współpraca dla firm serwisujących PV - szybsza diagnostyka",
+        content: "<p>Cześć! <br/><br/> Wiem, że ręczne mierzenie każdego panelu na farmie 1MW to koszmar. <br/><br/> Chętnie nawiążę stałą współpracę z Twoją firmą serwisową. Ja latam Mavic 3 Thermal i w 30 minut skanuję hektar farmy, dostarczając Ci 'mapę problemów'. Wy jedziecie prosto do uszkodzonych modułów. <br/><br/> Oszczędność czasu: 80%. <br/> Wzrost skuteczności: 100%. <br/><br/> Przetestujmy to na jednym zleceniu? <br/><br/> Pozdrawiam, <br/> Przemek Właśniewski</p>",
+        category: "DRONE_OFFER",
+        variables: JSON.stringify([])
+    },
+    {
+        title: "Dron - Leśnictwo i Drzewostan",
+        subject: "Monitoring stanu lasu i wiatrołomów z powietrza",
+        content: "<p>Darz Bór! <br/><br/> Oferuję usługi wspierające gospodarkę leśną nadleśnictwa {{company}}. <br/><br/> Zastosowanie drona pozwala na: <br/> - Szybką ocenę taksacyjną z powietrza. <br/> - Inwentaryzację szkód po wichurach (wiatrołomy). <br/> - Monitorowanie zdrowotności drzewostanu (kamery multispektralne/termowizyjne). <br/><br/> Dotrę tam, gdzie ciężki sprzęt i ludzie mają trudny dostęp. <br/><br/> Zapraszam do rozmowy o innowacjach w lesie. <br/> Przemysław Właśniewski</p>",
+        category: "DRONE_OFFER",
+        variables: JSON.stringify(["company"])
+    },
+    {
+        title: "Dron - Drogi i Infrastruktura",
+        subject: "Dokumentacja inwentaryzacyjna dróg i mostów",
+        content: "<p>Szanowni Państwo, <br/><br/> Zarządzanie infrastrukturą drogową wymaga aktualnych danych. <br/><br/> Wykonuję naloty fotogrametryczne pozwalające na stworzenie ortofotomapy pasa drogowego o wysokiej rozdzielczości (lepszej niż satelita). Idealne do: <br/> - Projektowania zjazdów. <br/> - Inwentaryzacji oznakowania poziomego. <br/> - Oceny stanu nawierzchni (spękania). <br/><br/> Materiał dostarczam w formatach kompatybilnych z CAD/GIS. <br/><br/> Pozdrawiam, <br/> Przemysław Właśniewski</p>",
+        category: "DRONE_OFFER",
+        variables: JSON.stringify([])
+    },
+    {
+        title: "Dron - Śluby Plenerowe",
+        subject: "Twój ślub z innej perspektywy - ujęcia dronowe",
+        content: "<p>Cześć! <br/><br/> Organizujecie ślub w plenerze? To idealna okazja na spektakularne ujęcia z drona! <br/><br/> Wyobraźcie sobie ujęcie 'filmowe', gdzie kamera unosi się nad Wami podczas przysięgi, pokazując całą scenerię i gości. To ujęcia, które robią największe wrażenie w teledysku ślubnym. <br/><br/> Współpracuję z fotografami i kamerzystami, nie przeszkadzając im w pracy (używam cichego drona i zoomu). <br/><br/> Zarezerwujcie termin już dziś! <br/> Przemek Właśniewski</p>",
+        category: "DRONE_OFFER",
+        variables: JSON.stringify([])
+    },
+    {
+        title: "Termowizja - Poszukiwania (SAR)",
+        subject: "Wsparcie w poszukiwaniach osób i zwierząt - Termowizja",
+        content: "<p>Dzień dobry, <br/><br/> W sytuacjach kryzysowych liczy się czas. Oferuję wsparcie dla grup poszukiwawczych i osób prywatnych w poszukiwaniu zaginionych osób lub zwierząt. <br/><br/> Dron Mavic 3 Thermal 'widzi' ciepło ciała nawet w gęstych zaroślach i w nocy, gdzie ludzkie oko zawodzi. <br/><br/> Jestem dostępny pod telefonem alarmowym. Zapisz ten numer: 123-456-789. <br/><br/> Z nadzieją na pomoc, <br/> Przemysław Właśniewski</p>",
+        category: "DRONE_OFFER",
+        variables: JSON.stringify([])
+    },
+    {
+        title: "Rabat - Zima z Dronem",
+        subject: "Zimowa sceneria z drona - Rabat -20%!",
+        content: "<p>Dzień dobry, <br/><br/> Zima to magiczny czas na zdjęcia! Ośnieżone dachy, białe krajobrazy... Twój obiekt {{company}} może wyglądać jak z bajki. <br/><br/> Tylko w styczniu i lutym oferuję sesje dronowe z rabatem -20%. <br/><br/> Wykorzystajmy ten czas, zanim śnieg stopnieje! <br/><br/> Pozdrawiam, <br/> Przemek</p>",
+        category: "DISCOUNT",
+        variables: JSON.stringify(["company"])
+    },
+    {
+        title: "Follow-up - Oferta Współpracy",
+        subject: "Współpraca B2B - czy rozważaliście moją propozycję?",
+        content: "<p>Szanowni Państwo, <br/><br/> Piszę ponownie, ponieważ jestem przekonany, że stała współpraca w zakresie usług dronowych przyniesie Państwa firmie wymierne korzyści wizerunkowe i operacyjne. <br/><br/> Czy możemy umówić się na 10-minutową wideorozmowę, podczas której pokażę przykłady realizacji dla firm z Państwa branży? <br/><br/> Czekam na propozycję dominu. <br/><br/> Z poważaniem, <br/> Przemysław Właśniewski</p>",
+        category: "FOLLOW_UP",
+        variables: JSON.stringify([])
+    }
+];
+
+async function main() {
+    console.log('Clearing old templates...');
+    await prisma.marketingTemplate.deleteMany({}); // Clear existing to allow clean seed
+
+    console.log('Start seeding MAVIC 3 THERMAL templates...');
+    for (const t of templates) {
+        await prisma.marketingTemplate.create({
+            data: t
+        });
+    }
+    console.log('Seeding finished.');
+}
+
+main()
+    .catch(e => {
+        console.error(e);
+        process.exit(1);
+    })
+    .finally(async () => {
+        await prisma.$disconnect();
+    });

@@ -60,32 +60,67 @@ async function main() {
     }
     console.log('✅ Pages created/updated');
 
-    // 3. Create essential settings (including SMTP for Gmail)
-    const settings = [
-        { key: 'site_title', value: 'Przemysław Właśniewski Fotografia' },
-        { key: 'site_description', value: 'Profesjonalna fotografia ślubna i portretowa' },
-        { key: 'contact_email', value: 'pwlasniewski@gmail.com' },
-        { key: 'contact_phone', value: '+48530788694' },
-        { key: 'whatsapp_number', value: '48530788694' },
-        // SMTP settings - use environment variables, NOT hardcoded passwords!
-        { key: 'smtp_host', value: process.env.SMTP_HOST || 'mail.wlasniewski.pl' },
-        { key: 'smtp_port', value: process.env.SMTP_PORT || '465' },
-        { key: 'smtp_user', value: process.env.SMTP_USER || 'noreply@wlasniewski.pl' },
-        { key: 'smtp_from', value: process.env.SMTP_FROM || 'noreply@wlasniewski.pl' },
-        // NOTE: SMTP_PASS should NEVER be stored in database - use environment variables only!
-    ];
+    // 3. Create/Update the main settings record
+    const mainSettingsKey = 'main_settings';
+    const existingSettings = await prisma.setting.findUnique({ where: { setting_key: mainSettingsKey } });
 
-    for (const setting of settings) {
-        await prisma.setting.upsert({
-            where: { setting_key: setting.key },
-            update: { setting_value: setting.value },
-            create: {
-                setting_key: setting.key,
-                setting_value: setting.value
+    if (!existingSettings) {
+        await prisma.setting.create({
+            data: {
+                setting_key: mainSettingsKey,
+                // Navbar & Branding
+                navbar_layout: 'logo_left_menu_right',
+                navbar_sticky: true,
+                navbar_transparent: false,
+                navbar_font_size: 16,
+                navbar_font_family: 'Montserrat',
+                logo_size: 140,
+                seasonal_effect: 'none',
+
+                // Email SMTP (Defaults)
+                smtp_host: process.env.SMTP_HOST || 'mail.wlasniewski.pl',
+                smtp_port: parseInt(process.env.SMTP_PORT || '465'),
+                smtp_user: process.env.SMTP_USER || 'noreply@wlasniewski.pl',
+                smtp_from: process.env.SMTP_FROM || 'noreply@wlasniewski.pl',
+
+                // Payment P24
+                p24_test_mode: true,
+                p24_method_blik: true,
+                p24_method_card: true,
+                p24_method_transfer: true,
+
+                // Payment PayU
+                payu_environment: 'sandbox',
+
+                // Booking
+                booking_currency: 'PLN',
+                booking_min_days_ahead: 7,
+                booking_payment_method: 'stripe',
+                booking_require_payment: false,
+
+                // Marketing
+                urgency_enabled: false,
+                urgency_slots_remaining: 5,
+                social_proof_enabled: true,
+                social_proof_total_clients: 100,
+                promo_code_discount_enabled: false,
+                promo_code_discount_amount: 10,
+                promo_code_discount_type: 'percentage',
+
+                // Gift Cards
+                gift_card_promo_enabled: false,
+                gift_card_promo_title: 'Karty Podarunkowe',
+                gift_card_promo_rotation_interval: 5,
+                gift_card_hero_opacity: 0.6,
+
+                // Portfolio
+                portfolio_layout: 'slider',
             }
         });
+        console.log('✅ Main settings record created');
+    } else {
+        console.log('ℹ️ Main settings record already exists');
     }
-    console.log('✅ Settings created/updated');
 
     // 4. Clear old analytics (optional - tylko jeśli tabela istnieje)
     try {

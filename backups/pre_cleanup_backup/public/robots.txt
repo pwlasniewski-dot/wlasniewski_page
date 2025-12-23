@@ -1,0 +1,26 @@
+User-agent: *
+Allow: /
+
+# Disallow admin and API routes
+Disallow: /admin/
+Disallow: /api/
+
+# Disallow private gallery access (requires code)
+Disallow: /galeria/*/
+
+# Allow specific public pages
+Allow: /fotograf-torun
+Allow: /fotograf-grudziadz
+Allow: /fotograf-lisewo
+Allow: /fotograf-pluznica
+Allow: /fotograf-wabrzezno
+Allow: /fotograf-powiat-torunski
+Allow: /fotograf-powiat-wabrzeski
+Allow: /portfolio/
+Allow: /blog/
+Allow: /o-mnie
+Allow: /jak-sie-ubrac
+Allow: /rezerwacja
+
+# Sitemap
+Sitemap: https://wlasniewski.pl/sitemap.xml

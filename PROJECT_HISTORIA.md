@@ -1,4 +1,50 @@
-# Historia Zmian Projektu - wlasniewski.pl
+# PROJECT_HISTORIA & VADEMECUM STABILNOŚCI
+
+> [!IMPORTANT]
+> **## ZASADY STABILNOŚCI (ŹRÓDŁO PRAWDY)
+
+### 1. SMTP & Email (Holy Configuration) [STABLE: 2025-12-23]
+*   **STATUS:** 100% sprawny (Zweryfikowano formularze: Kontakt, Booking, Drone, Gift Card).
+*   **CRITICAL FLAG:** `tls: { rejectUnauthorized: false }` w `src/lib/email/sender.ts` oraz `src/app/api/admin/test-email/route.ts`.
+*   **UWAGA:** Ta konfiguracja jest NIEZBĘDNA dla poprawnej komunikacji z serwerem `mail.wlasniewski.pl`. Nie usuwać bez konsultacji.
+*   **ZAKAZ**: Nigdy nie usuwaj tej flagi TLS, bo wysyłka maili natychmiast przestanie działać.
+
+### 2. PROTOKÓŁ "ZERO LOSS" (Data Persistence) [NEW: 2025-12-23]
+*   **STATUS:** Wdrożony i przetestowany end-to-end.
+*   **NARZĘDZIE:** `npm run db:backup` / `npm run db:restore` (`prisma/db-management.ts`).
+*   **ZASADA #1:** NIGDY nie używaj `prisma db push` na środowisku produkcyjnym (skrypt został przemianowany na `prisma:push-LOCAL-ONLY-DANGEROUS`).
+*   **ZASADA #2:** Przed każdą większą zmianą w schemacie lub migracji WYKONAJ BACKUP (`db:backup`).
+*   **ZASADA #3:** Backup "Holy Content" obejmuje: Blog, Portfolio, Settings, MediaLibrary, DroneOrders, Inquiries i inne kluczowe tabele.
+*   **LOKALIZACJA:** `backups/data/latest-holy-backup.json` to zawsze najnowsza pełna migawka bezpiecznej bazy.
+3. ✅ **DATABASE**: ZAKAZ `prisma db push` na produkcji. Używaj `prisma migrate`. Wszystkie domyślne ustawienia i pakiety MUSZĄ być w `prisma/seed.ts`.
+4. ✅ **LOGGING**: Używaj `logSystem()` (zapis do bazy). Nigdy nie pisz do plików `.log` ani przez `fs` (Netlify to zablokuje).
+5. ✅ **UI FRAMING (HeroSlider)**: Aby twarze na pionowych zdjęciach nie były ucięte, używamy `backgroundPosition: 'center 15%'` (desktop) oraz `top center` (mobile). Wartość ta jest wpisana na sztywno w `src/components/HeroSlider.tsx`.
+6. ✅ **CLEANUP**: Wszystkie archiwalne raporty i skrypty są w `backups/ARCHIVE_MESS`. Nie dodawaj nowych plików `.md` do roota.
+
+---
+
+## 🏗️ ŚCIĄGA Z MODUŁÓW
+
+- **Admin Settings**: Jeden rekord w tabeli `Setting` (`main_settings`). Edytuj go wyłącznie przez `/admin/settings` lub `seed.ts`.
+- **Analityka**: Zdarzenia śledzimy w `AnalyticsEvent`. Wykresy BI zależą od tego pola.
+- **Media**: Przez S3 (`src/lib/storage/s3.ts`). Baza trzyma tylko URL.
+
+---
+
+## ✅ STAN PRODUKCYJNY (100% STABLE - 2025-12-23)
+
+Oto lista modułów, które są przetestowane, działają i **nie wolno ich zmieniać** bez poważnego powodu:
+
+1.  **System Rezerwacji**: Kalendarz, wybór pakietów i zapis do DB (`/rezerwacja`).
+2.  **Karty Podarunkowe**: Cały flow zakupu, generowania kodu i wysyłki maila (`/karta-podarunkowa`).
+3.  **Portfolio CMS**: Dodawanie sesji, kategoryzacja i wyświetlanie galerii z S3.
+4.  **Admin Banners**: Centralny panel zarządzania promocjami (`/admin/banners`).
+5.  **Dron B2B**: Formularz wyceny usług dronowych i panel zleceń.
+6.  **BI Dashboard**: Wykresy przychodów i tablica Scrum w analityce.
+
+---
+
+# Historia Zmian Projektu
 
 Ten plik służy do ścisłego monitorowania wszystkich zmian wprowadzanych w projekcie, aby uniknąć regresji i utraty danych.
 
@@ -12,7 +58,35 @@ Ten plik służy do ścisłego monitorowania wszystkich zmian wprowadzanych w pr
 
 ## Log Zmian
 
-### [2025-12-22] 🎨 FIX: GiftCardPromoBar Visibility Issue
+### [2025-12-22] 🎨 UI Refinements & Admin Restructuring
+
+**Problem:** 
+1. SocialProofBanner close button was hidden by the chat widget on mobile.
+2. HeroSlider portrait images had heads cut off on desktop.
+3. Navbar did not hide on scroll on the homepage.
+4. Banner settings were scattered across multiple admin pages.
+5. Authentication issue on the new Banners page (incorrect token key).
+
+**Rozwiązanie:**
+- ✅ **Centralizacja Banerów**: Stworzono `/admin/banners` do zarządzania wszystkimi banerami (Promocode, GiftCard, SocialProof). Usunięto zduplikowane ustawienia z innych stron.
+- ✅ **HeroSlider Framing**: Ustawiono `backgroundPosition: center 15%` dla desktopu, co przesuwa zdjęcia pionowe o ok. 1/7 w górę, zapobiegając ucinaniu twarzy. Mobile pozostawiono na `top center`.
+- ✅ **Navbar Auto-hide**: Usunięto warunek `if (isHome)` w `Navbar.tsx`, umożliwiając ukrywanie paska na stronie głównej.
+- ✅ **SocialProofBanner Mobile**: Przeniesiono przycisk zamykania na lewą stronę (z dala od widgetu czatu) i zmieniono layout na `flex-row` na mobile dla lepszej widoczności.
+- ✅ **Admin Auth Fix**: Poprawiono klucz tokena z `token` na `admin_token` w `/admin/banners`.
+
+**Files Modified:**
+- `src/app/admin/banners/page.tsx`
+- `src/components/HeroSlider.tsx`
+- `src/components/Navbar.tsx`
+- `src/components/PhotoChallenge/SocialProofBanner.tsx`
+- `src/app/admin/settings/page.tsx` (usunięcie ustawień banerów)
+- `src/app/admin/gift-cards/page.tsx` (usunięcie ustawień banerów)
+
+**Build & Push:** ✅ SUCCESS (commit `e476397`)
+**Status:** ✅ **DONE**
+
+---
+
 
 **Problem:** Banerek z kartami podarunkowymi (floating sidebar z lewej strony) nie wyświetlał się na stronie, mimo że był poprawnie załadowany i renderowany
 
