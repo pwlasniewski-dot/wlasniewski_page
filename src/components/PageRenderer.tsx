@@ -92,8 +92,19 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
 
                     case 'hero':
                         return (
-                            <section key={section.id} className="relative py-24 px-4 bg-zinc-950 flex flex-col items-center text-center overflow-hidden">
-                                <div className="absolute inset-0 bg-gradient-to-b from-gold-500/5 to-transparent pointer-events-none" />
+                            <section key={section.id} className="relative py-32 px-4 bg-zinc-950 flex flex-col items-center justify-center text-center overflow-hidden min-h-[60vh]">
+                                {section.image ? (
+                                    <>
+                                        <div
+                                            className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+                                            style={{ backgroundImage: `url("${section.image}")` }}
+                                        />
+                                        <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px]" />
+                                    </>
+                                ) : (
+                                    <div className="absolute inset-0 bg-gradient-to-b from-gold-500/10 to-transparent pointer-events-none" />
+                                )}
+
                                 <div className="relative z-10 max-w-4xl space-y-6">
                                     {section.tag && (
                                         <span className="inline-block px-4 py-1.5 bg-gold-500/10 text-gold-500 text-sm font-bold tracking-widest uppercase rounded-full border border-gold-500/20">
@@ -103,9 +114,21 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                     <h1 className="text-5xl md:text-7xl font-display font-bold text-white leading-tight">
                                         {section.title}
                                     </h1>
-                                    <p className="text-xl md:text-2xl text-zinc-400 font-light">
-                                        {section.subtitle}
-                                    </p>
+                                    {section.subtitle && (
+                                        <p className="text-xl md:text-2xl text-zinc-400 font-light">
+                                            {section.subtitle}
+                                        </p>
+                                    )}
+                                    {section.buttonText && (
+                                        <div className="pt-4">
+                                            <Link
+                                                href={section.buttonLink || '#'}
+                                                className="inline-block px-8 py-4 bg-gold-500 hover:bg-gold-400 text-black font-bold rounded-xl transition-all transform hover:scale-105"
+                                            >
+                                                {section.buttonText}
+                                            </Link>
+                                        </div>
+                                    )}
                                 </div>
                             </section>
                         );

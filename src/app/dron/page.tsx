@@ -17,7 +17,8 @@ import {
 import prisma from '@/lib/db/prisma';
 import DronContent from './DronContent';
 
-export const revalidate = 3600; // Cache for 1 hour
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export async function generateMetadata(): Promise<Metadata> {
     const page = await prisma.page.findUnique({

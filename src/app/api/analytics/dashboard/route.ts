@@ -154,11 +154,14 @@ export async function GET(request: Request) {
             }));
 
         // Calculate conversion data
+        const bookingsStarted = events.filter(e => e.event_type === 'booking_started').length;
+        const totalPageViews = events.filter(e => e.event_type === 'page_view').length;
+
         const conversionData = {
-            bookingsStarted: events.filter(e => e.event_type === 'booking_started').length || Math.floor(bookings.length * 3.5),
+            bookingsStarted,
             bookingsCompleted: bookings.length,
-            conversionRate: events.length > 0
-                ? Math.round((bookings.length / events.filter(e => e.event_type === 'page_view').length) * 100 * 10) / 10
+            conversionRate: totalPageViews > 0
+                ? Math.min(100, Math.round((bookings.length / totalPageViews) * 100 * 10) / 10)
                 : 0,
             totalRevenue: bookings.reduce((sum, b) => sum + (b.price || 0), 0),
             avgOrderValue: bookings.length > 0
@@ -166,17 +169,36 @@ export async function GET(request: Request) {
                 : 0
         };
 
-        // Generate funnel data using page_url
-        const pageViewCount = events.filter(e => e.event_type === 'page_view').length;
+        // Generate funnel data using real events
         const portfolioViews = events.filter(e => e.page_url?.includes('portfolio')).length;
         const bookingPageViews = events.filter(e => e.page_url?.includes('rezerwacja')).length;
 
         const funnel = [
-            { step: 'Strona główna', count: pageViewCount, dropoff: 0 },
-            { step: 'Portfolio / Oferta', count: portfolioViews || Math.floor(pageViewCount * 0.45), dropoff: portfolioViews ? Math.round((1 - portfolioViews / pageViewCount) * 100) : 54.5 },
-            { step: 'Strona rezerwacji', count: bookingPageViews || Math.floor(pageViewCount * 0.34), dropoff: 25.4 },
-            { step: 'Wypełnienie formularza', count: conversionData.bookingsStarted, dropoff: 79.0 },
-            { step: 'Wysłanie rezerwacji', count: conversionData.bookingsCompleted, dropoff: 74.2 },
+            {
+                step: 'Strona główna',
+                count: totalPageViews,
+                dropoff: 0
+            },
+            {
+                step: 'Portfolio / Oferta',
+                count: portfolioViews,
+                dropoff: totalPageViews > 0 ? Math.max(0, Math.round((1 - portfolioViews / totalPageViews) * 100)) : 0
+            },
+            {
+                step: 'Strona rezerwacji',
+                count: bookingPageViews,
+                dropoff: portfolioViews > 0 ? Math.max(0, Math.round((1 - bookingPageViews / portfolioViews) * 100)) : 0
+            },
+            {
+                step: 'Wypełnienie formularza',
+                count: conversionData.bookingsStarted,
+                dropoff: bookingPageViews > 0 ? Math.max(0, Math.round((1 - conversionData.bookingsStarted / bookingPageViews) * 100)) : 0
+            },
+            {
+                step: 'Wysłanie rezerwacji',
+                count: conversionData.bookingsCompleted,
+                dropoff: conversionData.bookingsStarted > 0 ? Math.max(0, Math.round((1 - conversionData.bookingsCompleted / conversionData.bookingsStarted) * 100)) : 0
+            },
         ];
 
         // Calculate totals

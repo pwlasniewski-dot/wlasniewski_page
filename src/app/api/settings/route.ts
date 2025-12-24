@@ -208,6 +208,11 @@ export async function POST(request: NextRequest) {
                 await prisma.$transaction(updates);
             }
 
+            // Ensure changes are visible immediately (ISR cache invalidation)
+            // Revalidate everything since layout includes analytics, logo, etc.
+            const { revalidatePath } = await import('next/cache');
+            revalidatePath('/', 'layout');
+
             return NextResponse.json({ success: true, message: 'Settings updated' });
         } catch (error) {
             return NextResponse.json({ error: 'Failed to update settings' }, { status: 500 });

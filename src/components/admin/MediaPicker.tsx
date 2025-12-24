@@ -6,6 +6,7 @@ import { X, Check, Search, Upload, FolderPlus, Folder, MoreHorizontal, Edit, Tra
 import { getApiUrl } from '@/lib/api-config';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
+import imageCompression from 'browser-image-compression';
 import MediaItemCard from './MediaItemCard';
 
 interface MediaItem {
@@ -136,41 +137,98 @@ export default function MediaPicker({ isOpen, onClose, onSelect, multiple = fals
         let targetFolder = currentFolder || 'uploads';
         const uploadedIds: number[] = [];
 
-        // Check if token exists
         const token = localStorage.getItem('admin_token');
         if (!token) {
-            toast.error('Nie jesteś zalogowany. Zaloguj się do panelu admina.');
+            toast.error('Nie jesteś zalogowany.');
             setUploading(false);
             return;
         }
 
         for (const file of files) {
-            const formData = new FormData();
-            formData.append('file', file);
-            formData.append('folder', targetFolder);
-
             try {
-                const res = await fetch(`${getApiUrl('media')}/upload`, {
+                let fileToUpload = file;
+                let fileName = file.name;
+
+                // 1. Client-side WebP Compression & Conversion
+                if (file.type.startsWith('image/')) {
+                    const options = {
+                        maxSizeMB: 2,
+                        maxWidthOrHeight: 2560,
+                        useWebWorker: true,
+                        fileType: 'image/webp'
+                    };
+                    try {
+                        const compressedFile = await imageCompression(file, options);
+                        // Rename to .webp if it wasn't already
+                        const baseName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+                        fileName = `${baseName}.webp`;
+                        fileToUpload = new File([compressedFile], fileName, { type: 'image/webp' });
+                        console.log(`[WebP] Converted ${file.name} to ${fileName} (${(compressedFile.size / 1024 / 1024).toFixed(2)} MB)`);
+                    } catch (compressErr) {
+                        console.error('Compression failed, using original', compressErr);
+                    }
+                }
+
+                // 2. Get Presigned URL
+                const presignedRes = await fetch(`${getApiUrl('media')}/upload/presigned`, {
                     method: 'POST',
-                    headers: { 'Authorization': `Bearer ${token}` },
-                    body: formData,
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        fileName: fileName,
+                        fileType: fileToUpload.type,
+                        folder: targetFolder
+                    }),
                 });
-                const data = await res.json();
+
+                const { uploadUrl, key, publicUrl, error: preError } = await presignedRes.json();
+                if (!presignedRes.ok) throw new Error(preError || 'Failed to get upload URL');
+
+                // 3. Direct Upload to S3
+                const s3Res = await fetch(uploadUrl, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': fileToUpload.type },
+                    body: fileToUpload,
+                });
+
+                if (!s3Res.ok) throw new Error('S3 Upload failed');
+
+                // 4. Register in Database
+                const regRes = await fetch(`${getApiUrl('media')}/upload/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        fileName: key,
+                        publicUrl: publicUrl,
+                        fileSize: fileToUpload.size,
+                        mimeType: fileToUpload.type,
+                        folder: targetFolder
+                    }),
+                });
+
+                const data = await regRes.json();
                 if (data.success) {
                     uploadedIds.push(data.media.id);
                 } else {
-                    toast.error(`Błąd: ${data.error || 'Unknown error'}`);
+                    throw new Error(data.error || 'Registration failed');
                 }
-            } catch (error) {
-                console.error('Upload failed', error);
-                toast.error(`Błąd wgrywania: ${file.name}`);
+            } catch (error: any) {
+                console.error('Upload flow failed', error);
+                toast.error(`Błąd: ${file.name} - ${error.message}`);
             }
         }
 
         setUploading(false);
-        toast.success(`Wgrano pomyślnie`);
-        await fetchMedia();
-        await fetchFolders();
+        if (uploadedIds.length > 0) {
+            toast.success(`Wgrano ${uploadedIds.length} plik(ów)`);
+            await fetchMedia();
+            await fetchFolders();
+        }
     };
 
     // --- Selection & Actions ---
@@ -487,7 +545,7 @@ export default function MediaPicker({ isOpen, onClose, onSelect, multiple = fals
                                 <p>Przeciągnij pliki tutaj</p>
                             </div>
                         ) : (
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 pb-20">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-4 pb-20">
                                 {filteredMedia.map((item) => (
                                     <MediaItemCard
                                         key={item.id}

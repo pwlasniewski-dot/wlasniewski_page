@@ -15,6 +15,7 @@ export interface ThermalSectionData {
     category: string;
     visualImage: string;
     thermalImage: string;
+    description?: string;
     labelLeft?: string;
     labelRight?: string;
 }
@@ -43,11 +44,12 @@ interface PageBuilderProps {
     onChange: (sections: PageSection[]) => void;
 }
 
-function SortableSection({ section, index, onRemove, onUpdate }: {
+function SortableSection({ section, index, onRemove, onUpdate, onMove }: {
     section: PageSection;
     index: number;
     onRemove: (id: string) => void;
     onUpdate: (id: string, data: Partial<PageSection>) => void;
+    onMove: (id: string, direction: 'up' | 'down') => void;
 }) {
     const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: section.id });
     const style = { transform: CSS.Transform.toString(transform), transition };
@@ -96,6 +98,22 @@ function SortableSection({ section, index, onRemove, onUpdate }: {
                     <span className="text-sm font-medium text-white uppercase tracking-wider">
                         {section.type.replace('_', ' ')}
                     </span>
+                    <div className="flex items-center gap-1 border-l border-zinc-700 ml-4 pl-4">
+                        <button
+                            onClick={(e) => { e.preventDefault(); onMove(section.id, 'up'); }}
+                            className="p-1 hover:text-yellow-500 text-zinc-400 transition-colors"
+                            title="Przesuń w górę"
+                        >
+                            <MoveUp className="w-4 h-4" />
+                        </button>
+                        <button
+                            onClick={(e) => { e.preventDefault(); onMove(section.id, 'down'); }}
+                            className="p-1 hover:text-yellow-500 text-zinc-400 transition-colors"
+                            title="Przesuń w dół"
+                        >
+                            <MoveDown className="w-4 h-4" />
+                        </button>
+                    </div>
                 </div>
                 <button onClick={() => onRemove(section.id)} className="text-zinc-400 hover:text-red-500 transition-colors">
                     <Trash2 className="w-5 h-5" />
@@ -380,6 +398,7 @@ function SortableSection({ section, index, onRemove, onUpdate }: {
                                             category: 'Nowa Kategoria',
                                             visualImage: '',
                                             thermalImage: '',
+                                            description: '',
                                             labelLeft: 'Widok Standardowy',
                                             labelRight: 'Termowizja'
                                         };
@@ -482,6 +501,18 @@ function SortableSection({ section, index, onRemove, onUpdate }: {
                                                     className="bg-zinc-700 border border-zinc-600 rounded px-3 py-1.5 text-xs text-white"
                                                 />
                                             </div>
+                                            <div>
+                                                <textarea
+                                                    value={ts.description || ''}
+                                                    onChange={(e) => {
+                                                        const updated = [...(section.thermalSections || [])];
+                                                        updated[tsIndex] = { ...ts, description: e.target.value };
+                                                        onUpdate(section.id, { thermalSections: updated });
+                                                    }}
+                                                    placeholder="Opis / Podtytuł kategorii..."
+                                                    className="w-full bg-zinc-700 border border-zinc-600 rounded px-3 py-1.5 text-xs text-white h-16"
+                                                />
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
@@ -580,6 +611,15 @@ export default function PageBuilder({ sections, onChange }: PageBuilderProps) {
         onChange(sections.filter(s => s.id !== id));
     };
 
+    const moveSection = (id: string, direction: 'up' | 'down') => {
+        const index = sections.findIndex(s => s.id === id);
+        if (direction === 'up' && index > 0) {
+            onChange(arrayMove(sections, index, index - 1));
+        } else if (direction === 'down' && index < sections.length - 1) {
+            onChange(arrayMove(sections, index, index + 1));
+        }
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex gap-2 flex-wrap">
@@ -618,6 +658,7 @@ export default function PageBuilder({ sections, onChange }: PageBuilderProps) {
                             index={index}
                             onRemove={removeSection}
                             onUpdate={updateSection}
+                            onMove={moveSection}
                         />
                     ))}
                 </SortableContext>

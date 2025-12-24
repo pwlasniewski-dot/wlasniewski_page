@@ -144,10 +144,19 @@ export async function POST(request: NextRequest) {
 
             // Menu jest teraz oparte TYLKO na pages.is_in_menu - bez synchronizacji z menu_items
 
-            // Ensure homepage changes are visible immediately (ISR cache invalidation)
+            // Ensure changes are visible immediately (ISR cache invalidation)
+            revalidatePath(`/${page.slug}`);
             if (page.slug === 'strona-glowna') {
                 revalidatePath('/');
             }
+            if (page.slug === 'portfolio') {
+                revalidatePath('/portfolio');
+            }
+            if (page.slug === 'dron') {
+                revalidatePath('/dron');
+            }
+            // Broad revalidation for safety
+            revalidatePath('/', 'layout');
 
             return NextResponse.json({ success: true, page });
         } catch (error) {

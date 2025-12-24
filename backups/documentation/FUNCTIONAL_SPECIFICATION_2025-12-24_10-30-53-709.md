@@ -120,7 +120,7 @@ Centrum zarządzania tożsamością i infrastrukturą:
 - **Payments**: Konfiguracja Merchant ID, API Keys dla P24 i PayU. Tryb testowy (Sandbox) vs Produkcja.
 - **SMTP**: Pełne dane serwera pocztowego do wysyłki powiadomień i voucherów.
 - **Identity**: Zarządzanie Faviconą, Logotypami (Light/Dark mode) i Typografią nawigacji.
-- **Analytics**: Integracja z zewnętrznymi skryptami śledzącymi (Google Analytics, GTM, FB Pixel). System obsługuje **Instant Synchronization** – każda zmiana ID w panelu wymusza natychmiastową aktualizację kodu na stronie publicznej poprzez unieważnienie pamięci podręcznej (ISR Cache Revalidation).
+- **Analytics**: Integracja z zewnętrznymi skryptami śledzącymi.
 
 ### 7.2. Bezpieczeństwo i Diagnostyka
 - **System Logs**: Rejestracja zdarzeń systemowych (INFO, WARN, ERROR) z podziałem na moduły.

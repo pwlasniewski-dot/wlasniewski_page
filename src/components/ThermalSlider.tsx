@@ -1,12 +1,13 @@
 
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { MoveHorizontal, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface ThermalSection {
     id: string;
     category: string;
+    description?: string;
     visualImage: string;
     thermalImage: string;
     labelLeft?: string;
@@ -33,21 +34,13 @@ export default function ThermalSlider({
     const [sliderPos, setSliderPos] = useState(50);
     const [activeSection, setActiveSection] = useState(0);
     const [autoScroll, setAutoScroll] = useState(true);
+    const [isDragging, setIsDragging] = useState(false);
+
     const containerRef = useRef<HTMLDivElement>(null);
-    const scrollContainerRef = useRef<HTMLDivElement>(null);
     const autoScrollRef = useRef<NodeJS.Timeout>();
 
-    // If no sections and no individual images, don't render anything or show a "Work in progress" placeholder
-    if (sections.length === 0 && !visualImage && !thermalImage) {
-        return (
-            <div className="w-full py-20 text-center border-2 border-dashed border-zinc-800 rounded-3xl">
-                <p className="text-zinc-500">Galeria w przygotowaniu...</p>
-            </div>
-        );
-    }
-
     // Prepare sections from props
-    const displaySections: ThermalSection[] = sections.length > 0 ? sections : [
+    const displaySections: ThermalSection[] = (sections && sections.length > 0) ? sections : [
         {
             id: '1',
             category: 'Podgląd',
@@ -58,24 +51,58 @@ export default function ThermalSlider({
         }
     ];
 
+    if (displaySections.length === 1 && !displaySections[0].visualImage && !displaySections[0].thermalImage) {
+        return (
+            <div className="w-full py-20 text-center border-2 border-dashed border-zinc-800 rounded-3xl">
+                <p className="text-zinc-500">Galeria w przygotowaniu...</p>
+            </div>
+        );
+    }
+
     const currentSection = displaySections[activeSection];
 
-    const handleMove = (e: React.MouseEvent | React.TouchEvent) => {
+    const updateSlider = useCallback((clientX: number) => {
         if (!containerRef.current) return;
-
         const rect = containerRef.current.getBoundingClientRect();
-        let x = 0;
-
-        if ('touches' in e) {
-            x = e.touches[0].clientX - rect.left;
-        } else {
-            x = (e as React.MouseEvent).clientX - rect.left;
-        }
-
+        const x = clientX - rect.left;
         const position = (x / rect.width) * 100;
         setSliderPos(Math.max(0, Math.min(100, position)));
         setAutoScroll(false);
+    }, []);
+
+    const handleMouseDown = (e: React.MouseEvent) => {
+        setIsDragging(true);
+        updateSlider(e.clientX);
     };
+
+    const handleTouchStart = (e: React.TouchEvent) => {
+        setIsDragging(true);
+        updateSlider(e.touches[0].clientX);
+    };
+
+    useEffect(() => {
+        const handleMove = (e: MouseEvent) => {
+            if (isDragging) updateSlider(e.clientX);
+        };
+        const handleTouchMove = (e: TouchEvent) => {
+            if (isDragging) updateSlider(e.touches[0].clientX);
+        };
+        const handleEnd = () => setIsDragging(false);
+
+        if (isDragging) {
+            window.addEventListener('mousemove', handleMove);
+            window.addEventListener('mouseup', handleEnd);
+            window.addEventListener('touchmove', handleTouchMove, { passive: false });
+            window.addEventListener('touchend', handleEnd);
+        }
+
+        return () => {
+            window.removeEventListener('mousemove', handleMove);
+            window.removeEventListener('mouseup', handleEnd);
+            window.removeEventListener('touchmove', handleTouchMove);
+            window.removeEventListener('touchend', handleEnd);
+        };
+    }, [isDragging, updateSlider]);
 
     const handleCategoryClick = (index: number) => {
         setActiveSection(index);
@@ -95,128 +122,125 @@ export default function ThermalSlider({
     // Auto-scroll effect
     useEffect(() => {
         if (!autoScroll || displaySections.length <= 1) return;
-
         autoScrollRef.current = setInterval(() => {
             setActiveSection((prev) => (prev === displaySections.length - 1 ? 0 : prev + 1));
-        }, 5000); // Change section every 5 seconds
-
+        }, 8000);
         return () => {
             if (autoScrollRef.current) clearInterval(autoScrollRef.current);
         };
     }, [autoScroll, displaySections.length]);
 
+    // Format URLs for CSS
+    const visualUrl = currentSection.visualImage ? `url("${currentSection.visualImage}")` : 'none';
+    const thermalUrl = currentSection.thermalImage ? `url("${currentSection.thermalImage}")` : 'none';
+
     return (
         <div className="w-full space-y-6">
             {title && (
-                <div className="text-center">
-                    <h2 className="text-3xl lg:text-4xl font-bold text-white mb-2">{title}</h2>
-                    <p className="text-zinc-400">Kategoria: <span className="text-yellow-500 font-semibold">{currentSection.category}</span></p>
+                <div className="text-center space-y-2">
+                    <h2 className="text-3xl lg:text-4xl font-bold text-white tracking-tight">{title}</h2>
+                    <div className="flex flex-col items-center">
+                        <span className="text-yellow-500 font-bold uppercase tracking-[0.2em] text-[10px] mb-1">Bieżąca Analiza</span>
+                        <h3 className="text-xl font-medium text-zinc-100">{currentSection.category}</h3>
+                        {currentSection.description && (
+                            <p className="text-zinc-400 text-sm max-w-2xl mt-2 leading-relaxed italic">
+                                {currentSection.description}
+                            </p>
+                        )}
+                    </div>
                 </div>
             )}
 
-            {/* Category Tags */}
-            {displaySections.length > 1 && (
-                <div className="flex flex-wrap gap-3 justify-center">
+            {displaySections.length > 0 && (
+                <div className="flex flex-wrap gap-2 justify-center px-4">
                     {displaySections.map((section, index) => (
                         <button
                             key={section.id}
                             onClick={() => handleCategoryClick(index)}
-                            className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${activeSection === index
-                                    ? 'bg-yellow-500 text-black shadow-lg'
-                                    : 'bg-zinc-800 text-zinc-300 border border-zinc-700 hover:border-yellow-500/50 hover:text-white'
+                            className={`group relative px-5 py-2.5 rounded-full text-xs font-bold transition-all overflow-hidden ${activeSection === index
+                                ? 'bg-yellow-500 text-black shadow-lg shadow-yellow-500/20'
+                                : 'bg-zinc-900 text-zinc-400 border border-white/5 hover:text-white hover:bg-zinc-800'
                                 }`}
                         >
-                            {section.category}
+                            <span className="relative z-10">{section.category}</span>
+                            {activeSection === index && (
+                                <span className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-yellow-600 opacity-50 blur-sm" />
+                            )}
                         </button>
                     ))}
                 </div>
             )}
 
-            {/* Main Slider */}
             <div
                 ref={containerRef}
-                className="relative w-full aspect-[16/6] overflow-hidden rounded-2xl cursor-col-resize select-none shadow-2xl"
-                onMouseMove={handleMove}
-                onTouchMove={handleMove}
+                className="relative w-full aspect-[16/6] md:aspect-[16/7] overflow-hidden rounded-2xl cursor-col-resize select-none shadow-2xl bg-zinc-900 border border-white/5 touch-none"
+                onMouseDown={handleMouseDown}
+                onTouchStart={handleTouchStart}
             >
                 {/* Thermal Image (Bottom Layer) */}
                 <div
-                    className="absolute inset-0 bg-cover bg-center transition-all duration-500"
-                    style={{ backgroundImage: `url(${currentSection.thermalImage})` }}
+                    className="absolute inset-0 bg-cover bg-center"
+                    style={{ backgroundImage: thermalUrl }}
                 />
 
                 {/* Visual Image (Top Layer) */}
                 <div
-                    className="absolute inset-0 bg-cover bg-center transition-all duration-500"
+                    className="absolute inset-0 bg-cover bg-center"
                     style={{
-                        backgroundImage: `url(${currentSection.visualImage})`,
-                        clipPath: `inset(0 ${100 - sliderPos}% 0 0)`
+                        backgroundImage: visualUrl,
+                        clipPath: `inset(0 ${100 - sliderPos}% 0 0)`,
+                        WebkitClipPath: `inset(0 ${100 - sliderPos}% 0 0)`
                     }}
                 />
 
                 {/* Slider Divider */}
                 <div
-                    className="absolute top-0 bottom-0 w-1 bg-white shadow-[0_0_15px_rgba(0,0,0,0.5)] z-10 transition-all duration-75"
+                    className="absolute top-0 bottom-0 w-0.5 bg-white shadow-[0_0_15px_rgba(0,0,0,0.5)] z-10"
                     style={{ left: `${sliderPos}%` }}
                 >
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-xl flex items-center justify-center text-black">
-                        <MoveHorizontal size={20} />
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-white rounded-full shadow-xl flex items-center justify-center text-black">
+                        <MoveHorizontal size={16} />
                     </div>
                 </div>
 
                 {/* Labels */}
-                <div className="absolute bottom-6 left-6 z-20 pointer-events-none">
-                    <span className="bg-black/60 backdrop-blur-md text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-full border border-white/10">
+                <div className="absolute bottom-4 left-4 z-20 pointer-events-none sm:bottom-6 sm:left-6">
+                    <span className="bg-black/60 backdrop-blur-md text-white text-[9px] sm:text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-full border border-white/10">
                         {currentSection.labelLeft || labelLeft}
                     </span>
                 </div>
-                <div className="absolute bottom-6 right-6 z-20 pointer-events-none">
-                    <span className="bg-yellow-500 text-black text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-full shadow-lg">
+                <div className="absolute bottom-4 right-4 z-20 pointer-events-none sm:bottom-6 sm:right-6">
+                    <span className="bg-yellow-500 text-black text-[9px] sm:text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-full shadow-lg">
                         {currentSection.labelRight || labelRight}
                     </span>
                 </div>
 
-                {/* Navigation Controls (if multiple sections) */}
                 {displaySections.length > 1 && (
                     <>
                         <button
-                            onClick={handlePrev}
-                            className="absolute left-4 top-1/2 -translate-y-1/2 z-20 bg-black/50 hover:bg-black/70 text-white p-3 rounded-full transition-all backdrop-blur-sm"
-                            aria-label="Previous"
+                            onClick={(e) => { e.stopPropagation(); handlePrev(); }}
+                            className="absolute left-2 top-1/2 -translate-y-1/2 z-20 bg-black/40 hover:bg-black/60 text-white p-2 rounded-full transition-all backdrop-blur-sm hidden sm:flex"
                         >
-                            <ChevronLeft size={24} />
+                            <ChevronLeft size={20} />
                         </button>
                         <button
-                            onClick={handleNext}
-                            className="absolute right-4 top-1/2 -translate-y-1/2 z-20 bg-black/50 hover:bg-black/70 text-white p-3 rounded-full transition-all backdrop-blur-sm"
-                            aria-label="Next"
+                            onClick={(e) => { e.stopPropagation(); handleNext(); }}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 z-20 bg-black/40 hover:bg-black/60 text-white p-2 rounded-full transition-all backdrop-blur-sm hidden sm:flex"
                         >
-                            <ChevronRight size={24} />
+                            <ChevronRight size={20} />
                         </button>
-
-                        {/* Indicators */}
-                        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex gap-2">
-                            {displaySections.map((_, index) => (
-                                <button
-                                    key={index}
-                                    onClick={() => handleCategoryClick(index)}
-                                    className={`w-2 h-2 rounded-full transition-all ${activeSection === index
-                                            ? 'bg-yellow-500 w-6'
-                                            : 'bg-white/30 hover:bg-white/50'
-                                        }`}
-                                    aria-label={`Go to section ${index + 1}`}
-                                />
-                            ))}
-                        </div>
                     </>
                 )}
             </div>
 
-            {/* Description */}
             {displaySections.length > 1 && (
-                <div className="text-center text-sm text-zinc-400">
-                    Sekcja {activeSection + 1} z {displaySections.length}
-                    {autoScroll && <span className="ml-2 text-yellow-500/70">Auto-scroll aktywny</span>}
+                <div className="flex justify-center gap-1.5">
+                    {displaySections.map((_, index) => (
+                        <div
+                            key={index}
+                            className={`h-1 rounded-full transition-all ${activeSection === index ? 'w-8 bg-yellow-500' : 'w-2 bg-zinc-800'}`}
+                        />
+                    ))}
                 </div>
             )}
         </div>

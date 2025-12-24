@@ -1,6 +1,9 @@
 import AnalyticsIntegration from './AnalyticsIntegration';
 import prisma from '@/lib/db/prisma';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default async function AnalyticsLoader() {
     // Skip database access during build time
     if (process.env.NEXT_PHASE === 'phase-production-build' || !process.env.DATABASE_URL) {
