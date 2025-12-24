@@ -14,159 +14,40 @@ import {
     ArrowRight
 } from 'lucide-react';
 
-export const metadata: Metadata = {
-    title: 'FOTO-DRON Przemysław Właśniewski | Termowizja Mavic 3 Thermal | Toruń, Bydgoszcz',
-    description: 'Specjalistyczne usługi dronem: termowizja Mavic 3 Thermal, inspekcje dachów, timeline budowy, koła łowieckie. Profesjonalne raporty B2B w kujawsko-pomorskim. NIP: 8781430365.',
-    keywords: ['Mavic 3 Thermal', 'Air 2 S', 'termowizja dronem toruń', 'inspekcja dachu bydgoszcz', 'analiza paneli fotowoltaicznych', 'zdjęcia okolicznościowe z drona', 'koła łowieckie termowizja'],
-};
+import prisma from '@/lib/db/prisma';
+import DronContent from './DronContent';
 
-export default function DronePage() {
-    const thermalSections = [
-        {
-            id: '1',
-            category: 'Fotowoltaika',
-            visualImage: 'https://images.unsplash.com/photo-1613665813671-0b34b838d5a1?auto=format&fit=crop&q=80&w=1200',
-            thermalImage: 'https://images.unsplash.com/photo-1581092916056-0c4c3acd3789?auto=format&fit=crop&q=80&w=1200',
-            labelLeft: 'Widok Standardowy',
-            labelRight: 'Termowizja'
-        },
-        {
-            id: '2',
-            category: 'Inspekcja Dachu',
-            visualImage: 'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&q=80&w=1200',
-            thermalImage: 'https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?auto=format&fit=crop&q=80&w=1200',
-            labelLeft: 'Widok Standardowy',
-            labelRight: 'Analiza Ciepła'
-        },
-        {
-            id: '3',
-            category: 'Linie Energetyczne',
-            visualImage: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&q=80&w=1200',
-            thermalImage: 'https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?auto=format&fit=crop&q=80&w=1200',
-            labelLeft: 'Widok Standardowy',
-            labelRight: 'Detekcja Anomalii'
-        },
-        {
-            id: '4',
-            category: 'Budynki Komercyjne',
-            visualImage: 'https://images.unsplash.com/photo-1486325212027-8081e485255e?auto=format&fit=crop&q=80&w=1200',
-            thermalImage: 'https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?auto=format&fit=crop&q=80&w=1200',
-            labelLeft: 'Widok Standardowy',
-            labelRight: 'Izolacja Cieplna'
-        },
-        {
-            id: '5',
-            category: 'Ortofotomapy',
-            visualImage: 'https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&q=80&w=1200',
-            thermalImage: 'https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?auto=format&fit=crop&q=80&w=1200',
-            labelLeft: 'Widok Standardowy',
-            labelRight: 'Analiza Spektralna'
-        }
-    ];
+export const revalidate = 3600; // Cache for 1 hour
 
-    return (
-        <div className="bg-black text-zinc-100 min-h-screen">
-            {/* Hero Section */}
-            <section className="relative py-16 px-6 max-w-7xl mx-auto overflow-hidden">
-                <div className="space-y-12">
-                    <div>
-                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 text-[10px] font-bold uppercase tracking-[0.2em] mb-6">
-                            <Zap size={12} /> Rozwiązania B2B
-                        </div>
-                        <h1 className="text-5xl lg:text-7xl font-bold mb-8 leading-[1.1] tracking-tight">
-                            Specjalistyczne <span className="text-yellow-500">usługi dronem</span> i termowizja.
-                        </h1>
-                        <p className="text-zinc-400 text-lg mb-10 leading-relaxed max-w-2xl">
-                            Jako **FOTO-DRON Przemysław Właśniewski** oferuję zaawansowaną diagnostykę z powietrza. Wykorzystujemy drona **Mavic 3 Thermal** (termowizja radiometryczna) oraz **Air 2 S** do precyzyjnych zdjęć technicznych i okolicznościowych na terenie Torunia, Bydgoszczy i całego województwa.
-                        </p>
-                        <div className="flex flex-wrap gap-4">
-                            <a href="#kontakt" className="bg-yellow-500 hover:bg-yellow-400 text-black font-bold px-8 py-4 rounded-full transition-all flex items-center gap-2 group">
-                                Zamów darmową wycenę <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
-                            </a>
-                            <a href="#oferta" className="bg-zinc-900 border border-white/10 hover:bg-zinc-800 text-white px-8 py-4 rounded-full transition-all">
-                                Poznaj ofertę
-                            </a>
-                        </div>
-                    </div>
+export async function generateMetadata(): Promise<Metadata> {
+    const page = await prisma.page.findUnique({
+        where: { slug: 'dron' }
+    });
 
-                    {/* Thermal Slider with Multiple Sections */}
-                    <div className="relative">
-                        <ThermalSlider
-                            sections={thermalSections}
-                            title="Galeria Badań Termowizyjnych"
-                        />
-                        <div className="absolute -bottom-6 -left-6 bg-zinc-900 p-6 rounded-2xl border border-white/5 shadow-2xl hidden md:block">
-                            <div className="flex items-center gap-4">
-                                <div className="p-3 bg-yellow-500/10 rounded-xl">
-                                    <ShieldCheck className="text-yellow-500" size={24} />
-                                </div>
-                                <div>
-                                    <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Certyfikat ULC</p>
-                                    <p className="text-sm font-medium">Uprawnienia NSTS-01 / 02</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            {/* Services Grid */}
-            <section id="oferta" className="py-24 bg-zinc-900/30">
-                <div className="max-w-7xl mx-auto px-6">
-                    <div className="text-center mb-20">
-                        <h2 className="text-3xl lg:text-4xl font-bold mb-4">Eksperckie usługi inspekcyjne</h2>
-                        <p className="text-zinc-500">Optymalizujemy koszty i skracamy czas przeglądów dzięki technologii UAV.</p>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        <ServiceCard
-                            icon={<Zap />}
-                            title="Termowizja Mavic 3 Thermal"
-                            description="Profesjonalne badanie farm fotowoltaicznych, linii energetycznych i ciepłowniczych z użyciem sensora radiometrycznego."
-                        />
-                        <ServiceCard
-                            icon={<Building2 />}
-                            title="Analiza Dachów i Budynków"
-                            description="Bezinwazyjne sprawdzanie szczelności izolacji, wykrywanie zawilgoceń oraz szczegółowa dokumentacja stanu technicznego."
-                        />
-                        <ServiceCard
-                            icon={<Droplets />}
-                            title="Ciepłownictwo i Energetyka"
-                            description="Lokalizacja wycieków w sieciach przesyłowych oraz analiza strat ciepła w obiektach przemysłowych i biurowych."
-                        />
-                        <ServiceCard
-                            icon={<Search />}
-                            title="Nadzór i Timeline Budowy"
-                            description="Regularne zdjęcia poklatkowe i dokumentacja postępu prac. Idealne do monitorowania dużych inwestycji w regionie."
-                        />
-                        <ServiceCard
-                            icon={<Camera />}
-                            title="Zdjęcia i Filmy 4K (Air 2 S)"
-                            description="Wysokiej jakości ujęcia z drona dla firm, deweloperów oraz na wydarzenia okolicznościowe w Toruniu i Bydgoszczy."
-                        />
-                        <ServiceCard
-                            icon={<ShieldCheck />}
-                            title="Koła Łowieckie i Rolnictwo"
-                            description="Monitoring zwierzyny, szacowanie szkód łowieckich oraz analiza upraw z wykorzystaniem termowizji."
-                        />
-                    </div>
-                </div>
-            </section>
-
-            {/* Contact Section */}
-            <section id="kontakt" className="py-24 px-6 max-w-3xl mx-auto text-center">
-                <div className="p-12 bg-zinc-900/50 rounded-3xl border border-white/5 backdrop-blur-sm">
-                    <Mail className="mx-auto text-yellow-500 mb-6" size={48} />
-                    <h2 className="text-3xl font-bold mb-4">Potrzebujesz inspekcji?</h2>
-                    <p className="text-zinc-400 mb-10 leading-relaxed">
-                        Opisz swój projekt, a my dobierzemy odpowiedni sprzęt i przygotujemy ofertę w ciągu 24h.
-                    </p>
-                    <DroneOrderForm />
-                </div>
-            </section>
-        </div>
-    );
+    return {
+        title: page?.meta_title || 'FOTO-DRON Przemysław Właśniewski | Termowizja Mavic 3 Thermal | Toruń, Bydgoszcz',
+        description: page?.meta_description || 'Specjalistyczne usługi dronem: termowizja Mavic 3 Thermal, inspekcje dachów, timeline budowy, koła łowieckie. Profesjonalne raporty B2B w kujawsko-pomorskim. NIP: 8781430365.',
+        keywords: page?.meta_keywords ? page.meta_keywords.split(',').map(k => k.trim()) : ['Mavic 3 Thermal', 'Air 2 S', 'termowizja dronem toruń', 'inspekcja dachu bydgoszcz', 'analiza paneli fotowoltaicznych', 'zdjęcia okolicznościowe z drona', 'koła łowieckie termowizja'],
+    };
 }
+
+export default async function DronePage() {
+    const pageData = await prisma.page.findUnique({
+        where: { slug: 'dron' }
+    });
+
+    let sections = [];
+    if (pageData?.sections) {
+        try {
+            sections = JSON.parse(pageData.sections);
+        } catch (e) {
+            console.error('Failed to parse drone page sections', e);
+        }
+    }
+
+    return <DronContent pageData={pageData} sections={sections} />;
+}
+
 
 function ServiceCard({ icon, title, description }: { icon: any, title: string, description: string }) {
     return (

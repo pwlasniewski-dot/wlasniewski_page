@@ -37,15 +37,24 @@ export default function ThermalSlider({
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const autoScrollRef = useRef<NodeJS.Timeout>();
 
-    // Default sections if none provided
+    // If no sections and no individual images, don't render anything or show a "Work in progress" placeholder
+    if (sections.length === 0 && !visualImage && !thermalImage) {
+        return (
+            <div className="w-full py-20 text-center border-2 border-dashed border-zinc-800 rounded-3xl">
+                <p className="text-zinc-500">Galeria w przygotowaniu...</p>
+            </div>
+        );
+    }
+
+    // Prepare sections from props
     const displaySections: ThermalSection[] = sections.length > 0 ? sections : [
         {
             id: '1',
-            category: 'Fotowoltaika',
-            visualImage: visualImage || 'https://images.unsplash.com/photo-1542332213-9b5a5a3fad35?auto=format&fit=crop&q=80&w=1200',
-            thermalImage: thermalImage || 'https://images.unsplash.com/photo-1579546678181-7f311c1d0b3e?auto=format&fit=crop&q=80&w=1200',
-            labelLeft: 'Widok Standardowy',
-            labelRight: 'Termowizja'
+            category: 'Podgląd',
+            visualImage: visualImage || '',
+            thermalImage: thermalImage || '',
+            labelLeft: labelLeft,
+            labelRight: labelRight
         }
     ];
 
@@ -112,11 +121,10 @@ export default function ThermalSlider({
                         <button
                             key={section.id}
                             onClick={() => handleCategoryClick(index)}
-                            className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                                activeSection === index
+                            className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${activeSection === index
                                     ? 'bg-yellow-500 text-black shadow-lg'
                                     : 'bg-zinc-800 text-zinc-300 border border-zinc-700 hover:border-yellow-500/50 hover:text-white'
-                            }`}
+                                }`}
                         >
                             {section.category}
                         </button>
@@ -192,11 +200,10 @@ export default function ThermalSlider({
                                 <button
                                     key={index}
                                     onClick={() => handleCategoryClick(index)}
-                                    className={`w-2 h-2 rounded-full transition-all ${
-                                        activeSection === index
+                                    className={`w-2 h-2 rounded-full transition-all ${activeSection === index
                                             ? 'bg-yellow-500 w-6'
                                             : 'bg-white/30 hover:bg-white/50'
-                                    }`}
+                                        }`}
                                     aria-label={`Go to section ${index + 1}`}
                                 />
                             ))}
