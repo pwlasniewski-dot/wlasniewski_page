@@ -1,5 +1,14 @@
 'use client';
 
+/**
+ * SYNC INTEGRITY (Zero Flower Protocol)
+ * [MANUAL FOR AI ASSISTANTS]
+ * 
+ * 1. KAŻDA strona zarządzalna w Adminie (Slug w tabeli Page) MUSI być renderowana przez ten komponent.
+ * 2. ZAKAZ hardkodowania treści jako jedynego źródła prawdy.
+ * 3. Zawsze implementuj fallback do PageRenderer w page.tsx danej podstrony.
+ * 4. Dodając nowy typ sekcji, pamiętaj o dodaniu go tutaj (switch) ORAZ w PageBuilder.tsx.
+ */
 import React from 'react';
 import { PageSection } from '@/components/admin/PageBuilder';
 import ParallaxSection from '@/components/ParallaxSection';
@@ -149,6 +158,16 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                             dangerouslySetInnerHTML={{ __html: section.content }}
                                         />
                                     )}
+                                </div>
+                            </section>
+                        );
+
+                    case 'contact_form':
+                        const ContactForm = require('@/components/ContactForm').default;
+                        return (
+                            <section key={section.id} className="py-20 px-4 bg-black">
+                                <div className="max-w-4xl mx-auto">
+                                    <ContactForm />
                                 </div>
                             </section>
                         );

@@ -8,7 +8,7 @@ import { Plus, Trash2, GripVertical, Image as ImageIcon, Type, Layout, MoveUp, M
 import RichTextEditor from './RichTextEditor';
 import MediaPicker from './MediaPicker';
 
-export type SectionType = 'hero_parallax' | 'hero' | 'rich_text' | 'image_text' | 'gallery' | 'contact' | 'thermal_slider';
+export type SectionType = 'hero_parallax' | 'hero' | 'rich_text' | 'image_text' | 'gallery' | 'contact' | 'thermal_slider' | 'contact_form';
 
 export interface ThermalSectionData {
     id: string;
@@ -600,6 +600,9 @@ export default function PageBuilder({ sections, onChange }: PageBuilderProps) {
                 </button>
                 <button onClick={() => addSection('contact')} className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded text-sm text-white transition-colors">
                     <MoveUp className="w-4 h-4" /> CTA / Kontakt
+                </button>
+                <button onClick={() => addSection('contact_form')} className="flex items-center gap-2 px-4 py-2 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 rounded text-sm text-blue-400 transition-colors">
+                    <Layout className="w-4 h-4" /> Formularz Kontaktowy
                 </button>
                 <button onClick={() => addSection('thermal_slider')} className="flex items-center gap-2 px-4 py-2 bg-gold-600/20 hover:bg-gold-600/30 border border-gold-500/30 rounded text-sm text-gold-400 transition-colors">
                     <Layout className="w-4 h-4" /> Thermal Slider
