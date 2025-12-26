@@ -496,11 +496,14 @@ export default function RezerwacjaPage() {
                                             <h3 className="font-bold text-white">{pkg.name}</h3>
                                         </div>
                                         {pkg.subtitle && <p className="text-sm text-zinc-300 mb-2">{pkg.subtitle}</p>}
-                                        <div className="text-sm text-amber-400 font-bold">
+                                        <div className="text-lg text-amber-500 font-extrabold mb-2">
                                             {pkg.hours}h • {(pkg.price / 100).toFixed(2)} zł
                                         </div>
                                         {pkg.description && (
-                                            <p className="text-xs text-zinc-400 mt-2 line-clamp-2">{pkg.description}</p>
+                                            <div
+                                                className="text-xs text-zinc-400 mt-2 prose prose-invert prose-xs prose-p:my-0 prose-ul:my-1"
+                                                dangerouslySetInnerHTML={{ __html: pkg.description }}
+                                            />
                                         )}
                                     </button>
                                 ))}

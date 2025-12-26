@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { getApiUrl } from '@/lib/api-config';
 import { Toaster, toast } from 'sonner';
+import RichTextEditor from '@/components/admin/RichTextEditor';
 
 interface ServiceType {
     id: number;
@@ -157,7 +158,7 @@ export default function AdminPackagesPage() {
                                                 <span className="text-2xl">{pkg.icon || '📦'}</span>
                                                 <div>
                                                     <h3 className="font-bold text-white">{pkg.name}</h3>
-                                                    <p className="text-xs text-zinc-400">{pkg.hours}h • {pkg.price}zł</p>
+                                                    <p className="text-xs text-zinc-400">{pkg.hours}h • {pkg.price / 100}zł</p>
                                                 </div>
                                             </div>
                                             <span className={`text-xs px-2 py-1 rounded ${pkg.is_active ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400'}`}>
@@ -261,8 +262,8 @@ export default function AdminPackagesPage() {
                                         <label className="block text-sm font-medium text-zinc-300 mb-1">Cena (PLN)</label>
                                         <input
                                             type="number"
-                                            value={editingPackage.price}
-                                            onChange={(e) => setEditingPackage({ ...editingPackage, price: parseInt(e.target.value) || 0 })}
+                                            value={editingPackage.price / 100}
+                                            onChange={(e) => setEditingPackage({ ...editingPackage, price: Math.round((parseFloat(e.target.value) || 0) * 100) })}
                                             className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 text-white rounded-lg focus:ring-2 focus:ring-amber-500 outline-none"
                                             placeholder="199"
                                         />
@@ -282,11 +283,9 @@ export default function AdminPackagesPage() {
 
                                 <div>
                                     <label className="block text-sm font-medium text-zinc-300 mb-1">Opis pełny</label>
-                                    <textarea
+                                    <RichTextEditor
                                         value={editingPackage.description || ''}
-                                        onChange={(e) => setEditingPackage({ ...editingPackage, description: e.target.value })}
-                                        rows={3}
-                                        className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 text-white rounded-lg focus:ring-2 focus:ring-amber-500 outline-none"
+                                        onChange={(val) => setEditingPackage({ ...editingPackage, description: val })}
                                         placeholder="Szczegółowy opis pakietu..."
                                     />
                                 </div>
