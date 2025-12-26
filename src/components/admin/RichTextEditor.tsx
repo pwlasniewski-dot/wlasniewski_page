@@ -143,7 +143,18 @@ export default function RichTextEditor({ value, onChange, placeholder, onImageRe
                     <button
                         key={idx}
                         type="button"
-                        onClick={() => btn.value ? execCommand(btn.command, btn.value) : execCommand(btn.command)}
+                        onClick={() => {
+                            if (btn.command === 'formatBlock') {
+                                // Toggle logic for Headings: if active, switch to paragraph (p)
+                                if (btn.isActive) {
+                                    execCommand('formatBlock', 'p');
+                                } else {
+                                    execCommand('formatBlock', btn.value || 'p');
+                                }
+                            } else {
+                                btn.value ? execCommand(btn.command, btn.value) : execCommand(btn.command);
+                            }
+                        }}
                         className={`p-2 rounded transition-colors ${btn.isActive
                             ? 'bg-gold-500 text-black'
                             : 'text-zinc-400 hover:bg-zinc-700 hover:text-gold-400'
