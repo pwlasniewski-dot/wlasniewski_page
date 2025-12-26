@@ -29,6 +29,7 @@ interface Package {
     subtitle?: string;
     features?: string;
     order: number;
+    blocks_entire_day?: boolean;
     is_active: boolean;
 }
 
@@ -149,6 +150,14 @@ export default function RezerwacjaPage() {
         }
 
         const loadAvailability = async () => {
+            if (chosenPackage.blocks_entire_day) {
+                setAvailableHours([]);
+                setSelectedHour(null);
+                setSlot(prev => prev ? { ...prev, start: '08:00', end: '22:00' } : null);
+                setLoadingAvailability(false);
+                return;
+            }
+
             setLoadingAvailability(true);
             try {
                 const res = await fetch(
@@ -560,40 +569,45 @@ export default function RezerwacjaPage() {
                                         <div className="text-center text-zinc-400">
                                             <p>Sprawdzam dostępność...</p>
                                         </div>
+                                    ) : chosenPackage.blocks_entire_day ? (
+                                        <div className="p-6 bg-zinc-900/80 border border-amber-500/30 rounded-xl text-center">
+                                            <p className="text-amber-500 font-bold mb-1">✨ Pakiet całodniowy (Ślub/Przyjęcie)</p>
+                                            <p className="text-zinc-400 text-sm">Ten pakiet rezerwuje cały dzień. Nie musisz wybierać konkretnych godzin.</p>
+                                        </div>
                                     ) : availableHours.length === 0 ? (
                                         <div className="text-center text-amber-500">
                                             <p>Brak dostępnych godzin na wybrany dzień</p>
                                         </div>
                                     ) : (
                                         <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
-                                            {availableHours.map((slot) => (
+                                            {availableHours.map((hSlot) => (
                                                 <button
-                                                    key={slot.hour}
+                                                    key={hSlot.hour}
                                                     type="button"
-                                                    disabled={!slot.available}
+                                                    disabled={!hSlot.available}
                                                     onClick={() => {
-                                                        const start = `${slot.hour.toString().padStart(2, '0')}:00`;
-                                                        const end = `${(slot.hour + (chosenPackage?.hours || 1)).toString().padStart(2, '0')}:00`;
-                                                        setSelectedHour(slot.hour);
+                                                        const start = `${hSlot.hour.toString().padStart(2, '0')}:00`;
+                                                        const end = `${(hSlot.hour + (chosenPackage?.hours || 1)).toString().padStart(2, '0')}:00`;
+                                                        setSelectedHour(hSlot.hour);
                                                         setSlot(prev => prev ? { ...prev, start, end } : null);
                                                     }}
-                                                    className={`py-2 rounded-lg transition-all text-sm font-medium ${slot.available
-                                                        ? selectedHour === slot.hour
+                                                    className={`py-2 rounded-lg transition-all text-sm font-medium ${hSlot.available
+                                                        ? selectedHour === hSlot.hour
                                                             ? 'bg-amber-500 text-white border border-amber-400'
                                                             : 'bg-zinc-800 text-white border border-zinc-700 hover:border-amber-400 hover:bg-zinc-700'
                                                         : 'bg-zinc-900 text-zinc-600 border border-zinc-800 cursor-not-allowed'
                                                         }`}
                                                     title={
-                                                        !slot.available
-                                                            ? slot.reason === 'booked_session'
+                                                        !hSlot.available
+                                                            ? hSlot.reason === 'booked_session'
                                                                 ? 'Zajęte - rezerwacja sesji'
-                                                                : slot.reason === 'booked_event'
+                                                                : hSlot.reason === 'booked_event'
                                                                     ? 'Zajęte - rezerwacja całodniowa'
                                                                     : 'Poza godzinami dostępnymi'
                                                             : ''
                                                     }
                                                 >
-                                                    {slot.hour.toString().padStart(2, '0')}:00
+                                                    {hSlot.hour.toString().padStart(2, '0')}:00
                                                 </button>
                                             ))}
                                         </div>
