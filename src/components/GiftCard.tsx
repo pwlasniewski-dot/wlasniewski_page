@@ -40,8 +40,8 @@ const themeConfigs: Record<string, ThemeConfig> = {
         textColor: 'text-white'
     },
     wosp: {
-        bgGradient: 'from-red-600 via-red-700 to-amber-700',
-        accentColor: 'text-amber-300',
+        bgGradient: 'from-red-600 via-red-700 to-gold-700',
+        accentColor: 'text-gold-300',
         icon: '💛',
         title: 'Karta Pomocy',
         description: 'Wspieraj co w Tobie dobre',
@@ -58,7 +58,7 @@ const themeConfigs: Record<string, ThemeConfig> = {
         textColor: 'text-white'
     },
     easter: {
-        bgGradient: 'from-yellow-600 via-yellow-500 to-yellow-700',
+        bgGradient: 'from-gold-600 via-gold-500 to-gold-700',
         accentColor: 'text-purple-600',
         icon: '🐰',
         title: 'Wielkanoc',
@@ -77,7 +77,7 @@ const themeConfigs: Record<string, ThemeConfig> = {
     },
     'mothers-day': {
         bgGradient: 'from-purple-700 via-pink-600 to-purple-700',
-        accentColor: 'text-yellow-200',
+        accentColor: 'text-gold-200',
         icon: '💐',
         title: 'Dzień Matki',
         description: 'Dla najwspanialszej mamy',
@@ -86,7 +86,7 @@ const themeConfigs: Record<string, ThemeConfig> = {
     },
     'childrens-day': {
         bgGradient: 'from-blue-600 via-purple-500 to-pink-600',
-        accentColor: 'text-yellow-300',
+        accentColor: 'text-gold-300',
         icon: '🎈',
         title: 'Dzień Dziecka',
         description: 'Dla małego uśmieszku',
@@ -104,7 +104,7 @@ const themeConfigs: Record<string, ThemeConfig> = {
     },
     birthday: {
         bgGradient: 'from-cyan-500 via-blue-500 to-purple-600',
-        accentColor: 'text-yellow-200',
+        accentColor: 'text-gold-200',
         icon: '🎂',
         title: 'Urodziny',
         description: 'Wiele szczęścia!',

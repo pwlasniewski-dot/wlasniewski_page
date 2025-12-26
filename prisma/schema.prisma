@@ -526,6 +526,7 @@ model PhotoChallenge {
   unique_link              String                   @unique
   inviter_name             String
   inviter_contact          String
+  inviter_email            String?
   inviter_contact_type     String                   @default("email")
   invitee_name             String
   invitee_contact          String
@@ -548,6 +549,12 @@ model PhotoChallenge {
   preferred_dates          String?
   admin_notes              String?
   channel                  String?                  @default("messenger")
+  paid_amount              Int?
+  payment_id               String?
+  payment_method           String?
+  payment_status           String?       @default("pending")
+  refund_id                String?
+  refunded_at              DateTime?
   gallery                  ChallengeGallery?
   timeline                 ChallengeTimelineEvent[]
   invitee_user             ChallengeUser?           @relation(fields: [invitee_user_id], references: [id])

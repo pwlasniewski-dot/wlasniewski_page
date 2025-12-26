@@ -72,15 +72,6 @@ export default function SettingsPage() {
     const [currentImageField, setCurrentImageField] = useState<string>('');
     const [testingEmail, setTestingEmail] = useState(false);
 
-    // Challenge Settings State
-    const [challengeSettings, setChallengeSettings] = useState({
-        module_enabled: true,
-        public_gallery_enabled: true,
-        enable_carousels: true,
-        enable_parallax: false,
-        fomo_countdown_hours: 24,
-        monthly_challenge_limit: 10,
-    });
 
     useEffect(() => {
         fetchSettings();
@@ -140,17 +131,6 @@ export default function SettingsPage() {
                 });
             }
 
-            // Fetch challenge settings
-            const challengeRes = await fetch('/api/photo-challenge/settings', { headers, cache: 'no-store' });
-            if (!challengeRes.ok) {
-                console.error(`Failed to fetch challenge settings: ${challengeRes.status}`);
-                // Don't throw, just skip challenge settings
-                return;
-            }
-            const challengeData = await challengeRes.json();
-            if (challengeData.success) {
-                setChallengeSettings(prev => ({ ...prev, ...challengeData.settings }));
-            }
         } catch (error) {
             console.error('Failed to fetch settings', error);
             toast.error('Błąd pobierania ustawień');
@@ -247,21 +227,6 @@ export default function SettingsPage() {
                 throw new Error(resData.error || 'Nie udało się zapisać ustawień');
             }
 
-            // Save challenge settings
-            const challengeRes = await fetch('/api/photo-challenge/settings', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(challengeSettings),
-            });
-
-            const challengeResData = await challengeRes.json();
-
-            if (!challengeRes.ok || !challengeResData.success) {
-                throw new Error(challengeResData.error || 'Nie udało się zapisać ustawień wyzwania');
-            }
 
             toast.success('Zapisano wszystkie ustawienia');
         } catch (error: any) {
@@ -311,9 +276,6 @@ export default function SettingsPage() {
         }
     };
 
-    const updateChallengeSetting = (key: string, value: any) => {
-        setChallengeSettings(prev => ({ ...prev, [key]: value }));
-    };
 
     const openImagePicker = (field: string) => {
         setCurrentImageField(field);
@@ -1127,89 +1089,6 @@ export default function SettingsPage() {
                 </div>
             </div>
 
-            {/* Photo Challenge Settings */}
-            <div className="bg-zinc-900 shadow rounded-lg border border-zinc-800 p-6">
-                <h2 className="text-lg font-medium text-white mb-4">Foto-Wyzwanie (Konfiguracja)</h2>
-                <div className="space-y-6">
-                    {/* Module Toggle */}
-                    <div className="flex items-center justify-between border-b border-zinc-800 pb-4">
-                        <div>
-                            <label className="text-sm font-medium text-zinc-400">Włącz Moduł Wyzwań</label>
-                            <p className="text-xs text-zinc-500">Czy cały moduł ma być dostępny publicznie?</p>
-                        </div>
-                        <button
-                            onClick={() => updateChallengeSetting('module_enabled', !challengeSettings.module_enabled)}
-                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-gold-500 focus:ring-offset-2 ${challengeSettings.module_enabled ? 'bg-gold-500' : 'bg-zinc-700'}`}
-                        >
-                            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${challengeSettings.module_enabled ? 'translate-x-6' : 'translate-x-1'}`} />
-                        </button>
-                    </div>
-
-                    {/* Public Gallery */}
-                    <div className="flex items-center justify-between border-b border-zinc-800 pb-4">
-                        <div>
-                            <label className="text-sm font-medium text-zinc-400">Publiczna Galeria Par</label>
-                            <p className="text-xs text-zinc-500">Pokaż stronę /foto-wyzwanie/galeria</p>
-                        </div>
-                        <button
-                            onClick={() => updateChallengeSetting('public_gallery_enabled', !challengeSettings.public_gallery_enabled)}
-                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-gold-500 focus:ring-offset-2 ${challengeSettings.public_gallery_enabled ? 'bg-gold-500' : 'bg-zinc-700'}`}
-                        >
-                            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${challengeSettings.public_gallery_enabled ? 'translate-x-6' : 'translate-x-1'}`} />
-                        </button>
-                    </div>
-
-                    {/* Visual Effects */}
-                    <div>
-                        <h3 className="text-sm font-medium text-gold-400 mb-3">Efekty Wizualne</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="flex items-center justify-between bg-zinc-800/50 p-3 rounded-lg">
-                                <label className="text-sm text-zinc-300">Karuzela 3D (Orbiting)</label>
-                                <button
-                                    onClick={() => updateChallengeSetting('enable_carousels', !challengeSettings.enable_carousels)}
-                                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${challengeSettings.enable_carousels ? 'bg-gold-500' : 'bg-zinc-600'}`}
-                                >
-                                    <span className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${challengeSettings.enable_carousels ? 'translate-x-5' : 'translate-x-1'}`} />
-                                </button>
-                            </div>
-                            <div className="flex items-center justify-between bg-zinc-800/50 p-3 rounded-lg">
-                                <label className="text-sm text-zinc-300">Efekt Paralaksy</label>
-                                <button
-                                    onClick={() => updateChallengeSetting('enable_parallax', !challengeSettings.enable_parallax)}
-                                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${challengeSettings.enable_parallax ? 'bg-gold-500' : 'bg-zinc-600'}`}
-                                >
-                                    <span className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${challengeSettings.enable_parallax ? 'translate-x-5' : 'translate-x-1'}`} />
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* FOMO Settings */}
-                    <div>
-                        <h3 className="text-sm font-medium text-gold-400 mb-3">FOMO & Limity</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-zinc-400 mb-1">Czas na akceptację (h)</label>
-                                <input
-                                    type="number"
-                                    value={challengeSettings.fomo_countdown_hours}
-                                    onChange={e => updateChallengeSetting('fomo_countdown_hours', Number(e.target.value))}
-                                    className="block w-full rounded-md border-zinc-700 bg-zinc-800 text-white shadow-sm focus:border-gold-500 focus:ring-gold-500 sm:text-sm px-3 py-2"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-zinc-400 mb-1">Limit miesięczny (sloty)</label>
-                                <input
-                                    type="number"
-                                    value={challengeSettings.monthly_challenge_limit}
-                                    onChange={e => updateChallengeSetting('monthly_challenge_limit', Number(e.target.value))}
-                                    className="block w-full rounded-md border-zinc-700 bg-zinc-800 text-white shadow-sm focus:border-gold-500 focus:ring-gold-500 sm:text-sm px-3 py-2"
-                                />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
             {/* Media Picker Modal */}
             {

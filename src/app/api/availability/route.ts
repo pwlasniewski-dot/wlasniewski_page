@@ -46,6 +46,9 @@ export async function GET(request: NextRequest) {
                 date: {
                     gte: new Date(dateStr + 'T00:00:00Z'),
                     lt: new Date(dateStr + 'T23:59:59Z')
+                },
+                status: {
+                    notIn: ['cancelled', 'rejected']
                 }
             }
         });
@@ -67,17 +70,17 @@ export async function GET(request: NextRequest) {
         // 1. If booking blocks_entire_day (weddings, events) = entire day is blocked
         // 2. If booking is a session (1h) = only that time slot is blocked
         // 3. Weddings/events take priority - if day is blocked, sessions can't be added
-        
+
         let dayCompletelyBlocked = false;
 
         for (const booking of bookingsForDate) {
             // Check if this booking should block entire day
             // For now, we check if it's wedding/event service type by analyzing package info
             // This will be enhanced when blocks_entire_day field is available
-            
-            const isWeddingOrEvent = booking.service === 'Ślub' || 
-                                     booking.service === 'Przyjęcie' || 
-                                     booking.service === 'Urodziny';
+
+            const isWeddingOrEvent = booking.service === 'Ślub' ||
+                booking.service === 'Przyjęcie' ||
+                booking.service === 'Urodziny';
 
             if (isWeddingOrEvent) {
                 // Block entire day

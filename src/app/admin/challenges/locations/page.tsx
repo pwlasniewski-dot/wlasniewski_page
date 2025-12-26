@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, MapPin, Image as ImageIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
+import MediaPicker from '@/components/admin/MediaPicker';
 
 interface ChallengeLocation {
     id: number;
@@ -20,6 +21,7 @@ export default function LocationsPage() {
     const [loading, setLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
     const [currentLocation, setCurrentLocation] = useState<Partial<ChallengeLocation>>({});
+    const [showMediaPicker, setShowMediaPicker] = useState(false);
 
     useEffect(() => {
         fetchLocations();
@@ -111,6 +113,12 @@ export default function LocationsPage() {
             is_active: true
         });
         setIsEditing(true);
+    };
+
+    const handleImageSelect = (url: string | string[]) => {
+        const singleUrl = Array.isArray(url) ? url[0] : url;
+        setCurrentLocation({ ...currentLocation, image_url: singleUrl });
+        setShowMediaPicker(false);
     };
 
     return (
@@ -211,15 +219,29 @@ export default function LocationsPage() {
                             </div>
 
                             <div>
-                                <label className="block text-sm text-zinc-400 mb-1">Zdjęcie URL</label>
-                                <input
-                                    type="text"
-                                    value={currentLocation.image_url || ''}
-                                    onChange={e => setCurrentLocation({ ...currentLocation, image_url: e.target.value })}
-                                    className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-2 text-white"
-                                    placeholder="https://..."
-                                />
-                                <p className="text-xs text-zinc-500 mt-1">Tu przydałby się MediaPicker, w przyszłości do dodania.</p>
+                                <label className="block text-sm text-zinc-400 mb-1">Zdjęcie</label>
+                                <div className="flex gap-4 items-start">
+                                    <div className="flex-1 space-y-2">
+                                        <input
+                                            type="text"
+                                            value={currentLocation.image_url || ''}
+                                            onChange={e => setCurrentLocation({ ...currentLocation, image_url: e.target.value })}
+                                            className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-2 text-white text-sm"
+                                            placeholder="URL zdjęcia lub wybierz z galerii..."
+                                        />
+                                        <button
+                                            onClick={() => setShowMediaPicker(true)}
+                                            className="w-full py-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-lg text-zinc-300 text-sm flex items-center justify-center gap-2 transition-colors"
+                                        >
+                                            <ImageIcon size={16} /> Wybierz z galerii
+                                        </button>
+                                    </div>
+                                    {currentLocation.image_url && (
+                                        <div className="w-24 h-24 rounded-lg overflow-hidden border border-zinc-700 bg-black flex-shrink-0">
+                                            <img src={currentLocation.image_url} alt="Preview" className="w-full h-full object-cover" />
+                                        </div>
+                                    )}
+                                </div>
                             </div>
 
                             <div>
@@ -260,6 +282,12 @@ export default function LocationsPage() {
                     </div>
                 </div>
             )}
+
+            <MediaPicker
+                isOpen={showMediaPicker}
+                onClose={() => setShowMediaPicker(false)}
+                onSelect={(urls: string | string[]) => handleImageSelect(urls)}
+            />
         </div>
     );
 }

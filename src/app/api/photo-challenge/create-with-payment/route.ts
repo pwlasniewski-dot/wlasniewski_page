@@ -10,15 +10,19 @@ export async function POST(request: NextRequest) {
         const {
             inviter_name,
             inviter_phone,
+            inviter_email,
             invitee_name,
             invitee_email,
             package_id,
             location_id,
+            date,
+            start_time,
+            end_time,
             channel = 'email'
         } = body;
 
         // Validate required fields
-        if (!inviter_name || !inviter_phone || !invitee_name || !invitee_email || !package_id) {
+        if (!inviter_name || !inviter_phone || !inviter_email || !invitee_name || !invitee_email || !package_id) {
             return NextResponse.json(
                 { success: false, error: 'Missing required fields' },
                 { status: 400 }
@@ -44,46 +48,52 @@ export async function POST(request: NextRequest) {
                 unique_link: uniqueLink,
                 inviter_name,
                 inviter_contact: inviter_phone,
-                inviter_contact_type: 'phone',   // Set type to phone
+                inviter_email,
+                inviter_contact_type: 'phone',
                 invitee_name,
                 invitee_contact: invitee_email,
                 invitee_contact_type: 'email',
                 package_id: parseInt(package_id),
                 location_id: location_id ? parseInt(location_id) : null,
-                status: 'pending_payment', // Not sent yet, waiting for payment
+                custom_location: body.custom_location || null,
+                status: 'pending_payment',
                 channel,
-                discount_amount: 0, // Default: no discount
+                session_date: date ? new Date(date) : null,
+                discount_amount: 0,
                 discount_percentage: 0,
-                acceptance_deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
-            }
+                acceptance_deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+                paid_amount: pkg.challenge_price,
+                payment_status: 'pending'
+            } as any
         });
+
+        // Create a temporary booking to block the calendar
+        if (date) {
+            await prisma.booking.create({
+                data: {
+                    service: 'Sesja',
+                    package: pkg.name,
+                    price: pkg.challenge_price,
+                    date: new Date(date),
+                    start_time: start_time || null,
+                    end_time: end_time || null,
+                    client_name: invitee_name,
+                    email: invitee_email,
+                    phone: inviter_phone, // Use inviter phone for contact
+                    notes: `Wyzwanie od: ${inviter_name}. Lokalizacja: ${body.custom_location || 'Wybrana z listy'}. Status: Oczekiwanie na zapłatę.`,
+                    challenge_id: challenge.id,
+                    status: 'challenge_pending',
+                }
+            });
+        }
 
         // Create P24 payment URL
         // For now, we'll return a mock payment URL
         // In production, integrate with Przelewy24 API
         const paymentUrl = `/api/photo-challenge/payment/${challenge.id}?amount=${pkg.challenge_price}`;
 
-        // Send invitation email
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-        const inviteLink = `${baseUrl}/foto-wyzwanie/invite/${uniqueLink}`;
-
-        try {
-            await sendEmail({
-                to: invitee_email,
-                subject: `🎉 ${inviter_name} zaprasza Cię do Foto Wyzwania!`,
-                template: 'challenge-invitation',
-                data: {
-                    inviterName: inviter_name,
-                    packageName: pkg.name,
-                    packagePrice: pkg.challenge_price,
-                    packageDescription: pkg.description,
-                    inviteLink
-                }
-            });
-        } catch (emailError) {
-            console.error('Failed to send invitation email:', emailError);
-            // Don't fail the request if email fails
-        }
+        // Invitation email is now sent in the payment completion route
+        // to ensure it only goes out after successful payment.
 
         return NextResponse.json({
             success: true,

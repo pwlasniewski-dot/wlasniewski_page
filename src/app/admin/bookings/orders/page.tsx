@@ -56,7 +56,7 @@ export default function AdminOrdersPage() {
             o.customerName.toLowerCase().includes(lower) ||
             o.payuOrderId?.toLowerCase().includes(lower) ||
             o.giftCardCode?.toLowerCase().includes(lower) ||
-            `ORD - ${o.id} `.toLowerCase().includes(lower)
+            `ORD-${o.id}`.toLowerCase().includes(lower)
         );
         setFilteredOrders(filtered);
     }, [searchTerm, orders]);
@@ -66,7 +66,7 @@ export default function AdminOrdersPage() {
         try {
             const token = localStorage.getItem('admin_token');
             const res = await fetch(getApiUrl('gift-cards/orders'), {
-                headers: { 'Authorization': `Bearer ${token} ` }
+                headers: { 'Authorization': `Bearer ${token}` }
             });
 
             if (res.status === 401) {
@@ -110,7 +110,7 @@ export default function AdminOrdersPage() {
         const toastId = toast.loading('Wysyłanie...');
         try {
             const token = localStorage.getItem('admin_token');
-            const res = await fetch(getApiUrl(`gift - cards / orders / ${orderId}/resend`), {
+            const res = await fetch(getApiUrl(`gift-cards/orders/${orderId}/resend`), {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -144,7 +144,7 @@ export default function AdminOrdersPage() {
                         <div>
                             <div className="flex items-center gap-2 mb-2">
                                 <button
-                                    onClick={() => router.push('/admin/gift-cards')}
+                                    onClick={() => router.push('/admin/bookings')}
                                     className="p-1 hover:bg-zinc-800 rounded-lg text-zinc-400 transition-all"
                                 >
                                     <ArrowLeft size={20} />
@@ -273,85 +273,82 @@ export default function AdminOrdersPage() {
                                     )}
                                 </tbody>
                             </table>
-                        </div >
-                    </div >
-                </div >
-            )
-            }
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Details Modal */}
-            {
-                selectedOrder && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={() => setSelectedOrder(null)}>
-                        <div className="bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl max-w-2xl w-full overflow-hidden" onClick={e => e.stopPropagation()}>
-                            <div className="p-6 border-b border-zinc-800 flex justify-between items-center">
-                                <h2 className="text-xl font-bold text-white">Szczegóły Zamówienia <span className="text-gold-500">ORD-{selectedOrder.id}</span></h2>
-                                <button onClick={() => setSelectedOrder(null)} className="text-zinc-400 hover:text-white"><div className="w-6 h-6 flex items-center justify-center">✕</div></button>
+            {selectedOrder && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={() => setSelectedOrder(null)}>
+                    <div className="bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl max-w-2xl w-full overflow-hidden" onClick={e => e.stopPropagation()}>
+                        <div className="p-6 border-b border-zinc-800 flex justify-between items-center">
+                            <h2 className="text-xl font-bold text-white">Szczegóły Zamówienia <span className="text-gold-500">ORD-{selectedOrder.id}</span></h2>
+                            <button onClick={() => setSelectedOrder(null)} className="text-zinc-400 hover:text-white"><div className="w-6 h-6 flex items-center justify-center">✕</div></button>
+                        </div>
+                        <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div>
+                                <h3 className="text-sm font-medium text-zinc-500 uppercase tracking-wider mb-4">Dane Klienta (Kupujący)</h3>
+                                <div className="space-y-3">
+                                    <div>
+                                        <label className="text-xs text-zinc-500">Imię i nazwisko</label>
+                                        <div className="text-white font-medium">{selectedOrder.customerName}</div>
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-zinc-500">Email</label>
+                                        <div className="text-white">{selectedOrder.customerEmail}</div>
+                                    </div>
+                                </div>
                             </div>
-                            <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
-                                <div>
-                                    <h3 className="text-sm font-medium text-zinc-500 uppercase tracking-wider mb-4">Dane Klienta (Kupujący)</h3>
-                                    <div className="space-y-3">
-                                        <div>
-                                            <label className="text-xs text-zinc-500">Imię i nazwisko</label>
-                                            <div className="text-white font-medium">{selectedOrder.customerName}</div>
+
+                            <div>
+                                <h3 className="text-sm font-medium text-zinc-500 uppercase tracking-wider mb-4">Dane Odbiorcy (Karta)</h3>
+                                <div className="space-y-3">
+                                    <div>
+                                        <label className="text-xs text-zinc-500">Kod Karty</label>
+                                        <div className="text-emerald-400 font-mono font-bold bg-emerald-900/20 px-2 py-1 rounded inline-block">
+                                            {selectedOrder.giftCardCode || '-'}
                                         </div>
-                                        <div>
-                                            <label className="text-xs text-zinc-500">Email</label>
-                                            <div className="text-white">{selectedOrder.customerEmail}</div>
-                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-zinc-500">Wartość</label>
+                                        <div className="text-white font-bold">{selectedOrder.amount / 100} PLN</div>
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-zinc-500">Dla kogo</label>
+                                        <div className="text-white">{selectedOrder.recipientName || '-'}</div>
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-zinc-500">Email odbiorcy</label>
+                                        <div className="text-zinc-300">{selectedOrder.recipientEmail || '(Pusty - wysłano do kupującego)'}</div>
                                     </div>
                                 </div>
+                            </div>
 
-                                <div>
-                                    <h3 className="text-sm font-medium text-zinc-500 uppercase tracking-wider mb-4">Dane Odbiorcy (Karta)</h3>
-                                    <div className="space-y-3">
+                            <div className="md:col-span-2 border-t border-zinc-800 pt-6">
+                                <h3 className="text-sm font-medium text-zinc-500 uppercase tracking-wider mb-4">Status i Akcje</h3>
+                                <div className="flex items-center justify-between bg-zinc-950 p-4 rounded-lg border border-zinc-800">
+                                    <div className="flex items-center gap-3">
+                                        <div className={`w-3 h-3 rounded-full ${selectedOrder.status === 'completed' ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
                                         <div>
-                                            <label className="text-xs text-zinc-500">Kod Karty</label>
-                                            <div className="text-emerald-400 font-mono font-bold bg-emerald-900/20 px-2 py-1 rounded inline-block">
-                                                {selectedOrder.giftCardCode || '-'}
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label className="text-xs text-zinc-500">Wartość</label>
-                                            <div className="text-white font-bold">{selectedOrder.amount / 100} PLN</div>
-                                        </div>
-                                        <div>
-                                            <label className="text-xs text-zinc-500">Dla kogo</label>
-                                            <div className="text-white">{selectedOrder.recipientName || '-'}</div>
-                                        </div>
-                                        <div>
-                                            <label className="text-xs text-zinc-500">Email odbiorcy</label>
-                                            <div className="text-zinc-300">{selectedOrder.recipientEmail || '(Pusty - wysłano do kupującego)'}</div>
+                                            <div className="text-sm font-medium text-white">Status Płatności: {selectedOrder.status}</div>
+                                            <div className="text-xs text-zinc-500">Ref: {selectedOrder.payuOrderId || selectedOrder.stripeSessionId}</div>
                                         </div>
                                     </div>
-                                </div>
-
-                                <div className="md:col-span-2 border-t border-zinc-800 pt-6">
-                                    <h3 className="text-sm font-medium text-zinc-500 uppercase tracking-wider mb-4">Status i Akcje</h3>
-                                    <div className="flex items-center justify-between bg-zinc-950 p-4 rounded-lg border border-zinc-800">
-                                        <div className="flex items-center gap-3">
-                                            <div className={`w-3 h-3 rounded-full ${selectedOrder.status === 'completed' ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
-                                            <div>
-                                                <div className="text-sm font-medium text-white">Status Płatności: {selectedOrder.status}</div>
-                                                <div className="text-xs text-zinc-500">Ref: {selectedOrder.payuOrderId || selectedOrder.stripeSessionId}</div>
-                                            </div>
-                                        </div>
-                                        {selectedOrder.status === 'completed' && (
-                                            <button
-                                                onClick={() => handleResendEmail(selectedOrder.id)}
-                                                className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2"
-                                            >
-                                                <RefreshCw size={14} /> Wyślij email ponownie
-                                            </button>
-                                        )}
-                                    </div>
+                                    {selectedOrder.status === 'completed' && (
+                                        <button
+                                            onClick={() => handleResendEmail(selectedOrder.id)}
+                                            className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2"
+                                        >
+                                            <RefreshCw size={14} /> Wyślij email ponownie
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         </div>
                     </div>
-                )
-            }
-        </div >
+                </div>
+            )}
+        </div>
     );
 }

@@ -53,7 +53,7 @@ export default function FotoWyzwaniePage() {
     if (loading) {
         return (
             <div className="min-h-screen bg-black flex items-center justify-center">
-                <div className="text-gold-400 text-xl">Ładowanie...</div>
+                <div className="text-gold-500 text-xl">Ładowanie...</div>
             </div>
         );
     }
@@ -62,7 +62,7 @@ export default function FotoWyzwaniePage() {
         return (
             <div className="min-h-screen bg-black flex items-center justify-center px-4">
                 <div className="text-center max-w-2xl">
-                    <h1 className="text-4xl md:text-5xl font-display text-gold-400 mb-4">
+                    <h1 className="text-4xl md:text-5xl font-display text-gold-500 mb-4">
                         Moduł Foto-Wyzwań
                     </h1>
                     <p className="text-gray-300 text-lg">
@@ -92,7 +92,7 @@ export default function FotoWyzwaniePage() {
                         initial={{ opacity: 0, y: 30 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.8 }}
-                        className="text-5xl md:text-7xl font-display font-bold text-gold-400 mb-6"
+                        className="text-5xl md:text-7xl font-display font-bold text-gold-500 mb-6"
                     >
                         {settings?.landing_headline || 'Przyjmij foto-wyzwanie'}
                     </motion.h1>
@@ -135,7 +135,7 @@ export default function FotoWyzwaniePage() {
             {/* How It Works */}
             <section className="py-20 px-4 bg-gradient-to-b from-black to-gold-900/10">
                 <div className="max-w-4xl mx-auto">
-                    <h2 className="text-4xl md:text-5xl font-display font-bold text-gold-400 text-center mb-16">
+                    <h2 className="text-4xl md:text-5xl font-display font-bold text-gold-500 text-center mb-16">
                         Jak to działa?
                     </h2>
 
@@ -165,7 +165,7 @@ export default function FotoWyzwaniePage() {
             {/* FAQ */}
             <section className="py-20 px-4 bg-black">
                 <div className="max-w-3xl mx-auto">
-                    <h2 className="text-4xl md:text-5xl font-display font-bold text-gold-400 text-center mb-12">
+                    <h2 className="text-4xl md:text-5xl font-display font-bold text-gold-500 text-center mb-12">
                         Najczęściej zadawane pytania
                     </h2>
 
@@ -193,7 +193,7 @@ export default function FotoWyzwaniePage() {
             {/* Final CTA */}
             <section className="py-16 px-4 challenge-gradient">
                 <div className="max-w-4xl mx-auto text-center">
-                    <h2 className="text-3xl md:text-4xl font-display font-bold text-gold-400 mb-6">
+                    <h2 className="text-3xl md:text-4xl font-display font-bold text-gold-500 mb-6">
                         Gotowi na przygodę?
                     </h2>
                     <p className="text-gray-300 text-lg mb-8">
@@ -228,7 +228,7 @@ function StepCard({ number, title, description, delay }: {
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gold-400 flex items-center justify-center">
                 <span className="text-3xl font-bold text-black">{number}</span>
             </div>
-            <h3 className="text-2xl font-display font-bold text-gold-400 mb-3">
+            <h3 className="text-2xl font-display font-bold text-gold-500 mb-3">
                 {title}
             </h3>
             <p className="text-gray-300">
@@ -247,8 +247,8 @@ function FAQItem({ question, answer }: { question: string; answer: string }) {
                 onClick={() => setIsOpen(!isOpen)}
                 className="w-full px-6 py-4 text-left flex items-center justify-between hover:bg-gold-900/10 transition-colors"
             >
-                <span className="text-lg font-semibold text-gold-400">{question}</span>
-                <span className="text-gold-400 text-2xl">{isOpen ? '−' : '+'}</span>
+                <span className="text-lg font-semibold text-gold-500">{question}</span>
+                <span className="text-gold-500 text-2xl">{isOpen ? '−' : '+'}</span>
             </button>
             {isOpen && (
                 <div className="px-6 pb-4">

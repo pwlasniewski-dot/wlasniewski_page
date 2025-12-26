@@ -147,14 +147,32 @@ export default function ChallengeDetailPage() {
                         </p>
                     </div>
                 </div>
-                <button
-                    onClick={handleSave}
-                    disabled={saving}
-                    className="px-4 py-2 bg-gold-500 hover:bg-gold-400 text-black rounded-md font-medium disabled:opacity-50"
-                >
-                    <Save className="w-4 h-4 inline mr-2" />
-                    {saving ? 'Zapisywanie...' : 'Zapisz'}
-                </button>
+                <div className="flex items-center gap-3">
+                    {status === 'accepted' && (
+                        <button
+                            onClick={async () => {
+                                const token = localStorage.getItem('admin_token');
+                                const res = await fetch(getApiUrl(`photo-challenge/admin/${challengeId}/notify-ready`), {
+                                    method: 'POST',
+                                    headers: { 'Authorization': `Bearer ${token}` }
+                                });
+                                if (res.ok) toast.success('Klient został powiadomiony!');
+                                else toast.error('Błąd wysyłki powiadomienia');
+                            }}
+                            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md font-medium"
+                        >
+                            📸 Zdjęcia gotowe
+                        </button>
+                    )}
+                    <button
+                        onClick={handleSave}
+                        disabled={saving}
+                        className="px-4 py-2 bg-gold-500 hover:bg-gold-400 text-black rounded-md font-medium disabled:opacity-50"
+                    >
+                        <Save className="w-4 h-4 inline mr-2" />
+                        {saving ? 'Zapisywanie...' : 'Zapisz'}
+                    </button>
+                </div>
             </div>
 
             <div className="grid lg:grid-cols-2 gap-6">

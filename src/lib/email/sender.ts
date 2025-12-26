@@ -1,14 +1,11 @@
 import nodemailer from 'nodemailer';
 import prisma from '@/lib/db/prisma';
+import { logSystem } from '@/lib/logger';
+import { brandColors, baseStyles } from '@/lib/email-templates';
 
 // Get SMTP configuration from database or environment variables
-// [STABLE: 2025-12-23] ŚWIĘTA KONFIGURACJA SMTP
-// Dlaczego: Obsługuje mail.wlasniewski.pl z certyfikatem self-signed.
-// Zmiana: Dodano tls.rejectUnauthorized: false
 export async function getSMTPConfig() {
     try {
-        // Find the settings record with SMTP configuration
-        // We prioritize columns: smtp_host, smtp_user, smtp_password
         const mainSettings = await prisma.setting.findFirst({
             where: {
                 OR: [
@@ -20,7 +17,6 @@ export async function getSMTPConfig() {
         });
 
         if (mainSettings) {
-            console.log('📬 Loaded SMTP config from DB record ID:', mainSettings.id);
             return {
                 host: mainSettings.smtp_host || process.env.SMTP_HOST,
                 port: mainSettings.smtp_port || parseInt(process.env.SMTP_PORT || '587'),
@@ -30,7 +26,6 @@ export async function getSMTPConfig() {
             };
         }
 
-        console.warn('⚠️ No SMTP settings found in database, falling back to environment variables.');
         return {
             host: process.env.SMTP_HOST,
             port: parseInt(process.env.SMTP_PORT || '587'),
@@ -50,48 +45,24 @@ export async function getSMTPConfig() {
     }
 }
 
-// Helper to get Admin Email (defaults to SMTP user)
 export async function getAdminEmail() {
     try {
         const config = await getSMTPConfig();
-        const adminEmail = process.env.ADMIN_EMAIL || config.user || config.from;
-        console.log('🔍 getAdminEmail:', { fromEnv: process.env.ADMIN_EMAIL, fromConfig: config.user, final: adminEmail });
-        return adminEmail;
+        return process.env.ADMIN_EMAIL || config.user || config.from;
     } catch (error) {
-        console.error('❌ getAdminEmail error:', error);
         return process.env.ADMIN_EMAIL || undefined;
     }
 }
 
-import { logSystem } from '@/lib/logger';
-
-// ... (imports)
-
-// ... (getSMTPConfig function remains same)
-
-// Email transporter configuration (will be initialized lazily)
 let transporter: any = null;
 
 async function getTransporter() {
     if (!transporter) {
         const config = await getSMTPConfig();
-
-        // Validate SMTP config
         if (!config.host || !config.user || !config.pass) {
-            const missing = {
-                host: !config.host ? 'MISSING' : '✓',
-                user: !config.user ? 'MISSING' : '✓',
-                pass: !config.pass ? 'MISSING' : '✓'
-            };
-            console.error('❌ SMTP not configured! Missing:', missing);
-            await logSystem('ERROR', 'EMAIL', 'SMTP Configuration Missing', missing);
-            throw new Error('SMTP not configured. Configure settings in Admin → Settings → Email');
+            throw new Error('SMTP not configured.');
         }
 
-        console.log('🔌 Creating SMTP transporter:', { host: config.host, port: config.port, user: config.user });
-
-        // [STABLE: 2025-12-23] UNIKALNA KONFIGURACJA TLS
-        // Bez rejectUnauthorized: false pakiety SMTP są odrzucane (Error: ESOCKET).
         transporter = nodemailer.createTransport({
             host: config.host,
             port: config.port,
@@ -105,22 +76,7 @@ async function getTransporter() {
             }
         });
 
-        // Try to verify connection
-        try {
-            await transporter.verify();
-            console.log('✅ SMTP connection verified successfully');
-            await logSystem('INFO', 'EMAIL', 'Połączenie SMTP zweryfikowane', { host: config.host, port: config.port });
-        } catch (verifyError: any) {
-            console.error('❌ SMTP connection verification failed:', verifyError.message);
-            await logSystem('ERROR', 'EMAIL', 'Weryfikacja połączenia SMTP nieudana', {
-                error: verifyError.message,
-                code: verifyError.code,
-                host: config.host,
-                port: config.port
-            });
-            transporter = null;
-            throw verifyError;
-        }
+        await transporter.verify();
     }
     return transporter;
 }
@@ -133,27 +89,14 @@ interface EmailData {
     text?: string;
     template?: string;
     data?: Record<string, any>;
-    html?: string; // Direct HTML support
+    html?: string;
 }
 
 export async function sendEmail(emailData: EmailData) {
     try {
-        const { to, subject, replyTo, bcc, text, template, data, html } = emailData;
-
-        // Log attempt
-        await logSystem('INFO', 'EMAIL', 'Attempting to send email', { to, subject, replyTo, bcc });
-
-        // Get SMTP config (from database or env vars)
+        const { to, subject, template, data, html } = emailData;
         const config = await getSMTPConfig();
-        console.log('🔍 SMTP Config loaded:', {
-            host: config.host ? '✓' : '✗',
-            port: config.port,
-            user: config.user ? '✓ (masked)' : '✗',
-            pass: config.pass ? '✓ (masked)' : '✗',
-            from: config.from
-        });
 
-        // Use provided HTML or render from template
         let emailHtml = html;
         if (!emailHtml && template && data) {
             emailHtml = renderTemplate(template, data);
@@ -163,31 +106,18 @@ export async function sendEmail(emailData: EmailData) {
             throw new Error('Either html or template+data must be provided');
         }
 
-        const transport = await getTransporter(); // This might throw SMTP config error
-        console.log('📤 Sending email via SMTP to:', to);
-
+        const transport = await getTransporter();
         const result = await transport.sendMail({
             from: config.from,
             to,
-            bcc,
             subject,
             html: emailHtml,
         });
 
-        console.log('✅ Email sent successfully:', result.messageId);
         await logSystem('INFO', 'EMAIL', 'Email sent successfully', { messageId: result.messageId, to, subject });
         return { success: true, messageId: result.messageId };
     } catch (error: any) {
-        console.error('❌ Email send error:', error);
-        const errorDetails = {
-            message: error.message,
-            code: error.code,
-            command: error.command,
-            to: emailData.to,
-            subject: emailData.subject
-        };
-        console.error('📋 Error details:', errorDetails);
-        await logSystem('ERROR', 'EMAIL', 'Email send failed', errorDetails);
+        await logSystem('ERROR', 'EMAIL', 'Email send failed', { error: error.message, to: emailData.to });
         throw error;
     }
 }
@@ -195,109 +125,199 @@ export async function sendEmail(emailData: EmailData) {
 function renderTemplate(template: string, data: Record<string, any>): string {
     const templates: Record<string, (data: any) => string> = {
         'challenge-invitation': (d) => `
-            <!DOCTYPE html>
-            <html>
-                <head>
-                    <meta charset="utf-8">
-                    <title>Foto Wyzwanie!</title>
-                    <style>
-                        body { font-family: Arial, sans-serif; background: #0f0f0f; color: #fff; }
-                        .container { max-width: 600px; margin: 0 auto; background: #1a1a1a; padding: 40px; border-radius: 12px; }
-                        .header { text-align: center; margin-bottom: 30px; }
-                        .cta { display: inline-block; background: #d4af37; color: #000; padding: 12px 30px; border-radius: 6px; text-decoration: none; font-weight: bold; margin-top: 20px; }
-                        .package-info { background: #2a2a2a; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #d4af37; }
-                        .footer { text-align: center; margin-top: 40px; border-top: 1px solid #333; padding-top: 20px; font-size: 12px; color: #888; }
-                    </style>
-                </head>
-                <body>
-                    <div class="container">
-                        <div class="header">
-                            <h1 style="color: #d4af37; margin: 0;">🎉 Foto Wyzwanie!</h1>
-                            <p style="font-size: 18px; color: #aaa; margin-top: 10px;">${d.inviterName} zaprasza Cię do udziału w wyzwaniu fotograficznym</p>
-                        </div>
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>${baseStyles}</style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">Foto <span class="logo-accent">Wyzwanie</span></div>
+        </div>
+        <div class="content">
+            <div class="greeting">Hej, ${d.inviteeName}!</div>
+            <p>Masz nowe zaproszenie od <strong>${d.inviterName}</strong>!</p>
+            <div style="background: #1a1a1a; border: 2px solid #9f7a16; padding: 20px; border-radius: 12px; margin: 20px 0; text-align: center;">
+                <p style="color: #9f7a16; margin-bottom: 5px;">Zaproszenie od:</p>
+                <div style="font-size: 24px; font-weight: bold; color: white;">${d.inviterName}</div>
+                <div style="font-size: 18px; color: #9f7a16; font-family: monospace;">${d.inviterPhone}</div>
+            </div>
+            <div class="cta-section">
+                <a href="${d.inviteLink}" class="cta-button">Sprawdź szczegóły 📸</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>`,
+        'challenge-accepted-inviter': (d) => `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>${baseStyles}</style>
+</head>
+<body>
+    <div class="container">
+        <div class="header" style="border-color: #22c55e;">
+            <div class="logo">Wyzwanie <span class="logo-accent" style="color: #22c55e;">Zaakceptowane!</span></div>
+        </div>
+        <div class="content">
+            <div class="greeting">Świetne wieści, ${d.inviterName}!</div>
+            <p>Twoje wyzwanie dla <strong>${d.inviteeName}</strong> zostało zaakceptowane.</p>
+            <div class="details-box" style="border-color: rgba(34, 197, 94, 0.3);">
+                <p>📅 Data: ${d.sessionDate}</p>
+                <p>🕐 Godzina: ${d.sessionTime}</p>
+                <p>📍 Lokalizacja: ${d.location}</p>
+            </div>
+            <p>Sesja została oficjalnie potwierdzona w kalendarzu.</p>
+        </div>
+    </div>
+</body>
+</html>`,
+        'challenge-accepted-invitee': (d) => `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>${baseStyles}</style>
+</head>
+<body>
+    <div class="container">
+        <div class="header" style="border-color: #22c55e;">
+            <div class="logo">Wyzwanie <span class="logo-accent" style="color: #22c55e;">Potwierdzone!</span></div>
+        </div>
+        <div class="content">
+            <div class="greeting">Cześć ${d.inviteeName}!</div>
+            <p>Właśnie zaakceptowałeś/aś wyzwanie od <strong>${d.inviterName}</strong>. Do zobaczenia na ukośnej sesji!</p>
+            <div class="details-box" style="border-color: rgba(34, 197, 94, 0.3);">
+                <p>📅 Data: ${d.sessionDate}</p>
+                <p>🕐 Godzina: ${d.sessionTime}</p>
+                <p>📍 Lokalizacja: ${d.location}</p>
+            </div>
+            <div class="cta-section">
+                <a href="${d.galleryLink}" class="cta-button">Twój Panel Zdjęć 📸</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>`,
+        'challenge-rejected': (d) => `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>${baseStyles}</style>
+</head>
+<body>
+    <div class="container">
+        <div class="header" style="border-color: #ef4444;">
+            <div class="logo">Wyzwanie <span class="logo-accent" style="color: #ef4444;">Odrzucone</span></div>
+        </div>
+        <div class="content">
+            <div class="greeting">Hej, ${d.inviterName}</div>
+            <p>Twoje wyzwanie dla ${d.inviteeName} nie zostało zaakceptowane. Termin został zwolniony.</p>
+            <div class="details-box" style="border-color: rgba(239, 68, 68, 0.3); background: rgba(239, 68, 68, 0.05);">
+                <p>Jeśli dokonałeś opłaty, skontaktuj się ze mną bezpośrednio w celu ustalenia zwrotu.</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>`,
+        'challenge-rejected-admin': (d) => `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>${baseStyles}</style>
+</head>
+<body>
+    <div class="container">
+        <div class="header" style="border-color: #f97316;">
+            <div class="logo">Wymagany <span class="logo-accent" style="color: #f97316;">ZWROT</span></div>
+        </div>
+        <div class="content">
+            <div class="greeting">Cześć Przemek,</div>
+            <p>Wyzwanie zostało <strong>odrzucone</strong> przez zaproszonego. Należy dokonać zwrotu środków dla zapraszającego.</p>
+            <div class="details-box" style="border-color: rgba(249, 115, 22, 0.3); background: rgba(249, 115, 22, 0.05);">
+                <p>👤 Zapraszający: <strong>${d.inviterName}</strong> (${d.inviterEmail})</p>
+                <p>👤 Zaproszony: <strong>${d.inviteeName}</strong></p>
+                <p>💰 Kwota do zwrotu: <strong>${d.amount} PLN</strong></p>
+                <p>💳 ID Płatności: <strong>${d.paymentId || 'Brak'}</strong></p>
+            </div>
+            <p>Termin został automatycznie zwolniony w kalendarzu.</p>
+        </div>
+    </div>
+</body>
+</html>`,
+        'challenge-photos-ready': (d) => `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>${baseStyles}</style>
+</head>
+<body>
+    <div class="container">
+        <div class="header" style="border-color: # gold-500;">
+            <div class="logo">Twoje Zdjęcia są <span class="logo-accent" style="color: #d4af37;">GOTOWE!</span> 📸</div>
+        </div>
+        <div class="content">
+            <div class="greeting">Cześć ${d.inviteeName}!</div>
+            <p>Mam świetną wiadomość! Zdjęcia z Twojego Foto Wyzwania od <strong>${d.inviterName}</strong> są już gotowe i czekają na Ciebie w prywatnym panelu.</p>
+            <div class="details-box" style="border-color: rgba(212, 175, 55, 0.3); background: rgba(212, 175, 55, 0.05);">
+                <p>✨ Sesja: <strong>${d.packageName}</strong></p>
+                <p>🔐 Aby zobaczyć zdjęcia, zaloguj się na swoje konto klienta.</p>
+            </div>
+            <div class="cta-section">
+                <a href="${d.loginLink}" class="cta-button" style="background: #d4af37; color: black;">Zaloguj się i zobacz zdjęcia 🖼️</a>
+            </div>
+            <p style="font-size: 12px; color: #666; margin-top: 20px;">
+                Jeśli to Twoje pierwsze logowanie, użyj przycisku "Nie pamiętam hasła" lub linku aktywacyjnego, aby ustawić swoje hasło.
+            </p>
+        </div>
+    </div>
+</body>
+</html>`,
+        'challenge-payment-confirmed-inviter': (d) => `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>${baseStyles}</style>
+</head>
+<body>
+    <div class="container">
+        <div class="header" style="border-color: #22c55e;">
+            <div class="logo">Płatność <span class="logo-accent" style="color: #22c55e;">Potwierdzona!</span> ✅</div>
+        </div>
+        <div class="content">
+            <div class="greeting">Dzięki, ${d.inviterName}!</div>
+            <p>Twoja płatność za Foto Wyzwanie dla <strong>${d.inviteeName}</strong> została zaksięgowana. Zaproszenie jest już u adresata!</p>
+            
+            <div class="details-box" style="border-color: rgba(34, 197, 94, 0.3); background: rgba(34, 197, 94, 0.05);">
+                <p>🎁 <strong>Twoja nagroda:</strong> Twoja para otrzyma pełną kolekcję cyfrową w cenie wyzwania!</p>
+                <p>📸 <strong>Sesja:</strong> ${d.packageName}</p>
+            </div>
 
-                        <div class="package-info">
-                            <h2 style="margin-top: 0; color: #d4af37;">📦 Twój pakiet</h2>
-                            <p><strong>Nazwa:</strong> ${d.packageName}</p>
-                            <p><strong>Cena:</strong> ${d.packagePrice} PLN</p>
-                            <p><strong>Opis:</strong> ${d.packageDescription}</p>
-                        </div>
+            <h3 style="color: white; margin-top: 30px;">Co dalej?</h3>
+            <p>Polecam założyć konto (lub zalogować się), aby śledzić status wyzwania. Dowiesz się natychmiast, gdy <strong>${d.inviteeName}</strong> zaakceptuje termin!</p>
 
-                        <p>Wyzwanie ważne jest przez <strong>30 dni</strong>. Po tym czasie zaproszenie wygasa.</p>
-
-                        <div style="text-align: center;">
-                            <a href="${d.inviteLink}" class="cta">Przyjrzyj się szczegółom 📸</a>
-                        </div>
-
-                        <div class="footer">
-                            <p>Wiadomość wysłana przez System Rezerwacji Fotografa</p>
-                            <p>© 2024 Wszystkie prawa zastrzeżone</p>
-                        </div>
-                    </div>
-                </body>
-            </html>
-        `,
-
-        'challenge-accepted': (d) => `
-            <!DOCTYPE html>
-            <html>
-                <head>
-                    <meta charset="utf-8">
-                    <title>Wyzwanie zaakceptowane!</title>
-                    <style>
-                        body { font-family: Arial, sans-serif; background: #0f0f0f; color: #fff; }
-                        .container { max-width: 600px; margin: 0 auto; background: #1a1a1a; padding: 40px; border-radius: 12px; }
-                        .success { text-align: center; padding: 30px; background: linear-gradient(135deg, #d4af37 0%, #f4d03f 100%); color: #000; border-radius: 8px; margin: 30px 0; }
-                        .info-box { background: #2a2a2a; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #d4af37; }
-                        .cta { display: inline-block; background: #d4af37; color: #000; padding: 12px 30px; border-radius: 6px; text-decoration: none; font-weight: bold; margin-top: 20px; }
-                        .footer { text-align: center; margin-top: 40px; border-top: 1px solid #333; padding-top: 20px; font-size: 12px; color: #888; }
-                    </style>
-                </head>
-                <body>
-                    <div class="container">
-                        <div class="success">
-                            <h1 style="margin: 0; font-size: 32px;">🎉 Hurra!</h1>
-                            <p style="margin: 10px 0 0 0; font-size: 18px;">Wyzwanie zostało zaakceptowane</p>
-                        </div>
-
-                        <div class="info-box">
-                            <h2 style="margin-top: 0;">📅 Szczegóły sesji</h2>
-                            <p><strong>Data:</strong> ${d.sessionDate}</p>
-                            <p><strong>Godzina:</strong> ${d.sessionTime}</p>
-                            <p><strong>Lokalizacja:</strong> ${d.location}</p>
-                        </div>
-
-                        <p>Dziękujemy za potwierdzenie! Czekamy na Ciebie w zaplanowanym terminie.</p>
-
-                        <div style="text-align: center;">
-                            <a href="${d.galleryLink}" class="cta">Przejrzyj swoją galerię 📸</a>
-                        </div>
-
-                        <div class="info-box">
-                            <h3 style="margin-top: 0;">Co dalej?</h3>
-                            <ol>
-                                <li>Potwierdź obecność w dniu sesji</li>
-                                <li>Przygotuj się do sesji fotograficznej</li>
-                                <li>Zdobądź wspaniałe zdjęcia!</li>
-                                <li>Podziel się zdjęciami ze znajomymi</li>
-                            </ol>
-                        </div>
-
-                        <div class="footer">
-                            <p>Wiadomość wysłana przez System Rezerwacji Fotografa</p>
-                            <p>© 2024 Wszystkie prawa zastrzeżone</p>
-                        </div>
-                    </div>
-                </body>
-            </html>
-        `,
+            <div class="cta-section">
+                <a href="${d.loginLink}" class="cta-button" style="background: white; color: black; border: 1px solid #ccc;">Śledź status w panelu 🔎</a>
+            </div>
+            
+            <p style="font-size: 12px; color: #666; margin-top: 20px;">
+                Link do Twojego wyzwania: <br>
+                <a href="${d.inviteLink}" style="color: #9f7a16;">${d.inviteLink}</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>`
     };
 
     const templateFn = templates[template];
-    if (!templateFn) {
-        console.error(`Template not found: ${template}`);
-        return '<p>Template not found</p>';
-    }
-
-    return templateFn(data);
+    return templateFn ? templateFn(data) : '<p>Template not found</p>';
 }

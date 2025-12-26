@@ -16,7 +16,7 @@ interface BookingEmailData {
     email: string;
 }
 
-const brandColors = {
+export const brandColors = {
     gold: '#d4a853',
     black: '#0a0a0a',
     darkGray: '#18181b',
@@ -24,7 +24,7 @@ const brandColors = {
     white: '#ffffff',
 };
 
-const baseStyles = `
+export const baseStyles = `
     body { margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: ${brandColors.black}; }
     .container { max-width: 600px; margin: 0 auto; background-color: ${brandColors.darkGray}; }
     .header { background: linear-gradient(135deg, ${brandColors.black} 0%, ${brandColors.darkGray} 100%); padding: 40px 30px; text-align: center; border-bottom: 2px solid ${brandColors.gold}; }

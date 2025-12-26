@@ -30,12 +30,23 @@ export async function GET(
             });
         }
 
+        // Fetch associated booking to get session times
+        const booking = await prisma.booking.findFirst({
+            where: { challenge_id: challenge.id }
+        });
+
         return NextResponse.json({
             success: true,
             challenge: {
                 ...challenge,
                 package: challenge.package,
-                location: challenge.location
+                location: challenge.location,
+                booking: booking ? {
+                    date: booking.date,
+                    start_time: booking.start_time,
+                    end_time: booking.end_time,
+                    status: booking.status
+                } : null
             }
         });
     } catch (error) {

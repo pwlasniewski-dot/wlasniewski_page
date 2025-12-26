@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from 'next/link';
-import { RefreshCw, Calendar, Check, X, Clock, DollarSign, Image as ImageIcon } from 'lucide-react';
+import { RefreshCw, Calendar, Check, X, Clock, DollarSign, Image as ImageIcon, Trash2 } from 'lucide-react';
 
 type Booking = {
     id: number;
@@ -127,6 +127,29 @@ export default function AdminBookingsPage() {
         } catch (error) {
             console.error("Save error:", error);
             alert("Błąd podczas zapisu");
+        }
+    };
+
+    const handleDelete = async (id: number) => {
+        if (!confirm("Czy na pewno chcesz usunąć tę rezerwację? Tej operacji nie można cofnąć.")) {
+            return;
+        }
+
+        try {
+            const res = await fetch(`/api/bookings?id=${id}`, {
+                method: "DELETE",
+            });
+
+            if (res.ok) {
+                alert("Rezerwacja została usunięta");
+                fetchBookings();
+            } else {
+                const data = await res.json();
+                alert(data.message || "Błąd podczas usuwania");
+            }
+        } catch (error) {
+            console.error("Delete error:", error);
+            alert("Błąd podczas usuwania");
         }
     };
 
@@ -274,12 +297,21 @@ export default function AdminBookingsPage() {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <button
-                                                onClick={() => setSelectedBooking(booking)}
-                                                className="text-blue-600 hover:text-blue-700 font-medium text-xs"
-                                            >
-                                                Szczegóły
-                                            </button>
+                                            <div className="flex items-center gap-3">
+                                                <button
+                                                    onClick={() => setSelectedBooking(booking)}
+                                                    className="text-blue-600 hover:text-blue-700 font-medium text-xs"
+                                                >
+                                                    Szczegóły
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDelete(booking.id)}
+                                                    className="p-1.5 text-red-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                                    title="Usuń rezerwację"
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}

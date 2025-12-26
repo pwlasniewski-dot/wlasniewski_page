@@ -7,11 +7,19 @@ import MediaPicker from '@/components/admin/MediaPicker';
 
 interface ChallengeSettings {
     module_enabled: boolean;
+    public_gallery_enabled: boolean;
     landing_headline: string;
     landing_subtitle: string;
     cta_button_text: string;
     social_proof_enabled: boolean;
     enable_circular_grids: boolean;
+    enable_carousels: boolean;
+    enable_parallax: boolean;
+    fomo_countdown_hours: number;
+    monthly_challenge_limit: number;
+    hq_latitude: number;
+    hq_longitude: number;
+    max_radius_km: number;
 }
 
 interface PageEffect {
@@ -25,11 +33,19 @@ interface PageEffect {
 export default function ChallengeConfigPage() {
     const [settings, setSettings] = useState<ChallengeSettings>({
         module_enabled: true,
+        public_gallery_enabled: true,
         landing_headline: '',
         landing_subtitle: '',
         cta_button_text: 'Zacznij wyzwanie',
         social_proof_enabled: true,
-        enable_circular_grids: true
+        enable_circular_grids: true,
+        enable_carousels: true,
+        enable_parallax: false,
+        fomo_countdown_hours: 24,
+        monthly_challenge_limit: 10,
+        hq_latitude: 53.2952,
+        hq_longitude: 18.7845,
+        max_radius_km: 60
     });
 
     // Carousel State
@@ -162,48 +178,162 @@ export default function ChallengeConfigPage() {
                 </h2>
 
                 <div className="space-y-4">
-                    <div className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-lg">
-                        <input
-                            type="checkbox"
-                            id="moduleEnabled"
-                            checked={settings.module_enabled}
-                            onChange={e => setSettings({ ...settings, module_enabled: e.target.checked })}
-                            className="w-5 h-5 rounded bg-zinc-800 border-zinc-600 text-gold-500 focus:ring-gold-500"
-                        />
-                        <label htmlFor="moduleEnabled" className="font-medium cursor-pointer">Włącz Moduł Foto-Wyzwań</label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg">
+                            <div>
+                                <label className="font-medium cursor-pointer block">Włącz Moduł Foto-Wyzwań</label>
+                                <p className="text-xs text-zinc-500">Publiczna dostępność całego modułu</p>
+                            </div>
+                            <input
+                                type="checkbox"
+                                checked={settings.module_enabled}
+                                onChange={e => setSettings({ ...settings, module_enabled: e.target.checked })}
+                                className="w-5 h-5 rounded bg-zinc-800 border-zinc-600 text-gold-500 focus:ring-gold-500"
+                            />
+                        </div>
+                        <div className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg">
+                            <div>
+                                <label className="font-medium cursor-pointer block">Publiczna Galeria Par</label>
+                                <p className="text-xs text-zinc-500">Strona /foto-wyzwanie/galeria</p>
+                            </div>
+                            <input
+                                type="checkbox"
+                                checked={settings.public_gallery_enabled}
+                                onChange={e => setSettings({ ...settings, public_gallery_enabled: e.target.checked })}
+                                className="w-5 h-5 rounded bg-zinc-800 border-zinc-600 text-gold-500 focus:ring-gold-500"
+                            />
+                        </div>
                     </div>
 
-                    <div>
-                        <label className="block text-sm text-zinc-400 mb-1">Nagłówek Strony (H1)</label>
-                        <input
-                            type="text"
-                            value={settings.landing_headline}
-                            onChange={e => setSettings({ ...settings, landing_headline: e.target.value })}
-                            className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-2 text-white"
-                            placeholder="Przyjmij foto-wyzwanie"
-                        />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm text-zinc-400 mb-1">Nagłówek Strony (H1)</label>
+                            <input
+                                type="text"
+                                value={settings.landing_headline}
+                                onChange={e => setSettings({ ...settings, landing_headline: e.target.value })}
+                                className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-2 text-white"
+                                placeholder="Przyjmij foto-wyzwanie"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm text-zinc-400 mb-1">Tekst przycisku CTA</label>
+                            <input
+                                type="text"
+                                value={settings.cta_button_text}
+                                onChange={e => setSettings({ ...settings, cta_button_text: e.target.value })}
+                                className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-2 text-white"
+                                placeholder="Zacznij wyzwanie"
+                            />
+                        </div>
                     </div>
 
                     <div>
                         <label className="block text-sm text-zinc-400 mb-1">Podtytuł</label>
-                        <input
-                            type="text"
+                        <textarea
                             value={settings.landing_subtitle}
                             onChange={e => setSettings({ ...settings, landing_subtitle: e.target.value })}
-                            className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-2 text-white"
+                            className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-2 text-white h-20"
                             placeholder="Zaproś kogoś na sesję..."
                         />
                     </div>
 
-                    <div>
-                        <label className="block text-sm text-zinc-400 mb-1">Tekst przycisku CTA</label>
-                        <input
-                            type="text"
-                            value={settings.cta_button_text}
-                            onChange={e => setSettings({ ...settings, cta_button_text: e.target.value })}
-                            className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-2 text-white"
-                            placeholder="Zacznij wyzwanie"
-                        />
+                    <div className="pt-4 border-t border-zinc-800">
+                        <h3 className="text-sm font-medium text-gold-400 mb-3">Efekty Wizualne</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="flex items-center justify-between p-3 bg-zinc-800/30 rounded-lg">
+                                <span className="text-sm text-zinc-300">Social Proof</span>
+                                <input
+                                    type="checkbox"
+                                    checked={settings.social_proof_enabled}
+                                    onChange={e => setSettings({ ...settings, social_proof_enabled: e.target.checked })}
+                                    className="w-4 h-4 rounded bg-zinc-800 border-zinc-600 text-gold-500 focus:ring-gold-500"
+                                />
+                            </div>
+                            <div className="flex items-center justify-between p-3 bg-zinc-800/30 rounded-lg">
+                                <span className="text-sm text-zinc-300">Karuzela 3D</span>
+                                <input
+                                    type="checkbox"
+                                    checked={settings.enable_carousels}
+                                    onChange={e => setSettings({ ...settings, enable_carousels: e.target.checked })}
+                                    className="w-4 h-4 rounded bg-zinc-800 border-zinc-600 text-gold-500 focus:ring-gold-500"
+                                />
+                            </div>
+                            <div className="flex items-center justify-between p-3 bg-zinc-800/30 rounded-lg">
+                                <span className="text-sm text-zinc-300">Paralaksa</span>
+                                <input
+                                    type="checkbox"
+                                    checked={settings.enable_parallax}
+                                    onChange={e => setSettings({ ...settings, enable_parallax: e.target.checked })}
+                                    className="w-4 h-4 rounded bg-zinc-800 border-zinc-600 text-gold-500 focus:ring-gold-500"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="pt-4 border-t border-zinc-800">
+                        <h3 className="text-sm font-medium text-gold-400 mb-3">FOMO & Limity</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm text-zinc-400 mb-1">Czas na akceptację (h)</label>
+                                <input
+                                    type="number"
+                                    value={settings.fomo_countdown_hours}
+                                    onChange={e => setSettings({ ...settings, fomo_countdown_hours: parseInt(e.target.value) })}
+                                    className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-2 text-white text-sm"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm text-zinc-400 mb-1">Limit miesięczny (sloty)</label>
+                                <input
+                                    type="number"
+                                    value={settings.monthly_challenge_limit}
+                                    onChange={e => setSettings({ ...settings, monthly_challenge_limit: parseInt(e.target.value) })}
+                                    className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-2 text-white text-sm"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="pt-4 border-t border-zinc-800">
+                        <h3 className="text-sm font-medium text-gold-400 mb-3">Lokalizacja HQ i Zasięg</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label className="block text-sm text-zinc-400 mb-1">HQ Latitude (szerokość)</label>
+                                <input
+                                    type="number"
+                                    step="0.000001"
+                                    value={settings.hq_latitude}
+                                    onChange={e => setSettings({ ...settings, hq_latitude: parseFloat(e.target.value) })}
+                                    className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-2 text-white text-sm"
+                                    placeholder="53.2952"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm text-zinc-400 mb-1">HQ Longitude (długość)</label>
+                                <input
+                                    type="number"
+                                    step="0.000001"
+                                    value={settings.hq_longitude}
+                                    onChange={e => setSettings({ ...settings, hq_longitude: parseFloat(e.target.value) })}
+                                    className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-2 text-white text-sm"
+                                    placeholder="18.7845"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm text-zinc-400 mb-1">Max Promień (km)</label>
+                                <input
+                                    type="number"
+                                    value={settings.max_radius_km}
+                                    onChange={e => setSettings({ ...settings, max_radius_km: parseInt(e.target.value) })}
+                                    className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-2 text-white text-sm"
+                                    placeholder="60"
+                                />
+                            </div>
+                        </div>
+                        <p className="mt-2 text-xs text-zinc-500">
+                            Wartości służą do walidacji odległości oraz obliczania trasy HQ.
+                        </p>
                     </div>
                 </div>
             </div>

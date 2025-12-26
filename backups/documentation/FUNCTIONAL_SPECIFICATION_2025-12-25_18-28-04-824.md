@@ -92,7 +92,7 @@ Pełny system sprzedaży voucherów z personalizacją wizualną.
 
 Unikatowy system budowania zasięgu poprzez mechanizm zaproszeń.
 
-- **Flow**: Klient otrzymuje/kupuje pakiet wyzwania -> Wysyła zaproszenie (podając e-mail swój i zapraszanego - oba pola są obowiązkowe) -> Akceptuje Regulamin, RODO i Politykę Prywatności -> Proponuje termin sesji za pomocą `BookingCalendar` -> System tworzy tymczasową rezerwację `challenge_pending` -> Zaproszony otrzymuje unikalny link (wysyłany dopiero po opłaceniu wyzwania) -> Zaproszony wchodzi na stronę i może:
+- **Flow**: Klient otrzymuje/kupuje pakiet wyzwania -> Wysyła zaproszenie (podając e-mail swój i zapraszanego) -> Proponuje termin sesji za pomocą `BookingCalendar` -> System tworzy tymczasową rezerwację `challenge_pending` -> Zaproszony otrzymuje unikalny link -> Zaproszony wchodzi na stronę i może:
     1. Zaakceptować zaproponowany termin (status zmienia się na `accepted`, rezerwacja na `confirmed`).
     2. Wybrać inny termin (Counter-Proposal) -> system aktualizuje rezerwację i informuje zapraszającego.
 - **HQ & Dystans**: System posiada zdefiniowaną centralę (HQ) za pomocą współrzędnych geograficznych (Lat/Lng). Wyzwania mają konfigurowalny promień działania (domyślnie 60km). Jeśli klient wybierze "Własną lokalizację", system przelicza odległość (Haversine Formula) i blokuje możliwość przejścia dalej, jeśli dystans przekracza limit.
@@ -640,7 +640,7 @@ Główny model wiralowego silnika zaproszeń.
 - `unique_link`: String (Unique) - Unikalny kod zaproszenia.
 - `inviter_name`: String - Kto zaprasza.
 - `inviter_contact`: String - Telefon zapraszającego.
-- `inviter_email`: String - E-mail zapraszającego (obowiązkowy, służy do powiadomień i logowania do panelu).
+- `inviter_email`: String? - E-mail zapraszającego (do powiadomień o negocjacjach).
 - `invitee_name`: String - Kto jest zaproszony.
 - `invitee_contact`: String - E-mail zaproszonego.
 - `status`: String (sent, accepted, rejected, completed).

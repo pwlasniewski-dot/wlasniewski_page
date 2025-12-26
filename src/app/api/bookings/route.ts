@@ -319,3 +319,32 @@ export async function PATCH(request: Request) {
         );
     }
 }
+// DELETE /api/bookings?id=123 - Remove a booking
+export async function DELETE(request: Request) {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get("id");
+
+    if (!id) {
+        return NextResponse.json(
+            { ok: false, message: "Brak ID rezerwacji" },
+            { status: 400 }
+        );
+    }
+
+    try {
+        await prisma.booking.delete({
+            where: { id: parseInt(id) },
+        });
+
+        await logSystem('INFO', 'BOOKING', `Booking #${id} deleted by admin`, { bookingId: id });
+
+        return NextResponse.json({ ok: true, message: "Rezerwacja została usunięta" });
+    } catch (error) {
+        console.error("Error deleting booking:", error);
+        await logSystem('ERROR', 'BOOKING', `Booking #${id} deletion failed`, { error: String(error) });
+        return NextResponse.json(
+            { ok: false, message: "Błąd podczas usuwania rezerwacji" },
+            { status: 500 }
+        );
+    }
+}

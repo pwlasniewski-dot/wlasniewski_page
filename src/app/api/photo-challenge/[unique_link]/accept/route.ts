@@ -31,56 +31,125 @@ export async function POST(
             );
         }
 
-        // Create booking
-        const startTime = new Date(`${date}T${String(hour).padStart(2, '0')}:00:00`);
-        // Assume 1 hour session (can be configurable)
-        const endTime = new Date(startTime.getTime() + 60 * 60 * 1000);
-
-        const booking = await prisma.booking.create({
-            data: {
-                service: 'Foto-wyzwanie',
-                package: (challenge.package as any)?.name || 'Challenge',
-                price: (challenge.package as any)?.challenge_price || 0,
-                date: startTime,
-                start_time: startTime.toISOString(),
-                end_time: endTime.toISOString(),
-                client_name: name,
-                email: challenge.invitee_contact,
-                phone: '',
-                status: 'confirmed',
-                challenge_id: challenge.id
-            }
+        // Check if a booking already exists for this challenge
+        const existingBooking = await prisma.booking.findFirst({
+            where: { challenge_id: challenge.id }
         });
 
-        // Update challenge status
+        const startTimeText = `${String(hour).padStart(2, '0')}:00`;
+        const endTimeText = `${String(hour + 1).padStart(2, '0')}:00`;
+        const sessionDate = new Date(`${date}T00:00:00.000Z`);
+
+        let booking;
+        if (existingBooking) {
+            // Update existing booking
+            booking = await prisma.booking.update({
+                where: { id: existingBooking.id },
+                data: {
+                    date: sessionDate,
+                    start_time: startTimeText,
+                    end_time: endTimeText,
+                    client_name: name,
+                    status: 'confirmed'
+                }
+            });
+        } else {
+            // Create new booking (fallback)
+            booking = await prisma.booking.create({
+                data: {
+                    service: 'Foto-wyzwanie',
+                    package: challenge.package?.name || 'Challenge',
+                    price: challenge.package?.challenge_price || 0,
+                    date: sessionDate,
+                    start_time: startTimeText,
+                    end_time: endTimeText,
+                    client_name: name,
+                    email: challenge.invitee_contact,
+                    phone: challenge.inviter_contact, // Use inviter phone for contact
+                    status: 'confirmed',
+                    challenge_id: challenge.id
+                }
+            });
+        }
+
+        // Create or find ChallengeUser for the invitee
+        let userId = challenge.invitee_user_id;
+        if (!userId) {
+            const user = await prisma.challengeUser.upsert({
+                where: { email: challenge.invitee_contact },
+                update: { name: name },
+                create: {
+                    email: challenge.invitee_contact,
+                    name: name,
+                    phone: challenge.inviter_contact // Default to inviter contact for safety, or leave null
+                }
+            });
+            userId = user.id;
+        }
+
+        // Update challenge status and link user
         await prisma.photoChallenge.update({
             where: { unique_link },
             data: {
                 status: 'accepted',
                 accepted_at: new Date(),
-                session_date: startTime
-            }
+                session_date: sessionDate,
+                invitee_user_id: userId
+            } as any
         });
 
-        // Send confirmation email
+        // Send confirmation email to invitee
+        // Send confirmation e-mails
         const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
         const galleryLink = `${baseUrl}/foto-wyzwanie/gallery/${challenge.id}`;
+        const formattedDate = sessionDate.toLocaleDateString('pl-PL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        const locationName = challenge.location?.name || challenge.custom_location || 'Będzie podane wkrótce';
 
+        // 1. Notify Invitee (the one who just accepted)
         try {
             await sendEmail({
-                to: challenge.invitee_contact,
+                to: challenge.invitee_contact, // Assuming email is in contact
                 subject: '✅ Wyzwanie zaakceptowane! Szczegóły sesji',
-                template: 'challenge-accepted',
+                template: 'challenge-accepted-invitee',
                 data: {
-                    sessionDate: startTime.toLocaleDateString('pl-PL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
-                    sessionTime: `${String(hour).padStart(2, '0')}:00`,
-                    location: challenge.location?.name || 'Będzie podane wkrótce',
+                    inviteeName: name,
+                    inviterName: challenge.inviter_name,
+                    sessionDate: formattedDate,
+                    sessionTime: startTimeText,
+                    location: locationName,
                     galleryLink
                 }
             });
         } catch (emailError) {
-            console.error('Failed to send acceptance email:', emailError);
-            // Don't fail the request if email fails
+            console.error('Failed to send acceptance email to invitee:', emailError);
+        }
+
+        // 2. Notify Inviter
+        if (challenge.inviter_email) {
+            try {
+                const isDifferentDate = existingBooking && (
+                    new Date(existingBooking.date).toISOString().split('T')[0] !== date ||
+                    existingBooking.start_time !== startTimeText
+                );
+
+                await sendEmail({
+                    to: challenge.inviter_email,
+                    subject: isDifferentDate
+                        ? `📅 ${name} zaakceptował(a) wyzwanie, ale wybrał(a) inny termin!`
+                        : `🎉 ${name} właśnie zaakceptował(a) Twoje Foto Wyzwanie!`,
+                    template: 'challenge-accepted-inviter',
+                    data: {
+                        inviterName: challenge.inviter_name,
+                        inviteeName: name,
+                        sessionDate: formattedDate,
+                        sessionTime: startTimeText,
+                        location: locationName,
+                        isDifferentDate
+                    }
+                });
+            } catch (inviterEmailError) {
+                console.error('Failed to send notification email to inviter:', inviterEmailError);
+            }
         }
 
         return NextResponse.json({

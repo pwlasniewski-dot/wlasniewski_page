@@ -145,27 +145,35 @@ export default function BookingCalendar(props: Props) {
     const slots = buildSessionSlots(iso, durationHours);
 
     const info = availability[iso];
+
+    // Check for both 'booked' (array of start times) and 'ranges' (start/end objects)
     const ranges: { start: string; end: string }[] = Array.isArray(info?.ranges)
       ? info!.ranges!
-      : (info?.booked || []).map((s) => ({ start: s, end: fromMinutes(toMinutes(s) + 60) }));
+      : (info?.booked || []).map((s) => ({
+        start: s,
+        end: fromMinutes(toMinutes(s) + 60)
+      }));
 
     return slots.map((slot) => {
-      const blocked =
-        info?.fullDay === true ||
-        ranges.some((r) => overlap(slot.start, slot.end, r.start, r.end)) ||
-        (info?.booked || []).includes(slot.start);
+      const isBlockedByFullDay = info?.fullDay === true;
+      const isBlockedByOverlap = ranges.some((r) =>
+        overlap(slot.start, slot.end, r.start, r.end)
+      );
+      const isBlockedByExactStart = (info?.booked || []).includes(slot.start);
 
+      const blocked = isBlockedByFullDay || isBlockedByOverlap || isBlockedByExactStart;
       const picked = effectiveValue?.start === slot.start && effectiveValue?.end === slot.end;
+
       return { ...slot, blocked, picked };
     });
-  }, [service, effectiveValue?.date, effectiveValue?.start, effectiveValue?.end, durationHours, availability]);
+  }, [service, effectiveValue, durationHours, availability]);
 
   return (
     <div className="rounded-xl border p-4">
       <div className="mb-3 flex items-center justify-between">
         <button
           type="button"
-          className="rounded-md border px-3 py-1 hover:bg-zinc-50"
+          className="rounded-md border px-3 py-1 hover:bg-zinc-800 text-gold-400 border-gold-900/50"
           onClick={() => setCursor((d) => new Date(d.getFullYear(), d.getMonth() - 1, 1))}
           aria-label="Poprzedni miesiąc"
         >
@@ -176,7 +184,7 @@ export default function BookingCalendar(props: Props) {
         </div>
         <button
           type="button"
-          className="rounded-md border px-3 py-1 hover:bg-zinc-50"
+          className="rounded-md border px-3 py-1 hover:bg-zinc-800 text-gold-400 border-gold-900/50"
           onClick={() => setCursor((d) => new Date(d.getFullYear(), d.getMonth() + 1, 1))}
           aria-label="Następny miesiąc"
         >
@@ -193,7 +201,7 @@ export default function BookingCalendar(props: Props) {
         {daysGrid.map((c) => {
           if (!c.dateISO) return <div key={c.key} />;
           const info = availability[c.dateISO];
-          const isSelected = value?.date === c.dateISO;
+          const isSelected = effectiveValue?.date === c.dateISO;
           const disabled = service !== "Sesja" && info?.fullDay === true;
 
           return (
@@ -204,7 +212,7 @@ export default function BookingCalendar(props: Props) {
               disabled={disabled}
               className={[
                 "h-9 rounded-md border",
-                isSelected ? "bg-indigo-600 text-white border-indigo-600" : "hover:bg-zinc-50",
+                isSelected ? "bg-gold-500 text-black border-gold-500 font-bold shadow-lg shadow-gold-500/20" : "hover:bg-zinc-800 border-zinc-700",
                 disabled ? "opacity-40 cursor-not-allowed" : "",
               ].join(" ")}
               title={
@@ -219,10 +227,10 @@ export default function BookingCalendar(props: Props) {
         })}
       </div>
 
-      {service === "Sesja" && value?.date && (
+      {service === "Sesja" && effectiveValue?.date && (
         <div className="mt-4">
-          <div className="mb-2 text-sm text-zinc-600">
-            Wybierz godzinę dla: <span className="font-mono">{value.date}</span>{" "}
+          <div className="mb-2 text-sm text-zinc-400">
+            Wybierz godzinę dla: <span className="font-mono text-gold-400">{effectiveValue?.date}</span>{" "}
             <span className="text-zinc-500">(czas: {durationHours}h)</span>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -234,15 +242,15 @@ export default function BookingCalendar(props: Props) {
                 onClick={() => {
                   if (selectedDate !== undefined) {
                     // For selectedDate interface, just update the date
-                    (onChange as (date: Date | null) => void)(value?.date ? new Date(value.date + 'T12:00:00') : null);
+                    (effectiveOnChange as (date: Date | null) => void)(effectiveValue?.date ? new Date(effectiveValue.date + 'T12:00:00') : null);
                   } else {
                     // For value interface, update with time slot
-                    (onChange as (val: { date: string; start?: string; end?: string } | null) => void)({ date: value!.date!, start: s.start, end: s.end });
+                    (effectiveOnChange as (val: { date: string; start?: string; end?: string } | null) => void)({ date: effectiveValue!.date!, start: s.start, end: s.end });
                   }
                 }}
                 className={[
-                  "rounded-md border px-3 py-2 text-sm",
-                  s.picked ? "bg-indigo-600 text-white border-indigo-600" : "hover:bg-zinc-50",
+                  "rounded-md border px-3 py-2 text-sm transition-all",
+                  s.picked ? "bg-gold-500 text-black border-gold-500 font-bold shadow-lg shadow-gold-500/20" : "hover:bg-zinc-800 border-zinc-700",
                   s.blocked ? "opacity-40 cursor-not-allowed" : "",
                 ].join(" ")}
                 title={s.blocked ? "Zajęte" : `${s.start}–${s.end}`}
@@ -255,7 +263,8 @@ export default function BookingCalendar(props: Props) {
             Sesje: <b>Pn–Pt</b> start 18:00; <b>So–Nd</b> start 17:00 i 19:00. Zajęte sloty są wyszarzone.
           </p>
         </div>
-      )}
-    </div>
+      )
+      }
+    </div >
   );
 }
