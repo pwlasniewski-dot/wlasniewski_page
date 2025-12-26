@@ -8,7 +8,7 @@ import { Plus, Trash2, GripVertical, Image as ImageIcon, Type, Layout, MoveUp, M
 import RichTextEditor from './RichTextEditor';
 import MediaPicker from './MediaPicker';
 
-export type SectionType = 'hero_parallax' | 'hero' | 'rich_text' | 'image_text' | 'gallery' | 'contact' | 'thermal_slider' | 'contact_form' | 'hero_slider';
+export type SectionType = 'hero_parallax' | 'hero' | 'rich_text' | 'image_text' | 'gallery' | 'contact' | 'thermal_slider' | 'contact_form' | 'hero_slider' | 'about' | 'features' | 'parallax' | 'info_band' | 'testimonials' | 'challenge_banner' | 'creative_slider';
 
 export interface SliderSlide {
     id: string;
@@ -47,6 +47,7 @@ export interface PageSection {
     labelRight?: string; // For thermal_slider
     showCategoryTitle?: boolean; // For thermal_slider - show title above sections
     slides?: SliderSlide[]; // For hero_slider
+    data?: any; // For legacy / homepage sections
 }
 
 interface PageBuilderProps {

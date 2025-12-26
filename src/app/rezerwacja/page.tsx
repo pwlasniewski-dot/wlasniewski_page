@@ -8,6 +8,8 @@ import { buildICS } from '@/utils/ics';
 import TestimonialsSection from '@/components/TestimonialsSection';
 import BookingCalendar from '@/components/BookingCalendar';
 import PromocodeBar from '@/components/PromocodeBar';
+import PageRenderer from '@/components/PageRenderer';
+import { PageSection } from '@/components/admin/PageBuilder';
 
 interface ServiceType {
     id: number;
@@ -89,6 +91,9 @@ export default function RezerwacjaPage() {
         expiryDate?: string;
     } | null>(null);
 
+    // Page Builder Sections
+    const [pageSections, setPageSections] = useState<PageSection[] | null>(null);
+
     // Payment
     const [submitting, setSubmitting] = useState(false);
 
@@ -139,6 +144,27 @@ export default function RezerwacjaPage() {
         };
 
         loadPromoSettings();
+
+        // Load Page Sections
+        const loadPage = async () => {
+            try {
+                const res = await fetch('/api/pages?slug=rezerwacja');
+                const data = await res.json();
+                if (data.success && data.page?.sections) {
+                    try {
+                        const parsed = JSON.parse(data.page.sections);
+                        if (Array.isArray(parsed) && parsed.length > 0) {
+                            setPageSections(parsed);
+                        }
+                    } catch (e) {
+                        console.error('Failed to parse page sections');
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to load page sections:', error);
+            }
+        };
+        loadPage();
     }, []);
 
     // Load available hours when package and date are selected
@@ -443,432 +469,438 @@ export default function RezerwacjaPage() {
     }
 
     return (
-        <main className="min-h-screen bg-gradient-to-b from-zinc-950 via-black to-zinc-950 py-20 px-4">
-            {/* Promocode Bar */}
-            <div className="max-w-4xl mx-auto pt-8">
-                <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 text-center">
-                    📸 Zarezerwuj Sesję
-                </h1>
-                <p className="text-zinc-400 text-center mb-12">
-                    Wybierz usługę, pakiet i termin. Płatność przejdziesz bezpiecznie poprzez Stripe.
-                </p>
+        <main className="min-h-screen bg-gradient-to-b from-zinc-950 via-black to-zinc-950">
+            {/* Dynamic Content from Page Builder */}
+            {pageSections && pageSections.length > 0 && (
+                <PageRenderer sections={pageSections} />
+            )}
 
-                <form onSubmit={handleSubmit} className="space-y-8">
-                    {/* Step 1: Service Selection */}
-                    <motion.section
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5 }}
-                        className="bg-zinc-900/50 rounded-2xl p-8 border border-zinc-800"
-                    >
-                        <h2 className="text-2xl font-bold text-white mb-6">Krok 1: Wybierz Usługę</h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {serviceTypes.map((svc) => (
-                                <button
-                                    key={svc.id}
-                                    type="button"
-                                    onClick={() => {
-                                        setService(svc);
-                                        setChosenPackage(null);
-                                    }}
-                                    className={`p-4 rounded-xl border-2 transition-all text-left ${service?.id === svc.id
-                                        ? "border-amber-500 bg-amber-500/10"
-                                        : "border-zinc-700 bg-zinc-800/50 hover:border-zinc-600"
-                                        }`}
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <span className="text-3xl">{svc.icon || '📸'}</span>
-                                        <div>
-                                            <p className="font-bold text-white">{svc.name}</p>
-                                            <p className="text-sm text-zinc-400">{svc.description}</p>
-                                        </div>
-                                    </div>
-                                </button>
-                            ))}
-                        </div>
-                    </motion.section>
+            <div className="py-20 px-4">
+                <div className="max-w-4xl mx-auto pt-8">
+                    <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 text-center">
+                        📸 Zarezerwuj Sesję
+                    </h1>
+                    <p className="text-zinc-400 text-center mb-12">
+                        Wybierz usługę, pakiet i termin. Płatność przejdziesz bezpiecznie poprzez Stripe.
+                    </p>
 
-                    {/* Step 2: Package Selection */}
-                    {service && activePackages.length > 0 && (
+                    <form onSubmit={handleSubmit} className="space-y-8">
+                        {/* Step 1: Service Selection */}
                         <motion.section
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.5, delay: 0.1 }}
+                            transition={{ duration: 0.5 }}
                             className="bg-zinc-900/50 rounded-2xl p-8 border border-zinc-800"
                         >
-                            <h2 className="text-2xl font-bold text-white mb-6">Krok 2: Wybierz Pakiet</h2>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                {activePackages.map((pkg) => (
+                            <h2 className="text-2xl font-bold text-white mb-6">Krok 1: Wybierz Usługę</h2>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {serviceTypes.map((svc) => (
                                     <button
-                                        key={pkg.id}
+                                        key={svc.id}
                                         type="button"
-                                        onClick={() => setChosenPackage(pkg)}
-                                        className={`p-5 rounded-2xl border-2 transition-all text-left flex flex-col h-full ${chosenPackage?.id === pkg.id
-                                            ? "border-amber-500 bg-amber-500/10 shadow-[0_0_20px_rgba(245,158,11,0.15)]"
-                                            : "border-zinc-800 bg-zinc-900/40 hover:border-zinc-700 hover:bg-zinc-800/50"
+                                        onClick={() => {
+                                            setService(svc);
+                                            setChosenPackage(null);
+                                        }}
+                                        className={`p-4 rounded-xl border-2 transition-all text-left ${service?.id === svc.id
+                                            ? "border-amber-500 bg-amber-500/10"
+                                            : "border-zinc-700 bg-zinc-800/50 hover:border-zinc-600"
                                             }`}
                                     >
-                                        <div className="min-h-[5.5rem] flex flex-col">
-                                            <div className="flex items-center gap-3 mb-2">
-                                                <span className="text-3xl">{pkg.icon || '📦'}</span>
-                                                <h3 className="text-xl font-bold text-white leading-tight">{pkg.name}</h3>
+                                        <div className="flex items-center gap-3">
+                                            <span className="text-3xl">{svc.icon || '📸'}</span>
+                                            <div>
+                                                <p className="font-bold text-white">{svc.name}</p>
+                                                <p className="text-sm text-zinc-400">{svc.description}</p>
                                             </div>
-                                            {pkg.subtitle && (
-                                                <p className="text-sm text-zinc-400 mb-2 leading-snug line-clamp-2">
-                                                    {pkg.subtitle}
-                                                </p>
-                                            )}
                                         </div>
-
-                                        <div className="text-xl text-amber-500 font-extrabold mb-4 flex items-center gap-2">
-                                            <span className="text-sm bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">{pkg.hours}h</span>
-                                            <span>{(pkg.price / 100).toFixed(2)} zł</span>
-                                        </div>
-
-                                        {pkg.description && (
-                                            <div
-                                                className="text-[13px] text-zinc-400 mt-2 prose prose-invert prose-sm prose-p:my-0 prose-ul:my-2 prose-li:my-1 opacity-90"
-                                                dangerouslySetInnerHTML={{ __html: pkg.description }}
-                                            />
-                                        )}
                                     </button>
                                 ))}
                             </div>
                         </motion.section>
-                    )}
 
-                    {/* Step 3: Date & Time Selection - Visible immediately after Service is present */}
-                    {service && (
-                        <motion.section
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.5, delay: 0.2 }}
-                            className="bg-zinc-900/50 rounded-2xl p-8 border border-zinc-800"
-                        >
-                            <h2 className="text-2xl font-bold text-white mb-6">Krok 3: Wybierz Termin</h2>
+                        {/* Step 2: Package Selection */}
+                        {service && activePackages.length > 0 && (
+                            <motion.section
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.5, delay: 0.1 }}
+                                className="bg-zinc-900/50 rounded-2xl p-8 border border-zinc-800"
+                            >
+                                <h2 className="text-2xl font-bold text-white mb-6">Krok 2: Wybierz Pakiet</h2>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    {activePackages.map((pkg) => (
+                                        <button
+                                            key={pkg.id}
+                                            type="button"
+                                            onClick={() => setChosenPackage(pkg)}
+                                            className={`p-5 rounded-2xl border-2 transition-all text-left flex flex-col h-full ${chosenPackage?.id === pkg.id
+                                                ? "border-amber-500 bg-amber-500/10 shadow-[0_0_20px_rgba(245,158,11,0.15)]"
+                                                : "border-zinc-800 bg-zinc-900/40 hover:border-zinc-700 hover:bg-zinc-800/50"
+                                                }`}
+                                        >
+                                            <div className="min-h-[5.5rem] flex flex-col">
+                                                <div className="flex items-center gap-3 mb-2">
+                                                    <span className="text-3xl">{pkg.icon || '📦'}</span>
+                                                    <h3 className="text-xl font-bold text-white leading-tight">{pkg.name}</h3>
+                                                </div>
+                                                {pkg.subtitle && (
+                                                    <p className="text-sm text-zinc-400 mb-2 leading-snug line-clamp-2">
+                                                        {pkg.subtitle}
+                                                    </p>
+                                                )}
+                                            </div>
 
-                            {/* Calendar */}
-                            <div className="mb-8">
-                                <h3 className="text-lg font-bold text-white mb-4">Wybierz Dzień</h3>
-                                <BookingCalendar
-                                    onSlotSelect={setSlot}
-                                    selectedSlot={slot}
-                                    service={(service?.name as "Sesja" | "Ślub" | "Przyjęcie" | "Urodziny") || 'Sesja'}
-                                />
-                            </div>
+                                            <div className="text-xl text-amber-500 font-extrabold mb-4 flex items-center gap-2">
+                                                <span className="text-sm bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">{pkg.hours}h</span>
+                                                <span>{(pkg.price / 100).toFixed(2)} zł</span>
+                                            </div>
 
-                            {/* Hour Selection - shown after date is selected */}
-                            {slot?.date && (
-                                <div className="mt-8 pt-8 border-t border-zinc-700">
-                                    <h3 className="text-xl font-bold text-white mb-4">
-                                        {!chosenPackage
-                                            ? '📦 Wybierz pakiet, aby zobaczyć godziny'
-                                            : loadingAvailability
-                                                ? '⏳ Ładowanie dostępnych godzin...'
-                                                : '⏰ Wybierz Godzinę'}
-                                    </h3>
-
-                                    {!chosenPackage ? (
-                                        <div className="text-center text-amber-500 py-8 border border-dashed border-zinc-700 rounded-xl bg-zinc-900/50">
-                                            <p className="mb-2">Najpierw wybierz pakiet powyżej,</p>
-                                            <p className="text-sm text-zinc-400">abyśmy mogli sprawdzić dostępność dla wybranej długości sesji.</p>
-                                        </div>
-                                    ) : loadingAvailability ? (
-                                        <div className="text-center text-zinc-400">
-                                            <p>Sprawdzam dostępność...</p>
-                                        </div>
-                                    ) : chosenPackage.blocks_entire_day ? (
-                                        <div className="p-6 bg-zinc-900/80 border border-amber-500/30 rounded-xl text-center">
-                                            <p className="text-amber-500 font-bold mb-1">✨ Pakiet całodniowy (Ślub/Przyjęcie)</p>
-                                            <p className="text-zinc-400 text-sm">Ten pakiet rezerwuje cały dzień. Nie musisz wybierać konkretnych godzin.</p>
-                                        </div>
-                                    ) : availableHours.length === 0 ? (
-                                        <div className="text-center text-amber-500">
-                                            <p>Brak dostępnych godzin na wybrany dzień</p>
-                                        </div>
-                                    ) : (
-                                        <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
-                                            {availableHours.map((hSlot) => (
-                                                <button
-                                                    key={hSlot.hour}
-                                                    type="button"
-                                                    disabled={!hSlot.available}
-                                                    onClick={() => {
-                                                        const start = `${hSlot.hour.toString().padStart(2, '0')}:00`;
-                                                        const end = `${(hSlot.hour + (chosenPackage?.hours || 1)).toString().padStart(2, '0')}:00`;
-                                                        setSelectedHour(hSlot.hour);
-                                                        setSlot(prev => prev ? { ...prev, start, end } : null);
-                                                    }}
-                                                    className={`py-2 rounded-lg transition-all text-sm font-medium ${hSlot.available
-                                                        ? selectedHour === hSlot.hour
-                                                            ? 'bg-amber-500 text-white border border-amber-400'
-                                                            : 'bg-zinc-800 text-white border border-zinc-700 hover:border-amber-400 hover:bg-zinc-700'
-                                                        : 'bg-zinc-900 text-zinc-600 border border-zinc-800 cursor-not-allowed'
-                                                        }`}
-                                                    title={
-                                                        !hSlot.available
-                                                            ? hSlot.reason === 'booked_session'
-                                                                ? 'Zajęte - rezerwacja sesji'
-                                                                : hSlot.reason === 'booked_event'
-                                                                    ? 'Zajęte - rezerwacja całodniowa'
-                                                                    : 'Poza godzinami dostępnymi'
-                                                            : ''
-                                                    }
-                                                >
-                                                    {hSlot.hour.toString().padStart(2, '0')}:00
-                                                </button>
-                                            ))}
-                                        </div>
-                                    )}
+                                            {pkg.description && (
+                                                <div
+                                                    className="text-[13px] text-zinc-400 mt-2 prose prose-invert prose-sm prose-p:my-0 prose-ul:my-2 prose-li:my-1 opacity-90"
+                                                    dangerouslySetInnerHTML={{ __html: pkg.description }}
+                                                />
+                                            )}
+                                        </button>
+                                    ))}
                                 </div>
-                            )}
-                        </motion.section>
-                    )}
+                            </motion.section>
+                        )}
 
-                    {/* Step 4: Personal Information */}
-                    {slot && (
-                        <motion.section
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.5, delay: 0.3 }}
-                            className="bg-zinc-900/50 rounded-2xl p-8 border border-zinc-800"
-                        >
-                            <h2 className="text-2xl font-bold text-white mb-6">Krok 4: Twoje Dane</h2>
+                        {/* Step 3: Date & Time Selection - Visible immediately after Service is present */}
+                        {service && (
+                            <motion.section
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.5, delay: 0.2 }}
+                                className="bg-zinc-900/50 rounded-2xl p-8 border border-zinc-800"
+                            >
+                                <h2 className="text-2xl font-bold text-white mb-6">Krok 3: Wybierz Termin</h2>
 
-                            <div className="space-y-4">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-zinc-300 mb-2">
-                                            Imię i nazwisko *
-                                        </label>
-                                        <input
-                                            type="text"
-                                            required
-                                            value={name}
-                                            onChange={(e) => setName(e.target.value)}
-                                            className="w-full px-4 py-2 rounded-lg bg-zinc-800 border border-zinc-700 text-white focus:ring-2 focus:ring-amber-500 outline-none"
-                                            placeholder="Jan Kowalski"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-zinc-300 mb-2">
-                                            Email *
-                                        </label>
-                                        <input
-                                            type="email"
-                                            required
-                                            value={email}
-                                            onChange={(e) => setEmail(e.target.value)}
-                                            className="w-full px-4 py-2 rounded-lg bg-zinc-800 border border-zinc-700 text-white focus:ring-2 focus:ring-amber-500 outline-none"
-                                            placeholder="jan@example.com"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-zinc-300 mb-2">
-                                        Telefon
-                                    </label>
-                                    <input
-                                        type="tel"
-                                        value={phone}
-                                        onChange={(e) => setPhone(e.target.value)}
-                                        className="w-full px-4 py-2 rounded-lg bg-zinc-800 border border-zinc-700 text-white focus:ring-2 focus:ring-amber-500 outline-none"
-                                        placeholder="+48 123 456 789"
+                                {/* Calendar */}
+                                <div className="mb-8">
+                                    <h3 className="text-lg font-bold text-white mb-4">Wybierz Dzień</h3>
+                                    <BookingCalendar
+                                        onSlotSelect={setSlot}
+                                        selectedSlot={slot}
+                                        service={(service?.name as "Sesja" | "Ślub" | "Przyjęcie" | "Urodziny") || 'Sesja'}
                                     />
                                 </div>
 
-                                {needsVenue && (
+                                {/* Hour Selection - shown after date is selected */}
+                                {slot?.date && (
+                                    <div className="mt-8 pt-8 border-t border-zinc-700">
+                                        <h3 className="text-xl font-bold text-white mb-4">
+                                            {!chosenPackage
+                                                ? '📦 Wybierz pakiet, aby zobaczyć godziny'
+                                                : loadingAvailability
+                                                    ? '⏳ Ładowanie dostępnych godzin...'
+                                                    : '⏰ Wybierz Godzinę'}
+                                        </h3>
+
+                                        {!chosenPackage ? (
+                                            <div className="text-center text-amber-500 py-8 border border-dashed border-zinc-700 rounded-xl bg-zinc-900/50">
+                                                <p className="mb-2">Najpierw wybierz pakiet powyżej,</p>
+                                                <p className="text-sm text-zinc-400">abyśmy mogli sprawdzić dostępność dla wybranej długości sesji.</p>
+                                            </div>
+                                        ) : loadingAvailability ? (
+                                            <div className="text-center text-zinc-400">
+                                                <p>Sprawdzam dostępność...</p>
+                                            </div>
+                                        ) : chosenPackage.blocks_entire_day ? (
+                                            <div className="p-6 bg-zinc-900/80 border border-amber-500/30 rounded-xl text-center">
+                                                <p className="text-amber-500 font-bold mb-1">✨ Pakiet całodniowy (Ślub/Przyjęcie)</p>
+                                                <p className="text-zinc-400 text-sm">Ten pakiet rezerwuje cały dzień. Nie musisz wybierać konkretnych godzin.</p>
+                                            </div>
+                                        ) : availableHours.length === 0 ? (
+                                            <div className="text-center text-amber-500">
+                                                <p>Brak dostępnych godzin na wybrany dzień</p>
+                                            </div>
+                                        ) : (
+                                            <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
+                                                {availableHours.map((hSlot) => (
+                                                    <button
+                                                        key={hSlot.hour}
+                                                        type="button"
+                                                        disabled={!hSlot.available}
+                                                        onClick={() => {
+                                                            const start = `${hSlot.hour.toString().padStart(2, '0')}:00`;
+                                                            const end = `${(hSlot.hour + (chosenPackage?.hours || 1)).toString().padStart(2, '0')}:00`;
+                                                            setSelectedHour(hSlot.hour);
+                                                            setSlot(prev => prev ? { ...prev, start, end } : null);
+                                                        }}
+                                                        className={`py-2 rounded-lg transition-all text-sm font-medium ${hSlot.available
+                                                            ? selectedHour === hSlot.hour
+                                                                ? 'bg-amber-500 text-white border border-amber-400'
+                                                                : 'bg-zinc-800 text-white border border-zinc-700 hover:border-amber-400 hover:bg-zinc-700'
+                                                            : 'bg-zinc-900 text-zinc-600 border border-zinc-800 cursor-not-allowed'
+                                                            }`}
+                                                        title={
+                                                            !hSlot.available
+                                                                ? hSlot.reason === 'booked_session'
+                                                                    ? 'Zajęte - rezerwacja sesji'
+                                                                    : hSlot.reason === 'booked_event'
+                                                                        ? 'Zajęte - rezerwacja całodniowa'
+                                                                        : 'Poza godzinami dostępnymi'
+                                                                : ''
+                                                        }
+                                                    >
+                                                        {hSlot.hour.toString().padStart(2, '0')}:00
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </motion.section>
+                        )}
+
+                        {/* Step 4: Personal Information */}
+                        {slot && (
+                            <motion.section
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.5, delay: 0.3 }}
+                                className="bg-zinc-900/50 rounded-2xl p-8 border border-zinc-800"
+                            >
+                                <h2 className="text-2xl font-bold text-white mb-6">Krok 4: Twoje Dane</h2>
+
+                                <div className="space-y-4">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div>
                                             <label className="block text-sm font-medium text-zinc-300 mb-2">
-                                                Miasto *
+                                                Imię i nazwisko *
                                             </label>
                                             <input
                                                 type="text"
-                                                required={!!needsVenue}
-                                                value={venueCity}
-                                                onChange={(e) => setVenueCity(e.target.value)}
+                                                required
+                                                value={name}
+                                                onChange={(e) => setName(e.target.value)}
                                                 className="w-full px-4 py-2 rounded-lg bg-zinc-800 border border-zinc-700 text-white focus:ring-2 focus:ring-amber-500 outline-none"
-                                                placeholder="Toruń"
+                                                placeholder="Jan Kowalski"
                                             />
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-zinc-300 mb-2">
-                                                Miejsce *
+                                                Email *
                                             </label>
                                             <input
-                                                type="text"
-                                                required={!!needsVenue}
-                                                value={venuePlace}
-                                                onChange={(e) => setVenuePlace(e.target.value)}
+                                                type="email"
+                                                required
+                                                value={email}
+                                                onChange={(e) => setEmail(e.target.value)}
                                                 className="w-full px-4 py-2 rounded-lg bg-zinc-800 border border-zinc-700 text-white focus:ring-2 focus:ring-amber-500 outline-none"
-                                                placeholder="Pałac Dąbrowski"
+                                                placeholder="jan@example.com"
                                             />
                                         </div>
                                     </div>
-                                )}
 
-                                <div>
-                                    <label className="block text-sm font-medium text-zinc-300 mb-2">
-                                        Uwagi (opcjonalnie)
-                                    </label>
-                                    <textarea
-                                        rows={3}
-                                        value={notes}
-                                        onChange={(e) => setNotes(e.target.value)}
-                                        className="w-full px-4 py-2 rounded-lg bg-zinc-800 border border-zinc-700 text-white focus:ring-2 focus:ring-amber-500 outline-none"
-                                        placeholder="Wpisz dodatkowe informacje..."
+                                    <div>
+                                        <label className="block text-sm font-medium text-zinc-300 mb-2">
+                                            Telefon
+                                        </label>
+                                        <input
+                                            type="tel"
+                                            value={phone}
+                                            onChange={(e) => setPhone(e.target.value)}
+                                            className="w-full px-4 py-2 rounded-lg bg-zinc-800 border border-zinc-700 text-white focus:ring-2 focus:ring-amber-500 outline-none"
+                                            placeholder="+48 123 456 789"
+                                        />
+                                    </div>
+
+                                    {needsVenue && (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-sm font-medium text-zinc-300 mb-2">
+                                                    Miasto *
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    required={!!needsVenue}
+                                                    value={venueCity}
+                                                    onChange={(e) => setVenueCity(e.target.value)}
+                                                    className="w-full px-4 py-2 rounded-lg bg-zinc-800 border border-zinc-700 text-white focus:ring-2 focus:ring-amber-500 outline-none"
+                                                    placeholder="Toruń"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-zinc-300 mb-2">
+                                                    Miejsce *
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    required={!!needsVenue}
+                                                    value={venuePlace}
+                                                    onChange={(e) => setVenuePlace(e.target.value)}
+                                                    className="w-full px-4 py-2 rounded-lg bg-zinc-800 border border-zinc-700 text-white focus:ring-2 focus:ring-amber-500 outline-none"
+                                                    placeholder="Pałac Dąbrowski"
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-zinc-300 mb-2">
+                                            Uwagi (opcjonalnie)
+                                        </label>
+                                        <textarea
+                                            rows={3}
+                                            value={notes}
+                                            onChange={(e) => setNotes(e.target.value)}
+                                            className="w-full px-4 py-2 rounded-lg bg-zinc-800 border border-zinc-700 text-white focus:ring-2 focus:ring-amber-500 outline-none"
+                                            placeholder="Wpisz dodatkowe informacje..."
+                                        />
+                                    </div>
+
+                                    {/* Promo Code */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-zinc-300 mb-2">
+                                            Kod promocyjny
+                                        </label>
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="text"
+                                                value={promoCode}
+                                                onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                                                disabled={!!discount}
+                                                className="flex-1 px-4 py-2 rounded-lg bg-zinc-800 border border-zinc-700 text-white uppercase focus:ring-2 focus:ring-amber-500 outline-none disabled:opacity-50"
+                                                placeholder="KOD123"
+                                            />
+                                            {discount ? (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setDiscount(null);
+                                                        setPromoCode("");
+                                                        setCodeMessage("");
+                                                    }}
+                                                    className="px-4 py-2 bg-red-900/30 text-red-400 border border-red-900/50 rounded-lg font-medium hover:bg-red-900/50"
+                                                >
+                                                    Usuń
+                                                </button>
+                                            ) : (
+                                                <button
+                                                    type="button"
+                                                    onClick={handleCheckPromoCode}
+                                                    disabled={!promoCode || checkingCode}
+                                                    className="px-6 py-2 bg-zinc-800 text-white rounded-lg font-medium hover:bg-zinc-700 disabled:opacity-50"
+                                                >
+                                                    {checkingCode ? "..." : "Zastosuj"}
+                                                </button>
+                                            )}
+                                        </div>
+                                        {codeMessage && (
+                                            <p className={`text-sm mt-2 ${discount ? "text-green-400" : "text-red-400"}`}>
+                                                {codeMessage}
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    {/* Gift Card */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-zinc-300 mb-2">
+                                            Karta podarunkowa
+                                        </label>
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="text"
+                                                value={giftCardCode}
+                                                onChange={(e) => setGiftCardCode(e.target.value.toUpperCase())}
+                                                disabled={!!giftCard}
+                                                className="flex-1 px-4 py-2 rounded-lg bg-zinc-800 border border-zinc-700 text-white uppercase focus:ring-2 focus:ring-amber-500 outline-none disabled:opacity-50"
+                                                placeholder="KOD KARTY"
+                                            />
+                                            {giftCard ? (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setGiftCard(null);
+                                                        setGiftCardCode("");
+                                                        setGiftCardMessage("");
+                                                    }}
+                                                    className="px-4 py-2 bg-red-900/30 text-red-400 border border-red-900/50 rounded-lg font-medium hover:bg-red-900/50"
+                                                >
+                                                    Usuń
+                                                </button>
+                                            ) : (
+                                                <button
+                                                    type="button"
+                                                    onClick={handleCheckGiftCard}
+                                                    disabled={!giftCardCode || checkingGiftCard}
+                                                    className="px-6 py-2 bg-zinc-800 text-white rounded-lg font-medium hover:bg-zinc-700 disabled:opacity-50"
+                                                >
+                                                    {checkingGiftCard ? "..." : "Zastosuj"}
+                                                </button>
+                                            )}
+                                        </div>
+                                        {giftCardMessage && (
+                                            <p className={`text-sm mt-2 ${giftCard ? "text-green-400" : "text-red-400"}`}>
+                                                {giftCardMessage}
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    {/* Discounts Display */}
+                                    {discount && (
+                                        <div className="flex justify-between text-green-400">
+                                            <span>Rabat ({discount.code}):</span>
+                                            <span className="font-medium">
+                                                -{discount.type === "percentage" ? `${discount.value}%` : `${discount.value} zł`}
+                                            </span>
+                                        </div>
+                                    )}
+                                    {giftCard && (
+                                        <div className="flex justify-between text-green-400">
+                                            <span>Karta podarunkowa:</span>
+                                            <span className="font-medium">-{giftCard.amount} zł</span>
+                                        </div>
+                                    )}
+
+                                    {/* Final Price */}
+                                    <div className="flex justify-between text-2xl font-bold text-white pt-4 border-t border-zinc-800">
+                                        <span>Do zapłaty:</span>
+                                        <span>{(finalPrice / 100).toFixed(2)} zł</span>
+                                    </div>
+                                </div>
+
+                                {/* RODO */}
+                                <label className="flex items-start gap-3 cursor-pointer group mt-6">
+                                    <input
+                                        type="checkbox"
+                                        checked={rodo}
+                                        onChange={(e) => setRodo(e.target.checked)}
+                                        required
+                                        className="mt-1 w-4 h-4 rounded border-zinc-600 bg-zinc-800 text-amber-600 focus:ring-amber-500"
                                     />
-                                </div>
+                                    <span className="text-sm text-zinc-400 group-hover:text-zinc-300 transition-colors">
+                                        Zgadzam się na przetwarzanie danych osobowych (RODO) w celu realizacji usługi. *
+                                    </span>
+                                </label>
 
-                                {/* Promo Code */}
-                                <div>
-                                    <label className="block text-sm font-medium text-zinc-300 mb-2">
-                                        Kod promocyjny
-                                    </label>
-                                    <div className="flex gap-2">
-                                        <input
-                                            type="text"
-                                            value={promoCode}
-                                            onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
-                                            disabled={!!discount}
-                                            className="flex-1 px-4 py-2 rounded-lg bg-zinc-800 border border-zinc-700 text-white uppercase focus:ring-2 focus:ring-amber-500 outline-none disabled:opacity-50"
-                                            placeholder="KOD123"
-                                        />
-                                        {discount ? (
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    setDiscount(null);
-                                                    setPromoCode("");
-                                                    setCodeMessage("");
-                                                }}
-                                                className="px-4 py-2 bg-red-900/30 text-red-400 border border-red-900/50 rounded-lg font-medium hover:bg-red-900/50"
-                                            >
-                                                Usuń
-                                            </button>
-                                        ) : (
-                                            <button
-                                                type="button"
-                                                onClick={handleCheckPromoCode}
-                                                disabled={!promoCode || checkingCode}
-                                                className="px-6 py-2 bg-zinc-800 text-white rounded-lg font-medium hover:bg-zinc-700 disabled:opacity-50"
-                                            >
-                                                {checkingCode ? "..." : "Zastosuj"}
-                                            </button>
-                                        )}
-                                    </div>
-                                    {codeMessage && (
-                                        <p className={`text-sm mt-2 ${discount ? "text-green-400" : "text-red-400"}`}>
-                                            {codeMessage}
-                                        </p>
-                                    )}
-                                </div>
+                                {/* Submit Button */}
+                                <button
+                                    type="submit"
+                                    disabled={!isReadyToSubmit || submitting}
+                                    className="w-full mt-6 bg-amber-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-amber-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-amber-900/20"
+                                >
+                                    {submitting ? "Przetwarzanie..." : "💳 Przejdź do Płatności"}
+                                </button>
+                            </motion.section>
+                        )}
+                    </form>
 
-                                {/* Gift Card */}
-                                <div>
-                                    <label className="block text-sm font-medium text-zinc-300 mb-2">
-                                        Karta podarunkowa
-                                    </label>
-                                    <div className="flex gap-2">
-                                        <input
-                                            type="text"
-                                            value={giftCardCode}
-                                            onChange={(e) => setGiftCardCode(e.target.value.toUpperCase())}
-                                            disabled={!!giftCard}
-                                            className="flex-1 px-4 py-2 rounded-lg bg-zinc-800 border border-zinc-700 text-white uppercase focus:ring-2 focus:ring-amber-500 outline-none disabled:opacity-50"
-                                            placeholder="KOD KARTY"
-                                        />
-                                        {giftCard ? (
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    setGiftCard(null);
-                                                    setGiftCardCode("");
-                                                    setGiftCardMessage("");
-                                                }}
-                                                className="px-4 py-2 bg-red-900/30 text-red-400 border border-red-900/50 rounded-lg font-medium hover:bg-red-900/50"
-                                            >
-                                                Usuń
-                                            </button>
-                                        ) : (
-                                            <button
-                                                type="button"
-                                                onClick={handleCheckGiftCard}
-                                                disabled={!giftCardCode || checkingGiftCard}
-                                                className="px-6 py-2 bg-zinc-800 text-white rounded-lg font-medium hover:bg-zinc-700 disabled:opacity-50"
-                                            >
-                                                {checkingGiftCard ? "..." : "Zastosuj"}
-                                            </button>
-                                        )}
-                                    </div>
-                                    {giftCardMessage && (
-                                        <p className={`text-sm mt-2 ${giftCard ? "text-green-400" : "text-red-400"}`}>
-                                            {giftCardMessage}
-                                        </p>
-                                    )}
-                                </div>
-
-                                {/* Discounts Display */}
-                                {discount && (
-                                    <div className="flex justify-between text-green-400">
-                                        <span>Rabat ({discount.code}):</span>
-                                        <span className="font-medium">
-                                            -{discount.type === "percentage" ? `${discount.value}%` : `${discount.value} zł`}
-                                        </span>
-                                    </div>
-                                )}
-                                {giftCard && (
-                                    <div className="flex justify-between text-green-400">
-                                        <span>Karta podarunkowa:</span>
-                                        <span className="font-medium">-{giftCard.amount} zł</span>
-                                    </div>
-                                )}
-
-                                {/* Final Price */}
-                                <div className="flex justify-between text-2xl font-bold text-white pt-4 border-t border-zinc-800">
-                                    <span>Do zapłaty:</span>
-                                    <span>{(finalPrice / 100).toFixed(2)} zł</span>
-                                </div>
-                            </div>
-
-                            {/* RODO */}
-                            <label className="flex items-start gap-3 cursor-pointer group mt-6">
-                                <input
-                                    type="checkbox"
-                                    checked={rodo}
-                                    onChange={(e) => setRodo(e.target.checked)}
-                                    required
-                                    className="mt-1 w-4 h-4 rounded border-zinc-600 bg-zinc-800 text-amber-600 focus:ring-amber-500"
-                                />
-                                <span className="text-sm text-zinc-400 group-hover:text-zinc-300 transition-colors">
-                                    Zgadzam się na przetwarzanie danych osobowych (RODO) w celu realizacji usługi. *
-                                </span>
-                            </label>
-
-                            {/* Submit Button */}
-                            <button
-                                type="submit"
-                                disabled={!isReadyToSubmit || submitting}
-                                className="w-full mt-6 bg-amber-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-amber-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-amber-900/20"
-                            >
-                                {submitting ? "Przetwarzanie..." : "💳 Przejdź do Płatności"}
-                            </button>
-                        </motion.section>
-                    )}
-                </form>
-
-                {/* Testimonials */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6 }}
-                    viewport={{ once: true, margin: "-100px" }}
-                    className="mt-20"
-                >
-                    <TestimonialsSection />
-                </motion.div>
+                    {/* Testimonials */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.6 }}
+                        viewport={{ once: true, margin: "-100px" }}
+                        className="mt-20"
+                    >
+                        <TestimonialsSection />
+                    </motion.div>
+                </div>
             </div>
         </main>
     );

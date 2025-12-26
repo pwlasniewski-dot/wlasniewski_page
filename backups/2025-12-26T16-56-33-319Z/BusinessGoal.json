@@ -1,0 +1,211 @@
+[
+  {
+    "id": 18,
+    "title": "Monthly revenue target",
+    "target_amount": 50000,
+    "current_amount": 0,
+    "category": "revenue",
+    "start_date": "2025-12-21T14:21:29.713Z",
+    "end_date": "2026-01-20T14:21:29.713Z",
+    "created_at": "2025-12-21T14:21:29.715Z",
+    "updated_at": "2025-12-24T11:37:27.819Z"
+  },
+  {
+    "id": 19,
+    "title": "Monthly revenue target",
+    "target_amount": 50000,
+    "current_amount": 0,
+    "category": "revenue",
+    "start_date": "2025-12-21T14:22:14.969Z",
+    "end_date": "2026-01-20T14:22:14.969Z",
+    "created_at": "2025-12-21T14:22:14.971Z",
+    "updated_at": "2025-12-24T11:37:27.819Z"
+  },
+  {
+    "id": 1,
+    "title": "Zwiększyć rezerwacje do 10 na miesiąc",
+    "target_amount": 10,
+    "current_amount": 0,
+    "category": "bookings",
+    "start_date": "2025-11-21T12:11:19.722Z",
+    "end_date": "2026-01-20T12:11:19.722Z",
+    "created_at": "2025-11-21T12:11:19.722Z",
+    "updated_at": "2025-12-24T11:37:27.819Z"
+  },
+  {
+    "id": 2,
+    "title": "Przychód z dronów - 20 000 PLN na miesiąc",
+    "target_amount": 20000,
+    "current_amount": 0,
+    "category": "drone_orders",
+    "start_date": "2025-11-21T12:11:19.722Z",
+    "end_date": "2026-01-20T12:11:19.722Z",
+    "created_at": "2025-11-21T12:11:19.722Z",
+    "updated_at": "2025-12-24T11:37:27.819Z"
+  },
+  {
+    "id": 3,
+    "title": "Wzrost page views do 1000 na miesiąc",
+    "target_amount": 1000,
+    "current_amount": 0,
+    "category": "analytics",
+    "start_date": "2025-11-21T12:11:19.722Z",
+    "end_date": "2026-01-20T12:11:19.722Z",
+    "created_at": "2025-11-21T12:11:19.722Z",
+    "updated_at": "2025-12-24T11:37:27.819Z"
+  },
+  {
+    "id": 4,
+    "title": "Zwiększyć rezerwacje do 10 na miesiąc",
+    "target_amount": 10,
+    "current_amount": 0,
+    "category": "bookings",
+    "start_date": "2025-11-21T12:11:40.838Z",
+    "end_date": "2026-01-20T12:11:40.838Z",
+    "created_at": "2025-11-21T12:11:40.838Z",
+    "updated_at": "2025-12-24T11:37:27.819Z"
+  },
+  {
+    "id": 5,
+    "title": "Przychód z dronów - 20 000 PLN na miesiąc",
+    "target_amount": 20000,
+    "current_amount": 0,
+    "category": "drone_orders",
+    "start_date": "2025-11-21T12:11:40.838Z",
+    "end_date": "2026-01-20T12:11:40.838Z",
+    "created_at": "2025-11-21T12:11:40.838Z",
+    "updated_at": "2025-12-24T11:37:27.819Z"
+  },
+  {
+    "id": 6,
+    "title": "Wzrost page views do 1000 na miesiąc",
+    "target_amount": 1000,
+    "current_amount": 0,
+    "category": "analytics",
+    "start_date": "2025-11-21T12:11:40.838Z",
+    "end_date": "2026-01-20T12:11:40.838Z",
+    "created_at": "2025-11-21T12:11:40.838Z",
+    "updated_at": "2025-12-24T11:37:27.819Z"
+  },
+  {
+    "id": 7,
+    "title": "Zwiększyć rezerwacje do 10 na miesiąc",
+    "target_amount": 10,
+    "current_amount": 0,
+    "category": "bookings",
+    "start_date": "2025-11-21T12:11:56.751Z",
+    "end_date": "2026-01-20T12:11:56.751Z",
+    "created_at": "2025-11-21T12:11:56.751Z",
+    "updated_at": "2025-12-24T11:37:27.819Z"
+  },
+  {
+    "id": 8,
+    "title": "Przychód z dronów - 20 000 PLN na miesiąc",
+    "target_amount": 20000,
+    "current_amount": 0,
+    "category": "drone_orders",
+    "start_date": "2025-11-21T12:11:56.751Z",
+    "end_date": "2026-01-20T12:11:56.751Z",
+    "created_at": "2025-11-21T12:11:56.751Z",
+    "updated_at": "2025-12-24T11:37:27.819Z"
+  },
+  {
+    "id": 9,
+    "title": "Wzrost page views do 1000 na miesiąc",
+    "target_amount": 1000,
+    "current_amount": 0,
+    "category": "analytics",
+    "start_date": "2025-11-21T12:11:56.751Z",
+    "end_date": "2026-01-20T12:11:56.751Z",
+    "created_at": "2025-11-21T12:11:56.751Z",
+    "updated_at": "2025-12-24T11:37:27.819Z"
+  },
+  {
+    "id": 10,
+    "title": "Zwiększyć rezerwacje do 10 na miesiąc",
+    "target_amount": 10,
+    "current_amount": 0,
+    "category": "bookings",
+    "start_date": "2025-11-21T12:12:14.117Z",
+    "end_date": "2026-01-20T12:12:14.117Z",
+    "created_at": "2025-11-21T12:12:14.117Z",
+    "updated_at": "2025-12-24T11:37:27.819Z"
+  },
+  {
+    "id": 11,
+    "title": "Przychód z dronów - 20 000 PLN na miesiąc",
+    "target_amount": 20000,
+    "current_amount": 0,
+    "category": "drone_orders",
+    "start_date": "2025-11-21T12:12:14.117Z",
+    "end_date": "2026-01-20T12:12:14.117Z",
+    "created_at": "2025-11-21T12:12:14.117Z",
+    "updated_at": "2025-12-24T11:37:27.819Z"
+  },
+  {
+    "id": 12,
+    "title": "Wzrost page views do 1000 na miesiąc",
+    "target_amount": 1000,
+    "current_amount": 0,
+    "category": "analytics",
+    "start_date": "2025-11-21T12:12:14.117Z",
+    "end_date": "2026-01-20T12:12:14.117Z",
+    "created_at": "2025-11-21T12:12:14.117Z",
+    "updated_at": "2025-12-24T11:37:27.819Z"
+  },
+  {
+    "id": 13,
+    "title": "Monthly revenue target",
+    "target_amount": 50000,
+    "current_amount": 0,
+    "category": "revenue",
+    "start_date": "2025-12-21T14:07:11.966Z",
+    "end_date": "2026-01-20T14:07:11.966Z",
+    "created_at": "2025-12-21T14:07:11.968Z",
+    "updated_at": "2025-12-24T11:37:27.819Z"
+  },
+  {
+    "id": 14,
+    "title": "Monthly revenue target",
+    "target_amount": 50000,
+    "current_amount": 0,
+    "category": "revenue",
+    "start_date": "2025-12-21T14:14:32.454Z",
+    "end_date": "2026-01-20T14:14:32.454Z",
+    "created_at": "2025-12-21T14:14:32.456Z",
+    "updated_at": "2025-12-24T11:37:27.819Z"
+  },
+  {
+    "id": 15,
+    "title": "Monthly revenue target",
+    "target_amount": 50000,
+    "current_amount": 0,
+    "category": "revenue",
+    "start_date": "2025-12-21T14:18:51.735Z",
+    "end_date": "2026-01-20T14:18:51.735Z",
+    "created_at": "2025-12-21T14:18:51.735Z",
+    "updated_at": "2025-12-24T11:37:27.819Z"
+  },
+  {
+    "id": 16,
+    "title": "Monthly revenue target",
+    "target_amount": 50000,
+    "current_amount": 0,
+    "category": "revenue",
+    "start_date": "2025-12-21T14:19:24.955Z",
+    "end_date": "2026-01-20T14:19:24.955Z",
+    "created_at": "2025-12-21T14:19:24.955Z",
+    "updated_at": "2025-12-24T11:37:27.819Z"
+  },
+  {
+    "id": 17,
+    "title": "Monthly revenue target",
+    "target_amount": 50000,
+    "current_amount": 0,
+    "category": "revenue",
+    "start_date": "2025-12-21T14:20:03.595Z",
+    "end_date": "2026-01-20T14:20:03.595Z",
+    "created_at": "2025-12-21T14:20:03.596Z",
+    "updated_at": "2025-12-24T11:37:27.819Z"
+  }
+]

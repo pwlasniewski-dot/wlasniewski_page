@@ -14,6 +14,16 @@ import { PageSection } from '@/components/admin/PageBuilder';
 import ParallaxSection from '@/components/ParallaxSection';
 import Link from 'next/link';
 import ThermalSlider from '@/components/ThermalSlider';
+import Image from 'next/image';
+import { Check, Star, Camera, ArrowRight } from 'lucide-react';
+import PhotoChallengeBanner from '@/components/PhotoChallengeBanner';
+import WhiteInfoBand from '@/components/WhiteInfoBand';
+import CarouselGallery from '@/components/VisualEffects/CarouselGallery';
+import MasonryGallery from '@/components/VisualEffects/MasonryGallery';
+import PuzzleGallery from '@/components/VisualEffects/PuzzleGallery';
+import { motion } from 'framer-motion';
+import CreativeSlider from '@/components/CreativeSlider';
+import TestimonialsSection from '@/components/TestimonialsSection';
 
 export default function PageRenderer({ sections }: { sections: PageSection[] }) {
     if (!sections || sections.length === 0) return null;
@@ -21,13 +31,17 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
     return (
         <div className="flex flex-col gap-0">
             {sections.map((section) => {
+                // Determine source of data (flat or nested in .data)
+                // This allows PageRenderer to handle both old and new data structures
+                const data = section.data || section;
+
                 switch (section.type) {
                     case 'hero_parallax':
                         return (
                             <ParallaxSection
                                 key={section.id}
-                                image={section.image || ''}
-                                title={section.title || ''}
+                                image={data.image || ''}
+                                title={data.title || ''}
                                 height="min-h-[70vh]"
                             />
                         );
@@ -45,7 +59,7 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                         prose-li:marker:text-gold-400
                                         prose-img:rounded-xl prose-img:shadow-2xl
                                     "
-                                    dangerouslySetInnerHTML={{ __html: section.content || '' }}
+                                    dangerouslySetInnerHTML={{ __html: data.content || '' }}
                                 />
                             </section>
                         );
@@ -54,17 +68,18 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                         return (
                             <section key={section.id} className="py-16 px-4 bg-zinc-950">
                                 <div className="mx-auto max-w-6xl grid md:grid-cols-2 gap-12 items-center">
-                                    <div className={`relative aspect-video rounded-2xl overflow-hidden shadow-2xl ${section.layout === 'right' ? 'md:order-2' : ''}`}>
-                                        {section.image && (
+                                    <div className={`relative aspect-video rounded-2xl overflow-hidden shadow-2xl ${data.layout === 'right' ? 'md:order-2' : ''}`}>
+                                        {data.image && (
                                             <img
-                                                src={section.image}
+                                                src={data.image}
                                                 alt=""
                                                 className="w-full h-full object-cover"
                                             />
                                         )}
                                     </div>
-                                    <div className={`prose prose-invert prose-lg ${section.layout === 'right' ? 'md:order-1' : ''}`}>
-                                        <div dangerouslySetInnerHTML={{ __html: section.content || '' }} />
+                                    <div className={`prose prose-invert prose-lg ${data.layout === 'right' ? 'md:order-1' : ''}`}>
+                                        {data.title && <h2 className="text-3xl md:text-4xl font-bold text-gold-400 mb-6 font-display">{data.title}</h2>}
+                                        <div dangerouslySetInnerHTML={{ __html: data.content || '' }} />
                                     </div>
                                 </div>
                             </section>
@@ -75,7 +90,7 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                             <section key={section.id} className="py-16 px-4 bg-zinc-950">
                                 <div className="mx-auto max-w-6xl">
                                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                                        {section.images?.map((img, idx) => (
+                                        {data.images?.map((img: string, idx: number) => (
                                             <div key={idx} className="relative aspect-square rounded-xl overflow-hidden group">
                                                 <img
                                                     src={img}
@@ -93,11 +108,11 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                     case 'hero':
                         return (
                             <section key={section.id} className="relative py-32 px-4 bg-zinc-950 flex flex-col items-center justify-center text-center overflow-hidden min-h-[60vh]">
-                                {section.image ? (
+                                {data.image ? (
                                     <>
                                         <div
                                             className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-                                            style={{ backgroundImage: `url("${section.image}")` }}
+                                            style={{ backgroundImage: `url("${data.image}")` }}
                                         />
                                         <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px]" />
                                     </>
@@ -106,26 +121,26 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                 )}
 
                                 <div className="relative z-10 max-w-4xl space-y-6">
-                                    {section.tag && (
+                                    {data.tag && (
                                         <span className="inline-block px-4 py-1.5 bg-gold-500/10 text-gold-500 text-sm font-bold tracking-widest uppercase rounded-full border border-gold-500/20">
-                                            {section.tag}
+                                            {data.tag}
                                         </span>
                                     )}
                                     <h1 className="text-5xl md:text-7xl font-display font-bold text-white leading-tight">
-                                        {section.title}
+                                        {data.title}
                                     </h1>
-                                    {section.subtitle && (
+                                    {data.subtitle && (
                                         <p className="text-xl md:text-2xl text-zinc-400 font-light">
-                                            {section.subtitle}
+                                            {data.subtitle}
                                         </p>
                                     )}
-                                    {section.buttonText && (
+                                    {data.buttonText && (
                                         <div className="pt-4">
                                             <Link
-                                                href={section.buttonLink || '#'}
+                                                href={data.buttonLink || '#'}
                                                 className="inline-block px-8 py-4 bg-gold-500 hover:bg-gold-400 text-black font-bold rounded-xl transition-all transform hover:scale-105"
                                             >
-                                                {section.buttonText}
+                                                {data.buttonText}
                                             </Link>
                                         </div>
                                     )}
@@ -139,18 +154,18 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                 <div className="max-w-4xl mx-auto bg-zinc-900 border border-zinc-800 rounded-3xl p-12 text-center space-y-8">
                                     <div className="space-y-4">
                                         <h2 className="text-3xl md:text-4xl font-display font-bold text-white">
-                                            {section.title}
+                                            {data.title}
                                         </h2>
                                         <p className="text-lg text-zinc-400">
-                                            {section.subtitle}
+                                            {data.subtitle}
                                         </p>
                                     </div>
                                     <div className="flex flex-col sm:flex-row gap-4 justify-center">
                                         <Link
-                                            href={section.buttonLink || '/kontakt'}
+                                            href={data.buttonLink || '/kontakt'}
                                             className="px-8 py-4 bg-gold-500 hover:bg-gold-400 text-black font-bold rounded-xl transition-all transform hover:scale-105"
                                         >
-                                            {section.buttonText || 'Skontaktuj się'}
+                                            {data.buttonText || 'Skontaktuj się'}
                                         </Link>
                                     </div>
                                 </div>
@@ -162,23 +177,23 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                             <section key={section.id} className="py-20 bg-zinc-950 overflow-hidden">
                                 <div className="max-w-6xl mx-auto px-4">
                                     <div className="mb-12">
-                                        {section.title && <h2 className="text-3xl md:text-5xl font-display font-bold text-white mb-4 text-center">{section.title}</h2>}
-                                        {section.subtitle && <p className="text-zinc-400 max-w-2xl mx-auto text-center">{section.subtitle}</p>}
+                                        {data.title && <h2 className="text-3xl md:text-5xl font-display font-bold text-white mb-4 text-center">{data.title}</h2>}
+                                        {data.subtitle && <p className="text-zinc-400 max-w-2xl mx-auto text-center">{data.subtitle}</p>}
                                     </div>
                                     <div className="rounded-2xl overflow-hidden shadow-2xl border border-white/5 bg-zinc-900/50 p-2">
                                         <ThermalSlider
-                                            visualImage={section.image}
-                                            thermalImage={section.thermalImage}
-                                            labelLeft={section.labelLeft || 'Widok Standardowy'}
-                                            labelRight={section.labelRight || 'Termowizja'}
-                                            sections={section.thermalSections}
-                                            title={section.showCategoryTitle ? section.title : undefined}
+                                            visualImage={data.image}
+                                            thermalImage={data.thermalImage}
+                                            labelLeft={data.labelLeft || 'Widok Standardowy'}
+                                            labelRight={data.labelRight || 'Termowizja'}
+                                            sections={data.thermalSections}
+                                            title={data.showCategoryTitle ? data.title : undefined}
                                         />
                                     </div>
-                                    {section.content && (
+                                    {data.content && (
                                         <div
                                             className="mt-12 prose prose-invert prose-lg mx-auto"
-                                            dangerouslySetInnerHTML={{ __html: section.content }}
+                                            dangerouslySetInnerHTML={{ __html: data.content }}
                                         />
                                     )}
                                 </div>
@@ -188,7 +203,7 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                     case 'hero_slider':
                         const HeroSlider = require('@/components/HeroSlider').default;
                         // Map slides to HeroSlide format if needed
-                        const formattedSlides = (section.slides || []).map(s => ({
+                        const formattedSlides = (data.slides || []).map((s: any) => ({
                             id: s.id,
                             image: s.image,
                             title: s.title || '',
@@ -210,6 +225,122 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                     <ContactForm />
                                 </div>
                             </section>
+                        );
+
+                    // === Legacy / Homepage Types ===
+                    case 'about':
+                        return (
+                            <section key={section.id} className="py-20 px-6 bg-black">
+                                <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-12 items-center">
+                                    <div className={`relative overflow-hidden flex items-center justify-center ${data.imageShape === 'circle'
+                                        ? 'w-64 h-64 md:w-[500px] md:h-[500px] rounded-full mx-auto'
+                                        : 'h-[300px] md:h-[500px] rounded-2xl'
+                                        } ${data.textPosition === 'left' ? 'md:order-2' : ''}`}>
+                                        {data.image && (
+                                            <Image
+                                                src={data.image}
+                                                alt={data.title || "O mnie"}
+                                                fill
+                                                className={`object-cover ${data.imageShape === 'circle' ? 'rounded-full' : ''}`}
+                                            />
+                                        )}
+                                    </div>
+                                    <div className={data.textPosition === 'left' ? 'md:order-1' : ''}>
+                                        <h2 className="text-3xl md:text-4xl font-display font-bold text-gold-400 mb-6">
+                                            {data.title}
+                                        </h2>
+                                        <div
+                                            className="prose prose-invert text-zinc-300 mb-8 text-lg max-w-none"
+                                            dangerouslySetInnerHTML={{ __html: data.content || '' }}
+                                        />
+                                    </div>
+                                </div>
+                            </section>
+                        );
+
+                    case 'features':
+                        return (
+                            <section key={section.id} className="py-20 px-6 bg-black">
+                                <div className="max-w-6xl mx-auto grid md:grid-cols-3 gap-8">
+                                    {data.features?.map((feature: any, index: number) => (
+                                        feature.enabled && (
+                                            <div key={index} className="bg-zinc-900/50 p-8 rounded-2xl border border-zinc-800 hover:border-gold-500/30 transition-colors">
+                                                <h3 className="text-xl font-bold text-white mb-4">{feature.title}</h3>
+                                                <ul className="space-y-3">
+                                                    {feature.items.map((item: string, i: number) => (
+                                                        <li key={i} className="flex items-start gap-3 text-zinc-400">
+                                                            <Check className="w-5 h-5 text-gold-500 shrink-0 mt-0.5" />
+                                                            <span>{item}</span>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        )
+                                    ))}
+                                </div>
+                            </section>
+                        );
+
+                    case 'challenge_banner':
+                        return (
+                            <PhotoChallengeBanner
+                                key={section.id}
+                                title={data.title || '📸 Foto Wyzwanie'}
+                                subtitle={data.subtitle || 'Pokaż Swoją Kreatywność'}
+                                description={data.content || 'Podejmij wyzwanie i wygraj fantastyczne nagrody!'}
+                                buttonText={data.buttonText || 'Dołącz Teraz'}
+                                buttonLink={data.buttonLink || '/foto-wyzwanie'}
+                                layout={data.layout || 'full-width'}
+                                accentColor={data.accentColor || 'gold'}
+                                animationStyle={data.animationStyle || 'fade'}
+                                enableParticles={data.enableParticles !== false}
+                                height={data.height || 'min-h-[70vh]'}
+                            />
+                        );
+
+                    case 'parallax':
+                        return (
+                            <ParallaxSection
+                                key={section.id}
+                                {...data}
+                                imageSrc={data.image}
+                                height="min-h-[60vh] md:min-h-[80vh]"
+                            />
+                        );
+
+                    case 'info_band':
+                        return (
+                            <WhiteInfoBand
+                                key={section.id}
+                                image={data.image}
+                                title={data.title}
+                                content={data.content}
+                                imagePosition={data.position}
+                            />
+                        );
+
+                    case 'testimonials':
+                        return (
+                            <div key={section.id} className="py-20 px-4 bg-black">
+                                <div className="max-w-6xl mx-auto">
+                                    {(data.title || data.subtitle) && (
+                                        <div className="text-center mb-12">
+                                            {data.title && <h2 className="text-3xl md:text-5xl font-display font-bold text-white mb-4">{data.title}</h2>}
+                                            {data.subtitle && <p className="text-zinc-400 max-w-2xl mx-auto">{data.subtitle}</p>}
+                                        </div>
+                                    )}
+                                    <TestimonialsSection />
+                                </div>
+                            </div>
+                        );
+
+                    case 'creative_slider':
+                        return (
+                            <CreativeSlider
+                                key={section.id}
+                                slides={data.slides || []}
+                                config={data.config || { autoScroll: true, interval: 5, height: '70vh' }}
+                            />
                         );
 
                     default:
