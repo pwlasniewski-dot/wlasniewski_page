@@ -368,6 +368,22 @@ export default function RichTextEditor({ value, onChange, placeholder, onImageRe
                     color: #71717a;
                     pointer-events: none;
                 }
+                .prose ul {
+                    list-style-type: disc !important;
+                    padding-left: 1.5rem !important;
+                    margin-top: 0.5rem !important;
+                    margin-bottom: 0.5rem !important;
+                }
+                .prose ol {
+                    list-style-type: decimal !important;
+                    padding-left: 1.5rem !important;
+                    margin-top: 0.5rem !important;
+                    margin-bottom: 0.5rem !important;
+                }
+                .prose li {
+                    margin-top: 0.25rem !important;
+                    margin-bottom: 0.25rem !important;
+                }
             `}</style>
         </div>
     );

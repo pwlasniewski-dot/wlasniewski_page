@@ -36,6 +36,8 @@ export default function AdminPackagesPage() {
     const [loading, setLoading] = useState(true);
     const [editingPackage, setEditingPackage] = useState<Package | null>(null);
     const [showPackageForm, setShowPackageForm] = useState(false);
+    const [editingServiceType, setEditingServiceType] = useState<ServiceType | null>(null);
+    const [showServiceTypeForm, setShowServiceTypeForm] = useState(false);
 
     // Load service types and packages
     useEffect(() => {
@@ -126,6 +128,69 @@ export default function AdminPackagesPage() {
         }
     };
 
+    // Save service type (category)
+    const handleSaveServiceType = async (service: Partial<ServiceType>) => {
+        if (!service.name) {
+            toast.error('Nazwa jest wymagana');
+            return;
+        }
+
+        try {
+            const res = await fetch(getApiUrl('service-types'), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(service)
+            });
+
+            if (res.ok) {
+                toast.success(service.id ? 'Kategoria zaktualizowana' : 'Kategoria dodana');
+                setEditingServiceType(null);
+                setShowServiceTypeForm(false);
+
+                // Reload data
+                const reloadRes = await fetch(getApiUrl('service-types'));
+                if (reloadRes.ok) {
+                    const reloadData = await reloadRes.json();
+                    setServiceTypes(reloadData.serviceTypes || []);
+                }
+            } else {
+                toast.error('Błąd zapisu kategorii');
+            }
+        } catch (error) {
+            console.error('Error saving service type:', error);
+            toast.error('Błąd zapisu');
+        }
+    };
+
+    // Delete service type (category)
+    const handleDeleteServiceType = async (serviceId: number) => {
+        if (!confirm('Na pewno chcesz usunąć całą kategorię wraz ze wszystkimi pakietami?')) return;
+
+        try {
+            const res = await fetch(`${getApiUrl('service-types')}?id=${serviceId}`, {
+                method: 'DELETE'
+            });
+
+            if (res.ok) {
+                toast.success('Kategoria usunięta');
+
+                // Reload data
+                const reloadRes = await fetch(getApiUrl('service-types'));
+                if (reloadRes.ok) {
+                    const reloadData = await reloadRes.json();
+                    setServiceTypes(reloadData.serviceTypes || []);
+                }
+            } else {
+                toast.error('Błąd usunięcia');
+            }
+        } catch (error) {
+            console.error('Error deleting service type:', error);
+            toast.error('Błąd usunięcia');
+        }
+    };
+
     if (loading) return <div className="p-8 text-center">Ładowanie...</div>;
 
     return (
@@ -133,7 +198,26 @@ export default function AdminPackagesPage() {
             <Toaster position="top-right" theme="dark" />
 
             <div className="max-w-6xl mx-auto">
-                <h1 className="text-4xl font-bold text-white mb-8">📦 Zarządzaj Pakietami</h1>
+                <div className="flex justify-between items-center mb-8">
+                    <h1 className="text-4xl font-bold text-white">📦 Zarządzaj Ofertą</h1>
+                    <button
+                        onClick={() => {
+                            setEditingServiceType({
+                                id: 0,
+                                name: '',
+                                icon: '📸',
+                                description: '',
+                                order: serviceTypes.length,
+                                is_active: true,
+                                packages: []
+                            });
+                            setShowServiceTypeForm(true);
+                        }}
+                        className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-500 transition font-medium flex items-center gap-2"
+                    >
+                        ➕ Nowa Kategoria (np. Ślub)
+                    </button>
+                </div>
 
                 {/* Service Types List */}
                 <div className="space-y-8">
@@ -146,6 +230,23 @@ export default function AdminPackagesPage() {
                                         <h2 className="text-2xl font-bold text-white">{service.name}</h2>
                                         <p className="text-zinc-400 text-sm">{service.description}</p>
                                     </div>
+                                </div>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => {
+                                            setEditingServiceType(service);
+                                            setShowServiceTypeForm(true);
+                                        }}
+                                        className="px-3 py-1 bg-zinc-800 text-zinc-300 text-xs rounded border border-zinc-700 hover:bg-zinc-700 transition"
+                                    >
+                                        Edytuj Kategorię
+                                    </button>
+                                    <button
+                                        onClick={() => handleDeleteServiceType(service.id)}
+                                        className="px-3 py-1 bg-red-900/20 text-red-400 text-xs rounded border border-red-900/30 hover:bg-red-900/40 transition"
+                                    >
+                                        Usuń Kategorię
+                                    </button>
                                 </div>
                             </div>
 
@@ -339,6 +440,92 @@ export default function AdminPackagesPage() {
                                         className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-500 transition font-medium"
                                     >
                                         Zapisz
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Service Type Edit Form Modal */}
+                {showServiceTypeForm && editingServiceType && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-zinc-900 rounded-xl p-6 max-w-lg w-full border border-zinc-800">
+                            <h3 className="text-2xl font-bold text-white mb-4">
+                                {editingServiceType.id ? '✏️ Edytuj kategorię' : '➕ Nowa kategoria'}
+                            </h3>
+
+                            <div className="space-y-4">
+                                <div className="grid grid-cols-4 gap-4">
+                                    <div className="col-span-3">
+                                        <label className="block text-sm font-medium text-zinc-300 mb-1">Nazwa kategorii</label>
+                                        <input
+                                            type="text"
+                                            value={editingServiceType.name}
+                                            onChange={(e) => setEditingServiceType({ ...editingServiceType, name: e.target.value })}
+                                            className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 text-white rounded-lg focus:ring-2 focus:ring-amber-500 outline-none"
+                                            placeholder="np. Sesje Ślubne"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-zinc-300 mb-1">Ikona</label>
+                                        <input
+                                            type="text"
+                                            value={editingServiceType.icon || ''}
+                                            onChange={(e) => setEditingServiceType({ ...editingServiceType, icon: e.target.value })}
+                                            className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 text-white rounded-lg focus:ring-2 focus:ring-amber-500 outline-none"
+                                            placeholder="📸"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-zinc-300 mb-1">Opis krótki</label>
+                                    <textarea
+                                        value={editingServiceType.description || ''}
+                                        onChange={(e) => setEditingServiceType({ ...editingServiceType, description: e.target.value })}
+                                        rows={2}
+                                        className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 text-white rounded-lg focus:ring-2 focus:ring-amber-500 outline-none"
+                                        placeholder="Krótki opis kategorii wyświetlany w nagłówku..."
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-zinc-300 mb-1">Kolejność (0 = pierwsza)</label>
+                                    <input
+                                        type="number"
+                                        value={editingServiceType.order}
+                                        onChange={(e) => setEditingServiceType({ ...editingServiceType, order: parseInt(e.target.value) || 0 })}
+                                        className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 text-white rounded-lg focus:ring-2 focus:ring-amber-500 outline-none"
+                                    />
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                    <input
+                                        type="checkbox"
+                                        id="cat_active"
+                                        checked={editingServiceType.is_active}
+                                        onChange={(e) => setEditingServiceType({ ...editingServiceType, is_active: e.target.checked })}
+                                        className="w-4 h-4 rounded"
+                                    />
+                                    <label htmlFor="cat_active" className="text-sm text-zinc-300">Kategoria widoczna na stronie</label>
+                                </div>
+
+                                <div className="flex gap-3 justify-end pt-4 border-t border-zinc-800">
+                                    <button
+                                        onClick={() => {
+                                            setEditingServiceType(null);
+                                            setShowServiceTypeForm(false);
+                                        }}
+                                        className="px-4 py-2 bg-zinc-800 text-white rounded-lg hover:bg-zinc-700 transition"
+                                    >
+                                        Anuluj
+                                    </button>
+                                    <button
+                                        onClick={() => handleSaveServiceType(editingServiceType)}
+                                        className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-500 transition font-medium"
+                                    >
+                                        Zapisz Kategorię
                                     </button>
                                 </div>
                             </div>
