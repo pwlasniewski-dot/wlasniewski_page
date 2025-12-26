@@ -66,6 +66,7 @@ export default function SettingsPage() {
         gift_card_promo_description: '',
         gift_card_promo_rotation_interval: '5',
         gift_card_hero_image: '', // Store background image
+        gift_card_hero_opacity: 0.6,
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -1099,6 +1100,59 @@ export default function SettingsPage() {
                             Zdjęcia ułożone jedno pod drugim. Użytkownik przewija w dół. Klasyczny, czytelny układ.
                         </p>
                     </button>
+                </div>
+            </div>
+
+            {/* Gift Card Shop Settings */}
+            <div className="bg-zinc-900 shadow rounded-lg border border-zinc-800 p-6">
+                <h2 className="text-lg font-medium text-white mb-4">Sklep Kart Podarunkowych - Hero</h2>
+                <div className="space-y-6">
+                    <div>
+                        <label className="block text-sm font-medium text-zinc-400 mb-2">Zdjęcie w tle (Hero Image)</label>
+                        <div className="flex flex-col gap-4">
+                            <div className="relative w-full h-48 bg-zinc-950 rounded-lg border border-zinc-700 flex items-center justify-center overflow-hidden">
+                                {settings.gift_card_hero_image ? (
+                                    <img src={settings.gift_card_hero_image} alt="Hero" className="w-full h-full object-cover" />
+                                ) : (
+                                    <span className="text-zinc-600 text-sm">Brak zdjęcia - wyświetlany będzie gradient</span>
+                                )}
+                            </div>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => openImagePicker('gift_card_hero_image')}
+                                    className="flex-1 bg-zinc-800 text-white px-3 py-2 rounded-md hover:bg-zinc-700 transition-colors text-sm flex items-center justify-center gap-2 border border-zinc-600"
+                                >
+                                    <ImageIcon className="w-4 h-4" />
+                                    Wybierz Zdjęcie
+                                </button>
+                                {settings.gift_card_hero_image && (
+                                    <button
+                                        onClick={() => setSettings(s => ({ ...s, gift_card_hero_image: '' }))}
+                                        className="bg-red-900/30 text-red-400 px-3 py-2 rounded-md hover:bg-red-900/50 transition-colors text-sm border border-red-900/50"
+                                    >
+                                        Usuń
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-zinc-800/50 p-4 rounded-lg border border-zinc-700">
+                        <div className="flex justify-between items-center mb-2">
+                            <label className="block text-sm font-medium text-zinc-300">Przezroczystość nakładki (Overlay)</label>
+                            <span className="text-gold-400 font-bold">{Math.round((settings.gift_card_hero_opacity || 0.6) * 100)}%</span>
+                        </div>
+                        <input
+                            type="range"
+                            min="0"
+                            max="1"
+                            step="0.05"
+                            value={settings.gift_card_hero_opacity || 0.6}
+                            onChange={(e) => setSettings(s => ({ ...s, gift_card_hero_opacity: Number(e.target.value) }))}
+                            className="w-full h-2 bg-zinc-600 rounded-lg appearance-none cursor-pointer accent-gold-500 hover:accent-gold-400"
+                        />
+                        <p className="mt-2 text-xs text-zinc-500">Im wyższa wartość, tym ciemniejsze będzie zdjęcie (więcej czarnego koloru nałożonego na obraz).</p>
+                    </div>
                 </div>
             </div>
 

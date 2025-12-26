@@ -8,7 +8,16 @@ import { Plus, Trash2, GripVertical, Image as ImageIcon, Type, Layout, MoveUp, M
 import RichTextEditor from './RichTextEditor';
 import MediaPicker from './MediaPicker';
 
-export type SectionType = 'hero_parallax' | 'hero' | 'rich_text' | 'image_text' | 'gallery' | 'contact' | 'thermal_slider' | 'contact_form';
+export type SectionType = 'hero_parallax' | 'hero' | 'rich_text' | 'image_text' | 'gallery' | 'contact' | 'thermal_slider' | 'contact_form' | 'hero_slider';
+
+export interface SliderSlide {
+    id: string;
+    title?: string;
+    subtitle?: string;
+    buttonText?: string;
+    buttonLink?: string;
+    image: string;
+}
 
 export interface ThermalSectionData {
     id: string;
@@ -37,6 +46,7 @@ export interface PageSection {
     labelLeft?: string; // For thermal_slider
     labelRight?: string; // For thermal_slider
     showCategoryTitle?: boolean; // For thermal_slider - show title above sections
+    slides?: SliderSlide[]; // For hero_slider
 }
 
 interface PageBuilderProps {
@@ -78,6 +88,12 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove }: {
                 } else if (mediaPickerContext === 'thermal') {
                     onUpdate(section.id, { thermalImage: imageUrl });
                 }
+            }
+        } else if (section.type === 'hero_slider') {
+            const updated = [...(section.slides || [])];
+            if (sectionEditIndex >= 0) {
+                updated[sectionEditIndex] = { ...updated[sectionEditIndex], image: imageUrl };
+                onUpdate(section.id, { slides: updated });
             }
         } else if (mediaPickerTarget === 'single') {
             onUpdate(section.id, { image: imageUrl });
@@ -563,6 +579,122 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove }: {
                         </div>
                     </div>
                 )}
+
+                {/* HERO SLIDER */}
+                {section.type === 'hero_slider' && (
+                    <div className="space-y-6">
+                        <div className="flex items-center justify-between mb-2">
+                            <h4 className="text-sm font-bold text-white uppercase tracking-wider">Slajdy Hero</h4>
+                            <button
+                                onClick={() => {
+                                    const newSlide: SliderSlide = {
+                                        id: Math.random().toString(36).substr(2, 9),
+                                        image: '',
+                                        title: '',
+                                        subtitle: '',
+                                        buttonText: '',
+                                        buttonLink: ''
+                                    };
+                                    onUpdate(section.id, {
+                                        slides: [...(section.slides || []), newSlide]
+                                    });
+                                }}
+                                className="px-3 py-1.5 bg-yellow-500/20 border border-yellow-500/30 text-yellow-400 text-xs font-bold rounded hover:bg-yellow-500/30 transition-all flex items-center gap-1"
+                            >
+                                <Plus size={14} /> Dodaj slajd
+                            </button>
+                        </div>
+
+                        {section.slides && section.slides.length > 0 ? (
+                            <div className="space-y-4">
+                                {section.slides.map((slide, sIndex) => (
+                                    <div key={slide.id} className="bg-zinc-800/50 p-4 rounded-lg border border-zinc-700 space-y-4">
+                                        <div className="flex items-center justify-between gap-4">
+                                            <div className="w-24 h-24 relative rounded border border-zinc-600 overflow-hidden bg-zinc-900 shrink-0">
+                                                {slide.image ? (
+                                                    <img src={slide.image} alt="" className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <div className="w-full h-full flex items-center justify-center text-zinc-700">
+                                                        <ImageIcon size={24} />
+                                                    </div>
+                                                )}
+                                                <button
+                                                    onClick={() => { setMediaPickerTarget('single'); setSectionEditIndex(sIndex); setShowMediaPicker(true); }}
+                                                    className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 flex items-center justify-center transition-opacity"
+                                                >
+                                                    <span className="text-[10px] text-white font-bold uppercase">Zmień</span>
+                                                </button>
+                                            </div>
+                                            <div className="flex-1 space-y-3">
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <input
+                                                        type="text"
+                                                        value={slide.title || ''}
+                                                        onChange={(e) => {
+                                                            const updated = [...(section.slides || [])];
+                                                            updated[sIndex] = { ...slide, title: e.target.value };
+                                                            onUpdate(section.id, { slides: updated });
+                                                        }}
+                                                        placeholder="Tytuł slajdu"
+                                                        className="bg-zinc-700 border border-zinc-600 rounded px-2 py-1.5 text-sm text-white"
+                                                    />
+                                                    <input
+                                                        type="text"
+                                                        value={slide.subtitle || ''}
+                                                        onChange={(e) => {
+                                                            const updated = [...(section.slides || [])];
+                                                            updated[sIndex] = { ...slide, subtitle: e.target.value };
+                                                            onUpdate(section.id, { slides: updated });
+                                                        }}
+                                                        placeholder="Podtytuł slajdu"
+                                                        className="bg-zinc-700 border border-zinc-600 rounded px-2 py-1.5 text-sm text-white"
+                                                    />
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <input
+                                                        type="text"
+                                                        value={slide.buttonText || ''}
+                                                        onChange={(e) => {
+                                                            const updated = [...(section.slides || [])];
+                                                            updated[sIndex] = { ...slide, buttonText: e.target.value };
+                                                            onUpdate(section.id, { slides: updated });
+                                                        }}
+                                                        placeholder="Tekst przycisku"
+                                                        className="bg-zinc-700 border border-zinc-600 rounded px-2 py-1.5 text-sm text-white"
+                                                    />
+                                                    <input
+                                                        type="text"
+                                                        value={slide.buttonLink || ''}
+                                                        onChange={(e) => {
+                                                            const updated = [...(section.slides || [])];
+                                                            updated[sIndex] = { ...slide, buttonLink: e.target.value };
+                                                            onUpdate(section.id, { slides: updated });
+                                                        }}
+                                                        placeholder="Link przycisku"
+                                                        className="bg-zinc-700 border border-zinc-600 rounded px-2 py-1.5 text-sm text-white"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={() => {
+                                                    const updated = section.slides!.filter((_, i) => i !== sIndex);
+                                                    onUpdate(section.id, { slides: updated });
+                                                }}
+                                                className="p-2 text-zinc-500 hover:text-red-500 transition-colors"
+                                            >
+                                                <Trash2 size={18} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="text-center py-8 border-2 border-dashed border-zinc-800 rounded-lg">
+                                <p className="text-zinc-600 text-sm">Brak slajdów. Dodaj przynajmniej jeden.</p>
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
 
             <MediaPicker
@@ -646,6 +778,9 @@ export default function PageBuilder({ sections, onChange }: PageBuilderProps) {
                 </button>
                 <button onClick={() => addSection('thermal_slider')} className="flex items-center gap-2 px-4 py-2 bg-gold-600/20 hover:bg-gold-600/30 border border-gold-500/30 rounded text-sm text-gold-400 transition-colors">
                     <Layout className="w-4 h-4" /> Thermal Slider
+                </button>
+                <button onClick={() => addSection('hero_slider')} className="flex items-center gap-2 px-4 py-2 bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 rounded text-sm text-purple-400 transition-colors">
+                    <Layout className="w-4 h-4" /> Hero Slider (Multislide)
                 </button>
             </div>
 

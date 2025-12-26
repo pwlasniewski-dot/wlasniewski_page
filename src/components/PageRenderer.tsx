@@ -185,6 +185,23 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                             </section>
                         );
 
+                    case 'hero_slider':
+                        const HeroSlider = require('@/components/HeroSlider').default;
+                        // Map slides to HeroSlide format if needed
+                        const formattedSlides = (section.slides || []).map(s => ({
+                            id: s.id,
+                            image: s.image,
+                            title: s.title || '',
+                            subtitle: s.subtitle || '',
+                            buttonText: s.buttonText,
+                            buttonLink: s.buttonLink
+                        }));
+                        return (
+                            <section key={section.id} className="w-full">
+                                <HeroSlider slides={formattedSlides} />
+                            </section>
+                        );
+
                     case 'contact_form':
                         const ContactForm = require('@/components/ContactForm').default;
                         return (

@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import GiftCard from '@/components/GiftCard';
 import { ShoppingCart, Heart, Share2, ArrowRight } from 'lucide-react';
+import PageRenderer from '@/components/PageRenderer';
 
 interface GiftCardProduct {
     id: number;
@@ -16,6 +17,7 @@ interface GiftCardProduct {
     available: boolean;
     card_title?: string;
     card_description?: string;
+    lowest_price_30d?: number;
 }
 
 const THEME_INFO = {
@@ -38,6 +40,7 @@ export default function GiftCardShop() {
     const [isLoading, setIsLoading] = useState(true);
     const [heroImage, setHeroImage] = useState<string | null>(null);
     const [heroOpacity, setHeroOpacity] = useState(0.6);
+    const [pageSections, setPageSections] = useState<any[] | null>(null);
 
     useEffect(() => {
         const fetchCards = async () => {
@@ -65,7 +68,27 @@ export default function GiftCardShop() {
             }
         };
 
+        const fetchPage = async () => {
+            try {
+                const res = await fetch('/api/pages?slug=karta-podarunkowa');
+                const data = await res.json();
+                if (data.success && data.page?.sections) {
+                    try {
+                        const parsed = JSON.parse(data.page.sections);
+                        if (Array.isArray(parsed) && parsed.length > 0) {
+                            setPageSections(parsed);
+                        }
+                    } catch (e) {
+                        console.error('Failed to parse page sections');
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to fetch page data');
+            }
+        };
+
         fetchCards();
+        fetchPage();
     }, []);
 
     useEffect(() => {
@@ -102,50 +125,55 @@ export default function GiftCardShop() {
 
     return (
         <main className="min-h-screen bg-black text-white">
-            {/* Hero Section with Background */}
-            <section className="relative h-[60vh] min-h-[500px] flex items-center justify-center overflow-hidden">
-                {/* Background Image */}
-                {heroImage ? (
-                    <>
-                        <div
-                            className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-[10s] hover:scale-105"
-                            style={{ backgroundImage: `url(${heroImage})` }}
-                        />
-                        <div
-                            className="absolute inset-0 bg-black transition-opacity duration-700"
-                            style={{ opacity: heroOpacity }}
-                        />
-                    </>
-                ) : (
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-zinc-900 via-black to-black" />
-                )}
+            {/* Page Sections from Page Builder (allows adding Hero Slider etc.) */}
+            {pageSections && pageSections.length > 0 ? (
+                <PageRenderer sections={pageSections} />
+            ) : (
+                /* Hero Section with Background - Fallback if no sections in Page Builder */
+                <section className="relative h-[60vh] min-h-[500px] flex items-center justify-center overflow-hidden">
+                    {/* Background Image */}
+                    {heroImage ? (
+                        <>
+                            <div
+                                className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-[10s] hover:scale-105"
+                                style={{ backgroundImage: `url(${heroImage})` }}
+                            />
+                            <div
+                                className="absolute inset-0 bg-black transition-opacity duration-700"
+                                style={{ opacity: heroOpacity }}
+                            />
+                        </>
+                    ) : (
+                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-zinc-900 via-black to-black" />
+                    )}
 
-                <div className="relative z-10 max-w-7xl mx-auto px-6 text-center pt-20">
-                    <motion.div
-                        initial={{ opacity: 0, y: 30 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 1, ease: "easeOut" }}
-                        className="flex flex-col items-center"
-                    >
-                        <div className="w-px h-16 bg-gradient-to-b from-transparent via-gold-400 to-transparent mb-8" />
+                    <div className="relative z-10 max-w-7xl mx-auto px-6 text-center pt-20">
+                        <motion.div
+                            initial={{ opacity: 0, y: 30 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 1, ease: "easeOut" }}
+                            className="flex flex-col items-center"
+                        >
+                            <div className="w-px h-16 bg-gradient-to-b from-transparent via-gold-400 to-transparent mb-8" />
 
-                        <h2 className="text-gold-400 tracking-[0.2em] text-sm uppercase mb-4 font-medium">
-                            Premium Gift Cards
-                        </h2>
+                            <h2 className="text-gold-400 tracking-[0.2em] text-sm uppercase mb-4 font-medium">
+                                Premium Gift Cards
+                            </h2>
 
-                        <h1 className="text-5xl md:text-7xl font-display font-light text-white mb-8 tracking-wide">
-                            Karty <span className="italic font-serif text-gold-200">Podarunkowe</span>
-                        </h1>
+                            <h1 className="text-5xl md:text-7xl font-display font-light text-white mb-8 tracking-wide">
+                                Karty <span className="italic font-serif text-gold-200">Podarunkowe</span>
+                            </h1>
 
-                        <p className="text-lg md:text-xl text-zinc-300 max-w-xl mx-auto font-light leading-relaxed">
-                            Podaruj bliskim coś więcej niż przedmiot.
-                            <span className="block text-white mt-1">Podaruj niezapomniane wspomnienia.</span>
-                        </p>
+                            <p className="text-lg md:text-xl text-zinc-300 max-w-xl mx-auto font-light leading-relaxed">
+                                Podaruj bliskim coś więcej niż przedmiot.
+                                <span className="block text-white mt-1">Podaruj niezapomniane wspomnienia.</span>
+                            </p>
 
-                        <div className="w-px h-16 bg-gradient-to-b from-gold-400 via-transparent to-transparent mt-12" />
-                    </motion.div>
-                </div>
-            </section>
+                            <div className="w-px h-16 bg-gradient-to-b from-gold-400 via-transparent to-transparent mt-12" />
+                        </motion.div>
+                    </div>
+                </section>
+            )}
 
             {/* Theme Filter */}
             <section className="py-12 px-6 border-b border-zinc-800 bg-zinc-950">
@@ -202,8 +230,8 @@ export default function GiftCardShop() {
                                 >
                                     <div className="relative rounded-2xl overflow-hidden bg-zinc-900 border border-zinc-800 hover:border-gold-500/50 transition-all p-6 h-full flex flex-col">
                                         {/* Card Preview */}
-                                        <div className="mb-6 rounded-xl overflow-hidden bg-black p-4 flex items-center justify-center h-64">
-                                            <div className="scale-75 origin-center">
+                                        <div className="mb-6 rounded-xl overflow-hidden bg-black/40 p-4 flex items-center justify-center h-56 group-hover:bg-black/60 transition-colors">
+                                            <div className="w-full max-w-[320px]">
                                                 <GiftCard
                                                     code={card.code}
                                                     value={card.value}
@@ -225,16 +253,26 @@ export default function GiftCardShop() {
                                             </span>
                                         </div>
 
-                                        {/* Value */}
-                                        <h3 className="text-2xl font-bold text-gold-400 mb-2">
-                                            {card.value} zł
-                                        </h3>
+                                        {/* Price Section */}
+                                        <div className="mb-6 flex-1">
+                                            <div className="flex items-baseline gap-2">
+                                                {card.price < card.value ? (
+                                                    <>
+                                                        <span className="text-sm text-gold-400 font-medium bg-gold-400/10 px-2 py-0.5 rounded">RABAT</span>
+                                                        <span className="text-2xl font-bold text-white">{card.price} zł</span>
+                                                        <span className="text-sm text-zinc-500 line-through">{card.value} zł</span>
+                                                    </>
+                                                ) : (
+                                                    <span className="text-2xl font-bold text-white">{card.price} zł</span>
+                                                )}
+                                            </div>
 
-                                        {/* Price */}
-                                        <p className="text-zinc-300 mb-4 flex-1">
-                                            <span className="text-sm text-zinc-500">Cena: </span>
-                                            <span className="text-xl font-bold">{card.price} zł</span>
-                                        </p>
+                                            {card.price < card.value && (
+                                                <p className="text-[10px] text-zinc-500 mt-2 italic leading-tight">
+                                                    Najniższa cena z 30 dni przed obniżką: {card.lowest_price_30d || card.value} zł
+                                                </p>
+                                            )}
+                                        </div>
 
                                         {/* Description */}
                                         {card.description && (

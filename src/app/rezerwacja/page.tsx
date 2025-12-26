@@ -244,6 +244,12 @@ export default function RezerwacjaPage() {
                         type: data.discount.type
                     });
                     setCodeMessage(`✅ Kod "${promoCode}" zastosowany!`);
+                } else if (data.success && data.giftCard) {
+                    setGiftCard({
+                        code: promoCode,
+                        amount: data.giftCard.amount
+                    });
+                    setCodeMessage(`✅ Karta o wartości ${data.giftCard.amount} zł zastosowana!`);
                 } else {
                     // Fallback to Settings Promo Code
                     checkSettingsCode();
@@ -280,7 +286,7 @@ export default function RezerwacjaPage() {
         setGiftCardMessage("");
 
         try {
-            const res = await fetch(getApiUrl('gift-cards'), {
+            const res = await fetch('/api/promo-codes/check', {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ code: giftCardCode })
@@ -288,20 +294,22 @@ export default function RezerwacjaPage() {
 
             if (res.ok) {
                 const data = await res.json();
-                if (data.gift_card && !data.gift_card.is_used) {
+                if (data.giftCard) {
                     setGiftCard({
                         code: giftCardCode,
-                        amount: data.gift_card.amount
+                        amount: data.giftCard.amount
                     });
-                    setGiftCardMessage(`✅ Karta o wartości ${data.gift_card.amount} zł dodana!`);
+                    setGiftCardMessage(`✅ Karta o wartości ${data.giftCard.amount} zł dodana!`);
+                } else if (data.discount) {
+                    setGiftCardMessage("❌ To jest kod rabatowy, wpisz go powyżej");
                 } else {
                     setGiftCardMessage("❌ Karta nie znaleziona lub już użyta");
                 }
             } else {
-                setGiftCardMessage("❌ Karta nie znaleziona");
+                setGiftCardMessage("❌ Nieprawidłowy kod karty podarunkowej");
             }
         } catch (error) {
-            setGiftCardMessage("❌ Błąd sprawdzania karty");
+            setGiftCardMessage("❌ Błąd połączenia");
         } finally {
             setCheckingGiftCard(false);
         }

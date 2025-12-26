@@ -21,50 +21,80 @@ export async function POST(request: Request) {
             },
         });
 
-        if (!promoCode) {
-            return NextResponse.json(
-                { success: false, message: 'Nieprawidłowy kod rabatowy' },
-                { status: 404 }
-            );
+        if (promoCode) {
+            if (!promoCode.is_active) {
+                return NextResponse.json(
+                    { success: false, message: 'Ten kod jest nieaktywny' },
+                    { status: 400 }
+                );
+            }
+
+            const now = new Date();
+            if (promoCode.valid_from && now < promoCode.valid_from) {
+                return NextResponse.json(
+                    { success: false, message: 'Ten kod nie jest jeszcze aktywny' },
+                    { status: 400 }
+                );
+            }
+
+            if (promoCode.valid_until && now > promoCode.valid_until) {
+                return NextResponse.json(
+                    { success: false, message: 'Ten kod wygasł' },
+                    { status: 400 }
+                );
+            }
+
+            if (promoCode.max_usage && promoCode.usage_count >= promoCode.max_usage) {
+                return NextResponse.json(
+                    { success: false, message: 'Limit użyć tego kodu został wyczerpany' },
+                    { status: 400 }
+                );
+            }
+
+            return NextResponse.json({
+                success: true,
+                discount: {
+                    code: promoCode.code,
+                    value: promoCode.discount_value,
+                    type: promoCode.discount_type, // 'percentage' or 'fixed'
+                },
+            });
         }
 
-        if (!promoCode.is_active) {
-            return NextResponse.json(
-                { success: false, message: 'Ten kod jest nieaktywny' },
-                { status: 400 }
-            );
-        }
-
-        const now = new Date();
-        if (promoCode.valid_from && now < promoCode.valid_from) {
-            return NextResponse.json(
-                { success: false, message: 'Ten kod nie jest jeszcze aktywny' },
-                { status: 400 }
-            );
-        }
-
-        if (promoCode.valid_until && now > promoCode.valid_until) {
-            return NextResponse.json(
-                { success: false, message: 'Ten kod wygasł' },
-                { status: 400 }
-            );
-        }
-
-        if (promoCode.max_usage && promoCode.usage_count >= promoCode.max_usage) {
-            return NextResponse.json(
-                { success: false, message: 'Limit użyć tego kodu został wyczerpany' },
-                { status: 400 }
-            );
-        }
-
-        return NextResponse.json({
-            success: true,
-            discount: {
-                code: promoCode.code,
-                value: promoCode.discount_value,
-                type: promoCode.discount_type, // 'percentage' or 'fixed'
-            },
+        // 2. Check Gift Cards
+        const giftCard = await prisma.giftCard.findFirst({
+            where: {
+                code: {
+                    equals: code,
+                    mode: 'insensitive'
+                },
+                is_active: true,
+                redeemed_at: null
+            }
         });
+
+        if (giftCard) {
+            const now = new Date();
+            if (giftCard.valid_until && now > giftCard.valid_until) {
+                return NextResponse.json(
+                    { success: false, message: 'Ta karta podarunkowa wygasła' },
+                    { status: 400 }
+                );
+            }
+
+            return NextResponse.json({
+                success: true,
+                giftCard: {
+                    code: giftCard.code,
+                    amount: giftCard.value, // value is in PLN
+                }
+            });
+        }
+
+        return NextResponse.json(
+            { success: false, message: 'Nieprawidłowy kod' },
+            { status: 404 }
+        );
 
     } catch (error) {
         console.error('Error checking promo code:', error);

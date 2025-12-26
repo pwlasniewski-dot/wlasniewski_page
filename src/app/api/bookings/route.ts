@@ -66,6 +66,30 @@ export async function POST(request: Request) {
             },
         });
 
+        // Mark gift card as used if provided
+        if (gift_card_code) {
+            try {
+                await prisma.giftCard.updateMany({
+                    where: {
+                        code: {
+                            equals: gift_card_code,
+                            mode: 'insensitive'
+                        },
+                        redeemed_at: null
+                    },
+                    data: {
+                        redeemed_at: new Date(),
+                        is_active: false,
+                        notes: `Użyto dla rezerwacji #${booking.id}`
+                    }
+                });
+                await logSystem('INFO', 'GIFT_CARD', `Gift card ${gift_card_code} marked as redeemed for booking #${booking.id}`);
+            } catch (giftCardError) {
+                console.error('Failed to mark gift card as redeemed:', giftCardError);
+                await logSystem('ERROR', 'GIFT_CARD', `Failed to redeem gift card ${gift_card_code}`, { bookingId: booking.id, error: String(giftCardError) });
+            }
+        }
+
         await logSystem('INFO', 'BOOKING', `New booking created: #${booking.id} - ${service}`, { bookingId: booking.id, email, service });
 
         // Prepare email data

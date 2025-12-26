@@ -30,6 +30,7 @@ interface GiftCard {
     message?: string;
     card_title?: string;
     card_description?: string;
+    lowest_price_30d?: number;
     status?: string;
     created_at?: string;
 }
@@ -59,7 +60,8 @@ export default function GiftCardsAdmin() {
         senderName: '',
         message: '',
         card_title: '',
-        card_description: ''
+        card_description: '',
+        lowest_price_30d: 0
     });
 
     useEffect(() => {
@@ -71,7 +73,6 @@ export default function GiftCardsAdmin() {
         }
         setIsAuthorized(true);
         fetchCards();
-        fetchLogo();
         fetchLogo();
         fetchPromoBarStatus();
         fetchGlobalDiscount();
@@ -261,7 +262,8 @@ export default function GiftCardsAdmin() {
                     senderName: '',
                     message: '',
                     card_title: '',
-                    card_description: ''
+                    card_description: '',
+                    lowest_price_30d: 0
                 });
                 setShowCreateModal(false);
                 fetchCards();
@@ -812,16 +814,29 @@ Otrzymałeś kartę podarunkową na sesję fotograficzną!
                                         />
                                     </div>
 
-                                    {/* Card Description - Custom */}
+                                    {/* Description */}
                                     <div>
-                                        <label className="block text-sm font-medium text-zinc-400 mb-2">Opis karty (customowy)</label>
-                                        <input
-                                            type="text"
+                                        <label className="block text-sm font-medium text-zinc-400 mb-2">Opis w sklepie (Omnibus)</label>
+                                        <textarea
                                             value={formData.card_description}
                                             onChange={e => setFormData(prev => ({ ...prev, card_description: e.target.value }))}
-                                            placeholder="np. Specjalny rabat, Świąteczny bonus, etc."
+                                            placeholder="Krótki tekst zachęcający widoczny pod kartą..."
+                                            rows={2}
+                                            className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:border-gold-500 focus:outline-none resize-none"
+                                        />
+                                    </div>
+
+                                    {/* Lowest Price 30d */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-zinc-400 mb-2">Najniższa cena z 30 dni (Omnibus)</label>
+                                        <input
+                                            type="number"
+                                            value={formData.lowest_price_30d}
+                                            onChange={e => setFormData(prev => ({ ...prev, lowest_price_30d: parseInt(e.target.value) }))}
+                                            placeholder="Wymagane tylko przy promocjach"
                                             className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:border-gold-500 focus:outline-none"
                                         />
+                                        <p className="text-[10px] text-zinc-500 mt-1">Pozostaw 0, jeśli nie stosujesz obniżki od ceny wyższej niż wartość karty.</p>
                                     </div>
 
                                     {/* Actions */}

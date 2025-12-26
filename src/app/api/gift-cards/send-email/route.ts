@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
         // Send email
         await sendEmail({
             to: giftCard.recipient_email,
-            subject: `🎁 Twój Voucher Podarunkowy - ${discountText}`,
+            subject: `🎁 Twoja Karta Podarunkowa - Przemysław Właśniewski Fotografia`,
             html: htmlContent
         });
 

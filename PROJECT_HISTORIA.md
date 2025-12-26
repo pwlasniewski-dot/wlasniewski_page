@@ -156,6 +156,32 @@ Ten plik służy do ścisłego monitorowania wszystkich zmian wprowadzanych w pr
 
 ---
 
+### [2025-12-26] 🎁 Karty Podarunkowe & Hero Slider: Integracja CMS i Rezerwacji
+**Problem:**
+1. Sekcja hero na stronie kart podarunkowych nie wyświetlała się poprawnie (brak obrazka i overlay).
+2. `HeroSlider` (multislide) był dostępny tylko na stronie głównej, brak integracji z Page Builderem.
+3. Kody kart podarunkowych nie były automatycznie oznaczane jako zużyte po rezerwacji.
+4. Weryfikacja kodów kart na stronie rezerwacji wymagała zalogowanego użytkownika (wykonywana przez API admina).
+
+**Rozwiązanie:**
+- ✅ **HeroSlider Integration**: Zintegrowano `HeroSlider` z `PageBuilder` i `PageRenderer`. Teraz można dodać sekcję multislide (wiele slajdów) na dowolną stronę z poziomu panelu admina.
+- ✅ **Gift Card Shop Hero**: Dodano ustawienia obrazka i przezroczystości (opacity) do panelu admina (Ustawienia -> Sklep Kart Podarunkowych). Strona sklepu pobiera te dane dynamicznie.
+- ✅ **Unauthenticated Verification**: Endpoint `/api/promo-codes/check` obsługuje teraz zarówno kody rabatowe, jak i karty podarunkowe, pozwalając na ich weryfikację bez logowania w procesie rezerwacji.
+- ✅ **Auto-Redemption**: Logika API rezerwacji automatycznie oznacza kartę podarunkową jako zużytą (`redeemed_at`) po utworzeniu rezerwacji, zapobiegając wielokrotnemu użyciu tego samego kodu.
+- ✅ **Page Builder Support**: Sklep kart podarunkowych obsługuje teraz sekcje z Page Buildera (slug `karta-podarunkowa`), co pozwala na całkowite zastąpienie domyślnego hero sliderem lub inną treścią.
+
+**Files Modified:**
+- `src/components/admin/PageBuilder.tsx`
+- `src/components/PageRenderer.tsx`
+- `src/app/karta-podarunkowa/page.tsx`
+- `src/app/api/promo-codes/check/route.ts`
+- `src/app/api/bookings/route.ts`
+- `src/app/rezerwacja/page.tsx`
+
+**Status:** ✅ **DONE & INTEGRATED**
+
+---
+
 ### [2025-12-26] 🛡️ PayU Stabilization: Ujednolicenie & Fix Synchronizacji
 **Problem:** 
 1. Ustawienia PayU "znikały" po zapisie w panelu admina (konflikt kolumny z meta-danymi).

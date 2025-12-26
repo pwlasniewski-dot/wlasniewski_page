@@ -30,7 +30,8 @@ export async function GET() {
                 card_title: true,
                 card_description: true,
                 recipient_name: true,
-                message: true
+                message: true,
+                lowest_price_30d: true
             },
             distinct: ['theme', 'value'],
             orderBy: [
@@ -54,17 +55,20 @@ export async function GET() {
         });
 
         const formattedCards = cards.map(card => {
-            const themeKey = `${card.theme}_${card.value}`;
             const theme = (card.theme || card.card_template || 'christmas') as string;
-            const basePrice = priceMap[theme] || (card.value ? Math.round(card.value * 0.1) : 50); // 10% of value or 50 PLN
+            const cardValue = card.value || card.amount || 0;
+
+            // Price is now by default the same as value, unless a specific price is set in settings
+            const basePrice = priceMap[theme] || cardValue;
 
             return {
                 id: card.id,
                 code: 'PREVIEW', // MASKED for security - do not leak real codes
-                value: card.value || card.amount,
+                value: cardValue,
                 theme: theme,
                 price: basePrice,
-                description: `Karta podarunkowa o wartości ${card.value || card.amount} zł - ${theme}`,
+                lowest_price_30d: card.lowest_price_30d,
+                description: card.card_description || `Karta podarunkowa o wartości ${cardValue} zł`,
                 available: true,
                 card_title: card.card_title,
                 card_description: card.card_description
