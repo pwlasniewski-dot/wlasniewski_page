@@ -9,7 +9,14 @@
 *   **UWAGA:** Ta konfiguracja jest NIEZBĘDNA dla poprawnej komunikacji z serwerem `mail.wlasniewski.pl`. Nie usuwać bez konsultacji.
 *   **ZAKAZ**: Nigdy nie usuwaj tej flagi TLS, bo wysyłka maili natychmiast przestanie działać.
 
-### 2. PROTOKÓŁ "ZERO LOSS" (Data Persistence) [NEW: 2025-12-23]
+### 2. PAYU & PAYMENTS (Unified Protocol) [NEW: 2025-12-26]
+*   **STATUS:** 100% sprawny (Ujednolicony dla Rezerwacji, Kart Podarunkowych i Wyzwań).
+*   **ZASADA #1:** Wszystkie płatności MUSZĄ przechodzić przez `@/lib/payu` (`createPayUOrder`).
+*   **ZASADA #2:** Ustawienia PayU są zapisywane w kolumnach tabeli `Setting`. Klucze `payu_merchant_pos_id` i `payu_environment` są źródłem prawdy.
+*   **ADMIN PANEL**: Przy zapisie w `/admin/settings` pola `payu_pos_id` (frontend) mapują się na `payu_merchant_pos_id` (DB).
+*   **URGENT**: Każda zmiana w API ustawień musi uwzględniać mapping `payu_pos_id` -> `payu_merchant_pos_id` aby uniknąć nadpisania danych pustymi wartościami.
+
+### 3. PROTOKÓŁ "ZERO LOSS" (Data Persistence) [NEW: 2025-12-23]
 *   **STATUS:** Wdrożony i przetestowany end-to-end.
 *   **NARZĘDZIE:** `npm run db:backup` / `npm run db:restore` (`prisma/db-management.ts`).
 
@@ -145,7 +152,30 @@ Ten plik służy do ścisłego monitorowania wszystkich zmian wprowadzanych w pr
 - **2025-12-23 20:45**: [FIX] Hardened Media Upload API (500 error fix) with robust logging and size checks.
 - **2025-12-24 10:30**: [AUDIT] Completed Comprehensive System Audit. Generated `ARCHITECTURE.md` and `FUNCTIONAL_SPECIFICATION.md`.
 
-**Status:** ✅ **DONE & SEO OPTIMIZED**
+**Status:** ✅ **DONE & GA SYNCHRONIZED**
+
+---
+
+### [2025-12-26] 🛡️ PayU Stabilization: Ujednolicenie & Fix Synchronizacji
+**Problem:** 
+1. Ustawienia PayU "znikały" po zapisie w panelu admina (konflikt kolumny z meta-danymi).
+2. Błędy 500 przy zakupie kart podarunkowych i rezerwacji (brak konfiguracji w rezerwacjach).
+3. Wyzwania fotograficzne używały "mock" płatności zamiast realnego PayU.
+4. Brak pola `Notify URL` w panelu admina.
+
+**Rozwiązanie:**
+- ✅ **API Hardening**: Naprawiono `/api/settings`, aby poprawnie mapował `payu_pos_id` na kolumnę `payu_merchant_pos_id` i zapobiegał nadpisywaniu danych.
+- ✅ **Unified Payments**: Portowano `/api/checkout` (rezerwacje) na bibliotekę `@/lib/payu`. Teraz wszystkie moduły korzystają z tej samej, stabilnej logiki.
+- ✅ **Real Challenge Payments**: Wyzwania fotograficzne (`/api/photo-challenge/create-with-payment`) generują teraz prawdziwe linki do PayU.
+- ✅ **Admin UI Update**: Dodano pole `payu_notify_url` do panelu ustawień.
+
+**Files Modified:**
+- `src/app/api/settings/route.ts` (Mapping fix)
+- `src/app/api/checkout/route.ts` (Unified PayU lib)
+- `src/app/api/photo-challenge/create-with-payment/route.ts` (Real payments)
+- `src/app/admin/settings/page.tsx` (New Notify URL field)
+
+**Status:** ✅ **DONE & STABLE**
 
 ---
 

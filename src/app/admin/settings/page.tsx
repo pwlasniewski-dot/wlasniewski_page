@@ -55,6 +55,7 @@ export default function SettingsPage() {
         payu_client_secret: '',
         payu_pos_id: '',
         payu_md5_key: '',
+        payu_notify_url: '',
         payu_test_mode: true,
         // Portfolio
         portfolio_categories: [] as string[] | string, // Can be array or JSON string
@@ -996,6 +997,18 @@ export default function SettingsPage() {
                         >
                             <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${settings.payu_test_mode ? 'translate-x-6' : 'translate-x-1'}`} />
                         </button>
+                    </div>
+
+                    <div className="border-t border-zinc-800 pt-4">
+                        <label className="block text-sm font-medium text-zinc-400 mb-1">URL Powiadomień (Notify URL)</label>
+                        <input
+                            type="text"
+                            value={settings.payu_notify_url || ''}
+                            onChange={e => setSettings(s => ({ ...s, payu_notify_url: e.target.value }))}
+                            placeholder="https://wlasniewski.pl/api/payu/notify"
+                            className="block w-full rounded-md border-zinc-700 bg-zinc-800 text-white shadow-sm focus:border-gold-500 focus:ring-gold-500 sm:text-sm px-3 py-2"
+                        />
+                        <p className="mt-1 text-xs text-zinc-500">Adres, na który PayU wyśle potwierdzenie wpłaty. Musi być publicznie dostępny.</p>
                     </div>
                 </div>
             </div>

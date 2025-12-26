@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
                 'p24_merchant_id', 'p24_pos_id', 'p24_crc_key', 'p24_api_key',
                 'p24_test_mode', 'p24_method_blik', 'p24_method_card', 'p24_method_transfer',
                 // PayU Config (stored as merchant_pos_id/environment in DB)
-                'payu_client_id', 'payu_client_secret', 'payu_merchant_pos_id', 'payu_md5_key', 'payu_environment',
+                'payu_client_id', 'payu_client_secret', 'payu_merchant_pos_id', 'payu_md5_key', 'payu_environment', 'payu_notify_url',
                 // Booking Settings
                 'booking_require_payment', 'booking_payment_method', 'booking_currency', 'booking_min_days_ahead',
                 // Email SMTP
@@ -124,16 +124,27 @@ export async function POST(request: NextRequest) {
 
             for (const [key, value] of Object.entries(body)) {
                 // Legacy PayU keys -> map to DB columns
-                if (key === 'payu_pos_id') {
-                    columnUpdates.payu_merchant_pos_id = value;
-                    // kvUpdates.payu_pos_id = String(value); // Don't create zombie row
+                if (key === 'payu_pos_id' || key === 'payu_merchant_pos_id') {
+                    // Always use the non-empty value if both are present, 
+                    // or prioritize payu_pos_id as it's the primary field in frontend state.
+                    if (key === 'payu_pos_id' || !columnUpdates.payu_merchant_pos_id) {
+                        columnUpdates.payu_merchant_pos_id = value;
+                    }
                     continue;
                 }
+
                 if (key === 'payu_test_mode') {
                     // Handle boolean or string inputs robustly
                     const isSandbox = value === 'true' || value === true || value === '1' || value === 1;
                     columnUpdates.payu_environment = isSandbox ? 'sandbox' : 'secure';
-                    // Do NOT save payu_test_mode as a separate row, rely on column payu_environment
+                    continue;
+                }
+
+                if (key === 'payu_environment') {
+                    // If payu_environment is sent directly, only set it if not already set by payu_test_mode
+                    if (!columnUpdates.payu_environment) {
+                        columnUpdates.payu_environment = value;
+                    }
                     continue;
                 }
 
@@ -151,7 +162,6 @@ export async function POST(request: NextRequest) {
                     } else {
                         columnUpdates[key] = value;
                     }
-                    // DO NOT add to kvUpdates - keep single source of truth in columns
                 } else {
                     kvUpdates[key] = String(value);
                 }

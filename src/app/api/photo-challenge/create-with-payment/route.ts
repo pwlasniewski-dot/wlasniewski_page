@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { v4 as uuidv4 } from 'uuid';
+import { createPayUOrder } from '@/lib/payu';
 import { sendEmail } from '@/lib/email/sender';
 
 export async function POST(request: NextRequest) {
@@ -87,13 +88,46 @@ export async function POST(request: NextRequest) {
             });
         }
 
-        // Create P24 payment URL
-        // For now, we'll return a mock payment URL
-        // In production, integrate with Przelewy24 API
-        const paymentUrl = `/api/photo-challenge/payment/${challenge.id}?amount=${pkg.challenge_price}`;
+        // Create PayU Order
+        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://wlasniewski.pl';
+        const clientIp = request.headers.get('x-forwarded-for') || '127.0.0.1';
 
-        // Invitation email is now sent in the payment completion route
-        // to ensure it only goes out after successful payment.
+        const orderRequest = {
+            description: `Foto Wyzwanie - ${pkg.name}`,
+            currencyCode: 'PLN',
+            totalAmount: Math.round(pkg.challenge_price * 100), // Convert to grosze
+            extOrderId: `CHALLENGE_${challenge.id}_${Date.now()}`,
+            buyer: {
+                email: inviter_email,
+                firstName: inviter_name.split(' ')[0],
+                lastName: inviter_name.split(' ').slice(1).join(' ') || 'N/A',
+                language: 'pl',
+            },
+            products: [
+                {
+                    name: `Foto Wyzwanie - ${pkg.name}`,
+                    unitPrice: Math.round(pkg.challenge_price * 100),
+                    quantity: 1,
+                }
+            ],
+            continueUrl: `${baseUrl}/foto-wyzwanie/success?id=${uniqueLink}`
+        };
+
+        const payuData = await createPayUOrder(orderRequest, clientIp);
+        const paymentUrl = payuData.redirectUri || payuData.links?.find((l: any) => l.rel === 'redirect_uri')?.href;
+
+        if (!paymentUrl) {
+            throw new Error('Failed to create PayU payment URL');
+        }
+
+        // Update challenge with PayU order ID
+        await prisma.photoChallenge.update({
+            where: { id: challenge.id },
+            data: {
+                payment_id: payuData.orderId || payuData.orders?.[0]?.orderId || null,
+                payment_method: 'payu'
+            }
+        });
 
         return NextResponse.json({
             success: true,

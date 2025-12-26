@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
+import { createPayUOrder, OrderRequest } from '@/lib/payu';
 
 // PayU integration for booking payments
 export async function POST(request: NextRequest) {
@@ -7,7 +8,7 @@ export async function POST(request: NextRequest) {
         const body = await request.json();
         const {
             bookingId,
-            amount,
+            amount, // Expected in PLN from frontend
             email,
             serviceName,
             packageName
@@ -20,103 +21,55 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Get PayU configuration from settings
-        const settings = await prisma.setting.findMany({
-            where: {
-                setting_key: { in: ['payu_client_id', 'payu_client_secret', 'payu_pos_id', 'payu_test_mode'] }
-            }
-        });
+        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://wlasniewski.pl';
+        const clientIp = request.headers.get('x-forwarded-for') || '127.0.0.1';
 
-        const config: any = {};
-        settings.forEach(s => {
-            config[s.setting_key] = s.setting_value;
-        });
-
-        const payuClientId = config.payu_client_id || process.env.PAYU_CLIENT_ID;
-        const payuClientSecret = config.payu_client_secret || process.env.PAYU_CLIENT_SECRET;
-        const payuPosId = config.payu_pos_id || process.env.PAYU_POS_ID;
-        const isTestMode = config.payu_test_mode === 'true' || process.env.PAYU_TEST_MODE === 'true';
-
-        const payuBaseUrl = isTestMode ? 'https://sandbox.payu.com' : 'https://secure.payu.com';
-
-        // Get PayU OAuth token
-        const tokenRes = await fetch(`${payuBaseUrl}/pl/standard/user/oauth/authorize`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: new URLSearchParams({
-                grant_type: 'client_credentials',
-                client_id: payuClientId,
-                client_secret: payuClientSecret,
-            }).toString(),
-        });
-
-        if (!tokenRes.ok) {
-            console.error('PayU token error:', await tokenRes.text());
-            return NextResponse.json({ error: 'Payment gateway error' }, { status: 500 });
-        }
-
-        const tokenData = await tokenRes.json();
-        const accessToken = tokenData.access_token;
-
-        if (!accessToken) {
-            console.error('No access token from PayU');
-            return NextResponse.json({ error: 'Payment gateway error' }, { status: 500 });
-        }
-
-        // Create PayU order
-        const orderPayload = {
-            notifyUrl: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://wlasniewski.pl'}/api/payu/notify`,
-            customerIp: request.headers.get('x-forwarded-for') || '127.0.0.1',
-            merchantPosId: payuPosId,
+        const orderRequest: OrderRequest = {
             description: `${serviceName} - ${packageName}`,
             currencyCode: 'PLN',
-            totalAmount: amount,
+            totalAmount: Math.round(Number(amount) * 100), // Convert PLN to grosze for PayU
+            extOrderId: `BOOKING_${bookingId}_${Date.now()}`,
             buyer: {
                 email: email,
-                phone: '0000000000'
+                firstName: email.split('@')[0], // Fallback if name not passed
+                language: 'pl',
             },
             products: [
                 {
                     name: `${serviceName} - ${packageName}`,
-                    unitPrice: amount,
+                    unitPrice: Math.round(Number(amount) * 100),
                     quantity: 1,
-                    virtual: true
                 }
             ],
-            extOrderId: String(bookingId), // Use booking ID as external order ID
-            continueUrl: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://wlasniewski.pl'}/podziekowanie?bookingId=${bookingId}`
+            continueUrl: `${baseUrl}/rezerwacja/potwierdzenie?bookingId=${bookingId}`
         };
 
-        const orderRes = await fetch(`${payuBaseUrl}/api/v2_1/orders`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${accessToken}`,
-            },
-            body: JSON.stringify(orderPayload),
-        });
-
-        if (!orderRes.ok) {
-            console.error('PayU order error:', await orderRes.text());
-            return NextResponse.json({ error: 'Failed to create payment order' }, { status: 500 });
+        // Create PayU order using unified library
+        let payuData;
+        try {
+            payuData = await createPayUOrder(orderRequest, clientIp);
+        } catch (payuError: any) {
+            console.error('PayU Order Error:', payuError);
+            return NextResponse.json(
+                { error: 'Payment initialization failed', details: payuError.message },
+                { status: 500 }
+            );
         }
 
-        const orderData = await orderRes.json();
-        const payuOrderId = orderData.orderId;
-        const redirectUri = orderData.redirectUri;
+        // Check for redirect URL (302 response) or standard link
+        const redirectUri = payuData.redirectUri || payuData.links?.find((link: any) => link.rel === 'redirect_uri')?.href;
+        const payuOrderId = payuData.orderId || payuData.orders?.[0]?.orderId;
 
-        if (!payuOrderId || !redirectUri) {
-            console.error('Invalid PayU response:', orderData);
+        if (!redirectUri) {
+            console.error('No redirect URI in PayU response:', payuData);
             return NextResponse.json({ error: 'Invalid payment gateway response' }, { status: 500 });
         }
 
         // Update booking with PayU order ID
         await prisma.booking.update({
-            where: { id: bookingId },
+            where: { id: Number(bookingId) },
             data: {
-                stripe_session_id: payuOrderId, // Reuse field for PayU order ID
+                stripe_session_id: payuOrderId || null, // Reuse field for PayU order ID
             }
         });
 
@@ -126,8 +79,8 @@ export async function POST(request: NextRequest) {
             bookingId,
             payuOrderId
         });
-    } catch (error) {
+    } catch (error: any) {
         console.error('Checkout error:', error);
-        return NextResponse.json({ error: 'Failed to create checkout session' }, { status: 500 });
+        return NextResponse.json({ error: 'Failed to create checkout session', details: error.message }, { status: 500 });
     }
 }
