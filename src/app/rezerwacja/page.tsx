@@ -486,22 +486,31 @@ export default function RezerwacjaPage() {
                                         key={pkg.id}
                                         type="button"
                                         onClick={() => setChosenPackage(pkg)}
-                                        className={`p-4 rounded-xl border-2 transition-all text-left ${chosenPackage?.id === pkg.id
-                                            ? "border-amber-500 bg-amber-500/10"
-                                            : "border-zinc-700 bg-zinc-800/50 hover:border-zinc-600"
+                                        className={`p-5 rounded-2xl border-2 transition-all text-left flex flex-col h-full ${chosenPackage?.id === pkg.id
+                                            ? "border-amber-500 bg-amber-500/10 shadow-[0_0_20px_rgba(245,158,11,0.15)]"
+                                            : "border-zinc-800 bg-zinc-900/40 hover:border-zinc-700 hover:bg-zinc-800/50"
                                             }`}
                                     >
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <span className="text-2xl">{pkg.icon || '📦'}</span>
-                                            <h3 className="font-bold text-white">{pkg.name}</h3>
+                                        <div className="min-h-[5.5rem] flex flex-col">
+                                            <div className="flex items-center gap-3 mb-2">
+                                                <span className="text-3xl">{pkg.icon || '📦'}</span>
+                                                <h3 className="text-xl font-bold text-white leading-tight">{pkg.name}</h3>
+                                            </div>
+                                            {pkg.subtitle && (
+                                                <p className="text-sm text-zinc-400 mb-2 leading-snug line-clamp-2">
+                                                    {pkg.subtitle}
+                                                </p>
+                                            )}
                                         </div>
-                                        {pkg.subtitle && <p className="text-sm text-zinc-300 mb-2">{pkg.subtitle}</p>}
-                                        <div className="text-lg text-amber-500 font-extrabold mb-2">
-                                            {pkg.hours}h • {(pkg.price / 100).toFixed(2)} zł
+
+                                        <div className="text-xl text-amber-500 font-extrabold mb-4 flex items-center gap-2">
+                                            <span className="text-sm bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">{pkg.hours}h</span>
+                                            <span>{(pkg.price / 100).toFixed(2)} zł</span>
                                         </div>
+
                                         {pkg.description && (
                                             <div
-                                                className="text-xs text-zinc-400 mt-2 prose prose-invert prose-xs prose-p:my-0 prose-ul:my-1"
+                                                className="text-[13px] text-zinc-400 mt-2 prose prose-invert prose-sm prose-p:my-0 prose-ul:my-2 prose-li:my-1 opacity-90"
                                                 dangerouslySetInnerHTML={{ __html: pkg.description }}
                                             />
                                         )}
