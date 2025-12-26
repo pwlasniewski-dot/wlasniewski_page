@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
             description: `Karta Podarunkowa - ${theme} (${value} PLN)`,
             currencyCode: 'PLN',
             totalAmount: Math.round(price * 100),
-            extOrderId: order.id.toString(),
+            extOrderId: `GIFT_${order.id}_${Date.now()}`,
             buyer: {
                 email: customerEmail,
                 firstName: customerName.split(' ')[0],

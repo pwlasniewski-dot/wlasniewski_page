@@ -33,13 +33,13 @@ export async function POST(request: NextRequest) {
 
         // Generate unique extOrderId
         // Format: TYPE_ID_TIMESTAMP to allow parsing in Notify
-        let extOrderId = `ORDER_${Date.now()}_${Math.floor(Math.random() * 1000)} `;
+        let extOrderId = `ORDER_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
         if (challengeId) {
             // We need to fetch the challenge unique_link or use ID. unique_link is safer public ID but ID is internal.
             // If we use ID, we parse it back. 
-            extOrderId = `CHALLENGE_${challengeId}_${Date.now()} `;
+            extOrderId = `CHALLENGE_${challengeId}_${Date.now()}`;
         } else if (bookingId) {
-            extOrderId = `BOOKING_${bookingId}_${Date.now()} `;
+            extOrderId = `BOOKING_${bookingId}_${Date.now()}`;
         }
 
         const orderData: OrderRequest = {
