@@ -47,6 +47,7 @@ export interface PageSection {
     thermalSections?: ThermalSectionData[]; // For thermal_slider (multiple)
     title?: string;
     subtitle?: string;
+    description?: string; // For hero (long text)
     layout?: 'left' | 'right'; // For image_text
     images?: string[]; // For gallery
     tag?: string; // For hero
@@ -315,6 +316,15 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove }: {
                                 onChange={(e) => onUpdate(section.id, { tag: e.target.value })}
                                 className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
                                 placeholder="np. fotograf toruń"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs text-zinc-400 mb-1">Opis (Treść podtytułu)</label>
+                            <textarea
+                                value={section.description || ''}
+                                onChange={(e) => onUpdate(section.id, { description: e.target.value })}
+                                className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white h-24"
+                                placeholder="Dłuższy opis sekcji..."
                             />
                         </div>
                         <div className="grid grid-cols-2 gap-4">

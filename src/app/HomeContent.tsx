@@ -69,9 +69,10 @@ interface HomeContentProps {
     homeData: HomeData | null;
     orderedSections: Section[];
     testimonials: Testimonial[];
+    heroSliderInterval?: number;
 }
 
-export default function HomeContent({ heroSlides, sections, homeData, orderedSections, testimonials }: HomeContentProps) {
+export default function HomeContent({ heroSlides, sections, homeData, orderedSections, testimonials, heroSliderInterval = 6000 }: HomeContentProps) {
     const [currentTestimonial, setCurrentTestimonial] = useState(0);
 
 
@@ -721,7 +722,7 @@ export default function HomeContent({ heroSlides, sections, homeData, orderedSec
             />
 
             {/* Hero Slider - Always First */}
-            <HeroSlider slides={heroSlides} />
+            <HeroSlider slides={heroSlides} interval={heroSliderInterval} />
 
 
             {/* Dynamic Sections */}

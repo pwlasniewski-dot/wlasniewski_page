@@ -908,3 +908,18 @@ Niezastosowanie zasady atomowych edycji (ReplacementChunks) i próba przesłania
 - src/components/HeroSlider.tsx
 
 **Status:**  **KOMPLETNE & ZWERYFIKOWANE**
+
+### [2025-12-27]  Hero Config & Drone Page Migration
+**Cel:** Umożliwienie edycji interwału Hero Slidera oraz treści na stronie Dron page.
+
+**Zrealizowane Zmiany:**
+1. **Hero Slider Interval:**
+   - Dodano ustawienie 'Hero Slider Interval' w Panelu Admina.
+   - Domyślna wartość: 6000ms.
+
+2. **Drone Page Hero:**
+   - Zmigrowano statyczną treść do bazy danych.
+   - Treść edytowalna w Page Builder (dodano pole description).
+
+**Status:**  **KOMPLETNE & ZWERYFIKOWANE**
+

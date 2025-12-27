@@ -202,9 +202,9 @@ function renderSection(section: any) {
                             whileInView={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.1 }}
                             className="text-5xl md:text-7xl font-bold text-white leading-[1.1] tracking-tight"
-                        >
-                            {section.title}
-                        </motion.h1>
+                            dangerouslySetInnerHTML={{ __html: section.title }}
+                        />
+
                         {section.subtitle && (
                             <motion.p
                                 initial={{ opacity: 0, y: 20 }}
@@ -215,6 +215,17 @@ function renderSection(section: any) {
                                 {section.subtitle}
                             </motion.p>
                         )}
+
+                        {section.description && (
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.25 }}
+                                className="text-zinc-400 text-lg leading-relaxed max-w-2xl mx-auto"
+                                dangerouslySetInnerHTML={{ __html: section.description }}
+                            />
+                        )}
+
                         {section.buttonText && (
                             <motion.div
                                 initial={{ opacity: 0, scale: 0.9 }}

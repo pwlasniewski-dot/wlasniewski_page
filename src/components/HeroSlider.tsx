@@ -65,7 +65,7 @@ const animationVariants = {
     }
 };
 
-export default function HeroSlider({ slides = [] }: HeroSliderProps) {
+export default function HeroSlider({ slides = [], interval = 6000 }: HeroSliderProps & { interval?: number }) {
     const [currentSlide, setCurrentSlide] = useState(0);
     const [isMobile, setIsMobile] = useState(false);
     const [mounted, setMounted] = useState(false);
@@ -92,9 +92,9 @@ export default function HeroSlider({ slides = [] }: HeroSliderProps) {
         if (!autoplay || enabledSlides.length <= 1 || !mounted) return;
         const timer = setInterval(() => {
             setCurrentSlide((prev) => (prev + 1) % enabledSlides.length);
-        }, 6000);
+        }, interval);
         return () => clearInterval(timer);
-    }, [autoplay, enabledSlides.length, mounted]);
+    }, [autoplay, enabledSlides.length, mounted, interval]);
 
     if (!mounted) return <div className="h-screen w-full bg-black" />;
 

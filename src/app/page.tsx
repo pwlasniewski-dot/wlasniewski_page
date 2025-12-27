@@ -107,6 +107,13 @@ export default async function HomePage() {
     // Extract sections explicitly to ensure proper serialization
     const sections = JSON.parse(JSON.stringify(orderedSections));
 
+    // Fetch Hero Slider Interval (fallback to 6000ms)
+    // We check both specific KV setting and generic settings if needed
+    const intervalSetting = await prisma.setting.findFirst({
+        where: { setting_key: 'hero_slider_interval' }
+    });
+    const heroSliderInterval = intervalSetting?.setting_value ? parseInt(intervalSetting.setting_value) : 6000;
+
     return (
         <HomeContent
             heroSlides={heroSlides}
@@ -114,6 +121,7 @@ export default async function HomePage() {
             homeData={homeData}
             orderedSections={orderedSections}
             testimonials={testimonials}
+            heroSliderInterval={heroSliderInterval}
         />
     );
 }

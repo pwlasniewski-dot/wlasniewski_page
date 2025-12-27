@@ -67,6 +67,8 @@ export default function SettingsPage() {
         gift_card_promo_rotation_interval: '5',
         gift_card_hero_image: '', // Store background image
         gift_card_hero_opacity: 0.6,
+        // Home Page
+        hero_slider_interval: '6000',
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -162,7 +164,8 @@ export default function SettingsPage() {
 
             // Convert numeric fields to numbers
             const numericFields = ['navbar_font_size', 'logo_size', 'smtp_port', 'urgency_slots_remaining',
-                'social_proof_total_clients', 'booking_min_days_ahead', 'gift_card_promo_rotation_interval', 'gift_card_hero_opacity'];
+                'social_proof_total_clients', 'booking_min_days_ahead', 'gift_card_promo_rotation_interval', 'gift_card_hero_opacity',
+                'hero_slider_interval'];
 
             for (const field of numericFields) {
                 if (field in settingsToSave && settingsToSave[field] !== '' && settingsToSave[field] !== null) {
@@ -308,6 +311,25 @@ export default function SettingsPage() {
             </div>
 
             <div className="grid gap-8">
+                {/* Home Page Settings */}
+                <div className="bg-zinc-900 shadow rounded-lg border border-zinc-800 p-6">
+                    <h2 className="text-lg font-medium text-white mb-4">Ustawienia Strony Głównej</h2>
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-medium text-zinc-400 mb-1">Czas przewijania Hero Slidera (ms)</label>
+                            <input
+                                type="number"
+                                min="1000"
+                                step="500"
+                                value={settings.hero_slider_interval || '6000'}
+                                onChange={e => setSettings(s => ({ ...s, hero_slider_interval: e.target.value }))}
+                                className="block w-full rounded-md border-zinc-700 bg-zinc-800 text-white shadow-sm focus:border-gold-500 focus:ring-gold-500 sm:text-sm px-3 py-2"
+                            />
+                            <p className="mt-1 text-xs text-zinc-500">Domyślnie 6000ms (6 sekund). Ustaw czas wyświetlania jednego slajdu.</p>
+                        </div>
+                    </div>
+                </div>
+
                 {/* Promo Code Settings */}
                 <div className="bg-zinc-900 shadow rounded-lg border border-zinc-800 p-6">
                     <h2 className="text-lg font-medium text-white mb-4">Kody Rabatowe (Globalne)</h2>
