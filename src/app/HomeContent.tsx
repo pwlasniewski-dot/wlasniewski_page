@@ -484,7 +484,7 @@ export default function HomeContent({ heroSlides, sections, homeData, orderedSec
                                                 ))}
                                             </div>
                                             <p className="text-xl text-zinc-300 italic mb-6">
-                                                "{testimonial.testimonial_text}"
+                                                &quot;{testimonial.testimonial_text}&quot;
                                             </p>
                                             <div className="flex items-center justify-center gap-4">
                                                 {testimonial.client_photo?.file_path && (

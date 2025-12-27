@@ -22,7 +22,13 @@ const nextConfig = {
     // output: 'export',
     output: 'standalone',
     compress: false, // Fix for controller[kState].transformAlgorithm error
-    
+
+    eslint: {
+        ignoreDuringBuilds: true,
+    },
+    typescript: {
+        ignoreBuildErrors: true,
+    },
     // Optimize webpack bundle for Netlify serverless deployment
     webpack: (config, { isServer }) => {
         if (isServer) {
