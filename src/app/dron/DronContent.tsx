@@ -30,58 +30,49 @@ export default function DronContent({ pageData, sections }: DronContentProps) {
 
     return (
         <div className="bg-black text-zinc-100 min-h-screen">
-            {/* 1. POWERFUL DEFAULT HERO (Always shown as base) */}
-            <section className="relative py-16 px-6 max-w-7xl mx-auto overflow-hidden">
-                <div className="space-y-12">
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6 }}
-                    >
-                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 text-[10px] font-bold uppercase tracking-[0.2em] mb-6">
-                            <Zap size={12} /> Rozwiązania B2B
-                        </div>
-                        <h1 className="text-5xl lg:text-7xl font-bold mb-8 leading-[1.1] tracking-tight">
-                            Specjalistyczne <span className="text-yellow-500">usługi dronem</span> i termowizja.
-                        </h1>
-                        <p className="text-zinc-400 text-lg mb-10 leading-relaxed max-w-2xl">
-                            Jako **FOTO-DRON Przemysław Właśniewski** oferuję zaawansowaną diagnostykę z powietrza. Wykorzystujemy drona **Mavic 3 Thermal** (termowizja radiometryczna) oraz **Air 2 S** do precyzyjnych zdjęć technicznych i okolicznościowych na terenie Torunia, Bydgoszczy i całego województwa.
-                        </p>
-                        <div className="flex flex-wrap gap-4">
-                            <a href="#kontakt" className="bg-yellow-500 hover:bg-yellow-400 text-black font-bold px-8 py-4 rounded-full transition-all flex items-center gap-2 group">
-                                Zamów darmową wycenę <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
-                            </a>
-                            <a href="#oferta" className="bg-zinc-900 border border-white/10 hover:bg-zinc-800 text-white px-8 py-4 rounded-full transition-all">
-                                Poznaj ofertę
-                            </a>
-                        </div>
-                    </motion.div>
-
-                    {/* Thermal Slider (Legacy but stable anchor) */}
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        whileInView={{ opacity: 1, scale: 1 }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 0.8 }}
-                        className="relative"
-                    >
-                        <ThermalSlider
-                            title="Galeria Badań Termowizyjnych"
-                        />
-                        <div className="absolute -bottom-6 -left-6 bg-zinc-900 p-6 rounded-2xl border border-white/5 shadow-2xl hidden md:block">
-                            <div className="flex items-center gap-4">
-                                <div className="p-3 bg-yellow-500/10 rounded-xl">
-                                    <ShieldCheck className="text-yellow-500" size={24} />
+            {/* 1. POWERFUL DEFAULT HERO (Shown ONLY if no custom Hero is added) */}
+            {!sections?.some((s: any) => s.type === 'hero' || s.type === 'hero_parallax') && (
+                <section className="relative py-16 px-6 max-w-7xl mx-auto overflow-hidden">
+                    <div className="space-y-12">
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.6 }}
+                        >
+                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 text-[10px] font-bold uppercase tracking-[0.2em] mb-6">
+                                <Zap size={12} /> Rozwiązania B2B
+                            </div>
+                            <h1 className="text-5xl lg:text-7xl font-bold mb-8 leading-[1.1] tracking-tight">
+                                Specjalistyczne <span className="text-yellow-500">usługi dronem</span> i termowizja.
+                            </h1>
+                            <p className="text-zinc-400 text-lg mb-10 leading-relaxed max-w-2xl">
+                                Jako **FOTO-DRON Przemysław Właśniewski** oferuję zaawansowaną diagnostykę z powietrza. Wykorzystujemy drona **Mavic 3 Thermal** (termowizja radiometryczna) oraz **Air 2 S** do precyzyjnych zdjęć technicznych i okolicznościowych na terenie Torunia, Bydgoszczy i całego województwa.
+                            </p>
+                            <div className="flex flex-col sm:flex-row gap-8 items-start sm:items-center">
+                                <div className="flex flex-wrap gap-4">
+                                    <a href="#kontakt" className="bg-yellow-500 hover:bg-yellow-400 text-black font-bold px-8 py-4 rounded-full transition-all flex items-center gap-2 group">
+                                        Zamów darmową wycenę <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                                    </a>
+                                    <a href="#oferta" className="bg-zinc-900 border border-white/10 hover:bg-zinc-800 text-white px-8 py-4 rounded-full transition-all">
+                                        Poznaj ofertę
+                                    </a>
                                 </div>
-                                <div>
-                                    <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Certyfikat ULC</p>
-                                    <p className="text-sm font-medium">Uprawnienia NSTS-01 / 02</p>
+
+                                {/* ULC Certificate Badge */}
+                                <div className="flex items-center gap-4 pl-0 sm:pl-8 sm:border-l border-zinc-800">
+                                    <div className="p-3 bg-yellow-500/10 rounded-xl">
+                                        <ShieldCheck className="text-yellow-500" size={24} />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Certyfikat ULC</p>
+                                        <p className="text-sm font-medium">Uprawnienia NSTS-01 / 02</p>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    </motion.div>
-                </div>
-            </section>
+                        </motion.div>
+                    </div>
+                </section>
+            )}
 
             {/* 2. LEGACY CONTENT (If exists) */}
             {pageData?.content && (
