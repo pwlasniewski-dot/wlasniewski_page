@@ -174,7 +174,7 @@ export default function HeroSlider({ slides = [] }: HeroSliderProps) {
             <div className="absolute bottom-0 left-0 w-full h-[60vh] bg-gradient-to-t from-black via-black/80 to-transparent z-10" />
 
             {/* Content */}
-            <div className="relative z-20 w-full h-full flex flex-col items-center justify-center px-4 sm:px-6 text-center">
+            <div className="relative z-20 w-full h-full flex flex-col items-center justify-end pb-24 sm:pb-32 md:pb-40 px-4 sm:px-6 text-center">
                 <AnimatePresence mode="wait">
                     <motion.div
                         key={`content-${currentSlide}`}

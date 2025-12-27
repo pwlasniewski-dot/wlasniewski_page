@@ -116,8 +116,11 @@ export default function ParallaxSection({
                         className="relative w-full h-full"
                     >
                         <div
-                            className="absolute inset-0 bg-cover bg-center"
-                            style={{ backgroundImage: `url(${finalImage})` }}
+                            className="absolute inset-0 bg-cover bg-no-repeat"
+                            style={{
+                                backgroundImage: `url(${finalImage})`,
+                                backgroundPosition: 'center 15%' // Face-safe alignment
+                            }}
                         />
                     </motion.div>
                 )}

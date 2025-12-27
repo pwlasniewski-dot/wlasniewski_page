@@ -259,21 +259,44 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                         );
 
                     case 'features':
+                        const isCentered = data.sectionLayout === 'centered';
+                        const isLarge = data.featureSize === 'large';
+
                         return (
                             <section key={section.id} className="py-20 px-6 bg-black">
-                                <div className="max-w-6xl mx-auto grid md:grid-cols-3 gap-8">
+                                <div className={`max-w-6xl mx-auto ${isCentered
+                                    ? 'flex flex-wrap justify-center gap-8'
+                                    : 'grid md:grid-cols-3 gap-8'
+                                    }`}>
                                     {data.features?.map((feature: any, index: number) => (
                                         feature.enabled && (
-                                            <div key={index} className="bg-zinc-900/50 p-8 rounded-2xl border border-zinc-800 hover:border-gold-500/30 transition-colors">
-                                                <h3 className="text-xl font-bold text-white mb-4">{feature.title}</h3>
-                                                <ul className="space-y-3">
+                                            <div key={index}
+                                                className={`bg-zinc-900/50 rounded-2xl border border-zinc-800 hover:border-gold-500/30 transition-colors flex flex-col
+                                                     ${isCentered ? 'max-w-md w-full' : ''}
+                                                     ${isLarge ? 'p-12' : 'p-8'}
+                                                 `}
+                                            >
+                                                <h3 className={`font-bold text-white mb-4 ${isLarge ? 'text-2xl' : 'text-xl'}`}>{feature.title}</h3>
+                                                <ul className="space-y-3 flex-1">
                                                     {feature.items.map((item: string, i: number) => (
                                                         <li key={i} className="flex items-start gap-3 text-zinc-400">
                                                             <Check className="w-5 h-5 text-gold-500 shrink-0 mt-0.5" />
-                                                            <span>{item}</span>
+                                                            <span className={isLarge ? 'text-lg' : ''}>{item}</span>
                                                         </li>
                                                     ))}
                                                 </ul>
+
+                                                {(feature.buttonText && feature.buttonLink) && (
+                                                    <div className="mt-8 pt-6 border-t border-zinc-800">
+                                                        <Link
+                                                            href={feature.buttonLink}
+                                                            className="inline-flex items-center justify-center w-full px-6 py-3 bg-zinc-800 hover:bg-gold-500 hover:text-black text-white font-semibold rounded-lg transition-all group"
+                                                        >
+                                                            {feature.buttonText}
+                                                            <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                                                        </Link>
+                                                    </div>
+                                                )}
                                             </div>
                                         )
                                     ))}
@@ -303,7 +326,7 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                             <ParallaxSection
                                 key={section.id}
                                 {...data}
-                                imageSrc={data.image}
+                                imageSrc={data.imageSrc || data.image} // FIX: Support both keys
                                 height="min-h-[60vh] md:min-h-[80vh]"
                             />
                         );

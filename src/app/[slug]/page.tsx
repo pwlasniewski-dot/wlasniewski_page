@@ -46,8 +46,10 @@ export default async function DynamicPage({ params }: PageProps) {
         notFound();
     }
 
-    // Parse sections JSON
+    // Intelligent Content Merging Strategy (Zero Loss Protocol)
     let sections: PageSection[] = [];
+
+    // 1. Try to parse dynamic sections
     if (page.sections) {
         try {
             sections = JSON.parse(page.sections);
@@ -56,20 +58,23 @@ export default async function DynamicPage({ params }: PageProps) {
         }
     }
 
+    // 2. Fallback Safety: If no sections found (or empty), check for legacy content
+    // and inject it as a rich_text section to prevent empty page.
+    if ((!sections || sections.length === 0) && page.content) {
+        sections = [
+            {
+                id: 'legacy_content_fallback',
+                type: 'rich_text',
+                data: {
+                    content: page.content
+                }
+            }
+        ];
+    }
+
     return (
         <main className="min-h-screen bg-zinc-950 text-white selection:bg-gold-400 selection:text-black">
-            {/* If no sections defined, show legacy content or fallback */}
-            {sections.length > 0 ? (
-                <PageRenderer sections={sections} />
-            ) : (
-                <div className="pt-32 pb-16 px-4 text-center">
-                    <h1 className="text-4xl font-bold mb-4">{page.title}</h1>
-                    <div
-                        className="prose prose-invert mx-auto"
-                        dangerouslySetInnerHTML={{ __html: page.content }}
-                    />
-                </div>
-            )}
+            <PageRenderer sections={sections} />
         </main>
     );
 }

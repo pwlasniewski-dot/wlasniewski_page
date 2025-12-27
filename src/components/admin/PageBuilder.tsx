@@ -29,6 +29,15 @@ export interface ThermalSectionData {
     labelRight?: string;
 }
 
+export interface FeatureItem {
+    id: string; // Unique ID
+    title: string;
+    items: string[];
+    enabled: boolean;
+    buttonText?: string;
+    buttonLink?: string;
+}
+
 export interface PageSection {
     id: string;
     type: SectionType;
@@ -43,10 +52,12 @@ export interface PageSection {
     tag?: string; // For hero
     buttonText?: string; // For contact/hero
     buttonLink?: string; // For contact/hero
-    labelLeft?: string; // For thermal_slider
     labelRight?: string; // For thermal_slider
     showCategoryTitle?: boolean; // For thermal_slider - show title above sections
     slides?: SliderSlide[]; // For hero_slider
+    features?: FeatureItem[]; // For features
+    sectionLayout?: 'grid' | 'centered'; // Layout options
+    featureSize?: 'normal' | 'large'; // Feature size options
     data?: any; // For legacy / homepage sections
 }
 
@@ -696,6 +707,135 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove }: {
                         )}
                     </div>
                 )}
+
+                {/* FEATURES (KAFELKI) */}
+                {section.type === 'features' && (
+                    <div className="space-y-6">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs text-zinc-400 mb-1">Układ</label>
+                                <select
+                                    value={section.sectionLayout || 'grid'}
+                                    onChange={(e) => onUpdate(section.id, { sectionLayout: e.target.value as any })}
+                                    className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
+                                >
+                                    <option value="grid">Siatka (Standard)</option>
+                                    <option value="centered">Wyśrodkowany</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-xs text-zinc-400 mb-1">Rozmiar</label>
+                                <select
+                                    value={section.featureSize || 'normal'}
+                                    onChange={(e) => onUpdate(section.id, { featureSize: e.target.value as any })}
+                                    className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
+                                >
+                                    <option value="normal">Normalny</option>
+                                    <option value="large">Duży (Premium)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center justify-between mb-2">
+                            <h4 className="text-sm font-bold text-white uppercase tracking-wider">Kafelki</h4>
+                            <button
+                                onClick={() => {
+                                    const newFeature: FeatureItem = {
+                                        id: Math.random().toString(36).substr(2, 9),
+                                        title: 'Nowy Kafelek',
+                                        items: ['Cecha 1'],
+                                        enabled: true,
+                                        buttonText: '',
+                                        buttonLink: ''
+                                    };
+                                    onUpdate(section.id, {
+                                        features: [...(section.features || []), newFeature]
+                                    });
+                                }}
+                                className="px-3 py-1.5 bg-green-500/20 border border-green-500/30 text-green-400 text-xs font-bold rounded hover:bg-green-500/30 transition-all flex items-center gap-1"
+                            >
+                                <Plus size={14} /> Dodaj kafelkę
+                            </button>
+                        </div>
+
+                        <div className="space-y-4">
+                            {(section.features || []).map((feature, fIndex) => (
+                                <div key={feature.id || fIndex} className="bg-zinc-800/50 p-4 rounded-lg border border-zinc-700">
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div className="flex-1 mr-4">
+                                            <input
+                                                type="text"
+                                                value={feature.title}
+                                                onChange={(e) => {
+                                                    const updated = [...(section.features || [])];
+                                                    updated[fIndex] = { ...feature, title: e.target.value };
+                                                    onUpdate(section.id, { features: updated });
+                                                }}
+                                                className="w-full bg-zinc-700 border border-zinc-600 rounded px-3 py-2 text-white font-bold"
+                                                placeholder="Tytuł kafelka"
+                                            />
+                                        </div>
+                                        <button
+                                            onClick={() => {
+                                                const updated = section.features!.filter((_, i) => i !== fIndex);
+                                                onUpdate(section.id, { features: updated });
+                                            }}
+                                            className="text-zinc-500 hover:text-red-500"
+                                        >
+                                            <Trash2 size={18} />
+                                        </button>
+                                    </div>
+
+                                    <div className="space-y-3">
+                                        <div>
+                                            <label className="block text-xs text-zinc-500 mb-1">Cechy (oddziel przecinkami)</label>
+                                            <textarea
+                                                value={feature.items.join(', ')}
+                                                onChange={(e) => {
+                                                    const updated = [...(section.features || [])];
+                                                    updated[fIndex] = { ...feature, items: e.target.value.split(',').map(s => s.trim()).filter(Boolean) };
+                                                    onUpdate(section.id, { features: updated });
+                                                }}
+                                                className="w-full bg-zinc-700 border border-zinc-600 rounded px-3 py-2 text-sm text-white h-20"
+                                            />
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-4 pt-2 border-t border-zinc-700/50">
+                                            <div>
+                                                <label className="block text-xs text-zinc-400 mb-1">Tekst przycisku</label>
+                                                <input
+                                                    type="text"
+                                                    value={feature.buttonText || ''}
+                                                    onChange={(e) => {
+                                                        const updated = [...(section.features || [])];
+                                                        updated[fIndex] = { ...feature, buttonText: e.target.value };
+                                                        onUpdate(section.id, { features: updated });
+                                                    }}
+                                                    placeholder="np. Oferta dla firm"
+                                                    className="w-full bg-zinc-700 border border-zinc-600 rounded px-3 py-1.5 text-sm text-white"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs text-zinc-400 mb-1">Link</label>
+                                                <input
+                                                    type="text"
+                                                    value={feature.buttonLink || ''}
+                                                    onChange={(e) => {
+                                                        const updated = [...(section.features || [])];
+                                                        updated[fIndex] = { ...feature, buttonLink: e.target.value };
+                                                        onUpdate(section.id, { features: updated });
+                                                    }}
+                                                    placeholder="np. /oferta-b2b"
+                                                    className="w-full bg-zinc-700 border border-zinc-600 rounded px-3 py-1.5 text-sm text-white"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </div>
 
             <MediaPicker
@@ -782,6 +922,9 @@ export default function PageBuilder({ sections, onChange }: PageBuilderProps) {
                 </button>
                 <button onClick={() => addSection('hero_slider')} className="flex items-center gap-2 px-4 py-2 bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 rounded text-sm text-purple-400 transition-colors">
                     <Layout className="w-4 h-4" /> Hero Slider (Multislide)
+                </button>
+                <button onClick={() => addSection('features')} className="flex items-center gap-2 px-4 py-2 bg-green-600/20 hover:bg-green-600/30 border border-green-500/30 rounded text-sm text-green-400 transition-colors">
+                    <Layout className="w-4 h-4" /> Kafelki (Features)
                 </button>
             </div>
 

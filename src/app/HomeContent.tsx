@@ -227,21 +227,43 @@ export default function HomeContent({ heroSlides, sections, homeData, orderedSec
                 );
 
             case 'features':
+                const isCentered = section.data.sectionLayout === 'centered';
+                const isLarge = section.data.featureSize === 'large';
+
                 return (
                     <section key={section.id} className="py-20 px-6 bg-black">
-                        <div className="max-w-6xl mx-auto grid md:grid-cols-3 gap-8">
+                        <div className={`max-w-6xl mx-auto ${isCentered
+                            ? 'flex flex-wrap justify-center gap-8'
+                            : 'grid md:grid-cols-3 gap-8'
+                            }`}>
                             {section.data.features?.map((feature: any, index: number) => (
                                 feature.enabled && (
-                                    <div key={index} className="bg-zinc-900/50 p-8 rounded-2xl border border-zinc-800 hover:border-gold-500/30 transition-colors">
-                                        <h3 className="text-xl font-bold text-white mb-4">{feature.title}</h3>
-                                        <ul className="space-y-3">
+                                    <div key={index}
+                                        className={`bg-zinc-900/50 rounded-2xl border border-zinc-800 hover:border-gold-500/30 transition-colors flex flex-col
+                                            ${isCentered ? 'max-w-md w-full' : ''}
+                                            ${isLarge ? 'p-12' : 'p-8'}
+                                        `}
+                                    >
+                                        <h3 className={`font-bold text-white mb-4 ${isLarge ? 'text-2xl' : 'text-xl'}`}>{feature.title}</h3>
+                                        <ul className="space-y-3 flex-1">
                                             {feature.items.map((item: string, i: number) => (
                                                 <li key={i} className="flex items-start gap-3 text-zinc-400">
                                                     <Check className="w-5 h-5 text-gold-500 shrink-0 mt-0.5" />
-                                                    <span>{item}</span>
+                                                    <span className={isLarge ? 'text-lg' : ''}>{item}</span>
                                                 </li>
                                             ))}
                                         </ul>
+
+                                        {(feature.buttonText && feature.buttonLink) && (
+                                            <div className="mt-8 pt-6 border-t border-zinc-800">
+                                                <Link
+                                                    href={feature.buttonLink}
+                                                    className="w-full block text-center py-3 bg-gold-500/10 hover:bg-gold-500/20 border border-gold-500/30 hover:border-gold-500/50 text-gold-400 rounded-lg transition-all font-bold tracking-wide shadow-[0_0_15px_rgba(234,179,8,0.15)] animate-pulse hover:animate-none"
+                                                >
+                                                    {feature.buttonText}
+                                                </Link>
+                                            </div>
+                                        )}
                                     </div>
                                 )
                             ))}
@@ -507,7 +529,7 @@ export default function HomeContent({ heroSlides, sections, homeData, orderedSec
                         <div className="absolute inset-0 w-full h-full bg-cover bg-center" style={{ backgroundImage: `url("${section.image}")`, backgroundPosition: 'center 30%' }} />
                         <div className="absolute inset-0 bg-black/20" />
                         <div className="absolute bottom-0 left-0 w-full h-[60vh] bg-gradient-to-t from-black via-black/80 to-transparent" />
-                        
+
                         {/* Content */}
                         <div className="relative z-20 w-full h-full flex flex-col items-center justify-center px-4 sm:px-6 text-center">
                             <div className="space-y-3 sm:space-y-4 md:space-y-6 max-w-4xl">

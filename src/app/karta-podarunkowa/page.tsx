@@ -135,8 +135,12 @@ export default function GiftCardShop() {
                     {heroImage ? (
                         <>
                             <div
-                                className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-[10s] hover:scale-105"
-                                style={{ backgroundImage: `url(${heroImage})` }}
+                                className="absolute inset-0 bg-cover bg-no-repeat transition-transform duration-[10s] hover:scale-105"
+                                style={{
+                                    backgroundImage: `url(${heroImage})`,
+                                    backgroundPosition: 'center 15%', // Optimized for portraits (faces)
+                                    transformOrigin: 'center 15%'     // Zoom originates from face
+                                }}
                             />
                             <div
                                 className="absolute inset-0 bg-black transition-opacity duration-700"

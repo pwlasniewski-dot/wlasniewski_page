@@ -38,6 +38,8 @@ interface Feature {
     title: string;
     items: string[];
     enabled: boolean;
+    buttonText?: string;
+    buttonLink?: string;
 }
 
 type SectionType = 'about' | 'features' | 'parallax' | 'info_band' | 'challenge_banner' | 'testimonials';
@@ -85,6 +87,8 @@ interface FeaturesSection extends BaseSection {
     type: 'features';
     data: {
         features: Feature[];
+        sectionLayout?: 'grid' | 'centered';
+        featureSize?: 'normal' | 'large';
     };
 }
 
@@ -645,7 +649,9 @@ export default function HomepageManager() {
             id: `feature-${Date.now()}`,
             title: 'Nowa sekcja',
             items: ['Punkt 1', 'Punkt 2'],
-            enabled: true
+            enabled: true,
+            buttonText: '',
+            buttonLink: ''
         });
         setSections(newSections);
     };
@@ -998,26 +1004,91 @@ export default function HomepageManager() {
                             )}
 
                             {/* FEATURES EDITOR */}
+                            {/* FEATURES EDITOR */}
                             {section.type === 'features' && (
-                                <div className="space-y-4">
-                                    <button onClick={() => addFeature(index)} className="text-sm text-gold-400 hover:text-gold-300 flex items-center gap-1">
+                                <div className="space-y-6">
+                                    <div className="bg-zinc-800/50 p-4 rounded-lg border border-zinc-700 grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-xs text-zinc-400 mb-1">Układ sekcji</label>
+                                            <select
+                                                value={section.data.sectionLayout || 'grid'}
+                                                onChange={e => updateSectionData(index, 'sectionLayout', e.target.value)}
+                                                className="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1.5 text-sm text-white"
+                                            >
+                                                <option value="grid">Siatka (Standard)</option>
+                                                <option value="centered">Wyśrodkowany</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs text-zinc-400 mb-1">Rozmiar</label>
+                                            <select
+                                                value={section.data.featureSize || 'normal'}
+                                                onChange={e => updateSectionData(index, 'featureSize', e.target.value)}
+                                                className="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1.5 text-sm text-white"
+                                            >
+                                                <option value="normal">Normalny</option>
+                                                <option value="large">Duży (Premium)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <button onClick={() => addFeature(index)} className="text-sm text-gold-400 hover:text-gold-300 flex items-center gap-1 font-medium">
                                         <Plus className="w-4 h-4" /> Dodaj kafelkę
                                     </button>
-                                    <div className="grid md:grid-cols-3 gap-4">
+
+                                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                                         {section.data.features.map((feature, fIndex) => (
-                                            <div key={feature.id} className="border border-zinc-700 rounded p-3 bg-zinc-800/50">
-                                                <div className="flex justify-between mb-2">
-                                                    <input type="text" value={feature.title} onChange={e => updateFeature(index, fIndex, 'title', e.target.value)} className="bg-transparent border-b border-zinc-600 text-white w-full mr-2" />
-                                                    <button onClick={() => removeFeature(index, fIndex)} className="text-red-400"><Trash2 className="w-4 h-4" /></button>
+                                            <div key={feature.id} className="border border-zinc-700 rounded-lg p-4 bg-zinc-800/30 flex flex-col h-full">
+                                                <div className="flex justify-between mb-4 border-b border-zinc-700 pb-2">
+                                                    <input
+                                                        type="text"
+                                                        value={feature.title}
+                                                        onChange={e => updateFeature(index, fIndex, 'title', e.target.value)}
+                                                        className="bg-transparent text-white font-bold w-full mr-2 outline-none focus:text-gold-400"
+                                                        placeholder="Tytuł kafelka"
+                                                    />
+                                                    <button onClick={() => removeFeature(index, fIndex)} className="text-zinc-500 hover:text-red-400 transition-colors"><Trash2 className="w-4 h-4" /></button>
                                                 </div>
-                                                <div className="space-y-2">
+
+                                                <div className="space-y-2 flex-1 mb-4">
                                                     {feature.items.map((item, iIndex) => (
-                                                        <div key={iIndex} className="flex gap-1">
-                                                            <input type="text" value={item} onChange={e => updateFeatureItem(index, fIndex, iIndex, e.target.value)} className="flex-1 bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs text-white" />
-                                                            <button onClick={() => removeFeatureItem(index, fIndex, iIndex)} className="text-red-400"><Trash2 className="w-3 h-3" /></button>
+                                                        <div key={iIndex} className="flex gap-2 items-center group">
+                                                            <div className="w-1.5 h-1.5 rounded-full bg-gold-500 shrink-0"></div>
+                                                            <input
+                                                                type="text"
+                                                                value={item}
+                                                                onChange={e => updateFeatureItem(index, fIndex, iIndex, e.target.value)}
+                                                                className="flex-1 bg-transparent border-b border-zinc-800 focus:border-zinc-500 px-1 py-0.5 text-sm text-zinc-300 outline-none"
+                                                            />
+                                                            <button onClick={() => removeFeatureItem(index, fIndex, iIndex)} className="text-zinc-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 className="w-3 h-3" /></button>
                                                         </div>
                                                     ))}
-                                                    <button onClick={() => addFeatureItem(index, fIndex)} className="text-xs text-zinc-500 hover:text-white">+ punkt</button>
+                                                    <button onClick={() => addFeatureItem(index, fIndex)} className="text-xs text-zinc-500 hover:text-gold-400 mt-2 flex items-center gap-1 transition-colors">
+                                                        <Plus className="w-3 h-3" /> Dodaj punkt
+                                                    </button>
+                                                </div>
+
+                                                <div className="mt-auto pt-3 border-t border-zinc-700/50 space-y-3">
+                                                    <div>
+                                                        <label className="block text-[10px] uppercase tracking-wider text-zinc-500 mb-1">Tekst przycisku</label>
+                                                        <input
+                                                            type="text"
+                                                            value={feature.buttonText || ''}
+                                                            onChange={e => updateFeature(index, fIndex, 'buttonText', e.target.value)}
+                                                            placeholder="np. Oferta"
+                                                            className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-xs text-white placeholder-zinc-600 focus:border-gold-500/50 outline-none"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-[10px] uppercase tracking-wider text-zinc-500 mb-1">Link</label>
+                                                        <input
+                                                            type="text"
+                                                            value={feature.buttonLink || ''}
+                                                            onChange={e => updateFeature(index, fIndex, 'buttonLink', e.target.value)}
+                                                            placeholder="np. /oferta"
+                                                            className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-xs text-white placeholder-zinc-600 focus:border-gold-500/50 outline-none"
+                                                        />
+                                                    </div>
                                                 </div>
                                             </div>
                                         ))}
