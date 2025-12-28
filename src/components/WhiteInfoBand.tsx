@@ -7,6 +7,7 @@ import {
     Cpu, Layers, Trees, Box, Construction, Hammer,
     Layout, ArrowRight
 } from "lucide-react";
+import Link from 'next/link';
 
 const IconMap: Record<string, any> = {
     Building2, Factory, Warehouse, Truck, Plane, Ship,
@@ -21,6 +22,7 @@ interface InfoBandItem {
     description: string;
     icon?: string;
     image?: string;
+    link?: string;
 }
 
 interface WhiteInfoBandProps {
@@ -82,9 +84,11 @@ export default function WhiteInfoBand({ image, title, subtitle, content, items, 
                                         {item.description}
                                     </p>
 
-                                    <div className="flex items-center gap-2 text-[10px] font-black text-zinc-400 uppercase tracking-widest group-hover:text-zinc-900 transition-colors">
-                                        Szczegóły operacyjne <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
-                                    </div>
+                                    {item.link ? (
+                                        <Link href={item.link} className="flex items-center gap-2 text-[10px] font-black text-zinc-400 uppercase tracking-widest group-hover:text-zinc-900 transition-colors">
+                                            Szczegóły operacyjne <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                                        </Link>
+                                    ) : null}
                                 </div>
                             );
                         })}
