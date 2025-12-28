@@ -80,6 +80,7 @@ export interface InfoBandItem {
     description: string;
     icon?: string;
     image?: string;
+    link?: string;
 }
 
 export interface FeatureItem {
@@ -1253,6 +1254,7 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove, openMedia
                                                 <button onClick={() => onUpdate(section.id, { infoband_items: section.infoband_items!.filter((_, i) => i !== iIndex) })} className="text-zinc-600 hover:text-red-500"><Trash2 size={16} /></button>
                                             </div>
                                             <input type="text" value={item.title} onChange={e => { const up = [...section.infoband_items!]; up[iIndex].title = e.target.value; onUpdate(section.id, { infoband_items: up }); }} placeholder="Tytuł" className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-sm text-white font-bold" />
+                                            <input type="text" value={item.link || ''} onChange={e => { const up = [...section.infoband_items!]; up[iIndex].link = e.target.value; onUpdate(section.id, { infoband_items: up }); }} placeholder="Link (opcjonalnie)" className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs text-zinc-400 mt-1" />
                                         </div>
                                     </div>
                                     <textarea value={item.description} onChange={e => { const up = [...section.infoband_items!]; up[iIndex].description = e.target.value; onUpdate(section.id, { infoband_items: up }); }} placeholder="Krótki opis..." className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-xs text-zinc-400 h-16" />

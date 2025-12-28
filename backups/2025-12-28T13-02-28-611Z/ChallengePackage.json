@@ -1,0 +1,20 @@
+[
+  {
+    "id": 1,
+    "name": "Standard",
+    "description": null,
+    "base_price": 1000,
+    "challenge_price": 800,
+    "discount_percentage": 20,
+    "included_items": null,
+    "is_active": true,
+    "display_order": 0,
+    "created_at": "2025-12-21T18:02:46.142Z",
+    "updated_at": "2025-12-21T18:02:46.142Z",
+    "accent_color": "#d4af37",
+    "bg_color": "#18181b",
+    "gradient_to": "#1a1a1a",
+    "icon": null,
+    "style_variant": "classic"
+  }
+]

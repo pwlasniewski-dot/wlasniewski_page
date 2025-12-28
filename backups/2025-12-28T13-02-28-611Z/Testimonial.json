@@ -1,0 +1,54 @@
+[
+  {
+    "id": 4,
+    "client_name": "Agnieszka P",
+    "client_photo_id": 46,
+    "testimonial_text": "Sympatyczna atmosfera na sesji zdjęciowej, a efekty przeszły nasze oczekiwania. Polecam z całego serduszka, jeśli chcecie mieć wspaniałe i przepiękne wspomnienia.",
+    "rating": 5,
+    "source": "Facebook",
+    "photo_size": 80,
+    "is_featured": true,
+    "show_on_booking_page": true,
+    "display_order": 0,
+    "created_at": "2025-12-26T16:42:32.722Z"
+  },
+  {
+    "id": 5,
+    "client_name": "Rafał Zarzeczny",
+    "client_photo_id": 144,
+    "testimonial_text": "Super zdjęcia.Polecam z przyjemnością",
+    "rating": 5,
+    "source": "Facebook",
+    "photo_size": 80,
+    "is_featured": true,
+    "show_on_booking_page": true,
+    "display_order": 2,
+    "created_at": "2025-12-26T16:45:07.296Z"
+  },
+  {
+    "id": 6,
+    "client_name": "Małorzata Sosnowska",
+    "client_photo_id": 145,
+    "testimonial_text": "Wielokrotnie Przemek swoim profesjonalnym okiem, uwieczniał nasze wydarzenia wiejskie jaki i moje uroczystości rodzinne. Jest profesjonalistą. Zdjęcia przepiękne. Polecam gorąco i jeszcze nie raz na pewno skorzystam z jego osoby😉😄",
+    "rating": 5,
+    "source": "Google",
+    "photo_size": 80,
+    "is_featured": true,
+    "show_on_booking_page": true,
+    "display_order": 3,
+    "created_at": "2025-12-26T16:46:53.975Z"
+  },
+  {
+    "id": 7,
+    "client_name": "Płużnicka Piątka",
+    "client_photo_id": 146,
+    "testimonial_text": "Pan Przemek od trzech lat współpracuje z nami przy organizacji biegu wykonując przecudowne zdjęcia 😍 Polecamy!",
+    "rating": 5,
+    "source": "Facebook",
+    "photo_size": 80,
+    "is_featured": true,
+    "show_on_booking_page": true,
+    "display_order": 4,
+    "created_at": "2025-12-26T16:50:57.812Z"
+  }
+]

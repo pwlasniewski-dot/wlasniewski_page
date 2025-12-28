@@ -1,0 +1,34 @@
+[
+  {
+    "id": 1,
+    "email": "subscriber1@example.com",
+    "source": "website_footer",
+    "promo_code_sent": null,
+    "is_active": true,
+    "subscribed_at": "2025-11-06T12:11:57.988Z"
+  },
+  {
+    "id": 2,
+    "email": "subscriber2@example.com",
+    "source": "contact_form",
+    "promo_code_sent": null,
+    "is_active": true,
+    "subscribed_at": "2025-11-21T12:11:57.988Z"
+  },
+  {
+    "id": 3,
+    "email": "subscriber3@example.com",
+    "source": "popup",
+    "promo_code_sent": null,
+    "is_active": true,
+    "subscribed_at": "2025-12-06T12:11:57.988Z"
+  },
+  {
+    "id": 4,
+    "email": "subscriber4@example.com",
+    "source": "manual",
+    "promo_code_sent": null,
+    "is_active": true,
+    "subscribed_at": "2025-12-14T12:11:57.988Z"
+  }
+]
