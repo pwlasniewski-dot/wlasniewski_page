@@ -76,6 +76,15 @@ graph TD
 
 ---
 
+### 7. B2B TWIN-ENGINE ARCHITECTURE [NEW: 2025-12-28]
+*   **STATUS:** 100% sprawny (Wdrożono na `wlasniewski.pl/b2b` oraz subdomeny).
+*   **DETEKCJA**: Wykrywanie kontekstu odbywa się w `Navbar.tsx` na podstawie portu (3001), nazwy hosta (b2b, dron) lub ścieżki (/b2b).
+*   **ROUTING**: Obsługiwany przez `src/app/b2b/[slug]/page.tsx`. Strony B2B muszą mieć `page_type: 'b2b'` w bazie danych.
+*   **LOGIKA LINKÓW**: System automatycznie oczyszcza linki z prefixu `/b2b` gdy wykryje dedykowaną domenę, zapobiegając redundantnym URL-om.
+*   **STYLIZACJA**: Kontekst B2B wymusza ciemny motyw (Premium Dark) i logotyp `logo_dark_url` (oznaczony w panelu jako "Logo B2B / Alternatywne").
+
+---
+
 ## 🏗️ ŚCIĄGA Z MODUŁÓW
 
 - **Admin Settings**: Jeden rekord w tabeli `Setting` (`main_settings`). Edytuj go wyłącznie przez `/admin/settings` lub `seed.ts`.

@@ -1,114 +1,123 @@
-
-import { PrismaClient } from '@prisma/client';
+const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 async function main() {
-    console.log('🚀 Seeding B2B Page...');
+    console.log('🌱 Seeding/Updating B2B Page...');
 
-    const baseId = () => Math.random().toString(36).substr(2, 9);
-
-    const templateSections = [
+    const sections = [
+        // 1. HERO SECTION
         {
-            id: baseId(), type: 'hero_slider', slides: [
-                { id: baseId(), image: 'https://images.unsplash.com/photo-1581094288338-2314dddb7ecb?q=80&w=2070&auto=format&fit=crop', title: 'Inspekcje Dronowe i Monitoring', subtitle: 'Konkretna dokumentacja, która ma zastosowanie biznesowe. Bez marketingu, same fakty.', buttonText: 'ZAPYTAJ O OFERTĘ', buttonLink: '#rfq' },
-                { id: baseId(), image: 'https://images.unsplash.com/photo-1485083269755-a7b559a4fe5e?q=80&w=2070&auto=format&fit=crop', title: 'Rzetelna Dokumentacja Inwestycji', subtitle: 'Kontroluj jakość i stan techniczny obiektów bez przestojów i rusztowań.', buttonText: 'POZNAJ PROCES', buttonLink: '#process' }
+            id: "b2b-hero-seed",
+            type: "b2b_hero",
+            title: 'Wnieś Swój Biznes <span class="text-yellow-500">Na Wyższy Poziom</span>',
+            subtitle: "Precyzyjne inspekcje techniczne, termowizja i monitoring inwestycji z lotu ptaka. Technologia, która oszczędza Twój czas i pieniądze.",
+            tag: "B2B SOLUTIONS",
+            image: "https://images.unsplash.com/photo-1506947411487-a5673826e6e0?q=80&w=2000&auto=format&fit=crop",
+            buttonText: "ZAPYTAJ O OFERTĘ",
+            buttonLink: "/b2b/kontakt"
+        },
+        // 2. STATS SECTION
+        {
+            id: "b2b-stats-seed",
+            type: "b2b_stats",
+            b2b_stats: [
+                { id: "s1", value: "4K", label: "Rozdzielczość Video", prefix: "", suffix: "" },
+                { id: "s2", value: "50+", label: "Zbadanych Dachów", prefix: "", suffix: "" },
+                { id: "s3", value: "100%", label: "Zgodności z ULC", prefix: "", suffix: "" }
             ]
         },
-        { id: baseId(), type: 'b2b_stats', b2b_stats: [{ id: baseId(), value: 'ITC', label: 'Certyfikacja Level 1', prefix: '', suffix: '' }, { id: baseId(), value: '100', label: 'Inwestycji', prefix: '+', suffix: '' }, { id: baseId(), value: 'OC', label: 'Polisa Komercyjna', prefix: '', suffix: '' }] },
+        // 3. SERVICES (INFO BAND GRID)
         {
-            id: baseId(), type: 'info_band', title: 'Technologie & <span class="text-yellow-500">Bezpieczeństwo</span>',
-            subtitle: 'OBSZARY DZIAŁANIA',
+            id: "b2b-services-seed",
+            type: "info_band",
+            title: 'Specjalistyczne <span class="text-yellow-500">Usługi Dronem</span>',
+            subtitle: "OBSZARY DZIAŁANIA",
             infoband_items: [
-                { id: baseId(), icon: 'ShieldCheck', title: 'Inspekcje Techniczne', description: 'Szczegółowe przeglądy dachów, elewacji i konstrukcji bez rusztowań. Nie wstrzymujemy pracy obiektu.' },
-                { id: baseId(), icon: 'Thermometer', title: 'Termowizja ITC Level 1', description: 'Diagnostyka strat ciepła, nieszczelności i awarii PV. Raporty dla przemysłu i OZE.' },
-                { id: baseId(), icon: 'Building2', title: 'Monitoring Inwestycji', description: 'Cykliczna dokumentacja postępu prac. Spójny zapis "krok po kroku" dla inwestora.' }
-            ]
-        },
-        {
-            id: baseId(), type: 'info_band', title: 'Media & <span class="text-yellow-500">Długi Termin</span>',
-            subtitle: 'FORMATY DANYCH',
-            infoband_items: [
-                { id: baseId(), icon: 'Clock', title: 'Timelapse Budowlany', description: 'Długoterminowa rejestracja postępów. Film pokazujący cały proces powstawania inwestycji.' },
-                { id: baseId(), icon: 'Camera', title: 'Foto/Video dla Firm', description: 'Materiały 4K do raportów, prezentacji inwestorskich i promocji obiektów.' },
-                { id: baseId(), icon: 'AlertTriangle', title: 'Jasny Zakres Usług', description: 'Nie wykonujemy: ortofotomap, modeli 3D ani pomiarów geodezyjnych. Stawiamy na obraz i termowizję.' }
-            ]
-        },
-        {
-            id: baseId(), type: 'b2b_process', title: 'Prosty proces <span class="text-yellow-500">współpracy</span>',
-            subtitle: 'JAK DZIAŁAMY?',
-            b2b_process: [
-                { id: baseId(), title: 'Kontakt i Zakres', description: 'Omawiamy potrzeby: monitoring, timelapse czy inspekcja.', stepNumber: '01' },
-                { id: baseId(), title: 'Plan Realizacji', description: 'Ustalamy harmonogram i sposób raportowania.', stepNumber: '02' },
-                { id: baseId(), title: 'Realizacja i Raport', description: 'Wykonujemy naloty i dostarczamy gotową dokumentację.', stepNumber: '03' }
-            ]
-        },
-        {
-            id: baseId(), type: 'b2b_cases', title: 'Przykładowe Realizacje',
-            b2b_cases: [
                 {
-                    id: baseId(), client: 'SEKTOR PRZEMYSŁOWY', title: 'Inspekcja Termowizyjna Hali', category: 'Termowizja',
-                    image: 'https://images.unsplash.com/photo-1592833159057-6fdc2a5c3789?q=80&w=2070&auto=format&fit=crop',
-                    description: 'Audyt szczelności dachu i elewacji. Wykrycie mostków cieplnych bez konieczności użycia podnośników.'
+                    id: "f1",
+                    icon: "Thermometer",
+                    title: "Inspekcje Termowizyjne",
+                    description: "Wykrywanie mostków cieplnych, awarii paneli PV i wycieków ciepła za pomocą kamery Mavic 3 Thermal."
                 },
                 {
-                    id: baseId(), client: 'DEWELOPERZY', title: 'Monitoring Osiedla Mieszkaniowego', category: 'Construction',
-                    image: 'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?q=80&w=2070&auto=format&fit=crop',
-                    description: 'Cotygodniowe raporty zdjęciowe i wideo dokumentujące postęp prac dla zarządu i klientów.'
+                    id: "f2",
+                    icon: "Building2",
+                    title: "Monitoring Inwestycji",
+                    description: "Regularna dokumentacja postępów budowy z tej samej perspektywy (Timelapse). Raporty dla inwestorów."
                 },
                 {
-                    id: baseId(), client: 'INFRASTRUKTURA', title: 'Timelapse Budowy Drogi', category: 'Timelapse',
-                    image: 'https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=2069&auto=format&fit=crop',
-                    description: 'Półroczny zapis wideo pokazujący każdy etap powstawania nowej drogi dojazdowej.'
+                    id: "f3",
+                    icon: "ShieldCheck",
+                    title: "Inspekcje Infrastruktury",
+                    description: "Bezpieczna ocena stanu technicznego bez konieczności wchodzenia na wysokość. Zdjęcia wysokiej rozdzielczości."
+                },
+                {
+                    id: "f4",
+                    icon: "Trees",
+                    title: "Rolnictwo Precyzyjne",
+                    description: "Szacowanie szkód łowieckich, analiza stanu upraw i mapowanie terenu."
                 }
             ]
         },
+        // 4. PARALLAX
         {
-            id: baseId(), type: 'certificates', certificateSize: 'readable', title: 'Gwarancja Bezpieczeństwa',
-            certificates: [
-                { id: baseId(), title: 'UAV Pilot', subtitle: 'A1/A2/A3/STS', description: 'Licencjonowane operacje w całej Europie.' },
-                { id: baseId(), title: 'Termowizja ITC', subtitle: 'Level 1 Certified', description: 'Międzynarodowy certyfikat diagnostyki termowizyjnej.' },
-                { id: baseId(), icon: 'ShieldCheck', title: 'Ubezpieczenie OC', subtitle: 'Polisa Komercyjna', description: 'Pełna ochrona dla każdej realizowanej misji.' }
-            ]
+            id: "b2b-parallax-seed",
+            type: "parallax",
+            image: "https://images.unsplash.com/photo-1579829366248-204fe8413f31?q=80&w=2000&auto=format&fit=crop",
+            title: "Flota: DJI Mavic 3 Thermal",
+            subtitle: "Korzystamy z najnowocześniejszego sprzętu wyposażonego w kamery termowizyjne 640x512px oraz szerokokątne kamery 48MP."
         },
-        { id: baseId(), type: 'b2b_contact', title: 'Zapytanie ofertowe', subtitle: 'Opisz krótko projekt. Na tej podstawie przygotuję konkretną wycenę i harmonogram.' }
+        // 5. CONTACT CTA
+        {
+            id: "b2b-cta-seed",
+            type: "b2b_contact",
+            title: "Gotowy na współpracę?",
+            subtitle: "Skontaktuj się z nami, aby omówić szczegóły Twojego projektu. Wycena jest zawsze darmowa."
+        }
     ];
 
-    const slug = 'oferta-b2b';
-    const title = 'Oferta B2B';
+    const existingPage = await prisma.page.findFirst({
+        where: {
+            slug: { in: ['b2b', 'oferta-b2b'] }
+        }
+    });
 
-    try {
-        const page = await prisma.page.upsert({
-            where: { slug: slug },
-            update: {
-                title: title,
-                content: '', // Required field
-                sections: JSON.stringify(templateSections),
-                is_published: true,
-                page_type: 'regular',
-                is_in_menu: true,
-                menu_title: 'Oferta B2B',
-                menu_order: 10,
-                updated_at: new Date()
-            },
-            create: {
-                slug: slug,
-                title: title,
-                content: '',
-                sections: JSON.stringify(templateSections),
-                is_published: true,
-                page_type: 'regular',
-                is_in_menu: true,
-                menu_title: 'Oferta B2B',
-                menu_order: 10
+    if (existingPage) {
+        console.log(`⚠️ Page found (ID: ${existingPage.id}). Updating sections...`);
+        await prisma.page.update({
+            where: { id: existingPage.id },
+            data: {
+                sections: JSON.stringify(sections),
+                meta_title: "FOTO-DRON | Inspekcje Dronem, Termowizja, B2B",
+                meta_description: "Profesjonalne usługi dronowe dla przemysłu i biznesu. Termowizja, inspekcje techniczne, monitoring inwestycji.",
+                // Force title update if needed, but mostly sections are key
+                title: "Oferta B2B",
+                slug: "b2b"
             }
         });
-
-        console.log(`✅ Page '${slug}' updated successfully with ${templateSections.length} sections.`);
-    } catch (error) {
-        console.error('❌ Error updating page:', error);
-    } finally {
-        await prisma.$disconnect();
+        console.log('✅ B2B Page updated successfully!');
+    } else {
+        console.log('✨ Creating new B2B Page...');
+        await prisma.page.create({
+            data: {
+                title: "Oferta B2B",
+                slug: "b2b",
+                content: "Strona Biznesowa",
+                is_published: true,
+                sections: JSON.stringify(sections),
+                meta_title: "FOTO-DRON | Inspekcje Dronem, Termowizja, B2B",
+                meta_description: "Profesjonalne usługi dronowe dla przemysłu i biznesu. Termowizja, inspekcje techniczne, monitoring inwestycji."
+            }
+        });
+        console.log('✅ B2B Page created successfully!');
     }
 }
 
-main();
+main()
+    .catch((e) => {
+        console.error(e);
+        process.exit(1);
+    })
+    .finally(async () => {
+        await prisma.$disconnect();
+    });

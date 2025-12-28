@@ -74,6 +74,36 @@ export default function AdminMenuPage() {
     const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
+    // --- TABS CONFIGURATION ---
+    interface MenuTab {
+        id: string;
+        label: string;
+        isSystem?: boolean;
+    }
+    const [activeTabId, setActiveTabId] = useState<string>('b2c');
+    const [menuTabs, setMenuTabs] = useState<MenuTab[]>([
+        { id: 'b2c', label: 'B2C (Indywidualni)', isSystem: true },
+        { id: 'b2b', label: 'B2B (Firmy)', isSystem: true }
+    ]);
+    // Note: We can share the same localStorage key 'admin_page_tabs' or simple strict tabs.
+    // User asked for "adding another domain" for Pages. It's likely they want the same domains for Menus.
+    // So let's load from THE SAME key 'admin_page_tabs' to sync domains!
+
+    useEffect(() => {
+        const savedTabs = localStorage.getItem('admin_page_tabs');
+        if (savedTabs) {
+            try {
+                const parsed = JSON.parse(savedTabs);
+                // Map to MenuTab (we just need id and label)
+                const custom = parsed.map((t: any) => ({ id: t.id, label: t.label, isSystem: false }));
+                setMenuTabs(prev => {
+                    const system = prev.filter(t => t.isSystem);
+                    return [...system, ...custom];
+                });
+            } catch (e) { }
+        }
+    }, [isModalOpen]); // Reload when modal closes? Or just once. Once is fine. 
+
     // Form State
     const [formData, setFormData] = useState({
         title: "",
@@ -83,7 +113,6 @@ export default function AdminMenuPage() {
         parent_id: "",
     });
 
-    // System pages list
     const systemPages = [
         { title: "Strona Główna", url: "/" },
         { title: "Blog", url: "/blog" },
@@ -94,10 +123,7 @@ export default function AdminMenuPage() {
         { title: "Rezerwacja", url: "/rezerwacja" },
         { title: "Oferta B2B", url: "/oferta-b2b" },
         { title: "Dron", url: "/dron" },
-        { title: "Fotograf Toruń", url: "/fotograf-torun" },
-        { title: "Fotograf Bydgoszcz", url: "/fotograf-bydgoszcz" },
-        { title: "Fotograf Grudziądz", url: "/fotograf-grudziadz" },
-        { title: "Fotograf Wąbrzeźno", url: "/fotograf-wabrzezno" },
+        { title: "Kontakt", url: "/kontakt" },
     ];
 
     const sensors = useSensors(
@@ -107,36 +133,31 @@ export default function AdminMenuPage() {
 
     useEffect(() => {
         fetchData();
-    }, []);
+    }, [activeTabId]); // Re-fetch when tab changes
 
     const fetchData = async () => {
+        setLoading(true);
         try {
+            // Fetch items for specific tab
             const [menuRes, pagesRes] = await Promise.all([
-                fetch("/api/menu/items"),
+                fetch(`/api/menu/items?type=${activeTabId}`),
                 fetch("/api/pages")
             ]);
 
             const menuData = await menuRes.json();
-            // Try to fetch pages, but handle if endpoint doesn't exist or fails
+
+            // Handle Pages fetch
             let pagesData: any = [];
             try {
                 if (pagesRes.ok) {
                     const resJson = await pagesRes.json();
-                    // Handle wrapped response { success: true, pages: [...] }
                     if (resJson && resJson.pages && Array.isArray(resJson.pages)) {
                         pagesData = resJson.pages;
                     } else if (Array.isArray(resJson)) {
-                        // Handle direct array response (legacy)
                         pagesData = resJson;
                     }
-                } else {
-                    // Fallback to old menu endpoint if needed, or just empty
-                    const oldMenuRes = await fetch("/api/menu");
-                    if (oldMenuRes.ok) pagesData = await oldMenuRes.json();
                 }
-            } catch (e) {
-                console.warn("Failed to fetch pages", e);
-            }
+            } catch (e) { }
 
             if (Array.isArray(menuData)) setMenuItems(menuData);
             if (Array.isArray(pagesData)) setPages(pagesData);
@@ -160,6 +181,7 @@ export default function AdminMenuPage() {
             page_id: formData.type === "page" ? Number(formData.page_id) : null,
             parent_id: formData.parent_id ? Number(formData.parent_id) : null,
             order: editingItem ? editingItem.order : menuItems.length,
+            menu_type: activeTabId,
         };
 
         try {
@@ -298,28 +320,34 @@ export default function AdminMenuPage() {
 
     return (
         <div className="max-w-4xl mx-auto">
-            <div className="flex justify-between items-center mb-8">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                 <div>
                     <h1 className="text-3xl font-bold text-zinc-900">Zarządzanie Menu</h1>
-                    {isFallbackMode && (
-                        <p className="text-amber-600 text-sm mt-1">
-                            ⚠️ Tryb podglądu automatycznego. Zapisz układ, aby edytować.
-                        </p>
-                    )}
                 </div>
-                <div className="flex gap-3">
-                    {isFallbackMode && (
+
+                {/* Tabs */}
+                <div className="flex flex-wrap gap-2 bg-white p-1.5 rounded-xl border border-zinc-200">
+                    {menuTabs.map(tab => (
                         <button
-                            onClick={handleInitializeMenu}
-                            className="bg-amber-500 text-white px-4 py-2 rounded-lg hover:bg-amber-600 transition-colors shadow-sm"
+                            key={tab.id}
+                            onClick={() => setActiveTabId(tab.id)}
+                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${activeTabId === tab.id
+                                ? tab.id === 'b2b'
+                                    ? 'bg-zinc-900 text-amber-500 shadow-sm'
+                                    : 'bg-zinc-900 text-white shadow-sm'
+                                : 'text-zinc-500 hover:text-zinc-800 hover:bg-zinc-50'
+                                }`}
                         >
-                            💾 Zapisz obecny układ
+                            {tab.label}
                         </button>
-                    )}
+                    ))}
+                    {/* Note: We only allow Viewing/Switching here. Creation of Domains happens in Pages view to keep it centralized. */}
+                </div>
+
+                <div className="flex gap-3">
                     <button
                         onClick={() => openModal()}
-                        disabled={isFallbackMode}
-                        className={`bg-zinc-900 text-white px-4 py-2 rounded-lg transition-colors ${isFallbackMode ? 'opacity-50 cursor-not-allowed' : 'hover:bg-zinc-800'}`}
+                        className="bg-zinc-900 text-white px-4 py-2 rounded-lg transition-colors hover:bg-zinc-800 shadow-lg shadow-zinc-900/10"
                     >
                         + Dodaj element
                     </button>

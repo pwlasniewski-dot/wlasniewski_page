@@ -112,12 +112,153 @@ export default function PagesListPage() {
         setNewPageData(prev => ({ ...prev, title, slug }));
     };
 
+    // --- TABS & DOMAINS CONFIGURATION ---
+    interface PageTab {
+        id: string;
+        label: string;
+        keywords: string[]; // Slugs or types containing these
+        isSystem?: boolean; // Cannot be deleted
+    }
+
+    const [activeTabId, setActiveTabId] = useState<string>('b2c');
+    const [pageTabs, setPageTabs] = useState<PageTab[]>([
+        { id: 'b2c', label: 'B2C (Indywidualni)', keywords: [], isSystem: true }, // Logic handled specifically
+        { id: 'b2b', label: 'B2B (Firmy)', keywords: ['b2b', 'dron'], isSystem: true }
+    ]);
+    const [showAddTabModal, setShowAddTabModal] = useState(false);
+    const [newTabName, setNewTabName] = useState('');
+    const [newTabKeyword, setNewTabKeyword] = useState('');
+
+    useEffect(() => {
+        const savedTabs = localStorage.getItem('admin_page_tabs');
+        if (savedTabs) {
+            try {
+                const parsed = JSON.parse(savedTabs);
+                // Merge with system tabs to ensure they act as base, but allow additions
+                setPageTabs(prev => {
+                    const system = prev.filter(t => t.isSystem);
+                    const custom = parsed.filter((t: PageTab) => !t.isSystem);
+                    return [...system, ...custom];
+                });
+            } catch (e) { console.error('Error loading tabs', e); }
+        }
+    }, []);
+
+    const saveTabs = (tabs: PageTab[]) => {
+        setPageTabs(tabs);
+        localStorage.setItem('admin_page_tabs', JSON.stringify(tabs.filter(t => !t.isSystem)));
+    };
+
+    const addTab = () => {
+        if (!newTabName || !newTabKeyword) return;
+        const newTab: PageTab = {
+            id: `custom-${Date.now()}`,
+            label: newTabName,
+            keywords: [newTabKeyword.toLowerCase()]
+        };
+        saveTabs([...pageTabs, newTab]);
+        setNewTabName('');
+        setNewTabKeyword('');
+        setShowAddTabModal(false);
+        setActiveTabId(newTab.id);
+        toast.success(`Dodano grupę: ${newTabName}`);
+    };
+
+    const removeTab = (id: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (confirm('Usunąć tę grupę widoku? Strony nie zostaną usunięte.')) {
+            const newTabs = pageTabs.filter(t => t.id !== id);
+            saveTabs(newTabs);
+            if (activeTabId === id) setActiveTabId('b2c');
+        }
+    };
+
+    const filteredPages = pages.filter(page => {
+        if (activeTabId === 'b2c') {
+            // B2C = Everything NOT caught by other specific tabs? 
+            // Or just NOT B2B? Let's keep strict "Not B2B" definition for now as base.
+            // But if we have custom tabs, B2C should probably exclude them?
+            // User requested "split", so let's exclude pages that match B2B.
+            // Complex logic: Check if it matches ANY other tab.
+
+            const isB2B = page.page_type === 'b2b' || page.slug.startsWith('b2b') || page.slug.includes('dron');
+            // Check other custom tabs
+            const matchesCustom = pageTabs.filter(t => !t.isSystem).some(t =>
+                t.keywords.some(k => page.slug.includes(k) || page.page_type === k)
+            );
+
+            return !isB2B && !matchesCustom;
+        }
+
+        const currentTab = pageTabs.find(t => t.id === activeTabId);
+        if (!currentTab) return true; // Fallback
+
+        // Check keywords
+        return currentTab.keywords.some(k =>
+            page.slug.includes(k) ||
+            page.page_type === k ||
+            page.title.toLowerCase().includes(k)
+        );
+    });
+
     return (
         <div>
-            <div className="flex justify-between items-center mb-8">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                 <h1 className="text-2xl font-display font-semibold text-white">Strony statyczne</h1>
+
+                {/* Tabs */}
+                {/* Tabs */}
+                <div className="flex flex-wrap gap-2 bg-zinc-900 p-1.5 rounded-xl border border-zinc-800">
+                    {pageTabs.map(tab => (
+                        <button
+                            key={tab.id}
+                            onClick={() => setActiveTabId(tab.id)}
+                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${activeTabId === tab.id
+                                ? tab.id === 'b2b'
+                                    ? 'bg-zinc-800 text-gold-500 shadow-sm border border-gold-500/30'
+                                    : 'bg-zinc-800 text-white shadow-sm border border-zinc-700'
+                                : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50'
+                                }`}
+                        >
+                            {tab.label}
+                            {!tab.isSystem && (
+                                <span
+                                    onClick={(e) => removeTab(tab.id, e)}
+                                    className="ml-1 p-0.5 rounded-full hover:bg-red-500/20 hover:text-red-400 opacity-60 hover:opacity-100"
+                                >
+                                    <X size={12} />
+                                </span>
+                            )}
+                        </button>
+                    ))}
+                    <button
+                        onClick={() => setShowAddTabModal(true)}
+                        className="px-3 py-2 rounded-lg text-xs font-medium text-zinc-600 border border-dashed border-zinc-700 hover:text-zinc-400 hover:border-zinc-500 transition-all flex items-center gap-1"
+                        title="Dodaj nową domenę/grupę"
+                    >
+                        <Plus size={14} />
+                    </button>
+                </div>
+
                 <button
-                    onClick={() => setShowCreateModal(true)}
+                    onClick={() => {
+                        const activeTab = pageTabs.find(t => t.id === activeTabId);
+                        // Try to guess type from tab keyword
+                        let defaultType = 'regular';
+                        if (activeTabId === 'b2b') defaultType = 'b2b';
+                        else if (activeTab?.keywords.length) {
+                            // If keyword matches a known page type, use it, else regular
+                            if (['shop', 'portfolio', 'contact'].includes(activeTab.keywords[0])) {
+                                defaultType = activeTab.keywords[0];
+                            }
+                        }
+
+                        setNewPageData(prev => ({
+                            ...prev,
+                            page_type: defaultType
+                        }));
+                        setShowCreateModal(true);
+                    }}
                     className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-black bg-gold-500 hover:bg-gold-400"
                 >
                     <Plus className="-ml-1 mr-2 h-5 w-5" />
@@ -129,69 +270,95 @@ export default function PagesListPage() {
                 <div className="text-center py-12 text-zinc-400">Ładowanie...</div>
             ) : (
                 <div className="bg-zinc-900 rounded-lg border border-zinc-800 overflow-hidden">
-                    <ul className="divide-y divide-zinc-800">
-                        {pages.map((page) => (
-                            <li key={page.id} className="p-6 hover:bg-zinc-800/50 transition-colors">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex-1">
-                                        <div className="flex items-center gap-3">
-                                            <h3 className="text-lg font-medium text-white">
-                                                {page.title}
-                                            </h3>
-                                            <span className={`px-2 py-0.5 rounded text-xs border ${page.page_type === 'home' ? 'bg-gold-500/10 text-gold-500 border-gold-500/30' :
-                                                page.page_type === 'portfolio' ? 'bg-purple-500/10 text-purple-400 border-purple-500/30' :
-                                                    page.page_type === 'contact' ? 'bg-blue-500/10 text-blue-400 border-blue-500/30' :
-                                                        page.page_type === 'shop' ? 'bg-green-500/10 text-green-400 border-green-500/30' :
-                                                            page.page_type === 'reviews' ? 'bg-orange-500/10 text-orange-400 border-orange-500/30' :
-                                                                page.page_type === 'b2b' ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/30' :
-                                                                    'bg-zinc-800 text-zinc-400 border-zinc-700'
-                                                }`}>
-                                                {page.page_type === 'home' ? 'Strona główna' :
-                                                    page.page_type === 'portfolio' ? 'Portfolio' :
-                                                        page.page_type === 'about' ? 'O mnie' :
-                                                            page.page_type === 'contact' ? 'Kontakt' :
-                                                                page.page_type === 'shop' ? 'Sklep' :
-                                                                    page.page_type === 'reviews' ? 'Opinie' :
-                                                                        page.page_type === 'offer' ? 'Oferta' :
-                                                                            page.page_type === 'b2b' ? 'Strona B2B' : 'Standardowa'}
-                                            </span>
-                                            {page.is_published ? (
-                                                <span className="px-2 py-0.5 rounded text-xs bg-green-900/30 text-green-400 border border-green-900/50">
-                                                    Opublikowana
+                    {filteredPages.length === 0 ? (
+                        <div className="text-center py-12 text-zinc-500">
+                            Brak stron w tej kategorii.
+                        </div>
+                    ) : (
+                        <ul className="divide-y divide-zinc-800">
+                            {filteredPages.map((page) => (
+                                <li key={page.id} className="p-6 hover:bg-zinc-800/50 transition-colors">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-3">
+                                                <h3 className="text-lg font-medium text-white">
+                                                    {page.title}
+                                                </h3>
+                                                <span className={`px-2 py-0.5 rounded text-xs border ${page.page_type === 'home' ? 'bg-gold-500/10 text-gold-500 border-gold-500/30' :
+                                                    page.page_type === 'portfolio' ? 'bg-purple-500/10 text-purple-400 border-purple-500/30' :
+                                                        page.page_type === 'contact' ? 'bg-blue-500/10 text-blue-400 border-blue-500/30' :
+                                                            page.page_type === 'shop' ? 'bg-green-500/10 text-green-400 border-green-500/30' :
+                                                                page.page_type === 'reviews' ? 'bg-orange-500/10 text-orange-400 border-orange-500/30' :
+                                                                    page.page_type === 'b2b' ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/30' :
+                                                                        'bg-zinc-800 text-zinc-400 border-zinc-700'
+                                                    }`}>
+                                                    {page.page_type === 'home' ? 'Strona główna' :
+                                                        page.page_type === 'portfolio' ? 'Portfolio' :
+                                                            page.page_type === 'about' ? 'O mnie' :
+                                                                page.page_type === 'contact' ? 'Kontakt' :
+                                                                    page.page_type === 'shop' ? 'Sklep' :
+                                                                        page.page_type === 'reviews' ? 'Opinie' :
+                                                                            page.page_type === 'offer' ? 'Oferta' :
+                                                                                page.page_type === 'b2b' ? 'Strona B2B' : 'Standardowa'}
                                                 </span>
-                                            ) : (
-                                                <span className="px-2 py-0.5 rounded text-xs bg-zinc-800 text-zinc-400 border border-zinc-700">
-                                                    Szkic
-                                                </span>
-                                            )}
+                                                {page.is_published ? (
+                                                    <span className="px-2 py-0.5 rounded text-xs bg-green-900/30 text-green-400 border border-green-900/50">
+                                                        Opublikowana
+                                                    </span>
+                                                ) : (
+                                                    <span className="px-2 py-0.5 rounded text-xs bg-zinc-800 text-zinc-400 border border-zinc-700">
+                                                        Szkic
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <p className="text-sm text-zinc-500 mt-1 font-mono">/{page.slug}</p>
                                         </div>
-                                        <p className="text-sm text-zinc-500 mt-1 font-mono">/{page.slug}</p>
+                                        <div className="flex items-center gap-4">
+                                            <Link
+                                                href={page.slug === '' ? '/admin/pages/strona-glowna' : `/admin/pages/${page.slug}`}
+                                                className="inline-flex items-center px-3 py-1.5 border border-zinc-700 rounded-md text-sm font-medium text-zinc-300 hover:bg-zinc-800"
+                                            >
+                                                <Edit className="h-4 w-4 mr-2" />
+                                                Edytuj treść
+                                            </Link>
+                                            <button
+                                                onClick={() => {
+                                                    if (window.confirm('Czy na pewno chcesz usunąć tę stronę? Tej operacji nie można cofnąć.')) {
+                                                        deletePage(page.id);
+                                                    }
+                                                }}
+                                                className="inline-flex items-center px-3 py-1.5 border border-red-900/30 rounded-md text-sm font-medium text-red-500 hover:bg-red-900/20"
+                                            >
+                                                <Trash2 className="h-4 w-4 mr-2" />
+                                                Usuń
+                                            </button>
+                                        </div>
                                     </div>
-                                    <div className="flex items-center gap-4">
-                                        <Link
-                                            href={page.slug === '' ? '/admin/pages/strona-glowna' : `/admin/pages/${page.slug}`}
-                                            className="inline-flex items-center px-3 py-1.5 border border-zinc-700 rounded-md text-sm font-medium text-zinc-300 hover:bg-zinc-800"
-                                        >
-                                            <Edit className="h-4 w-4 mr-2" />
-                                            Edytuj treść
-                                        </Link>
-                                        <button
-                                            onClick={() => {
-                                                if (window.confirm('Czy na pewno chcesz usunąć tę stronę? Tej operacji nie można cofnąć.')) {
-                                                    // handleDeletePage(page.id); // Need to define this function
-                                                    deletePage(page.id);
-                                                }
-                                            }}
-                                            className="inline-flex items-center px-3 py-1.5 border border-red-900/30 rounded-md text-sm font-medium text-red-500 hover:bg-red-900/20"
-                                        >
-                                            <Trash2 className="h-4 w-4 mr-2" />
-                                            Usuń
-                                        </button>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                    {/* Add Tab Modal */}
+                    {showAddTabModal && (
+                        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                            <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6 w-full max-w-sm shadow-2xl relative">
+                                <button onClick={() => setShowAddTabModal(false)} className="absolute right-4 top-4 text-zinc-400 hover:text-white"><X className="w-5 h-5" /></button>
+                                <h2 className="text-xl font-bold text-white mb-4">Dodaj grupę / domenę</h2>
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-zinc-400 mb-1">Nazwa zakładki</label>
+                                        <input type="text" value={newTabName} onChange={e => setNewTabName(e.target.value)} placeholder="np. Sklep" className="w-full px-4 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-white" />
                                     </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-zinc-400 mb-1">Słowo kluczowe (Slug/Typ)</label>
+                                        <input type="text" value={newTabKeyword} onChange={e => setNewTabKeyword(e.target.value)} placeholder="np. sklep" className="w-full px-4 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-white" />
+                                        <p className="text-xs text-zinc-500 mt-1">Strony zawierające to słowo w adresie URL trafią do tej zakładki.</p>
+                                    </div>
+                                    <button onClick={addTab} className="w-full py-2 bg-gold-500 text-black font-bold rounded-lg hover:bg-gold-400 mt-2">Dodaj</button>
                                 </div>
-                            </li>
-                        ))}
-                    </ul>
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
 

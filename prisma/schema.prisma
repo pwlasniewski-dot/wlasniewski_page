@@ -108,6 +108,7 @@ model MenuItem {
   parent_id  Int?
   order      Int        @default(0)
   is_active  Boolean    @default(true)
+  menu_type  String     @default("b2c")
   created_at DateTime   @default(now())
   page       Page?      @relation(fields: [page_id], references: [id])
   parent     MenuItem?  @relation("MenuHierarchy", fields: [parent_id], references: [id])

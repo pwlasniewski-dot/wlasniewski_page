@@ -32,7 +32,7 @@ export default async function middleware(req: NextRequest) {
         // e.g. b2b.wlasniewski.pl/ -> wlasniewski.pl/b2b
 
         // Prevent double stacking if the path already starts with /b2b (rare edge case)
-        if (url.pathname.startsWith('/b2b')) {
+        if (url.pathname.startsWith('/b2b') || url.pathname.startsWith('/admin')) {
             return NextResponse.next();
         }
 

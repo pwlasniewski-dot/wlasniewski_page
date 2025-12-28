@@ -8,7 +8,7 @@ async function getB2BPage() {
     // Try to find a page specifically named/slugged as b2b
     const page = await prisma.page.findFirst({
         where: {
-            slug: { in: ['b2b', 'strona-b2b', 'oferta-b2b'] },
+            slug: { in: ['b2b', 'strona-b2b', 'oferta-b2b', 'start', 'home'] },
             is_published: true
         },
         orderBy: { updated_at: 'desc' }
@@ -21,8 +21,13 @@ export async function generateMetadata(): Promise<Metadata> {
 
     if (!page) {
         return {
-            title: 'Oferta B2B | Profesjonalne Usługi Dronem',
-            description: 'Kompleksowe rozwiązania korporacyjne: inspekcje, termowizja i monitoring z powietrza.'
+            title: 'FOTO-DRON | Inspekcje Dronem, Termowizja, Monitoring w Toruniu',
+            description: 'Profesjonalne usługi dronowe dla przemysłu, rolnictwa i deweloperów. Mavic 3 Thermal. Licencjonowany operator UAVO.',
+            openGraph: {
+                title: 'FOTO-DRON | Usługi Dronem dla Biznesu',
+                description: 'Inspekcje termowizyjne, ortofotomapy, monitoring inwestycji. Sprawdź ofertę B2B.',
+                images: ['/assets/b2b/hero-drone.jpg']
+            }
         };
     }
 
@@ -45,32 +50,103 @@ export default async function B2BPage() {
         }
     }
 
-    // Default B2B sections if none found in DB (Bootstrap)
+    // --- B2B "HARDCODED" PREMIUM CONTENT (IF NO DB ENTRY/FALLBACK) ---
+    // User requested "full cleaning" of B2C stuff, so we provide a rich B2B structure here.
     if (sections.length === 0) {
         sections = [
+            // 1. HERO SECTION - Industrial/Dark
             {
-                id: 'default_b2b_hero',
-                type: 'b2b_hero',
-                title: 'Innowacyjne rozwiązania <span class="text-yellow-500">dla Twojego biznesu</span>',
-                subtitle: 'Profesjonalne usługi dronem, termowizja i inspekcje techniczne z powietrza.',
-                tag: 'B2B SOLUTIONS',
-                buttonText: 'ZAPYTAJ O OFERTĘ',
-                buttonLink: '#rfq'
+                id: 'b2b-hero',
+                type: 'hero',
+                data: {
+                    title: 'Wnieś Swój Biznes <span class="text-gold-500">Na Wyższy Poziom</span>',
+                    subtitle: 'Precyzyjne inspekcje techniczne, termowizja i monitoring inwestycji z lotu ptaka. Technologia, która oszczędza Twój czas i pieniądze.',
+                    image_url: 'https://images.unsplash.com/photo-1506947411487-a5673826e6e0?q=80&w=2000&auto=format&fit=crop',
+                    overlay_opacity: 70,
+                    full_height: true,
+                    buttons: [
+                        { id: 'b1', label: 'ZAPYTAJ O OFERTĘ', url: '/b2b/kontakt', style: 'primary' },
+                        { id: 'b2', label: 'ZOBACZ REALIZACJE', url: '#realizacje', style: 'outline-white' }
+                    ]
+                }
             },
+            // 2. STATS - Credibility
             {
-                id: 'default_b2b_stats',
+                id: 'b2b-stats',
                 type: 'b2b_stats',
-                b2b_stats: [
-                    { id: '1', value: '15+', label: 'Lat doświadczenia', prefix: '', suffix: '' },
-                    { id: '2', value: '500+', label: 'Projektów', prefix: '', suffix: '' },
-                    { id: '3', value: '100%', label: 'Bezpieczeństwa', prefix: '', suffix: '' }
-                ]
+                data: {
+                    b2b_stats: [
+                        { id: 's1', value: '4K', label: 'Rozdzielczość Video', prefix: '', suffix: '' },
+                        { id: 's2', value: '50+', label: 'Zbadanych Dachów', prefix: '', suffix: '' },
+                        { id: 's3', value: '100%', label: 'Zgodności z ULC', prefix: '', suffix: '' }
+                    ]
+                }
+            },
+            // 3. OFFER GRID - "Co robimy"
+            {
+                id: 'b2b-offer',
+                type: 'features',
+                data: {
+                    title: 'Specjalistyczne Usługi Dronem',
+                    subtitle: 'Dostarczamy dane krytyczne dla Twojej branży.',
+                    items: [
+                        {
+                            id: 'f1',
+                            title: 'Inspekcje Termowizyjne',
+                            text: 'Wykrywanie mostków cieplnych, awarii paneli PV i wycieków ciepła za pomocą kamery Mavic 3 Thermal.',
+                            icon: 'thermometer'
+                        },
+                        {
+                            id: 'f2',
+                            title: 'Monitoring Inwestycji',
+                            text: 'Regularna dokumentacja postępów budowy z tej samej perspektywy (Timelapse). Raporty dla inwestorów.',
+                            icon: 'building'
+                        },
+                        {
+                            id: 'f3',
+                            title: 'Inspekcje Dachów i Infrastruktury',
+                            text: 'Bezpieczna ocena stanu technicznego bez konieczności wchodzenia na wysokość. Zdjęcia wysokiej rozdzielczości.',
+                            icon: 'shield'
+                        },
+                        {
+                            id: 'f4',
+                            title: 'Rolnictwo Precyzyjne',
+                            text: 'Szacowanie szkód łowieckich, analiza stanu upraw i mapowanie terenu.',
+                            icon: 'leaf'
+                        }
+                    ]
+                }
+            },
+            // 4. PARALLAX BREAK - "Technologia"
+            {
+                id: 'b2b-tech',
+                type: 'parallax',
+                data: {
+                    image_url: 'https://images.unsplash.com/photo-1579829366248-204fe8413f31?q=80&w=2000&auto=format&fit=crop',
+                    title: 'Flota: DJI Mavic 3 Thermal',
+                    content: 'Korzystamy z najnowocześniejszego sprzętu wyposażonego w kamery termowizyjne 640x512px oraz szerokokątne kamery 48MP. Gwarancja precyzji co do centymetra.',
+                    height: '500px',
+                    overlay_color: '#000000',
+                    overlay_opacity: 80
+                }
+            },
+            // 5. CALL TO ACTION - Bottom
+            {
+                id: 'b2b-cta',
+                type: 'info_band',
+                data: {
+                    title: 'Gotowy na współpracę?',
+                    text: 'Skontaktuj się z nami, aby omówić szczegóły Twojego projektu. Wycena jest zawsze darmowa.',
+                    background_color: '#1a1a1a',
+                    text_color: '#ffffff',
+                    link: '/b2b/kontakt'
+                }
             }
         ];
     }
 
     return (
-        <main className="min-h-screen bg-black text-white selection:bg-yellow-500 selection:text-black">
+        <main className="min-h-screen bg-neutral-950 text-neutral-200 selection:bg-gold-500 selection:text-black">
             <PageRenderer sections={sections} />
         </main>
     );

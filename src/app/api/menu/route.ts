@@ -1,14 +1,21 @@
 import { NextResponse } from "next/server";
 import prisma from '@/lib/db/prisma';
 
+export const dynamic = 'force-dynamic';
+
 // UPROSZCZONE MENU - tylko z tabeli pages (is_in_menu = true)
-export async function GET() {
+// UPROSZCZONE MENU - tylko z tabeli pages (is_in_menu = true)
+export async function GET(request: Request) {
     try {
+        const { searchParams } = new URL(request.url);
+        const type = searchParams.get("type") || "b2c"; // Default to b2c
+
         // 1. Try to fetch from custom menu_items table first
         const menuItems = await prisma.menuItem.findMany({
             where: {
                 parent_id: null, // Top-level items
-                is_active: true
+                is_active: true,
+                menu_type: type // Filter by type!
             },
             orderBy: {
                 order: "asc"
@@ -49,40 +56,44 @@ export async function GET() {
             return NextResponse.json(menuItems.map(mapItem));
         }
 
-        // 2. FALLBACK: If menu_items is empty, fetch pages (Old Logic)
-        const menuPages = await prisma.page.findMany({
-            where: {
-                is_in_menu: true,
-                is_published: true,
-                parent_page_id: null,
-            },
-            orderBy: {
-                menu_order: "asc",
-            },
-            include: {
-                children: {
-                    where: { is_published: true },
-                    orderBy: { menu_order: "asc" }
+        // 2. FALLBACK: If menu_items is empty AND type is b2c, fetch pages (Old Logic)
+        if (type === 'b2c') {
+            const menuPages = await prisma.page.findMany({
+                where: {
+                    is_in_menu: true,
+                    is_published: true,
+                    parent_page_id: null,
+                },
+                orderBy: {
+                    menu_order: "asc",
+                },
+                include: {
+                    children: {
+                        where: { is_published: true },
+                        orderBy: { menu_order: "asc" }
+                    }
                 }
-            }
-        });
+            });
 
-        const menu = menuPages.map(page => ({
-            id: page.id,
-            title: page.menu_title || page.title,
-            slug: page.slug,
-            url: page.slug === 'strona-glowna' ? '/' : `/${page.slug}`,
-            order: page.menu_order || 0,
-            children: page.children.map(child => ({
-                id: child.id,
-                title: child.menu_title || child.title,
-                slug: child.slug,
-                url: child.slug === 'strona-glowna' ? '/' : `/${child.slug}`,
-                order: child.menu_order || 0,
-            }))
-        }));
+            const menu = menuPages.map(page => ({
+                id: page.id,
+                title: page.menu_title || page.title,
+                slug: page.slug,
+                url: page.slug === 'strona-glowna' ? '/' : `/${page.slug}`,
+                order: page.menu_order || 0,
+                children: page.children.map(child => ({
+                    id: child.id,
+                    title: child.menu_title || child.title,
+                    slug: child.slug,
+                    url: child.slug === 'strona-glowna' ? '/' : `/${child.slug}`,
+                    order: child.menu_order || 0,
+                }))
+            }));
 
-        return NextResponse.json(menu);
+            return NextResponse.json(menu);
+        }
+
+        return NextResponse.json([]);
     } catch (error) {
         console.error("Error fetching menu:", error);
         return NextResponse.json([]);

@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:b2b": "next dev -p 3001",
     "build": "node scripts/pre-build-check.js && node scripts/backup-docs.js && prisma generate && next build",
     "start": "next start",
     "lint": "next lint",

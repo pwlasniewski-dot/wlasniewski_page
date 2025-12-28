@@ -581,11 +581,11 @@ export default function SettingsPage() {
 
                     {/* Dark/White-bg Logo */}
                     <div>
-                        <label className="block text-sm font-medium text-zinc-400 mb-2">Logo Alternatywne (Jasne tło)</label>
+                        <label className="block text-sm font-medium text-zinc-400 mb-2">Logo B2B / Alternatywne</label>
                         <div className="flex flex-col gap-4">
-                            <div className="relative w-full h-32 bg-white rounded-lg border border-zinc-200 flex items-center justify-center overflow-hidden">
+                            <div className="relative w-full h-32 bg-zinc-800 rounded-lg border border-zinc-600 flex items-center justify-center overflow-hidden">
                                 {settings.logo_dark_url ? (
-                                    <img src={settings.logo_dark_url} alt="Logo Dark" className="max-h-full max-w-full object-contain p-2" />
+                                    <img src={settings.logo_dark_url} alt="Logo B2B" className="max-h-full max-w-full object-contain p-2" />
                                 ) : (
                                     <span className="text-zinc-400 text-sm">Brak logo</span>
                                 )}
@@ -615,7 +615,7 @@ export default function SettingsPage() {
                                 className="block w-full rounded-md border-zinc-700 bg-zinc-800 text-zinc-500 text-xs shadow-sm focus:border-gold-500 focus:ring-gold-500 px-2 py-1"
                             />
                         </div>
-                        <p className="mt-2 text-xs text-zinc-500">Logo używane na jasnym tle (np. Podstrony, Mobilne Menu).</p>
+                        <p className="mt-2 text-xs text-zinc-500">Logo używane w strefie B2B oraz na jasnych tłach.</p>
                     </div>
                 </div>
 

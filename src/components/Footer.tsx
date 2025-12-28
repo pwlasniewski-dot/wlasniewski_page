@@ -72,9 +72,25 @@ const defaultSettings: FooterSettings = {
 export default function Footer() {
     const year = new Date().getFullYear();
     const [settings, setSettings] = useState<FooterSettings>(defaultSettings);
+    const [isB2B, setIsB2B] = useState(false);
 
     useEffect(() => {
+        // Check B2B Context
+        const checkB2B = () => {
+            const host = window.location.hostname;
+            const port = window.location.port;
+            const path = window.location.pathname;
+
+            if (host.includes('b2b') || host.includes('dron') || port === '3001' || path.startsWith('/b2b')) {
+                setIsB2B(true);
+            } else {
+                setIsB2B(false);
+            }
+        };
+        checkB2B();
+
         const fetchSettings = async () => {
+
             try {
                 // Fetch footer settings
                 const res = await fetch(getApiUrl('settings'));
@@ -144,6 +160,63 @@ export default function Footer() {
         };
         fetchSettings();
     }, []);
+
+
+    if (isB2B) {
+        return (
+            <footer className="mt-0 border-t border-zinc-900 bg-black text-zinc-400 relative z-10 isolate">
+                <div className="mx-auto max-w-7xl px-4 py-12 grid gap-8 md:grid-cols-3">
+                    {/* B2B Brand */}
+                    <div className="space-y-4">
+                        <div className="text-lg font-bold text-white tracking-widest">FOTO-DRON</div>
+                        <p className="text-sm max-w-xs text-zinc-500">
+                            Profesjonalne usługi dronem dla przemysłu, budownictwa i rolnictwa.
+                            Precyzja, bezpieczeństwo i rzetelna dokumentacja techniczna.
+                        </p>
+                    </div>
+
+                    {/* B2B Links */}
+                    <div className="grid grid-cols-2 gap-8">
+                        <div>
+                            <h3 className="tex-sm font-semibold text-zinc-200 mb-4">Oferta</h3>
+                            <ul className="space-y-2 text-sm">
+                                <li><Link href="/b2b#b2b-services-seed" className="hover:text-yellow-500 transition-colors">Inspekcje</Link></li>
+                                <li><Link href="/b2b#b2b-hero-seed" className="hover:text-yellow-500 transition-colors">Termowizja</Link></li>
+                                <li><Link href="/b2b#b2b-process-seed" className="hover:text-yellow-500 transition-colors">Monitoring</Link></li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h3 className="tex-sm font-semibold text-zinc-200 mb-4">Firma</h3>
+                            <ul className="space-y-2 text-sm">
+                                <li><Link href="/b2b/kontakt" className="hover:text-yellow-500 transition-colors">Kontakt</Link></li>
+                                <li><Link href="/polityka-prywatnosci" className="hover:text-yellow-500 transition-colors">Prywatność</Link></li>
+                                <li><Link href="/regulamin" className="hover:text-yellow-500 transition-colors">Regulamin</Link></li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    {/* B2B Contact */}
+                    <div className="md:text-right">
+                        <h3 className="tex-sm font-semibold text-zinc-200 mb-4">Kontakt Bezpośredni</h3>
+                        <address className="not-italic space-y-2 text-sm text-zinc-500">
+                            <p>Toruń, Polska</p>
+                            <p><a href={`mailto:${settings.email}`} className="hover:text-white">{settings.email}</a></p>
+                            <p><a href={`tel:${settings.phone.replace(/\s/g, '')}`} className="hover:text-white font-mono">{settings.phone}</a></p>
+                        </address>
+                        <div className="mt-6 flex justify-start md:justify-end gap-4">
+                            {/* Simple Social Icons for B2B if needed, or just keep cleaner */}
+                        </div>
+                    </div>
+                </div>
+                <div className="border-t border-zinc-900 bg-black">
+                    <div className="mx-auto max-w-7xl px-4 py-6 flex flex-col md:flex-row justify-between items-center text-xs text-zinc-600">
+                        <p>&copy; {year} FOTO-DRON by {settings.brand_name}</p>
+                        <p>Realizacja: Twin-Engine Architecture</p>
+                    </div>
+                </div>
+            </footer>
+        );
+    }
 
     return (
         <footer className="mt-16 border-t border-zinc-800 bg-zinc-950 relative z-10 isolate">

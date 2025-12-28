@@ -41,6 +41,90 @@ export default function Navbar() {
     const [isNavbarVisible, setIsNavbarVisible] = useState(true);
     const [lastScrollY, setLastScrollY] = useState(0);
 
+
+
+    // B2B Context State
+    const [isB2B, setIsB2B] = useState(false);
+
+    // Unified B2B Check & Menu Fetch
+    useEffect(() => {
+        const init = async () => {
+            // 1. Determine Context
+            const host = window.location.hostname;
+            const port = window.location.port;
+            const path = window.location.pathname;
+
+            const isB2BContext = host.includes('b2b') ||
+                host.includes('dron') ||
+                port === '3001' ||
+                path.startsWith('/b2b');
+
+            setIsB2B(isB2BContext);
+
+            // 2. Fetch Menu for this context
+            try {
+                const type = isB2BContext ? 'b2b' : 'b2c';
+                // Add timestamp to prevent caching
+                const res = await fetch(`/api/menu?type=${type}&t=${Date.now()}`, {
+                    cache: 'no-store',
+                    headers: { 'Pragma': 'no-cache' }
+                });
+
+                if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+
+                const data = await res.json();
+
+                if (Array.isArray(data)) {
+                    const dynamicMenuItems = data.map((item: any) => ({
+                        id: item.id,
+                        label: item.title,
+                        href: item.url || '#',
+                        children: item.children && item.children.length > 0 ? item.children.map((child: any) => ({
+                            id: child.id,
+                            label: child.title,
+                            href: child.url || '#'
+                        })) : undefined
+                    }));
+                    setMenuItems(dynamicMenuItems);
+                } else {
+                    console.error('Menu data is not an array:', data);
+                    setMenuItems([]); // Clear menu on error/empty
+                }
+            } catch (error) {
+                console.error('Failed to fetch menu:', error);
+                setMenuItems([]);
+            }
+        };
+
+        init();
+    }, [pathname]); // Re-run on navigation
+
+    // Helper to resolve links based on context (prevents double /b2b/ on subdomains)
+    const resolveHref = (href: string) => {
+        if (!href) return '#';
+        // If we are on a B2B domain (not localhost), we can show "clean" links 
+        // because middleware handles the rewrite.
+        const host = typeof window !== 'undefined' ? window.location.hostname : '';
+        const isB2BHost = host.includes('b2b') || host.includes('dron');
+
+        if (isB2BHost && href.startsWith('/b2b')) {
+            const clean = href.replace('/b2b', '');
+            return clean === '' ? '/' : clean;
+        }
+        return href;
+    };
+
+    // Unified Menu Source
+    const currentMenuItems = menuItems.map(item => ({
+        ...item,
+        href: resolveHref(item.href),
+        children: item.children?.map(child => ({
+            ...child,
+            href: resolveHref(child.href)
+        }))
+    }));
+    const currentCtaItems = ctaItems;
+
     // Fetch settings
     useEffect(() => {
         const fetchSettings = async () => {
@@ -58,76 +142,22 @@ export default function Navbar() {
         };
         fetchSettings();
     }, []);
-
-    // Fetch menu items from database
-    useEffect(() => {
-        const fetchMenu = async () => {
-            try {
-                const res = await fetch('/api/menu');
-                const data = await res.json();
-                if (Array.isArray(data) && data.length > 0) {
-                    // Convert API response to MenuItem format with children
-                    const dynamicMenuItems = data.map((item: any) => ({
-                        id: item.id,
-                        label: item.title,
-                        href: item.url,
-                        children: item.children && item.children.length > 0 ? item.children.map((child: any) => ({
-                            id: child.id,
-                            label: child.title,
-                            href: child.url
-                        })) : undefined
-                    }));
-                    setMenuItems(dynamicMenuItems);
-                }
-            } catch (error) {
-                console.error('Failed to fetch menu:', error);
-                // Keep empty menu on error (no fallback to hardcoded values)
-            }
+    const getSplitMenuItems = (items: MenuItem[], ctas: MenuItem[]) => {
+        const allItems = [...items, ...ctas];
+        const midPoint = Math.ceil(allItems.length / 2);
+        return {
+            leftItems: allItems.slice(0, midPoint),
+            rightItems: allItems.slice(midPoint)
         };
-        fetchMenu();
-    }, []);
+    };
 
-    // Track scroll
-    // Track scroll
-    useEffect(() => {
-        const handleScroll = () => {
-            const currentScrollY = window.scrollY;
-
-            // Updated threshold for transparency switch
-            const isScrolledDown = currentScrollY > 20; // Reduced from 50 to 20 for quicker response
-            if (isScrolled !== isScrolledDown) {
-                setIsScrolled(isScrolledDown);
-            }
-
-            // Always show navbar at the very top (fix for flash/hiding glitches)
-            if (currentScrollY <= 0) {
-                if (!isNavbarVisible) setIsNavbarVisible(true);
-                return;
-            }
-
-            // Show navbar when scrolling up, hide when scrolling down
-            if (currentScrollY > 100) {
-                if (currentScrollY < lastScrollY && !isNavbarVisible) {
-                    // Scrolling up
-                    setIsNavbarVisible(true);
-                } else if (currentScrollY > lastScrollY && isNavbarVisible) {
-                    // Scrolling down
-                    setIsNavbarVisible(false);
-                }
-            } else {
-                if (!isNavbarVisible) setIsNavbarVisible(true);
-            }
-
-            setLastScrollY(currentScrollY);
-        };
-
-        window.addEventListener('scroll', handleScroll, { passive: true });
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, [lastScrollY, isNavbarVisible, isScrolled, isHome]);
 
     const logoSize = settings.logo_size || 140; // Use full value from settings
     const logoDisplaySize = logoSize; // Removed Math.min(logoSize, 100) cap to respect slider
-    const logoSrc = settings.logo_url || '/assets/brand/logo.png';
+    // B2B uses dark mode logo if available
+    const logoSrc = (isB2B && settings.logo_dark_url)
+        ? settings.logo_dark_url
+        : (settings.logo_url || '/assets/brand/logo.png');
     const navbarFontSize = settings.navbar_font_size || 16;
     const navbarFontFamily = settings.navbar_font_family || 'Montserrat';
     const isNavbarSticky = settings.navbar_sticky !== false; // default true
@@ -140,19 +170,18 @@ export default function Navbar() {
         ? 'text-white hover:text-gold-400'
         : (isScrolled ? 'text-zinc-700 hover:text-gold-500' : 'text-white hover:text-gold-400');
 
-    // Helper to calculate menu split
-    const getSplitMenuItems = () => {
-        const allItems = [...menuItems, ...ctaItems];
-        const midPoint = Math.ceil(allItems.length / 2);
-        return {
-            leftItems: allItems.slice(0, midPoint),
-            rightItems: allItems.slice(midPoint)
-        };
-    };
-
     const isActive = (href: string) => pathname === href;
 
-    const { leftItems, rightItems } = navbarLayout === 'logo_center_menu_split' ? getSplitMenuItems() : { leftItems: [], rightItems: [] };
+    const { leftItems, rightItems } = navbarLayout === 'logo_center_menu_split'
+        ? getSplitMenuItems(currentMenuItems, currentCtaItems)
+        : { leftItems: [], rightItems: [] };
+
+    // Force Dark styling for B2B
+    const navStyle = isB2B ? {
+        backgroundColor: 'rgba(0,0,0,0.95)',
+        backdropFilter: 'blur(12px)',
+        borderBottom: '1px solid rgba(255,255,255,0.1)'
+    } : {};
 
     return (
         <header
@@ -166,7 +195,8 @@ export default function Navbar() {
                 } ${!isNavbarVisible && (forceTransparent || isNavbarSticky) ? '-translate-y-full' : 'translate-y-0'}`}
             style={{
                 fontFamily: navbarFontFamily,
-                transform: !isNavbarVisible && (forceTransparent || isNavbarSticky) ? 'translateY(-100%)' : 'translateY(0)'
+                transform: !isNavbarVisible && (forceTransparent || isNavbarSticky) ? 'translateY(-100%)' : 'translateY(0)',
+                ...navStyle
             }}
         >
             <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative transition-all duration-300">
@@ -300,7 +330,7 @@ export default function Navbar() {
 
                             {/* MENU LEFT-RIGHT */}
                             <div className="hidden md:flex items-center gap-8 flex-1 justify-center">
-                                {menuItems.map((item) => (
+                                {currentMenuItems.map((item) => (
                                     <div key={item.id} className="relative group">
                                         <Link
                                             href={item.href}
@@ -334,7 +364,7 @@ export default function Navbar() {
 
                             {/* RIGHT CTA */}
                             <div className="hidden md:flex items-center gap-8 flex-1 justify-end">
-                                {ctaItems.map((item) => (
+                                {currentCtaItems.map((item) => (
                                     <div key={item.id} className="relative group">
                                         <Link
                                             href={item.href}
@@ -399,7 +429,7 @@ export default function Navbar() {
 
                             {/* MENU BOTTOM CENTER */}
                             <div className="hidden md:flex items-center gap-8 justify-center">
-                                {[...menuItems, ...ctaItems].map((item) => (
+                                {[...currentMenuItems, ...currentCtaItems].map((item) => (
                                     <div key={item.id} className="relative group">
                                         <Link
                                             href={item.href}
@@ -437,7 +467,7 @@ export default function Navbar() {
                         <>
                             {/* LEFT MENU */}
                             <div className="hidden md:flex items-center gap-8 flex-1">
-                                {[...menuItems, ...ctaItems].map((item) => (
+                                {[...currentMenuItems, ...currentCtaItems].map((item) => (
                                     <div key={item.id} className="relative group">
                                         <Link
                                             href={item.href}
@@ -513,7 +543,7 @@ export default function Navbar() {
                 {/* MOBILE MENU */}
                 {isOpen && (
                     <div className="md:hidden bg-white shadow-lg rounded-lg mt-2 py-4 space-y-4 max-h-[70vh] overflow-y-auto">
-                        {[...menuItems, ...ctaItems].map((item) => (
+                        {[...currentMenuItems, ...currentCtaItems].map((item) => (
                             <div key={item.label}>
                                 <Link
                                     href={item.href}

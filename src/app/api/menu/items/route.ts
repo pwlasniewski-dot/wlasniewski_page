@@ -3,8 +3,11 @@ import { NextResponse } from "next/server";
 import prisma from '@/lib/db/prisma';
 
 // GET: Fetch menu tree
-export async function GET() {
+export async function GET(request: Request) {
     try {
+        const { searchParams } = new URL(request.url);
+        const type = searchParams.get("type") || "b2c"; // Default to b2c if not specified? Or fetch all?
+
         const menuItems = await prisma.menuItem.findMany({
             orderBy: { order: "asc" },
             include: {
@@ -27,11 +30,12 @@ export async function GET() {
                 }
             },
             where: {
-                parent_id: null // Only fetch top-level items, children are included via relation
+                parent_id: null, // Only fetch top-level items
+                menu_type: type,
             }
         });
 
-        if (menuItems.length === 0) {
+        if (menuItems.length === 0 && type === 'b2c') {
             // Fallback: build menu from pages where is_in_menu = true
             const pages = await prisma.page.findMany({
                 where: { is_in_menu: true },
@@ -49,7 +53,7 @@ export async function GET() {
             const fallback = pages.map(p => ({
                 id: p.id,
                 title: p.menu_title || p.title,
-                url: p.slug === 'strona-glowna' ? '/' : `/ ${p.slug} `,
+                url: p.slug === 'strona-glowna' ? '/' : `/${p.slug}`,
                 page_id: p.id,
                 parent_id: null,
                 order: p.menu_order || 0,
@@ -74,7 +78,7 @@ export async function GET() {
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { title, url, page_id, parent_id, order } = body;
+        const { title, url, page_id, parent_id, order, menu_type } = body;
 
         const menuItem = await prisma.menuItem.create({
             data: {
@@ -83,6 +87,7 @@ export async function POST(request: Request) {
                 page_id: page_id ? Number(page_id) : null,
                 parent_id: parent_id ? Number(parent_id) : null,
                 order: order ? Number(order) : 0,
+                menu_type: menu_type || 'b2c',
             },
         });
 
@@ -93,11 +98,11 @@ export async function POST(request: Request) {
     }
 }
 
-// PUT: Update menu item (move, rename, reorder)
+// PUT: Update menu item
 export async function PUT(request: Request) {
     try {
         const body = await request.json();
-        const { id, title, url, page_id, parent_id, order, is_active } = body;
+        const { id, title, url, page_id, parent_id, order, is_active, menu_type } = body;
 
         if (!id) {
             return NextResponse.json({ error: "ID is required" }, { status: 400 });
@@ -112,6 +117,7 @@ export async function PUT(request: Request) {
                 parent_id: parent_id !== undefined ? (parent_id ? Number(parent_id) : null) : undefined,
                 order: order !== undefined ? Number(order) : undefined,
                 is_active: is_active !== undefined ? Boolean(is_active) : undefined,
+                menu_type: menu_type !== undefined ? menu_type : undefined,
             },
         });
 
