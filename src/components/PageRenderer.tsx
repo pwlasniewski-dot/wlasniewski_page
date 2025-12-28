@@ -799,8 +799,13 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                     <div className="relative p-12 md:p-24 bg-zinc-950 border border-white/5 rounded-[50px] overflow-hidden">
                                         <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-20">
                                             <div>
-                                                <h2 className="text-5xl md:text-7xl font-bold text-white mb-8 leading-tight">Zapytaj o <span className="text-yellow-500">ofertę B2B.</span></h2>
-                                                <p className="text-zinc-400 text-lg mb-12">Nasz doradca techniczny skontaktuje się z Tobą w ciągu 4 godzin roboczych.</p>
+                                                <h2
+                                                    className="text-5xl md:text-7xl font-bold text-white mb-8 leading-tight"
+                                                    dangerouslySetInnerHTML={{ __html: section.title || 'Zapytaj o <span class="text-yellow-500">ofertę B2B.</span>' }}
+                                                />
+                                                <p className="text-zinc-400 text-lg mb-12">
+                                                    {section.subtitle || 'Nasz doradca techniczny skontaktuje się z Tobą w ciągu 4 godzin roboczych.'}
+                                                </p>
                                                 <div className="space-y-4">
                                                     {['Bezpośrednie wsparcie inżyniera', 'Darmowa analiza wykonalności'].map((item, i) => (
                                                         <div key={i} className="flex items-center gap-4 text-white font-medium">

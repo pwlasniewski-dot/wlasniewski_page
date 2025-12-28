@@ -1422,6 +1422,9 @@ export default function PageBuilder({ sections, onChange }: PageBuilderProps) {
                 { id: Math.random().toString(36).substr(2, 9), icon: 'Truck', title: 'Transport i Logistyka', description: 'Monitoring procesów i dokumentacja transportowa.' },
                 { id: Math.random().toString(36).substr(2, 9), icon: 'Crosshair', title: 'Precyzyjne Pomiary', description: 'Fotogrametria i modele 3D terenu.' }
             ];
+        } else if (type === 'b2b_contact') {
+            newSection.title = 'Zapytaj o <span class="text-yellow-500">ofertę B2B.</span>';
+            newSection.subtitle = 'Nasz doradca techniczny skontaktuje się z Tobą w ciągu 4 godzin roboczych.';
         }
 
         onChange([...sections, newSection]);
