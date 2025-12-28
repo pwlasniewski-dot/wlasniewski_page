@@ -46,8 +46,10 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
     const [resolvedParams, setResolvedParams] = useState<{ slug: string } | null>(null);
     const router = useRouter();
     const [formData, setFormData] = useState({
+        id: undefined as number | undefined,
         slug: '',
         title: '',
+        page_type: 'regular',
         content: '',
         hero_image: '',
         hero_subtitle: '',
@@ -96,8 +98,10 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
                 if (data.success) {
                     const page = data.page;
                     setFormData({
+                        id: page.id,
                         slug: page.slug,
                         title: page.title,
+                        page_type: page.page_type || 'regular',
                         content: page.content || '',
                         hero_image: page.hero_image || '',
                         hero_subtitle: page.hero_subtitle || '',

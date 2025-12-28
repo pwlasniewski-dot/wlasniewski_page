@@ -107,10 +107,17 @@ export default function Navbar() {
         const host = typeof window !== 'undefined' ? window.location.hostname : '';
         const isB2BHost = host.includes('b2b') || host.includes('dron');
 
+        // On B2B dedicated domain: clean the /b2b prefix (handled by middleware)
         if (isB2BHost && href.startsWith('/b2b')) {
             const clean = href.replace('/b2b', '');
             return clean === '' ? '/' : clean;
         }
+
+        // On main domain in B2B context: ensure /b2b prefix exists for relative links
+        if (!isB2BHost && isB2B && !href.startsWith('/b2b') && !href.startsWith('http') && !href.startsWith('#')) {
+            return `/b2b${href.startsWith('/') ? href : '/' + href}`;
+        }
+
         return href;
     };
 
