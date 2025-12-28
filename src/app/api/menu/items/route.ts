@@ -1,12 +1,26 @@
 
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import prisma from '@/lib/db/prisma';
+import { withAuth } from "@/lib/auth/middleware";
 
 // GET: Fetch menu tree
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
     try {
         const { searchParams } = new URL(request.url);
-        const type = searchParams.get("type") || "b2c"; // Default to b2c if not specified? Or fetch all?
+        const type = searchParams.get("type") || "b2c";
+
+        // Simple token check for GET (public but show more to admins)
+        const authHeader = request.headers.get('Authorization');
+        const isAdmin = authHeader && authHeader.startsWith('Bearer ') && authHeader.length > 20;
+
+        const where: any = {
+            parent_id: null, // Only fetch top-level items
+            menu_type: type,
+        };
+
+        if (!isAdmin) {
+            where.is_active = true;
+        }
 
         const menuItems = await prisma.menuItem.findMany({
             orderBy: { order: "asc" },
@@ -19,6 +33,7 @@ export async function GET(request: Request) {
                 },
                 children: {
                     orderBy: { order: "asc" },
+                    where: isAdmin ? {} : { is_active: true }, // Filter sub-items if not admin
                     include: {
                         page: {
                             select: {
@@ -29,16 +44,16 @@ export async function GET(request: Request) {
                     }
                 }
             },
-            where: {
-                parent_id: null, // Only fetch top-level items
-                menu_type: type,
-            }
+            where
         });
 
         if (menuItems.length === 0 && type === 'b2c') {
             // Fallback: build menu from pages where is_in_menu = true
             const pages = await prisma.page.findMany({
-                where: { is_in_menu: true },
+                where: {
+                    is_in_menu: true,
+                    ...(isAdmin ? {} : { is_published: true })
+                },
                 orderBy: { menu_order: 'asc' },
                 select: {
                     id: true,
@@ -75,89 +90,95 @@ export async function GET(request: Request) {
 }
 
 // POST: Create menu item
-export async function POST(request: Request) {
-    try {
-        const body = await request.json();
-        const { title, url, page_id, parent_id, order, menu_type } = body;
+export async function POST(request: NextRequest) {
+    return withAuth(request, async (req) => {
+        try {
+            const body = await req.json();
+            const { title, url, page_id, parent_id, order, menu_type } = body;
 
-        const menuItem = await prisma.menuItem.create({
-            data: {
-                title,
-                url,
-                page_id: page_id ? Number(page_id) : null,
-                parent_id: parent_id ? Number(parent_id) : null,
-                order: order ? Number(order) : 0,
-                menu_type: menu_type || 'b2c',
-            },
-        });
+            const menuItem = await prisma.menuItem.create({
+                data: {
+                    title,
+                    url,
+                    page_id: page_id ? Number(page_id) : null,
+                    parent_id: parent_id ? Number(parent_id) : null,
+                    order: order ? Number(order) : 0,
+                    menu_type: menu_type || 'b2c',
+                },
+            });
 
-        return NextResponse.json(menuItem);
-    } catch (error) {
-        console.error("Error creating menu item:", error);
-        return NextResponse.json({ error: "Failed to create menu item" }, { status: 500 });
-    }
+            return NextResponse.json(menuItem);
+        } catch (error) {
+            console.error("Error creating menu item:", error);
+            return NextResponse.json({ error: "Failed to create menu item" }, { status: 500 });
+        }
+    });
 }
 
 // PUT: Update menu item
-export async function PUT(request: Request) {
-    try {
-        const body = await request.json();
-        const { id, title, url, page_id, parent_id, order, is_active, menu_type } = body;
+export async function PUT(request: NextRequest) {
+    return withAuth(request, async (req) => {
+        try {
+            const body = await req.json();
+            const { id, title, url, page_id, parent_id, order, is_active, menu_type } = body;
 
-        if (!id) {
-            return NextResponse.json({ error: "ID is required" }, { status: 400 });
+            if (!id) {
+                return NextResponse.json({ error: "ID is required" }, { status: 400 });
+            }
+
+            const menuItem = await prisma.menuItem.update({
+                where: { id: Number(id) },
+                data: {
+                    title,
+                    url,
+                    page_id: page_id ? Number(page_id) : null,
+                    parent_id: parent_id !== undefined ? (parent_id ? Number(parent_id) : null) : undefined,
+                    order: order !== undefined ? Number(order) : undefined,
+                    is_active: is_active !== undefined ? Boolean(is_active) : undefined,
+                    menu_type: menu_type !== undefined ? menu_type : undefined,
+                },
+            });
+
+            return NextResponse.json(menuItem);
+        } catch (error) {
+            console.error("Error updating menu item:", error);
+            return NextResponse.json({ error: "Failed to update menu item" }, { status: 500 });
         }
-
-        const menuItem = await prisma.menuItem.update({
-            where: { id: Number(id) },
-            data: {
-                title,
-                url,
-                page_id: page_id ? Number(page_id) : null,
-                parent_id: parent_id !== undefined ? (parent_id ? Number(parent_id) : null) : undefined,
-                order: order !== undefined ? Number(order) : undefined,
-                is_active: is_active !== undefined ? Boolean(is_active) : undefined,
-                menu_type: menu_type !== undefined ? menu_type : undefined,
-            },
-        });
-
-        return NextResponse.json(menuItem);
-    } catch (error) {
-        console.error("Error updating menu item:", error);
-        return NextResponse.json({ error: "Failed to update menu item" }, { status: 500 });
-    }
+    });
 }
 
 // DELETE: Remove menu item
-export async function DELETE(request: Request) {
-    try {
-        const { searchParams } = new URL(request.url);
-        const id = searchParams.get("id");
+export async function DELETE(request: NextRequest) {
+    return withAuth(request, async (req) => {
+        try {
+            const { searchParams } = new URL(request.url);
+            const id = searchParams.get("id");
 
-        if (!id) {
-            return NextResponse.json({ error: "ID is required" }, { status: 400 });
+            if (!id) {
+                return NextResponse.json({ error: "ID is required" }, { status: 400 });
+            }
+
+            const numericId = Number(id);
+
+            // If a menuItem exists with this id, delete it (and its children)
+            const existing = await prisma.menuItem.findUnique({ where: { id: numericId } });
+            if (existing) {
+                await prisma.menuItem.deleteMany({ where: { parent_id: numericId } });
+                await prisma.menuItem.delete({ where: { id: numericId } });
+                return NextResponse.json({ success: true });
+            }
+
+            // Fallback: if no menuItem, maybe this is a Page id (from fallback). Unset is_in_menu on that page.
+            const page = await prisma.page.findUnique({ where: { id: numericId } });
+            if (page) {
+                await prisma.page.update({ where: { id: numericId }, data: { is_in_menu: false } });
+                return NextResponse.json({ success: true, fallback: true });
+            }
+
+            return NextResponse.json({ error: 'Item not found' }, { status: 404 });
+        } catch (error) {
+            console.error("Error deleting menu item:", error);
+            return NextResponse.json({ error: "Failed to delete menu item" }, { status: 500 });
         }
-
-        const numericId = Number(id);
-
-        // If a menuItem exists with this id, delete it (and its children)
-        const existing = await prisma.menuItem.findUnique({ where: { id: numericId } });
-        if (existing) {
-            await prisma.menuItem.deleteMany({ where: { parent_id: numericId } });
-            await prisma.menuItem.delete({ where: { id: numericId } });
-            return NextResponse.json({ success: true });
-        }
-
-        // Fallback: if no menuItem, maybe this is a Page id (from fallback). Unset is_in_menu on that page.
-        const page = await prisma.page.findUnique({ where: { id: numericId } });
-        if (page) {
-            await prisma.page.update({ where: { id: numericId }, data: { is_in_menu: false } });
-            return NextResponse.json({ success: true, fallback: true });
-        }
-
-        return NextResponse.json({ error: 'Item not found' }, { status: 404 });
-    } catch (error) {
-        console.error("Error deleting menu item:", error);
-        return NextResponse.json({ error: "Failed to delete menu item" }, { status: 500 });
-    }
+    });
 }

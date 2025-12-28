@@ -138,10 +138,13 @@ export default function AdminMenuPage() {
     const fetchData = async () => {
         setLoading(true);
         try {
+            const token = localStorage.getItem('admin_token');
+            const headers = { 'Authorization': `Bearer ${token}` };
+
             // Fetch items for specific tab
             const [menuRes, pagesRes] = await Promise.all([
-                fetch(`/api/menu/items?type=${activeTabId}`),
-                fetch("/api/pages")
+                fetch(`/api/menu/items?type=${activeTabId}`, { headers }),
+                fetch("/api/pages", { headers })
             ]);
 
             const menuData = await menuRes.json();
@@ -185,9 +188,13 @@ export default function AdminMenuPage() {
         };
 
         try {
+            const token = localStorage.getItem('admin_token');
             const res = await fetch(url, {
                 method,
-                headers: { "Content-Type": "application/json" },
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
                 body: JSON.stringify(body)
             });
 
@@ -212,7 +219,11 @@ export default function AdminMenuPage() {
     const handleDelete = async (id: number) => {
         if (!confirm("Czy na pewno usunąć ten element?")) return;
         try {
-            const res = await fetch(`/api/menu/items?id=${id}`, { method: "DELETE" });
+            const token = localStorage.getItem('admin_token');
+            const res = await fetch(`/api/menu/items?id=${id}`, {
+                method: "DELETE",
+                headers: { "Authorization": `Bearer ${token}` }
+            });
             if (!res.ok) {
                 const error = await res.json();
                 console.error("Delete failed:", error);
@@ -276,10 +287,14 @@ export default function AdminMenuPage() {
 
                 // Update order in backend
                 // This is a simplified approach, ideally we batch update
+                const token = localStorage.getItem('admin_token');
                 newItems.forEach((item, index) => {
                     fetch("/api/menu/items", {
                         method: "PUT",
-                        headers: { "Content-Type": "application/json" },
+                        headers: {
+                            "Content-Type": "application/json",
+                            "Authorization": `Bearer ${token}`
+                        },
                         body: JSON.stringify({ id: item.id, order: index })
                     });
                 });
@@ -296,11 +311,15 @@ export default function AdminMenuPage() {
         if (!confirm("To utworzy edytowalną strukturę menu na podstawie obecnych stron. Kontynuować?")) return;
 
         try {
+            const token = localStorage.getItem('admin_token');
             // Save all current items to DB
             for (const item of menuItems) {
                 await fetch("/api/menu/items", {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${token}`
+                    },
                     body: JSON.stringify({
                         title: item.title,
                         url: item.url,

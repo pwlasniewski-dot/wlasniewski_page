@@ -93,7 +93,12 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
 
         const fetchPage = async () => {
             try {
-                const res = await fetch(`${getApiUrl('pages')}?slug=${resolvedParams.slug}`);
+                const token = localStorage.getItem('admin_token');
+                const res = await fetch(`${getApiUrl('pages')}?slug=${resolvedParams.slug}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
                 const data = await res.json();
                 if (data.success) {
                     const page = data.page;

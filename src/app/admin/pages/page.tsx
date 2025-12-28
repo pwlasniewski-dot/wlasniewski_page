@@ -24,7 +24,12 @@ export default function PagesListPage() {
 
     const fetchPages = async () => {
         try {
-            const res = await fetch(getApiUrl('pages'));
+            const token = localStorage.getItem('admin_token');
+            const res = await fetch(getApiUrl('pages'), {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
             const data = await res.json();
             if (data.success) {
                 setPages(data.pages);
