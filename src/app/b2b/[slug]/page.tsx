@@ -14,14 +14,14 @@ async function getB2BPage(slug: string) {
         where: {
             slug,
             is_published: true,
-            domain: 'b2b'
+            page_type: 'b2b'
         },
     });
 
     // Fallback search if no domain-specific page found (legacy)
     if (!page) {
         return await prisma.page.findUnique({
-            where: { slug, is_published: true },
+            where: { slug },
         });
     }
 

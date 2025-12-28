@@ -195,6 +195,9 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
 
             if (res.ok) {
                 toast.success('Zapisano zmiany');
+            } else if (res.status === 401) {
+                toast.error('Sesja wygasła. Zaloguj się ponownie.');
+                // Optional: router.push('/admin/login');
             } else {
                 throw new Error('Failed to save');
             }
