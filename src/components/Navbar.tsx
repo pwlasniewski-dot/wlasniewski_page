@@ -250,7 +250,7 @@ export default function Navbar() {
                             {/* CENTER LOGO */}
                             {logoLoaded && (
                                 <Link
-                                    href="/"
+                                    href={isB2B ? '/b2b' : '/'}
                                     className="hover:opacity-80 transition-opacity z-10 flex-shrink-0"
                                     aria-label="Strona główna"
                                 >
@@ -313,7 +313,7 @@ export default function Navbar() {
                             {/* LOGO LEFT */}
                             {logoLoaded && (
                                 <Link
-                                    href="/"
+                                    href={isB2B ? '/b2b' : '/'}
                                     className="hover:opacity-80 transition-opacity"
                                     aria-label="Strona główna"
                                 >
@@ -411,7 +411,7 @@ export default function Navbar() {
                             <div className="w-full flex justify-center">
                                 {logoLoaded && (
                                     <Link
-                                        href="/"
+                                        href={isB2B ? '/b2b' : '/'}
                                         className="hover:opacity-80 transition-opacity"
                                         aria-label="Strona główna"
                                     >
@@ -509,7 +509,7 @@ export default function Navbar() {
                             {/* LOGO RIGHT - Absolutely positioned */}
                             {logoLoaded && (
                                 <Link
-                                    href="/"
+                                    href={isB2B ? '/b2b' : '/'}
                                     className="absolute right-4 sm:right-6 lg:right-8 hover:opacity-80 transition-opacity"
                                     aria-label="Strona główna"
                                 >

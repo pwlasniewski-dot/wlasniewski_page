@@ -1413,6 +1413,7 @@ export default function PageBuilder({ sections, onChange }: PageBuilderProps) {
             newSection.subtitle = 'Profesjonalne usługi dronem, termowizja i inspekcje techniczne z powietrza.';
             newSection.tag = 'B2B SOLUTIONS';
             newSection.buttonText = 'ZAPYTAJ O OFERTĘ';
+            newSection.buttonLink = '#rfq';
         } else if (type === 'info_band') {
             newSection.title = 'Wsparcie Twojego <span class="text-yellow-500">biznesu</span>';
             newSection.subtitle = 'KOMPLEKSOWA OBSŁUGA';
@@ -1436,7 +1437,8 @@ export default function PageBuilder({ sections, onChange }: PageBuilderProps) {
                     id: baseId(), type: 'b2b_hero', tag: 'TERMOWIZJA Z POWIETRZA',
                     title: 'Wykrywamy to, co <span class="text-yellow-500">niewidoczne</span> dla oka.',
                     subtitle: 'Dzięki kamerze termowizyjne wykrywamy nieszczelności, mostki cieplne i przegrzewające się elementy w instalacjach. Idealne dla przemysłu i OZE.',
-                    buttonText: 'ZAMÓW AUDYT TERMICZNY'
+                    buttonText: 'ZAMÓW AUDYT TERMICZNY',
+                    buttonLink: '#rfq'
                 },
                 {
                     id: baseId(), type: 'info_band', title: 'Energia pod <span class="text-yellow-500">kontrolą</span>',
@@ -1464,7 +1466,8 @@ export default function PageBuilder({ sections, onChange }: PageBuilderProps) {
                     id: baseId(), type: 'b2b_hero', tag: 'MONITORING INWESTYCJI',
                     title: 'Pełna kontrola nad <span class="text-yellow-500">Twoją budową</span>',
                     subtitle: 'Regularna dokumentacja postępów prac, profesjonalne raporty dla inwestorów i widok 360° na cały plac budowy.',
-                    buttonText: 'ZAMÓW MONITORING'
+                    buttonText: 'ZAMÓW MONITORING',
+                    buttonLink: '#rfq'
                 },
                 {
                     id: baseId(), type: 'info_band', title: 'Dane, które <span class="text-yellow-500">budują zysk</span>',
@@ -1492,7 +1495,8 @@ export default function PageBuilder({ sections, onChange }: PageBuilderProps) {
                     id: baseId(), type: 'b2b_hero', tag: 'PROMOCJA & WIZYTÓWKI',
                     title: 'Pokaż swoją firmę w <span class="text-yellow-500">standardzie 4K.</span>',
                     subtitle: 'Wirtualne spacery Google Street View i profesjonalne filmy promocyjne, które wyróżnią Cię w Mapach Google i social mediach.',
-                    buttonText: 'ZAMÓW SESJĘ 360'
+                    buttonText: 'ZAMÓW SESJĘ 360',
+                    buttonLink: '#rfq'
                 },
                 {
                     id: baseId(), type: 'info_band', title: 'Wideo, które <span class="text-yellow-500">sprzedaje</span>',
@@ -1511,7 +1515,8 @@ export default function PageBuilder({ sections, onChange }: PageBuilderProps) {
                     id: baseId(), type: 'b2b_hero', tag: 'INSPEKCJE TECHNICZNE',
                     title: 'Szybki i bezpieczny <span class="text-yellow-500">przegląd obiektu.</span>',
                     subtitle: 'Szczegółowe inspekcje dachów, elewacji, konstrukcji stalowych i instalacji PV bez rusztowań i podnośników.',
-                    buttonText: 'ZAMÓW INSPEKCJĘ'
+                    buttonText: 'ZAMÓW INSPEKCJĘ',
+                    buttonLink: '#rfq'
                 },
                 {
                     id: baseId(), type: 'info_band', title: 'Specjalistyczna <span class="text-yellow-500">analiza konstrukcji</span>',
