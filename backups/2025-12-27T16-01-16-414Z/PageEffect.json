@@ -1,0 +1,15 @@
+[
+  {
+    "id": 1,
+    "page_slug": "foto-wyzwanie",
+    "section_name": "main",
+    "effect_type": "carousel",
+    "is_enabled": true,
+    "config": "{\"autoplay\":true,\"interval\":3000}",
+    "photos_source": "manual",
+    "manual_photos": "[\"https://wlasniewski-photo-storage.s3.eu-north-1.amazonaws.com/1766353884533-portret-torun-01.webp\",\"https://wlasniewski-photo-storage.s3.eu-north-1.amazonaws.com/1766353849849-fotografia-rodzinna-torun-26.webp\",\"https://wlasniewski-photo-storage.s3.eu-north-1.amazonaws.com/1766353855550-fotograf-rodzinny-torun-19.webp\"]",
+    "order_index": 0,
+    "created_at": "2025-12-25T09:17:50.970Z",
+    "updated_at": "2025-12-26T13:11:53.359Z"
+  }
+]

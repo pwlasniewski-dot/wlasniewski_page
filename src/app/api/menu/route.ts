@@ -4,41 +4,69 @@ import prisma from '@/lib/db/prisma';
 // UPROSZCZONE MENU - tylko z tabeli pages (is_in_menu = true)
 export async function GET() {
     try {
-        // Pobierz wszystkie strony które powinny być w menu
+        // 1. Try to fetch from custom menu_items table first
+        const menuItems = await prisma.menuItem.findMany({
+            where: {
+                parent_id: null, // Top-level items
+                is_active: true
+            },
+            orderBy: {
+                order: "asc"
+            },
+            include: {
+                page: {
+                    select: { slug: true, title: true }
+                },
+                children: {
+                    where: { is_active: true },
+                    orderBy: { order: "asc" },
+                    include: {
+                        page: {
+                            select: { slug: true, title: true }
+                        },
+                        children: { // Support 3 levels of nesting
+                            where: { is_active: true },
+                            orderBy: { order: "asc" },
+                            include: {
+                                page: { select: { slug: true, title: true } }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        if (menuItems.length > 0) {
+            // Map to frontend structure
+            const mapItem = (item: any) => ({
+                id: item.id,
+                title: item.title,
+                url: item.page ? (item.page.slug === 'strona-glowna' ? '/' : `/${item.page.slug}`) : item.url,
+                order: item.order,
+                children: item.children ? item.children.map(mapItem) : []
+            });
+
+            return NextResponse.json(menuItems.map(mapItem));
+        }
+
+        // 2. FALLBACK: If menu_items is empty, fetch pages (Old Logic)
         const menuPages = await prisma.page.findMany({
             where: {
                 is_in_menu: true,
                 is_published: true,
-                parent_page_id: null, // Only top-level pages
+                parent_page_id: null,
             },
             orderBy: {
                 menu_order: "asc",
             },
-            select: {
-                id: true,
-                title: true,
-                slug: true,
-                menu_title: true,
-                menu_order: true,
+            include: {
                 children: {
-                    where: {
-                        is_published: true
-                    },
-                    orderBy: {
-                        menu_order: "asc"
-                    },
-                    select: {
-                        id: true,
-                        title: true,
-                        slug: true,
-                        menu_title: true,
-                        menu_order: true
-                    }
+                    where: { is_published: true },
+                    orderBy: { menu_order: "asc" }
                 }
-            },
+            }
         });
 
-        // Formatuj do struktury z submenu
         const menu = menuPages.map(page => ({
             id: page.id,
             title: page.menu_title || page.title,

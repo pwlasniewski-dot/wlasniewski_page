@@ -55,8 +55,9 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json({ success: true, settings: publicSettings });
     } catch (error) {
-        console.error('Failed to fetch public settings', error);
-        return NextResponse.json({ error: 'Failed to fetch settings' }, { status: 500 });
+        console.error('--- DEBUG: Failed to fetch public settings ---');
+        console.error('Error stack:', error instanceof Error ? error.stack : error);
+        return NextResponse.json({ error: 'Failed to fetch settings', message: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 });
     }
 }
 

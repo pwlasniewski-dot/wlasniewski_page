@@ -27,7 +27,9 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ success: true, pages });
         }
     } catch (error) {
-        return NextResponse.json({ error: 'Failed to fetch pages' }, { status: 500 });
+        console.error('--- DEBUG: Failed to fetch pages ---');
+        console.error('Error stack:', error instanceof Error ? error.stack : error);
+        return NextResponse.json({ error: 'Failed to fetch pages', message: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 });
     }
 }
 

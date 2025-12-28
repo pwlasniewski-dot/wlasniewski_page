@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import Image from 'next/image';
 import { X, Check, Search, Upload, FolderPlus, Folder, MoreHorizontal, Edit, Trash2, LayoutGrid, List as ListIcon, Move } from 'lucide-react';
 import { getApiUrl } from '@/lib/api-config';
@@ -411,10 +411,12 @@ export default function MediaPicker({ isOpen, onClose, onSelect, multiple = fals
     };
 
     // --- Helpers ---
-    const filteredMedia = media.filter(item =>
-        item.file_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (item.alt_text && item.alt_text.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
+    const filteredMedia = useMemo(() => {
+        return media.filter(item =>
+            item.file_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (item.alt_text && item.alt_text.toLowerCase().includes(searchTerm.toLowerCase()))
+        );
+    }, [media, searchTerm]);
 
     if (!isOpen && !inline) return null;
 

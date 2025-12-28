@@ -143,7 +143,8 @@ export default function PagesListPage() {
                                                     page.page_type === 'contact' ? 'bg-blue-500/10 text-blue-400 border-blue-500/30' :
                                                         page.page_type === 'shop' ? 'bg-green-500/10 text-green-400 border-green-500/30' :
                                                             page.page_type === 'reviews' ? 'bg-orange-500/10 text-orange-400 border-orange-500/30' :
-                                                        'bg-zinc-800 text-zinc-400 border-zinc-700'
+                                                                page.page_type === 'b2b' ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/30' :
+                                                                    'bg-zinc-800 text-zinc-400 border-zinc-700'
                                                 }`}>
                                                 {page.page_type === 'home' ? 'Strona główna' :
                                                     page.page_type === 'portfolio' ? 'Portfolio' :
@@ -151,7 +152,8 @@ export default function PagesListPage() {
                                                             page.page_type === 'contact' ? 'Kontakt' :
                                                                 page.page_type === 'shop' ? 'Sklep' :
                                                                     page.page_type === 'reviews' ? 'Opinie' :
-                                                                        page.page_type === 'offer' ? 'Oferta' : 'Standardowa'}
+                                                                        page.page_type === 'offer' ? 'Oferta' :
+                                                                            page.page_type === 'b2b' ? 'Strona B2B' : 'Standardowa'}
                                             </span>
                                             {page.is_published ? (
                                                 <span className="px-2 py-0.5 rounded text-xs bg-green-900/30 text-green-400 border border-green-900/50">
@@ -253,6 +255,7 @@ export default function PagesListPage() {
                                     <option value="shop">Sklep (Karty Podarunkowe)</option>
                                     <option value="reviews">Opinie i Recenzje</option>
                                     <option value="contact">Kontakt</option>
+                                    <option value="b2b">Strona B2B / Firmy</option>
                                 </select>
                                 <p className="text-xs text-zinc-500 mt-1">Typ strony pomaga w automatycznym budowaniu menu i struktury.</p>
                             </div>

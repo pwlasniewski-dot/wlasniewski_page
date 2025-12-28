@@ -8,7 +8,7 @@ export async function POST(request: Request) {
     let body: any = {};
     try {
         body = await request.json();
-        const { name, email, message } = body;
+        const { name, email, message, company, phone, serviceType } = body;
 
         // Validation
         if (!name || !email || !message) {
@@ -24,23 +24,34 @@ export async function POST(request: Request) {
             throw new Error("Admin email is not configured");
         }
 
+        const isB2B = company || serviceType;
+        const subjectPrefix = isB2B ? '[B2B RFQ]' : 'Nowa wiadomość od:';
+
         // Send email using shared utility
         const result = await sendEmail({
             to: adminEmail,
             replyTo: email,
-            subject: `Nowa wiadomość od: ${name}`,
+            subject: `${subjectPrefix} ${name} ${company ? `(${company})` : ''}`,
             text: `
 Imię: ${name}
 Email: ${email}
+${company ? `Firma: ${company}` : ''}
+${phone ? `Telefon: ${phone}` : ''}
+${serviceType ? `Usługa: ${serviceType}` : ''}
+
 Wiadomość:
 ${message}
             `,
             html: `
-<h3>Nowa wiadomość ze strony</h3>
+<h3>${isB2B ? 'Nowe zapytanie ofertowe (B2B)' : 'Nowa wiadomość ze strony'}</h3>
 <p><strong>Imię:</strong> ${name}</p>
 <p><strong>Email:</strong> ${email}</p>
+${company ? `<p><strong>Firma:</strong> ${company}</p>` : ''}
+${phone ? `<p><strong>Telefon:</strong> ${phone}</p>` : ''}
+${serviceType ? `<p><strong>Typ usługi:</strong> ${serviceType}</p>` : ''}
+<hr />
 <p><strong>Wiadomość:</strong></p>
-<blockquote style="border-left: 2px solid #ccc; padding-left: 10px; margin-left: 0;">
+<blockquote style="border-left: 2px solid #ccc; padding-left: 10px; margin-left: 0; white-space: pre-wrap;">
     ${message.replace(/\n/g, '<br>')}
 </blockquote>
             `,

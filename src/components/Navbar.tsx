@@ -194,14 +194,14 @@ export default function Navbar() {
                                             {item.children && item.children.length > 0 && <ChevronDown className="w-4 h-4" />}
                                         </Link>
                                         {item.children && item.children.length > 0 && (
-                                            <div className="absolute left-0 mt-0 w-48 bg-white shadow-lg rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 py-2 z-40">
+                                            <div className="absolute left-0 mt-2 w-48 bg-neutral-900/95 backdrop-blur-md border border-white/5 shadow-xl shadow-black/50 rounded-xl overflow-hidden opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-40 transform origin-top-left group-hover:translate-y-0 translate-y-2">
                                                 {item.children.map((child) => (
                                                     <Link
                                                         key={child.id}
                                                         href={child.href}
-                                                        className="block px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-50 hover:text-gold-500 transition-colors first:rounded-t-lg last:rounded-b-lg"
+                                                        className="block px-5 py-3 text-sm text-zinc-300 hover:bg-white/5 hover:text-gold-400 transition-colors border-b border-white/5 last:border-0 font-medium tracking-wide text-center"
                                                     >
-                                                        {child.label}
+                                                        {child.label.toUpperCase()}
                                                     </Link>
                                                 ))}
                                             </div>
@@ -253,14 +253,14 @@ export default function Navbar() {
                                             {item.children && item.children.length > 0 && <ChevronDown className="w-4 h-4" />}
                                         </Link>
                                         {item.children && item.children.length > 0 && (
-                                            <div className="absolute right-0 mt-0 w-48 bg-white shadow-lg rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 py-2 z-40">
+                                            <div className="absolute right-0 mt-2 w-48 bg-neutral-900/95 backdrop-blur-md border border-white/5 shadow-xl shadow-black/50 rounded-xl overflow-hidden opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-40 transform origin-top-right group-hover:translate-y-0 translate-y-2">
                                                 {item.children.map((child) => (
                                                     <Link
                                                         key={child.id}
                                                         href={child.href}
-                                                        className="block px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-50 hover:text-gold-500 transition-colors first:rounded-t-lg last:rounded-b-lg"
+                                                        className="block px-5 py-3 text-sm text-zinc-300 hover:bg-white/5 hover:text-gold-400 transition-colors border-b border-white/5 last:border-0 font-medium tracking-wide text-center"
                                                     >
-                                                        {child.label}
+                                                        {child.label.toUpperCase()}
                                                     </Link>
                                                 ))}
                                             </div>
@@ -316,14 +316,14 @@ export default function Navbar() {
                                             {item.children && item.children.length > 0 && <ChevronDown className="w-4 h-4" />}
                                         </Link>
                                         {item.children && item.children.length > 0 && (
-                                            <div className="absolute left-0 mt-0 w-48 bg-white shadow-lg rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 py-2 z-40">
+                                            <div className="absolute left-0 mt-2 w-48 bg-neutral-900/95 backdrop-blur-md border border-white/5 shadow-xl shadow-black/50 rounded-xl overflow-hidden opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-40 transform origin-top-left group-hover:translate-y-0 translate-y-2">
                                                 {item.children.map((child) => (
                                                     <Link
                                                         key={child.id}
                                                         href={child.href}
-                                                        className="block px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-50 hover:text-gold-500 transition-colors first:rounded-t-lg last:rounded-b-lg"
+                                                        className="block px-5 py-3 text-sm text-zinc-300 hover:bg-white/5 hover:text-gold-400 transition-colors border-b border-white/5 last:border-0 font-medium tracking-wide text-center"
                                                     >
-                                                        {child.label}
+                                                        {child.label.toUpperCase()}
                                                     </Link>
                                                 ))}
                                             </div>
@@ -350,14 +350,14 @@ export default function Navbar() {
                                             {item.children && item.children.length > 0 && <ChevronDown className="w-4 h-4" />}
                                         </Link>
                                         {item.children && item.children.length > 0 && (
-                                            <div className="absolute right-0 mt-0 w-48 bg-white shadow-lg rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 py-2 z-40">
+                                            <div className="absolute right-0 mt-2 w-48 bg-neutral-900/95 backdrop-blur-md border border-white/5 shadow-xl shadow-black/50 rounded-xl overflow-hidden opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-40 transform origin-top-right group-hover:translate-y-0 translate-y-2">
                                                 {item.children.map((child) => (
                                                     <Link
                                                         key={child.id}
                                                         href={child.href}
-                                                        className="block px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-50 hover:text-gold-500 transition-colors first:rounded-t-lg last:rounded-b-lg"
+                                                        className="block px-5 py-3 text-sm text-zinc-300 hover:bg-white/5 hover:text-gold-400 transition-colors border-b border-white/5 last:border-0 font-medium tracking-wide text-center"
                                                     >
-                                                        {child.label}
+                                                        {child.label.toUpperCase()}
                                                     </Link>
                                                 ))}
                                             </div>
@@ -415,14 +415,14 @@ export default function Navbar() {
                                             {item.children && item.children.length > 0 && <ChevronDown className="w-4 h-4" />}
                                         </Link>
                                         {item.children && item.children.length > 0 && (
-                                            <div className="absolute left-1/2 -translate-x-1/2 mt-0 w-48 bg-white shadow-lg rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 py-2 z-40">
+                                            <div className="absolute left-1/2 -translate-x-1/2 mt-2 w-48 bg-neutral-900/95 backdrop-blur-md border border-white/5 shadow-xl shadow-black/50 rounded-xl overflow-hidden opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-40 transform origin-top group-hover:translate-y-0 translate-y-2">
                                                 {item.children.map((child) => (
                                                     <Link
                                                         key={child.id}
                                                         href={child.href}
-                                                        className="block px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-50 hover:text-gold-500 transition-colors first:rounded-t-lg last:rounded-b-lg"
+                                                        className="block px-5 py-3 text-sm text-zinc-300 hover:bg-white/5 hover:text-gold-400 transition-colors border-b border-white/5 last:border-0 font-medium tracking-wide text-center"
                                                     >
-                                                        {child.label}
+                                                        {child.label.toUpperCase()}
                                                     </Link>
                                                 ))}
                                             </div>
@@ -453,14 +453,14 @@ export default function Navbar() {
                                             {item.children && item.children.length > 0 && <ChevronDown className="w-4 h-4" />}
                                         </Link>
                                         {item.children && item.children.length > 0 && (
-                                            <div className="absolute left-0 mt-0 w-48 bg-white shadow-lg rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 py-2 z-40">
+                                            <div className="absolute left-0 mt-2 w-48 bg-neutral-900/95 backdrop-blur-md border border-white/5 shadow-xl shadow-black/50 rounded-xl overflow-hidden opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-40 transform origin-top-left group-hover:translate-y-0 translate-y-2">
                                                 {item.children.map((child) => (
                                                     <Link
                                                         key={child.id}
                                                         href={child.href}
-                                                        className="block px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-50 hover:text-gold-500 transition-colors first:rounded-t-lg last:rounded-b-lg"
+                                                        className="block px-5 py-3 text-sm text-zinc-300 hover:bg-white/5 hover:text-gold-400 transition-colors border-b border-white/5 last:border-0 font-medium tracking-wide text-center"
                                                     >
-                                                        {child.label}
+                                                        {child.label.toUpperCase()}
                                                     </Link>
                                                 ))}
                                             </div>

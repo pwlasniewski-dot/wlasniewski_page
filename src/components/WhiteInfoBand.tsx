@@ -1,138 +1,110 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import Link from "next/link";
-import { getApiUrl } from "@/lib/api-config";
+import {
+    Building2, Factory, Warehouse, Truck, Plane, Ship,
+    HardHat, Zap, ShieldCheck, Crosshair, Thermometer,
+    Activity, Gauge, Globe, MapPin, Camera, Workflow,
+    Cpu, Layers, Trees, Box, Construction, Hammer,
+    Layout, ArrowRight
+} from "lucide-react";
+
+const IconMap: Record<string, any> = {
+    Building2, Factory, Warehouse, Truck, Plane, Ship,
+    HardHat, Zap, ShieldCheck, Crosshair, Thermometer,
+    Activity, Gauge, Globe, MapPin, Camera, Workflow,
+    Cpu, Layers, Trees, Box, Construction, Hammer
+};
+
+interface InfoBandItem {
+    id: string;
+    title: string;
+    description: string;
+    icon?: string;
+    image?: string;
+}
 
 interface WhiteInfoBandProps {
     image?: string;
     title?: string;
+    subtitle?: string;
     content?: string;
+    items?: InfoBandItem[];
     imagePosition?: 'left' | 'right' | 'center';
 }
 
-export default function WhiteInfoBand({ image, title, content, imagePosition }: WhiteInfoBandProps) {
-    const [settings, setSettings] = useState({
-        image: image || "",
-        title: title || "Materiały, które budują Twój wizerunek",
-        content: content || "",
-        imagePosition: imagePosition || 'left'
-    });
-
-    useEffect(() => {
-        // If props are provided, don't fetch settings
-        if (image || title || content) {
-            setSettings({
-                image: image || "",
-                title: title || "Materiały, które budują Twój wizerunek",
-                content: content || "",
-                imagePosition: imagePosition || 'left'
-            });
-            return;
-        }
-
-        const fetchSettings = async () => {
-            try {
-                const res = await fetch(getApiUrl('settings'));
-                const data = await res.json();
-                if (data.success) {
-                    setSettings({
-                        image: data.settings.info_band_image || "",
-                        title: data.settings.info_band_title || "Materiały, które budują Twój wizerunek",
-                        content: data.settings.info_band_content || "",
-                        imagePosition: data.settings.info_band_position || 'left'
-                    });
-                }
-            } catch (error) {
-                console.error('Failed to fetch info band settings');
-            }
-        };
-        fetchSettings();
-    }, [image, title, content, imagePosition]);
-
-    const defaultContent = (
-        <div className="text-zinc-700 text-lg leading-relaxed space-y-6">
-            <p>
-                Tworzę <strong>profesjonalne i dopasowane treści wizualne</strong>, które
-                wzmacniają markę i osobisty wizerunek.
-            </p>
-            <div>
-                <h3 className="font-semibold text-zinc-800 mb-2">Fotografia biznesowa i eventowa</h3>
-                <ul className="list-disc list-inside space-y-1 text-base">
-                    <li>Spójne portrety zespołu</li>
-                    <li>Materiały promocyjne do social media</li>
-                    <li>Profesjonalne reportaże z konferencji i gal</li>
-                </ul>
-            </div>
-            <div>
-                <h3 className="font-semibold text-zinc-800 mb-2">Fotografia rodzinna i portretowa</h3>
-                <ul className="list-disc list-inside space-y-1 text-base">
-                    <li>Naturalne, autentyczne ujęcia</li>
-                    <li>Wsparcie w doborze stylizacji i lokalizacji</li>
-                    <li>Sesje w komfortowej, swobodnej atmosferze</li>
-                </ul>
-            </div>
-            <div>
-                <h3 className="font-semibold text-zinc-800 mb-2">
-                    Dron i termowizja <span className="text-sm">(NSTS-01  / ITC Level 1)</span>
-                </h3>
-                <ul className="list-disc list-inside space-y-1 text-base">
-                    <li>Efektowne ujęcia promocyjne z powietrza</li>
-                    <li>Precyzyjne inspekcje techniczne</li>
-                    <li>Zaawansowane analizy termowizyjne</li>
-                </ul>
-            </div>
-            <div className="pt-4">
-                <Link
-                    href="/rezerwacja"
-                    className="inline-block bg-zinc-900 hover:bg-zinc-800 text-white font-bold px-6 py-3 rounded-xl transition-colors"
-                >
-                    Zarezerwuj sesję
-                </Link>
-            </div>
-        </div>
-    );
-
-    const isCenter = settings.imagePosition === 'center';
-    const isRight = settings.imagePosition === 'right';
-
+export default function WhiteInfoBand({ image, title, subtitle, content, items, imagePosition }: WhiteInfoBandProps) {
     return (
-        <section className="bg-white">
-            <div className={`mx-auto max-w-6xl px-6 py-16 ${isCenter ? 'text-center' : 'grid grid-cols-1 md:grid-cols-2 gap-10 items-center'}`}>
+        <section className="bg-white py-24 px-6 relative overflow-hidden">
+            {/* Subtle architectural background pattern */}
+            <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
+                style={{ backgroundImage: `radial-gradient(#000 1px, transparent 1px)`, backgroundSize: '40px 40px' }} />
 
-                {/* Image */}
-                <figure className={`rounded-2xl overflow-hidden shadow-md border border-zinc-100 ${isRight ? 'md:order-2' : ''} ${isCenter ? 'mb-10 max-w-3xl mx-auto' : ''}`}>
-                    {settings.image ? (
-                        <img
-                            src={settings.image}
-                            alt={settings.title}
-                            className="w-full h-auto object-cover min-h-[300px]"
+            <div className="max-w-7xl mx-auto relative z-10">
+                {(title || subtitle) && (
+                    <div className="mb-20">
+                        {subtitle && (
+                            <span className="inline-block px-3 py-1 bg-zinc-100 border border-zinc-200 rounded text-zinc-500 text-[10px] font-black uppercase tracking-[0.3em] mb-4">
+                                {subtitle}
+                            </span>
+                        )}
+                        <h2 className="text-4xl md:text-6xl font-bold text-zinc-950 tracking-tight leading-none"
+                            dangerouslySetInnerHTML={{ __html: title || 'Infrastruktura i <span class="text-yellow-600">logistyka</span>' }}
                         />
-                    ) : (
-                        <div className="w-full h-72 md:h-96 bg-gradient-to-br from-zinc-200 to-zinc-300" />
-                    )}
-                </figure>
+                        <div className="h-1.5 w-20 bg-yellow-500 mt-8 rounded-full" />
+                    </div>
+                )}
 
-                {/* Content */}
-                <div className={`${isRight ? 'md:order-1' : ''}`}>
-                    <h2 className="text-3xl md:text-4xl font-semibold text-zinc-900 mb-6 font-display">
-                        {settings.title}
-                    </h2>
+                {items && items.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-16">
+                        {items.map((item, idx) => {
+                            const IconComponent = item.icon ? IconMap[item.icon] : null;
 
-                    {settings.content ? (
-                        <div className="text-zinc-700 text-lg leading-relaxed space-y-6">
-                            <div dangerouslySetInnerHTML={{ __html: settings.content }} />
-                            <div className="pt-4">
-                                <Link
-                                    href="/rezerwacja"
-                                    className="inline-block bg-zinc-900 hover:bg-zinc-800 text-white font-bold px-6 py-3 rounded-xl transition-colors"
-                                >
-                                    Zarezerwuj sesję
-                                </Link>
-                            </div>
+                            return (
+                                <div key={item.id || idx} className="group">
+                                    <div className="mb-8 relative">
+                                        {item.image ? (
+                                            <div className="aspect-video rounded-3xl overflow-hidden border border-zinc-100 shadow-sm transition-transform duration-500 group-hover:scale-[1.02]">
+                                                <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
+                                            </div>
+                                        ) : (
+                                            <div className="w-16 h-16 rounded-2xl bg-zinc-50 border border-zinc-100 flex items-center justify-center text-zinc-900 shadow-sm transition-all duration-500 group-hover:bg-yellow-500 group-hover:border-yellow-500 group-hover:scale-110">
+                                                {IconComponent ? <IconComponent size={32} strokeWidth={1.5} /> : <Zap size={32} />}
+                                            </div>
+                                        )}
+                                        {/* Decorative line */}
+                                        <div className="absolute -bottom-4 left-0 w-0 h-px bg-yellow-500 transition-all duration-500 group-hover:w-full" />
+                                    </div>
+
+                                    <h3 className="text-xl font-bold text-zinc-900 mb-4 group-hover:text-yellow-600 transition-colors">
+                                        {item.title}
+                                    </h3>
+                                    <p className="text-zinc-500 text-sm leading-relaxed mb-6">
+                                        {item.description}
+                                    </p>
+
+                                    <div className="flex items-center gap-2 text-[10px] font-black text-zinc-400 uppercase tracking-widest group-hover:text-zinc-900 transition-colors">
+                                        Szczegóły operacyjne <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                ) : (
+                    <div className={`grid grid-cols-1 md:grid-cols-2 gap-20 items-center ${imagePosition === 'right' ? '' : ''}`}>
+                        <div className={`relative aspect-square md:aspect-video rounded-[40px] overflow-hidden shadow-2xl border border-zinc-100 ${imagePosition === 'right' ? 'md:order-2' : ''}`}>
+                            {image ? (
+                                <img src={image} alt={title} className="w-full h-full object-cover" />
+                            ) : (
+                                <div className="w-full h-full bg-zinc-100 flex items-center justify-center">
+                                    <Layout size={64} className="text-zinc-200" />
+                                </div>
+                            )}
                         </div>
-                    ) : defaultContent}
-                </div>
+                        <div className={imagePosition === 'right' ? 'md:order-1' : ''}>
+                            <div className="prose prose-zinc prose-lg max-w-none" dangerouslySetInnerHTML={{ __html: content || '' }} />
+                        </div>
+                    </div>
+                )}
             </div>
         </section>
     );

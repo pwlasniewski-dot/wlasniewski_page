@@ -15,17 +15,22 @@ import ParallaxSection from '@/components/ParallaxSection';
 import Link from 'next/link';
 import ThermalSlider from '@/components/ThermalSlider';
 import Image from 'next/image';
-import { Check, Star, Camera, ArrowRight } from 'lucide-react';
+import { Check, Star } from 'lucide-react';
 import PhotoChallengeBanner from '@/components/PhotoChallengeBanner';
 import WhiteInfoBand from '@/components/WhiteInfoBand';
 import CarouselGallery from '@/components/VisualEffects/CarouselGallery';
 import MasonryGallery from '@/components/VisualEffects/MasonryGallery';
 import PuzzleGallery from '@/components/VisualEffects/PuzzleGallery';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import CreativeSlider from '@/components/CreativeSlider';
 import TestimonialsSection from '@/components/TestimonialsSection';
+import ContactForm from '@/components/ContactForm';
+import B2BContactForm from '@/components/B2BContactForm';
+import { ShieldCheck, Zap, ArrowRight, Workflow, FileText, Briefcase, CheckCircle2, Maximize2, X, Camera } from 'lucide-react';
 
 export default function PageRenderer({ sections }: { sections: PageSection[] }) {
+    const [selectedCert, setSelectedCert] = React.useState<any>(null);
+    const [selectedCase, setSelectedCase] = React.useState<any>(null);
     if (!sections || sections.length === 0) return null;
 
     return (
@@ -337,7 +342,9 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                 key={section.id}
                                 image={data.image}
                                 title={data.title}
+                                subtitle={data.subtitle}
                                 content={data.content}
+                                items={data.infoband_items}
                                 imagePosition={data.position}
                             />
                         );
@@ -366,10 +373,685 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                             />
                         );
 
+                    case 'certificates':
+                        return (
+                            <section key={section.id} className="py-32 px-6 max-w-7xl mx-auto relative overflow-hidden">
+                                {/* Background decorations */}
+                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-yellow-500/5 blur-[120px] rounded-full pointer-events-none" />
+
+                                <div className="text-center mb-20 relative z-10">
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 10 }}
+                                        whileInView={{ opacity: 1, y: 0 }}
+                                        className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 text-[11px] font-bold uppercase tracking-[0.3em] mb-6"
+                                    >
+                                        <ShieldCheck size={14} /> Gwarancja Ekspertyzy
+                                    </motion.div>
+                                    <h2 className="text-4xl md:text-6xl font-bold text-white tracking-tight">
+                                        Potwierdzona <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-500 via-yellow-400 to-yellow-600">profesjonalność</span>
+                                    </h2>
+                                </div>
+
+                                <div className={`grid gap-10 relative z-10 ${section.certificateSize === 'readable' ? 'grid-cols-1 lg:grid-cols-2 max-w-7xl mx-auto' :
+                                    section.certificateSize === 'large' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-2 max-w-6xl mx-auto' :
+                                        section.certificateSize === 'small' ? 'grid-cols-1 md:grid-cols-3 lg:grid-cols-4' :
+                                            'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
+                                    }`}>
+                                    {data.certificates?.map((cert: any, i: number) => (
+                                        <motion.div
+                                            key={cert.id || i}
+                                            initial={{ opacity: 0, y: 30 }}
+                                            whileInView={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: i * 0.1, duration: 0.5 }}
+                                            className="group"
+                                        >
+                                            <div className="relative p-1 rounded-[32px] bg-gradient-to-b from-white/10 to-transparent transition-all duration-500 group-hover:from-yellow-500/40 group-hover:to-yellow-500/5 shadow-2xl h-full">
+                                                <div className={`bg-zinc-950 rounded-[30px] h-full border border-white/5 relative overflow-hidden flex flex-col ${section.certificateSize === 'readable' ? 'p-10 md:p-16' :
+                                                    section.certificateSize === 'large' ? 'p-8 md:p-10' : 'p-6'
+                                                    }`}>
+                                                    {/* Inner Glow */}
+                                                    <div className="absolute -top-48 -right-48 w-96 h-96 bg-yellow-500/10 blur-[100px] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
+
+                                                    {/* Main Certificate Display Area - Priority on visibility */}
+                                                    <div
+                                                        onClick={() => setSelectedCert(cert)}
+                                                        className={`relative rounded-2xl overflow-hidden bg-zinc-900 border border-white/5 cursor-pointer group/img flex items-center justify-center p-4 shadow-inner ${section.certificateSize === 'readable' ? 'aspect-[3/4] mb-12 border-white/10' :
+                                                            section.certificateSize === 'large' ? 'aspect-[3/4] mb-8' :
+                                                                section.certificateSize === 'small' ? 'aspect-[3/4] mb-4' :
+                                                                    'aspect-[3/4] mb-6'
+                                                            }`}
+                                                    >
+                                                        {cert.image ? (
+                                                            <img
+                                                                src={cert.image}
+                                                                alt={cert.title}
+                                                                className="w-full h-full object-contain transition-transform duration-700 group-hover/img:scale-105"
+                                                            />
+                                                        ) : (
+                                                            <div className="w-full h-full flex flex-col items-center justify-center gap-4 bg-zinc-900/50">
+                                                                <ShieldCheck className="text-yellow-500/20" size={64} />
+                                                                <span className="text-zinc-600 text-[10px] font-bold uppercase tracking-widest">Podgląd niedostępny</span>
+                                                            </div>
+                                                        )}
+
+                                                        {/* Overlay on hover */}
+                                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex flex-col items-center justify-center backdrop-blur-[1px]">
+                                                            <div className="bg-yellow-500 p-6 rounded-full text-black scale-90 group-hover/img:scale-100 transition-all shadow-[0_0_30px_rgba(234,179,8,0.5)]">
+                                                                <Maximize2 size={section.certificateSize === 'readable' ? 48 : 32} />
+                                                            </div>
+                                                            <span className="mt-6 text-white text-[12px] font-bold uppercase tracking-[0.2em] opacity-0 group-hover/img:opacity-100 transition-opacity">
+                                                                Kliknij aby powiększyć
+                                                            </span>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex flex-col flex-grow relative z-10">
+                                                        <div className="flex items-center gap-2 mb-4">
+                                                            <span className="px-3 py-1 bg-yellow-500/10 border border-yellow-500/20 rounded-md text-[10px] text-yellow-500 font-bold uppercase tracking-widest">
+                                                                Verified Credentials
+                                                            </span>
+                                                            <span className="text-zinc-600">•</span>
+                                                            <div className="flex items-center gap-1.5 text-[10px] font-bold text-green-500 uppercase tracking-tighter">
+                                                                <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)] animate-pulse" />
+                                                                Status: Aktywny
+                                                            </div>
+                                                        </div>
+
+                                                        <h3 className={`font-bold text-white mb-2 group-hover:text-yellow-500 transition-colors line-clamp-2 ${section.certificateSize === 'readable' ? 'text-4xl' :
+                                                            section.certificateSize === 'large' ? 'text-2xl' : 'text-xl'
+                                                            }`}>
+                                                            {cert.title}
+                                                        </h3>
+
+                                                        {cert.subtitle && (
+                                                            <p className={`text-zinc-500 font-medium uppercase tracking-widest ${section.certificateSize === 'readable' ? 'text-base mb-10' :
+                                                                section.certificateSize === 'large' ? 'text-xs mb-6' : 'text-[10px] mb-4'
+                                                                }`}>
+                                                                {cert.subtitle}
+                                                            </p>
+                                                        )}
+
+                                                        <button
+                                                            onClick={() => setSelectedCert(cert)}
+                                                            className={`mt-auto w-full py-3 bg-zinc-900 hover:bg-zinc-800 border border-white/5 rounded-xl font-bold text-zinc-300 uppercase tracking-widest transition-all flex items-center justify-center gap-2 group/btn ${section.certificateSize === 'readable' ? 'text-sm py-5' :
+                                                                section.certificateSize === 'large' ? 'text-xs py-4' : 'text-[10px]'
+                                                                }`}
+                                                        >
+                                                            Szczegóły uprawnień
+                                                            <ArrowRight size={18} className="group-hover/btn:translate-x-1 transition-transform" />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </motion.div>
+                                    ))}
+                                </div>
+                            </section>
+                        );
+
+                    case 'b2b_hero':
+                        return (
+                            <section key={section.id} className="relative min-h-[80vh] flex items-center justify-center overflow-hidden py-24 px-6">
+                                {/* Background Image */}
+                                {data.image ? (
+                                    <>
+                                        <div
+                                            className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+                                            style={{ backgroundImage: `url("${data.image}")` }}
+                                        />
+                                        <div className="absolute inset-0 bg-black/50" />
+                                    </>
+                                ) : (
+                                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(255,215,0,0.05),transparent_70%)]" />
+                                )}
+
+                                <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+
+                                <div className="relative max-w-5xl mx-auto text-center z-10">
+                                    {data.tag && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 text-[10px] font-bold uppercase tracking-[0.3em] mb-8"
+                                        >
+                                            <Zap size={12} className="fill-yellow-500/20" /> {data.tag}
+                                        </motion.div>
+                                    )}
+                                    <h1 className="text-5xl md:text-7xl font-bold text-white mb-8 leading-[1.1] tracking-tight" dangerouslySetInnerHTML={{ __html: data.title }} />
+                                    <p className="text-zinc-400 text-lg md:text-xl mb-12 max-w-2xl mx-auto leading-relaxed">{data.subtitle}</p>
+                                    {data.buttonText && (
+                                        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 }}>
+                                            <Link href={data.buttonLink || '#kontakt'} className="inline-flex items-center gap-2 bg-white text-black font-bold px-10 py-5 rounded-full hover:bg-yellow-500 transition-all group hover:scale-105 active:scale-95">
+                                                {data.buttonText}
+                                                <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+                                            </Link>
+                                        </motion.div>
+                                    )}
+                                </div>
+
+                                {/* Abstract Decoration */}
+                                <div className="absolute top-1/4 -right-24 w-96 h-96 bg-yellow-500/10 blur-[120px] rounded-full pointer-events-none" />
+                                <div className="absolute bottom-1/4 -left-24 w-96 h-96 bg-blue-500/5 blur-[120px] rounded-full pointer-events-none" />
+                            </section>
+                        );
+
+                    case 'b2b_stats':
+                        return (
+                            <section key={section.id} className="py-24 px-6 border-y border-white/5 bg-zinc-950/50">
+                                <div className="max-w-7xl mx-auto">
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                                        {data.b2b_stats?.map((stat: any, i: number) => (
+                                            <motion.div key={stat.id} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} className="relative p-10 bg-zinc-900/30 border border-white/5 rounded-3xl hover:border-white/10 transition-colors group text-center">
+                                                <div className="text-5xl md:text-6xl font-black text-white mb-4 tracking-tighter flex items-center justify-center gap-1 group-hover:scale-110 transition-transform duration-500">
+                                                    {stat.prefix && <span className="text-yellow-500 text-3xl font-bold">{stat.prefix}</span>}
+                                                    {stat.value}
+                                                    {stat.suffix && <span className="text-yellow-500 text-3xl font-bold">{stat.suffix}</span>}
+                                                </div>
+                                                <p className="text-zinc-500 font-bold uppercase tracking-widest text-xs">{stat.label}</p>
+                                            </motion.div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </section>
+                        );
+
+                    case 'b2b_logos':
+                        return (
+                            <section key={section.id} className="py-12 px-6 border-b border-white/5 overflow-hidden">
+                                <div className="max-w-7xl mx-auto">
+                                    <p className="text-center text-[10px] font-bold text-zinc-600 uppercase tracking-[0.4em] mb-10">Zaufali nam liderzy rynkowi</p>
+                                    <div className="flex flex-wrap justify-center gap-12 md:gap-24 items-center opacity-40 grayscale transition-all duration-700 hover:grayscale-0 hover:opacity-100">
+                                        {data.b2b_logos?.map((logo: any, i: number) => (
+                                            <motion.div key={logo.id} initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} transition={{ delay: i * 0.05 }} className="h-8 md:h-10 shrink-0">
+                                                <img src={logo.image} alt={logo.name || 'Partner'} className="h-full w-auto object-contain filter invert opacity-80" />
+                                            </motion.div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </section>
+                        );
+
+                    case 'b2b_process':
+                        return (
+                            <section key={section.id} className="py-40 px-6 relative overflow-hidden">
+                                {/* Technical Background Elements */}
+                                <div className="absolute top-1/2 left-0 w-[500px] h-[500px] bg-blue-500/5 blur-[120px] rounded-full pointer-events-none" />
+
+                                <div className="max-w-7xl mx-auto relative z-10">
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-24 items-start">
+                                        <div className="sticky top-32">
+                                            <motion.div
+                                                initial={{ opacity: 0, x: -20 }}
+                                                whileInView={{ opacity: 1, x: 0 }}
+                                                className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] font-black uppercase tracking-[0.3em] mb-8"
+                                            >
+                                                <Workflow size={12} className="animate-spin-slow" /> {data.subtitle || 'Ecosystem Operacyjny'}
+                                            </motion.div>
+
+                                            <h2 className="text-5xl md:text-7xl font-bold text-white mb-10 leading-[1.05] tracking-tight"
+                                                dangerouslySetInnerHTML={{ __html: data.title || 'Inżynieria procesowa <span class="text-yellow-500">bez kompromisów.</span>' }}
+                                            />
+
+                                            <p className="text-zinc-400 text-lg mb-12 max-w-lg leading-relaxed">
+                                                Dostarczamy dane najwyższej jakości dzięki zdefiniowanym protokołom operacyjnym i rygorystycznym standardom bezpieczeństwa.
+                                            </p>
+
+                                            <div className="grid grid-cols-2 gap-8">
+                                                <motion.div
+                                                    whileHover={{ y: -5 }}
+                                                    className="p-8 bg-zinc-900/50 backdrop-blur-md rounded-[32px] border border-white/5 relative group"
+                                                >
+                                                    <div className="absolute inset-0 bg-yellow-500/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-[32px]" />
+                                                    <ShieldCheck className="text-yellow-500 mb-6" size={32} />
+                                                    <p className="text-white font-black text-xs uppercase tracking-widest mb-2">{data.featureTitle || 'Standardy LUC'}</p>
+                                                    <p className="text-[10px] text-zinc-500 font-bold tracking-tight uppercase">{data.featureContent || 'Pełna zgodność z EASA'}</p>
+                                                </motion.div>
+
+                                                <motion.div
+                                                    whileHover={{ y: -5 }}
+                                                    className="p-8 bg-zinc-900/50 backdrop-blur-md rounded-[32px] border border-white/5 relative group"
+                                                >
+                                                    <div className="absolute inset-0 bg-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-[32px]" />
+                                                    <Zap className="text-blue-400 mb-6" size={32} />
+                                                    <p className="text-white font-black text-xs uppercase tracking-widest mb-2">Czas Reakcji</p>
+                                                    <p className="text-[10px] text-zinc-500 font-bold tracking-tight uppercase">SLA 24h / 48h</p>
+                                                </motion.div>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-8 relative">
+                                            {/* Vertical Connect Line */}
+                                            <div className="absolute left-[39px] top-10 bottom-10 w-px bg-gradient-to-b from-yellow-500/50 via-zinc-800 to-transparent hidden md:block" />
+
+                                            {data.b2b_process?.map((step: any, i: number) => (
+                                                <motion.div
+                                                    key={step.id || i}
+                                                    initial={{ opacity: 0, x: 30 }}
+                                                    whileInView={{ opacity: 1, x: 0 }}
+                                                    transition={{ delay: i * 0.15, duration: 0.6 }}
+                                                    className="group relative pl-0 md:pl-20"
+                                                >
+                                                    {/* Step Number with Pulsing Indicator */}
+                                                    <div className="hidden md:flex absolute left-0 top-0 w-20 items-center justify-center">
+                                                        <div className="w-10 h-10 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center text-white text-xs font-black z-10 group-hover:border-yellow-500/50 group-hover:text-yellow-500 transition-all duration-500">
+                                                            {i + 1}
+                                                        </div>
+                                                        <div className="absolute w-14 h-14 rounded-full border border-yellow-500/0 group-hover:border-yellow-500/20 group-hover:scale-125 transition-all duration-700 pointer-events-none" />
+                                                    </div>
+
+                                                    <div className="p-10 bg-zinc-900/40 backdrop-blur-sm border border-white/5 rounded-[40px] hover:bg-zinc-900/60 hover:border-white/10 transition-all duration-500 relative overflow-hidden">
+                                                        <div className="absolute top-0 right-0 p-8 text-8xl font-black text-white/[0.02] group-hover:text-yellow-500/[0.05] transition-colors select-none">
+                                                            0{i + 1}
+                                                        </div>
+
+                                                        <div className="relative z-10">
+                                                            <div className="flex items-center gap-4 mb-4 md:hidden">
+                                                                <div className="w-8 h-8 rounded-full bg-yellow-500/20 flex items-center justify-center text-yellow-500 text-[10px] font-black">
+                                                                    {i + 1}
+                                                                </div>
+                                                                <div className="text-[10px] font-black text-yellow-500 uppercase tracking-widest">Krok Procesu</div>
+                                                            </div>
+
+                                                            <h4 className="text-2xl font-bold text-white mb-4 group-hover:text-yellow-400 transition-colors">
+                                                                {step.title}
+                                                            </h4>
+                                                            <p className="text-zinc-500 text-sm leading-relaxed max-w-md">
+                                                                {step.description}
+                                                            </p>
+
+                                                            <div className="mt-8 flex items-center gap-4">
+                                                                <div className="h-px w-8 bg-zinc-800" />
+                                                                <span className="text-[9px] font-black text-zinc-600 uppercase tracking-widest group-hover:text-zinc-400 transition-colors">
+                                                                    Verified Operation
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </motion.div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
+                        );
+
+                    case 'b2b_cases':
+                        return (
+                            <section key={section.id} className="py-32 px-6 relative overflow-hidden">
+                                {/* Ambient Background Particles/Flares */}
+                                <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-yellow-500/5 blur-[120px] rounded-full pointer-events-none" />
+                                <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-blue-500/5 blur-[120px] rounded-full pointer-events-none" />
+
+                                <div className="max-w-7xl mx-auto relative z-10">
+                                    <div className="mb-20">
+                                        <motion.div
+                                            initial={{ opacity: 0, x: -20 }}
+                                            whileInView={{ opacity: 1, x: 0 }}
+                                            className="inline-flex items-center gap-3 px-4 py-1.5 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-400 text-[11px] font-bold uppercase tracking-[0.3em] mb-6"
+                                        >
+                                            <Briefcase size={14} className="fill-orange-400/20" /> Case Studies
+                                        </motion.div>
+                                        <h2 className="text-5xl md:text-7xl font-bold text-white tracking-tight leading-none mb-4">
+                                            Przykładowe <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-500 to-yellow-200">realizacje</span>
+                                        </h2>
+                                        <div className="h-1 w-24 bg-gradient-to-r from-yellow-500 to-transparent rounded-full" />
+                                    </div>
+
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                                        {data.b2b_cases?.map((caseStudy: any, i: number) => (
+                                            <motion.div
+                                                key={caseStudy.id || i}
+                                                initial={{ opacity: 0, y: 40 }}
+                                                whileInView={{ opacity: 1, y: 0 }}
+                                                transition={{ delay: i * 0.2, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+                                                className="group relative h-[600px] rounded-[48px] overflow-hidden border border-white/10 bg-zinc-900"
+                                            >
+                                                {/* Background Image - Optimized for visibility */}
+                                                {caseStudy.image ? (
+                                                    <div className="absolute inset-0 transition-transform duration-[2000ms] ease-out group-hover:scale-105">
+                                                        <div
+                                                            className="absolute inset-0 bg-cover bg-center blur-xl opacity-20 scale-110"
+                                                            style={{ backgroundImage: `url("${caseStudy.image}")` }}
+                                                        />
+                                                        <img
+                                                            src={caseStudy.image}
+                                                            alt=""
+                                                            className="w-full h-full object-contain relative z-10 p-4 transition-all duration-700"
+                                                        />
+                                                        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/60 to-transparent z-20" />
+                                                    </div>
+                                                ) : (
+                                                    <div className="absolute inset-0 bg-zinc-900 flex items-center justify-center">
+                                                        <Camera size={64} className="text-zinc-800" />
+                                                    </div>
+                                                )}
+
+                                                {/* Decorative Accent Line */}
+                                                <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-yellow-500 via-yellow-300 to-transparent transform -translate-x-full group-hover:translate-x-0 transition-transform duration-700 delay-100" />
+
+                                                {/* Content Overlay */}
+                                                <div className="absolute inset-0 p-10 md:p-14 flex flex-col justify-end z-20">
+                                                    <div className="space-y-4 translate-y-8 group-hover:translate-y-0 transition-transform duration-500">
+                                                        <motion.div className="flex items-center gap-3">
+                                                            <div className="w-8 h-[1px] bg-yellow-500" />
+                                                            <p className="text-yellow-500 text-[10px] font-black uppercase tracking-[0.4em]">
+                                                                {caseStudy.client || 'Realizacja Premium'}
+                                                            </p>
+                                                        </motion.div>
+
+                                                        <h3 className="text-4xl md:text-5xl font-bold text-white leading-[1.1] tracking-tight group-hover:text-yellow-400 transition-colors">
+                                                            {caseStudy.title}
+                                                        </h3>
+
+                                                        {/* Description - Revealed on hover */}
+                                                        <div className="max-h-0 opacity-0 group-hover:max-h-48 group-hover:opacity-100 transition-all duration-700 overflow-hidden">
+                                                            <p className="text-zinc-400 text-sm leading-relaxed mb-6 mt-4">
+                                                                {caseStudy.description}
+                                                            </p>
+                                                            <div className="pt-6 border-t border-white/5 flex items-center justify-between">
+                                                                <div className="flex items-center gap-2">
+                                                                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                                                                    <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest group-hover:text-zinc-300 transition-colors">Case ID: #DPR-{i + 101}</span>
+                                                                </div>
+                                                                <button
+                                                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setSelectedCase(caseStudy); }}
+                                                                    className="flex items-center gap-3 px-6 py-2.5 bg-white text-black text-xs font-black uppercase tracking-widest rounded-full hover:bg-yellow-500 transition-all hover:scale-105 active:scale-95 shadow-xl shadow-black/20 group/btn"
+                                                                >
+                                                                    Szczegóły projektu
+                                                                    <ArrowRight size={14} className="group-hover/btn:translate-x-1 transition-transform" />
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                        <div className="hidden md:flex items-center gap-2 text-zinc-500 text-[10px] font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-300">
+                                                            <Zap size={10} className="text-yellow-500" /> Case ID: #{i + 1}024
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Corner Decoration */}
+                                                <div className="absolute top-8 right-8 w-12 h-12 border-t-2 border-r-2 border-white/10 rounded-tr-2xl group-hover:border-yellow-500/40 transition-colors duration-500" />
+
+                                                {/* Hover Glow Effect */}
+                                                <div className="absolute -inset-24 bg-yellow-500/10 blur-[80px] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-1000 pointer-events-none" />
+                                            </motion.div>
+                                        ))}
+                                    </div>
+
+                                    {/* Bottom CTA for Section */}
+                                    <motion.div
+                                        initial={{ opacity: 0 }}
+                                        whileInView={{ opacity: 1 }}
+                                        className="mt-20 flex flex-col items-center text-center space-y-6"
+                                    >
+                                        <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-[0.5em]">Realizujemy najbardziej wymagające zlecenia</p>
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-12 h-px bg-zinc-800" />
+                                            <div className="w-2 h-2 rounded-full bg-yellow-500" />
+                                            <div className="w-12 h-px bg-zinc-800" />
+                                        </div>
+                                    </motion.div>
+                                </div>
+                            </section>
+                        );
+
+                    case 'b2b_contact':
+                        return (
+                            <section key={section.id} id="rfq" className="py-32 px-6">
+                                <div className="max-w-7xl mx-auto">
+                                    <div className="relative p-12 md:p-24 bg-zinc-950 border border-white/5 rounded-[50px] overflow-hidden">
+                                        <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-20">
+                                            <div>
+                                                <h2 className="text-5xl md:text-7xl font-bold text-white mb-8 leading-tight">Zapytaj o <span className="text-yellow-500">ofertę B2B.</span></h2>
+                                                <p className="text-zinc-400 text-lg mb-12">Nasz doradca techniczny skontaktuje się z Tobą w ciągu 4 godzin roboczych.</p>
+                                                <div className="space-y-4">
+                                                    {['Bezpośrednie wsparcie inżyniera', 'Darmowa analiza wykonalności'].map((item, i) => (
+                                                        <div key={i} className="flex items-center gap-4 text-white font-medium">
+                                                            <CheckCircle2 className="text-yellow-500" size={20} /> {item}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                            <div className="relative z-10 w-full">
+                                                <B2BContactForm />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
+                        );
+
                     default:
                         return null;
                 }
             })}
+
+            {/* SHARED MODALS & LIGHTBOXES */}
+            <AnimatePresence>
+                {selectedCert && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-10 pointer-events-auto"
+                    >
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setSelectedCert(null)}
+                            className="absolute inset-0 bg-black/95 backdrop-blur-md cursor-zoom-out"
+                        />
+
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            className="relative max-w-5xl w-full max-h-full bg-zinc-900 rounded-[32px] overflow-hidden shadow-2xl border border-white/10"
+                        >
+                            <button
+                                onClick={() => setSelectedCert(null)}
+                                className="absolute top-6 right-6 z-20 p-2 bg-black/50 hover:bg-black/80 rounded-full text-white transition-colors border border-white/10"
+                            >
+                                <X size={24} />
+                            </button>
+
+                            <div className="grid md:grid-cols-5 h-full overflow-y-auto max-h-[90vh]">
+                                <div className="md:col-span-3 bg-black flex items-center justify-center p-4 md:p-8 border-r border-white/5">
+                                    {selectedCert.image ? (
+                                        <img
+                                            src={selectedCert.image}
+                                            alt={selectedCert.title}
+                                            className="max-w-full max-h-full h-auto shadow-2xl rounded-sm border border-zinc-800"
+                                        />
+                                    ) : (
+                                        <ShieldCheck className="text-zinc-800" size={200} />
+                                    )}
+                                </div>
+                                <div className="md:col-span-2 p-8 md:p-12 flex flex-col">
+                                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-yellow-500/10 border border-yellow-500/20 rounded-full text-yellow-500 text-[10px] font-bold uppercase tracking-widest mb-8 self-start">
+                                        Official Certification
+                                    </div>
+                                    <h2 className="text-2xl md:text-3xl font-bold text-white mb-4 leading-tight">
+                                        {selectedCert.title}
+                                    </h2>
+                                    <p className="text-zinc-500 text-xs font-semibold mb-8 uppercase tracking-[0.2em] border-b border-white/5 pb-6">
+                                        {selectedCert.subtitle || 'Verified Specialist'}
+                                    </p>
+
+                                    <div className="flex-grow">
+                                        <h4 className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-4">Opis kwalifikacji</h4>
+                                        <p className="text-zinc-400 text-sm leading-relaxed mb-8">
+                                            {selectedCert.description || 'Ten dokument potwierdza oficjalne uprawnienia do realizacji specjalistycznych operacji z wykorzystaniem systemów bezzałogowych statków powietrznych w określonych kategoriach.'}
+                                        </p>
+
+                                        <div className="space-y-4">
+                                            <div className="flex items-center gap-4 p-4 rounded-2xl bg-white/5 border border-white/5">
+                                                <div className="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center text-green-500">
+                                                    <ShieldCheck size={20} />
+                                                </div>
+                                                <div>
+                                                    <div className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">Status Walidacji</div>
+                                                    <div className="text-white text-sm font-medium">Aktywny i zweryfikowany</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <button
+                                        onClick={() => setSelectedCert(null)}
+                                        className="mt-12 w-full py-4 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-2xl transition-all shadow-lg shadow-yellow-500/10"
+                                    >
+                                        Zamknij podgląd
+                                    </button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+
+                {selectedCase && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[110] flex items-center justify-center p-4 md:p-8 pointer-events-auto"
+                    >
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setSelectedCase(null)}
+                            className="absolute inset-0 bg-black/98 backdrop-blur-xl cursor-zoom-out"
+                        />
+
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                            className="relative max-w-7xl w-[95vw] max-h-[85vh] bg-zinc-950 rounded-[40px] overflow-hidden shadow-[0_0_100px_rgba(0,0,0,0.8)] border border-white/10 flex flex-col lg:flex-row"
+                        >
+                            {/* CLOSE BUTTON */}
+                            <button
+                                onClick={() => setSelectedCase(null)}
+                                className="absolute top-8 right-8 z-50 p-3 bg-black/50 hover:bg-yellow-500 hover:text-black rounded-full text-white transition-all border border-white/10 group backdrop-blur-md"
+                            >
+                                <X size={24} className="group-hover:rotate-90 transition-transform duration-300" />
+                            </button>
+
+                            {/* Cinema Image Pane */}
+                            <div className="lg:w-[65%] bg-black relative group/media overflow-hidden flex items-center justify-center border-b lg:border-b-0 lg:border-r border-white/5 min-h-[40vh] lg:min-h-0">
+                                {/* Blurred Background Overlay */}
+                                {selectedCase.image && (
+                                    <div
+                                        className="absolute inset-0 bg-cover bg-center blur-3xl opacity-20 scale-110"
+                                        style={{ backgroundImage: `url("${selectedCase.image}")` }}
+                                    />
+                                )}
+
+                                {selectedCase.image ? (
+                                    <img
+                                        src={selectedCase.image}
+                                        alt={selectedCase.title}
+                                        className="relative z-10 w-full h-full object-contain p-4 lg:p-12 transition-transform duration-1000 group-hover/media:scale-[1.02]"
+                                    />
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center">
+                                        <Camera className="text-zinc-800" size={120} />
+                                    </div>
+                                )}
+
+                                {/* Scanning Line */}
+                                <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden z-20">
+                                    <motion.div
+                                        initial={{ top: "-100%" }}
+                                        animate={{ top: "200%" }}
+                                        transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+                                        className="absolute left-0 right-0 h-1 bg-yellow-500/10 blur-sm shadow-[0_0_15px_rgba(234,179,8,0.3)]"
+                                    />
+                                </div>
+
+                                {/* Info Box */}
+                                <div className="absolute bottom-8 left-8 z-30 hidden md:block">
+                                    <div className="bg-black/40 backdrop-blur-xl p-6 rounded-3xl border border-white/10 shadow-2xl max-w-sm">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <div className="px-2 py-0.5 bg-yellow-500 text-black text-[9px] font-black rounded uppercase tracking-tighter">CASE</div>
+                                            <span className="text-white/40 text-[10px] uppercase font-bold tracking-widest">PROJEKT B2B</span>
+                                        </div>
+                                        <h3 className="text-white text-xl font-bold leading-tight">{selectedCase.title}</h3>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Info & Specs Pane */}
+                            <div className="lg:w-[35%] bg-zinc-950 flex flex-col p-8 lg:p-12 overflow-y-auto custom-scrollbar">
+                                <div className="space-y-10">
+                                    <div>
+                                        <div className="text-yellow-500/50 text-[10px] font-bold uppercase tracking-[0.2em] mb-2">{selectedCase.client}</div>
+                                        <h4 className="text-white text-2xl font-bold mb-4">Analiza przypadku</h4>
+                                        <p className="text-zinc-400 text-sm leading-relaxed">
+                                            {selectedCase.description || 'Pomyślnie zrealizowana misja z wykorzystaniem najnowszych technologii dronowych.'}
+                                        </p>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 gap-4">
+                                        <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400">
+                                                    <Zap size={20} />
+                                                </div>
+                                                <div>
+                                                    <div className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">Technologia</div>
+                                                    <div className="text-white text-sm font-semibold">UAV Multispectral Analysis</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center text-green-400">
+                                                    <ShieldCheck size={20} />
+                                                </div>
+                                                <div>
+                                                    <div className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">Rezultat</div>
+                                                    <div className="text-white text-sm font-semibold">Redukcja kosztów procesu o 40%</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="pt-8 border-t border-white/5">
+                                        <div className="flex flex-col gap-4">
+                                            <div className="flex justify-between items-end mb-2">
+                                                <div>
+                                                    <div className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider mb-1">Status Realizacji</div>
+                                                    <div className="text-white text-xl font-black italic tracking-tight uppercase">Zrealizowano</div>
+                                                </div>
+                                                <div className="px-2 py-1 bg-green-500 text-black text-[9px] font-bold rounded">100% SUCCESS</div>
+                                            </div>
+                                            <div className="h-1 bg-zinc-800 rounded-full overflow-hidden">
+                                                <motion.div
+                                                    initial={{ width: 0 }}
+                                                    animate={{ width: "100%" }}
+                                                    transition={{ duration: 1.5, ease: "easeOut" }}
+                                                    className="h-full bg-gradient-to-r from-yellow-500 to-yellow-400"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="mt-auto pt-10">
+                                    <button
+                                        onClick={() => setSelectedCase(null)}
+                                        className="w-full py-4 bg-white hover:bg-yellow-500 text-black font-bold rounded-2xl transition-all shadow-xl hover:shadow-yellow-500/20 uppercase text-xs tracking-widest"
+                                    >
+                                        Zamknij przegląd
+                                    </button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

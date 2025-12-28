@@ -92,6 +92,8 @@ export default function AdminMenuPage() {
         { title: "O mnie", url: "/o-mnie" },
         { title: "Jak się ubrać", url: "/jak-sie-ubrac" },
         { title: "Rezerwacja", url: "/rezerwacja" },
+        { title: "Oferta B2B", url: "/oferta-b2b" },
+        { title: "Dron", url: "/dron" },
         { title: "Fotograf Toruń", url: "/fotograf-torun" },
         { title: "Fotograf Bydgoszcz", url: "/fotograf-bydgoszcz" },
         { title: "Fotograf Grudziądz", url: "/fotograf-grudziadz" },
@@ -116,10 +118,17 @@ export default function AdminMenuPage() {
 
             const menuData = await menuRes.json();
             // Try to fetch pages, but handle if endpoint doesn't exist or fails
-            let pagesData = [];
+            let pagesData: any = [];
             try {
                 if (pagesRes.ok) {
-                    pagesData = await pagesRes.json();
+                    const resJson = await pagesRes.json();
+                    // Handle wrapped response { success: true, pages: [...] }
+                    if (resJson && resJson.pages && Array.isArray(resJson.pages)) {
+                        pagesData = resJson.pages;
+                    } else if (Array.isArray(resJson)) {
+                        // Handle direct array response (legacy)
+                        pagesData = resJson;
+                    }
                 } else {
                     // Fallback to old menu endpoint if needed, or just empty
                     const oldMenuRes = await fetch("/api/menu");
@@ -147,8 +156,8 @@ export default function AdminMenuPage() {
         const body = {
             id: editingItem?.id,
             title: formData.title,
-            url: formData.type === "custom" ? formData.url : (formData.type === "system" ? formData.url : undefined),
-            page_id: formData.type === "page" ? Number(formData.page_id) : undefined,
+            url: formData.type === "custom" ? formData.url : (formData.type === "system" ? formData.url : null),
+            page_id: formData.type === "page" ? Number(formData.page_id) : null,
             parent_id: formData.parent_id ? Number(formData.parent_id) : null,
             order: editingItem ? editingItem.order : menuItems.length,
         };
@@ -160,14 +169,21 @@ export default function AdminMenuPage() {
                 body: JSON.stringify(body)
             });
 
-            if (res.ok) {
-                setIsModalOpen(false);
-                setEditingItem(null);
-                resetForm();
-                fetchData();
+            if (!res.ok) {
+                const errorData = await res.json();
+                console.error("Save failed:", errorData);
+                alert(`Błąd zapisu: ${errorData.error || 'Wystąpił nieznany błąd'}`);
+                return;
             }
+
+            // Success
+            setIsModalOpen(false);
+            setEditingItem(null);
+            resetForm();
+            fetchData();
         } catch (error) {
             console.error("Error saving:", error);
+            alert("Błąd połączenia z serwerem. Sprawdź konsolę.");
         }
     };
 
@@ -214,6 +230,19 @@ export default function AdminMenuPage() {
         setIsModalOpen(true);
     };
 
+    // Helper to flatten items for the dropdown
+    const flattenMenuItems = (items: MenuItem[], depth = 0): (MenuItem & { depth: number })[] => {
+        let result: (MenuItem & { depth: number })[] = [];
+        for (const item of items) {
+            result.push({ ...item, depth });
+            if (item.children && item.children.length > 0) {
+                result = [...result, ...flattenMenuItems(item.children, depth + 1)];
+            }
+        }
+        return result;
+    };
+
+
     // Drag End Handler (Simplified for now - just reordering top level)
     const handleDragEnd = async (event: any) => {
         const { active, over } = event;
@@ -238,16 +267,63 @@ export default function AdminMenuPage() {
         }
     };
 
+    // Check if we are in fallback mode
+    const isFallbackMode = menuItems.length > 0 && (menuItems[0] as any).__source === 'pages';
+
+    const handleInitializeMenu = async () => {
+        if (!confirm("To utworzy edytowalną strukturę menu na podstawie obecnych stron. Kontynuować?")) return;
+
+        try {
+            // Save all current items to DB
+            for (const item of menuItems) {
+                await fetch("/api/menu/items", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        title: item.title,
+                        url: item.url,
+                        page_id: item.page_id,
+                        order: item.order,
+                        parent_id: null, // Fallback items are always flat initially or we'd need complex logic
+                    })
+                });
+            }
+            alert("Menu zostało zainicjalizowane. Teraz możesz dodawać nowe elementy i podstrony.");
+            fetchData(); // Refresh to get real IDs
+        } catch (e) {
+            console.error(e);
+            alert("Błąd inicjalizacji menu");
+        }
+    };
+
     return (
         <div className="max-w-4xl mx-auto">
             <div className="flex justify-between items-center mb-8">
-                <h1 className="text-3xl font-bold text-zinc-900">Zarządzanie Menu</h1>
-                <button
-                    onClick={() => openModal()}
-                    className="bg-zinc-900 text-white px-4 py-2 rounded-lg hover:bg-zinc-800 transition-colors"
-                >
-                    + Dodaj element
-                </button>
+                <div>
+                    <h1 className="text-3xl font-bold text-zinc-900">Zarządzanie Menu</h1>
+                    {isFallbackMode && (
+                        <p className="text-amber-600 text-sm mt-1">
+                            ⚠️ Tryb podglądu automatycznego. Zapisz układ, aby edytować.
+                        </p>
+                    )}
+                </div>
+                <div className="flex gap-3">
+                    {isFallbackMode && (
+                        <button
+                            onClick={handleInitializeMenu}
+                            className="bg-amber-500 text-white px-4 py-2 rounded-lg hover:bg-amber-600 transition-colors shadow-sm"
+                        >
+                            💾 Zapisz obecny układ
+                        </button>
+                    )}
+                    <button
+                        onClick={() => openModal()}
+                        disabled={isFallbackMode}
+                        className={`bg-zinc-900 text-white px-4 py-2 rounded-lg transition-colors ${isFallbackMode ? 'opacity-50 cursor-not-allowed' : 'hover:bg-zinc-800'}`}
+                    >
+                        + Dodaj element
+                    </button>
+                </div>
             </div>
 
             <div className="bg-zinc-50 p-6 rounded-xl border border-zinc-200">
@@ -384,9 +460,13 @@ export default function AdminMenuPage() {
                                     onChange={e => setFormData({ ...formData, parent_id: e.target.value })}
                                 >
                                     <option value="">-- Brak (element główny) --</option>
-                                    {menuItems.filter(i => i.id !== editingItem?.id).map(i => (
-                                        <option key={i.id} value={i.id}>{i.title}</option>
-                                    ))}
+                                    {flattenMenuItems(menuItems)
+                                        .filter(i => i.id !== editingItem?.id) // Cannot be own parent
+                                        .map(i => (
+                                            <option key={i.id} value={i.id}>
+                                                {Array(i.depth).fill("\u00A0\u00A0").join("")} {i.depth > 0 ? "└ " : ""}{i.title}
+                                            </option>
+                                        ))}
                                 </select>
                             </div>
 
