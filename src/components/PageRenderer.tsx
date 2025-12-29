@@ -177,8 +177,8 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
 
                     case 'thermal_slider':
                         return (
-                            <section key={section.id} className="py-20 bg-zinc-950 overflow-hidden">
-                                <div className="max-w-6xl mx-auto px-4">
+                            <section key={section.id} className="py-24 bg-zinc-950 overflow-hidden px-4 md:px-6">
+                                <div className="max-w-[1400px] mx-auto">
                                     <div className="mb-12">
                                         {data.title && <h2 className="text-3xl md:text-5xl font-display font-bold text-white mb-4 text-center">{data.title}</h2>}
                                         {data.subtitle && <p className="text-zinc-400 max-w-2xl mx-auto text-center">{data.subtitle}</p>}
@@ -535,8 +535,12 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
 
                     case 'b2b_stats':
                         return (
-                            <section key={section.id} className="py-24 px-6 border-y border-white/5 bg-zinc-950/50">
-                                <div className="max-w-7xl mx-auto">
+                            <section key={section.id} className="py-24 bg-zinc-950 overflow-hidden px-4 md:px-6">
+                                <div className="max-w-[1400px] mx-auto">
+                                    <div className="mb-12">
+                                        {data.title && <h2 className="text-3xl md:text-5xl font-display font-bold text-white mb-4 text-center">{data.title}</h2>}
+                                        {data.subtitle && <p className="text-zinc-400 max-w-2xl mx-auto text-center">{data.subtitle}</p>}
+                                    </div>
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                                         {data.b2b_stats?.map((stat: any, i: number) => (
                                             <motion.div key={stat.id} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} className="relative p-10 bg-zinc-900/30 border border-white/5 rounded-3xl hover:border-white/10 transition-colors group text-center">
@@ -555,9 +559,9 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
 
                     case 'b2b_logos':
                         return (
-                            <section key={section.id} className="py-12 px-6 border-b border-white/5 overflow-hidden">
-                                <div className="max-w-7xl mx-auto">
-                                    <p className="text-center text-[10px] font-bold text-zinc-600 uppercase tracking-[0.4em] mb-10">Zaufali nam liderzy rynkowi</p>
+                            <section key={section.id} className="py-16 bg-zinc-900/30 border-y border-white/5 px-4 md:px-6">
+                                <div className="max-w-[1400px] mx-auto">
+                                    <h4 className="text-center text-zinc-500 text-[10px] font-black uppercase tracking-[0.4em] mb-12">Zaufali nam liderzy branży</h4>
                                     <div className="flex flex-wrap justify-center gap-12 md:gap-24 items-center opacity-40 grayscale transition-all duration-700 hover:grayscale-0 hover:opacity-100">
                                         {data.b2b_logos?.map((logo: any, i: number) => (
                                             <motion.div key={logo.id} initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} transition={{ delay: i * 0.05 }} className="h-8 md:h-10 shrink-0">
@@ -675,12 +679,12 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
 
                     case 'b2b_cases':
                         return (
-                            <section key={section.id} className="py-32 px-6 relative overflow-hidden">
+                            <section key={section.id} className="py-24 md:py-32 px-4 md:px-6 relative overflow-hidden">
                                 {/* Ambient Background Particles/Flares */}
                                 <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-yellow-500/5 blur-[120px] rounded-full pointer-events-none" />
                                 <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-blue-500/5 blur-[120px] rounded-full pointer-events-none" />
 
-                                <div className="max-w-7xl mx-auto relative z-10">
+                                <div className="max-w-[1400px] mx-auto relative z-10">
                                     <div className="mb-20">
                                         <motion.div
                                             initial={{ opacity: 0, x: -20 }}
@@ -808,16 +812,16 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                             data.videoType === 'vimeo' ? getVimeoId(data.videoUrl || '') : '';
 
                         return (
-                            <section key={section.id} className={`py-24 bg-zinc-950 ${data.sectionLayout === 'full' ? 'px-0' : 'px-6'}`}>
-                                <div className={`${data.sectionLayout === 'full' ? 'w-full' : 'max-w-7xl mx-auto'}`}>
+                            <section key={section.id} className={`py-16 md:py-24 bg-zinc-950 ${data.sectionLayout === 'full' ? 'px-0' : 'px-4 md:px-6'}`}>
+                                <div className={`${data.sectionLayout === 'full' ? 'w-full' : 'max-w-[1400px] mx-auto'}`}>
                                     {(data.title || data.subtitle) && (
-                                        <div className="text-center mb-16 px-6">
-                                            {data.title && <h2 className="text-4xl md:text-6xl font-bold text-white mb-6 leading-tight" dangerouslySetInnerHTML={{ __html: data.title }} />}
-                                            {data.subtitle && <p className="text-zinc-500 max-w-2xl mx-auto text-xl leading-relaxed">{data.subtitle}</p>}
+                                        <div className="text-center mb-12 md:mb-16 px-6">
+                                            {data.title && <h2 className="text-3xl md:text-6xl font-bold text-white mb-6 leading-tight" dangerouslySetInnerHTML={{ __html: data.title }} />}
+                                            {data.subtitle && <p className="text-zinc-500 max-w-2xl mx-auto text-lg md:text-xl leading-relaxed">{data.subtitle}</p>}
                                         </div>
                                     )}
 
-                                    <div className={`relative aspect-video bg-black overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)] ${data.sectionLayout === 'centered' ? 'rounded-[40px] border border-white/5 mx-auto' : ''}`}>
+                                    <div className={`relative aspect-video bg-black overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)] ${data.sectionLayout === 'centered' ? 'rounded-2xl md:rounded-[40px] border border-white/5 mx-auto' : ''}`}>
                                         {data.videoType === 'direct' ? (
                                             <video
                                                 src={data.videoUrl}
@@ -852,11 +856,12 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
 
                     case 'b2b_contact':
                         return (
-                            <section key={section.id} id="rfq" className="py-32 px-6">
-                                <div className="max-w-7xl mx-auto">
-                                    <div className="relative p-12 md:p-24 bg-zinc-950 border border-white/5 rounded-[50px] overflow-hidden">
-                                        <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-20">
-                                            <div>
+                            <section key={section.id} id="rfq" className="py-24 md:py-32 px-4 md:px-6">
+                                <div className="max-w-[1400px] mx-auto">
+                                    <div className="bg-zinc-900 border border-white/5 rounded-3xl md:rounded-[40px] overflow-hidden shadow-2xl">
+                                        <div className="flex flex-col lg:flex-row">
+                                            {/* Info Column */}
+                                            <div className="lg:w-1/3 p-8 md:p-12 lg:p-16 bg-zinc-800/50 border-b lg:border-b-0 lg:border-r border-white/5">
                                                 <h2
                                                     className="text-5xl md:text-7xl font-bold text-white mb-8 leading-tight"
                                                     dangerouslySetInnerHTML={{ __html: section.title || 'Zapytaj o <span class="text-yellow-500">ofertę B2B.</span>' }}
