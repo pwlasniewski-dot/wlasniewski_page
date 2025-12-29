@@ -215,6 +215,7 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                             labelRight={data.labelRight || 'Termowizja'}
                                             sections={data.thermalSections}
                                             title={data.showCategoryTitle ? data.title : undefined}
+                                            switchInterval={data.switchInterval}
                                         />
                                     </div>
                                     {data.content && (

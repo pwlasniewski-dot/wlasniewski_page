@@ -177,14 +177,22 @@ Ten plik służy do ścisłego monitorowania wszystkich zmian wprowadzanych w pr
 
 **Status:** ✅ **KOMPLETNE & ZWERYFIKOWANE**
 
-- **Zadanie**: Rozbudowa funkcjonalności dronowych oraz implementacja zaawansowanych narzędzi Business Intelligence.
-- **Działania**:
-    - Integracja z zewnętrznymi API pogodowymi dla optymalizacji lotów dronowych.
-    - Rozwój modułu do automatycznego generowania raportów z inspekcji termowizyjnych.
-    - Wdrożenie narzędzi BI do analizy danych sprzedażowych i operacyjnych.
-- **Status**: Planowanie (Planning).
+### [2025-12-29] 🛠️ Post-Deployment Refinements (RichText & Thermal Slider)
+**Cel:** Naprawa trwałości kolorów w RichText oraz dodanie konfiguracji czasu zmiany w Thermal Slider.
+
+**Zrealizowane Zmiany:**
+1. **RichText Color Fix:** Usunięto agresywny reset CSS `.prose-inline-styles * { color: inherit !important; }` z `ThermalSlider.tsx`, który nadpisywał kolory wybrane w edytorze. Teraz kolory renderują się poprawnie na froncie.
+2. **Thermal Slider Interval:** 
+   - Dodano pole `switchInterval` (sekundy) do edytora sekcji `thermal_slider` w `PageBuilder.tsx`.
+   - Zaktualizowano `PageRenderer.tsx` do przekazywania wartości do komponentu.
+   - Zaktualizowano `ThermalSlider.tsx`, aby używał dynamicznego interwału zamiast sztywnej wartości 8s.
+3. **Certificate Modal Enhancements:** (Z poprzedniej sesji) Dodano edytowalne etykiety ("DOKUMENT ZWERYFIKOWANY" itp.) oraz poprawiono UX na mobile.
+
+**Status:** ✅ **KOMPLETNE & ZWERYFIKOWANE**
 
 ---
+
+### [Future Plans] Analityka Dronowa & Raporty BI
 
 
 

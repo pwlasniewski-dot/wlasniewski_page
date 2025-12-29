@@ -19,6 +19,7 @@ interface ThermalSliderProps {
     labelRight?: string;
     sections?: ThermalSection[];
     title?: string;
+    switchInterval?: number;
 }
 
 export default function ThermalSlider({
@@ -27,7 +28,8 @@ export default function ThermalSlider({
     labelLeft = 'Widok Standardowy',
     labelRight = 'Termowizja',
     sections = [],
-    title
+    title,
+    switchInterval = 8
 }: ThermalSliderProps) {
     const [sliderPos, setSliderPos] = useState(50);
     const [activeSection, setActiveSection] = useState(0);
@@ -93,11 +95,11 @@ export default function ThermalSlider({
         if (!autoScroll || displaySections.length <= 1) return;
         autoScrollRef.current = setInterval(() => {
             setActiveSection((prev) => (prev === displaySections.length - 1 ? 0 : prev + 1));
-        }, 8000);
+        }, switchInterval * 1000);
         return () => {
             if (autoScrollRef.current) clearInterval(autoScrollRef.current);
         };
-    }, [autoScroll, displaySections.length]);
+    }, [autoScroll, displaySections.length, switchInterval]);
 
     // Format URLs for CSS
     const visualUrl = currentSection.visualImage ? `url("${currentSection.visualImage}")` : 'none';
@@ -335,10 +337,6 @@ export default function ThermalSlider({
             </div>
 
             <style jsx global>{`
-                .prose-inline-styles * {
-                    color: inherit !important;
-                    font-family: inherit !important;
-                }
                 .no-scrollbar::-webkit-scrollbar {
                     display: none;
                 }

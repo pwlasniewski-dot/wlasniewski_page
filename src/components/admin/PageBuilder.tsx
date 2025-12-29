@@ -132,6 +132,7 @@ export interface PageSection {
     videoAutoPlay?: boolean;
     videoMuted?: boolean;
     videoLoop?: boolean;
+    switchInterval?: number; // For thermal_slider
 }
 
 interface PageBuilderProps {
@@ -444,17 +445,32 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove, openMedia
                                     className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white"
                                 />
                             </div>
-                            <div>
-                                <label className="block text-xs text-zinc-400 mb-2 font-bold uppercase tracking-tight">Pokaż Tytuł w Sliderze</label>
-                                <label className="flex items-center gap-2 cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        checked={section.showCategoryTitle || false}
-                                        onChange={(e) => onUpdate(section.id, { showCategoryTitle: e.target.checked })}
-                                        className="w-4 h-4 rounded border-zinc-600 text-yellow-500"
-                                    />
-                                    <span className="text-sm text-zinc-300">Wyświetl nagłówek i kategorię w komponencie</span>
-                                </label>
+                            <div className="flex items-center gap-6">
+                                <div className="flex-1">
+                                    <label className="block text-xs text-zinc-400 mb-2 font-bold uppercase tracking-tight">Pokaż Tytuł w Sliderze</label>
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={section.showCategoryTitle || false}
+                                            onChange={(e) => onUpdate(section.id, { showCategoryTitle: e.target.checked })}
+                                            className="w-4 h-4 rounded border-zinc-600 text-yellow-500"
+                                        />
+                                        <span className="text-sm text-zinc-300">Wyświetl nagłówek i kategorię</span>
+                                    </label>
+                                </div>
+                                <div className="flex-1">
+                                    <label className="block text-xs text-zinc-400 mb-2 font-bold uppercase tracking-tight">Czas zmiany (sekundy)</label>
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            max="60"
+                                            value={section.switchInterval || 8}
+                                            onChange={(e) => onUpdate(section.id, { switchInterval: parseInt(e.target.value) || 8 })}
+                                            className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white"
+                                        />
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
