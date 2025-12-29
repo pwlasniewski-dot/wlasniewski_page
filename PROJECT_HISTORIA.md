@@ -81,7 +81,14 @@ graph TD
 *   **DETEKCJA**: Wykrywanie kontekstu odbywa się w `Navbar.tsx` na podstawie portu (3001), nazwy hosta (b2b, dron) lub ścieżki (/b2b).
 *   **ROUTING**: Obsługiwany przez `src/app/b2b/[slug]/page.tsx`. Strony B2B muszą mieć `page_type: 'b2b'` w bazie danych.
 *   **LOGIKA LINKÓW**: System automatycznie oczyszcza linki z prefixu `/b2b` gdy wykryje dedykowaną domenę, zapobiegając redundantnym URL-om.
-*   **STYLIZACJA**: Kontekst B2B wymusza ciemny motyw (Premium Dark) i logotyp `logo_dark_url` (oznaczony w panelu jako "Logo B2B / Alternatywne").
+*   **LOGO B2B**: Mapuje pola "Logo B2B / Alternatywne" w panelu ustawień na `logo_dark_url`, co jest kluczowe dla zachowania jasnego logotypu na ciemnym tle B2B.
+
+### 8. B2B VIDEO MODULE (Premium Content) [NEW: 2025-12-29]
+*   **STATUS:** Zaimplementowany i gotowy do użycia.
+*   **FUNKCJE**: Obsługa YouTube, Vimeo oraz bezpośrednich plików wideo (S3).
+*   **LAYOUT**: Opcje "Full Width" (krawędź-krawędź) oraz "Contained" (wyśrodkowany z zaokrąglonymi rogami 40px).
+*   **STEROWANIE**: Autoodtwarzanie, wyciszenie i pętla konfigurowalne z poziomu Page Buildera.
+*   **INTEGRACJA**: Automatyczna delegacja renderowania z `DronContent.tsx` do `PageRenderer.tsx`.
 
 ---
 

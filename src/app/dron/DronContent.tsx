@@ -424,6 +424,7 @@ export default function DronContent({ pageData, sections }: DronContentProps) {
             case 'b2b_process':
             case 'b2b_cases':
             case 'b2b_contact':
+            case 'b2b_video':
             case 'info_band':
                 // Redirect to PageRenderer for B2B modules to avoid duplication
                 return <PageRenderer sections={[section]} />;

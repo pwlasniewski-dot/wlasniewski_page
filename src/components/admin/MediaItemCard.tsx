@@ -1,6 +1,6 @@
 import React, { memo } from 'react';
 import Image from 'next/image';
-import { Check, Trash2 } from 'lucide-react';
+import { Check, Trash2, PlayCircle, FileVideo } from 'lucide-react';
 
 interface MediaItem {
     id: number;
@@ -31,6 +31,8 @@ const MediaItemCard = memo(({ item, isSelected, onToggle, onClick, onDelete, onD
         onClick(item);
     };
 
+    const isVideo = item.mime_type?.startsWith('video/');
+
     return (
         <div
             draggable
@@ -41,14 +43,27 @@ const MediaItemCard = memo(({ item, isSelected, onToggle, onClick, onDelete, onD
                 : 'border-zinc-800 hover:border-zinc-600'
                 }`}
         >
-            <Image
-                src={item.file_path}
-                alt={item.alt_text || item.file_name}
-                fill
-                className="object-cover"
-                sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 20vw"
-                quality={60} // Optimization: Lower quality for thumbnails
-            />
+            {isVideo ? (
+                <div className="w-full h-full bg-zinc-800 flex flex-col items-center justify-center gap-2">
+                    <div className="relative w-full h-full flex items-center justify-center group-hover:bg-black/20 transition-colors">
+                        <FileVideo className="w-12 h-12 text-zinc-600 group-hover:text-gold-500/50 transition-colors" />
+                        <PlayCircle className="absolute w-8 h-8 text-white/40 group-hover:text-gold-500 transition-all scale-90 group-hover:scale-110" />
+                    </div>
+                    <div className="absolute top-0 right-0 p-1">
+                        <span className="px-1.5 py-0.5 bg-black/60 rounded text-[8px] font-bold text-gold-500 uppercase tracking-tighter">VIDEO</span>
+                    </div>
+                </div>
+            ) : (
+                <Image
+                    src={item.file_path}
+                    alt={item.alt_text || item.file_name}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 20vw"
+                    quality={60}
+                />
+            )}
+
             {/* Selection Overlay */}
             <div className={`absolute inset-0 transition-colors ${isSelected ? 'bg-gold-500/20' : 'bg-black/0 group-hover:bg-black/10'}`} />
 

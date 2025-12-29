@@ -792,6 +792,64 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                             </section>
                         );
 
+                    case 'b2b_video':
+                        const getYouTubeId = (url: string) => {
+                            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+                            const match = url.match(regExp);
+                            return (match && match[2].length === 11) ? match[2] : url;
+                        };
+                        const getVimeoId = (url: string) => {
+                            const regExp = /vimeo\.com\/(?:video\/)?([0-9]+)/;
+                            const match = url.match(regExp);
+                            return match ? match[1] : url;
+                        };
+
+                        const videoId = data.videoType === 'youtube' ? getYouTubeId(data.videoUrl || '') :
+                            data.videoType === 'vimeo' ? getVimeoId(data.videoUrl || '') : '';
+
+                        return (
+                            <section key={section.id} className={`py-24 bg-zinc-950 ${data.sectionLayout === 'full' ? 'px-0' : 'px-6'}`}>
+                                <div className={`${data.sectionLayout === 'full' ? 'w-full' : 'max-w-7xl mx-auto'}`}>
+                                    {(data.title || data.subtitle) && (
+                                        <div className="text-center mb-16 px-6">
+                                            {data.title && <h2 className="text-4xl md:text-6xl font-bold text-white mb-6 leading-tight" dangerouslySetInnerHTML={{ __html: data.title }} />}
+                                            {data.subtitle && <p className="text-zinc-500 max-w-2xl mx-auto text-xl leading-relaxed">{data.subtitle}</p>}
+                                        </div>
+                                    )}
+
+                                    <div className={`relative aspect-video bg-black overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)] ${data.sectionLayout === 'centered' ? 'rounded-[40px] border border-white/5 mx-auto' : ''}`}>
+                                        {data.videoType === 'direct' ? (
+                                            <video
+                                                src={data.videoUrl}
+                                                autoPlay={data.videoAutoPlay}
+                                                muted={data.videoMuted}
+                                                loop={data.videoLoop}
+                                                playsInline
+                                                controls={!data.videoAutoPlay}
+                                                className="w-full h-full object-cover"
+                                            />
+                                        ) : data.videoType === 'vimeo' ? (
+                                            <iframe
+                                                src={`https://player.vimeo.com/video/${videoId}?autoplay=${data.videoAutoPlay ? 1 : 0}&muted=${data.videoMuted ? 1 : 0}&loop=${data.videoLoop ? 1 : 0}`}
+                                                className="absolute inset-0 w-full h-full"
+                                                frameBorder="0"
+                                                allow="autoplay; fullscreen; picture-in-picture"
+                                                allowFullScreen
+                                            />
+                                        ) : (
+                                            <iframe
+                                                src={`https://www.youtube.com/embed/${videoId}?autoplay=${data.videoAutoPlay ? 1 : 0}&mute=${data.videoMuted ? 1 : 0}&loop=${data.videoLoop ? 1 : 0}&playlist=${videoId}`}
+                                                className="absolute inset-0 w-full h-full"
+                                                frameBorder="0"
+                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                                allowFullScreen
+                                            />
+                                        )}
+                                    </div>
+                                </div>
+                            </section>
+                        );
+
                     case 'b2b_contact':
                         return (
                             <section key={section.id} id="rfq" className="py-32 px-6">

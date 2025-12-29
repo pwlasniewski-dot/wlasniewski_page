@@ -8,12 +8,12 @@ import {
     Plus, Trash2, GripVertical, Image as ImageIcon, Type, Layout,
     MoveUp, MoveDown, ShieldCheck, Stars, BarChart3, Award, Workflow,
     Briefcase, FileText, Zap, Building2, Maximize2, Thermometer, Cpu, Crosshair,
-    Camera, Droplets, Map, Search, HardHat
+    Camera, Droplets, Map, Search, HardHat, Video
 } from 'lucide-react';
 import RichTextEditor from './RichTextEditor';
 import MediaPicker from './MediaPicker';
 
-export type SectionType = 'hero_parallax' | 'hero' | 'rich_text' | 'image_text' | 'gallery' | 'contact' | 'thermal_slider' | 'contact_form' | 'hero_slider' | 'about' | 'features' | 'parallax' | 'info_band' | 'testimonials' | 'challenge_banner' | 'creative_slider' | 'certificates' | 'b2b_hero' | 'b2b_stats' | 'b2b_logos' | 'b2b_process' | 'b2b_cases' | 'b2b_contact';
+export type SectionType = 'hero_parallax' | 'hero' | 'rich_text' | 'image_text' | 'gallery' | 'contact' | 'thermal_slider' | 'contact_form' | 'hero_slider' | 'about' | 'features' | 'parallax' | 'info_band' | 'testimonials' | 'challenge_banner' | 'creative_slider' | 'certificates' | 'b2b_hero' | 'b2b_stats' | 'b2b_logos' | 'b2b_process' | 'b2b_cases' | 'b2b_contact' | 'b2b_video';
 
 export interface SliderSlide {
     id: string;
@@ -123,6 +123,12 @@ export interface PageSection {
     certificateSize?: 'small' | 'medium' | 'large' | 'readable'; // Certificate size options
     infoband_items?: InfoBandItem[];
     data?: any; // For legacy / homepage sections
+    // Video Section Properties
+    videoUrl?: string;
+    videoType?: 'youtube' | 'vimeo' | 'direct';
+    videoAutoPlay?: boolean;
+    videoMuted?: boolean;
+    videoLoop?: boolean;
 }
 
 interface PageBuilderProps {
@@ -986,6 +992,76 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove, openMedia
                     </div>
                 )}
 
+                {/* B2B VIDEO */}
+                {section.type === 'b2b_video' && (
+                    <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs text-zinc-500 mb-1">Tytuł Sekcji (opcjonalnie)</label>
+                                <input type="text" value={section.title || ''} onChange={e => onUpdate(section.id, { title: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white" />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-zinc-500 mb-1">Podtytuł</label>
+                                <input type="text" value={section.subtitle || ''} onChange={e => onUpdate(section.id, { subtitle: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white" />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs text-zinc-500 mb-1">Typ Wideo</label>
+                                <select
+                                    value={section.videoType || 'youtube'}
+                                    onChange={e => onUpdate(section.id, { videoType: e.target.value as any })}
+                                    className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white"
+                                >
+                                    <option value="youtube">YouTube</option>
+                                    <option value="vimeo">Vimeo</option>
+                                    <option value="direct">Bezpośredni Link (S3/MP4)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-xs text-zinc-500 mb-1">Layout</label>
+                                <select
+                                    value={section.sectionLayout || 'full'}
+                                    onChange={e => onUpdate(section.id, { sectionLayout: e.target.value as any })}
+                                    className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white"
+                                >
+                                    <option value="full">Pełna Szerokość (Full Width)</option>
+                                    <option value="centered">Wyśrodkowany (Contained)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label className="block text-xs text-zinc-500 mb-1">URL Wideo / ID</label>
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    value={section.videoUrl || ''}
+                                    onChange={e => onUpdate(section.id, { videoUrl: e.target.value })}
+                                    className="flex-1 bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white"
+                                    placeholder={section.videoType === 'direct' ? 'https://.../video.mp4' : 'ID filmu lub pełny URL'}
+                                />
+                                {section.videoType === 'direct' && (
+                                    <button onClick={() => { openMediaPicker(section.id, { target: 'single' }); }} className="px-3 py-2 bg-zinc-800 hover:bg-zinc-700 rounded text-xs text-white border border-zinc-700">Wybierz Plik</button>
+                                )}
+                            </div>
+                        </div>
+                        <div className="flex gap-6 pt-2">
+                            <label className="flex items-center gap-2 cursor-pointer group">
+                                <input type="checkbox" checked={section.videoAutoPlay} onChange={e => onUpdate(section.id, { videoAutoPlay: e.target.checked })} className="rounded bg-zinc-800 border-zinc-700 text-yellow-500" />
+                                <span className="text-xs text-zinc-400 group-hover:text-white transition-colors">Autoodtwarzanie</span>
+                            </label>
+                            <label className="flex items-center gap-2 cursor-pointer group">
+                                <input type="checkbox" checked={section.videoMuted} onChange={e => onUpdate(section.id, { videoMuted: e.target.checked })} className="rounded bg-zinc-800 border-zinc-700 text-yellow-500" />
+                                <span className="text-xs text-zinc-400 group-hover:text-white transition-colors">Wyciszony</span>
+                            </label>
+                            <label className="flex items-center gap-2 cursor-pointer group">
+                                <input type="checkbox" checked={section.videoLoop} onChange={e => onUpdate(section.id, { videoLoop: e.target.checked })} className="rounded bg-zinc-800 border-zinc-700 text-yellow-500" />
+                                <span className="text-xs text-zinc-400 group-hover:text-white transition-colors">Pętla</span>
+                            </label>
+                        </div>
+                    </div>
+                )}
+
                 {/* B2B HERO */}
                 {section.type === 'b2b_hero' && (
                     <div className="space-y-4">
@@ -1362,6 +1438,8 @@ export default function PageBuilder({ sections, onChange }: PageBuilderProps) {
                     updateSection(activeSectionId, { infoband_items: updated });
                 }
             }
+        } else if (section.type === 'b2b_video') {
+            updateSection(activeSectionId, { videoUrl: imageUrl });
         } else if (mediaPickerTarget === 'single') {
             updateSection(activeSectionId, { image: imageUrl });
         } else {
@@ -1425,6 +1503,12 @@ export default function PageBuilder({ sections, onChange }: PageBuilderProps) {
         } else if (type === 'b2b_contact') {
             newSection.title = 'Zapytaj o <span class="text-yellow-500">ofertę B2B.</span>';
             newSection.subtitle = 'Nasz doradca techniczny skontaktuje się z Tobą w ciągu 4 godzin roboczych.';
+        } else if (type === 'b2b_video') {
+            newSection.videoType = 'youtube';
+            newSection.sectionLayout = 'full';
+            newSection.videoAutoPlay = false;
+            newSection.videoMuted = true;
+            newSection.videoLoop = true;
         }
 
         onChange([...sections, newSection]);
@@ -1736,6 +1820,9 @@ export default function PageBuilder({ sections, onChange }: PageBuilderProps) {
                 </button>
                 <button onClick={() => addSection('info_band')} className="flex items-center gap-2 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/50 rounded text-sm text-zinc-300 transition-colors group">
                     <Layout className="w-4 h-4 text-blue-400" /> InfoBand (White)
+                </button>
+                <button onClick={() => addSection('b2b_video')} className="flex items-center gap-2 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/50 rounded text-sm text-zinc-300 transition-colors group">
+                    <Video className="w-4 h-4 text-orange-400" /> B2B Video
                 </button>
             </div>
 
