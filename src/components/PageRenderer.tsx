@@ -30,6 +30,7 @@ import { ShieldCheck, Zap, ArrowRight, Workflow, FileText, Briefcase, CheckCircl
 
 export default function PageRenderer({ sections }: { sections: PageSection[] }) {
     const [selectedCert, setSelectedCert] = React.useState<any>(null);
+    const [activeCertSection, setActiveCertSection] = React.useState<any>(null);
     const [selectedCase, setSelectedCase] = React.useState<any>(null);
     if (!sections || sections.length === 0) return null;
 
@@ -435,7 +436,7 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
 
                                                     {/* Main Certificate Display Area - Priority on visibility */}
                                                     <div
-                                                        onClick={() => setSelectedCert(cert)}
+                                                        onClick={() => { setSelectedCert(cert); setActiveCertSection(section); }}
                                                         className={`relative rounded-2xl overflow-hidden bg-zinc-900 border border-white/5 cursor-pointer group/img flex items-center justify-center p-4 shadow-inner ${section.certificateSize === 'readable' ? 'aspect-[3/4] mb-12 border-white/10' :
                                                             section.certificateSize === 'large' ? 'aspect-[3/4] mb-8' :
                                                                 section.certificateSize === 'small' ? 'aspect-[3/4] mb-4' :
@@ -493,7 +494,7 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                                         )}
 
                                                         <button
-                                                            onClick={() => setSelectedCert(cert)}
+                                                            onClick={() => { setSelectedCert(cert); setActiveCertSection(section); }}
                                                             className={`mt-auto w-full py-3 bg-zinc-900 hover:bg-zinc-800 border border-white/5 rounded-xl font-bold text-zinc-300 uppercase tracking-widest transition-all flex items-center justify-center gap-2 group/btn ${section.certificateSize === 'readable' ? 'text-sm py-5' :
                                                                 section.certificateSize === 'large' ? 'text-xs py-4' : 'text-[10px]'
                                                                 }`}
@@ -944,49 +945,52 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-10 pointer-events-auto"
+                        className="fixed inset-0 z-[120] flex items-center justify-center p-0 md:p-10 pointer-events-auto overflow-y-auto"
                     >
+                        {/* Improved Backdrop for Mobile */}
                         <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            onClick={() => setSelectedCert(null)}
-                            className="absolute inset-0 bg-black/95 backdrop-blur-md cursor-zoom-out"
+                            onClick={() => { setSelectedCert(null); setActiveCertSection(null); }}
+                            className="fixed inset-0 bg-black/95 backdrop-blur-md cursor-zoom-out"
                         />
 
                         <motion.div
                             initial={{ scale: 0.9, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.9, opacity: 0 }}
-                            className="relative w-full max-w-5xl bg-zinc-900 rounded-[32px] md:rounded-[40px] shadow-2xl overflow-hidden border border-white/10 flex flex-col md:flex-row group"
+                            className="relative w-full md:max-w-5xl md:h-auto min-h-full md:min-h-0 bg-zinc-900 rounded-none md:rounded-[40px] shadow-2xl overflow-hidden border-0 md:border border-white/10 flex flex-col md:flex-row group z-10"
                         >
+                            {/* ENHANCED CLOSE BUTTON */}
                             <button
                                 onClick={() => setSelectedCert(null)}
-                                className="absolute top-6 right-6 z-20 p-2 bg-black/50 hover:bg-black/80 rounded-full text-white transition-colors border border-white/10"
+                                className="absolute top-6 right-6 z-[60] p-4 bg-black/50 hover:bg-yellow-500 hover:text-black rounded-full text-white transition-all border border-white/20 backdrop-blur-xl shadow-2xl"
+                                aria-label="Zamknij"
                             >
-                                <X size={24} />
+                                <X size={28} />
                             </button>
 
                             {/* Certificate Image Side */}
-                            <div className="md:w-1/3 bg-black relative flex items-center justify-center p-8 md:p-12 border-b md:border-b-0 md:border-r border-white/5">
+                            <div className="md:w-1/3 bg-black relative flex items-center justify-center p-8 md:p-12 border-b md:border-b-0 md:border-r border-white/5 shrink-0">
                                 {selectedCert.image && (
                                     <img
                                         src={selectedCert.image}
                                         alt={selectedCert.title}
-                                        className="w-full h-auto object-contain rounded-lg drop-shadow-2xl transition-transform duration-700 group-hover:scale-[1.05]"
+                                        className="w-full h-auto max-h-[40vh] md:max-h-none object-contain rounded-lg drop-shadow-2xl transition-transform duration-700 group-hover:scale-[1.05]"
                                     />
                                 )}
                                 <div className="absolute inset-x-0 bottom-4 flex justify-center opacity-40">
                                     <div className="px-3 py-1 bg-yellow-500/10 border border-yellow-500/20 rounded-full text-[8px] font-black text-yellow-500 uppercase tracking-widest">
-                                        Verified Document
+                                        {activeCertSection?.verifiedTag || "Verified Document"}
                                     </div>
                                 </div>
                             </div>
 
                             {/* Info Side */}
-                            <div className="md:w-2/3 p-8 md:p-12 flex flex-col">
+                            <div className="md:w-2/3 p-8 md:p-12 flex flex-col overflow-y-auto max-h-[60vh] md:max-h-none">
                                 <div className="inline-flex items-center gap-2 px-3 py-1 bg-yellow-500/10 border border-yellow-500/20 rounded-full text-yellow-500 text-[10px] font-bold uppercase tracking-widest mb-8 self-start">
-                                    Official Certification
+                                    {activeCertSection?.certTag || "Official Certification"}
                                 </div>
                                 <h2 className="text-2xl md:text-3xl font-bold text-white mb-4 leading-tight">
                                     {selectedCert.title}
@@ -996,14 +1000,16 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                 </p>
 
                                 <div className="flex-grow">
-                                    <h4 className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-4">Opis kwalifikacji</h4>
+                                    <h4 className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-4">
+                                        {activeCertSection?.descriptionLabel || "Opis kwalifikacji"}
+                                    </h4>
                                     <p className="text-zinc-400 text-sm leading-relaxed mb-8">
                                         {selectedCert.description || 'Ten dokument potwierdza oficjalne uprawnienia do realizacji specjalistycznych operacji z wykorzystaniem systemów bezzałogowych statków powietrznych w określonych kategoriach.'}
                                     </p>
                                 </div>
 
                                 <button
-                                    onClick={() => setSelectedCert(null)}
+                                    onClick={() => { setSelectedCert(null); setActiveCertSection(null); }}
                                     className="mt-auto w-full py-4 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-2xl transition-all shadow-lg"
                                 >
                                     Zamknij podgląd
@@ -1099,13 +1105,6 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                     </motion.div>
                 )}
             </AnimatePresence>
-
-            <style jsx global>{`
-                .prose-inline-styles * {
-                    color: inherit !important;
-                    font-family: inherit !important;
-                }
-            `}</style>
         </div>
     );
 }

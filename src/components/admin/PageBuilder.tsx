@@ -121,6 +121,9 @@ export interface PageSection {
     sectionLayout?: 'grid' | 'centered' | 'full'; // Layout options
     featureSize?: 'normal' | 'large'; // Feature size options
     certificateSize?: 'small' | 'medium' | 'large' | 'readable'; // Certificate size options
+    verifiedTag?: string; // For certificates
+    certTag?: string; // For certificates
+    descriptionLabel?: string; // For certificates
     infoband_items?: InfoBandItem[];
     data?: any; // For legacy / homepage sections
     // Video Section Properties
@@ -893,6 +896,39 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove, openMedia
                                     <option value="large">Duży (Widoczny)</option>
                                     <option value="readable">Bardzo Duży (Czytelny bez klikania)</option>
                                 </select>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-zinc-900/50 rounded-xl border border-zinc-800">
+                            <div>
+                                <label className="block text-[10px] text-zinc-500 uppercase font-bold mb-1">Etykieta "Verified"</label>
+                                <input
+                                    type="text"
+                                    value={section.verifiedTag || ''}
+                                    onChange={(e) => onUpdate(section.id, { verifiedTag: e.target.value })}
+                                    placeholder="np. Dokument Zweryfikowany"
+                                    className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-xs text-white"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-[10px] text-zinc-500 uppercase font-bold mb-1">Typ Certyfikatu (Tag)</label>
+                                <input
+                                    type="text"
+                                    value={section.certTag || ''}
+                                    onChange={(e) => onUpdate(section.id, { certTag: e.target.value })}
+                                    placeholder="np. Certyfikat Oficjalny"
+                                    className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-xs text-white"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-[10px] text-zinc-500 uppercase font-bold mb-1">Etykieta Opisu</label>
+                                <input
+                                    type="text"
+                                    value={section.descriptionLabel || ''}
+                                    onChange={(e) => onUpdate(section.id, { descriptionLabel: e.target.value })}
+                                    placeholder="np. Zakres uprawnień"
+                                    className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-xs text-white"
+                                />
                             </div>
                         </div>
 
