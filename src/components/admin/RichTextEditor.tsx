@@ -16,6 +16,12 @@ export default function RichTextEditor({ value, onChange, placeholder, onImageRe
     const [showColorPicker, setShowColorPicker] = useState(false);
     const [showFontSizePicker, setShowFontSizePicker] = useState(false);
     const [showFontFamilyPicker, setShowFontFamilyPicker] = useState(false);
+    const [currentColor, setCurrentColor] = useState('#ffffff');
+
+    useEffect(() => {
+        // Enable modern CSS-based styling
+        document.execCommand('styleWithCSS', false, 'true');
+    }, []);
 
     useEffect(() => {
         if (editorRef.current && editorRef.current.innerHTML !== value) {
@@ -50,6 +56,14 @@ export default function RichTextEditor({ value, onChange, placeholder, onImageRe
         if (document.queryCommandState('justifyLeft')) formats.push('justifyLeft');
         if (document.queryCommandState('justifyCenter')) formats.push('justifyCenter');
         if (document.queryCommandState('justifyRight')) formats.push('justifyRight');
+
+        // Check for color
+        const color = document.queryCommandValue('foreColor');
+        if (color) {
+            // Convert to hex if it's rgb/rgba
+            const hex = color.startsWith('rgb') ? rgbToHex(color) : color;
+            setCurrentColor(hex);
+        }
 
         // Block check for H1/H2
         const selection = window.getSelection();
@@ -135,6 +149,16 @@ export default function RichTextEditor({ value, onChange, placeholder, onImageRe
         { icon: AlignRight, command: 'justifyRight', title: 'Wyrównaj do prawej', isActive: activeFormats.includes('justifyRight') },
     ];
 
+    const rgbToHex = (rgb: string) => {
+        if (!rgb.startsWith('rgb')) return rgb;
+        const match = rgb.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*(\d+(\.\d+)?))?\)$/);
+        if (!match) return rgb;
+        const r = parseInt(match[1]);
+        const g = parseInt(match[2]);
+        const b = parseInt(match[3]);
+        return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+    };
+
     return (
         <div className="border border-zinc-700 rounded-lg overflow-hidden bg-zinc-800">
             {/* Toolbar */}
@@ -174,23 +198,42 @@ export default function RichTextEditor({ value, onChange, placeholder, onImageRe
                         className={`p-2 rounded transition-colors text-zinc-400 hover:bg-zinc-700 hover:text-gold-400 ${showColorPicker ? 'bg-zinc-700 text-gold-400' : ''}`}
                         title="Kolor tekstu"
                     >
-                        <Palette className="w-4 h-4" />
+                        <div className="flex flex-col items-center">
+                            <Palette className="w-4 h-4" />
+                            <div
+                                className="w-4 h-0.5 mt-0.5 rounded-full"
+                                style={{ backgroundColor: currentColor }}
+                            />
+                        </div>
                     </button>
                     {showColorPicker && (
-                        <div className="absolute top-full left-0 mt-2 p-2 bg-zinc-900 border border-zinc-700 rounded shadow-xl grid grid-cols-4 gap-1 z-50">
-                            {['#ffffff', '#000000', '#D4AF37', '#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6'].map(color => (
-                                <button
-                                    key={color}
-                                    type="button"
-                                    onClick={() => {
-                                        execCommand('foreColor', color);
-                                        setShowColorPicker(false);
+                        <div className="absolute top-full left-0 mt-2 p-2 bg-zinc-900 border border-zinc-700 rounded shadow-xl z-50">
+                            <div className="grid grid-cols-4 gap-1 mb-2">
+                                {['#ffffff', '#000000', '#D4AF37', '#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6'].map(color => (
+                                    <button
+                                        key={color}
+                                        type="button"
+                                        onClick={() => {
+                                            execCommand('foreColor', color);
+                                            setShowColorPicker(false);
+                                        }}
+                                        className="w-6 h-6 rounded border border-zinc-700 hover:scale-110 transition-transform"
+                                        style={{ backgroundColor: color }}
+                                        title={color}
+                                    />
+                                ))}
+                            </div>
+                            <div className="flex items-center gap-2 pt-2 border-t border-zinc-700">
+                                <label className="text-[10px] text-zinc-500 uppercase font-bold shrink-0">Custom:</label>
+                                <input
+                                    type="color"
+                                    value={currentColor}
+                                    onChange={(e) => {
+                                        execCommand('foreColor', e.target.value);
                                     }}
-                                    className="w-6 h-6 rounded border border-zinc-700"
-                                    style={{ backgroundColor: color }}
-                                    title={color}
+                                    className="w-full h-6 bg-transparent border-none cursor-pointer"
                                 />
-                            ))}
+                            </div>
                         </div>
                     )}
                 </div>

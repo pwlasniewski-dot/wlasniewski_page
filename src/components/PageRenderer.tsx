@@ -55,7 +55,7 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                         return (
                             <section key={section.id} className="py-16 px-4 bg-zinc-950">
                                 <div
-                                    className="mx-auto max-w-4xl prose prose-invert prose-lg
+                                    className={`mx-auto max-w-4xl prose prose-invert prose-lg prose-inline-styles
                                         prose-headings:font-display prose-headings:text-white
                                         prose-p:text-zinc-300 prose-p:leading-relaxed
                                         prose-a:text-gold-400 prose-a:no-underline hover:prose-a:text-gold-300
@@ -63,7 +63,7 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                         prose-ul:text-zinc-300 prose-ol:text-zinc-300
                                         prose-li:marker:text-gold-400
                                         prose-img:rounded-xl prose-img:shadow-2xl
-                                    "
+                                    `}
                                     dangerouslySetInnerHTML={{ __html: data.content || '' }}
                                 />
                             </section>
@@ -82,7 +82,7 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                             />
                                         )}
                                     </div>
-                                    <div className={`prose prose-invert prose-lg ${data.layout === 'right' ? 'md:order-1' : ''}`}>
+                                    <div className={`prose prose-invert prose-lg prose-inline-styles ${data.layout === 'right' ? 'md:order-1' : ''}`}>
                                         {data.title && <h2 className="text-3xl md:text-4xl font-bold text-gold-400 mb-6 font-display">{data.title}</h2>}
                                         <div dangerouslySetInnerHTML={{ __html: data.content || '' }} />
                                     </div>
@@ -113,7 +113,30 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                     case 'hero':
                         return (
                             <section key={section.id} className="relative py-32 px-4 bg-zinc-950 flex flex-col items-center justify-center text-center overflow-hidden min-h-[60vh]">
-                                {data.image ? (
+                                {data.videoUrl ? (
+                                    <div className="absolute inset-0 overflow-hidden">
+                                        {data.videoType === 'direct' ? (
+                                            <video
+                                                src={data.videoUrl}
+                                                autoPlay={data.videoAutoPlay !== false}
+                                                muted={data.videoMuted !== false}
+                                                loop={data.videoLoop !== false}
+                                                className="w-full h-full object-cover"
+                                                playsInline
+                                            />
+                                        ) : (
+                                            <iframe
+                                                src={data.videoType === 'vimeo'
+                                                    ? `https://player.vimeo.com/video/${data.videoUrl.split('/').pop()}?autoplay=1&muted=1&loop=1&background=1`
+                                                    : `https://www.youtube.com/embed/${(data.videoUrl.match(/[?&]v=([^&]+)/) || [null, data.videoUrl.split('/').pop()])[1]}?autoplay=1&mute=1&loop=1&playlist=${(data.videoUrl.match(/[?&]v=([^&]+)/) || [null, data.videoUrl.split('/').pop()])[1]}&controls=0&showinfo=0&rel=0`}
+                                                className="absolute inset-0 w-full h-[120%] -top-[10%] pointer-events-none"
+                                                frameBorder="0"
+                                                allow="autoplay; fullscreen"
+                                            />
+                                        )}
+                                        <div className="absolute inset-0 bg-black/60 backdrop-blur-[1px]" />
+                                    </div>
+                                ) : data.image ? (
                                     <>
                                         <div
                                             className="absolute inset-0 bg-cover bg-center bg-no-repeat"
@@ -490,8 +513,31 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                     case 'b2b_hero':
                         return (
                             <section key={section.id} className="relative min-h-[80vh] flex items-center justify-center overflow-hidden py-24 px-6">
-                                {/* Background Image */}
-                                {data.image ? (
+                                {/* Background Video or Image */}
+                                {data.videoUrl ? (
+                                    <div className="absolute inset-0 overflow-hidden">
+                                        {data.videoType === 'direct' ? (
+                                            <video
+                                                src={data.videoUrl}
+                                                autoPlay={data.videoAutoPlay !== false}
+                                                muted={data.videoMuted !== false}
+                                                loop={data.videoLoop !== false}
+                                                className="w-full h-full object-cover"
+                                                playsInline
+                                            />
+                                        ) : (
+                                            <iframe
+                                                src={data.videoType === 'vimeo'
+                                                    ? `https://player.vimeo.com/video/${data.videoUrl.split('/').pop()}?autoplay=1&muted=1&loop=1&background=1`
+                                                    : `https://www.youtube.com/embed/${(data.videoUrl.match(/[?&]v=([^&]+)/) || [null, data.videoUrl.split('/').pop()])[1]}?autoplay=1&mute=1&loop=1&playlist=${(data.videoUrl.match(/[?&]v=([^&]+)/) || [null, data.videoUrl.split('/').pop()])[1]}&controls=0&showinfo=0&rel=0`}
+                                                className="absolute inset-0 w-full h-[120%] -top-[10%] pointer-events-none"
+                                                frameBorder="0"
+                                                allow="autoplay; fullscreen"
+                                            />
+                                        )}
+                                        <div className="absolute inset-0 bg-black/50" />
+                                    </div>
+                                ) : data.image ? (
                                     <>
                                         <div
                                             className="absolute inset-0 bg-cover bg-center bg-no-repeat"
@@ -834,7 +880,7 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                             />
                                         ) : data.videoType === 'vimeo' ? (
                                             <iframe
-                                                src={`https://player.vimeo.com/video/${videoId}?autoplay=${data.videoAutoPlay ? 1 : 0}&muted=${data.videoMuted ? 1 : 0}&loop=${data.videoLoop ? 1 : 0}`}
+                                                src={`https://player.vimeo.com/video/${videoId}?autoplay=${data.videoAutoPlay ? 1 : 0}&muted=${data.videoMuted ? 1 : 0}&loop=${data.videoLoop ? 1 : 0}&background=${data.videoAutoPlay ? 1 : 0}`}
                                                 className="absolute inset-0 w-full h-full"
                                                 frameBorder="0"
                                                 allow="autoplay; fullscreen; picture-in-picture"
@@ -842,7 +888,7 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                             />
                                         ) : (
                                             <iframe
-                                                src={`https://www.youtube.com/embed/${videoId}?autoplay=${data.videoAutoPlay ? 1 : 0}&mute=${data.videoMuted ? 1 : 0}&loop=${data.videoLoop ? 1 : 0}&playlist=${videoId}`}
+                                                src={`https://www.youtube.com/embed/${videoId}?autoplay=${data.videoAutoPlay ? 1 : 0}&mute=${data.videoMuted ? 1 : 0}&loop=${data.videoLoop ? 1 : 0}&playlist=${videoId}&controls=${data.videoAutoPlay ? 0 : 1}&rel=0`}
                                                 className="absolute inset-0 w-full h-full"
                                                 frameBorder="0"
                                                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -912,7 +958,7 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                             initial={{ scale: 0.9, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.9, opacity: 0 }}
-                            className="relative max-w-5xl w-full max-h-full bg-zinc-900 rounded-[32px] overflow-hidden shadow-2xl border border-white/10"
+                            className="relative w-full max-w-5xl bg-zinc-900 rounded-[32px] md:rounded-[40px] shadow-2xl overflow-hidden border border-white/10 flex flex-col md:flex-row group"
                         >
                             <button
                                 onClick={() => setSelectedCert(null)}
@@ -921,55 +967,47 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                 <X size={24} />
                             </button>
 
-                            <div className="grid md:grid-cols-5 h-full overflow-y-auto max-h-[90vh]">
-                                <div className="md:col-span-3 bg-black flex items-center justify-center p-4 md:p-8 border-r border-white/5">
-                                    {selectedCert.image ? (
-                                        <img
-                                            src={selectedCert.image}
-                                            alt={selectedCert.title}
-                                            className="max-w-full max-h-full h-auto shadow-2xl rounded-sm border border-zinc-800"
-                                        />
-                                    ) : (
-                                        <ShieldCheck className="text-zinc-800" size={200} />
-                                    )}
-                                </div>
-                                <div className="md:col-span-2 p-8 md:p-12 flex flex-col">
-                                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-yellow-500/10 border border-yellow-500/20 rounded-full text-yellow-500 text-[10px] font-bold uppercase tracking-widest mb-8 self-start">
-                                        Official Certification
+                            {/* Certificate Image Side */}
+                            <div className="md:w-1/3 bg-black relative flex items-center justify-center p-8 md:p-12 border-b md:border-b-0 md:border-r border-white/5">
+                                {selectedCert.image && (
+                                    <img
+                                        src={selectedCert.image}
+                                        alt={selectedCert.title}
+                                        className="w-full h-auto object-contain rounded-lg drop-shadow-2xl transition-transform duration-700 group-hover:scale-[1.05]"
+                                    />
+                                )}
+                                <div className="absolute inset-x-0 bottom-4 flex justify-center opacity-40">
+                                    <div className="px-3 py-1 bg-yellow-500/10 border border-yellow-500/20 rounded-full text-[8px] font-black text-yellow-500 uppercase tracking-widest">
+                                        Verified Document
                                     </div>
-                                    <h2 className="text-2xl md:text-3xl font-bold text-white mb-4 leading-tight">
-                                        {selectedCert.title}
-                                    </h2>
-                                    <p className="text-zinc-500 text-xs font-semibold mb-8 uppercase tracking-[0.2em] border-b border-white/5 pb-6">
-                                        {selectedCert.subtitle || 'Verified Specialist'}
+                                </div>
+                            </div>
+
+                            {/* Info Side */}
+                            <div className="md:w-2/3 p-8 md:p-12 flex flex-col">
+                                <div className="inline-flex items-center gap-2 px-3 py-1 bg-yellow-500/10 border border-yellow-500/20 rounded-full text-yellow-500 text-[10px] font-bold uppercase tracking-widest mb-8 self-start">
+                                    Official Certification
+                                </div>
+                                <h2 className="text-2xl md:text-3xl font-bold text-white mb-4 leading-tight">
+                                    {selectedCert.title}
+                                </h2>
+                                <p className="text-zinc-500 text-xs font-semibold mb-8 uppercase tracking-[0.2em] border-b border-white/5 pb-6">
+                                    {selectedCert.subtitle || 'Verified Specialist'}
+                                </p>
+
+                                <div className="flex-grow">
+                                    <h4 className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-4">Opis kwalifikacji</h4>
+                                    <p className="text-zinc-400 text-sm leading-relaxed mb-8">
+                                        {selectedCert.description || 'Ten dokument potwierdza oficjalne uprawnienia do realizacji specjalistycznych operacji z wykorzystaniem systemów bezzałogowych statków powietrznych w określonych kategoriach.'}
                                     </p>
-
-                                    <div className="flex-grow">
-                                        <h4 className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-4">Opis kwalifikacji</h4>
-                                        <p className="text-zinc-400 text-sm leading-relaxed mb-8">
-                                            {selectedCert.description || 'Ten dokument potwierdza oficjalne uprawnienia do realizacji specjalistycznych operacji z wykorzystaniem systemów bezzałogowych statków powietrznych w określonych kategoriach.'}
-                                        </p>
-
-                                        <div className="space-y-4">
-                                            <div className="flex items-center gap-4 p-4 rounded-2xl bg-white/5 border border-white/5">
-                                                <div className="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center text-green-500">
-                                                    <ShieldCheck size={20} />
-                                                </div>
-                                                <div>
-                                                    <div className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">Status Walidacji</div>
-                                                    <div className="text-white text-sm font-medium">Aktywny i zweryfikowany</div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <button
-                                        onClick={() => setSelectedCert(null)}
-                                        className="mt-12 w-full py-4 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-2xl transition-all shadow-lg shadow-yellow-500/10"
-                                    >
-                                        Zamknij podgląd
-                                    </button>
                                 </div>
+
+                                <button
+                                    onClick={() => setSelectedCert(null)}
+                                    className="mt-auto w-full py-4 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-2xl transition-all shadow-lg"
+                                >
+                                    Zamknij podgląd
+                                </button>
                             </div>
                         </motion.div>
                     </motion.div>
@@ -1006,7 +1044,6 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
 
                             {/* Cinema Image Pane */}
                             <div className="lg:w-[65%] bg-black relative group/media overflow-hidden flex items-center justify-center border-b lg:border-b-0 lg:border-r border-white/5 min-h-[40vh] lg:min-h-0">
-                                {/* Blurred Background Overlay */}
                                 {selectedCase.image && (
                                     <div
                                         className="absolute inset-0 bg-cover bg-center blur-3xl opacity-20 scale-110"
@@ -1035,17 +1072,6 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                         className="absolute left-0 right-0 h-1 bg-yellow-500/10 blur-sm shadow-[0_0_15px_rgba(234,179,8,0.3)]"
                                     />
                                 </div>
-
-                                {/* Info Box */}
-                                <div className="absolute bottom-8 left-8 z-30 hidden md:block">
-                                    <div className="bg-black/40 backdrop-blur-xl p-6 rounded-3xl border border-white/10 shadow-2xl max-w-sm">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <div className="px-2 py-0.5 bg-yellow-500 text-black text-[9px] font-black rounded uppercase tracking-tighter">CASE</div>
-                                            <span className="text-white/40 text-[10px] uppercase font-bold tracking-widest">PROJEKT B2B</span>
-                                        </div>
-                                        <h3 className="text-white text-xl font-bold leading-tight">{selectedCase.title}</h3>
-                                    </div>
-                                </div>
                             </div>
 
                             {/* Info & Specs Pane */}
@@ -1054,70 +1080,33 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                     <div>
                                         <div className="text-yellow-500/50 text-[10px] font-bold uppercase tracking-[0.2em] mb-2">{selectedCase.client}</div>
                                         <h4 className="text-white text-2xl font-bold mb-4">Analiza przypadku</h4>
-                                        <p className="text-zinc-400 text-sm leading-relaxed">
-                                            {selectedCase.description || 'Pomyślnie zrealizowana misja z wykorzystaniem najnowszych technologii dronowych.'}
-                                        </p>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 gap-4">
-                                        <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400">
-                                                    <Zap size={20} />
-                                                </div>
-                                                <div>
-                                                    <div className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">Technologia</div>
-                                                    <div className="text-white text-sm font-semibold">UAV Multispectral Analysis</div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center text-green-400">
-                                                    <ShieldCheck size={20} />
-                                                </div>
-                                                <div>
-                                                    <div className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">Rezultat</div>
-                                                    <div className="text-white text-sm font-semibold">Redukcja kosztów procesu o 40%</div>
-                                                </div>
-                                            </div>
+                                        <div className="text-zinc-400 text-sm leading-relaxed prose prose-invert prose-sm prose-inline-styles">
+                                            <div dangerouslySetInnerHTML={{ __html: selectedCase.description || 'Pomyślnie zrealizowana misja.' }} />
                                         </div>
                                     </div>
 
-                                    <div className="pt-8 border-t border-white/5">
-                                        <div className="flex flex-col gap-4">
-                                            <div className="flex justify-between items-end mb-2">
-                                                <div>
-                                                    <div className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider mb-1">Status Realizacji</div>
-                                                    <div className="text-white text-xl font-black italic tracking-tight uppercase">Zrealizowano</div>
-                                                </div>
-                                                <div className="px-2 py-1 bg-green-500 text-black text-[9px] font-bold rounded">100% SUCCESS</div>
-                                            </div>
-                                            <div className="h-1 bg-zinc-800 rounded-full overflow-hidden">
-                                                <motion.div
-                                                    initial={{ width: 0 }}
-                                                    animate={{ width: "100%" }}
-                                                    transition={{ duration: 1.5, ease: "easeOut" }}
-                                                    className="h-full bg-gradient-to-r from-yellow-500 to-yellow-400"
-                                                />
-                                            </div>
-                                        </div>
+                                    <div className="mt-12 pt-10 border-t border-white/5">
+                                        <button
+                                            onClick={() => setSelectedCase(null)}
+                                            className="w-full py-5 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-2xl transition-all shadow-xl hover:shadow-yellow-500/20 uppercase text-xs tracking-widest"
+                                        >
+                                            Zamknij przegląd projektu
+                                        </button>
                                     </div>
-                                </div>
-
-                                <div className="mt-auto pt-10">
-                                    <button
-                                        onClick={() => setSelectedCase(null)}
-                                        className="w-full py-4 bg-white hover:bg-yellow-500 text-black font-bold rounded-2xl transition-all shadow-xl hover:shadow-yellow-500/20 uppercase text-xs tracking-widest"
-                                    >
-                                        Zamknij przegląd
-                                    </button>
                                 </div>
                             </div>
                         </motion.div>
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            <style jsx global>{`
+                .prose-inline-styles * {
+                    color: inherit !important;
+                    font-family: inherit !important;
+                }
+            `}</style>
         </div>
     );
 }
+

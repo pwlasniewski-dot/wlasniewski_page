@@ -570,15 +570,15 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove, openMedia
                                                 />
                                             </div>
                                             <div>
-                                                <textarea
+                                                <label className="block text-xs text-zinc-500 mb-1">Opis / Podtytuł kategorii...</label>
+                                                <RichTextEditor
                                                     value={ts.description || ''}
-                                                    onChange={(e) => {
+                                                    onChange={(val) => {
                                                         const updated = [...(section.thermalSections || [])];
-                                                        updated[tsIndex] = { ...ts, description: e.target.value };
+                                                        updated[tsIndex] = { ...ts, description: val };
                                                         onUpdate(section.id, { thermalSections: updated });
                                                     }}
                                                     placeholder="Opis / Podtytuł kategorii..."
-                                                    className="w-full bg-zinc-700 border border-zinc-600 rounded px-3 py-1.5 text-xs text-white h-16"
                                                 />
                                             </div>
                                         </div>
@@ -1079,7 +1079,7 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove, openMedia
                             <label className="block text-xs text-zinc-500 mb-1">Podtytuł</label>
                             <input type="text" value={section.subtitle || ''} onChange={e => onUpdate(section.id, { subtitle: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white" />
                         </div>
-                        <div className="flex gap-4">
+                        <div className="grid grid-cols-2 gap-4">
                             <div className="flex-1">
                                 <label className="block text-xs text-zinc-500 mb-1">Tło (Image URL)</label>
                                 <div className="flex gap-2">
@@ -1087,7 +1087,42 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove, openMedia
                                     <button onClick={() => { openMediaPicker(section.id, { target: 'single' }); }} className="px-3 py-2 bg-zinc-700 hover:bg-zinc-600 rounded text-xs text-white uppercase font-bold">Wybierz</button>
                                 </div>
                             </div>
+                            <div className="flex-1">
+                                <label className="block text-xs text-zinc-500 mb-1">Wideo w tle (Opcjonalnie)</label>
+                                <div className="flex gap-2">
+                                    <input type="text" value={section.videoUrl || ''} onChange={e => onUpdate(section.id, { videoUrl: e.target.value })} className="flex-1 bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white" placeholder="URL YouTube/Vimeo/MP4" />
+                                    <button onClick={() => { openMediaPicker(section.id, { target: 'single', context: 'video' as any }); }} className="px-3 py-2 bg-zinc-700 hover:bg-zinc-600 rounded text-xs text-white uppercase font-bold">Plik</button>
+                                </div>
+                            </div>
                         </div>
+
+                        {section.videoUrl && (
+                            <div className="grid grid-cols-2 gap-4 p-4 bg-zinc-900/50 rounded-xl border border-zinc-800">
+                                <div>
+                                    <label className="block text-xs text-zinc-500 mb-1">Typ Wideo</label>
+                                    <select
+                                        value={section.videoType || 'youtube'}
+                                        onChange={e => onUpdate(section.id, { videoType: e.target.value as any })}
+                                        className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white"
+                                    >
+                                        <option value="youtube">YouTube</option>
+                                        <option value="vimeo">Vimeo</option>
+                                        <option value="direct">Bezpośredni Link (MP4)</option>
+                                    </select>
+                                </div>
+                                <div className="flex items-center gap-4 pt-4">
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input type="checkbox" checked={section.videoAutoPlay !== false} onChange={e => onUpdate(section.id, { videoAutoPlay: e.target.checked })} className="rounded bg-zinc-800 border-zinc-700 text-yellow-500" />
+                                        <span className="text-xs text-zinc-400">Autoplay</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input type="checkbox" checked={section.videoMuted !== false} onChange={e => onUpdate(section.id, { videoMuted: e.target.checked })} className="rounded bg-zinc-800 border-zinc-700 text-yellow-500" />
+                                        <span className="text-xs text-zinc-400">Wyciszony</span>
+                                    </label>
+                                </div>
+                            </div>
+                        )}
+
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-xs text-zinc-500 mb-1">Tekst przycisku</label>
@@ -1438,7 +1473,7 @@ export default function PageBuilder({ sections, onChange }: PageBuilderProps) {
                     updateSection(activeSectionId, { infoband_items: updated });
                 }
             }
-        } else if (section.type === 'b2b_video') {
+        } else if (section.type === 'b2b_video' || (section.type === 'b2b_hero' && mediaPickerContext === ('video' as any))) {
             updateSection(activeSectionId, { videoUrl: imageUrl });
         } else if (mediaPickerTarget === 'single') {
             updateSection(activeSectionId, { image: imageUrl });
@@ -1492,6 +1527,10 @@ export default function PageBuilder({ sections, onChange }: PageBuilderProps) {
             newSection.tag = 'B2B SOLUTIONS';
             newSection.buttonText = 'ZAPYTAJ O OFERTĘ';
             newSection.buttonLink = '#rfq';
+            newSection.videoType = 'youtube';
+            newSection.videoAutoPlay = true;
+            newSection.videoMuted = true;
+            newSection.videoLoop = true;
         } else if (type === 'info_band') {
             newSection.title = 'Wsparcie Twojego <span class="text-yellow-500">biznesu</span>';
             newSection.subtitle = 'KOMPLEKSOWA OBSŁUGA';

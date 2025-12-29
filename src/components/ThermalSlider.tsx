@@ -1,8 +1,6 @@
-
-'use client';
-
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { MoveHorizontal, ChevronLeft, ChevronRight } from 'lucide-react';
+import { MoveHorizontal, ChevronLeft, ChevronRight, Activity, Crosshair, Maximize2, ScanLine } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface ThermalSection {
     id: string;
@@ -65,44 +63,15 @@ export default function ThermalSlider({
         if (!containerRef.current) return;
         const rect = containerRef.current.getBoundingClientRect();
         const x = clientX - rect.left;
-        const position = (x / rect.width) * 100;
-        setSliderPos(Math.max(0, Math.min(100, position)));
+        const position = Math.max(0, Math.min(100, (x / rect.width) * 100));
+        setSliderPos(position);
         setAutoScroll(false);
     }, []);
 
-    const handleMouseDown = (e: React.MouseEvent) => {
-        setIsDragging(true);
-        updateSlider(e.clientX);
+    const handleMouseMove = (e: React.MouseEvent | React.TouchEvent) => {
+        const clientX = 'touches' in e ? e.touches[0].clientX : (e as React.MouseEvent).clientX;
+        updateSlider(clientX);
     };
-
-    const handleTouchStart = (e: React.TouchEvent) => {
-        setIsDragging(true);
-        updateSlider(e.touches[0].clientX);
-    };
-
-    useEffect(() => {
-        const handleMove = (e: MouseEvent) => {
-            if (isDragging) updateSlider(e.clientX);
-        };
-        const handleTouchMove = (e: TouchEvent) => {
-            if (isDragging) updateSlider(e.touches[0].clientX);
-        };
-        const handleEnd = () => setIsDragging(false);
-
-        if (isDragging) {
-            window.addEventListener('mousemove', handleMove);
-            window.addEventListener('mouseup', handleEnd);
-            window.addEventListener('touchmove', handleTouchMove, { passive: false });
-            window.addEventListener('touchend', handleEnd);
-        }
-
-        return () => {
-            window.removeEventListener('mousemove', handleMove);
-            window.removeEventListener('mouseup', handleEnd);
-            window.removeEventListener('touchmove', handleTouchMove);
-            window.removeEventListener('touchend', handleEnd);
-        };
-    }, [isDragging, updateSlider]);
 
     const handleCategoryClick = (index: number) => {
         setActiveSection(index);
@@ -135,114 +104,249 @@ export default function ThermalSlider({
     const thermalUrl = currentSection.thermalImage ? `url("${currentSection.thermalImage}")` : 'none';
 
     return (
-        <div className="w-full space-y-6">
+        <div className="w-full space-y-8">
+            {/* 1. Technical Header */}
             {title && (
-                <div className="text-center space-y-2">
-                    <h2 className="text-3xl lg:text-4xl font-bold text-white tracking-tight">{title}</h2>
+                <div className="text-center space-y-4">
                     <div className="flex flex-col items-center">
-                        <span className="text-yellow-500 font-bold uppercase tracking-[0.2em] text-[10px] mb-1">Bieżąca Analiza</span>
-                        <h3 className="text-xl font-medium text-zinc-100">{currentSection.category}</h3>
-                        {currentSection.description && (
-                            <p className="text-zinc-400 text-sm max-w-2xl mt-2 leading-relaxed italic">
-                                {currentSection.description}
-                            </p>
+                        <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="inline-flex items-center gap-2 px-3 py-1 bg-yellow-500/10 border border-yellow-500/20 rounded-full text-yellow-500 text-[10px] font-black uppercase tracking-[0.3em] mb-4"
+                        >
+                            <Activity size={12} className="animate-pulse" /> Thermal Analysis Module
+                        </motion.div>
+                        <h2 className="text-3xl lg:text-5xl font-bold text-white tracking-tight mb-2">{title}</h2>
+
+                        {/* 2. Sleek Tab Navigation */}
+                        {displaySections.length > 1 && (
+                            <div className="mt-6 md:mt-8 relative inline-flex p-1 bg-zinc-900/50 backdrop-blur-xl border border-white/5 rounded-2xl overflow-hidden self-center max-w-full">
+                                {displaySections.map((section, index) => (
+                                    <button
+                                        key={section.id}
+                                        onClick={() => handleCategoryClick(index)}
+                                        className={`relative px-4 md:px-8 py-3 md:py-4 rounded-xl text-[10px] md:text-[13px] font-black uppercase tracking-widest transition-all z-10 ${activeSection === index ? 'text-black' : 'text-zinc-500 hover:text-white'
+                                            }`}
+                                    >
+                                        {section.category}
+                                        {activeSection === index && (
+                                            <motion.div
+                                                layoutId="activeTab"
+                                                className="absolute inset-0 bg-yellow-500 rounded-xl -z-10 shadow-lg"
+                                                transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                                            />
+                                        )}
+                                    </button>
+                                ))}
+                            </div>
                         )}
                     </div>
-                </div>
-            )}
 
-            {displaySections.length > 0 && (
-                <div className="flex flex-wrap gap-2 justify-center px-4">
-                    {displaySections.map((section, index) => (
-                        <button
-                            key={section.id}
-                            onClick={() => handleCategoryClick(index)}
-                            className={`group relative px-5 py-2.5 rounded-full text-xs font-bold transition-all overflow-hidden ${activeSection === index
-                                ? 'bg-yellow-500 text-black shadow-lg shadow-yellow-500/20'
-                                : 'bg-zinc-900 text-zinc-400 border border-white/5 hover:text-white hover:bg-zinc-800'
-                                }`}
+                    <AnimatePresence mode="wait">
+                        <motion.div
+                            key={activeSection}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            className="max-w-3xl mx-auto"
                         >
-                            <span className="relative z-10">{section.category}</span>
-                            {activeSection === index && (
-                                <span className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-yellow-600 opacity-50 blur-sm" />
+                            <h3 className="text-xl font-bold text-white mb-3">{currentSection.category}</h3>
+                            {currentSection.description && (
+                                <div
+                                    className="text-zinc-400 text-sm leading-relaxed max-w-2xl mx-auto prose prose-invert prose-sm prose-inline-styles"
+                                    dangerouslySetInnerHTML={{ __html: currentSection.description }}
+                                />
                             )}
-                        </button>
-                    ))}
+                        </motion.div>
+                    </AnimatePresence>
                 </div>
             )}
 
-            <div
-                ref={containerRef}
-                className="relative w-full aspect-[16/6] md:aspect-[16/7] overflow-hidden rounded-2xl cursor-col-resize select-none shadow-2xl bg-zinc-900 border border-white/5 touch-none"
-                onMouseDown={handleMouseDown}
-                onTouchStart={handleTouchStart}
-            >
-                {/* Thermal Image (Bottom Layer) */}
-                <div
-                    className="absolute inset-0 bg-cover bg-center"
-                    style={{ backgroundImage: thermalUrl }}
-                />
-
-                {/* Visual Image (Top Layer) */}
-                <div
-                    className="absolute inset-0 bg-cover bg-center"
-                    style={{
-                        backgroundImage: visualUrl,
-                        clipPath: `inset(0 ${100 - sliderPos}% 0 0)`,
-                        WebkitClipPath: `inset(0 ${100 - sliderPos}% 0 0)`
-                    }}
-                />
-
-                {/* Slider Divider */}
-                <div
-                    className="absolute top-0 bottom-0 w-0.5 bg-white shadow-[0_0_15px_rgba(0,0,0,0.5)] z-10"
-                    style={{ left: `${sliderPos}%` }}
-                >
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-white rounded-full shadow-xl flex items-center justify-center text-black">
-                        <MoveHorizontal size={16} />
+            {/* 3. The Slider with HUD */}
+            <div className="relative group/slider">
+                {/* HUD Elements - TOP LEFT */}
+                <div className="absolute top-6 left-6 z-30 pointer-events-none hidden md:flex flex-col gap-2">
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-black/40 backdrop-blur-md rounded-lg border border-white/10 text-[9px] font-mono text-zinc-300">
+                        <ScanLine size={12} className="text-yellow-500" />
+                        <span>STATUS: LIVE_SCAN_ACTIVE</span>
+                    </div>
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-black/40 backdrop-blur-md rounded-lg border border-white/10 text-[9px] font-mono text-zinc-300">
+                        <Crosshair size={12} className="text-blue-400" />
+                        <span>LAT: 52.2297° N / LON: 21.0122° E</span>
                     </div>
                 </div>
 
-                {/* Labels */}
-                <div className="absolute bottom-4 left-4 z-20 pointer-events-none sm:bottom-6 sm:left-6">
-                    <span className="bg-black/60 backdrop-blur-md text-white text-[9px] sm:text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-full border border-white/10">
-                        {currentSection.labelLeft || labelLeft}
-                    </span>
-                </div>
-                <div className="absolute bottom-4 right-4 z-20 pointer-events-none sm:bottom-6 sm:right-6">
-                    <span className="bg-yellow-500 text-black text-[9px] sm:text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-full shadow-lg">
-                        {currentSection.labelRight || labelRight}
-                    </span>
+                {/* HUD Elements - TOP RIGHT */}
+                <div className="absolute top-6 right-6 z-30 pointer-events-none hidden md:flex flex-col items-end gap-2">
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-black/40 backdrop-blur-md rounded-lg border border-white/10 text-[9px] font-mono text-zinc-300">
+                        <span>RES: 640x512 PX</span>
+                        <Maximize2 size={12} className="text-zinc-500" />
+                    </div>
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-black/40 backdrop-blur-md rounded-lg border border-white/10 text-[9px] font-mono text-zinc-300">
+                        <span>EMISSIVITY: 0.95</span>
+                    </div>
                 </div>
 
+                <div
+                    ref={containerRef}
+                    onMouseMove={handleMouseMove}
+                    onTouchMove={handleMouseMove}
+                    className="relative aspect-[4/3] md:aspect-video w-full rounded-[20px] md:rounded-[40px] overflow-hidden group/container cursor-none active:scale-[0.99] transition-transform duration-500 shadow-2xl"
+                >
+                    {/* Thermal Image (Bottom Layer) */}
+                    <AnimatePresence mode="wait">
+                        <motion.div
+                            key={currentSection.id + '_thermal'}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.5 }}
+                            className="absolute inset-0 bg-cover bg-center"
+                            style={{ backgroundImage: thermalUrl }}
+                        />
+                    </AnimatePresence>
+
+                    {/* Visual Image (Top Layer) */}
+                    <AnimatePresence mode="wait">
+                        <motion.div
+                            key={currentSection.id + '_visual'}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.5 }}
+                            className="absolute inset-0 bg-cover bg-center"
+                            style={{
+                                backgroundImage: visualUrl,
+                                clipPath: `inset(0 ${100 - sliderPos}% 0 0)`,
+                                WebkitClipPath: `inset(0 ${100 - sliderPos}% 0 0)`
+                            }}
+                        />
+                    </AnimatePresence>
+
+                    {/* PRO Handle UI - More Technical */}
+                    <div
+                        className="absolute inset-y-0 z-30 pointer-events-none"
+                        style={{ left: `${sliderPos}%`, transform: 'translateX(-50%)' }}
+                    >
+                        <div className="h-full w-0.5 bg-yellow-500/50 shadow-[0_0_20px_rgba(234,179,8,0.5)] transition-all duration-300 group-active/container:scale-x-150" />
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+                            <div className="w-10 h-10 md:w-16 md:h-16 rounded-full bg-black/40 backdrop-blur-2xl border border-white/10 flex items-center justify-center shadow-2xl">
+                                <div className="w-6 h-6 md:w-10 md:h-10 rounded-full border border-yellow-500/30 flex items-center justify-center animate-pulse">
+                                    <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-yellow-400 shadow-[0_0_10px_rgba(234,179,8,1)]" />
+                                </div>
+                                {/* Handle Arrow Indicators */}
+                                <div className="absolute inset-x-[-12px] md:inset-x-[-20px] top-1/2 -translate-y-1/2 flex justify-between px-1">
+                                    <div className="w-1.5 h-1.5 md:w-2 md:h-2 border-l border-t border-yellow-500 -rotate-45" />
+                                    <div className="w-1.5 h-1.5 md:w-2 md:h-2 border-r border-t border-yellow-500 rotate-45" />
+                                </div>
+                            </div>
+                            <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-yellow-500 text-black text-[10px] md:text-xs font-black rounded uppercase tracking-tighter whitespace-nowrap shadow-xl opacity-0 group-hover/container:opacity-100 transition-opacity">
+                                POSITION: {sliderPos.toFixed(1)}%
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Labels - More Professional Styling */}
+                    <div className="absolute bottom-10 left-10 z-20 pointer-events-none">
+                        <div className="flex flex-col gap-1">
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 mb-1">Source Filter</span>
+                            <span className="bg-black/40 backdrop-blur-xl text-white text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-xl border border-white/10 shadow-xl">
+                                {currentSection.labelLeft || labelLeft}
+                            </span>
+                        </div>
+                    </div>
+                    <div className="absolute bottom-10 right-10 z-20 pointer-events-none">
+                        <div className="flex flex-col items-end gap-1">
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 mb-1">Active Core</span>
+                            <span className="bg-yellow-500 text-black text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-xl shadow-[0_10px_30px_rgba(234,179,8,0.3)] border border-yellow-400">
+                                {currentSection.labelRight || labelRight}
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* Navigation Buttons - Hidden on small screens, minimal on large */}
+                    {displaySections.length > 1 && (
+                        <>
+                            <button
+                                onClick={(e) => { e.stopPropagation(); handlePrev(); }}
+                                className="absolute left-6 top-1/2 -translate-y-1/2 z-20 bg-black/40 hover:bg-yellow-500 hover:text-black text-white p-3 rounded-2xl transition-all backdrop-blur-md border border-white/10 hidden lg:flex group/btn"
+                            >
+                                <ChevronLeft size={24} className="group-hover/btn:-translate-x-1 transition-transform" />
+                            </button>
+                            <button
+                                onClick={(e) => { e.stopPropagation(); handleNext(); }}
+                                className="absolute right-6 top-1/2 -translate-y-1/2 z-20 bg-black/40 hover:bg-yellow-500 hover:text-black text-white p-3 rounded-2xl transition-all backdrop-blur-md border border-white/10 hidden lg:flex group/btn"
+                            >
+                                <ChevronRight size={24} className="group-hover/btn:translate-x-1 transition-transform" />
+                            </button>
+                        </>
+                    )}
+                </div>
+
+                {/* Filmstrip Switcher - Mega Pro Look */}
                 {displaySections.length > 1 && (
-                    <>
-                        <button
-                            onClick={(e) => { e.stopPropagation(); handlePrev(); }}
-                            className="absolute left-2 top-1/2 -translate-y-1/2 z-20 bg-black/40 hover:bg-black/60 text-white p-2 rounded-full transition-all backdrop-blur-sm hidden sm:flex"
-                        >
-                            <ChevronLeft size={20} />
-                        </button>
-                        <button
-                            onClick={(e) => { e.stopPropagation(); handleNext(); }}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 z-20 bg-black/40 hover:bg-black/60 text-white p-2 rounded-full transition-all backdrop-blur-sm hidden sm:flex"
-                        >
-                            <ChevronRight size={20} />
-                        </button>
-                    </>
+                    <div className="mt-12 flex justify-center items-center gap-4 overflow-x-auto pb-4 no-scrollbar">
+                        {displaySections.map((section, index) => (
+                            <button
+                                key={section.id}
+                                onClick={() => handleCategoryClick(index)}
+                                className={`group/thumb relative flex-shrink-0 w-32 md:w-40 aspect-video rounded-xl overflow-hidden border-2 transition-all duration-500 bg-zinc-900 ${activeSection === index
+                                    ? 'border-yellow-500 scale-110 shadow-[0_0_30px_rgba(234,179,8,0.3)]'
+                                    : 'border-white/5 hover:border-white/20'
+                                    }`}
+                            >
+                                {/* Thumbnail Background (Visual) */}
+                                <img
+                                    src={section.visualImage}
+                                    alt={section.category}
+                                    className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 ${activeSection === index ? 'grayscale-0 opacity-100' : 'grayscale opacity-40 group-hover/thumb:opacity-70 group-hover/thumb:grayscale-0'
+                                        }`}
+                                />
+
+                                {/* Thumbnail Foreground (Thermal) - Reflecting main slider position */}
+                                {section.thermalImage && (
+                                    <div
+                                        className="absolute inset-0 z-10"
+                                        style={{ clipPath: `inset(0 0 0 ${sliderPos}%)` }}
+                                    >
+                                        <img
+                                            src={section.thermalImage}
+                                            alt={section.category}
+                                            className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 ${activeSection === index ? 'grayscale-0 opacity-100' : 'grayscale opacity-40 group-hover/thumb:opacity-70 group-hover/thumb:grayscale-0'
+                                                }`}
+                                        />
+                                    </div>
+                                )}
+
+                                <div className="absolute inset-0 z-20 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                                <div className="absolute bottom-2 left-2 right-2 z-30">
+                                    <p className={`text-[9px] font-black uppercase tracking-tighter truncate transition-colors ${activeSection === index ? 'text-yellow-500' : 'text-zinc-500 group-hover/thumb:text-white'
+                                        }`}>
+                                        {section.category}
+                                    </p>
+                                </div>
+                                {activeSection === index && (
+                                    <div className="absolute inset-0 border-4 border-yellow-500/20 pointer-events-none" />
+                                )}
+                            </button>
+                        ))}
+                    </div>
                 )}
             </div>
 
-            {displaySections.length > 1 && (
-                <div className="flex justify-center gap-1.5">
-                    {displaySections.map((_, index) => (
-                        <div
-                            key={index}
-                            className={`h-1 rounded-full transition-all ${activeSection === index ? 'w-8 bg-yellow-500' : 'w-2 bg-zinc-800'}`}
-                        />
-                    ))}
-                </div>
-            )}
+            <style jsx global>{`
+                .prose-inline-styles * {
+                    color: inherit !important;
+                    font-family: inherit !important;
+                }
+                .no-scrollbar::-webkit-scrollbar {
+                    display: none;
+                }
+                .no-scrollbar {
+                    -ms-overflow-style: none;
+                    scrollbar-width: none;
+                }
+            `}</style>
         </div>
     );
 }
