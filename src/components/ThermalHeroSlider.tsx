@@ -246,10 +246,10 @@ export default function ThermalHeroSlider({ slides = [], interval = 10000 }: The
                                 <Link
                                     href={slide.buttonLink || '#'}
                                     className={`inline-block px-8 py-4 font-black rounded-2xl transition-all duration-300 shadow-2xl hover:scale-105 ${slide.buttonStyle === 'white'
-                                            ? 'bg-white text-black hover:bg-zinc-200'
-                                            : slide.buttonStyle === 'transparent'
-                                                ? 'bg-transparent border-2 border-white/20 text-white hover:bg-white/10 hover:border-white'
-                                                : 'bg-yellow-500 text-black hover:bg-yellow-400'
+                                        ? 'bg-white text-black hover:bg-zinc-200'
+                                        : slide.buttonStyle === 'transparent'
+                                            ? 'bg-transparent border-2 border-white/20 text-white hover:bg-white/10 hover:border-white'
+                                            : 'bg-yellow-500 text-black hover:bg-yellow-400'
                                         }`}
                                 >
                                     {slide.buttonText}
@@ -260,34 +260,73 @@ export default function ThermalHeroSlider({ slides = [], interval = 10000 }: The
                 </AnimatePresence>
             </div>
 
-            {/* Navigation Arrows */}
+            {/* Navigation Arrows (Optional/Mobile) */}
             {slides.length > 1 && (
-                <>
+                <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 z-40 px-4 md:px-8 pointer-events-none flex justify-between items-center opacity-0 md:opacity-100 group-hover/slider:opacity-100 transition-opacity">
                     <button
                         onClick={prevSlide}
-                        className="absolute left-6 top-1/2 -translate-y-1/2 z-40 p-4 rounded-2xl bg-black/40 hover:bg-yellow-500 text-white hover:text-black transition-all backdrop-blur-xl border border-white/10 group/btn"
+                        className="pointer-events-auto p-4 md:p-6 rounded-2xl bg-black/40 hover:bg-yellow-500 text-white hover:text-black transition-all backdrop-blur-xl border border-white/10 group/btn relative overflow-hidden"
                     >
-                        <ChevronLeft size={32} className="group-hover/btn:-translate-x-1 transition-transform" />
+                        <ChevronLeft size={32} className="relative z-10 group-hover/btn:-translate-x-1 transition-transform" />
+                        <div className="absolute inset-0 border-2 border-yellow-500/30 rounded-2xl animate-pulse opacity-0 group-hover/btn:opacity-100 transition-opacity" />
                     </button>
                     <button
                         onClick={nextSlide}
-                        className="absolute right-6 top-1/2 -translate-y-1/2 z-40 p-4 rounded-2xl bg-black/40 hover:bg-yellow-500 text-white hover:text-black transition-all backdrop-blur-xl border border-white/10 group/btn"
+                        className="pointer-events-auto p-4 md:p-6 rounded-2xl bg-black/40 hover:bg-yellow-500 text-white hover:text-black transition-all backdrop-blur-xl border border-white/10 group/btn relative overflow-hidden"
                     >
-                        <ChevronRight size={32} className="group-hover/btn:translate-x-1 transition-transform" />
+                        <ChevronRight size={32} className="relative z-10 group-hover/btn:translate-x-1 transition-transform" />
+                        <div className="absolute inset-0 border-2 border-yellow-500/30 rounded-2xl animate-pulse opacity-0 group-hover/btn:opacity-100 transition-opacity" />
                     </button>
-
-                    {/* Dots */}
-                    <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-40 flex gap-3">
-                        {slides.map((_, idx) => (
-                            <button
-                                key={idx}
-                                onClick={() => { setCurrentSlide(idx); setAutoplay(false); }}
-                                className={`h-1.5 rounded-full transition-all duration-500 ${idx === currentSlide ? 'w-12 bg-yellow-500' : 'w-4 bg-white/20 hover:bg-white/40'}`}
-                            />
-                        ))}
-                    </div>
-                </>
+                </div>
             )}
+
+            {/* "Mega Pro" Filmstrip Thumbnails */}
+            {slides.length > 1 && (
+                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-40 w-full max-w-4xl px-4 flex gap-3 md:gap-4 justify-center items-center overflow-x-auto no-scrollbar py-4">
+                    {slides.map((s, idx) => (
+                        <button
+                            key={idx}
+                            onClick={() => { setCurrentSlide(idx); setAutoplay(false); }}
+                            className={`group/thumb relative flex-shrink-0 w-24 md:w-32 aspect-video rounded-xl overflow-hidden border-2 transition-all duration-500 ${idx === currentSlide
+                                ? 'border-yellow-500 scale-110 shadow-[0_0_30px_rgba(234,179,8,0.5)]'
+                                : 'border-white/5 hover:border-white/20'}`}
+                        >
+                            {/* Visual Layer */}
+                            <img
+                                src={s.visualMedia}
+                                className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 ${idx === currentSlide ? 'grayscale-0 opacity-100' : 'grayscale opacity-40 group-hover/thumb:opacity-70 group-hover/thumb:grayscale-0'}`}
+                            />
+                            {/* Thermal Layer (Partial Overlay) */}
+                            <div
+                                className="absolute inset-0 z-10"
+                                style={{ clipPath: `inset(0 0 0 ${sliderPos}%)` }}
+                            >
+                                <img
+                                    src={s.thermalMedia}
+                                    className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 ${idx === currentSlide ? 'grayscale-0 opacity-100' : 'grayscale opacity-40 group-hover/thumb:opacity-70 group-hover/thumb:grayscale-0'}`}
+                                />
+                            </div>
+
+                            <div className="absolute inset-0 z-20 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                            <div className="absolute bottom-1.5 left-2 right-2 z-30">
+                                <p className={`text-[8px] font-black uppercase tracking-tighter truncate ${idx === currentSlide ? 'text-yellow-500' : 'text-zinc-500'}`}>
+                                    {s.category}
+                                </p>
+                            </div>
+
+                            {/* Pulsing Highlight for Active Item */}
+                            {idx === currentSlide && (
+                                <div className="absolute inset-0 border-2 border-yellow-500 animate-pulse pointer-events-none" />
+                            )}
+                        </button>
+                    ))}
+                </div>
+            )}
+
+            <style jsx global>{`
+                .no-scrollbar::-webkit-scrollbar { display: none; }
+                .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+            `}</style>
         </div>
     );
 }

@@ -1,0 +1,38 @@
+[
+  {
+    "id": 1,
+    "email": "test-1766340517744@user.com",
+    "password_hash": "$2b$10$qy3SbV/FGm5s6xcYcBLKIekCsZnzwqt6jmbIDW6jhCYLwc4ErqiM.",
+    "name": "Test Client",
+    "phone": null,
+    "created_at": "2025-12-21T18:08:37.811Z",
+    "updated_at": "2025-12-21T18:08:37.811Z"
+  },
+  {
+    "id": 2,
+    "email": "test-1766342161508@user.com",
+    "password_hash": "$2b$10$xiUtA0Y9FjGLYYhvN68CMO5.fFxN0rebKUXgSHGNGoAtz8ncEaogO",
+    "name": "Test Client",
+    "phone": null,
+    "created_at": "2025-12-21T18:36:01.575Z",
+    "updated_at": "2025-12-21T18:36:01.575Z"
+  },
+  {
+    "id": 3,
+    "email": "test-1766342245229@user.com",
+    "password_hash": "$2b$10$6v5r8aIm/wbwBLZvsyM2zuqTC77d0B9g0poDgI207aeh3rxgHe0Ni",
+    "name": "Test Client",
+    "phone": null,
+    "created_at": "2025-12-21T18:37:25.318Z",
+    "updated_at": "2025-12-21T18:37:25.318Z"
+  },
+  {
+    "id": 4,
+    "email": "test-1766342527497@user.com",
+    "password_hash": "$2b$10$vBWNte3a.g0QQMajUgi1HeEER4fuc4ZHdLFDxEm..FbIN17Knq.4e",
+    "name": "Test Client",
+    "phone": null,
+    "created_at": "2025-12-21T18:42:07.561Z",
+    "updated_at": "2025-12-21T18:42:07.561Z"
+  }
+]

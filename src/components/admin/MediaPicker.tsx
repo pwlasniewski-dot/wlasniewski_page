@@ -533,7 +533,7 @@ export default function MediaPicker({ isOpen, onClose, onSelect, multiple = fals
                         <label className="flex items-center gap-2 px-4 py-2 bg-gold-500 text-black text-xs font-bold rounded-md cursor-pointer hover:bg-gold-400 transition-colors shadow-lg shadow-gold-500/10">
                             <Upload className="w-4 h-4" />
                             <span>Wgraj Pliki</span>
-                            <input type="file" ref={fileInputRef} className="hidden" multiple accept="image/*,video/*" onChange={(e) => e.target.files && handleUpload(Array.from(e.target.files))} />
+                            <input type="file" ref={fileInputRef} className="hidden" multiple accept="image/*,video/*,application/pdf" onChange={(e) => e.target.files && handleUpload(Array.from(e.target.files))} />
                         </label>
                     </div>
 

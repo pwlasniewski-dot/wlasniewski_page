@@ -853,6 +853,7 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                             <ThermalHeroSlider
                                 key={section.id}
                                 slides={data.thermal_hero_slides || []}
+                                interval={(data.switchInterval || 10) * 1000}
                             />
                         );
 

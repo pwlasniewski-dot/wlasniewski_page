@@ -1,6 +1,6 @@
 import React, { memo } from 'react';
 import Image from 'next/image';
-import { Check, Trash2, PlayCircle, FileVideo } from 'lucide-react';
+import { Check, Trash2, PlayCircle, FileVideo, FileText } from 'lucide-react';
 
 interface MediaItem {
     id: number;
@@ -32,6 +32,7 @@ const MediaItemCard = memo(({ item, isSelected, onToggle, onClick, onDelete, onD
     };
 
     const isVideo = item.mime_type?.startsWith('video/');
+    const isPDF = item.mime_type === 'application/pdf';
 
     return (
         <div
@@ -51,6 +52,18 @@ const MediaItemCard = memo(({ item, isSelected, onToggle, onClick, onDelete, onD
                     </div>
                     <div className="absolute top-0 right-0 p-1">
                         <span className="px-1.5 py-0.5 bg-black/60 rounded text-[8px] font-bold text-gold-500 uppercase tracking-tighter">VIDEO</span>
+                    </div>
+                </div>
+            ) : isPDF ? (
+                <div className="w-full h-full bg-zinc-800 flex flex-col items-center justify-center gap-2">
+                    <div className="relative w-full h-full flex items-center justify-center group-hover:bg-black/20 transition-colors">
+                        <FileText className="w-12 h-12 text-red-500/50 group-hover:text-red-500 transition-colors" />
+                    </div>
+                    <div className="absolute top-0 right-0 p-1">
+                        <span className="px-1.5 py-0.5 bg-red-600 rounded text-[8px] font-bold text-white uppercase tracking-tighter shadow-lg">PDF</span>
+                    </div>
+                    <div className="absolute bottom-1 left-2 right-2 truncate text-[9px] text-zinc-500 font-medium">
+                        {item.file_name}
                     </div>
                 </div>
             ) : (

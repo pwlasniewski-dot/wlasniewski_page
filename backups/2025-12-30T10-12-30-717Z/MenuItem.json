@@ -1,0 +1,123 @@
+[
+  {
+    "id": 15,
+    "title": "O Mnie",
+    "url": "/ o-mnie ",
+    "page_id": 2,
+    "parent_id": null,
+    "order": 2,
+    "is_active": true,
+    "menu_type": "b2c",
+    "created_at": "2025-12-28T11:58:05.040Z"
+  },
+  {
+    "id": 16,
+    "title": "Portfolio",
+    "url": "/ portfolio ",
+    "page_id": 3,
+    "parent_id": null,
+    "order": 3,
+    "is_active": true,
+    "menu_type": "b2c",
+    "created_at": "2025-12-28T11:58:05.398Z"
+  },
+  {
+    "id": 17,
+    "title": "Rezerwacja",
+    "url": "/ rezerwacja ",
+    "page_id": 4,
+    "parent_id": null,
+    "order": 4,
+    "is_active": true,
+    "menu_type": "b2c",
+    "created_at": "2025-12-28T11:58:05.621Z"
+  },
+  {
+    "id": 18,
+    "title": "Blog",
+    "url": "/ blog ",
+    "page_id": 5,
+    "parent_id": null,
+    "order": 5,
+    "is_active": true,
+    "menu_type": "b2c",
+    "created_at": "2025-12-28T11:58:05.826Z"
+  },
+  {
+    "id": 19,
+    "title": "Foto Wyzwanie",
+    "url": "/ foto-wyzwanie ",
+    "page_id": 6,
+    "parent_id": null,
+    "order": 6,
+    "is_active": true,
+    "menu_type": "b2c",
+    "created_at": "2025-12-28T11:58:06.039Z"
+  },
+  {
+    "id": 20,
+    "title": "Sklep",
+    "url": "/ sklep ",
+    "page_id": 47,
+    "parent_id": null,
+    "order": 7,
+    "is_active": true,
+    "menu_type": "b2c",
+    "created_at": "2025-12-28T11:58:06.241Z"
+  },
+  {
+    "id": 33,
+    "title": "Monitoring",
+    "url": null,
+    "page_id": 128,
+    "parent_id": null,
+    "order": 1,
+    "is_active": true,
+    "menu_type": "b2b",
+    "created_at": "2025-12-28T18:36:19.140Z"
+  },
+  {
+    "id": 35,
+    "title": "Kontakt",
+    "url": null,
+    "page_id": 129,
+    "parent_id": null,
+    "order": 4,
+    "is_active": true,
+    "menu_type": "b2b",
+    "created_at": "2025-12-28T18:37:18.617Z"
+  },
+  {
+    "id": 34,
+    "title": "Inspekcje",
+    "url": null,
+    "page_id": 127,
+    "parent_id": null,
+    "order": 3,
+    "is_active": true,
+    "menu_type": "b2b",
+    "created_at": "2025-12-28T18:36:55.996Z"
+  },
+  {
+    "id": 31,
+    "title": "Start",
+    "url": null,
+    "page_id": 125,
+    "parent_id": null,
+    "order": 2,
+    "is_active": true,
+    "menu_type": "b2b",
+    "created_at": "2025-12-28T18:35:36.989Z"
+  },
+  {
+    "id": 32,
+    "title": "Termowizja",
+    "url": null,
+    "page_id": 126,
+    "parent_id": null,
+    "order": 0,
+    "is_active": true,
+    "menu_type": "b2b",
+    "created_at": "2025-12-28T18:35:54.812Z"
+  }
+]

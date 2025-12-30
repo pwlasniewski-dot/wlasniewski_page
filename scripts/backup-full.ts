@@ -61,11 +61,22 @@ async function backup() {
 
     for (const modelName of MODELS) {
         try {
+            // Prisma models are accessed with lowercased first letter
+            const prismaModelName = modelName.charAt(0).toLowerCase() + modelName.slice(1);
             // @ts-ignore
-            const data = await prisma[modelName].findMany();
+            const model = prisma[prismaModelName];
+
+            if (!model) {
+                console.warn(`⚠️ Skipped ${modelName}: Not found in Prisma Client as ${prismaModelName}`);
+                continue;
+            }
+
+            const data = await model.findMany();
             if (data) {
                 const filePath = path.join(backupDir, `${modelName}.json`);
-                fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+                fs.writeFileSync(filePath, JSON.stringify(data, (key, value) =>
+                    typeof value === 'bigint' ? value.toString() : value
+                    , 2));
                 console.log(`✅ Backed up ${modelName}: ${data.length} records`);
             }
         } catch (error) {

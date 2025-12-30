@@ -138,6 +138,12 @@ export default function ThermalSlider({
                                                 transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                                             />
                                         )}
+                                        {/* Pulsing Border for Clickability */}
+                                        {activeSection !== index && (
+                                            <div className="absolute inset-0 rounded-xl border border-white/0 hover:border-yellow-500/30 transition-colors">
+                                                <div className="absolute inset-0 rounded-xl border border-yellow-500/0 hover:border-yellow-500/20 animate-pulse" />
+                                            </div>
+                                        )}
                                     </button>
                                 ))}
                             </div>

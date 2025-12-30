@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { FileText, Download, Calendar, MapPin, Activity, ChevronRight, FileSearch } from 'lucide-react';
+import { FileText, Eye, Calendar, MapPin, Activity, ChevronRight, FileSearch } from 'lucide-react';
 
 interface ThermalReport {
     id: string;
@@ -114,9 +114,9 @@ export default function ThermalReportShowcase({ title, subtitle, reports = [] }:
                                     >
                                         <div className="flex items-center gap-3">
                                             <FileText size={18} />
-                                            <span className="text-xs font-black uppercase tracking-widest">Pobierz Raport PDF</span>
+                                            <span className="text-xs font-black uppercase tracking-widest">Zobacz Raport PDF</span>
                                         </div>
-                                        <Download size={18} className="translate-y-0 group-hover/btn:translate-y-1 transition-transform" />
+                                        <Eye size={18} className="translate-y-0 group-hover/btn:-translate-y-1 transition-transform" />
                                     </a>
                                 </div>
                             </div>

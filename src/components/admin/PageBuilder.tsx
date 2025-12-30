@@ -1480,6 +1480,18 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove, openMedia
                 {/* THERMAL HERO SLIDER */}
                 {section.type === 'thermal_hero' && (
                     <div className="space-y-6">
+                        <div className="grid grid-cols-2 gap-4 bg-zinc-800/30 p-4 rounded-xl border border-zinc-700/50 mb-4">
+                            <div>
+                                <label className="block text-[10px] text-zinc-500 uppercase font-black mb-1">Czas zmiany (sekundy)</label>
+                                <input
+                                    type="number"
+                                    value={section.switchInterval || 10}
+                                    onChange={e => onUpdate(section.id, { switchInterval: parseInt(e.target.value) })}
+                                    className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-sm text-white"
+                                    placeholder="np. 10"
+                                />
+                            </div>
+                        </div>
                         <div className="flex items-center justify-between">
                             <h4 className="text-sm font-bold text-white uppercase tracking-wider">Slajdy Thermal Hero</h4>
                             <button
@@ -1533,6 +1545,15 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove, openMedia
                                         </select>
                                         <input type="text" value={slide.title} onChange={e => { const up = [...section.thermal_hero_slides!]; up[sIndex].title = e.target.value; onUpdate(section.id, { thermal_hero_slides: up }); }} placeholder="Tytuł Slajdu (HTML)" className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-1.5 text-xs text-white" />
                                         <input type="text" value={slide.subtitle || ''} onChange={e => { const up = [...section.thermal_hero_slides!]; up[sIndex].subtitle = e.target.value; onUpdate(section.id, { thermal_hero_slides: up }); }} placeholder="Podtytuł" className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-1.5 text-xs text-zinc-400" />
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <input type="text" value={slide.buttonText || ''} onChange={e => { const up = [...section.thermal_hero_slides!]; up[sIndex].buttonText = e.target.value; onUpdate(section.id, { thermal_hero_slides: up }); }} placeholder="Tekst przycisku" className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-1.5 text-[10px] text-white" />
+                                            <input type="text" value={slide.buttonLink || ''} onChange={e => { const up = [...section.thermal_hero_slides!]; up[sIndex].buttonLink = e.target.value; onUpdate(section.id, { thermal_hero_slides: up }); }} placeholder="Link przycisku" className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-1.5 text-[10px] text-zinc-400" />
+                                        </div>
+                                        <select value={slide.buttonStyle || 'gold'} onChange={e => { const up = [...section.thermal_hero_slides!]; up[sIndex].buttonStyle = e.target.value as any; onUpdate(section.id, { thermal_hero_slides: up }); }} className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-1.5 text-[10px] text-white">
+                                            <option value="gold">Styl: Gold</option>
+                                            <option value="white">Styl: White</option>
+                                            <option value="transparent">Styl: Transparent</option>
+                                        </select>
                                     </div>
                                 </div>
                             </div>
@@ -1664,11 +1685,29 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove, openMedia
                                         <div className="flex items-center gap-3">
                                             <div className="flex-1">
                                                 <label className="text-[8px] text-zinc-600 uppercase font-black mb-1 block">Miniaturka</label>
-                                                <button onClick={() => openMediaPicker(section.id, { target: 'single', context: 'visual', index: rIndex })} className="w-full py-1.5 bg-zinc-700 hover:bg-zinc-600 text-[10px] font-bold text-zinc-400 rounded uppercase">Wybierz Foto</button>
+                                                <div className="flex gap-2">
+                                                    <div className="w-10 h-10 bg-zinc-900 rounded overflow-hidden border border-zinc-700 shrink-0 flex items-center justify-center">
+                                                        {rep.thumbnailUrl ? (
+                                                            <img src={rep.thumbnailUrl} className="w-full h-full object-cover" />
+                                                        ) : (
+                                                            <ImageIcon size={16} className="text-zinc-700" />
+                                                        )}
+                                                    </div>
+                                                    <button onClick={() => openMediaPicker(section.id, { target: 'single', context: 'visual', index: rIndex })} className="flex-1 py-1.5 bg-zinc-700 hover:bg-zinc-600 text-[10px] font-bold text-white rounded uppercase px-2 transition-colors">
+                                                        {rep.thumbnailUrl ? 'Zmień Foto' : 'Wybierz Foto'}
+                                                    </button>
+                                                </div>
                                             </div>
                                             <div className="flex-1">
                                                 <label className="text-[8px] text-zinc-600 uppercase font-black mb-1 block">PDF Raport</label>
-                                                <button onClick={() => openMediaPicker(section.id, { target: 'single', context: 'thermal', index: rIndex })} className="w-full py-1.5 bg-zinc-900 hover:bg-zinc-800 text-[10px] font-bold text-yellow-500 rounded uppercase border border-yellow-500/20">Wgraj PDF</button>
+                                                <div className="flex gap-2">
+                                                    <div className={`w-10 h-10 rounded overflow-hidden border shrink-0 flex items-center justify-center transition-colors ${rep.pdfUrl ? 'bg-red-500/10 border-red-500/30 text-red-500' : 'bg-zinc-900 border-zinc-700 text-zinc-700'}`}>
+                                                        <FileText size={16} />
+                                                    </div>
+                                                    <button onClick={() => openMediaPicker(section.id, { target: 'single', context: 'thermal', index: rIndex })} className={`flex-1 py-1.5 rounded text-[10px] font-bold uppercase transition-all border ${rep.pdfUrl ? 'bg-zinc-900 text-yellow-500 border-yellow-500/20 hover:border-yellow-500' : 'bg-zinc-800 text-zinc-400 border-transparent hover:bg-zinc-700'}`}>
+                                                        {rep.pdfUrl ? 'Zmień PDF' : 'Wgraj PDF'}
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                         <input type="text" value={rep.equipment} onChange={e => { const up = [...section.thermal_reports!]; up[rIndex].equipment = e.target.value; onUpdate(section.id, { thermal_reports: up }); }} placeholder="Sprzęt pomiarowy" className="w-full bg-zinc-900/50 border border-zinc-700 rounded px-3 py-1.5 text-[10px] text-zinc-500 italic" />
