@@ -8,12 +8,12 @@ import {
     Plus, Trash2, GripVertical, Image as ImageIcon, Type, Layout,
     MoveUp, MoveDown, ShieldCheck, Stars, BarChart3, Award, Workflow,
     Briefcase, FileText, Zap, Building2, Maximize2, Thermometer, Cpu, Crosshair,
-    Camera, Droplets, Map, Search, HardHat, Video
+    Camera, Droplets, Map, Search, HardHat, Video, FileSearch
 } from 'lucide-react';
 import RichTextEditor from './RichTextEditor';
 import MediaPicker from './MediaPicker';
 
-export type SectionType = 'hero_parallax' | 'hero' | 'rich_text' | 'image_text' | 'gallery' | 'contact' | 'thermal_slider' | 'contact_form' | 'hero_slider' | 'about' | 'features' | 'parallax' | 'info_band' | 'testimonials' | 'challenge_banner' | 'creative_slider' | 'certificates' | 'b2b_hero' | 'b2b_stats' | 'b2b_logos' | 'b2b_process' | 'b2b_cases' | 'b2b_contact' | 'b2b_video';
+export type SectionType = 'hero_parallax' | 'hero' | 'rich_text' | 'image_text' | 'gallery' | 'contact' | 'thermal_slider' | 'contact_form' | 'hero_slider' | 'about' | 'features' | 'parallax' | 'info_band' | 'testimonials' | 'challenge_banner' | 'creative_slider' | 'certificates' | 'b2b_hero' | 'b2b_stats' | 'b2b_logos' | 'b2b_process' | 'b2b_cases' | 'b2b_contact' | 'b2b_video' | 'thermal_hero' | 'hero_video' | 'parallax_video' | 'thermal_report';
 
 export interface SliderSlide {
     id: string;
@@ -22,6 +22,37 @@ export interface SliderSlide {
     buttonText?: string;
     buttonLink?: string;
     image: string;
+    videoUrl?: string;
+    overlayOpacity?: number;
+    textAnimation?: 'fade' | 'slide-up' | 'scale';
+}
+
+export interface ThermalHeroSlide {
+    id: string;
+    category: string;
+    title: string;
+    subtitle?: string;
+    description?: string;
+    visualMedia: string;
+    thermalMedia: string;
+    mediaType?: 'image' | 'video';
+    labelLeft?: string;
+    labelRight?: string;
+    buttonText?: string;
+    buttonLink?: string;
+    buttonStyle?: 'gold' | 'white' | 'transparent';
+    textAnimation?: 'fade' | 'slide-up' | 'scale';
+}
+
+export interface ThermalReport {
+    id: string;
+    title: string;
+    date: string;
+    location: string;
+    equipment: string;
+    pdfUrl: string;
+    thumbnailUrl: string;
+    type: string;
 }
 
 export interface ThermalSectionData {
@@ -125,6 +156,8 @@ export interface PageSection {
     certTag?: string; // For certificates
     descriptionLabel?: string; // For certificates
     infoband_items?: InfoBandItem[];
+    thermal_hero_slides?: ThermalHeroSlide[];
+    thermal_reports?: ThermalReport[];
     data?: any; // For legacy / homepage sections
     // Video Section Properties
     videoUrl?: string;
@@ -133,6 +166,7 @@ export interface PageSection {
     videoMuted?: boolean;
     videoLoop?: boolean;
     switchInterval?: number; // For thermal_slider
+    overlayOpacity?: number; // For video modules
 }
 
 interface PageBuilderProps {
@@ -1442,6 +1476,208 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove, openMedia
                         </div>
                     </div>
                 )}
+
+                {/* THERMAL HERO SLIDER */}
+                {section.type === 'thermal_hero' && (
+                    <div className="space-y-6">
+                        <div className="flex items-center justify-between">
+                            <h4 className="text-sm font-bold text-white uppercase tracking-wider">Slajdy Thermal Hero</h4>
+                            <button
+                                onClick={() => {
+                                    const newSlide: ThermalHeroSlide = {
+                                        id: Math.random().toString(36).substr(2, 9),
+                                        category: 'ANALIZA TERMICZNA',
+                                        title: 'Tytuł <span class="text-yellow-500">Slajdu</span>',
+                                        visualMedia: '',
+                                        thermalMedia: '',
+                                        mediaType: 'image'
+                                    };
+                                    onUpdate(section.id, { thermal_hero_slides: [...(section.thermal_hero_slides || []), newSlide] });
+                                }}
+                                className="px-3 py-1.5 bg-yellow-500/20 border border-yellow-500/30 text-yellow-400 text-xs font-bold rounded hover:bg-yellow-500/30 transition-all flex items-center gap-1"
+                            >
+                                <Plus size={14} /> Dodaj slajd
+                            </button>
+                        </div>
+                        {(section.thermal_hero_slides || []).map((slide, sIndex) => (
+                            <div key={slide.id} className="bg-zinc-800/50 p-6 rounded-xl border border-zinc-700 space-y-4">
+                                <div className="flex items-center justify-between mb-2">
+                                    <input type="text" value={slide.category} onChange={e => { const up = [...section.thermal_hero_slides!]; up[sIndex].category = e.target.value; onUpdate(section.id, { thermal_hero_slides: up }); }} className="bg-zinc-700 border border-zinc-600 rounded px-3 py-1 text-xs text-yellow-500 font-black uppercase tracking-widest" placeholder="Kategoria" />
+                                    <button onClick={() => onUpdate(section.id, { thermal_hero_slides: section.thermal_hero_slides!.filter((_, i) => i !== sIndex) })} className="text-zinc-500 hover:text-red-500"><Trash2 size={16} /></button>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="block text-[10px] text-zinc-500 uppercase font-black mb-1">Widok Optyczny (L)</label>
+                                            <div className="flex gap-2">
+                                                <div className="w-16 h-16 bg-zinc-900 rounded overflow-hidden border border-zinc-600 shrink-0">
+                                                    {slide.visualMedia && (slide.mediaType === 'video' ? <Video className="m-auto mt-5 text-zinc-700" size={20} /> : <img src={slide.visualMedia} className="w-full h-full object-cover" />)}
+                                                </div>
+                                                <button onClick={() => openMediaPicker(section.id, { target: 'single', context: 'visual', index: sIndex })} className="flex-1 bg-zinc-700 hover:bg-zinc-600 rounded text-[10px] font-bold text-zinc-300 uppercase px-2">Wybierz Media</button>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-[10px] text-zinc-500 uppercase font-black mb-1">Widok Termiczny (R)</label>
+                                            <div className="flex gap-2">
+                                                <div className="w-16 h-16 bg-zinc-900 rounded overflow-hidden border border-zinc-600 shrink-0">
+                                                    {slide.thermalMedia && (slide.mediaType === 'video' ? <Video className="m-auto mt-5 text-zinc-700" size={20} /> : <img src={slide.thermalMedia} className="w-full h-full object-cover" />)}
+                                                </div>
+                                                <button onClick={() => openMediaPicker(section.id, { target: 'single', context: 'thermal', index: sIndex })} className="flex-1 bg-zinc-700 hover:bg-zinc-600 rounded text-[10px] font-bold text-zinc-300 uppercase px-2">Wybierz Media</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-3">
+                                        <select value={slide.mediaType || 'image'} onChange={e => { const up = [...section.thermal_hero_slides!]; up[sIndex].mediaType = e.target.value as any; onUpdate(section.id, { thermal_hero_slides: up }); }} className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-1.5 text-xs text-white">
+                                            <option value="image">Format: Zdjęcie</option>
+                                            <option value="video">Format: Wideo</option>
+                                        </select>
+                                        <input type="text" value={slide.title} onChange={e => { const up = [...section.thermal_hero_slides!]; up[sIndex].title = e.target.value; onUpdate(section.id, { thermal_hero_slides: up }); }} placeholder="Tytuł Slajdu (HTML)" className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-1.5 text-xs text-white" />
+                                        <input type="text" value={slide.subtitle || ''} onChange={e => { const up = [...section.thermal_hero_slides!]; up[sIndex].subtitle = e.target.value; onUpdate(section.id, { thermal_hero_slides: up }); }} placeholder="Podtytuł" className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-1.5 text-xs text-zinc-400" />
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                {/* HERO VIDEO SLIDER */}
+                {section.type === 'hero_video' && (
+                    <div className="space-y-6">
+                        <div className="flex items-center justify-between">
+                            <h4 className="text-sm font-bold text-white uppercase tracking-wider">Slajdy Wideo Hero</h4>
+                            <button
+                                onClick={() => {
+                                    const newSlide: any = { id: Math.random().toString(36).substr(2, 9), title: 'Tytuł Wideo', videoUrl: '', overlayOpacity: 0.4 };
+                                    onUpdate(section.id, { slides: [...(section.slides || []), newSlide] });
+                                }}
+                                className="px-3 py-1.5 bg-blue-500/20 border border-blue-500/30 text-blue-400 text-xs font-bold rounded hover:bg-blue-500/30 transition-all flex items-center gap-1"
+                            >
+                                <Plus size={14} /> Dodaj slajd
+                            </button>
+                        </div>
+                        {(section.slides || []).map((slide, sIndex) => (
+                            <div key={slide.id} className="bg-zinc-800/50 p-4 rounded-lg border border-zinc-700 grid grid-cols-2 gap-4">
+                                <div className="space-y-3">
+                                    <div className="flex gap-2">
+                                        <div className="w-16 h-16 bg-zinc-900 rounded border border-zinc-600 flex items-center justify-center text-blue-500 shrink-0">
+                                            <Video size={24} />
+                                        </div>
+                                        <button onClick={() => openMediaPicker(section.id, { target: 'single', index: sIndex })} className="flex-1 bg-zinc-700 hover:bg-zinc-600 rounded text-[10px] font-bold text-zinc-300 uppercase px-2">Wgraj Wideo</button>
+                                    </div>
+                                    <input type="text" value={slide.title} onChange={e => { const up = [...section.slides!]; up[sIndex].title = e.target.value; onUpdate(section.id, { slides: up }); }} placeholder="Tytuł" className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs text-white font-bold" />
+                                </div>
+                                <div className="space-y-2">
+                                    <input type="text" value={slide.subtitle || ''} onChange={e => { const up = [...section.slides!]; up[sIndex].subtitle = e.target.value; onUpdate(section.id, { slides: up }); }} placeholder="Podtytuł" className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs text-zinc-400" />
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-[10px] text-zinc-500 uppercase font-black">Overlay</span>
+                                        <input type="range" min="0" max="1" step="0.1" value={slide.overlayOpacity ?? 0.4} onChange={e => { const up = [...section.slides!]; (up[sIndex] as any).overlayOpacity = parseFloat(e.target.value); onUpdate(section.id, { slides: up }); }} className="flex-1" />
+                                    </div>
+                                    <button onClick={() => onUpdate(section.id, { slides: section.slides!.filter((_, i) => i !== sIndex) })} className="w-full py-1 text-[10px] font-bold text-red-500 hover:bg-red-500/10 rounded border border-red-500/20 uppercase transition-all">Usuń Slajd</button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                {/* PARALLAX VIDEO */}
+                {section.type === 'parallax_video' && (
+                    <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-xs text-zinc-500 mb-1">Wideo Paralaksa</label>
+                                    <div className="flex gap-3">
+                                        <div className="w-20 h-20 bg-zinc-900 rounded border border-zinc-700 flex items-center justify-center text-purple-500 shrink-0">
+                                            <Video size={32} />
+                                        </div>
+                                        <button onClick={() => openMediaPicker(section.id, { target: 'single' })} className="flex-1 border-2 border-dashed border-zinc-700 rounded text-xs font-bold text-zinc-500 hover:text-white hover:border-zinc-500 transition-all uppercase">Wybierz Wideo</button>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-xs text-zinc-500 mb-1">Tytuł (HTML)</label>
+                                    <input type="text" value={section.title || ''} onChange={e => onUpdate(section.id, { title: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white font-bold" />
+                                </div>
+                            </div>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-xs text-zinc-500 mb-1">Podtytuł</label>
+                                    <input type="text" value={section.subtitle || ''} onChange={e => onUpdate(section.id, { subtitle: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-zinc-400" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs text-zinc-500 mb-1">Overlay Opacity</label>
+                                    <input type="number" step="0.1" min="0" max="1" value={section.overlayOpacity ?? 0.4} onChange={e => onUpdate(section.id, { overlayOpacity: parseFloat(e.target.value) })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* THERMAL REPORT SHOWCASE */}
+                {section.type === 'thermal_report' && (
+                    <div className="space-y-6">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs text-zinc-500 mb-1">Tytuł Sekcji</label>
+                                <input type="text" value={section.title || ''} onChange={e => onUpdate(section.id, { title: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white font-bold" />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-zinc-500 mb-1">Podtytuł</label>
+                                <input type="text" value={section.subtitle || ''} onChange={e => onUpdate(section.id, { subtitle: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-zinc-400" />
+                            </div>
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <h4 className="text-xs font-black text-zinc-600 uppercase tracking-widest">Baza Raportów PDF</h4>
+                            <button
+                                onClick={() => {
+                                    const newReport: ThermalReport = { id: Math.random().toString(36).substr(2, 9), title: 'Nowy Raport', date: '30.12.2025', location: 'Toruń PL', equipment: 'DJI Mavic 3 Thermal', pdfUrl: '', thumbnailUrl: '', type: 'INSPEKCJA PV' };
+                                    onUpdate(section.id, { thermal_reports: [...(section.thermal_reports || []), newReport] });
+                                }}
+                                className="text-[10px] bg-yellow-500/10 text-yellow-500 px-3 py-1 rounded-full border border-yellow-500/20 hover:bg-yellow-500/20 font-black uppercase tracking-widest"
+                            >
+                                + DODAJ RAPORT
+                            </button>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {(section.thermal_reports || []).map((rep, rIndex) => (
+                                <div key={rep.id} className="bg-zinc-800/80 p-5 rounded-2xl border border-white/5 space-y-4 hover:border-yellow-500/20 transition-all group">
+                                    <div className="flex items-start justify-between">
+                                        <div className="w-12 h-12 bg-zinc-900 rounded-xl border border-zinc-700 flex items-center justify-center text-yellow-500 shrink-0">
+                                            <FileText size={24} />
+                                        </div>
+                                        <div className="flex-1 ml-4 space-y-1">
+                                            <input type="text" value={rep.title} onChange={e => { const up = [...section.thermal_reports!]; up[rIndex].title = e.target.value; onUpdate(section.id, { thermal_reports: up }); }} className="w-full bg-transparent border-none p-0 text-sm text-white font-bold" placeholder="Tytuł raportu" />
+                                            <input type="text" value={rep.type} onChange={e => { const up = [...section.thermal_reports!]; up[rIndex].type = e.target.value; onUpdate(section.id, { thermal_reports: up }); }} className="w-full bg-transparent border-none p-0 text-[10px] text-yellow-500/60 font-black uppercase tracking-tighter" placeholder="TYP: PV / BUDYNEK" />
+                                        </div>
+                                        <button onClick={() => onUpdate(section.id, { thermal_reports: section.thermal_reports!.filter((_, i) => i !== rIndex) })} className="text-zinc-600 hover:text-red-500 ml-2"><Trash2 size={16} /></button>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3 pb-3 border-b border-white/5">
+                                        <div className="space-y-1">
+                                            <label className="text-[8px] text-zinc-600 uppercase font-black">Data</label>
+                                            <input type="text" value={rep.date} onChange={e => { const up = [...section.thermal_reports!]; up[rIndex].date = e.target.value; onUpdate(section.id, { thermal_reports: up }); }} className="w-full bg-zinc-900/50 border border-zinc-700 rounded px-2 py-1 text-[10px] text-zinc-300" />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-[8px] text-zinc-600 uppercase font-black">Lokalizacja</label>
+                                            <input type="text" value={rep.location} onChange={e => { const up = [...section.thermal_reports!]; up[rIndex].location = e.target.value; onUpdate(section.id, { thermal_reports: up }); }} className="w-full bg-zinc-900/50 border border-zinc-700 rounded px-2 py-1 text-[10px] text-zinc-300" />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-3">
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex-1">
+                                                <label className="text-[8px] text-zinc-600 uppercase font-black mb-1 block">Miniaturka</label>
+                                                <button onClick={() => openMediaPicker(section.id, { target: 'single', context: 'visual', index: rIndex })} className="w-full py-1.5 bg-zinc-700 hover:bg-zinc-600 text-[10px] font-bold text-zinc-400 rounded uppercase">Wybierz Foto</button>
+                                            </div>
+                                            <div className="flex-1">
+                                                <label className="text-[8px] text-zinc-600 uppercase font-black mb-1 block">PDF Raport</label>
+                                                <button onClick={() => openMediaPicker(section.id, { target: 'single', context: 'thermal', index: rIndex })} className="w-full py-1.5 bg-zinc-900 hover:bg-zinc-800 text-[10px] font-bold text-yellow-500 rounded uppercase border border-yellow-500/20">Wgraj PDF</button>
+                                            </div>
+                                        </div>
+                                        <input type="text" value={rep.equipment} onChange={e => { const up = [...section.thermal_reports!]; up[rIndex].equipment = e.target.value; onUpdate(section.id, { thermal_reports: up }); }} placeholder="Sprzęt pomiarowy" className="w-full bg-zinc-900/50 border border-zinc-700 rounded px-3 py-1.5 text-[10px] text-zinc-500 italic" />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
@@ -1498,6 +1734,26 @@ export default function PageBuilder({ sections, onChange }: PageBuilderProps) {
             if (sectionEditIndex >= 0) {
                 updated[sectionEditIndex] = { ...updated[sectionEditIndex], image: imageUrl };
                 updateSection(activeSectionId, { slides: updated });
+            }
+        } else if (section.type === 'thermal_hero') {
+            const updated = [...(section.thermal_hero_slides || [])];
+            if (sectionEditIndex >= 0) {
+                if (mediaPickerContext === 'visual') {
+                    updated[sectionEditIndex] = { ...updated[sectionEditIndex], visualMedia: imageUrl };
+                } else if (mediaPickerContext === 'thermal') {
+                    updated[sectionEditIndex] = { ...updated[sectionEditIndex], thermalMedia: imageUrl };
+                }
+                updateSection(activeSectionId, { thermal_hero_slides: updated });
+            }
+        } else if (section.type === 'thermal_report') {
+            const updated = [...(section.thermal_reports || [])];
+            if (sectionEditIndex >= 0) {
+                if (mediaPickerContext === 'visual') {
+                    updated[sectionEditIndex] = { ...updated[sectionEditIndex], thumbnailUrl: imageUrl };
+                } else if (mediaPickerContext === 'thermal') {
+                    updated[sectionEditIndex] = { ...updated[sectionEditIndex], pdfUrl: imageUrl };
+                }
+                updateSection(activeSectionId, { thermal_reports: updated });
             }
         } else if (['certificates', 'b2b_logos', 'b2b_cases'].includes(section.type)) {
             if (section.type === 'certificates') {
@@ -1600,6 +1856,15 @@ export default function PageBuilder({ sections, onChange }: PageBuilderProps) {
             newSection.videoAutoPlay = false;
             newSection.videoMuted = true;
             newSection.videoLoop = true;
+        } else if (type === 'thermal_hero') {
+            newSection.thermal_hero_slides = [];
+        } else if (type === 'hero_video') {
+            newSection.slides = [];
+        } else if (type === 'parallax_video') {
+            newSection.videoUrl = '';
+            newSection.overlayOpacity = 0.4;
+        } else if (type === 'thermal_report') {
+            newSection.thermal_reports = [];
         }
 
         onChange([...sections, newSection]);
@@ -1914,6 +2179,18 @@ export default function PageBuilder({ sections, onChange }: PageBuilderProps) {
                 </button>
                 <button onClick={() => addSection('b2b_video')} className="flex items-center gap-2 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/50 rounded text-sm text-zinc-300 transition-colors group">
                     <Video className="w-4 h-4 text-orange-400" /> B2B Video
+                </button>
+                <button onClick={() => addSection('thermal_hero')} className="flex items-center gap-2 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/50 rounded text-sm text-zinc-300 transition-colors group">
+                    <Thermometer className="w-4 h-4 text-red-500" /> Thermal Hero
+                </button>
+                <button onClick={() => addSection('hero_video')} className="flex items-center gap-2 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/50 rounded text-sm text-zinc-300 transition-colors group">
+                    <Video className="w-4 h-4 text-blue-500" /> Hero Video Slider
+                </button>
+                <button onClick={() => addSection('parallax_video')} className="flex items-center gap-2 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/50 rounded text-sm text-zinc-300 transition-colors group">
+                    <MoveUp className="w-4 h-4 text-purple-500" /> Parallax Video
+                </button>
+                <button onClick={() => addSection('thermal_report')} className="flex items-center gap-2 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/50 rounded text-sm text-zinc-300 transition-colors group">
+                    <FileSearch className="w-4 h-4 text-yellow-500" /> Thermal Reports
                 </button>
             </div>
 

@@ -26,6 +26,10 @@ import CreativeSlider from '@/components/CreativeSlider';
 import TestimonialsSection from '@/components/TestimonialsSection';
 import ContactForm from '@/components/ContactForm';
 import B2BContactForm from '@/components/B2BContactForm';
+import ThermalHeroSlider from '@/components/ThermalHeroSlider';
+import HeroVideoSlider from '@/components/HeroVideoSlider';
+import ParallaxVideo from '@/components/ParallaxVideo';
+import ThermalReportShowcase from '@/components/ThermalReportShowcase';
 import { ShieldCheck, Zap, ArrowRight, Workflow, FileText, Briefcase, CheckCircle2, Maximize2, X, Camera } from 'lucide-react';
 
 export default function PageRenderer({ sections }: { sections: PageSection[] }) {
@@ -842,6 +846,43 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                     </motion.div>
                                 </div>
                             </section>
+                        );
+
+                    case 'thermal_hero':
+                        return (
+                            <ThermalHeroSlider
+                                key={section.id}
+                                slides={data.thermal_hero_slides || []}
+                            />
+                        );
+
+                    case 'hero_video':
+                        return (
+                            <HeroVideoSlider
+                                key={section.id}
+                                slides={data.slides || []}
+                            />
+                        );
+
+                    case 'parallax_video':
+                        return (
+                            <ParallaxVideo
+                                key={section.id}
+                                videoUrl={data.videoUrl || ''}
+                                title={data.title}
+                                subtitle={data.subtitle}
+                                overlayOpacity={data.overlayOpacity}
+                            />
+                        );
+
+                    case 'thermal_report':
+                        return (
+                            <ThermalReportShowcase
+                                key={section.id}
+                                title={data.title}
+                                subtitle={data.subtitle}
+                                reports={data.thermal_reports || []}
+                            />
                         );
 
                     case 'b2b_video':
