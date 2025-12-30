@@ -150,7 +150,7 @@ export default function ThermalSlider({
                         )}
                     </div>
 
-                    <AnimatePresence mode="wait">
+                    <AnimatePresence>
                         <motion.div
                             key={activeSection}
                             initial={{ opacity: 0, y: 10 }}
@@ -202,7 +202,7 @@ export default function ThermalSlider({
                     className="relative aspect-[4/3] md:aspect-video w-full rounded-[20px] md:rounded-[40px] overflow-hidden group/container cursor-none active:scale-[0.99] transition-transform duration-500 shadow-2xl touch-none"
                 >
                     {/* Thermal Image (Bottom Layer) */}
-                    <AnimatePresence mode="wait">
+                    <AnimatePresence>
                         <motion.div
                             key={currentSection.id + '_thermal'}
                             initial={{ opacity: 0 }}
@@ -215,7 +215,7 @@ export default function ThermalSlider({
                     </AnimatePresence>
 
                     {/* Visual Image (Top Layer) */}
-                    <AnimatePresence mode="wait">
+                    <AnimatePresence>
                         <motion.div
                             key={currentSection.id + '_visual'}
                             initial={{ opacity: 0 }}
