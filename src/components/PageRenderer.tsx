@@ -883,6 +883,10 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                 title={data.title}
                                 subtitle={data.subtitle}
                                 reports={data.thermal_reports || []}
+                                ctaTitle={data.featureTitle}
+                                ctaDescription={data.featureContent}
+                                ctaButtonText={data.buttonText}
+                                ctaButtonLink={data.buttonLink}
                             />
                         );
 

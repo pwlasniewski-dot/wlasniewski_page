@@ -19,9 +19,21 @@ interface ThermalReportShowcaseProps {
     title?: string;
     subtitle?: string;
     reports: ThermalReport[];
+    ctaTitle?: string;
+    ctaDescription?: string;
+    ctaButtonText?: string;
+    ctaButtonLink?: string;
 }
 
-export default function ThermalReportShowcase({ title, subtitle, reports = [] }: ThermalReportShowcaseProps) {
+export default function ThermalReportShowcase({
+    title,
+    subtitle,
+    reports = [],
+    ctaTitle,
+    ctaDescription,
+    ctaButtonText,
+    ctaButtonLink
+}: ThermalReportShowcaseProps) {
     if (!reports || reports.length === 0) return null;
 
     return (
@@ -130,22 +142,27 @@ export default function ThermalReportShowcase({ title, subtitle, reports = [] }:
                 </div>
 
                 {/* Analysis CTA */}
-                <motion.div
-                    initial={{ opacity: 0, y: 30 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    className="p-12 bg-gradient-to-br from-yellow-500/10 to-transparent border border-yellow-500/20 rounded-[40px] flex flex-col md:flex-row items-center justify-between gap-8"
-                >
-                    <div className="space-y-4 text-center md:text-left">
-                        <h3 className="text-2xl md:text-3xl font-bold text-white">Potrzebujesz profesjonalnej analizy?</h3>
-                        <p className="text-zinc-400 max-w-xl font-light">
-                            Każdy nalot kończy się wygenerowaniem szczegółowego raportu w systemie DJI Thermal Analysis, zawierającego precyzyjne pomiary temperatur i mapę anomalii.
-                        </p>
-                    </div>
-                    <button className="px-10 py-5 bg-yellow-500 text-black font-black rounded-2xl hover:scale-105 transition-all shadow-2xl flex items-center gap-3">
-                        DOWIEDZ SIĘ WIĘCEJ <ChevronRight size={20} />
-                    </button>
-                </motion.div>
+                {(ctaTitle || ctaDescription) && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 30 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        className="p-12 bg-gradient-to-br from-yellow-500/10 to-transparent border border-yellow-500/20 rounded-[40px] flex flex-col md:flex-row items-center justify-between gap-8"
+                    >
+                        <div className="space-y-4 text-center md:text-left">
+                            <h3 className="text-2xl md:text-3xl font-bold text-white">{ctaTitle || 'Potrzebujesz profesjonalnej analizy?'}</h3>
+                            <p className="text-zinc-400 max-w-xl font-light">
+                                {ctaDescription || 'Każdy nalot kończy się wygenerowaniem szczegółowego raportu w systemie DJI Thermal Analysis, zawierającego precyzyjne pomiary temperatur i mapę anomalii.'}
+                            </p>
+                        </div>
+                        <a
+                            href={ctaButtonLink || '#'}
+                            className="px-10 py-5 bg-yellow-500 text-black font-black rounded-2xl hover:scale-105 transition-all shadow-2xl flex items-center gap-3"
+                        >
+                            {ctaButtonText || 'DOWIEDZ SIĘ WIĘCEJ'} <ChevronRight size={20} />
+                        </a>
+                    </motion.div>
+                )}
             </div>
         </section>
     );

@@ -1646,6 +1646,33 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove, openMedia
                                 <input type="text" value={section.subtitle || ''} onChange={e => onUpdate(section.id, { subtitle: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-zinc-400" />
                             </div>
                         </div>
+
+                        {/* CTA Editor */}
+                        <div className="bg-yellow-500/5 p-6 rounded-3xl border border-yellow-500/10 space-y-4">
+                            <div className="flex items-center gap-2 mb-2">
+                                <Stars size={16} className="text-yellow-500" />
+                                <h4 className="text-[10px] font-black text-yellow-500 uppercase tracking-widest">Sekcja "Potrzebujesz analizy?" (CTA)</h4>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-[10px] text-zinc-500 mb-1 uppercase font-black">Tytuł CTA</label>
+                                    <input type="text" value={section.featureTitle || ''} onChange={e => onUpdate(section.id, { featureTitle: e.target.value })} className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-1.5 text-xs text-white" placeholder="np. Potrzebujesz profesjonalnej analizy?" />
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] text-zinc-500 mb-1 uppercase font-black">Przycisk CTA</label>
+                                    <input type="text" value={section.buttonText || ''} onChange={e => onUpdate(section.id, { buttonText: e.target.value })} className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-1.5 text-xs text-white" placeholder="np. DOWIEDZ SIĘ WIĘCEJ" />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-[10px] text-zinc-500 mb-1 uppercase font-black">Opis CTA</label>
+                                <textarea value={section.featureContent || ''} onChange={e => onUpdate(section.id, { featureContent: e.target.value })} className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-1.5 text-xs text-zinc-300 min-h-[60px]" placeholder="Opis działania raportów..." />
+                            </div>
+                            <div>
+                                <label className="block text-[10px] text-zinc-500 mb-1 uppercase font-black">Link Przycisku</label>
+                                <input type="text" value={section.buttonLink || ''} onChange={e => onUpdate(section.id, { buttonLink: e.target.value })} className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-1.5 text-xs text-white" placeholder="np. /kontakt lub #rfq" />
+                            </div>
+                        </div>
+
                         <div className="flex items-center justify-between">
                             <h4 className="text-xs font-black text-zinc-600 uppercase tracking-widest">Baza Raportów PDF</h4>
                             <button

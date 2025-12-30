@@ -40,6 +40,23 @@ export default function ThermalHeroSlider({ slides = [], interval = 10000 }: The
     const [autoplay, setAutoplay] = useState(true);
     const containerRef = useRef<HTMLDivElement>(null);
     const autoplayRef = useRef<NodeJS.Timeout>();
+    const touchStartRef = useRef<number | null>(null);
+
+    const handleTouchStart = (e: React.TouchEvent) => {
+        touchStartRef.current = e.touches[0].clientX;
+    };
+
+    const handleTouchEnd = (e: React.TouchEvent) => {
+        if (touchStartRef.current === null) return;
+        const touchEnd = e.changedTouches[0].clientX;
+        const diff = touchStartRef.current - touchEnd;
+
+        if (Math.abs(diff) > 50) { // Threshold for swipe
+            if (diff > 0) nextSlide();
+            else prevSlide();
+        }
+        touchStartRef.current = null;
+    };
 
     const slide = slides[currentSlide];
 
@@ -88,7 +105,9 @@ export default function ThermalHeroSlider({ slides = [], interval = 10000 }: The
                 ref={containerRef}
                 onMouseMove={handleMouseMove}
                 onTouchMove={handleMouseMove}
-                className="absolute inset-0 w-full h-full cursor-none"
+                onTouchStart={handleTouchStart}
+                onTouchEnd={handleTouchEnd}
+                className="absolute inset-0 w-full h-full cursor-none touch-none"
             >
                 {/* 1. THERMAL LAYER (Bottom) */}
                 <AnimatePresence mode="wait">
@@ -260,10 +279,11 @@ export default function ThermalHeroSlider({ slides = [], interval = 10000 }: The
                 </AnimatePresence>
             </div>
 
-            {/* Navigation Arrows (Optional/Mobile) */}
+            {/* Navigation Arrows (Desktop Only) */}
             {slides.length > 1 && (
-                <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 z-40 px-4 md:px-8 pointer-events-none flex justify-between items-center opacity-0 md:opacity-100 group-hover/slider:opacity-100 transition-opacity">
+                <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 z-40 px-4 md:px-8 pointer-events-none flex justify-between items-center hidden md:flex opacity-0 group-hover/slider:opacity-100 transition-opacity">
                     <button
+                        type="button"
                         onClick={prevSlide}
                         className="pointer-events-auto p-4 md:p-6 rounded-2xl bg-black/40 hover:bg-yellow-500 text-white hover:text-black transition-all backdrop-blur-xl border border-white/10 group/btn relative overflow-hidden"
                     >
@@ -271,6 +291,7 @@ export default function ThermalHeroSlider({ slides = [], interval = 10000 }: The
                         <div className="absolute inset-0 border-2 border-yellow-500/30 rounded-2xl animate-pulse opacity-0 group-hover/btn:opacity-100 transition-opacity" />
                     </button>
                     <button
+                        type="button"
                         onClick={nextSlide}
                         className="pointer-events-auto p-4 md:p-6 rounded-2xl bg-black/40 hover:bg-yellow-500 text-white hover:text-black transition-all backdrop-blur-xl border border-white/10 group/btn relative overflow-hidden"
                     >
@@ -286,6 +307,7 @@ export default function ThermalHeroSlider({ slides = [], interval = 10000 }: The
                     {slides.map((s, idx) => (
                         <button
                             key={idx}
+                            type="button"
                             onClick={() => { setCurrentSlide(idx); setAutoplay(false); }}
                             className={`group/thumb relative flex-shrink-0 w-24 md:w-32 aspect-video rounded-xl overflow-hidden border-2 transition-all duration-500 ${idx === currentSlide
                                 ? 'border-yellow-500 scale-110 shadow-[0_0_30px_rgba(234,179,8,0.5)]'

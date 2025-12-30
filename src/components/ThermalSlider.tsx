@@ -118,7 +118,6 @@ export default function ThermalSlider({
                         >
                             <Activity size={12} className="animate-pulse" /> Thermal Analysis Module
                         </motion.div>
-                        <h2 className="text-3xl lg:text-5xl font-bold text-white tracking-tight mb-2">{title}</h2>
 
                         {/* 2. Sleek Tab Navigation */}
                         {displaySections.length > 1 && (
@@ -126,6 +125,7 @@ export default function ThermalSlider({
                                 {displaySections.map((section, index) => (
                                     <button
                                         key={section.id}
+                                        type="button"
                                         onClick={() => handleCategoryClick(index)}
                                         className={`relative px-4 md:px-8 py-3 md:py-4 rounded-xl text-[10px] md:text-[13px] font-black uppercase tracking-widest transition-all z-10 ${activeSection === index ? 'text-black' : 'text-zinc-500 hover:text-white'
                                             }`}
@@ -199,7 +199,7 @@ export default function ThermalSlider({
                     ref={containerRef}
                     onMouseMove={handleMouseMove}
                     onTouchMove={handleMouseMove}
-                    className="relative aspect-[4/3] md:aspect-video w-full rounded-[20px] md:rounded-[40px] overflow-hidden group/container cursor-none active:scale-[0.99] transition-transform duration-500 shadow-2xl"
+                    className="relative aspect-[4/3] md:aspect-video w-full rounded-[20px] md:rounded-[40px] overflow-hidden group/container cursor-none active:scale-[0.99] transition-transform duration-500 shadow-2xl touch-none"
                 >
                     {/* Thermal Image (Bottom Layer) */}
                     <AnimatePresence mode="wait">
@@ -276,12 +276,14 @@ export default function ThermalSlider({
                     {displaySections.length > 1 && (
                         <>
                             <button
+                                type="button"
                                 onClick={(e) => { e.stopPropagation(); handlePrev(); }}
                                 className="absolute left-6 top-1/2 -translate-y-1/2 z-20 bg-black/40 hover:bg-yellow-500 hover:text-black text-white p-3 rounded-2xl transition-all backdrop-blur-md border border-white/10 hidden lg:flex group/btn"
                             >
                                 <ChevronLeft size={24} className="group-hover/btn:-translate-x-1 transition-transform" />
                             </button>
                             <button
+                                type="button"
                                 onClick={(e) => { e.stopPropagation(); handleNext(); }}
                                 className="absolute right-6 top-1/2 -translate-y-1/2 z-20 bg-black/40 hover:bg-yellow-500 hover:text-black text-white p-3 rounded-2xl transition-all backdrop-blur-md border border-white/10 hidden lg:flex group/btn"
                             >
@@ -297,6 +299,7 @@ export default function ThermalSlider({
                         {displaySections.map((section, index) => (
                             <button
                                 key={section.id}
+                                type="button"
                                 onClick={() => handleCategoryClick(index)}
                                 className={`group/thumb relative flex-shrink-0 w-32 md:w-40 aspect-video rounded-xl overflow-hidden border-2 transition-all duration-500 bg-zinc-900 ${activeSection === index
                                     ? 'border-yellow-500 scale-110 shadow-[0_0_30px_rgba(234,179,8,0.3)]'

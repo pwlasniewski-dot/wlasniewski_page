@@ -8,6 +8,7 @@ import CookieBanner from "@/components/CookieBanner";
 import GiftCardPromoBar from "@/components/GiftCardPromoBar";
 import SocialProofBanner from "@/components/PhotoChallenge/SocialProofBanner";
 import PromocodeBar from "@/components/PromocodeBar";
+import ScrollToTop from "@/components/ScrollToTop";
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
@@ -32,6 +33,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                     <SocialProofBanner />
                 </div>
             )}
+            {!isAdmin && <ScrollToTop />}
         </>
     );
 }
