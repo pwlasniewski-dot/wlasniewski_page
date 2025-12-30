@@ -54,8 +54,11 @@ Zbiór reguł krytycznych dla operacji biznesowych:
 *   **Płatności**: Żaden status rezerwacji/zamówienia nie może zostać zmieniony na `confirmed` przed otrzymaniem poprawnego podpisu Webhooka z bramki płatniczej.
 *   **Security**: Wszystkie trasy `/admin/*` są chronione przez autorski Middleware sprawdzający `admin_token` z `localStorage` oraz nagłówki `Authorization`.
 
-### 3.3. Protokół "Zero Loss" (Data Persistence)
-Wdrożony system `scripts/backup-full.ts` i `scripts/restore-full.ts` działający w oparciu o logikę **UPSERT**. Pozwala to na przywrócenie „świętej treści” (Blog, Portfolio, Ustawienia) nawet po całkowitym wyczyszczeniu bazy danych przez nieautoryzowane komendy (np. `prisma db push`). Backupy są wersjonowane czasowo w katalogu `backups/TIMESTAMP`.
+### 3.3. Protokół "Zero Loss" (Data Persistence & Versioning) [UPDATE: 2025-12-30]
+Wdrożono zaawansowany system kopii zapasowych oparty na dwóch skryptach:
+- **`scripts/backup-full.ts`**: Eksportuje stan wszystkich 40 tabel bazy danych (Modele Prisma) do sformatowanych plików JSON. Backupy są kategoryzowane czasowo (`backups/[TIMESTAMP]/`), co pozwala na atomowe przywracanie konkretnych punktów w czasie.
+- **`scripts/restore-full.ts`**: Skrypt przywracający, realizujący logikę **TRUNCATE CASCADE** (czyszczenie) oraz **UPSERT** (bezpieczne wstrzykiwanie danych).
+- **Cel**: Ochrona „świętej treści” (Blog, Portfolio, Ustawienia, B2B) przed destrukcyjnymi operacjami schematu lub awariami dostawcy bazy danych. Służy również jako mechanizm bezpiecznego deployu ("Backup-Before-Push").
 
 ### 3.4. "Scope Isolation" (Atomic Integrity) [NEW: 2025-12-25]
 Zasada nienaruszalności modułów niezwiązanych z bieżącym zadaniem. Agent/Deweloper ma obowiązek wykonywania zmian **wyłącznie** w zakresie wskazanym przez USERA. 
@@ -238,4 +241,4 @@ System jest oceniony jako **100% Ready for Production**. Wszystkie krytyczne bł
 ---
 
 *Opracowane przez: Senior Architect Antigravity*
-*Ostatnia aktualizacja: 2025-12-27*
+*Ostatnia aktualizacja: 2025-12-30*

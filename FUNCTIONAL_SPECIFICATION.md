@@ -24,16 +24,14 @@ Najbardziej złożony moduł panelu, pozwalający na dynamiczne budowanie dowoln
 - **Zasięg**: `strona-glowna`, `o-mnie`, `rezerwacja`, `karta-podarunkowa` oraz strony dynamiczne CMS.
 - **Integracja**: Komponent `PageRenderer` dynamicznie renderuje sekcje w zależności od sluga strony.
 
-#### A. Hero Slider (Sekcja Główna)
-System slajdów wysokiej rozdzielczości z obsługą multimediów.
-- **Media**: Rozdzielne pliki dla Desktop i Mobile (optymalizacja LCP).
-- **Typy mediów**: Obrazy statyczne oraz Video.
-- **Animacje tekstu**: 
-    - `fade`, `slide-up`, `slide-down`, `scale`, `bounce`, `zoom-in`.
-- **Konfiguracja elementu**: 
-    - Tytuł, podtytuł, opis (Rich Text).
-    - Call to Action (CTA): Tekst przycisku i link.
-    - Overlay: Kontrola stopnia przyciemnienia tła dla czytelności tekstu.
+- **Thermal Hero Slider**: Premium moduł termowizyjny z obsługą wideo/obrazu, tekstów i dedykowaną nawigacją.
+    - **Nawigacja "Filmstrip"**: Interaktywne miniatury slajdów na dole ekranu dla łatwego przełączania.
+    - **CTA Buttons**: Konfigurowalne przyciski (tekst, link, styl: Gold/White/Transparent) dla każdego slajdu.
+    - **Interwał**: Możliwość ustawienia czasu autoprzewijania (sekundy) w panelu admina.
+    - **Efekty**: Pulsujące ramki strzałek nawigacyjnych dla lepszego UX.
+- **Hero Video Slider**: Pełnoekranowy slider wideo z tekstami i przyciskami.
+- **Parallax Video**: Efekt paralaksy wideo reagujący na scrollowanie.
+- **Logo Transition**: Dynamiczne przełączanie logotypu w zależności od kontekstu (B2C/B2B).
 
 #### B. Dynamiczne Sekcje
 Strona składa się z modułów, które można dowolnie sortować (Drag & Drop), włączać/wyłączać oraz usuwać.
@@ -128,6 +126,13 @@ Unikatowy system budowania zasięgu poprzez mechanizm zaproszeń.
 - Podział na zdjęcia "Standardowe" (w cenie pakietu) oraz "Premium" (płatne dodatkowo).
 - System rozliczeń: Automatyczne przeliczanie przychodu z dodatkowych ujęć na podstawie `price_per_premium`.
 - Daty wygasania galerii z automatyczną blokadą dostępu.
+
+### 6.3. Zarządzanie Dokumentami PDF (Raporty Techniczne)
+System obsługuje pełny cykl życia raportów technicznych dla segmentu B2B:
+- **Upload**: Wsparcie dla plików `application/pdf` w `MediaPicker`.
+- **Bypass Compression**: Pliki PDF nie są kompresowane, co gwarantuje 100% czytelności wykresów i danych.
+- **Web Preview**: Raporty otwierają się w nowej karcie przeglądarki (podgląd PDF) zamiast wymuszania pobrania, co jest standardem w profesjonalnych analizach.
+- **Admin Feedback**: Natychmiastowy status wybrania pliku PDF w edytorze `thermal_report`.
 
 ---
 

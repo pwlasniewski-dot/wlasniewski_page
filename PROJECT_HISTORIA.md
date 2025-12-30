@@ -177,16 +177,27 @@ Ten plik służy do ścisłego monitorowania wszystkich zmian wprowadzanych w pr
 
 **Status:** ✅ **KOMPLETNE & ZWERYFIKOWANE**
 
-### [2025-12-29] 🛠️ Post-Deployment Refinements (RichText & Thermal Slider)
-**Cel:** Naprawa trwałości kolorów w RichText oraz dodanie konfiguracji czasu zmiany w Thermal Slider.
+### [2025-12-30] 🚀 B2B Premium Refinements & "Zero Loss" Backup Protocol
+**Cel:** Podniesienie jakości modułów B2B, wdrożenie obsługi raportów technicznych (PDF) oraz pełne zabezpieczenie treści przed deployem.
 
 **Zrealizowane Zmiany:**
-1. **RichText Color Fix:** Usunięto agresywny reset CSS `.prose-inline-styles * { color: inherit !important; }` z `ThermalSlider.tsx`, który nadpisywał kolory wybrane w edytorze. Teraz kolory renderują się poprawnie na froncie.
-2. **Thermal Slider Interval:** 
-   - Dodano pole `switchInterval` (sekundy) do edytora sekcji `thermal_slider` w `PageBuilder.tsx`.
-   - Zaktualizowano `PageRenderer.tsx` do przekazywania wartości do komponentu.
-   - Zaktualizowano `ThermalSlider.tsx`, aby używał dynamicznego interwału zamiast sztywnej wartości 8s.
-3. **Certificate Modal Enhancements:** (Z poprzedniej sesji) Dodano edytowalne etykiety ("DOKUMENT ZWERYFIKOWANY" itp.) oraz poprawiono UX na mobile.
+1. **Thermal Hero Slider (Mega Pro Update):**
+   - **Nawigacja "Filmstrip"**: Dodano interaktywną listę miniatur na dole slidera, zastępując mało czytelne strzałki/kropki.
+   - **Konfiguracja CTA**: Każdy slajd obsługuje teraz tekst, link i styl przycisku (Gold/White/Transparent) konfigurowalny w Page Builderze.
+   - **Dynamiczny Interwał**: Dodano parametr `switchInterval` (w sekundach), pozwalający na precyzyjne ustawienie czasu autoprzewijania.
+   - **Efekt Pulsowania**: Główne strzałki nawigacji otrzymały pulsującą ramkę, informującą o ich klikalności.
+
+2. **Obsługa Raportów PDF (Technical Reports):**
+   - **MediaPicker PDF**: Umożliwiono wgrywanie plików `application/pdf`. PDF-y omijają kompresję obrazów, zachowując czytelność techniczną.
+   - **Podgląd vs Pobieranie**: Zmieniono logikę wyświetlania raportów – przycisk "Zobacz Raport PDF" otwiera podgląd w nowej karcie zamiast wymuszania pobrania.
+   - **Admin Previews**: W Page Builderze dodano wizualny podgląd wybranej miniatury raportu oraz ikonę statusu PDF (czerwona ikona PDF po wybraniu pliku).
+
+3. **"Zero Loss" Full Backup Protocol:**
+   - **Skrypt `backup-full.ts`**: Eksportuje wszystkie 40 tabel bazy danych (Treści, Portfolio, Blog, Ustawienia, Rezerwacje, B2B) do zorganizowanych plików JSON w folderze `/backups/[timestamp]`.
+   - **Skrypt `restore-full.ts`**: Umożliwia przywrócenie całego ekosystemu treści jedną komendą, co jest krytycznym zabezpieczeniem przed błędami typu `prisma db push`.
+
+4. **UI Refinements:**
+   - **Thermal Slider**: Przyciski kategorii otrzymały pulsującą przezroczystą ramkę (transparent border), co nadaje im bardziej interaktywny charakter bez wizualnego przeładowania.
 
 **Status:** ✅ **KOMPLETNE & ZWERYFIKOWANE**
 
