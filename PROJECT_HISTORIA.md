@@ -890,6 +890,14 @@ meta: { modelName: 'Setting', column: 'settings.social_proof_enabled' }
 - [x] Site-wide Metadata overhaul
     - [x] Title tags and Meta descriptions optimization
     - [x] JSON-LD Structured Data for Local Business
+- [x] Bug Fixes & Mobile Optimization
+    - [x] Remove navigation arrows on mobile in `ThermalHeroSlider.tsx`
+    - [x] Enable touch/swipe support in `ThermalHeroSlider.tsx`
+    - [x] Resolve category selection jump issue in `ThermalSlider.tsx`
+    - [x] Upgrade to Pointer Events & Pointer Capture for iOS stability
+- [x] Final Build & Push Verification
+    - [x] Verify functionality and responsiveness of all 4 modules
+    - [x] Run `npm run build` and push
 - [x] Update `o-mnie` (About Me) page content and SEO
     - [x] Update `generateMetadata` with Sony A7 keywords
     - [x] Enrich bio with Sony A7 and regional keywords

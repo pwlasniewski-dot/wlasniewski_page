@@ -42,18 +42,31 @@ export default function ThermalHeroSlider({ slides = [], interval = 10000 }: The
     const autoplayRef = useRef<NodeJS.Timeout>();
     const touchStartRef = useRef<number | null>(null);
 
-    const handleTouchStart = (e: React.TouchEvent) => {
-        touchStartRef.current = e.touches[0].clientX;
+    const handlePointerDown = (e: React.PointerEvent) => {
+        if (e.pointerType === 'mouse' && e.button !== 0) return;
+        (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId);
+        setIsDragging(true);
+        updateSlider(e.clientX);
+        touchStartRef.current = e.clientX;
     };
 
-    const handleTouchEnd = (e: React.TouchEvent) => {
-        if (touchStartRef.current === null) return;
-        const touchEnd = e.changedTouches[0].clientX;
-        const diff = touchStartRef.current - touchEnd;
+    const handlePointerMove = (e: React.PointerEvent) => {
+        if (!isDragging) return;
+        updateSlider(e.clientX);
+    };
 
-        if (Math.abs(diff) > 50) { // Threshold for swipe
-            if (diff > 0) nextSlide();
-            else prevSlide();
+    const handlePointerUp = (e: React.PointerEvent) => {
+        if (!isDragging) return;
+        setIsDragging(false);
+        (e.currentTarget as HTMLDivElement).releasePointerCapture(e.pointerId);
+
+        if (touchStartRef.current !== null) {
+            const diff = touchStartRef.current - e.clientX;
+            // High threshold for swipe to distinguish from slider movement
+            if (Math.abs(diff) > 100) {
+                if (diff > 0) nextSlide();
+                else prevSlide();
+            }
         }
         touchStartRef.current = null;
     };
@@ -80,9 +93,8 @@ export default function ThermalHeroSlider({ slides = [], interval = 10000 }: The
         setAutoplay(false);
     }, []);
 
-    const handleMouseMove = (e: React.MouseEvent | React.TouchEvent) => {
-        const clientX = 'touches' in e ? e.touches[0].clientX : (e as React.MouseEvent).clientX;
-        updateSlider(clientX);
+    const handleMouseMove = (e: React.MouseEvent) => {
+        if (isDragging) updateSlider(e.clientX);
     };
 
     const nextSlide = () => {
@@ -104,10 +116,11 @@ export default function ThermalHeroSlider({ slides = [], interval = 10000 }: The
             <div
                 ref={containerRef}
                 onMouseMove={handleMouseMove}
-                onTouchMove={handleMouseMove}
-                onTouchStart={handleTouchStart}
-                onTouchEnd={handleTouchEnd}
-                className="absolute inset-0 w-full h-full cursor-none touch-none"
+                onPointerDown={handlePointerDown}
+                onPointerMove={handlePointerMove}
+                onPointerUp={handlePointerUp}
+                onPointerCancel={handlePointerUp}
+                className="absolute inset-0 w-full h-full md:cursor-none touch-none"
             >
                 {/* 1. THERMAL LAYER (Bottom) */}
                 <AnimatePresence mode="wait">

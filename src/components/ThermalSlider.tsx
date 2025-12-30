@@ -70,9 +70,24 @@ export default function ThermalSlider({
         setAutoScroll(false);
     }, []);
 
-    const handleMouseMove = (e: React.MouseEvent | React.TouchEvent) => {
-        const clientX = 'touches' in e ? e.touches[0].clientX : (e as React.MouseEvent).clientX;
-        updateSlider(clientX);
+    const handlePointerDown = (e: React.PointerEvent) => {
+        if (e.pointerType === 'mouse' && e.button !== 0) return;
+        (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId);
+        setIsDragging(true);
+        updateSlider(e.clientX);
+    };
+
+    const handlePointerMove = (e: React.PointerEvent) => {
+        if (isDragging) updateSlider(e.clientX);
+    };
+
+    const handlePointerUp = (e: React.PointerEvent) => {
+        setIsDragging(false);
+        (e.currentTarget as HTMLDivElement).releasePointerCapture(e.pointerId);
+    };
+
+    const handleMouseMove = (e: React.MouseEvent) => {
+        if (isDragging) updateSlider(e.clientX);
     };
 
     const handleCategoryClick = (index: number) => {
@@ -198,8 +213,11 @@ export default function ThermalSlider({
                 <div
                     ref={containerRef}
                     onMouseMove={handleMouseMove}
-                    onTouchMove={handleMouseMove}
-                    className="relative aspect-[4/3] md:aspect-video w-full rounded-[20px] md:rounded-[40px] overflow-hidden group/container cursor-none active:scale-[0.99] transition-transform duration-500 shadow-2xl touch-none"
+                    onPointerDown={handlePointerDown}
+                    onPointerMove={handlePointerMove}
+                    onPointerUp={handlePointerUp}
+                    onPointerCancel={handlePointerUp}
+                    className="relative aspect-[4/3] md:aspect-video w-full rounded-[20px] md:rounded-[40px] overflow-hidden group/container md:cursor-none active:scale-[0.99] transition-transform duration-500 shadow-2xl touch-none"
                 >
                     {/* Thermal Image (Bottom Layer) */}
                     <AnimatePresence>
