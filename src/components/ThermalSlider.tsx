@@ -147,10 +147,8 @@ export default function ThermalSlider({
                                     >
                                         {section.category}
                                         {activeSection === index && (
-                                            <motion.div
-                                                layoutId="activeTab"
+                                            <div
                                                 className="absolute inset-0 bg-yellow-500 rounded-xl -z-10 shadow-lg"
-                                                transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                                             />
                                         )}
                                         {/* Pulsing Border for Clickability */}
@@ -165,23 +163,15 @@ export default function ThermalSlider({
                         )}
                     </div>
 
-                    <AnimatePresence>
-                        <motion.div
-                            key={activeSection}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -10 }}
-                            className="max-w-3xl mx-auto"
-                        >
-                            <h3 className="text-xl font-bold text-white mb-3">{currentSection.category}</h3>
-                            {currentSection.description && (
-                                <div
-                                    className="text-zinc-400 text-sm leading-relaxed max-w-2xl mx-auto prose prose-invert prose-sm prose-inline-styles"
-                                    dangerouslySetInnerHTML={{ __html: currentSection.description }}
-                                />
-                            )}
-                        </motion.div>
-                    </AnimatePresence>
+                    <div className="max-w-3xl mx-auto min-h-[160px] md:min-h-[180px] flex flex-col items-center justify-start">
+                        <h3 className="text-xl font-bold text-white mb-3">{currentSection.category}</h3>
+                        {currentSection.description && (
+                            <div
+                                className="text-zinc-400 text-sm leading-relaxed max-w-2xl mx-auto prose prose-invert prose-sm prose-inline-styles"
+                                dangerouslySetInnerHTML={{ __html: currentSection.description }}
+                            />
+                        )}
+                    </div>
                 </div>
             )}
 
@@ -220,34 +210,20 @@ export default function ThermalSlider({
                     className="relative aspect-[4/3] md:aspect-video w-full rounded-[20px] md:rounded-[40px] overflow-hidden group/container md:cursor-none active:scale-[0.99] transition-transform duration-500 shadow-2xl touch-none"
                 >
                     {/* Thermal Image (Bottom Layer) */}
-                    <AnimatePresence>
-                        <motion.div
-                            key={currentSection.id + '_thermal'}
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            transition={{ duration: 0.5 }}
-                            className="absolute inset-0 bg-cover bg-center"
-                            style={{ backgroundImage: thermalUrl }}
-                        />
-                    </AnimatePresence>
+                    <div
+                        className="absolute inset-0 bg-cover bg-center transition-opacity duration-500"
+                        style={{ backgroundImage: thermalUrl }}
+                    />
 
                     {/* Visual Image (Top Layer) */}
-                    <AnimatePresence>
-                        <motion.div
-                            key={currentSection.id + '_visual'}
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            transition={{ duration: 0.5 }}
-                            className="absolute inset-0 bg-cover bg-center"
-                            style={{
-                                backgroundImage: visualUrl,
-                                clipPath: `inset(0 ${100 - sliderPos}% 0 0)`,
-                                WebkitClipPath: `inset(0 ${100 - sliderPos}% 0 0)`
-                            }}
-                        />
-                    </AnimatePresence>
+                    <div
+                        className="absolute inset-0 bg-cover bg-center transition-all duration-500"
+                        style={{
+                            backgroundImage: visualUrl,
+                            clipPath: `inset(0 ${100 - sliderPos}% 0 0)`,
+                            WebkitClipPath: `inset(0 ${100 - sliderPos}% 0 0)`
+                        }}
+                    />
 
                     {/* PRO Handle UI - More Technical */}
                     <div
@@ -315,49 +291,50 @@ export default function ThermalSlider({
                 {displaySections.length > 1 && (
                     <div className="mt-12 flex justify-center items-center gap-4 overflow-x-auto pb-4 no-scrollbar">
                         {displaySections.map((section, index) => (
-                            <button
-                                key={section.id}
-                                type="button"
-                                onClick={() => handleCategoryClick(index)}
-                                className={`group/thumb relative flex-shrink-0 w-32 md:w-40 aspect-video rounded-xl overflow-hidden border-2 transition-all duration-500 bg-zinc-900 ${activeSection === index
-                                    ? 'border-yellow-500 scale-110 shadow-[0_0_30px_rgba(234,179,8,0.3)]'
-                                    : 'border-white/5 hover:border-white/20'
-                                    }`}
-                            >
-                                {/* Thumbnail Background (Visual) */}
-                                <img
-                                    src={section.visualImage}
-                                    alt={section.category}
-                                    className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 ${activeSection === index ? 'grayscale-0 opacity-100' : 'grayscale opacity-40 group-hover/thumb:opacity-70 group-hover/thumb:grayscale-0'
+                            <div key={section.id} className="w-32 md:w-40 aspect-video flex-shrink-0 relative py-2">
+                                <button
+                                    type="button"
+                                    onClick={() => handleCategoryClick(index)}
+                                    className={`group/thumb relative w-full h-full rounded-xl overflow-hidden border-2 transition-all duration-500 bg-zinc-900 ${activeSection === index
+                                        ? 'border-yellow-500 scale-105 shadow-[0_0_30px_rgba(234,179,8,0.3)]'
+                                        : 'border-white/5 hover:border-white/20'
                                         }`}
-                                />
+                                >
+                                    {/* Thumbnail Background (Visual) */}
+                                    <img
+                                        src={section.visualImage}
+                                        alt={section.category}
+                                        className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 ${activeSection === index ? 'grayscale-0 opacity-100' : 'grayscale opacity-40 group-hover/thumb:opacity-70 group-hover/thumb:grayscale-0'
+                                            }`}
+                                    />
 
-                                {/* Thumbnail Foreground (Thermal) - Reflecting main slider position */}
-                                {section.thermalImage && (
-                                    <div
-                                        className="absolute inset-0 z-10"
-                                        style={{ clipPath: `inset(0 0 0 ${sliderPos}%)` }}
-                                    >
-                                        <img
-                                            src={section.thermalImage}
-                                            alt={section.category}
-                                            className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 ${activeSection === index ? 'grayscale-0 opacity-100' : 'grayscale opacity-40 group-hover/thumb:opacity-70 group-hover/thumb:grayscale-0'
-                                                }`}
-                                        />
+                                    {/* Thumbnail Foreground (Thermal) - Reflecting main slider position */}
+                                    {section.thermalImage && (
+                                        <div
+                                            className="absolute inset-0 z-10"
+                                            style={{ clipPath: `inset(0 0 0 ${sliderPos}%)` }}
+                                        >
+                                            <img
+                                                src={section.thermalImage}
+                                                alt={section.category}
+                                                className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 ${activeSection === index ? 'grayscale-0 opacity-100' : 'grayscale opacity-40 group-hover/thumb:opacity-70 group-hover/thumb:grayscale-0'
+                                                    }`}
+                                            />
+                                        </div>
+                                    )}
+
+                                    <div className="absolute inset-0 z-20 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                                    <div className="absolute bottom-2 left-2 right-2 z-30">
+                                        <p className={`text-[9px] font-black uppercase tracking-tighter truncate transition-colors ${activeSection === index ? 'text-yellow-500' : 'text-zinc-500 group-hover/thumb:text-white'
+                                            }`}>
+                                            {section.category}
+                                        </p>
                                     </div>
-                                )}
-
-                                <div className="absolute inset-0 z-20 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-                                <div className="absolute bottom-2 left-2 right-2 z-30">
-                                    <p className={`text-[9px] font-black uppercase tracking-tighter truncate transition-colors ${activeSection === index ? 'text-yellow-500' : 'text-zinc-500 group-hover/thumb:text-white'
-                                        }`}>
-                                        {section.category}
-                                    </p>
-                                </div>
-                                {activeSection === index && (
-                                    <div className="absolute inset-0 border-4 border-yellow-500/20 pointer-events-none" />
-                                )}
-                            </button>
+                                    {activeSection === index && (
+                                        <div className="absolute inset-0 border-4 border-yellow-500/20 pointer-events-none" />
+                                    )}
+                                </button>
+                            </div>
                         ))}
                     </div>
                 )}

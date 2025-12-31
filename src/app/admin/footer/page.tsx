@@ -70,10 +70,54 @@ const defaultSettings: FooterSettings = {
     }
 };
 
+const defaultB2BSettings: FooterSettings = {
+    brand_name: 'FOTO-DRON Solutions',
+    tagline: 'Zaawansowana termowizja i inspekcje techniczne z powietrza. Kompleksowa dokumentacja dla przemysłu, OZE i budownictwa.',
+    phone: '+48 530 788 694',
+    email: 'biuro@wlasniewski.pl',
+    facebook_url: '',
+    instagram_url: '',
+    sections: {
+        oferta: {
+            title: 'Usługi Specjalistyczne',
+            enabled: true,
+            links: [
+                { id: '1', label: 'Audyty Termowizyjne', url: '/b2b/termowizja' },
+                { id: '2', label: 'Inspekcje Farm PV', url: '/b2b/fotowoltaika' },
+                { id: '3', label: 'Monitoring Budowy', url: '/b2b/monitoring' },
+                { id: '4', label: 'Ortofotomapy', url: '/b2b/mapowanie' },
+            ]
+        },
+        lokalnie: {
+            title: 'Współpraca',
+            enabled: true,
+            links: [
+                { id: '1', label: 'Szybka Wycena (RFQ)', url: '/b2b#rfq' },
+                { id: '2', label: 'Obszary Działania', url: '/b2b#lokalizacja' },
+                { id: '3', label: 'Kontakt Bezpośredni', url: '/b2b/kontakt' },
+            ]
+        },
+        inne: {
+            title: 'Prawne',
+            enabled: true,
+            links: [
+                { id: '1', label: 'Polityka Prywatności', url: '/polityka-prywatnosci' },
+                { id: '2', label: 'Regulamin Usług B2B', url: '/regulamin' },
+            ]
+        }
+    }
+};
+
 export default function FooterSettingsPage() {
-    const [settings, setSettings] = useState<FooterSettings>(defaultSettings);
+    const [activeTab, setActiveTab] = useState<'b2c' | 'b2b'>('b2c');
+    const [b2cSettings, setB2cSettings] = useState<FooterSettings>(defaultSettings);
+    const [b2bSettings, setB2bSettings] = useState<FooterSettings>(defaultB2BSettings);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+
+    // Current settings based on active tab
+    const settings = activeTab === 'b2c' ? b2cSettings : b2bSettings;
+    const setSettings = activeTab === 'b2c' ? setB2cSettings : setB2bSettings;
 
     useEffect(() => {
         fetchSettings();
@@ -83,12 +127,22 @@ export default function FooterSettingsPage() {
         try {
             const res = await fetch(getApiUrl('settings'));
             const data = await res.json();
-            if (data.success && data.settings?.footer_config) {
-                try {
-                    const footerConfig = JSON.parse(data.settings.footer_config);
-                    setSettings({ ...defaultSettings, ...footerConfig });
-                } catch (e) {
-                    console.error('Failed to parse footer config');
+            if (data.success && data.settings) {
+                if (data.settings.footer_config) {
+                    try {
+                        const b2cConfig = JSON.parse(data.settings.footer_config);
+                        setB2cSettings({ ...defaultSettings, ...b2cConfig });
+                    } catch (e) {
+                        console.error('Failed to parse B2C footer config');
+                    }
+                }
+                if (data.settings.b2b_footer_config) {
+                    try {
+                        const b2bConfig = JSON.parse(data.settings.b2b_footer_config);
+                        setB2bSettings({ ...defaultB2BSettings, ...b2bConfig });
+                    } catch (e) {
+                        console.error('Failed to parse B2B footer config');
+                    }
                 }
             }
         } catch (error) {
@@ -109,12 +163,12 @@ export default function FooterSettingsPage() {
                     'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({
-                    footer_config: JSON.stringify(settings)
+                    [activeTab === 'b2c' ? 'footer_config' : 'b2b_footer_config']: JSON.stringify(settings)
                 }),
             });
 
             if (res.ok) {
-                toast.success('Zapisano ustawienia stopki');
+                toast.success(`Zapisano ustawienia stopki ${activeTab.toUpperCase()}`);
             } else {
                 throw new Error('Save failed');
             }
@@ -175,7 +229,7 @@ export default function FooterSettingsPage() {
 
     return (
         <div className="max-w-4xl pb-20">
-            <div className="flex justify-between items-center mb-8">
+            <div className="flex justify-between items-center mb-4">
                 <h1 className="text-2xl font-display font-semibold text-white">Zarządzanie stopką</h1>
                 <button
                     onClick={handleSave}
@@ -184,6 +238,28 @@ export default function FooterSettingsPage() {
                 >
                     <Save className="-ml-1 mr-2 h-5 w-5" />
                     {saving ? 'Zapisywanie...' : 'Zapisz zmiany'}
+                </button>
+            </div>
+
+            {/* Tabs */}
+            <div className="flex border-b border-zinc-800 mb-8">
+                <button
+                    onClick={() => setActiveTab('b2c')}
+                    className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'b2c'
+                        ? 'border-gold-500 text-gold-500'
+                        : 'border-transparent text-zinc-500 hover:text-white'
+                        }`}
+                >
+                    Klient (B2C)
+                </button>
+                <button
+                    onClick={() => setActiveTab('b2b')}
+                    className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'b2b'
+                        ? 'border-gold-500 text-gold-500'
+                        : 'border-transparent text-zinc-500 hover:text-white'
+                        }`}
+                >
+                    Biznes (B2B)
                 </button>
             </div>
 

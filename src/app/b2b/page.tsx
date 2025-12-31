@@ -5,19 +5,33 @@ import { Metadata } from 'next';
 import { PageSection } from '@/components/admin/PageBuilder';
 
 async function getB2BPage() {
-    // Try to find a page specifically named/slugged as b2b
-    const page = await prisma.page.findFirst({
-        where: {
-            slug: { in: ['b2b', 'strona-b2b', 'oferta-b2b', 'start', 'home'] },
-            is_published: true
-        },
-        orderBy: { updated_at: 'desc' }
-    });
-    return page;
+    try {
+        // Try to find a page specifically named/slugged as b2b
+        const page = await prisma.page.findFirst({
+            where: {
+                slug: { in: ['b2b', 'strona-b2b', 'oferta-b2b', 'start', 'home'] },
+                is_published: true
+            },
+            orderBy: { updated_at: 'desc' },
+            // Add a short timeout to prevent long hangs if DB is unreachable
+            // Note: Prisma doesn't have a direct query timeout in findFirst without middleware, 
+            // but we can wrap it in a Promise.race if needed. 
+            // For now, simple try/catch handles the final rejection.
+        });
+        return page;
+    } catch (error) {
+        console.error('CRITICAL: B2B Database connection failed in getB2BPage:', error);
+        return null; // Let the page use its internal hardcoded fallback
+    }
 }
 
 export async function generateMetadata(): Promise<Metadata> {
-    const page = await getB2BPage();
+    let page = null;
+    try {
+        page = await getB2BPage();
+    } catch (e) {
+        console.error('Metadata generation failed due to DB error', e);
+    }
 
     if (!page) {
         return {

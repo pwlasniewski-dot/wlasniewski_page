@@ -69,6 +69,44 @@ const defaultSettings: FooterSettings = {
     }
 };
 
+const defaultB2BSettings: FooterSettings = {
+    brand_name: 'FOTO-DRON Solutions',
+    tagline: 'Zaawansowana termowizja i inspekcje techniczne z powietrza. Kompleksowa dokumentacja dla przemysłu, OZE i budownictwa.',
+    phone: '+48 530 788 694',
+    email: 'biuro@wlasniewski.pl',
+    facebook_url: '',
+    instagram_url: '',
+    sections: {
+        oferta: {
+            title: 'Usługi Specjalistyczne',
+            enabled: true,
+            links: [
+                { id: '1', label: 'Audyty Termowizyjne', url: '/b2b/termowizja' },
+                { id: '2', label: 'Inspekcje Farm PV', url: '/b2b/fotowoltaika' },
+                { id: '3', label: 'Monitoring Budowy', url: '/b2b/monitoring' },
+                { id: '4', label: 'Ortofotomapy', url: '/b2b/mapowanie' },
+            ]
+        },
+        lokalnie: {
+            title: 'Współpraca',
+            enabled: true,
+            links: [
+                { id: '1', label: 'Szybka Wycena (RFQ)', url: '/b2b#rfq' },
+                { id: '2', label: 'Obszary Działania', url: '/b2b#lokalizacja' },
+                { id: '3', label: 'Kontakt Bezpośredni', url: '/b2b/kontakt' },
+            ]
+        },
+        inne: {
+            title: 'Prawne',
+            enabled: true,
+            links: [
+                { id: '1', label: 'Polityka Prywatności', url: '/polityka-prywatnosci' },
+                { id: '2', label: 'Regulamin Usług B2B', url: '/regulamin' },
+            ]
+        }
+    }
+};
+
 export default function Footer() {
     const year = new Date().getFullYear();
     const [settings, setSettings] = useState<FooterSettings>(defaultSettings);
@@ -82,12 +120,12 @@ export default function Footer() {
             const path = window.location.pathname;
 
             if (host.includes('b2b') || host.includes('dron') || port === '3001' || path.startsWith('/b2b')) {
-                setIsB2B(true);
-            } else {
-                setIsB2B(false);
+                return true;
             }
+            return false;
         };
-        checkB2B();
+        const activeIsB2B = checkB2B();
+        setIsB2B(activeIsB2B);
 
         const fetchSettings = async () => {
 
@@ -95,62 +133,64 @@ export default function Footer() {
                 // Fetch footer settings
                 const res = await fetch(getApiUrl('settings'));
                 const data = await res.json();
-                let footerConfig = defaultSettings;
+                let footerConfig = activeIsB2B ? defaultB2BSettings : defaultSettings;
 
-                if (data.success && data.settings?.footer_config) {
-                    try {
-                        const parsed = JSON.parse(data.settings.footer_config);
-                        // Deep merge sections to preserve enabled flag
-                        const mergedSections = {
-                            oferta: { ...defaultSettings.sections.oferta, ...parsed.sections?.oferta },
-                            lokalnie: { ...defaultSettings.sections.lokalnie, ...parsed.sections?.lokalnie },
-                            inne: { ...defaultSettings.sections.inne, ...parsed.sections?.inne },
-                        };
-                        footerConfig = { ...defaultSettings, ...parsed, sections: mergedSections };
-                    } catch (e) {
-                        // Use defaults
+                if (data.success && data.settings) {
+                    const configKey = activeIsB2B ? 'b2b_footer_config' : 'footer_config';
+                    if (data.settings[configKey]) {
+                        try {
+                            const parsed = JSON.parse(data.settings[configKey]);
+                            // Deep merge sections to preserve enabled flag
+                            const mergedSections = {
+                                oferta: { ...(activeIsB2B ? defaultB2BSettings : defaultSettings).sections.oferta, ...parsed.sections?.oferta },
+                                lokalnie: { ...(activeIsB2B ? defaultB2BSettings : defaultSettings).sections.lokalnie, ...parsed.sections?.lokalnie },
+                                inne: { ...(activeIsB2B ? defaultB2BSettings : defaultSettings).sections.inne, ...parsed.sections?.inne },
+                            };
+                            footerConfig = { ...(activeIsB2B ? defaultB2BSettings : defaultSettings), ...parsed, sections: mergedSections };
+                        } catch (e) {
+                            // Use defaults
+                        }
                     }
                 }
 
-                // Fetch portfolio categories to auto-populate Oferta section
-                try {
-                    const portfolioRes = await fetch(getApiUrl('portfolio'));
-                    const portfolioData = await portfolioRes.json();
+                // ONLY auto-populate portfolio categories for B2C
+                if (!activeIsB2B) {
+                    try {
+                        const portfolioRes = await fetch(getApiUrl('portfolio'));
+                        const portfolioData = await portfolioRes.json();
 
-                    if (portfolioData.success && portfolioData.sessions?.length > 0) {
-                        // Get unique categories from portfolio
-                        const categories = new Map<string, { name: string; slug: string }>();
-                        portfolioData.sessions.forEach((session: any) => {
-                            if (session.category && !categories.has(session.category)) {
-                                categories.set(session.category, {
-                                    name: session.category_name || session.category,
-                                    slug: session.category
-                                });
-                            }
-                        });
-
-                        // Create dynamic links from portfolio categories
-                        const dynamicLinks = Array.from(categories.values()).map((cat, index) => ({
-                            id: `portfolio-${cat.slug}`,
-                            label: cat.name,
-                            url: `/portfolio/${cat.slug}`
-                        }));
-
-                        if (dynamicLinks.length > 0) {
-                            footerConfig = {
-                                ...footerConfig,
-                                sections: {
-                                    ...footerConfig.sections,
-                                    oferta: {
-                                        ...footerConfig.sections.oferta,
-                                        links: dynamicLinks
-                                    }
+                        if (portfolioData.success && portfolioData.sessions?.length > 0) {
+                            // ... portfolio logic stays same ...
+                            const categories = new Map<string, { name: string; slug: string }>();
+                            portfolioData.sessions.forEach((session: any) => {
+                                if (session.category && !categories.has(session.category)) {
+                                    categories.set(session.category, {
+                                        name: session.category_name || session.category,
+                                        slug: session.category
+                                    });
                                 }
-                            };
+                            });
+
+                            const dynamicLinks = Array.from(categories.values()).map((cat, index) => ({
+                                id: `portfolio-${cat.slug}`,
+                                label: cat.name,
+                                url: `/portfolio/${cat.slug}`
+                            }));
+
+                            if (dynamicLinks.length > 0) {
+                                footerConfig = {
+                                    ...footerConfig,
+                                    sections: {
+                                        ...footerConfig.sections,
+                                        oferta: {
+                                            ...footerConfig.sections.oferta,
+                                            links: dynamicLinks
+                                        }
+                                    }
+                                };
+                            }
                         }
-                    }
-                } catch (e) {
-                    // Portfolio fetch failed, use static links
+                    } catch (e) { }
                 }
 
                 setSettings(footerConfig);
@@ -162,69 +202,13 @@ export default function Footer() {
     }, []);
 
 
-    if (isB2B) {
-        return (
-            <footer className="mt-0 border-t border-zinc-900 bg-black text-zinc-400 relative z-10 isolate">
-                <div className="mx-auto max-w-7xl px-4 py-12 grid gap-8 md:grid-cols-3">
-                    {/* B2B Brand */}
-                    <div className="space-y-4">
-                        <div className="text-lg font-bold text-white tracking-widest">FOTO-DRON</div>
-                        <p className="text-sm max-w-xs text-zinc-500">
-                            Profesjonalne usługi dronem dla przemysłu, budownictwa i rolnictwa.
-                            Precyzja, bezpieczeństwo i rzetelna dokumentacja techniczna.
-                        </p>
-                    </div>
-
-                    {/* B2B Links */}
-                    <div className="grid grid-cols-2 gap-8">
-                        <div>
-                            <h3 className="tex-sm font-semibold text-zinc-200 mb-4">Oferta</h3>
-                            <ul className="space-y-2 text-sm">
-                                <li><Link href="/b2b#b2b-services-seed" className="hover:text-yellow-500 transition-colors">Inspekcje</Link></li>
-                                <li><Link href="/b2b#b2b-hero-seed" className="hover:text-yellow-500 transition-colors">Termowizja</Link></li>
-                                <li><Link href="/b2b#b2b-process-seed" className="hover:text-yellow-500 transition-colors">Monitoring</Link></li>
-                            </ul>
-                        </div>
-                        <div>
-                            <h3 className="tex-sm font-semibold text-zinc-200 mb-4">Firma</h3>
-                            <ul className="space-y-2 text-sm">
-                                <li><Link href="/b2b/kontakt" className="hover:text-yellow-500 transition-colors">Kontakt</Link></li>
-                                <li><Link href="/polityka-prywatnosci" className="hover:text-yellow-500 transition-colors">Prywatność</Link></li>
-                                <li><Link href="/regulamin" className="hover:text-yellow-500 transition-colors">Regulamin</Link></li>
-                            </ul>
-                        </div>
-                    </div>
-
-                    {/* B2B Contact */}
-                    <div className="md:text-right">
-                        <h3 className="tex-sm font-semibold text-zinc-200 mb-4">Kontakt Bezpośredni</h3>
-                        <address className="not-italic space-y-2 text-sm text-zinc-500">
-                            <p>Toruń, Polska</p>
-                            <p><a href={`mailto:${settings.email}`} className="hover:text-white">{settings.email}</a></p>
-                            <p><a href={`tel:${settings.phone.replace(/\s/g, '')}`} className="hover:text-white font-mono">{settings.phone}</a></p>
-                        </address>
-                        <div className="mt-6 flex justify-start md:justify-end gap-4">
-                            {/* Simple Social Icons for B2B if needed, or just keep cleaner */}
-                        </div>
-                    </div>
-                </div>
-                <div className="border-t border-zinc-900 bg-black">
-                    <div className="mx-auto max-w-7xl px-4 py-6 flex flex-col md:flex-row justify-between items-center text-xs text-zinc-600">
-                        <p>&copy; {year} FOTO-DRON by {settings.brand_name}</p>
-                        <p>Realizacja: Twin-Engine Architecture</p>
-                    </div>
-                </div>
-            </footer>
-        );
-    }
-
     return (
-        <footer className="mt-16 border-t border-zinc-800 bg-zinc-950 relative z-10 isolate">
+        <footer className={`mt-16 border-t ${isB2B ? 'border-zinc-900 bg-black text-zinc-400' : 'border-zinc-800 bg-zinc-950'} relative z-10 isolate`}>
 
             <div className="mx-auto max-w-7xl px-4 py-10 grid gap-8 md:grid-cols-2 lg:grid-cols-4">
                 {/* Brand + tagline */}
                 <div>
-                    <div className="text-sm font-semibold text-zinc-50">{settings.brand_name}</div>
+                    <div className={`text-sm font-semibold ${isB2B ? 'text-white tracking-widest' : 'text-zinc-50'}`}>{settings.brand_name}</div>
                     <p className="mt-2 text-sm text-zinc-400">
                         {settings.tagline}
                     </p>
@@ -233,25 +217,25 @@ export default function Footer() {
                 {/* Oferta */}
                 {settings.sections.oferta.enabled && (
                     <nav aria-label={settings.sections.oferta.title} className="text-sm text-zinc-400">
-                        <div className="font-semibold text-zinc-50">{settings.sections.oferta.title}</div>
+                        <div className={`font-semibold ${isB2B ? 'text-zinc-200' : 'text-zinc-50'}`}>{settings.sections.oferta.title}</div>
                         <ul className="mt-2 space-y-1">
                             {settings.sections.oferta.links.map(link => (
                                 <li key={link.id}>
-                                    <Link href={link.url} className="hover:underline hover:text-zinc-200">{link.label}</Link>
+                                    <Link href={link.url} className={`hover:underline ${isB2B ? 'hover:text-yellow-500' : 'hover:text-zinc-200'} transition-colors`}>{link.label}</Link>
                                 </li>
                             ))}
                         </ul>
                     </nav>
                 )}
 
-                {/* Lokalnie */}
+                {/* Lokalnie / Firma */}
                 {settings.sections.lokalnie.enabled && (
                     <nav aria-label={settings.sections.lokalnie.title} className="text-sm text-zinc-400">
-                        <div className="font-semibold text-zinc-50">{settings.sections.lokalnie.title}</div>
+                        <div className={`font-semibold ${isB2B ? 'text-zinc-200' : 'text-zinc-50'}`}>{settings.sections.lokalnie.title}</div>
                         <ul className="mt-2 grid grid-cols-1 gap-1">
                             {settings.sections.lokalnie.links.map(link => (
                                 <li key={link.id}>
-                                    <Link href={link.url} className="hover:underline hover:text-zinc-200">{link.label}</Link>
+                                    <Link href={link.url} className={`hover:underline ${isB2B ? 'hover:text-yellow-500' : 'hover:text-zinc-200'} transition-colors`}>{link.label}</Link>
                                 </li>
                             ))}
                         </ul>
@@ -260,16 +244,16 @@ export default function Footer() {
 
                 {/* Kontakt */}
                 <div className="text-sm text-zinc-400">
-                    <div className="font-semibold text-zinc-50">Kontakt</div>
+                    <div className={`font-semibold ${isB2B ? 'text-zinc-200' : 'text-zinc-50'}`}>Kontakt</div>
                     <address className="not-italic mt-2 space-y-1 text-zinc-400">
-                        <div>tel. <a className="hover:underline hover:text-zinc-200" href={`tel:${settings.phone.replace(/\s/g, '')}`}>{settings.phone}</a></div>
-                        <div>e-mail <a className="hover:underline hover:text-zinc-200" href={`mailto:${settings.email}`}>{settings.email}</a></div>
+                        <div>tel. <a className={`hover:underline ${isB2B ? 'hover:text-white' : 'hover:text-zinc-200'}`} href={`tel:${settings.phone.replace(/\s/g, '')}`}>{settings.phone}</a></div>
+                        <div>e-mail <a className={`hover:underline ${isB2B ? 'hover:text-white' : 'hover:text-zinc-200'}`} href={`mailto:${settings.email}`}>{settings.email}</a></div>
                     </address>
-                    <div className="mt-3 space-x-3">
+                    <div className={`mt-3 space-x-3 ${isB2B ? 'opacity-90' : ''}`}>
                         {settings.sections.inne.enabled && settings.sections.inne.links.map(link => (
-                            <Link key={link.id} href={link.url} className="hover:underline hover:text-zinc-200">{link.label}</Link>
+                            <Link key={link.id} href={link.url} className={`hover:underline ${isB2B ? 'hover:text-white' : 'hover:text-zinc-200'} transition-colors`}>{link.label}</Link>
                         ))}
-                        <Link href="/rezerwacja" className="hover:underline font-semibold hover:text-zinc-200">Rezerwacja</Link>
+                        {!isB2B && <Link href="/rezerwacja" className="hover:underline font-semibold hover:text-zinc-200">Rezerwacja</Link>}
                     </div>
                     <div className="mt-6 flex gap-4">
                         {settings.facebook_url && (
@@ -277,7 +261,7 @@ export default function Footer() {
                                 href={settings.facebook_url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="w-12 h-12 rounded-full border-2 border-zinc-700 bg-transparent flex items-center justify-center text-zinc-400 hover:border-gold-500 hover:text-gold-500 hover:bg-gold-500/10 transition-all duration-300"
+                                className={`w-12 h-12 rounded-full border-2 ${isB2B ? 'border-zinc-800 hover:border-white hover:text-white' : 'border-zinc-700 hover:border-gold-500 hover:text-gold-500'} bg-transparent flex items-center justify-center text-zinc-400 hover:bg-gold-500/10 transition-all duration-300`}
                                 aria-label="Facebook"
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -290,7 +274,7 @@ export default function Footer() {
                                 href={settings.instagram_url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="w-12 h-12 rounded-full border-2 border-zinc-700 bg-transparent flex items-center justify-center text-zinc-400 hover:border-gold-500 hover:text-gold-500 hover:bg-gold-500/10 transition-all duration-300"
+                                className={`w-12 h-12 rounded-full border-2 ${isB2B ? 'border-zinc-800 hover:border-white hover:text-white' : 'border-zinc-700 hover:border-gold-500 hover:text-gold-500'} bg-transparent flex items-center justify-center text-zinc-400 hover:bg-gold-500/10 transition-all duration-300`}
                                 aria-label="Instagram"
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
