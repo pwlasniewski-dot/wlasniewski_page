@@ -89,7 +89,7 @@ export default function ThermalHeroSlider({ slides = [], interval = 10000 }: The
     }, []);
 
     const handleMouseMove = (e: React.MouseEvent) => {
-        if (isDragging) updateSlider(e.clientX);
+        updateSlider(e.clientX);
     };
 
     const nextSlide = () => {
@@ -116,7 +116,7 @@ export default function ThermalHeroSlider({ slides = [], interval = 10000 }: The
                 onPointerMove={handlePointerMove}
                 onPointerUp={handlePointerUp}
                 onPointerCancel={handlePointerUp}
-                className="absolute inset-0 w-full h-full md:cursor-none touch-pan-y z-10"
+                className="absolute inset-0 w-full h-full cursor-crosshair touch-pan-y z-10"
             >
                 {/* 1. VISUAL/THERMAL IMAGES (Behind Interaction Layer) */}
                 <div className="absolute inset-0 w-full h-full pointer-events-none z-0">

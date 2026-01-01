@@ -207,23 +207,34 @@ export default function ThermalSlider({
                     onPointerMove={handlePointerMove}
                     onPointerUp={handlePointerUp}
                     onPointerCancel={handlePointerUp}
-                    className="relative aspect-[4/3] md:aspect-video w-full rounded-[20px] md:rounded-[40px] overflow-hidden group/container md:cursor-none active:scale-[0.99] transition-transform duration-500 shadow-2xl touch-none"
+                    className="relative aspect-[4/3] md:aspect-video w-full rounded-[20px] md:rounded-[40px] overflow-hidden group/container cursor-crosshair active:scale-[0.99] transition-transform duration-500 shadow-2xl touch-pan-y"
                 >
-                    {/* Thermal Image (Bottom Layer) */}
-                    <div
-                        className="absolute inset-0 bg-cover bg-center transition-opacity duration-500"
-                        style={{ backgroundImage: thermalUrl }}
-                    />
+                    <AnimatePresence mode="wait">
+                        <motion.div
+                            key={`thermal-container-${activeSection}`}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.5 }}
+                            className="absolute inset-0"
+                        >
+                            {/* Thermal Image (Bottom Layer) */}
+                            <div
+                                className="absolute inset-0 bg-cover bg-center"
+                                style={{ backgroundImage: thermalUrl }}
+                            />
 
-                    {/* Visual Image (Top Layer) */}
-                    <div
-                        className="absolute inset-0 bg-cover bg-center transition-all duration-500"
-                        style={{
-                            backgroundImage: visualUrl,
-                            clipPath: `inset(0 ${100 - sliderPos}% 0 0)`,
-                            WebkitClipPath: `inset(0 ${100 - sliderPos}% 0 0)`
-                        }}
-                    />
+                            {/* Visual Image (Top Layer) */}
+                            <div
+                                className="absolute inset-0 bg-cover bg-center"
+                                style={{
+                                    backgroundImage: visualUrl,
+                                    clipPath: `inset(0 ${100 - sliderPos}% 0 0)`,
+                                    WebkitClipPath: `inset(0 ${100 - sliderPos}% 0 0)`
+                                }}
+                            />
+                        </motion.div>
+                    </AnimatePresence>
 
                     {/* PRO Handle UI - More Technical */}
                     <div
@@ -289,7 +300,7 @@ export default function ThermalSlider({
 
                 {/* Filmstrip Switcher - Mega Pro Look */}
                 {displaySections.length > 1 && (
-                    <div className="mt-12 flex justify-center items-center gap-4 overflow-x-auto pb-4 no-scrollbar">
+                    <div className="mt-12 flex justify-center items-center gap-4 overflow-x-auto pb-4 no-scrollbar touch-pan-x">
                         {displaySections.map((section, index) => (
                             <div key={section.id} className="w-32 md:w-40 aspect-video flex-shrink-0 relative py-2">
                                 <button
