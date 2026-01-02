@@ -8,6 +8,7 @@ export async function GET(request: NextRequest) {
         const { searchParams } = new URL(request.url);
         const slug = searchParams.get('slug');
         const id = searchParams.get('id');
+        const category = searchParams.get('category');
 
         // Fetch single post
         if (slug || id) {
@@ -46,8 +47,14 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ success: true, post: serializedPost });
         }
 
-        // Fetch all posts
+        // Fetch all posts with optional category filter
+        const whereClause: any = {};
+        if (category) {
+            whereClause.category = category;
+        }
+
         const posts = await prisma.blogPost.findMany({
+            where: whereClause,
             orderBy: { created_at: 'desc' },
             include: {
                 featured_image: true
