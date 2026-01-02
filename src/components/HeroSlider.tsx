@@ -229,16 +229,19 @@ export default function HeroSlider({ slides = [], interval = 6000 }: HeroSliderP
                         transition={variant.transition}
                         className="space-y-3 sm:space-y-4 md:space-y-6 max-w-4xl"
                     >
-                        <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-8xl font-extrabold text-white tracking-tighter drop-shadow-2xl leading-tight">
-                            {slide.title}
-                        </h1>
-                        <p className="text-sm sm:text-base md:text-lg lg:text-xl text-zinc-200 drop-shadow-lg">
-                            {slide.subtitle}
-                        </p>
+                        <h1
+                            className="text-3xl sm:text-5xl md:text-6xl lg:text-8xl font-extrabold text-white tracking-tighter drop-shadow-2xl leading-tight"
+                            dangerouslySetInnerHTML={{ __html: slide.title || '' }}
+                        />
+                        <p
+                            className="text-sm sm:text-base md:text-lg lg:text-xl text-zinc-200 drop-shadow-lg"
+                            dangerouslySetInnerHTML={{ __html: slide.subtitle || '' }}
+                        />
                         {slide.description && (
-                            <p className="text-xs sm:text-sm md:text-base text-zinc-300 max-w-xl mx-auto drop-shadow-md">
-                                {slide.description}
-                            </p>
+                            <p
+                                className="text-xs sm:text-sm md:text-base text-zinc-300 max-w-xl mx-auto drop-shadow-md"
+                                dangerouslySetInnerHTML={{ __html: slide.description }}
+                            />
                         )}
                         {slide.buttonText && (
                             <motion.div

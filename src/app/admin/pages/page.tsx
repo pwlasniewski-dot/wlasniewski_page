@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { getApiUrl } from '@/lib/api-config';
 import Link from 'next/link';
 import { Edit, Plus, X, Trash2 } from 'lucide-react';
@@ -21,6 +22,21 @@ export default function PagesListPage() {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [newPageData, setNewPageData] = useState({ title: '', slug: '', page_type: 'regular', is_in_menu: false, parent_page_id: null as number | null });
     const [creating, setCreating] = useState(false);
+
+    // Navigation & URL State
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const initialTab = searchParams.get('tab') || 'b2c';
+
+    const [activeTabId, setActiveTabId] = useState<string>(initialTab);
+
+    // Update URL when tab changes
+    const handleTabChange = (tabId: string) => {
+        setActiveTabId(tabId);
+        const params = new URLSearchParams(searchParams.toString());
+        params.set('tab', tabId);
+        router.replace(`/admin/pages?${params.toString()}`);
+    };
 
     const fetchPages = async () => {
         try {
@@ -44,6 +60,14 @@ export default function PagesListPage() {
     useEffect(() => {
         fetchPages();
     }, []);
+
+    // Sync state with URL if it changes externally
+    useEffect(() => {
+        const tab = searchParams.get('tab');
+        if (tab && tab !== activeTabId) {
+            setActiveTabId(tab);
+        }
+    }, [searchParams]);
 
     const deletePage = async (id: number) => {
         try {
@@ -125,9 +149,8 @@ export default function PagesListPage() {
         isSystem?: boolean; // Cannot be deleted
     }
 
-    const [activeTabId, setActiveTabId] = useState<string>('b2c');
     const [pageTabs, setPageTabs] = useState<PageTab[]>([
-        { id: 'b2c', label: 'B2C (Indywidualni)', keywords: [], isSystem: true }, // Logic handled specifically
+        { id: 'b2c', label: 'B2C (Indywidualni)', keywords: [], isSystem: true },
         { id: 'b2b', label: 'B2B (Firmy)', keywords: ['b2b', 'dron'], isSystem: true }
     ]);
     const [showAddTabModal, setShowAddTabModal] = useState(false);
@@ -139,7 +162,6 @@ export default function PagesListPage() {
         if (savedTabs) {
             try {
                 const parsed = JSON.parse(savedTabs);
-                // Merge with system tabs to ensure they act as base, but allow additions
                 setPageTabs(prev => {
                     const system = prev.filter(t => t.isSystem);
                     const custom = parsed.filter((t: PageTab) => !t.isSystem);
@@ -165,7 +187,7 @@ export default function PagesListPage() {
         setNewTabName('');
         setNewTabKeyword('');
         setShowAddTabModal(false);
-        setActiveTabId(newTab.id);
+        handleTabChange(newTab.id);
         toast.success(`Dodano grupę: ${newTabName}`);
     };
 
@@ -174,31 +196,22 @@ export default function PagesListPage() {
         if (confirm('Usunąć tę grupę widoku? Strony nie zostaną usunięte.')) {
             const newTabs = pageTabs.filter(t => t.id !== id);
             saveTabs(newTabs);
-            if (activeTabId === id) setActiveTabId('b2c');
+            if (activeTabId === id) handleTabChange('b2c');
         }
     };
 
     const filteredPages = pages.filter(page => {
         if (activeTabId === 'b2c') {
-            // B2C = Everything NOT caught by other specific tabs? 
-            // Or just NOT B2B? Let's keep strict "Not B2B" definition for now as base.
-            // But if we have custom tabs, B2C should probably exclude them?
-            // User requested "split", so let's exclude pages that match B2B.
-            // Complex logic: Check if it matches ANY other tab.
-
             const isB2B = page.page_type === 'b2b' || page.slug.startsWith('b2b') || page.slug.includes('dron');
-            // Check other custom tabs
             const matchesCustom = pageTabs.filter(t => !t.isSystem).some(t =>
                 t.keywords.some(k => page.slug.includes(k) || page.page_type === k)
             );
-
             return !isB2B && !matchesCustom;
         }
 
         const currentTab = pageTabs.find(t => t.id === activeTabId);
-        if (!currentTab) return true; // Fallback
+        if (!currentTab) return true;
 
-        // Check keywords
         return currentTab.keywords.some(k =>
             page.slug.includes(k) ||
             page.page_type === k ||
@@ -212,12 +225,11 @@ export default function PagesListPage() {
                 <h1 className="text-2xl font-display font-semibold text-white">Strony statyczne</h1>
 
                 {/* Tabs */}
-                {/* Tabs */}
                 <div className="flex flex-wrap gap-2 bg-zinc-900 p-1.5 rounded-xl border border-zinc-800">
                     {pageTabs.map(tab => (
                         <button
                             key={tab.id}
-                            onClick={() => setActiveTabId(tab.id)}
+                            onClick={() => handleTabChange(tab.id)}
                             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${activeTabId === tab.id
                                 ? tab.id === 'b2b'
                                     ? 'bg-zinc-800 text-gold-500 shadow-sm border border-gold-500/30'
@@ -320,7 +332,7 @@ export default function PagesListPage() {
                                         </div>
                                         <div className="flex items-center gap-4">
                                             <Link
-                                                href={page.slug === '' ? '/admin/pages/strona-glowna' : `/admin/pages/${page.slug}`}
+                                                href={(page.slug === '' ? '/admin/pages/strona-glowna' : `/admin/pages/${page.slug}`) + `?tab=${activeTabId}`}
                                                 className="inline-flex items-center px-3 py-1.5 border border-zinc-700 rounded-md text-sm font-medium text-zinc-300 hover:bg-zinc-800"
                                             >
                                                 <Edit className="h-4 w-4 mr-2" />

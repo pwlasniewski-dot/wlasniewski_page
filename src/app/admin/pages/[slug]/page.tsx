@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { getApiUrl } from '@/lib/api-config';
 import { Save, ArrowLeft, Plus, Trash2, Image as ImageIcon, Eye, EyeOff, MoveUp, MoveDown, X } from 'lucide-react';
 import Link from 'next/link';
@@ -347,11 +347,50 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
     const isHomePage = resolvedParams?.slug === 'strona-glowna';
     const isPortfolio = resolvedParams?.slug === 'portfolio';
 
+    // Navigation
+    const searchParams = useSearchParams();
+    const activeTab = searchParams.get('tab') || 'b2c';
+    const backLink = `/admin/pages?tab=${activeTab}`;
+
+    // Floating UI State
+    const [showFloatingBar, setShowFloatingBar] = useState(false);
+
+    useEffect(() => {
+        const handleScroll = () => {
+            setShowFloatingBar(window.scrollY > 300);
+        };
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
+    const scrollToTop = () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
     return (
-        <div className="max-w-6xl">
+        <div className="max-w-6xl relative">
+            {/* FLOATING ACTION BAR */}
+            <div className={`fixed bottom-6 right-6 z-50 flex flex-col gap-3 transition-all duration-300 ${showFloatingBar ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0 pointer-events-none'}`}>
+                <button
+                    onClick={scrollToTop}
+                    className="p-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white rounded-full shadow-lg border border-zinc-700 transition-colors"
+                    title="Przewiń do góry"
+                >
+                    <ArrowLeft className="w-5 h-5 rotate-90" />
+                </button>
+                <button
+                    onClick={handleSubmit}
+                    disabled={saving}
+                    className="p-3 bg-gold-500 hover:bg-gold-400 text-black rounded-full shadow-lg shadow-gold-500/20 transition-all hover:scale-105 disabled:opacity-50 disabled:scale-100"
+                    title="Zapisz zmiany"
+                >
+                    <Save className="w-6 h-6" />
+                </button>
+            </div>
+
             <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-4">
-                    <Link href="/admin/pages" className="p-2 rounded-full hover:bg-zinc-800 text-zinc-400">
+                    <Link href={backLink} className="p-2 rounded-full hover:bg-zinc-800 text-zinc-400">
                         <ArrowLeft className="h-6 w-6" />
                     </Link>
                     <h1 className="text-2xl font-semibold text-white">Edycja: {formData.title}</h1>

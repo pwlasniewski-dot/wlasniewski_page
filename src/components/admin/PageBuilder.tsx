@@ -103,6 +103,8 @@ export interface B2BCaseStudy {
     client: string;
     description: string;
     image: string;
+    videoUrl?: string; // New field for video
+    logo?: string; // New field for logo
     link?: string;
     category?: string;
 }
@@ -158,6 +160,8 @@ export interface PageSection {
     certTag?: string; // For certificates
     descriptionLabel?: string; // For certificates
     infoband_items?: InfoBandItem[];
+    logoHeight?: number; // For b2b_logos resizing
+    textAnimation?: 'fade' | 'slide-up' | 'scale'; // For parallax_video
     thermal_hero_slides?: ThermalHeroSlide[];
     thermal_reports?: ThermalReport[];
     data?: any; // For legacy / homepage sections
@@ -169,6 +173,8 @@ export interface PageSection {
     videoLoop?: boolean;
     switchInterval?: number; // For thermal_slider
     overlayOpacity?: number; // For video modules
+    imageObjectFit?: 'cover' | 'contain'; // For image_text
+    backgroundColor?: 'black' | 'zinc-900' | 'zinc-950'; // For image_text
 }
 
 interface PageBuilderProps {
@@ -182,7 +188,7 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove, openMedia
     onRemove: (id: string) => void;
     onUpdate: (id: string, data: Partial<PageSection>) => void;
     onMove: (id: string, direction: 'up' | 'down') => void;
-    openMediaPicker: (sectionId: string, options: { target: 'single' | 'gallery', context?: 'visual' | 'thermal' | 'before', index?: number }) => void;
+    openMediaPicker: (sectionId: string, options: { target: 'single' | 'gallery', context?: 'visual' | 'thermal' | 'before' | 'case_logo' | 'case_video' | 'video', index?: number }) => void;
 }) {
     const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: section.id });
     const style = { transform: CSS.Transform.toString(transform), transition };
@@ -263,22 +269,49 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove, openMedia
                 {/* IMAGE & TEXT */}
                 {section.type === 'image_text' && (
                     <div className="space-y-4">
-                        <div className="flex gap-4">
-                            <div className="w-1/3">
-                                <label className="block text-xs text-zinc-400 mb-1">Zdjęcie</label>
-                                {section.image ? (
-                                    <img src={section.image} alt="Preview" className="w-full aspect-video object-cover rounded border border-zinc-700 mb-2" />
-                                ) : (
-                                    <div className="w-full aspect-video bg-zinc-800 rounded border border-zinc-700 mb-2" />
-                                )}
-                                <button
-                                    onClick={() => { openMediaPicker(section.id, { target: 'single' }); }}
-                                    className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-sm text-zinc-300 hover:text-white"
-                                >
-                                    Wybierz zdjęcie
-                                </button>
-                            </div>
-                            <div className="w-2/3 space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            {/* Left Column: Image & visual settings */}
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-xs text-zinc-400 mb-1">Zdjęcie</label>
+                                    {section.image ? (
+                                        <img src={section.image} alt="Preview" className={`w-full aspect-video rounded border border-zinc-700 mb-2 ${section.imageObjectFit === 'contain' ? 'object-contain bg-black' : 'object-cover'}`} />
+                                    ) : (
+                                        <div className="w-full aspect-video bg-zinc-800 rounded border border-zinc-700 mb-2" />
+                                    )}
+                                    <button
+                                        onClick={() => { openMediaPicker(section.id, { target: 'single' }); }}
+                                        className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-sm text-zinc-300 hover:text-white mb-2"
+                                    >
+                                        Wybierz zdjęcie
+                                    </button>
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs text-zinc-400 mb-1">Dopasowanie zdjęcia</label>
+                                    <select
+                                        value={section.imageObjectFit || 'cover'}
+                                        onChange={(e) => onUpdate(section.id, { imageObjectFit: e.target.value as 'cover' | 'contain' })}
+                                        className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
+                                    >
+                                        <option value="cover">Wypełnij (Cover)</option>
+                                        <option value="contain">Dopasuj (Contain)</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs text-zinc-400 mb-1">Tło sekcji</label>
+                                    <select
+                                        value={section.backgroundColor || 'zinc-950'}
+                                        onChange={(e) => onUpdate(section.id, { backgroundColor: e.target.value as any })}
+                                        className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
+                                    >
+                                        <option value="zinc-950">Bardzo Ciemne (Zinc-950)</option>
+                                        <option value="zinc-900">Ciemne (Zinc-900)</option>
+                                        <option value="black">Czerń (Black)</option>
+                                    </select>
+                                </div>
+
                                 <div>
                                     <label className="block text-xs text-zinc-400 mb-1">Układ</label>
                                     <select
@@ -290,13 +323,63 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove, openMedia
                                         <option value="right">Zdjęcie po prawej</option>
                                     </select>
                                 </div>
+                            </div>
+
+                            {/* Middle & Right Column: Content */}
+                            <div className="md:col-span-2 space-y-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-xs text-zinc-400 mb-1">Tytuł (Opcjonalny)</label>
+                                        <input
+                                            type="text"
+                                            value={section.title || ''}
+                                            onChange={(e) => onUpdate(section.id, { title: e.target.value })}
+                                            className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
+                                            placeholder="np. O Mnie"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs text-zinc-400 mb-1">Podtytuł (Accent)</label>
+                                        <input
+                                            type="text"
+                                            value={section.subtitle || ''}
+                                            onChange={(e) => onUpdate(section.id, { subtitle: e.target.value })}
+                                            className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
+                                            placeholder="np. MOJA PASJA"
+                                        />
+                                    </div>
+                                </div>
+
                                 <div>
                                     <label className="block text-xs text-zinc-400 mb-1">Treść</label>
                                     <RichTextEditor
                                         value={section.content || ''}
                                         onChange={(val) => onUpdate(section.id, { content: val })}
-                                        placeholder="Opis..."
+                                        placeholder="Główna treść sekcji..."
                                     />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4 border-t border-zinc-800 pt-4">
+                                    <div>
+                                        <label className="block text-xs text-zinc-400 mb-1">Tekst przycisku</label>
+                                        <input
+                                            type="text"
+                                            value={section.buttonText || ''}
+                                            onChange={(e) => onUpdate(section.id, { buttonText: e.target.value })}
+                                            className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
+                                            placeholder="np. Zobacz portfolio"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs text-zinc-400 mb-1">Link przycisku</label>
+                                        <input
+                                            type="text"
+                                            value={section.buttonLink || ''}
+                                            onChange={(e) => onUpdate(section.id, { buttonLink: e.target.value })}
+                                            className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
+                                            placeholder="np. /portfolio"
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -768,28 +851,29 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove, openMedia
                                                     />
                                                     <label className="text-xs text-yellow-500 font-bold uppercase tracking-wider">Tryb "Przed i Po"</label>
                                                 </div>
+                                                <div className="text-[10px] text-zinc-500 font-mono mb-1">
+                                                    Wsparcie dla HTML: <span className="text-yellow-500">&lt;span class="text-yellow-500"&gt;text&lt;/span&gt;</span>
+                                                </div>
                                                 <div className="grid grid-cols-2 gap-3">
-                                                    <input
-                                                        type="text"
+                                                    <textarea
                                                         value={slide.title || ''}
                                                         onChange={(e) => {
                                                             const updated = [...(section.slides || [])];
                                                             updated[sIndex] = { ...slide, title: e.target.value };
                                                             onUpdate(section.id, { slides: updated });
                                                         }}
-                                                        placeholder="Tytuł slajdu"
-                                                        className="bg-zinc-700 border border-zinc-600 rounded px-2 py-1.5 text-sm text-white"
+                                                        placeholder="Tytuł Slajdu (HTML)"
+                                                        className="w-full bg-zinc-700 border border-zinc-600 rounded px-2 py-1.5 text-sm text-white h-16 font-mono"
                                                     />
-                                                    <input
-                                                        type="text"
+                                                    <textarea
                                                         value={slide.subtitle || ''}
                                                         onChange={(e) => {
                                                             const updated = [...(section.slides || [])];
                                                             updated[sIndex] = { ...slide, subtitle: e.target.value };
                                                             onUpdate(section.id, { slides: updated });
                                                         }}
-                                                        placeholder="Podtytuł slajdu"
-                                                        className="bg-zinc-700 border border-zinc-600 rounded px-2 py-1.5 text-sm text-white"
+                                                        placeholder="Podtytuł (HTML)"
+                                                        className="w-full bg-zinc-700 border border-zinc-600 rounded px-2 py-1.5 text-sm text-white h-12 font-mono"
                                                     />
                                                 </div>
                                                 <div className="grid grid-cols-2 gap-3">
@@ -1305,6 +1389,24 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove, openMedia
                                 + DODAJ LOGO
                             </button>
                         </div>
+
+                        {/* Logo Size Control */}
+                        <div className="bg-zinc-800 p-3 rounded border border-zinc-700">
+                            <div className="flex items-center justify-between mb-2">
+                                <label className="text-xs text-zinc-400 font-bold uppercase">Wielkość Logotypów</label>
+                                <span className="text-yellow-500 text-xs font-mono">{section.logoHeight || 40}px</span>
+                            </div>
+                            <input
+                                type="range"
+                                min="20"
+                                max="120"
+                                step="5"
+                                value={section.logoHeight || 40}
+                                onChange={(e) => onUpdate(section.id, { logoHeight: parseInt(e.target.value) })}
+                                className="w-full accent-yellow-500"
+                            />
+                        </div>
+
                         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
                             {(section.b2b_logos || []).map((logo, lIndex) => (
                                 <div key={logo.id} className="relative aspect-square bg-zinc-800 rounded border border-zinc-700 overflow-hidden flex items-center justify-center p-2">
@@ -1330,6 +1432,15 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove, openMedia
                             <div>
                                 <label className="block text-xs text-zinc-500 mb-1">Tag (nad tytułem)</label>
                                 <input type="text" value={section.subtitle || ''} onChange={e => onUpdate(section.id, { subtitle: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white" />
+                            </div>
+                            <div className="col-span-2">
+                                <label className="block text-xs text-zinc-500 mb-1">Główny Opis Sekcji</label>
+                                <textarea
+                                    value={section.description || ''}
+                                    onChange={e => onUpdate(section.id, { description: e.target.value })}
+                                    className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-zinc-300 h-20"
+                                    placeholder="Dostarczamy dane najwyższej jakości..."
+                                />
                             </div>
                         </div>
                         <div className="p-4 bg-zinc-900 border border-zinc-800 rounded-lg space-y-3">
@@ -1394,15 +1505,36 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove, openMedia
                                     <div className="flex gap-4 items-start">
                                         <div className="w-24 h-24 bg-zinc-900 rounded border border-zinc-700 overflow-hidden relative group shrink-0">
                                             {cse.image ? <img src={cse.image} className="w-full h-full object-cover" /> : <ImageIcon className="m-auto mt-8 text-zinc-800" size={24} />}
-                                            <button onClick={() => { openMediaPicker(section.id, { target: 'single', index: cIndex }); }} className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-[8px] text-white font-bold uppercase transition-opacity">Zmień</button>
+                                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-2 transition-opacity">
+                                                <button onClick={() => { openMediaPicker(section.id, { target: 'single', index: cIndex }); }} className="p-1.5 bg-zinc-700 hover:bg-zinc-600 rounded text-white" title="Zmień okładkę"><ImageIcon size={14} /></button>
+                                            </div>
                                         </div>
                                         <div className="flex-1 space-y-2">
                                             <input type="text" value={cse.title} onChange={e => { const up = [...section.b2b_cases!]; up[cIndex].title = e.target.value; onUpdate(section.id, { b2b_cases: up }); }} placeholder="Tytuł projektu" className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-sm text-white font-bold" />
-                                            <input type="text" value={cse.client} onChange={e => { const up = [...section.b2b_cases!]; up[cIndex].client = e.target.value; onUpdate(section.id, { b2b_cases: up }); }} placeholder="Klient" className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs text-zinc-400" />
+                                            <input type="text" value={cse.client} onChange={e => { const up = [...section.b2b_cases!]; up[cIndex].client = e.target.value; onUpdate(section.id, { b2b_cases: up }); }} placeholder="Nazwa klienta" className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs text-yellow-500 font-bold" />
+                                            <div className="flex gap-2">
+                                                <div className="flex items-center gap-2 flex-1">
+                                                    {cse.logo && <img src={cse.logo} className="h-6 w-auto opacity-50" />}
+                                                    <button onClick={() => openMediaPicker(section.id, { target: 'single', context: 'case_logo', index: cIndex })} className={`flex-1 py-1 text-[10px] uppercase font-bold rounded border ${cse.logo ? 'bg-purple-900/20 text-purple-400 border-purple-500/30' : 'bg-zinc-700 text-zinc-400 border-transparent'}`}>
+                                                        {cse.logo ? 'Zmień Logo' : '+ Logo'}
+                                                    </button>
+                                                </div>
+                                                <button onClick={() => openMediaPicker(section.id, { target: 'single', context: 'case_video', index: cIndex })} className={`flex-1 py-1 text-[10px] uppercase font-bold rounded border ${cse.videoUrl ? 'bg-blue-900/20 text-blue-400 border-blue-500/30' : 'bg-zinc-700 text-zinc-400 border-transparent'}`}>
+                                                    {cse.videoUrl ? 'Wideo Dodane' : '+ Wideo'}
+                                                </button>
+                                            </div>
                                         </div>
-                                        <button onClick={() => onUpdate(section.id, { b2b_cases: section.b2b_cases!.filter((_, i) => i !== cIndex) })} className="text-zinc-600 hover:text-red-500"><Trash2 size={16} /></button>
                                     </div>
-                                    <textarea value={cse.description} onChange={e => { const up = [...section.b2b_cases!]; up[cIndex].description = e.target.value; onUpdate(section.id, { b2b_cases: up }); }} placeholder="Opis realizacji..." className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-xs text-zinc-400 h-20" />
+                                    <textarea
+                                        value={cse.description}
+                                        onChange={e => { const up = [...section.b2b_cases!]; up[cIndex].description = e.target.value; onUpdate(section.id, { b2b_cases: up }); }}
+                                        className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-2 text-xs text-zinc-300 font-sans min-h-[100px]"
+                                        placeholder="Opis realizacji (HTML)..."
+                                    />
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-[10px] text-zinc-600">ID: {cse.id}</span>
+                                        <button onClick={() => onUpdate(section.id, { b2b_cases: section.b2b_cases!.filter((_, i) => i !== cIndex) })} className="text-xs text-red-500 hover:text-red-400 hover:underline">Usuń</button>
+                                    </div>
                                 </div>
                             ))}
                         </div>
@@ -1653,7 +1785,15 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove, openMedia
                                 </div>
                                 <div>
                                     <label className="block text-xs text-zinc-500 mb-1">Tytuł (HTML)</label>
-                                    <input type="text" value={section.title || ''} onChange={e => onUpdate(section.id, { title: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white font-bold" />
+                                    <div className="text-[10px] text-zinc-500 font-mono mb-1">
+                                        Wsparcie dla HTML: <span className="text-yellow-500">&lt;span class="text-yellow-500"&gt;text&lt;/span&gt;</span>
+                                    </div>
+                                    <textarea
+                                        value={section.title || ''}
+                                        onChange={e => onUpdate(section.id, { title: e.target.value })}
+                                        className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white font-bold h-20 font-mono"
+                                        placeholder="Tytuł sekcji..."
+                                    />
                                 </div>
                             </div>
                             <div className="space-y-4">
@@ -1664,6 +1804,18 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove, openMedia
                                 <div>
                                     <label className="block text-xs text-zinc-500 mb-1">Overlay Opacity</label>
                                     <input type="number" step="0.1" min="0" max="1" value={section.overlayOpacity ?? 0.4} onChange={e => onUpdate(section.id, { overlayOpacity: parseFloat(e.target.value) })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs text-zinc-500 mb-1">Animacja Tekstu</label>
+                                    <select
+                                        value={section.textAnimation || 'slide-up'}
+                                        onChange={e => onUpdate(section.id, { textAnimation: e.target.value as any })}
+                                        className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white"
+                                    >
+                                        <option value="fade">Zanikanie (Fade)</option>
+                                        <option value="slide-up">Wjazd od dołu (Slide Up)</option>
+                                        <option value="scale">Powiększenie (Scale)</option>
+                                    </select>
                                 </div>
                             </div>
                         </div>
@@ -1797,11 +1949,11 @@ export default function PageBuilder({ sections, onChange }: PageBuilderProps) {
     // Global MediaPicker State
     const [showMediaPicker, setShowMediaPicker] = useState(false);
     const [mediaPickerTarget, setMediaPickerTarget] = useState<'single' | 'gallery'>('single');
-    const [mediaPickerContext, setMediaPickerContext] = useState<'visual' | 'thermal' | 'before' | null>(null);
+    const [mediaPickerContext, setMediaPickerContext] = useState<'visual' | 'thermal' | 'before' | 'case_logo' | 'case_video' | 'video' | null>(null);
     const [sectionEditIndex, setSectionEditIndex] = useState(-1);
     const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
 
-    const openMediaPicker = (sectionId: string, options: { target: 'single' | 'gallery', context?: 'visual' | 'thermal' | 'before', index?: number }) => {
+    const openMediaPicker = (sectionId: string, options: { target: 'single' | 'gallery', context?: 'visual' | 'thermal' | 'before' | 'case_logo' | 'case_video' | 'video', index?: number }) => {
         setActiveSectionId(sectionId);
         setMediaPickerTarget(options.target);
         setMediaPickerContext(options.context || null);
@@ -1889,6 +2041,20 @@ export default function PageBuilder({ sections, onChange }: PageBuilderProps) {
                 }
             }
         } else if (section.type === 'b2b_video' || (section.type === 'b2b_hero' && mediaPickerContext === ('video' as any))) {
+            updateSection(activeSectionId, { videoUrl: imageUrl });
+        } else if (section.type === 'b2b_cases' && mediaPickerContext === ('case_video' as any)) {
+            const updated = [...(section.b2b_cases || [])];
+            if (sectionEditIndex >= 0) {
+                updated[sectionEditIndex] = { ...updated[sectionEditIndex], videoUrl: imageUrl };
+                updateSection(activeSectionId, { b2b_cases: updated });
+            }
+        } else if (section.type === 'b2b_cases' && mediaPickerContext === ('case_logo' as any)) {
+            const updated = [...(section.b2b_cases || [])];
+            if (sectionEditIndex >= 0) {
+                updated[sectionEditIndex] = { ...updated[sectionEditIndex], logo: imageUrl };
+                updateSection(activeSectionId, { b2b_cases: updated });
+            }
+        } else if (section.type === 'parallax_video') {
             updateSection(activeSectionId, { videoUrl: imageUrl });
         } else if (mediaPickerTarget === 'single') {
             updateSection(activeSectionId, { image: imageUrl });

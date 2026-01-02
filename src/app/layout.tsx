@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { Cormorant_Garamond, Montserrat, Playfair_Display, Lato, Great_Vibes, Cinzel } from "next/font/google"; // Added fonts
+import { Cormorant_Garamond, Montserrat, Playfair_Display, Lato, Great_Vibes, Cinzel } from "next/font/google";
+import prisma from '@/lib/db/prisma'; // Added fonts
 
 // PERFORMANCE: Enable ISR (Incremental Static Regeneration)
 // Revalidate every hour instead of on-demand rendering
@@ -54,7 +55,7 @@ const montserrat = Montserrat({
 });
 
 // Full PRO SEO Configuration
-export const metadata: Metadata = {
+const baseMetadata: Metadata = {
     metadataBase: new URL('https://wlasniewski.pl'),
     title: {
         default: 'Przemysław Właśniewski — Fotograf Toruń',
@@ -126,6 +127,34 @@ export const metadata: Metadata = {
     },
     category: 'photography',
 };
+
+export async function generateMetadata(): Promise<Metadata> {
+    try {
+        const settings = await prisma.setting.findFirst({
+            orderBy: { id: 'asc' },
+            select: { meta_verification_google: true, meta_verification_facebook: true }
+        });
+
+        // Clean Google Code - user might paste "google-site-verification=CODE" or just "CODE"
+        let googleCode = settings?.meta_verification_google || undefined;
+        if (googleCode && googleCode.includes('google-site-verification=')) {
+            googleCode = googleCode.replace('google-site-verification=', '');
+        }
+
+        return {
+            ...baseMetadata,
+            verification: {
+                google: googleCode,
+                other: {
+                    'facebook-domain-verification': settings?.meta_verification_facebook || [],
+                }
+            }
+        };
+    } catch (e) {
+        console.error('Failed to generate dynamic metadata', e);
+        return baseMetadata;
+    }
+}
 
 export default function RootLayout({
     children,

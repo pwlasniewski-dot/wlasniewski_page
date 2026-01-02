@@ -42,3 +42,6 @@ prisma/migrations/
 
 # Local Netlify folder
 .netlify
+
+# backups
+backups/

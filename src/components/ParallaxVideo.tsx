@@ -64,14 +64,18 @@ export default function ParallaxVideo({
                     style={{ y, willChange: 'transform' }}
                     className="relative w-full h-full"
                 >
-                    <video
-                        src={videoUrl}
-                        autoPlay
-                        muted
-                        loop
-                        playsInline
-                        className="w-full h-full object-cover"
-                    />
+                    {videoUrl ? (
+                        <video
+                            src={videoUrl}
+                            autoPlay
+                            muted
+                            loop
+                            playsInline
+                            className="w-full h-full object-cover"
+                        />
+                    ) : (
+                        <div className="w-full h-full bg-zinc-900" />
+                    )}
                 </motion.div>
             </div>
 

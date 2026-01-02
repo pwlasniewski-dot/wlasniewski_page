@@ -427,6 +427,14 @@ export default function RichTextEditor({ value, onChange, placeholder, onImageRe
                     margin-top: 0.25rem !important;
                     margin-bottom: 0.25rem !important;
                 }
+                /* FIX: Remove top margin from the first element to prevent cursor gap */
+                .prose > :first-child {
+                    margin-top: 0 !important;
+                }
+                .prose p {
+                    margin-top: 0.5rem !important;
+                    margin-bottom: 0.5rem !important;
+                }
             `}</style>
         </div>
     );

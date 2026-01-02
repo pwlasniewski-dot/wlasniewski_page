@@ -127,6 +127,32 @@ Ten plik służy do ścisłego monitorowania wszystkich zmian wprowadzanych w pr
 
 ## Log Zmian
 
+### [2026-01-02] 🛠️ Admin UX Overhaul & Google Verification Fix
+**Cel:** Poprawa ergonomii pracy administratora (nawigacja, zapisywanie) oraz naprawa krytycznego błędu weryfikacji domeny w Google Search Console.
+
+**Zrealizowane Zmiany:**
+1. **Admin Navigation UX**:
+   - **Persistent Tabs**: Lista stron (`/admin/pages`) zapamiętuje aktywną zakładkę (B2B/B2C) w URL (`?tab=b2b`).
+   - **Smart Back Navigation**: Powrót z edycji strony ("Wstecz") kieruje do poprawnej zakładki, eliminując frustrujące przełączanie kontekstu.
+   - **Floating Action Bar**: Dodano pływający panel "Save & Scroll Top" w prawym dolnym rogu edytora, ułatwiający pracę z długimi formularzami.
+
+2. **Google Site Verification (Critical Fix)**:
+   - **Problem**: Kod weryfikacyjny wpisany w ustawieniach admina (`meta_verification_google`) nie pojawiał się w sekcji `<head>`.
+   - **Fix**: Zmigrowano `metadata` w `layout.tsx` na funkcję asynchroniczną `generateMetadata`.
+   - **Smart Parsing**: System automatycznie usuwa prefiks `google-site-verification=` jeśli użytkownik wklei cały tag, akceptując zarówno czysty kod, jak i pełny ciąg.
+
+3. **Client Logo (B2B Enhancements)**:
+   - Zaktualizowano `PageRenderer.tsx` o profesjonalny komponent wyświetlania logotypu klienta z etykietą "WYKONANO DLA".
+
+**Files Modified:**
+- `src/app/admin/pages/page.tsx` (Persistent Tabs)
+- `src/app/admin/pages/[slug]/page.tsx` (Floating Action Bar)
+- `src/app/layout.tsx` (Dynamic Metadata)
+- `src/components/PageRenderer.tsx` (Client Logo)
+
+**Status:** ✅ **DONE & VERIFIED (Build Passed)**
+
+
 ### [2026-01-02] 🏗️ B2B Hero Slider "Before/After" & PageBuilder Integration
 **Cel:** Umożliwienie prezentacji efektów "Przed i Po" (np. postęp budowy, czyszczenie) w sekcji Hero na podstronach B2B.
 

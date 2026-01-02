@@ -30,7 +30,7 @@ import ThermalHeroSlider from '@/components/ThermalHeroSlider';
 import HeroVideoSlider from '@/components/HeroVideoSlider';
 import ParallaxVideo from '@/components/ParallaxVideo';
 import ThermalReportShowcase from '@/components/ThermalReportShowcase';
-import { ShieldCheck, Zap, ArrowRight, Workflow, FileText, Briefcase, CheckCircle2, Maximize2, X, Camera } from 'lucide-react';
+import { ShieldCheck, Zap, ArrowRight, Workflow, FileText, Briefcase, CheckCircle2, Maximize2, X, Camera, ImageIcon } from 'lucide-react';
 
 export default function PageRenderer({ sections }: { sections: PageSection[] }) {
     const [selectedCert, setSelectedCert] = React.useState<any>(null);
@@ -74,22 +74,85 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                             </section>
                         );
 
+
                     case 'image_text':
+                        const bgColor = data.backgroundColor === 'black' ? 'bg-black' :
+                            data.backgroundColor === 'zinc-900' ? 'bg-zinc-900' : 'bg-zinc-950';
+
                         return (
-                            <section key={section.id} className="py-16 px-4 bg-zinc-950">
-                                <div className="mx-auto max-w-6xl grid md:grid-cols-2 gap-12 items-center">
-                                    <div className={`relative aspect-video rounded-2xl overflow-hidden shadow-2xl ${data.layout === 'right' ? 'md:order-2' : ''}`}>
-                                        {data.image && (
-                                            <img
-                                                src={data.image}
-                                                alt=""
-                                                className="w-full h-full object-cover"
-                                            />
-                                        )}
-                                    </div>
-                                    <div className={`prose prose-invert prose-lg prose-inline-styles ${data.layout === 'right' ? 'md:order-1' : ''}`}>
-                                        {data.title && <h2 className="text-3xl md:text-4xl font-bold text-gold-400 mb-6 font-display">{data.title}</h2>}
-                                        <div dangerouslySetInnerHTML={{ __html: data.content || '' }} />
+                            <section key={section.id} className={`py-20 md:py-32 px-4 md:px-6 ${bgColor} overflow-hidden`}>
+                                <div className="max-w-7xl mx-auto">
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-24 items-center">
+                                        {/* Image Container */}
+                                        <motion.div
+                                            initial={{ opacity: 0, x: data.layout === 'right' ? 20 : -20 }}
+                                            whileInView={{ opacity: 1, x: 0 }}
+                                            transition={{ duration: 0.8 }}
+                                            className={`relative rounded-3xl overflow-hidden border border-white/5 shadow-2xl group ${data.layout === 'right' ? 'lg:order-2' : ''}`}
+                                        >
+                                            <div className={`aspect-[4/3] md:aspect-auto md:h-[600px] w-full relative overflow-hidden bg-zinc-900`}>
+                                                {data.image ? (
+                                                    <img
+                                                        src={data.image}
+                                                        alt={data.title || "Zdjęcie sekcji"}
+                                                        className={`w-full h-full transition-transform duration-[2s] group-hover:scale-105 ${data.imageObjectFit === 'contain' ? 'object-contain p-8' : 'object-cover'}`}
+                                                    />
+                                                ) : (
+                                                    <div className="w-full h-full flex items-center justify-center text-zinc-700">
+                                                        <ImageIcon size={64} />
+                                                    </div>
+                                                )}
+
+                                                {/* Overlay Gradient for Text Contrast (Standard for cover) */}
+                                                {data.imageObjectFit !== 'contain' && (
+                                                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
+                                                )}
+                                            </div>
+
+                                            {/* Decorative Corner */}
+                                            <div className={`absolute bottom-0 w-24 h-24 border-b-2 border-yellow-500/20 pointer-events-none ${data.layout === 'right' ? 'right-0 border-r-2 rounded-br-3xl' : 'left-0 border-l-2 rounded-bl-3xl'}`} />
+                                        </motion.div>
+
+                                        {/* Content Container */}
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 20 }}
+                                            whileInView={{ opacity: 1, y: 0 }}
+                                            transition={{ duration: 0.8, delay: 0.2 }}
+                                            className={`flex flex-col justify-center ${data.layout === 'right' ? 'lg:order-1 lg:pr-12' : 'lg:pl-12'}`}
+                                        >
+                                            {/* Subtitle / Tag */}
+                                            {data.subtitle && (
+                                                <div className="inline-flex items-center gap-3 mb-6">
+                                                    <div className="h-px w-8 bg-yellow-500" />
+                                                    <span className="text-yellow-500 text-xs font-black uppercase tracking-[0.3em]">{data.subtitle}</span>
+                                                </div>
+                                            )}
+
+                                            {/* Title */}
+                                            {data.title && (
+                                                <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-8 leading-[1.1] tracking-tight">
+                                                    {data.title}
+                                                </h2>
+                                            )}
+
+                                            {/* Description */}
+                                            <div className="prose prose-invert prose-lg text-zinc-400 font-light leading-relaxed mb-10 max-w-none">
+                                                <div dangerouslySetInnerHTML={{ __html: data.content || '' }} />
+                                            </div>
+
+                                            {/* Button */}
+                                            {data.buttonText && data.buttonLink && (
+                                                <div className="pt-4">
+                                                    <Link
+                                                        href={data.buttonLink}
+                                                        className="inline-flex items-center gap-3 px-8 py-4 bg-zinc-900 hover:bg-zinc-800 border border-white/10 rounded-full text-white font-bold transition-all group hover:border-yellow-500/50"
+                                                    >
+                                                        {data.buttonText}
+                                                        <ArrowRight size={18} className="text-yellow-500 group-hover:translate-x-1 transition-transform" />
+                                                    </Link>
+                                                </div>
+                                            )}
+                                        </motion.div>
                                     </div>
                                 </div>
                             </section>
@@ -619,7 +682,7 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                     <h4 className="text-center text-zinc-500 text-[10px] font-black uppercase tracking-[0.4em] mb-12">Zaufali nam liderzy branży</h4>
                                     <div className="flex flex-wrap justify-center gap-12 md:gap-24 items-center opacity-40 grayscale transition-all duration-700 hover:grayscale-0 hover:opacity-100">
                                         {data.b2b_logos?.map((logo: any, i: number) => (
-                                            <motion.div key={logo.id} initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} transition={{ delay: i * 0.05 }} className="h-8 md:h-10 shrink-0">
+                                            <motion.div key={logo.id} initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} transition={{ delay: i * 0.05 }} className="shrink-0" style={{ height: (data.logoHeight || 40) + 'px' }}>
                                                 <img src={logo.image} alt={logo.name || 'Partner'} className="h-full w-auto object-contain filter invert opacity-80" />
                                             </motion.div>
                                         ))}
@@ -650,7 +713,7 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                             />
 
                                             <p className="text-zinc-400 text-lg mb-12 max-w-lg leading-relaxed">
-                                                Dostarczamy dane najwyższej jakości dzięki zdefiniowanym protokołom operacyjnym i rygorystycznym standardom bezpieczeństwa.
+                                                {data.description || 'Dostarczamy dane najwyższej jakości dzięki zdefiniowanym protokołom operacyjnym i rygorystycznym standardom bezpieczeństwa.'}
                                             </p>
 
                                             <div className="grid grid-cols-2 gap-8">
@@ -761,9 +824,10 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                                 initial={{ opacity: 0, y: 40 }}
                                                 whileInView={{ opacity: 1, y: 0 }}
                                                 transition={{ delay: i * 0.2, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-                                                className="group relative h-[600px] rounded-[48px] overflow-hidden border border-white/10 bg-zinc-900"
+                                                onClick={() => setSelectedCase(caseStudy)}
+                                                className="group relative h-[600px] rounded-[48px] overflow-hidden border border-white/10 bg-zinc-900 cursor-pointer"
                                             >
-                                                {/* Background Image - Optimized for visibility */}
+                                                {/* Background Image */}
                                                 {caseStudy.image ? (
                                                     <div className="absolute inset-0 transition-transform duration-[2000ms] ease-out group-hover:scale-105">
                                                         <div
@@ -800,23 +864,25 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                                             {caseStudy.title}
                                                         </h3>
 
+                                                        {/* Video Indicator */}
+                                                        {caseStudy.videoUrl && (
+                                                            <div className="inline-flex items-center gap-2 px-3 py-1 bg-red-500/10 border border-red-500/20 rounded-full text-red-500 text-[10px] uppercase font-bold tracking-widest">
+                                                                <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
+                                                                Wideo dostępne
+                                                            </div>
+                                                        )}
+
                                                         {/* Description - Revealed on hover */}
                                                         <div className="max-h-0 opacity-0 group-hover:max-h-48 group-hover:opacity-100 transition-all duration-700 overflow-hidden">
-                                                            <p className="text-zinc-400 text-sm leading-relaxed mb-6 mt-4">
-                                                                {caseStudy.description}
-                                                            </p>
                                                             <div className="pt-6 border-t border-white/5 flex items-center justify-between">
                                                                 <div className="flex items-center gap-2">
                                                                     <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                                                                     <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest group-hover:text-zinc-300 transition-colors">Case ID: #DPR-{i + 101}</span>
                                                                 </div>
-                                                                <button
-                                                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setSelectedCase(caseStudy); }}
-                                                                    className="flex items-center gap-3 px-6 py-2.5 bg-white text-black text-xs font-black uppercase tracking-widest rounded-full hover:bg-yellow-500 transition-all hover:scale-105 active:scale-95 shadow-xl shadow-black/20 group/btn"
-                                                                >
-                                                                    Szczegóły projektu
-                                                                    <ArrowRight size={14} className="group-hover/btn:translate-x-1 transition-transform" />
-                                                                </button>
+                                                                <span className="flex items-center gap-3 px-6 py-2.5 bg-white text-black text-xs font-black uppercase tracking-widest rounded-full group-hover:bg-yellow-500 transition-all hover:scale-105 active:scale-95 shadow-xl shadow-black/20 group/btn">
+                                                                    Otwórz Projekt
+                                                                    <Maximize2 size={14} className="group-hover/btn:scale-125 transition-transform" />
+                                                                </span>
                                                             </div>
                                                         </div>
                                                         <div className="hidden md:flex items-center gap-2 text-zinc-500 text-[10px] font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-300">
@@ -824,6 +890,16 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                                         </div>
                                                     </div>
                                                 </div>
+
+                                                {/* Client Logo Overlay */}
+                                                {caseStudy.logo && (
+                                                    <div className="absolute top-6 left-6 z-30 transition-all duration-500 group-hover:opacity-100 opacity-80">
+                                                        <div className="px-4 py-3 bg-zinc-950/80 backdrop-blur-md rounded-xl border border-white/10 flex flex-col gap-1.5 items-start shadow-xl">
+                                                            <span className="text-[8px] font-bold text-zinc-500 uppercase tracking-widest leading-none">Wykonano dla</span>
+                                                            <img src={caseStudy.logo} className="h-6 w-auto brightness-0 invert opacity-90 group-hover:opacity-100 transition-opacity" alt={caseStudy.client} />
+                                                        </div>
+                                                    </div>
+                                                )}
 
                                                 {/* Corner Decoration */}
                                                 <div className="absolute top-8 right-8 w-12 h-12 border-t-2 border-r-2 border-white/10 rounded-tr-2xl group-hover:border-yellow-500/40 transition-colors duration-500" />
@@ -833,6 +909,97 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                             </motion.div>
                                         ))}
                                     </div>
+
+                                    {/* Lightbox Modal */}
+                                    <AnimatePresence>
+                                        {selectedCase && (
+                                            <motion.div
+                                                initial={{ opacity: 0 }}
+                                                animate={{ opacity: 1 }}
+                                                exit={{ opacity: 0 }}
+                                                onClick={() => setSelectedCase(null)}
+                                                className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-md overflow-y-auto overflow-x-hidden flex items-center justify-center p-4 md:p-10"
+                                            >
+                                                <motion.div
+                                                    initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                                                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                                                    exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    className="relative w-full max-w-6xl bg-zinc-900 rounded-[32px] overflow-hidden border border-white/10 shadow-2xl flex flex-col lg:flex-row max-h-[90vh]"
+                                                >
+                                                    <button
+                                                        onClick={() => setSelectedCase(null)}
+                                                        className="absolute top-4 right-4 z-50 p-2 bg-black/50 hover:bg-black/80 rounded-full text-white transition-colors border border-white/10"
+                                                    >
+                                                        <X size={24} />
+                                                    </button>
+
+                                                    {/* Media Section */}
+                                                    <div className="w-full lg:w-2/3 bg-black relative min-h-[400px] lg:min-h-full flex items-center justify-center p-6">
+                                                        {selectedCase.videoUrl ? (
+                                                            <div className="w-full h-full flex items-center justify-center">
+                                                                {selectedCase.videoUrl.includes('youtube') || selectedCase.videoUrl.includes('youtu.be') ? (
+                                                                    <iframe
+                                                                        width="100%"
+                                                                        height="100%"
+                                                                        src={`https://www.youtube.com/embed/${selectedCase.videoUrl.split('v=')[1] || selectedCase.videoUrl.split('/').pop()}?autoplay=1&rel=0`}
+                                                                        title="YouTube video player"
+                                                                        frameBorder="0"
+                                                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                                                        allowFullScreen
+                                                                        className="w-full aspect-video rounded-xl"
+                                                                    ></iframe>
+                                                                ) : (
+                                                                    <video src={selectedCase.videoUrl} controls autoPlay className="w-full max-h-[80vh] rounded-xl" />
+                                                                )}
+                                                            </div>
+                                                        ) : (
+                                                            <img src={selectedCase.image} className="max-w-full max-h-[80vh] object-contain rounded-lg" />
+                                                        )}
+
+                                                        {/* Client Logo in Modal */}
+                                                        {selectedCase.logo && (
+                                                            <div className="absolute bottom-6 left-6 p-4 bg-black/60 backdrop-blur rounded-xl border border-white/10">
+                                                                <img src={selectedCase.logo} className="h-8 w-auto brightness-0 invert opacity-90" alt="Client Logo" />
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Content Section */}
+                                                    <div className="w-full lg:w-1/3 p-8 md:p-12 overflow-y-auto custom-scrollbar bg-zinc-900 flex flex-col border-t lg:border-t-0 lg:border-l border-white/10">
+                                                        <div className="mb-6">
+                                                            <p className="text-yellow-500 text-xs font-black uppercase tracking-[0.2em] mb-2 flex items-center gap-2">
+                                                                <div className="w-2 h-2 bg-yellow-500 rounded-full" />
+                                                                {selectedCase.client || 'Realizacja'}
+                                                            </p>
+                                                            <h3 className="text-3xl md:text-4xl font-bold text-white leading-[1.1]">
+                                                                {selectedCase.title}
+                                                            </h3>
+                                                        </div>
+
+                                                        <div
+                                                            className="prose prose-invert prose-lg max-w-none text-zinc-300 font-light leading-relaxed mb-8 flex-1"
+                                                            dangerouslySetInnerHTML={{ __html: selectedCase.description }}
+                                                        />
+
+                                                        <div className="pt-6 border-t border-white/10 mt-auto">
+                                                            <div className="flex items-center justify-between">
+                                                                <div className="flex items-center gap-2 text-zinc-500 text-[10px] font-bold uppercase tracking-widest">
+                                                                    <CheckCircle2 size={14} className="text-green-500" />
+                                                                    Projekt Zakończony Pomyślnie
+                                                                </div>
+                                                                {selectedCase.category && (
+                                                                    <span className="text-[10px] text-zinc-600 font-mono border border-zinc-800 px-2 py-1 rounded">
+                                                                        {selectedCase.category}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </motion.div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
 
                                     {/* Bottom CTA for Section */}
                                     <motion.div
@@ -876,6 +1043,7 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                 title={data.title}
                                 subtitle={data.subtitle}
                                 overlayOpacity={data.overlayOpacity}
+                                textAnimation={data.textAnimation}
                             />
                         );
 
@@ -1155,7 +1323,7 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                     </motion.div>
                 )}
             </AnimatePresence>
-        </div>
+        </div >
     );
 }
 
