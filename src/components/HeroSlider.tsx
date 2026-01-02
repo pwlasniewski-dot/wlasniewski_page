@@ -4,21 +4,27 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import BeforeAfterSlide from './BeforeAfterSlide';
 
 interface HeroSlide {
     id: string | number;
-    image: string;
-    image_mobile?: string;
-    image_desktop?: string;
     title: string;
     subtitle: string;
     description?: string;
     buttonText?: string;
     buttonLink?: string;
+    button_text?: string;
+    button_link?: string;
     buttonStyle?: 'gold' | 'white' | 'transparent';
     enabled?: boolean;
     order?: number;
     textAnimation?: 'fade' | 'slide-up' | 'slide-down' | 'scale' | 'bounce' | 'zoom-in';
+    is_before_after?: boolean;
+    before_image?: string | { file_path: string };
+    image_mobile?: string;
+    image_desktop?: string;
+    // Helper for API response structure where image is object
+    image: string | { file_path: string };
 }
 
 interface HeroSliderProps {
@@ -121,7 +127,8 @@ export default function HeroSlider({ slides = [], interval = 6000 }: HeroSliderP
     }
 
     const slide = enabledSlides[currentSlide];
-    const slideImage = isMobile && slide.image_mobile ? slide.image_mobile : slide.image_desktop || slide.image;
+    const mainImage = typeof slide.image === 'string' ? slide.image : slide.image?.file_path;
+    const slideImage = isMobile && slide.image_mobile ? slide.image_mobile : slide.image_desktop || mainImage;
     const textAnim = (slide.textAnimation || 'slide-up') as keyof typeof animationVariants;
     const variant = animationVariants[textAnim] || animationVariants['slide-up'];
 
@@ -134,6 +141,44 @@ export default function HeroSlider({ slides = [], interval = 6000 }: HeroSliderP
         setCurrentSlide((prev) => (prev - 1 + enabledSlides.length) % enabledSlides.length);
         setAutoplay(false);
     };
+
+    const currentSlideData = enabledSlides[currentSlide];
+
+    if (currentSlideData?.is_before_after && currentSlideData.image && currentSlideData.before_image) {
+        return (
+            <div className="relative w-full h-[100vh] bg-black">
+                <BeforeAfterSlide
+                    beforeImage={typeof currentSlideData.before_image === 'string' ? currentSlideData.before_image : currentSlideData.before_image.file_path}
+                    afterImage={typeof currentSlideData.image === 'string' ? currentSlideData.image : currentSlideData.image.file_path}
+                    title={currentSlideData.title}
+                    subtitle={currentSlideData.subtitle}
+                    buttonText={currentSlideData.button_text}
+                    buttonLink={currentSlideData.button_link}
+                    isActive={true}
+                    onPrev={enabledSlides.length > 1 ? prevSlide : undefined}
+                    onNext={enabledSlides.length > 1 ? nextSlide : undefined}
+                />
+
+                {/* Keep Dots Navigation for consistency if multiple slides */}
+                {enabledSlides.length > 1 && (
+                    <div className="absolute bottom-6 sm:bottom-8 left-1/2 -translate-x-1/2 flex gap-2 z-40">
+                        {enabledSlides.map((_, index) => (
+                            <button
+                                key={index}
+                                onClick={() => {
+                                    setCurrentSlide(index);
+                                    setAutoplay(false);
+                                }}
+                                className={`rounded-full transition-all ${index === currentSlide ? 'bg-gold-500 w-8' : 'bg-white/40 hover:bg-white/60 w-2.5'
+                                    } h-2.5`}
+                                aria-label={`Przejdź do slajdu ${index + 1}`}
+                            />
+                        ))}
+                    </div>
+                )}
+            </div>
+        );
+    }
 
     return (
         <div className="relative w-full bg-black overflow-hidden" style={{ height: '100vh', minHeight: '600px' }}>

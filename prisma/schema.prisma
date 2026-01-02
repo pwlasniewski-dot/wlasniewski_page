@@ -140,6 +140,7 @@ model MediaLibrary {
   blog_featured           BlogPost[]
   challenge_photos        ChallengePhoto[]
   hero_slides             HeroSlide[]
+  hero_before_slides      HeroSlide[]        @relation("HeroBeforeImage")
   uploader                AdminUser?         @relation(fields: [uploaded_by], references: [id])
   portfolio_covers        PortfolioSession[]
   portfolio_mobile_covers PortfolioSession[] @relation("MobileCover")
@@ -284,10 +285,13 @@ model HeroSlide {
   button_link   String?
   image_id      Int
   display_order Int          @default(0)
-  display_mode  String       @default("BOTH")
-  is_active     Boolean      @default(true)
-  created_at    DateTime     @default(now())
-  image         MediaLibrary @relation(fields: [image_id], references: [id])
+  display_mode    String       @default("BOTH")
+  is_active       Boolean      @default(true)
+  is_before_after Boolean      @default(false)
+  before_image_id Int?
+  created_at      DateTime     @default(now())
+  image           MediaLibrary @relation(fields: [image_id], references: [id])
+  before_image    MediaLibrary? @relation("HeroBeforeImage", fields: [before_image_id], references: [id])
 
   @@map("hero_slides")
 }

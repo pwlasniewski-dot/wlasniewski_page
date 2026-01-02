@@ -241,7 +241,10 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                             title: s.title || '',
                             subtitle: s.subtitle || '',
                             buttonText: s.buttonText,
-                            buttonLink: s.buttonLink
+                            buttonLink: s.buttonLink,
+                            is_before_after: s.is_before_after,
+                            before_image: s.before_image,
+                            before_image_id: s.before_image_id
                         }));
                         return (
                             <section key={section.id} className="w-full">

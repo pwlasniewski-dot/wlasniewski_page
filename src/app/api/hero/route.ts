@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
     try {
         const slides = await prisma.heroSlide.findMany({
             orderBy: { display_order: 'asc' },
-            include: { image: true }
+            include: { image: true, before_image: true }
         });
         // Convert BigInt to Number
         const serializedSlides = slides.map(slide => ({
@@ -19,6 +19,14 @@ export async function GET(request: NextRequest) {
                 id: Number(slide.image.id),
                 file_size: Number(slide.image.file_size),
                 uploaded_by: slide.image.uploaded_by ? Number(slide.image.uploaded_by) : null,
+            } : null,
+            is_before_after: slide.is_before_after,
+            before_image_id: slide.before_image_id ? Number(slide.before_image_id) : null,
+            before_image: slide.before_image ? {
+                ...slide.before_image,
+                id: Number(slide.before_image.id),
+                file_size: Number(slide.before_image.file_size),
+                uploaded_by: slide.before_image.uploaded_by ? Number(slide.before_image.uploaded_by) : null,
             } : null,
         }));
         return NextResponse.json({ success: true, slides: serializedSlides });
@@ -32,17 +40,17 @@ export async function POST(request: NextRequest) {
     return withAuth(request, async (req) => {
         try {
             const body = await req.json();
-            const { id, title, subtitle, button_text, button_link, image_id, is_active, display_mode } = body;
+            const { id, title, subtitle, button_text, button_link, image_id, is_active, display_mode, is_before_after, before_image_id } = body;
 
             let slide;
             if (id) {
                 slide = await prisma.heroSlide.update({
                     where: { id },
-                    data: { title, subtitle, button_text, button_link, image_id, is_active, display_mode },
+                    data: { title, subtitle, button_text, button_link, image_id, is_active, display_mode, is_before_after, before_image_id },
                 });
             } else {
                 slide = await prisma.heroSlide.create({
-                    data: { title, subtitle, button_text, button_link, image_id, is_active, display_mode },
+                    data: { title, subtitle, button_text, button_link, image_id, is_active, display_mode, is_before_after, before_image_id },
                 });
             }
 
@@ -51,6 +59,7 @@ export async function POST(request: NextRequest) {
                 ...slide,
                 id: Number(slide.id),
                 image_id: slide.image_id ? Number(slide.image_id) : null,
+                before_image_id: slide.before_image_id ? Number(slide.before_image_id) : null,
             };
             return NextResponse.json({ success: true, slide: serializedSlide });
         } catch (error) {

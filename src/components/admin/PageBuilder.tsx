@@ -25,6 +25,8 @@ export interface SliderSlide {
     videoUrl?: string;
     overlayOpacity?: number;
     textAnimation?: 'fade' | 'slide-up' | 'scale';
+    is_before_after?: boolean;
+    before_image?: string;
 }
 
 export interface ThermalHeroSlide {
@@ -180,7 +182,7 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove, openMedia
     onRemove: (id: string) => void;
     onUpdate: (id: string, data: Partial<PageSection>) => void;
     onMove: (id: string, direction: 'up' | 'down') => void;
-    openMediaPicker: (sectionId: string, options: { target: 'single' | 'gallery', context?: 'visual' | 'thermal', index?: number }) => void;
+    openMediaPicker: (sectionId: string, options: { target: 'single' | 'gallery', context?: 'visual' | 'thermal' | 'before', index?: number }) => void;
 }) {
     const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: section.id });
     const style = { transform: CSS.Transform.toString(transform), transition };
@@ -715,22 +717,57 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove, openMedia
                                 {section.slides.map((slide, sIndex) => (
                                     <div key={slide.id} className="bg-zinc-800/50 p-4 rounded-lg border border-zinc-700 space-y-4">
                                         <div className="flex items-center justify-between gap-4">
-                                            <div className="w-24 h-24 relative rounded border border-zinc-600 overflow-hidden bg-zinc-900 shrink-0">
-                                                {slide.image ? (
-                                                    <img src={slide.image} alt="" className="w-full h-full object-cover" />
-                                                ) : (
-                                                    <div className="w-full h-full flex items-center justify-center text-zinc-700">
-                                                        <ImageIcon size={24} />
+                                            <div className="flex flex-col gap-2 shrink-0">
+                                                <div className="w-24 h-24 relative rounded border border-zinc-600 overflow-hidden bg-zinc-900">
+                                                    {slide.image ? (
+                                                        <img src={slide.image} alt="" className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <div className="w-full h-full flex items-center justify-center text-zinc-700">
+                                                            <ImageIcon size={24} />
+                                                        </div>
+                                                    )}
+                                                    <div className="absolute top-0 left-0 bg-black/60 px-1 py-0.5 text-[8px] text-white font-bold uppercase">PO (MAIN)</div>
+                                                    <button
+                                                        onClick={() => { openMediaPicker(section.id, { target: 'single', index: sIndex }); }}
+                                                        className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 flex items-center justify-center transition-opacity"
+                                                    >
+                                                        <span className="text-[10px] text-white font-bold uppercase">Zmień</span>
+                                                    </button>
+                                                </div>
+
+                                                {slide.is_before_after && (
+                                                    <div className="w-24 h-24 relative rounded border border-zinc-600 overflow-hidden bg-zinc-900">
+                                                        {slide.before_image ? (
+                                                            <img src={slide.before_image} alt="" className="w-full h-full object-cover" />
+                                                        ) : (
+                                                            <div className="w-full h-full flex items-center justify-center text-zinc-700">
+                                                                <ImageIcon size={24} />
+                                                            </div>
+                                                        )}
+                                                        <div className="absolute top-0 left-0 bg-yellow-500/80 px-1 py-0.5 text-[8px] text-black font-bold uppercase">PRZED</div>
+                                                        <button
+                                                            onClick={() => { openMediaPicker(section.id, { target: 'single', context: 'before', index: sIndex }); }}
+                                                            className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 flex items-center justify-center transition-opacity"
+                                                        >
+                                                            <span className="text-[10px] text-white font-bold uppercase">Zmień</span>
+                                                        </button>
                                                     </div>
                                                 )}
-                                                <button
-                                                    onClick={() => { openMediaPicker(section.id, { target: 'single', index: sIndex }); }}
-                                                    className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 flex items-center justify-center transition-opacity"
-                                                >
-                                                    <span className="text-[10px] text-white font-bold uppercase">Zmień</span>
-                                                </button>
                                             </div>
                                             <div className="flex-1 space-y-3">
+                                                <div className="flex items-center gap-2 pb-2 border-b border-zinc-700/50">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={slide.is_before_after || false}
+                                                        onChange={(e) => {
+                                                            const updated = [...(section.slides || [])];
+                                                            updated[sIndex] = { ...slide, is_before_after: e.target.checked };
+                                                            onUpdate(section.id, { slides: updated });
+                                                        }}
+                                                        className="rounded bg-zinc-700 border-zinc-600 text-yellow-500 focus:ring-yellow-500/50"
+                                                    />
+                                                    <label className="text-xs text-yellow-500 font-bold uppercase tracking-wider">Tryb "Przed i Po"</label>
+                                                </div>
                                                 <div className="grid grid-cols-2 gap-3">
                                                     <input
                                                         type="text"
@@ -1760,11 +1797,11 @@ export default function PageBuilder({ sections, onChange }: PageBuilderProps) {
     // Global MediaPicker State
     const [showMediaPicker, setShowMediaPicker] = useState(false);
     const [mediaPickerTarget, setMediaPickerTarget] = useState<'single' | 'gallery'>('single');
-    const [mediaPickerContext, setMediaPickerContext] = useState<'visual' | 'thermal' | null>(null);
+    const [mediaPickerContext, setMediaPickerContext] = useState<'visual' | 'thermal' | 'before' | null>(null);
     const [sectionEditIndex, setSectionEditIndex] = useState(-1);
     const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
 
-    const openMediaPicker = (sectionId: string, options: { target: 'single' | 'gallery', context?: 'visual' | 'thermal', index?: number }) => {
+    const openMediaPicker = (sectionId: string, options: { target: 'single' | 'gallery', context?: 'visual' | 'thermal' | 'before', index?: number }) => {
         setActiveSectionId(sectionId);
         setMediaPickerTarget(options.target);
         setMediaPickerContext(options.context || null);
@@ -1798,7 +1835,11 @@ export default function PageBuilder({ sections, onChange }: PageBuilderProps) {
         } else if (section.type === 'hero_slider') {
             const updated = [...(section.slides || [])];
             if (sectionEditIndex >= 0) {
-                updated[sectionEditIndex] = { ...updated[sectionEditIndex], image: imageUrl };
+                if (mediaPickerContext === 'before') {
+                    updated[sectionEditIndex] = { ...updated[sectionEditIndex], before_image: imageUrl };
+                } else {
+                    updated[sectionEditIndex] = { ...updated[sectionEditIndex], image: imageUrl };
+                }
                 updateSection(activeSectionId, { slides: updated });
             }
         } else if (section.type === 'thermal_hero') {

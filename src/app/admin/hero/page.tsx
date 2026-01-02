@@ -17,12 +17,15 @@ interface HeroSlide {
     display_order: number;
     display_mode: string;
     is_active: boolean;
+    is_before_after?: boolean;
+    before_image_id?: number | null;
+    before_image?: { file_path: string };
 }
 
 export default function HeroManagerPage() {
     const [slides, setSlides] = useState<HeroSlide[]>([]);
     const [loading, setLoading] = useState(true);
-    const [showMediaPicker, setShowMediaPicker] = useState(false);
+    const [showMediaPicker, setShowMediaPicker] = useState<{ type: 'main' | 'before' } | null>(null);
     const [editingSlide, setEditingSlide] = useState<Partial<HeroSlide> | null>(null);
 
     useEffect(() => {
@@ -174,25 +177,65 @@ export default function HeroManagerPage() {
                                 <option value="MOBILE">Tylko Telefon</option>
                             </select>
                         </div>
+
+                        <div className="flex items-center gap-2 mt-4">
+                            <input
+                                type="checkbox"
+                                id="is_before_after"
+                                checked={editingSlide.is_before_after || false}
+                                onChange={e => setEditingSlide({ ...editingSlide, is_before_after: e.target.checked })}
+                                className="w-4 h-4 rounded border-zinc-700 bg-zinc-800 text-gold-500 focus:ring-gold-500"
+                            />
+                            <label htmlFor="is_before_after" className="text-sm text-zinc-300">
+                                Tryb "Przed i Po" (Suwak porównawczy)
+                            </label>
+                        </div>
                     </div>
 
-                    <div>
-                        <label className="block text-sm text-zinc-400 mb-1">Zdjęcie w tle</label>
-                        <div className="flex items-center gap-4">
-                            {editingSlide.image?.file_path ? (
-                                <img src={editingSlide.image.file_path} className="h-20 w-32 object-cover rounded border border-zinc-700" />
-                            ) : (
-                                <div className="h-20 w-32 bg-zinc-800 rounded border border-zinc-700 flex items-center justify-center text-zinc-500">Brak</div>
-                            )}
-                            <button
-                                type="button"
-                                onClick={() => setShowMediaPicker(true)}
-                                className="px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-sm text-zinc-300 hover:text-white"
-                            >
-                                <ImageIcon className="inline-block w-4 h-4 mr-2" />
-                                Wybierz zdjęcie
-                            </button>
+                    <div className="space-y-4">
+                        {/* Main Image (After / Standard) */}
+                        <div>
+                            <label className="block text-sm text-zinc-400 mb-1">
+                                {editingSlide.is_before_after ? 'Zdjęcie "PO" (Główne)' : 'Zdjęcie w tle'}
+                            </label>
+                            <div className="flex items-center gap-4">
+                                {editingSlide.image?.file_path ? (
+                                    <img src={editingSlide.image.file_path} className="h-20 w-32 object-cover rounded border border-zinc-700" />
+                                ) : (
+                                    <div className="h-20 w-32 bg-zinc-800 rounded border border-zinc-700 flex items-center justify-center text-zinc-500">Brak</div>
+                                )}
+                                <button
+                                    type="button"
+                                    onClick={() => setShowMediaPicker({ type: 'main' })}
+                                    className="px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-sm text-zinc-300 hover:text-white"
+                                >
+                                    <ImageIcon className="inline-block w-4 h-4 mr-2" />
+                                    Wybierz
+                                </button>
+                            </div>
                         </div>
+
+                        {/* Before Image (Conditional) */}
+                        {editingSlide.is_before_after && (
+                            <div>
+                                <label className="block text-sm text-zinc-400 mb-1">Zdjęcie "PRZED"</label>
+                                <div className="flex items-center gap-4">
+                                    {editingSlide.before_image?.file_path ? (
+                                        <img src={editingSlide.before_image.file_path} className="h-20 w-32 object-cover rounded border border-zinc-700" />
+                                    ) : (
+                                        <div className="h-20 w-32 bg-zinc-800 rounded border border-zinc-700 flex items-center justify-center text-zinc-500">Brak</div>
+                                    )}
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowMediaPicker({ type: 'before' })}
+                                        className="px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-sm text-zinc-300 hover:text-white"
+                                    >
+                                        <ImageIcon className="inline-block w-4 h-4 mr-2" />
+                                        Wybierz "Przed"
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     <div className="flex justify-end gap-3 mt-6">
@@ -213,13 +256,19 @@ export default function HeroManagerPage() {
             )}
 
             <MediaPicker
-                isOpen={showMediaPicker}
-                onClose={() => setShowMediaPicker(false)}
+                isOpen={!!showMediaPicker}
+                onClose={() => setShowMediaPicker(null)}
                 multiple={false}
                 onSelect={(url: string | string[], id: number | number[]) => {
                     const singleUrl = Array.isArray(url) ? url[0] : url;
                     const singleId = Array.isArray(id) ? id[0] : id;
-                    setEditingSlide(prev => prev ? ({ ...prev, image_id: singleId, image: { file_path: singleUrl } }) : null);
+
+                    if (showMediaPicker?.type === 'main') {
+                        setEditingSlide(prev => prev ? ({ ...prev, image_id: singleId, image: { file_path: singleUrl } }) : null);
+                    } else if (showMediaPicker?.type === 'before') {
+                        setEditingSlide(prev => prev ? ({ ...prev, before_image_id: singleId, before_image: { file_path: singleUrl } }) : null);
+                    }
+                    setShowMediaPicker(null);
                 }}
             />
 
