@@ -123,10 +123,11 @@ export default function PagesListPage() {
                 setNewPageData({ title: '', slug: '', page_type: 'regular', is_in_menu: false, parent_page_id: null });
                 fetchPages();
             } else {
-                throw new Error('Failed to create');
+                const data = await res.json();
+                throw new Error(data.error || 'Failed to create');
             }
-        } catch (error) {
-            toast.error('Błąd tworzenia strony');
+        } catch (error: any) {
+            toast.error(error.message || 'Błąd tworzenia strony');
         } finally {
             setCreating(false);
         }

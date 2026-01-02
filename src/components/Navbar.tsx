@@ -552,34 +552,37 @@ export default function Navbar() {
                     <div className="md:hidden bg-white shadow-lg rounded-lg mt-2 py-4 space-y-4 max-h-[70vh] overflow-y-auto">
                         {[...currentMenuItems, ...currentCtaItems].map((item) => (
                             <div key={item.label}>
-                                <Link
-                                    href={item.href}
-                                    onClick={() => setIsOpen(false)}
-                                    className={`block px-4 py-2 font-medium transition-colors rounded ${isActive(item.href)
-                                        ? 'bg-gold-100 text-gold-600'
-                                        : 'text-zinc-700 hover:bg-zinc-50'
-                                        }`}
-                                >
-                                    {item.label}
-                                </Link>
-                                {item.children && item.children.length > 0 && (
-                                    <button
-                                        onClick={() => setOpenSubmenu(openSubmenu === String(item.id) ? null : String(item.id))}
-                                        className="w-full text-left px-4 py-1 text-xs text-zinc-500 hover:text-zinc-700"
+                                <div className="flex items-center justify-between px-4 py-2 hover:bg-zinc-50 rounded">
+                                    <Link
+                                        href={item.href}
+                                        onClick={() => setIsOpen(false)}
+                                        className={`flex-1 font-medium transition-colors ${isActive(item.href) ? 'text-gold-600' : 'text-zinc-700'
+                                            }`}
                                     >
-                                        {openSubmenu === String(item.id) ? '▼' : '▶'} Pokaż więcej
-                                    </button>
-                                )}
+                                        {item.label}
+                                    </Link>
+                                    {item.children && item.children.length > 0 && (
+                                        <button
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                setOpenSubmenu(openSubmenu === String(item.id) ? null : String(item.id));
+                                            }}
+                                            className="p-2 text-zinc-500 hover:text-gold-500"
+                                        >
+                                            <ChevronDown className={`w-4 h-4 transition-transform ${openSubmenu === String(item.id) ? 'rotate-180' : ''}`} />
+                                        </button>
+                                    )}
+                                </div>
                                 {item.children && item.children.length > 0 && openSubmenu === String(item.id) && (
-                                    <div className="pl-4 space-y-1">
+                                    <div className="pl-6 pr-4 pb-2 space-y-1 bg-zinc-50/50">
                                         {item.children.map((child) => (
                                             <Link
                                                 key={child.id}
                                                 href={child.href}
                                                 onClick={() => setIsOpen(false)}
-                                                className="block px-3 py-1 text-sm text-zinc-600 hover:text-gold-500"
+                                                className="block py-2 text-sm text-zinc-600 hover:text-gold-500 border-l-2 border-transparent hover:border-gold-300 pl-3 transition-all"
                                             >
-                                                • {child.label}
+                                                {child.label}
                                             </Link>
                                         ))}
                                     </div>
