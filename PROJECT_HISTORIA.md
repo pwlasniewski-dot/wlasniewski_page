@@ -144,9 +144,13 @@ Ten plik służy do ścisłego monitorowania wszystkich zmian wprowadzanych w pr
 3. **Client Logo (B2B Enhancements)**:
    - Zaktualizowano `PageRenderer.tsx` o profesjonalny komponent wyświetlania logotypu klienta z etykietą "WYKONANO DLA".
 
+4. **React Error #310 Fix (Editor Stability)**:
+   - **Problem**: Błąd edytora stron przy edycji (np. Monitoring) spowodowany błędną kolejnością wywoływania React Hooks (`if (loading) return` przed `useSearchParams`).
+   - **Fix**: Przesunięto hooki nawigacji i UI na samą górę komponentu `EditPage`, zgodnie z zasadami Reacta.
+
 **Files Modified:**
 - `src/app/admin/pages/page.tsx` (Persistent Tabs)
-- `src/app/admin/pages/[slug]/page.tsx` (Floating Action Bar)
+- `src/app/admin/pages/[slug]/page.tsx` (Floating Action Bar, React Fix)
 - `src/app/layout.tsx` (Dynamic Metadata)
 - `src/components/PageRenderer.tsx` (Client Logo)
 

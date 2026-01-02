@@ -45,6 +45,22 @@ const AVAILABLE_ICONS = [
 export default function EditPage({ params }: { params: Promise<{ slug: string }> }) {
     const [resolvedParams, setResolvedParams] = useState<{ slug: string } | null>(null);
     const router = useRouter();
+    // Navigation
+    const searchParams = useSearchParams();
+    const activeTab = searchParams.get('tab') || 'b2c';
+    const backLink = `/admin/pages?tab=${activeTab}`;
+
+    // Floating UI State
+    const [showFloatingBar, setShowFloatingBar] = useState(false);
+
+    useEffect(() => {
+        const handleScroll = () => {
+            setShowFloatingBar(window.scrollY > 300);
+        };
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
     const [formData, setFormData] = useState({
         id: undefined as number | undefined,
         slug: '',
@@ -346,22 +362,6 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
     const isOMnie = resolvedParams?.slug === 'o-mnie';
     const isHomePage = resolvedParams?.slug === 'strona-glowna';
     const isPortfolio = resolvedParams?.slug === 'portfolio';
-
-    // Navigation
-    const searchParams = useSearchParams();
-    const activeTab = searchParams.get('tab') || 'b2c';
-    const backLink = `/admin/pages?tab=${activeTab}`;
-
-    // Floating UI State
-    const [showFloatingBar, setShowFloatingBar] = useState(false);
-
-    useEffect(() => {
-        const handleScroll = () => {
-            setShowFloatingBar(window.scrollY > 300);
-        };
-        window.addEventListener('scroll', handleScroll);
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, []);
 
     const scrollToTop = () => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
