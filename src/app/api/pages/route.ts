@@ -22,9 +22,13 @@ export async function GET(request: NextRequest) {
             if (!isAdmin && !page.is_published) return NextResponse.json({ error: 'Page not found' }, { status: 404 });
             return NextResponse.json({ success: true, page });
         }
-        // If slug param exists (even if empty string), search for specific page
+        // If slug param exists (even if empty string), search for specific page (case-insensitive)
         else if (slug !== null) {
-            const page = await prisma.page.findUnique({ where: { slug } });
+            const page = await prisma.page.findFirst({
+                where: {
+                    slug: { equals: slug, mode: 'insensitive' }
+                }
+            });
             if (!page) return NextResponse.json({ error: 'Page not found' }, { status: 404 });
             // Hide unpublished pages from public
             if (!isAdmin && !page.is_published) return NextResponse.json({ error: 'Page not found' }, { status: 404 });
@@ -46,30 +50,11 @@ export async function POST(request: NextRequest) {
     return withAuth(request, async (req) => {
         try {
             const body = await req.json();
-            const {
-                id,
-                slug,
-                title,
-                page_type,
-                content,
-                is_published,
-                is_in_menu,
-                menu_order,
-                menu_title,
-                parent_page_id,
-                hero_image,
-                hero_subtitle,
-                content_images,
-                parallax_sections,
-                content_cards,
-                about_photo,
-                about_text_side,
-                home_sections,
-                sections,
-                meta_title,
-                meta_description,
-                meta_keywords
-            } = body;
+            const { id, title, page_type, content, is_published, is_in_menu, menu_order, menu_title, parent_page_id, hero_image, hero_subtitle, content_images, parallax_sections, content_cards, about_photo, about_text_side, home_sections, sections, meta_title, meta_description, meta_keywords } = body;
+            let slug = body.slug;
+
+            // Normalize slug to lowercase
+            if (slug) slug = slug.toLowerCase().trim();
 
             let page;
 
@@ -101,8 +86,12 @@ export async function POST(request: NextRequest) {
                     }
                 });
             } else {
-                // CREATE NEW page - check slug uniqueness first!
-                const existing = await prisma.page.findUnique({ where: { slug } });
+                // CREATE NEW page - check slug uniqueness first (case-insensitive)!
+                const existing = await prisma.page.findFirst({
+                    where: {
+                        slug: { equals: slug, mode: 'insensitive' }
+                    }
+                });
                 if (existing) {
                     return NextResponse.json({
                         error: 'Strona z tym adresem (slug) już istnieje. Użyj innego adresu lub edytuj istniejącą stronę.'

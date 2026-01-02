@@ -13,18 +13,11 @@ async function getB2BPage(slug: string) {
         // Specifically search for B2B domain pages to avoid clashing with B2C slugs
         const page = await prisma.page.findFirst({
             where: {
-                slug,
+                slug: { equals: slug, mode: 'insensitive' },
                 is_published: true,
                 page_type: 'b2b'
             },
         });
-
-        // Fallback search if no domain-specific page found (legacy)
-        if (!page) {
-            return await prisma.page.findUnique({
-                where: { slug },
-            });
-        }
 
         return page;
     } catch (error) {

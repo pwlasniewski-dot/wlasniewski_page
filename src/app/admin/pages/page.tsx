@@ -414,7 +414,7 @@ export default function PagesListPage() {
                                 <input
                                     type="text"
                                     value={newPageData.slug}
-                                    onChange={(e) => setNewPageData({ ...newPageData, slug: e.target.value })}
+                                    onChange={(e) => setNewPageData({ ...newPageData, slug: e.target.value.toLowerCase() })}
                                     placeholder="np. o-mnie"
                                     className="w-full px-4 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-white focus:outline-none focus:border-gold-500"
                                 />

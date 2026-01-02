@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import prisma from '@/lib/db/prisma';
 import PageRenderer from '@/components/PageRenderer';
 import { Metadata } from 'next';
@@ -9,8 +9,11 @@ interface PageProps {
 }
 
 async function getPage(slug: string) {
-    const page = await prisma.page.findUnique({
-        where: { slug, is_published: true },
+    const page = await prisma.page.findFirst({
+        where: {
+            slug: { equals: slug, mode: 'insensitive' },
+            is_published: true
+        },
     });
     return page;
 }
@@ -44,6 +47,11 @@ export default async function DynamicPage({ params }: PageProps) {
 
     if (!page) {
         notFound();
+    }
+
+    // Redirect B2B pages to their proper path
+    if (page.page_type === 'b2b') {
+        redirect(`/b2b/${page.slug.toLowerCase()}`);
     }
 
     // Intelligent Content Merging Strategy (Zero Loss Protocol)

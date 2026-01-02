@@ -1007,6 +1007,14 @@ s control
 - Create PR i czekaj na review
 - Zaloguj w PROJECT_HISTORIA.md
 
+## 2026-01-02: Strict B2B/B2C Routing Separation & SEO Fix
+- **Routing Isolation**: Implemented a "Zero Leak" policy. B2B pages are no longer accessible via root URLs (e.g., `wlasniewski.pl/monitoring`).
+- **301 Redirect Logic**: Any B2B-typed page accessed via the root domain now triggers a permanent (301) redirect to its canonical `/b2b/` path.
+- **Case-Insensitive Slugs**: Added `mode: 'insensitive'` to Prisma queries in both root and B2B routers to prevent 404s due to URL casing typos (e.g., `/Monitoring` now works).
+- **Slug Normalization**: Enforced lowercase slugs in the Admin API and UI to maintain a clean and consistent URL structure.
+- **B2B Menu Fixes**: Resolved mobile menu rendering issues where submenus were not expanding correctly in the B2B context.
+- **B2B Blog Support**: Added a `BlogFeedSection` to the PageBuilder allowing separate blog feeds for B2B/B2C based on category filtering.
+
 ## 2025-12-29: Pro Thermal Slider & RichText Enhancements
 - **RichText Editor Fixes**: Reclaimed color picker functionality and implemented `prose-inline-styles` to prevent Tailwind from overriding custom formatting (colors, fonts).
 - **Refinement (Certificates & RichText)**:
