@@ -1501,11 +1501,24 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove, openMedia
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {(section.b2b_cases || []).map((cse, cIndex) => (
-                                <div key={cse.id} className="bg-zinc-800 p-4 rounded border border-zinc-700 space-y-3">
-                                    <div className="flex gap-4 items-start">
-                                        <div className="w-24 h-24 bg-zinc-900 rounded border border-zinc-700 overflow-hidden relative group shrink-0">
+                                <div key={cse.id} className="bg-zinc-800 p-4 rounded border border-zinc-700 space-y-3 relative group">
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (confirm("Czy na pewno usunąć ten projekt?")) {
+                                                onUpdate(section.id, { b2b_cases: section.b2b_cases!.filter((_, i) => i !== cIndex) });
+                                            }
+                                        }}
+                                        className="absolute top-2 right-2 text-zinc-500 hover:text-red-500 z-10 bg-zinc-800/80 rounded-full p-1"
+                                        title="Usuń projekt"
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
+
+                                    <div className="flex gap-4 items-start pr-6">
+                                        <div className="w-24 h-24 bg-zinc-900 rounded border border-zinc-700 overflow-hidden relative group/img shrink-0">
                                             {cse.image ? <img src={cse.image} className="w-full h-full object-cover" /> : <ImageIcon className="m-auto mt-8 text-zinc-800" size={24} />}
-                                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-2 transition-opacity">
+                                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/img:opacity-100 flex items-center justify-center gap-2 transition-opacity">
                                                 <button onClick={() => { openMediaPicker(section.id, { target: 'single', index: cIndex }); }} className="p-1.5 bg-zinc-700 hover:bg-zinc-600 rounded text-white" title="Zmień okładkę"><ImageIcon size={14} /></button>
                                             </div>
                                         </div>
@@ -1533,7 +1546,6 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove, openMedia
                                     />
                                     <div className="flex justify-between items-center">
                                         <span className="text-[10px] text-zinc-600">ID: {cse.id}</span>
-                                        <button onClick={() => onUpdate(section.id, { b2b_cases: section.b2b_cases!.filter((_, i) => i !== cIndex) })} className="text-xs text-red-500 hover:text-red-400 hover:underline">Usuń</button>
                                     </div>
                                 </div>
                             ))}

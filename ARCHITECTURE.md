@@ -58,6 +58,8 @@ Zbiór reguł krytycznych dla operacji biznesowych:
 Wdrożono zaawansowany system kopii zapasowych oparty na dwóch skryptach:
 - **`scripts/backup-full.ts`**: Eksportuje stan wszystkich 40 tabel bazy danych (Modele Prisma) do sformatowanych plików JSON. Backupy są kategoryzowane czasowo (`backups/[TIMESTAMP]/`), co pozwala na atomowe przywracanie konkretnych punktów w czasie.
 - **`scripts/restore-full.ts`**: Skrypt przywracający, realizujący logikę **TRUNCATE CASCADE** (czyszczenie) oraz **UPSERT** (bezpieczne wstrzykiwanie danych).
+- **Zasada "File vs Folder"**: Backupem jest wyłącznie plik JSON. Kopiowanie folderów jest zabronione.
+- **Holy File**: Referencyjny backup "Holy Backup" znajduje się zawsze w `backups/data/[TIMESTAMP]_HOLY_BACKUP`.
 - **Cel**: Ochrona „świętej treści” (Blog, Portfolio, Ustawienia, B2B) przed destrukcyjnymi operacjami schematu lub awariami dostawcy bazy danych. Służy również jako mechanizm bezpiecznego deployu ("Backup-Before-Push").
 
 ### 3.4. "Scope Isolation" (Atomic Integrity) [NEW: 2025-12-25]
@@ -229,6 +231,7 @@ To ensure system stability, critical endpoints (`/api/pages`, `/api/settings/pub
 ### 7.6. B2B Context Stability (Navigation Layer) [NEW: 2025-12-28]
 Aby zapewnić spójność doświadczenia użytkownika na domenach współdzielonych (np. `wlasniewski.pl/b2b`), wdrożono mechanizm **Context-Aware Link Resolution**:
 - **Navbar Logic**: Komponent `Navbar.tsx` wykorzystuje funkcję `resolveHref`, która dynamicznie dodaje lub usuwa prefiks `/b2b` w zależności od wykrytego kontekstu hosta i ścieżki.
+- **Strict Routing**: Strony B2B (np. Dron) znajdują się wyłącznie w folderze `src/app/b2b`. Fizyczne ścieżki (jak stare `/dron`) zostały usunięte na rzecz dynamicznego routingu `/b2b/[slug]`, co eliminuje ryzyko "wycieku" treści B2C.
 - **Identity Preservation**: Edytorzy administracyjni są otypowani tak, aby zachowywać pole `page_type: 'b2b'`, co zapobiega przypadkowej konwersji stron biznesowych na standardowe podczas edycji treści.
 - **Rendering Purity**: System renderowania (`PageRenderer.tsx`) automatycznie parsuje osadzone w bazach danych znaczniki HTML w tytułach (np. dla efektów gradientowych w nagłówkach B2B).
 

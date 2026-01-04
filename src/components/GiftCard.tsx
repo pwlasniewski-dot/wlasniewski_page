@@ -131,48 +131,48 @@ export default function GiftCard({
     const displayTitle = cardTitle || 'KARTA PODARUNKOWA';
     const displayDescription = cardDescription || config.description;
 
-    const cardStyle = isPrint
-        ? { width: '540px', height: '340px' } // Standard gift card size in pixels (for printing)
-        : {};
-
     return (
         <motion.div
-            className={`relative overflow-hidden rounded-xl md:rounded-2xl ${isPrint ? '' : 'shadow-xl hover:shadow-2xl'} transition-shadow duration-300 w-full`}
+            className={`relative overflow-hidden rounded-[2cqw] ${isPrint ? '' : 'shadow-2xl hover:shadow-3xl'} transition-all duration-500 w-full`}
             style={{
-                ...cardStyle,
                 aspectRatio: '1.586 / 1',
-                // For web, we ensure it doesn't get too small or too big
-                maxWidth: isPrint ? 'none' : '550px',
-                minWidth: isPrint ? 'auto' : '260px'
+                containerType: 'inline-size',
+                maxWidth: isPrint ? 'none' : '800px',
             }}
-            animate={!isPrint ? { scale: [1, 1.01, 1] } : {}}
-            transition={!isPrint ? { duration: 4, repeat: Infinity } : {}}
+            animate={!isPrint ? {
+                scale: [1, 1.005, 1],
+                filter: ['brightness(1)', 'brightness(1.05)', 'brightness(1)']
+            } : {}}
+            transition={!isPrint ? { duration: 6, repeat: Infinity, ease: "easeInOut" } : {}}
         >
             {/* Main background */}
             <div className={`absolute inset-0 bg-gradient-to-br ${config.bgGradient}`}></div>
 
+            {/* Premium Texture Overlay */}
+            <div className="absolute inset-0 opacity-10 mix-blend-overlay pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]"></div>
+
             {/* Pattern overlay */}
-            <div className="absolute inset-0 opacity-5 pointer-events-none">
-                <div className="w-full h-full flex flex-wrap items-center justify-around content-around text-4xl sm:text-6xl overflow-hidden">
-                    {Array(8).fill(0).map((_, i) => (
-                        <span key={i} className="opacity-20 select-none whitespace-nowrap">{config.borderPattern}</span>
+            <div className="absolute inset-0 opacity-[0.03] pointer-events-none">
+                <div className="w-full h-full flex flex-wrap items-center justify-around content-around text-[10cqw] overflow-hidden">
+                    {Array(12).fill(0).map((_, i) => (
+                        <span key={i} className="select-none whitespace-nowrap rotate-12">{config.icon}</span>
                     ))}
                 </div>
             </div>
 
             {/* Shine effect */}
             <motion.div
-                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent pointer-events-none"
-                animate={{ x: ['-100%', '200%'] }}
-                transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent pointer-events-none"
+                animate={{ x: ['-200%', '300%'] }}
+                transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
             />
 
             {/* Content Container */}
-            <div className={`relative h-full w-full p-2 sm:p-3 md:p-5 flex flex-col justify-between ${config.textColor} z-10 overflow-hidden`}>
+            <div className={`relative h-full w-full p-[4cqw] flex flex-col justify-between ${config.textColor} z-10 overflow-hidden`}>
                 {/* Top section - Logo and theme */}
                 <div className="flex items-start justify-between shrink-0">
                     {logoUrl ? (
-                        <div className="relative w-5 h-5 sm:w-8 sm:h-8 md:w-12 md:h-12">
+                        <div className="relative w-[12cqw] h-[12cqw]">
                             <Image
                                 src={logoUrl}
                                 alt="Logo"
@@ -181,75 +181,65 @@ export default function GiftCard({
                                 quality={100}
                             />
                         </div>
-                    ) : <div className="w-5 h-5 sm:w-8" />}
-                    <div className="text-lg sm:text-xl md:text-3xl">{config.icon}</div>
+                    ) : <div className="w-[12cqw] h-[12cqw]" />}
+                    <div className="text-[6cqw] drop-shadow-lg">{config.icon}</div>
                 </div>
 
                 {/* Center section - Card title and description */}
-                <div className="flex-1 flex flex-col justify-start items-center text-center px-1 sm:px-2 min-w-0 pt-0 sm:pt-1 md:pt-2">
-                    <h2 className={`font-bold mb-1 drop-shadow-xl leading-tight w-full line-clamp-2 ${displayTitle.length > 25 ? 'text-[10px] sm:text-xs md:text-base lg:text-lg' : 'text-[11px] sm:text-sm md:text-lg lg:text-xl'
-                        }`}>
+                <div className="flex-1 flex flex-col justify-start items-center text-center px-[2cqw] pt-[1cqw]">
+                    <h2 className="font-bold drop-shadow-2xl leading-tight w-full line-clamp-2 text-[4.5cqw] tracking-tight uppercase">
                         {displayTitle}
                     </h2>
-                    <p className={`opacity-85 drop-shadow-md leading-tight line-clamp-2 max-w-[95%] font-medium ${displayDescription.length > 50 ? 'text-[7px] sm:text-[8px] md:text-[10px]' : 'text-[8px] sm:text-[9px] md:text-xs'
-                        }`}>
+                    <p className="opacity-80 drop-shadow-md leading-relaxed line-clamp-2 max-w-[90%] font-medium mt-[1cqw] text-[2cqw]">
                         {displayDescription}
                     </p>
 
                     {recipientName && (
-                        <div className="mt-1 sm:mt-1.5 py-0 px-2.5 bg-black/15 backdrop-blur-sm rounded-full border border-white/10 shadow-sm">
-                            <p className="text-[6px] sm:text-[8px] md:text-[10px] italic opacity-100 font-semibold tracking-tight">
-                                Dla: <span className="not-italic">{recipientName}</span>
+                        <div className="mt-[2cqw] py-[0.5cqw] px-[3cqw] bg-black/20 backdrop-blur-md rounded-full border border-white/10 shadow-inner">
+                            <p className="text-[1.8cqw] italic opacity-100 font-semibold tracking-tight">
+                                Dla: <span className="not-italic text-white">{recipientName}</span>
                             </p>
                         </div>
                     )}
                 </div>
 
                 {/* Bottom section - Value and Code */}
-                <div className="flex flex-col items-center gap-1 sm:gap-2 md:gap-3 mt-auto w-full shrink-0">
+                <div className="flex flex-col items-center gap-[1.5cqw] mt-auto w-full shrink-0">
                     {/* Value */}
                     <div className="text-center">
-                        <p className="text-[6px] sm:text-[7px] md:text-[9px] opacity-60 mb-0 uppercase tracking-tighter sm:tracking-widest font-bold">Wartość karty</p>
-                        <p className="text-[14px] sm:text-lg md:text-2xl lg:text-3xl font-black drop-shadow-2xl leading-none">
-                            {value} zł
+                        <p className="text-[1.5cqw] opacity-60 mb-0 uppercase tracking-[0.3em] font-black">Wartość karty</p>
+                        <p className="text-[8cqw] font-black drop-shadow-2xl leading-none tracking-tighter">
+                            {value} PLN
                         </p>
                     </div>
 
                     {/* Code / Payment Notice */}
-                    <div className="w-full max-w-[90%] sm:max-w-[85%] mx-auto pb-0.5">
+                    <div className="w-full max-w-[85%] mx-auto">
                         {!hideCode ? (
-                            <div className="bg-white/15 backdrop-blur-md rounded-lg p-0.5 sm:p-1 md:p-2 border border-white/20 shadow-lg">
-                                <p className="text-[5px] sm:text-[7px] md:text-[9px] opacity-60 text-center mb-0 uppercase font-bold tracking-widest leading-none">KOD PROMOCYJNY</p>
-                                <p className="font-mono text-xs sm:text-base md:text-lg lg:text-xl font-black text-center tracking-[0.1em] sm:tracking-[0.3em] md:tracking-[0.4em] drop-shadow-lg leading-tight">
+                            <div className="bg-white/10 backdrop-blur-xl rounded-[1.5cqw] p-[1.5cqw] border border-white/20 shadow-2xl relative group overflow-hidden">
+                                <p className="text-[1.5cqw] opacity-70 text-center mb-[1cqw] uppercase font-bold tracking-[0.4em] leading-none">KOD PROMOCYJNY</p>
+                                <p className="font-mono text-[4.5cqw] font-black text-center tracking-[0.2em] drop-shadow-lg leading-none text-white">
                                     {code}
                                 </p>
                             </div>
                         ) : (
-                            <div className="bg-blue-600/15 backdrop-blur-md rounded-lg p-0.5 sm:p-1 md:p-1.5 border border-blue-400/30 shadow-xl">
-                                <p className="text-[5px] sm:text-[6px] md:text-[8px] opacity-80 text-center mb-0 text-blue-100 uppercase tracking-tighter sm:tracking-widest font-black leading-none py-0.5">DOSTĘPNY PO OPŁACENIU</p>
-                                <p className="hidden sm:block font-mono text-[6px] md:text-[8px] font-bold text-center text-white opacity-70 italic leading-none mt-0">
-                                    Wysłanie kodu na email
-                                </p>
+                            <div className="bg-blue-600/20 backdrop-blur-xl rounded-[1.5cqw] p-[2cqw] border border-blue-400/30 shadow-xl text-center">
+                                <p className="text-[1.8cqw] opacity-90 text-blue-100 uppercase tracking-widest font-black leading-none py-0.5">DOSTĘPNY PO OPŁACENIU</p>
                             </div>
                         )}
                     </div>
 
                     {orderId && (
-                        <div className="absolute bottom-1 right-4 text-[8px] md:text-[10px] opacity-40 font-mono font-bold">
-                            #ID: {orderId}
+                        <div className="absolute bottom-[2cqw] right-[4cqw] text-[1.2cqw] opacity-30 font-mono font-bold tracking-widest">
+                            REF-{orderId}
                         </div>
                     )}
                 </div>
             </div>
 
-            {/* Corner decorations for non-print view */}
-            {!isPrint && (
-                <>
-                    <div className="absolute top-4 left-4 text-4xl opacity-10 pointer-events-none">
-                        {config.icon}
-                    </div>
-                </>
-            )}
+            {/* Background elements */}
+            <div className="absolute -bottom-8 -left-8 w-32 h-32 bg-white/5 blur-3xl rounded-full"></div>
+            <div className="absolute -top-8 -right-8 w-32 h-32 bg-black/20 blur-3xl rounded-full"></div>
         </motion.div>
     );
 }

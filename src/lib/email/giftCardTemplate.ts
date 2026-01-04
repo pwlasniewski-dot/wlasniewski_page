@@ -121,6 +121,9 @@ export function generateGiftCardEmail(
                                         <td style="padding-bottom: 15px;">4. Użyj kodu w polu "KUPON" podczas podsumowania.</td>
                                     </tr>
                                 </table>
+                                
+                                <!-- INJECT_ACCESS_BUTTON -->
+
                                 <p style="margin: 20px 0 0 0; font-size: 11px; color: #555555; text-align: center; font-style: italic;">Karta ważna przez 12 miesięcy. Realizacja jednorazowa.</p>
                             </td>
                         </tr>

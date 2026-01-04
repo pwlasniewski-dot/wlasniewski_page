@@ -9,6 +9,9 @@ import GiftCardPromoBar from "@/components/GiftCardPromoBar";
 import SocialProofBanner from "@/components/PhotoChallenge/SocialProofBanner";
 import PromocodeBar from "@/components/PromocodeBar";
 import ScrollToTop from "@/components/ScrollToTop";
+import { CartProvider } from '@/context/CartContext';
+import { AuthProvider } from '@/context/AuthContext';
+import BasketDrawer from '@/components/BasketDrawer';
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
@@ -17,23 +20,26 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     const isHome = pathname === '/';
 
     return (
-        <>
-            {!isAdmin && !isB2B && <GiftCardPromoBar />}
-            {!isAdmin && !isB2B && <PromocodeBar />}
-            {!isAdmin && <Navbar />}
-            <div className={`flex-1 ${isAdmin ? '' : (isHome ? 'pt-0' : 'pt-32')} ${isAdmin ? '' : 'pb-20 md:pb-24'}`}>
-                {!isAdmin && !isHome && !isB2B && <UrgencyBanner />}
-                {children}
-                {!isAdmin && <Footer />}
-            </div>
-            {!isAdmin && <CookieBanner />}
-
-            {!isAdmin && !isB2B && (
-                <div className="fixed bottom-0 left-0 right-0 z-[60]">
-                    <SocialProofBanner />
+        <AuthProvider>
+            <CartProvider>
+                {!isAdmin && !isB2B && <GiftCardPromoBar />}
+                {!isAdmin && !isB2B && <PromocodeBar />}
+                {!isAdmin && <Navbar />}
+                <div className={`flex-1 ${isAdmin ? '' : (isHome ? 'pt-0' : 'pt-32')} ${isAdmin ? '' : 'pb-20 md:pb-24'}`}>
+                    {!isAdmin && !isHome && !isB2B && <UrgencyBanner />}
+                    {children}
+                    {!isAdmin && <Footer />}
                 </div>
-            )}
-            {!isAdmin && <ScrollToTop />}
-        </>
+                {!isAdmin && <CookieBanner />}
+
+                {!isAdmin && !isB2B && (
+                    <div className="fixed bottom-0 left-0 right-0 z-[60]">
+                        <SocialProofBanner />
+                    </div>
+                )}
+                {!isAdmin && <ScrollToTop />}
+                {!isAdmin && <BasketDrawer />}
+            </CartProvider>
+        </AuthProvider>
     );
 }

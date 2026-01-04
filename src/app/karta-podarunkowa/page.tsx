@@ -6,6 +6,7 @@ import Link from 'next/link';
 import GiftCard from '@/components/GiftCard';
 import { ShoppingCart, Heart, Share2, ArrowRight } from 'lucide-react';
 import PageRenderer from '@/components/PageRenderer';
+import { useCart } from '@/context/CartContext';
 
 interface GiftCardProduct {
     id: number;
@@ -41,6 +42,7 @@ export default function GiftCardShop() {
     const [heroImage, setHeroImage] = useState<string | null>(null);
     const [heroOpacity, setHeroOpacity] = useState(0.6);
     const [pageSections, setPageSections] = useState<any[] | null>(null);
+    const { addItem } = useCart();
 
     useEffect(() => {
         const fetchCards = async () => {
@@ -294,13 +296,22 @@ export default function GiftCardShop() {
 
                                         {/* Action Buttons */}
                                         <div className="space-y-3">
-                                            <Link
-                                                href={`/karta-podarunkowa/${card.id}/kup`}
+                                            <button
+                                                onClick={() => addItem({
+                                                    type: 'gift_card',
+                                                    productId: card.id.toString(),
+                                                    title: `Karta Podarunkowa: ${Math.round(card.value)} zł`,
+                                                    subtitle: `Motyw: ${THEME_INFO[card.theme as keyof typeof THEME_INFO]?.name}`,
+                                                    price: Math.round(card.price) * 100, // item price in cents
+                                                    quantity: 1,
+                                                    metadata: { cardId: card.id, theme: card.theme, value: card.value }
+                                                })}
+                                                disabled={!card.available}
                                                 className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 bg-gold-500 hover:bg-gold-400 text-black font-bold rounded-lg transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
                                                 <ShoppingCart className="w-5 h-5" />
-                                                Kup teraz
-                                            </Link>
+                                                Dodaj do koszyka
+                                            </button>
 
                                             <div className="flex gap-2">
                                                 <motion.button

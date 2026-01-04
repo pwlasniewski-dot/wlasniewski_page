@@ -13,7 +13,7 @@
     "db:backup": "ts-node -P ./tsconfig.json ./prisma/db-management.ts backup",
     "db:restore": "ts-node -P ./tsconfig.json ./prisma/db-management.ts restore",
     "prisma:generate": "prisma generate",
-    "prisma:push-LOCAL-ONLY-DANGEROUS": "prisma generate && prisma db push"
+    "prisma:push-LOCAL-ONLY-DANGEROUS": "node scripts/guard-db.js push && prisma generate && prisma db push"
   },
   "prisma": {
     "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"

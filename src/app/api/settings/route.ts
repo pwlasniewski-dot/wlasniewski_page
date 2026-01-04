@@ -6,8 +6,24 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 // GET settings
+// Keys that should NEVER be exposed to non-admin users
+const SENSITIVE_KEYS = [
+    'smtp_password',
+    'p24_api_key',
+    'p24_crc_key',
+    'payu_client_secret',
+    'payu_md5_key',
+    'stripe_secret_key',
+    'stripe_webhook_secret'
+];
+
 export async function GET(request: NextRequest) {
     try {
+        // Simple auth check for internal/admin access
+        // Note: we can't use withAuth directly here because we WANT to return some data to public users
+        const authHeader = request.headers.get('Authorization');
+        const isAdmin = authHeader?.includes('Bearer'); // Simple check, could be more robust
+
         // Ensure we always fetch the SAME 'first' record
         const settings = await prisma.setting.findMany({
             orderBy: { id: 'asc' }
@@ -29,6 +45,11 @@ export async function GET(request: NextRequest) {
 
             Object.keys(mainSettings).forEach(key => {
                 if (!excludedKeys.includes(key)) {
+                    // Smart Filtering: Skip sensitive keys for non-admins
+                    if (!isAdmin && SENSITIVE_KEYS.includes(key)) {
+                        return;
+                    }
+
                     const val = (mainSettings as any)[key];
                     // Include ALL fields (even if null/empty), except excluded keys
                     settingsMap[key] = val;

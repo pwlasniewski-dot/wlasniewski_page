@@ -348,6 +348,8 @@ model Booking {
   created_at        DateTime @default(now())
   updated_at        DateTime @updatedAt
   stripe_session_id String?
+  photographer_id   Int?
+  photographer      User?    @relation("PhotographerBookings", fields: [photographer_id], references: [id])
 
   @@map("bookings")
 }
@@ -446,17 +448,66 @@ model GiftCard {
 }
 
 model User {
-  id            Int             @id @default(autoincrement())
-  email         String          @unique
-  password_hash String
-  name          String?
-  phone         String?
-  created_at    DateTime        @default(now())
-  updated_at    DateTime        @updatedAt
-  orders        GiftCardOrder[]
-  gift_cards    GiftCard[]      @relation("UserGiftCards")
+  id                      Int                 @id @default(autoincrement())
+  email                   String              @unique
+  password_hash           String
+  name                    String?
+  phone                   String?
+  role                    String              @default("CLIENT") // CLIENT, PHOTOGRAPHER
+  is_active               Boolean             @default(true)
+  photographer_profile_id Int?                @unique
+  created_at              DateTime            @default(now())
+  updated_at              DateTime            @updatedAt
+  orders                  GiftCardOrder[]
+  gift_cards              GiftCard[]          @relation("UserGiftCards")
+  baskets                 Basket[]
+  photographer_profile    PhotographerProfile? @relation(fields: [photographer_profile_id], references: [id])
+  assigned_bookings       Booking[]           @relation("PhotographerBookings")
+  assigned_galleries      ClientGallery[]     @relation("PhotographerGalleries")
 
   @@map("users")
+}
+
+model PhotographerProfile {
+  id                Int      @id @default(autoincrement())
+  bio               String?
+  experience_years  Int?
+  specialties       String?  // JSON string or comma-separated
+  base_commission   Int      @default(15) // percentage for the platform
+  rating            Float    @default(5.0)
+  portfolio_enabled Boolean  @default(true)
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+  user              User?
+  
+  @@map("photographer_profiles")
+}
+
+model Basket {
+  id          String       @id @default(cuid())
+  user_id     Int?
+  session_id  String?      @unique
+  created_at  DateTime     @default(now())
+  updated_at  DateTime     @updatedAt
+  items       BasketItem[]
+  user        User?        @relation(fields: [user_id], references: [id])
+
+  @@map("baskets")
+}
+
+model BasketItem {
+  id            String   @id @default(cuid())
+  basket_id     String
+  type          String   // 'booking' | 'gift_card'
+  product_id    String?  // ID pakietu lub szablonu karty
+  quantity      Int      @default(1)
+  price         Int      // Cena w groszach
+  metadata      String?  // JSON z danymi rezerwacji lub karty
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+  basket        Basket   @relation(fields: [basket_id], references: [id], onDelete: Cascade)
+
+  @@map("basket_items")
 }
 
 model SessionInvite {
@@ -639,6 +690,8 @@ model ClientGallery {
   is_active         Boolean        @default(true)
   created_at        DateTime       @default(now())
   updated_at        DateTime       @updatedAt
+  photographer_id   Int?
+  photographer      User?          @relation("PhotographerGalleries", fields: [photographer_id], references: [id])
   photos            GalleryPhoto[]
   orders            PhotoOrder[]
 

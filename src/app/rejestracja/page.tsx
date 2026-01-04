@@ -9,11 +9,36 @@ export default function RegisterPage() {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [error, setError] = useState('');
+    const [passwordError, setPasswordError] = useState('');
+
+    const validatePassword = (pass: string) => {
+        const hasUpper = /[A-Z]/.test(pass);
+        const hasLower = /[a-z]/.test(pass);
+        const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(pass);
+        const isLongEnough = pass.length >= 8;
+
+        if (!isLongEnough) return "Hasło musi mieć minimum 8 znaków.";
+        if (!hasUpper || !hasLower) return "Hasło musi zawierać małe i wielkie litery.";
+        if (!hasSpecial) return "Hasło musi zawierać znak specjalny.";
+        return "";
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
+
+        const passErr = validatePassword(password);
+        if (passErr) {
+            setError(passErr);
+            return;
+        }
+
+        if (password !== confirmPassword) {
+            setError('Hasła nie są identyczne.');
+            return;
+        }
 
         try {
             const res = await fetch('/api/auth/register', {
@@ -51,6 +76,7 @@ export default function RegisterPage() {
                             value={name}
                             onChange={e => setName(e.target.value)}
                             className="w-full bg-black border border-zinc-700 rounded p-3 focus:border-gold-500 focus:outline-none transition-colors"
+                            placeholder="Jan Kowalski"
                         />
                     </div>
                     <div>
@@ -61,6 +87,7 @@ export default function RegisterPage() {
                             value={email}
                             onChange={e => setEmail(e.target.value)}
                             className="w-full bg-black border border-zinc-700 rounded p-3 focus:border-gold-500 focus:outline-none transition-colors"
+                            placeholder="jan@kowalski.pl"
                         />
                     </div>
                     <div>
@@ -70,8 +97,27 @@ export default function RegisterPage() {
                             required
                             value={password}
                             onChange={e => setPassword(e.target.value)}
-                            className="w-full bg-black border border-zinc-700 rounded p-3 focus:border-gold-500 focus:outline-none transition-colors"
+                            className={`w-full bg-black border rounded p-3 focus:outline-none transition-colors ${password ? (validatePassword(password) ? 'border-red-500/50' : 'border-green-500/50') : 'border-zinc-700'}`}
+                            placeholder="Min. 8 znaków, A-z, !@#"
                         />
+                    </div>
+                    <div>
+                        <label className="block text-sm text-zinc-400 mb-1">Powtórz hasło</label>
+                        <input
+                            type="password"
+                            required
+                            value={confirmPassword}
+                            onChange={e => setConfirmPassword(e.target.value)}
+                            className={`w-full bg-black border rounded p-3 focus:outline-none transition-colors ${confirmPassword ? (password === confirmPassword ? 'border-green-500/50' : 'border-red-500/50') : 'border-zinc-700'}`}
+                            placeholder="Wpisz ponownie"
+                        />
+                    </div>
+
+                    <div className="bg-black/50 p-4 rounded-xl border border-zinc-800 text-[10px] text-zinc-500 gap-y-1 grid grid-cols-2">
+                        <p className={password.length >= 8 ? 'text-green-500' : ''}>• Min. 8 znaków</p>
+                        <p className={/[A-Z]/.test(password) ? 'text-green-500' : ''}>• Wielka litera</p>
+                        <p className={/[a-z]/.test(password) ? 'text-green-500' : ''}>• Mała litera</p>
+                        <p className={/[!@#$%^&*(),.?":{}|<>]/.test(password) ? 'text-green-500' : ''}>• Znak specjalny</p>
                     </div>
 
                     <button

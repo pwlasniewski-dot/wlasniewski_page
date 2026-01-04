@@ -214,16 +214,16 @@ export default function BuyGiftCardPage() {
                             <div>
                                 <p className="text-sm text-zinc-500 mb-2">Wartość karty</p>
                                 <p className="text-4xl font-bold text-gold-400">
-                                    {card.value} zł
+                                    {Math.round(card.value)} zł
                                 </p>
                             </div>
 
                             <div className="border-t border-zinc-800 pt-6">
                                 <p className="text-sm text-zinc-500 mb-2">Cena do zapłaty</p>
                                 <div className="flex items-baseline gap-2">
-                                    <p className="text-4xl font-bold">{card.price} zł</p>
+                                    <p className="text-4xl font-bold">{Math.round(card.price)} zł</p>
                                     <p className="text-sm text-green-400">
-                                        Zaoszczędzisz {card.value - card.price} zł!
+                                        Zaoszczędzisz {Math.round(card.value - card.price)} zł!
                                     </p>
                                 </div>
                             </div>
@@ -312,13 +312,19 @@ export default function BuyGiftCardPage() {
                                 className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-gold-500"
                             />
 
-                            <textarea
-                                placeholder="Wiadomość na karcie..."
-                                value={message}
-                                onChange={(e) => setMessage(e.target.value)}
-                                className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-gold-500"
-                                rows={3}
-                            />
+                            <div className="relative">
+                                <textarea
+                                    placeholder="Wiadomość na karcie..."
+                                    value={message}
+                                    onChange={(e) => setMessage(e.target.value.slice(0, 25))}
+                                    className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-gold-500"
+                                    rows={3}
+                                    maxLength={25}
+                                />
+                                <div className="absolute bottom-2 right-2 text-[10px] text-zinc-500">
+                                    {message.length}/25
+                                </div>
+                            </div>
                         </div>
 
                         {/* GDPR Checkboxes */}
@@ -366,7 +372,7 @@ export default function BuyGiftCardPage() {
                                 </>
                             ) : (
                                 <>
-                                    Przejdź do płatności → {card.price} zł
+                                    Przejdź do płatności → {Math.round(card.price)} zł
                                 </>
                             )}
                         </button>

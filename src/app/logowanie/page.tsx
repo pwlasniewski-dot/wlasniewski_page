@@ -3,9 +3,11 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
 
 export default function LoginPage() {
     const router = useRouter();
+    const { login } = useAuth();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
@@ -23,10 +25,7 @@ export default function LoginPage() {
             const data = await res.json();
 
             if (res.ok) {
-                // Store token (in real app, assume HttpOnly cookie or helper)
-                localStorage.setItem('user_token', data.token);
-                // Also store user info if needed
-                localStorage.setItem('user_info', JSON.stringify(data.user));
+                login(data.token, data.user);
                 router.push('/konto');
             } else {
                 setError(data.error || 'Błąd logowania');

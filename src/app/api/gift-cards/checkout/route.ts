@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
                 customer_name: customerName,
                 recipient_name: recipientName,
                 recipient_email: recipientEmail,
-                message: message,
+                message: message ? message.slice(0, 25) : undefined,
                 sender_name: senderName,
                 payment_method: 'payu',
                 amount_paid: Math.round(Number(price) * 100), // Convert to groszy
@@ -150,7 +150,8 @@ export async function POST(request: NextRequest) {
                             body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: #000000; color: #ffffff; margin: 0; padding: 0; }
                             .container { max-width: 600px; margin: 0 auto; background: #111111; border: 1px solid #333; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.8); }
                             .header { background: #000; padding: 40px; text-align: center; border-bottom: 2px solid #222; }
-                            .title { color: #d4af37; font-size: 24px; font-weight: bold; letter-spacing: 2px; text-transform: uppercase; margin: 0; }
+                            .premium-line { height: 1px; width: 40px; background: #d4af37; margin: 15px auto; }
+                            .title { color: #d4af37; font-size: 20px; font-weight: 300; letter-spacing: 4px; text-transform: uppercase; margin: 0; }
                             .content { padding: 40px; text-align: center; }
                             .greeting { font-size: 20px; color: #ffffff; margin-bottom: 20px; font-weight: 500; }
                             .text { color: #dddddd; font-size: 16px; line-height: 1.6; margin-bottom: 30px; }
@@ -181,7 +182,9 @@ export async function POST(request: NextRequest) {
                     <body>
                         <div class="container">
                             <div class="header">
-                                <h1 class="title">🎁 Potwierdzenie Zamówienia</h1>
+                                <h1 class="title">Exclusive Gift Card</h1>
+                                <div class="premium-line"></div>
+                                <div style="font-size: 11px; color: #888; letter-spacing: 2px;">POTWIERDZENIE ZAMÓWIENIA</div>
                             </div>
                             
                             <div class="content">
@@ -198,11 +201,11 @@ export async function POST(request: NextRequest) {
                                     </div>
                                     <div class="info-row">
                                         <span class="info-label">Wartość karty</span>
-                                        <span class="info-val">${value} PLN</span>
+                                        <span class="info-val">${Math.round(value)} PLN</span>
                                     </div>
                                     <div class="info-row">
                                         <span class="info-label">Do zapłaty</span>
-                                        <span class="info-val">${(price / 100).toFixed(2)} PLN</span>
+                                        <span class="info-val">${Math.round(price)} PLN</span>
                                     </div>
                                 </div>
 

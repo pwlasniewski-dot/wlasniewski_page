@@ -9,7 +9,7 @@ async function getB2BPage() {
         // Try to find a page specifically named/slugged as b2b
         const page = await prisma.page.findFirst({
             where: {
-                slug: { in: ['b2b', 'strona-b2b', 'oferta-b2b', 'start', 'home'] },
+                slug: { in: ['b2b', 'strona-b2b', 'oferta-b2b'] },
                 is_published: true
             },
             orderBy: { updated_at: 'desc' },

@@ -4,8 +4,9 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Plus, Edit2, Trash2 } from 'lucide-react';
+import GiftCard from '@/components/GiftCard';
 
-interface GiftCard {
+interface IGiftCard {
     id: number;
     code: string;
     value: number;
@@ -38,7 +39,7 @@ const THEMES = [
 
 export default function GiftCardShopPage() {
     const router = useRouter();
-    const [cards, setCards] = useState<GiftCard[]>([]);
+    const [cards, setCards] = useState<IGiftCard[]>([]);
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
     const [editingId, setEditingId] = useState<number | null>(null);
@@ -171,7 +172,7 @@ export default function GiftCardShopPage() {
         setShowForm(false);
     };
 
-    const handleEdit = (card: GiftCard) => {
+    const handleEdit = (card: IGiftCard) => {
         setFormData({
             code: card.code,
             value: card.value.toString(),
@@ -239,6 +240,21 @@ export default function GiftCardShopPage() {
 
                         <form onSubmit={handleSubmit} className="space-y-6">
                             <div className="grid md:grid-cols-2 gap-6">
+                                {/* Preview Section */}
+                                <div className="md:col-span-2 flex flex-col items-center justify-center p-8 bg-black/40 rounded-xl border border-zinc-800 mb-6 group relative overflow-hidden">
+                                    <div className="absolute top-2 left-4 text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Podgląd w czasie rzeczywistym</div>
+                                    <div className="w-full max-w-2xl">
+                                        <GiftCard
+                                            code={formData.code || 'XXXX-XXXX'}
+                                            value={parseInt(formData.value) || 0}
+                                            theme={formData.theme as any}
+                                            cardTitle={formData.card_title || 'KARTA PODARUNKOWA'}
+                                            cardDescription={formData.card_description || 'Twój wyjątkowy upominek'}
+                                            hideCode={false}
+                                        />
+                                    </div>
+                                </div>
+
                                 {/* Kod */}
                                 <div>
                                     <label className="block text-sm font-medium mb-2">
@@ -428,7 +444,7 @@ export default function GiftCardShopPage() {
                         </div>
                     ) : (
                         <div className="grid gap-4">
-                            {cards.map((card) => (
+                            {cards.map((card: IGiftCard) => (
                                 <motion.div
                                     key={card.id}
                                     initial={{ opacity: 0, y: 10 }}
@@ -444,8 +460,8 @@ export default function GiftCardShopPage() {
                                                 </h3>
                                                 <span
                                                     className={`px-3 py-1 rounded-full text-xs font-bold ${card.status === 'active'
-                                                            ? 'bg-green-500/20 text-green-300'
-                                                            : 'bg-red-500/20 text-red-300'
+                                                        ? 'bg-green-500/20 text-green-300'
+                                                        : 'bg-red-500/20 text-red-300'
                                                         }`}
                                                 >
                                                     {card.status === 'active' ? '✅ Aktywna' : '❌ Nieaktywna'}

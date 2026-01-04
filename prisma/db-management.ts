@@ -7,21 +7,27 @@ const prisma = new PrismaClient();
 // Tables to include in "Holy Content" backup
 const TABLES = [
     'adminUser',
+    'user',
     'setting',
+    'systemSettings',
+    'mediaLibrary',
     'page',
+    'menuItem',
     'serviceType',
     'package',
     'blogPost',
     'portfolioSession',
-    'mediaLibrary',
     'testimonial',
     'promoCode',
+    'giftCard',
+    'giftCardOrder',
+    'photoChallenge',
+    'challengeSetting',
     'inquiry',
     'droneOrder',
     'analyticsSnapshot',
     'businessGoal',
-    'marketingTemplate',
-    'systemSettings'
+    'marketingTemplate'
 ];
 
 async function backup() {
@@ -83,6 +89,15 @@ async function restore(filePath?: string) {
 
         for (const record of records) {
             try {
+                // Sanitize record: remove fields that might not exist in current schema (simple protection)
+                // In a real scenario, we should check against Prisma's dmmf, but here we just try-catch.
+                // However, 'Invalid invocation' often means extra fields.
+                // We'll trust strict matching for now, but if fails, we might need to be smarter.
+                // Let's add 'role' default if missing for User
+                if (table === 'user' && !record.role) {
+                    record.role = 'CLIENT';
+                }
+
                 // We use id or unique slugs for upsert
                 const where: any = { id: record.id };
                 if (table === 'page' || table === 'portfolioSession' || table === 'blogPost') {

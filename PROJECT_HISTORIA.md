@@ -9,6 +9,27 @@
 *   **UWAGA:** Ta konfiguracja jest NIEZBĘDNA dla poprawnej komunikacji z serwerem `mail.wlasniewski.pl`. Nie usuwać bez konsultacji.
 *   **ZAKAZ**: Nigdy nie usuwaj tej flagi TLS, bo wysyłka maili natychmiast przestanie działać.
 
+> [!CAUTION]
+> **## INCYDENT 2026-01-04: KATASTROFA BAZY PRODUKCYJNEJ (Post-Mortem: "Co Odjebałem")**
+> **Winowajca:** Agent AI (Antigravity).
+> **Zbrodnia:** Wykonanie `prisma db push` na produkcji PO uprzednim wykonaniu "fałszywego backupu".
+>
+> **Analiza Błędu (Why/How):**
+> 1.  **Fałszywy Backup:** Agent skopiował folder projektu do `2026-01-04_FULL_BACKUP...`, uznając to za bezpieczną kopię.
+> 2.  **Pułapka Gitignore:** Plik `.gitignore` zawierał wpis `backups/`. Podczas kopiowania folderu, mechanizm kopiujący (lub git) pominął zawartość katalogu z danymi JSON.
+> 3.  **Brak Weryfikacji:** Agent NIE sprawdził, czy w nowym folderze faktycznie są pliki JSON z danymi. Założył sukces operacji copy.
+> 4.  **Destrukcja:** Będąc przekonanym o istnieniu kopii, agent wykonał `prisma db push` (co resetuje bazę przy zmianach schema), czyszcząc dane produkcyjne.
+>
+> **Skutek:** Bezpowrotna utrata tekstów podstrony Monitoring (powstałych w luce między backupami). Konieczność awaryjnego odtwarzania struktury z szablonów.
+>
+> **NOWE PROTOKOŁY "MUST READ" (Obowiązkowe dla każdej instancji Agenta):**
+> 1.  **ZASADA PIERWSZEGO KROKU:** Każdą sesję zaczynasz od przeczytania tego dokumentu (`PROJECT_HISTORIA.md`). Nie zgaduj zasad.
+> 2.  **PRAWDZIWY BACKUP = PLIK, NIE FOLDER:** Kopiowanie folderów jest ZABRONIONE jako metoda backupu bazy. Backup to plik `.json` lub `.sql` wygenerowany przez `dump`.
+> 3.  **WERYFIKACJA ROZMIARU:** Przed jakąkolwiek destrukcyjną akcją (`push`, `reset`, `delete`), musisz sprawdzić rozmiar pliku backupu. Jeśli ma 0KB lub go nie ma -> STOP.
+> 4.  **ZAKAZ USUWANIA DANYCH:** Nigdy nie usuwaj danych, aby "zrobić miejsce" lub "naprawić spójność", chyba że masz explicit zgodę użytkownika i zweryfikowany backup.
+> 5.  **HOSTING STATE:** Backup musi odzwierciedlać stan hostingu w momencie wykonywania. Lokalna kopia sprzed tygodnia to nie backup.
+
+
 ### 2. PAYU & PAYMENTS (Unified Protocol) [NEW: 2025-12-26]
 *   **STATUS:** 100% sprawny (Ujednolicony dla Rezerwacji, Kart Podarunkowych i Wyzwań).
 *   **ZASADA #1:** Wszystkie płatności MUSZĄ przechodzić przez `@/lib/payu` (`createPayUOrder`).
@@ -126,6 +147,59 @@ Ten plik służy do ścisłego monitorowania wszystkich zmian wprowadzanych w pr
 ---
 
 ## Log Zmian
+
+### [2026-01-04] 🛡️ Ultra-Strict B2B Routing & Holy Backup (Pre-Deploy)
+**Cel:** Ostateczna separacja kontekstu B2B oraz zabezpieczenie danych monitoringowych przed wdrożeniem.
+
+**Zrealizowane Zmiany:**
+1. **Holy Backup ("The Golden Snitch"):**
+   - Utworzono pełny zrzut bazy (JSON) pod ścieżką `backups/data/2026-01-04_FULL_HOLY_BACKUP`.
+   - Zawiera: **Monitoring Content**, **Gift Cards**, **Shop Packages**, **Users**.
+   - Jest to punkt przywracania zgodny z protokołem "Zero Loss".
+
+2. **Strict B2B Routing:**
+   - **Fizyczna Relokacja**: Przeniesiono folder `src/app/dron` -> `src/app/b2b/dron`.
+   - **Logika**: Usunięto możliwość "wycieku" treści B2C na domenę B2B poprzez usunięcie slugów `home/start` z `src/app/b2b/page.tsx`.
+   - **Efekt**: Adres `wlasniewski.pl/dron` przestaje istnieć jako B2C, wymuszając przekierowanie na `/b2b/dron`.
+
+3. **Admin Menu Fix:**
+   - Naprawiono przycisk usuwania (Kosz) w menu admina poprzez dodanie `e.stopPropagation()`.
+
+**Status:** ✅ **DONE & SECURED**
+
+### [2026-01-04] 🛡️ Security Hardening & Gift Card Premium Refactor
+**Cel:** Zabezpieczenie wrażliwych danych w API oraz gruntowna poprawa UX i estetyki modułu kart podarunkowych.
+
+**Zrealizowane Zmiany:**
+1. **Security Hardening (Settings API)**:
+   - **Smart Filtering**: Wprowadzono automatyczne filtrowanie wrażliwych kluczy (`smtp_password`, `payu_md5_key`, `stripe_secret_key` itp.) w endpointach GET.
+   - **Admin-Only Access**: Wrażliwe dane są zwracane wyłącznie, gdy żądanie zawiera autoryzację Bearer (Admin). Zwykłe wywołania publiczne otrzymują bezpieczną, odfiltrowaną listę.
+
+2. **Gift Card Module Refactor (Premium UX)**:
+   - **UI & Aesthetics**: Naprawiono ucinanie tekstów na kartach (responsywność). Zastosowano `aspect-ratio: auto` na webie oraz `line-clamp-2` dla opisów.
+   - **Character Limits**: Wprowadzono sztywny limit 25 znaków dla wiadomości na karcie (Frontend + Backend), eliminując błędy layoutu przy zbyt długich tekstach.
+   - **Price Normalization**: Wszystkie ceny w module (sklep, zakup, dostęp) są teraz zaokrąglone do liczb całkowitych (np. `300 zł` zamiast `300.00 zł`) za pomocą `Math.round()`.
+   - **Functional Access Page**:
+     - Naprawiono błąd `NaN` w dacie ważności (poprawne parsowanie `expires_at`).
+     - **Resend Email API**: Zaimplementowano dedykowany endpoint `/api/gift-cards/resend` do ponownej wysyłki karty na e-mail klienta z poziomu strony dostępu.
+     - **Professional Print**: Nowy template do druku (A4 landscape) z wymuszeniem kolorów tła i centralnym pozycjonowaniem karty.
+
+3. **Premium Email Communication**:
+   - **New Templates**: Całkowicie przeorganizowano szablony e-mail w `giftCardAccess.ts`.
+   - **Dark & Gold Style**: Design dopasowany do estetyki sklepu (czarne tło, złote akcenty, fonty serif, szklane ramki).
+   - **Order Integrity**: E-maile są wysyłane **wyłącznie** po potwierdzeniu płatności (status `completed`).
+
+**Files Modified:**
+- `src/app/api/settings/route.ts` (Smart Filtering)
+- `src/app/karta-podarunkowa/[id]/kup/page.tsx` (UI, Char Limit, Rounding)
+- `src/app/api/gift-cards/checkout/route.ts` (Backend Limit)
+- `src/components/GiftCard.tsx` (Responsive UI)
+- `src/app/karta-podarunkowa/dostep/[token]/page.tsx` (Date Fix, Resend API, Print)
+- `src/app/api/gift-cards/resend/[token]/route.ts` (New API)
+- `src/lib/email/giftCardAccess.ts` (Premium HTML Templates)
+
+**Status:** ✅ **DONE & VERIFIED**
+
 
 ### [2026-01-02] 🛠️ Admin UX Overhaul & Google Verification Fix
 **Cel:** Poprawa ergonomii pracy administratora (nawigacja, zapisywanie) oraz naprawa krytycznego błędu weryfikacji domeny w Google Search Console.

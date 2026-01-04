@@ -75,6 +75,7 @@ Zarządza pełnym cyklem życia zamówienia usługi fotograficznej.
 System pozwala na obsługę klientów biznesowych (B2B) w ramach tej samej instancji aplikacji, stosując architekturę **Twin-Engine**.
 
 - **Kontekstowy Routing**: Automatyczne wykrywanie domen/ścieżek biznesowych (np. `wlasniewski.pl/b2b`).
+- **Strict B2B Separation**: Treści biznesowe są dostępne wyłącznie pod prefiksem `/b2b` (lub stosowną subdomeną). System blokuje wyświetlanie treści konsumenckich na ścieżkach biznesowych.
 - **Dynamiczne Menu B2B**: Osobna struktura nawigacji zarządzana w panelu admina (tab "B2B"), która aktywuje się automatycznie po wykryciu kontekstu biznesowego.
 - **Formularz RFQ (Request for Quote)**: Dedykowany moduł kontaktu B2B (`B2BContactForm.tsx`) zbierający dane firmowe i szczegóły zlecenia, zintegrowany z systemem powiadomień.
 - **Branding B2B**: Automatyczne przełączanie na "Premium Dark Mode" oraz priorytetyzacja logotypu o oznaczeniu "B2B / Alternatywne".

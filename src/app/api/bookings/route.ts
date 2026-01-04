@@ -62,7 +62,7 @@ export async function POST(request: Request) {
                 notes: notes || null,
                 promo_code: promo_code || promoCode || null,
                 gift_card_code: gift_card_code || null,
-                status: "pending",
+                status: Number(price) === 0 ? "confirmed" : "pending",
             },
         });
 
@@ -121,12 +121,21 @@ export async function POST(request: Request) {
 
         // Send elegant confirmation email to client
         try {
+            const isConfirmed = Number(price) === 0;
+            const subject = isConfirmed
+                ? `✅ Rezerwacja POTWIERDZONA! - ${service}`
+                : `✨ Potwierdzenie rezerwacji - ${service}`;
+
+            const html = isConfirmed
+                ? generateBookingConfirmedEmail(emailData)
+                : generateClientEmail(emailData);
+
             await sendEmail({
                 to: email,
-                subject: `✨ Potwierdzenie rezerwacji - ${service}`,
-                html: generateClientEmail(emailData)
+                subject,
+                html
             });
-            await logSystem('INFO', 'EMAIL', `Booking confirmation sent to client`, { bookingId: booking.id, email });
+            await logSystem('INFO', 'EMAIL', `Booking confirmation sent to client ${isConfirmed ? '(Confirmed)' : '(Pending)'}`, { bookingId: booking.id, email });
         } catch (emailError) {
             await logSystem('ERROR', 'EMAIL', `Failed to send client confirmation email`, { bookingId: booking.id, error: String(emailError) });
         }

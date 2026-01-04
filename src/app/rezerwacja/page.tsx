@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { Toaster, toast } from 'sonner';
 import { motion } from 'framer-motion';
+import { ShoppingBag } from 'lucide-react';
 import { getApiUrl } from '@/lib/api-config';
 import { buildICS } from '@/utils/ics';
 import TestimonialsSection from '@/components/TestimonialsSection';
@@ -10,6 +11,7 @@ import BookingCalendar from '@/components/BookingCalendar';
 import PromocodeBar from '@/components/PromocodeBar';
 import PageRenderer from '@/components/PageRenderer';
 import { PageSection } from '@/components/admin/PageBuilder';
+import { useCart } from '@/context/CartContext';
 
 interface ServiceType {
     id: number;
@@ -341,6 +343,8 @@ export default function RezerwacjaPage() {
         }
     };
 
+    const { addItem } = useCart();
+
     // Create booking and redirect to payment
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -350,112 +354,37 @@ export default function RezerwacjaPage() {
             return;
         }
 
-        setSubmitting(true);
+        const title = `${service?.name} — ${chosenPackage.name}`;
+        const bookingData = {
+            service: service?.name,
+            package: chosenPackage.name,
+            hours: chosenPackage.hours,
+            price: finalPrice,
+            originalPrice: chosenPackage.price,
+            date: slot.date,
+            start_time: slot.start ?? null,
+            end_time: slot.end ?? null,
+            name,
+            email,
+            phone: phone || null,
+            venue_city: needsVenue ? venueCity : null,
+            venue_place: needsVenue ? venuePlace : null,
+            notes: notes || null,
+            promo_code: discount ? discount.code : null,
+            gift_card_code: giftCard ? giftCard.code : null,
+        };
 
-        try {
-            const title = `${service?.name} — ${chosenPackage.name}`;
-            const location = needsVenue && venueCity && venuePlace ? `${venuePlace}, ${venueCity}` : "Do ustalenia";
+        addItem({
+            type: 'booking',
+            productId: chosenPackage.id.toString(),
+            title,
+            subtitle: `${slot.date}${slot.start ? ` o ${slot.start}` : ''}`,
+            price: finalPrice,
+            quantity: 1,
+            metadata: bookingData
+        });
 
-            const descLines = [
-                `Usługa: ${service?.name}`,
-                `Pakiet: ${chosenPackage.name}`,
-                `Cena: ${(finalPrice / 100).toFixed(2)} zł`,
-                `Klient: ${name}`,
-                `Email: ${email}`,
-                `Telefon: ${phone || "-"}`,
-                needsVenue ? `Miejsce: ${venuePlace}, ${venueCity}` : undefined,
-                `Uwagi: ${notes || "-"}`,
-            ].filter(Boolean) as string[];
-
-            const ics = buildICS({
-                uid: `booking-${Date.now()}@wlasniewski.pl`,
-                title,
-                description: descLines.join("\n"),
-                date: slot.date,
-                start: slot.start,
-                end: slot.end,
-                attendeeEmail: email,
-                organizerEmail: process.env.NEXT_PUBLIC_CONTACT_EMAIL || "kontakt@wlasniewski.pl",
-                location,
-            });
-
-            const bookingPayload = {
-                service: service?.name,
-                package: chosenPackage.name,
-                hours: chosenPackage.hours,
-                price: finalPrice,
-                originalPrice: chosenPackage.price,
-                date: slot.date,
-                start_time: slot.start ?? null,
-                end_time: slot.end ?? null,
-                name,
-                email,
-                phone: phone || null,
-                venue_city: needsVenue ? venueCity : null,
-                venue_place: needsVenue ? venuePlace : null,
-                notes: notes || null,
-                promo_code: discount ? discount.code : null,
-                gift_card_code: giftCard ? giftCard.code : null,
-                ics,
-            };
-
-            // Create booking first
-            const bookingRes = await fetch(getApiUrl('bookings'), {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(bookingPayload)
-            });
-
-            if (!bookingRes.ok) {
-                throw new Error("Booking creation failed");
-            }
-
-            const bookingData = await bookingRes.json();
-            const bookingId = bookingData.booking?.id;
-
-            if (!bookingId) {
-                throw new Error("No booking ID returned");
-            }
-
-            // If price is 0, skip payment
-            if (finalPrice === 0) {
-                // Optionally update booking status to confirmed/paid here if needed
-                // For now just redirect to confirmation
-                window.location.href = "/rezerwacja/potwierdzenie";
-                return;
-            }
-
-            // Redirect to Stripe checkout
-            const checkoutRes = await fetch(getApiUrl('checkout'), {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    bookingId,
-                    amount: finalPrice,
-                    email,
-                    serviceName: service?.name,
-                    packageName: chosenPackage.name
-                })
-            });
-
-            if (checkoutRes.ok) {
-                const { url } = await checkoutRes.json();
-                if (url) {
-                    window.location.href = url;
-                    return;
-                }
-            }
-
-            // Fallback: show alert if payment setup not ready
-            alert("✅ Rezerwacja utworzona!\n\nPrzejdź do panelu aby dokonać płatności.");
-            window.location.href = "/rezerwacja/potwierdzenie";
-
-        } catch (error) {
-            console.error("Submission error:", error);
-            alert("❌ Błąd podczas tworzenia rezerwacji. Spróbuj ponownie.");
-        } finally {
-            setSubmitting(false);
-        }
+        // Scroll to top or show toast is handled by addItem
     };
 
     if (servicesLoading) {
@@ -483,6 +412,79 @@ export default function RezerwacjaPage() {
                     <p className="text-zinc-400 text-center mb-12">
                         Wybierz usługę, pakiet i termin. Płatność przejdziesz bezpiecznie poprzez Stripe.
                     </p>
+
+                    {/* NEW: Testimonials moved to top */}
+                    <div className="mb-20">
+                        <TestimonialsSection />
+                    </div>
+
+                    {/* NEW: Early Gift Card Input */}
+                    <motion.section
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="bg-zinc-900/50 rounded-2xl p-8 border border-amber-500/20 mb-8 overflow-hidden relative"
+                    >
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 blur-[50px] rounded-full -mr-16 -mt-16" />
+                        <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-2">
+                            🎁 Masz kartę podarunkową?
+                        </h2>
+                        <p className="text-zinc-400 mb-6 text-sm">
+                            Wpisz kod karty, aby od razu naliczyć środki na rezerwację. Jeśli karta pokrywa koszt sesji, rezerwacja będzie natychmiastowa.
+                        </p>
+
+                        <div className="flex flex-col md:flex-row gap-4">
+                            <input
+                                type="text"
+                                value={giftCardCode}
+                                onChange={(e) => setGiftCardCode(e.target.value.toUpperCase())}
+                                disabled={!!giftCard}
+                                className="flex-1 px-4 py-3 rounded-xl bg-zinc-800 border border-zinc-700 text-white uppercase focus:ring-2 focus:ring-amber-500 outline-none disabled:opacity-50 text-lg tracking-widest font-mono"
+                                placeholder="WPISZ KOD KARTY"
+                            />
+                            {giftCard ? (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setGiftCard(null);
+                                        setGiftCardCode("");
+                                        setGiftCardMessage("");
+                                    }}
+                                    className="px-6 py-3 bg-red-900/40 text-red-200 border border-red-500/30 rounded-xl font-bold hover:bg-red-900/60 transition-colors flex items-center gap-2 justify-center"
+                                >
+                                    <span>Usuń Kartę</span>
+                                </button>
+                            ) : (
+                                <button
+                                    type="button"
+                                    onClick={handleCheckGiftCard}
+                                    disabled={!giftCardCode || checkingGiftCard}
+                                    className="px-8 py-3 bg-amber-600 text-white rounded-xl font-bold hover:bg-amber-500 disabled:opacity-50 transition-all flex items-center gap-2 justify-center shadow-lg shadow-amber-900/30"
+                                >
+                                    {checkingGiftCard ? (
+                                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    ) : (
+                                        "Zastosuj"
+                                    )}
+                                </button>
+                            )}
+                        </div>
+                        {giftCardMessage && (
+                            <motion.p
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                className={`text-sm mt-3 font-medium flex items-center gap-2 ${giftCard ? "text-green-400" : "text-red-400"}`}
+                            >
+                                {giftCard ? "✨" : "❌"} {giftCardMessage}
+                            </motion.p>
+                        )}
+                        {giftCard && (
+                            <div className="mt-4 p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+                                <p className="text-green-400 text-sm font-bold">
+                                    Dostępne środki: -{giftCard.amount} zł
+                                </p>
+                            </div>
+                        )}
+                    </motion.section>
 
                     <form onSubmit={handleSubmit} className="space-y-8">
                         {/* Step 1: Service Selection */}
@@ -797,49 +799,6 @@ export default function RezerwacjaPage() {
                                         )}
                                     </div>
 
-                                    {/* Gift Card */}
-                                    <div>
-                                        <label className="block text-sm font-medium text-zinc-300 mb-2">
-                                            Karta podarunkowa
-                                        </label>
-                                        <div className="flex gap-2">
-                                            <input
-                                                type="text"
-                                                value={giftCardCode}
-                                                onChange={(e) => setGiftCardCode(e.target.value.toUpperCase())}
-                                                disabled={!!giftCard}
-                                                className="flex-1 px-4 py-2 rounded-lg bg-zinc-800 border border-zinc-700 text-white uppercase focus:ring-2 focus:ring-amber-500 outline-none disabled:opacity-50"
-                                                placeholder="KOD KARTY"
-                                            />
-                                            {giftCard ? (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        setGiftCard(null);
-                                                        setGiftCardCode("");
-                                                        setGiftCardMessage("");
-                                                    }}
-                                                    className="px-4 py-2 bg-red-900/30 text-red-400 border border-red-900/50 rounded-lg font-medium hover:bg-red-900/50"
-                                                >
-                                                    Usuń
-                                                </button>
-                                            ) : (
-                                                <button
-                                                    type="button"
-                                                    onClick={handleCheckGiftCard}
-                                                    disabled={!giftCardCode || checkingGiftCard}
-                                                    className="px-6 py-2 bg-zinc-800 text-white rounded-lg font-medium hover:bg-zinc-700 disabled:opacity-50"
-                                                >
-                                                    {checkingGiftCard ? "..." : "Zastosuj"}
-                                                </button>
-                                            )}
-                                        </div>
-                                        {giftCardMessage && (
-                                            <p className={`text-sm mt-2 ${giftCard ? "text-green-400" : "text-red-400"}`}>
-                                                {giftCardMessage}
-                                            </p>
-                                        )}
-                                    </div>
 
                                     {/* Discounts Display */}
                                     {discount && (
@@ -852,7 +811,7 @@ export default function RezerwacjaPage() {
                                     )}
                                     {giftCard && (
                                         <div className="flex justify-between text-green-400">
-                                            <span>Karta podarunkowa:</span>
+                                            <span>Karta podarunkowa (Kredyt):</span>
                                             <span className="font-medium">-{giftCard.amount} zł</span>
                                         </div>
                                     )}
@@ -882,24 +841,18 @@ export default function RezerwacjaPage() {
                                 <button
                                     type="submit"
                                     disabled={!isReadyToSubmit || submitting}
-                                    className="w-full mt-6 bg-amber-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-amber-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-amber-900/20"
+                                    className={`w-full mt-6 py-4 rounded-xl font-bold text-lg transition-all shadow-lg ${isReadyToSubmit
+                                            ? "bg-amber-600 text-white hover:bg-amber-500 shadow-amber-900/20"
+                                            : "bg-zinc-800 text-zinc-500 cursor-not-allowed"
+                                        } group flex items-center justify-center gap-2`}
                                 >
-                                    {submitting ? "Przetwarzanie..." : "💳 Przejdź do Płatności"}
+                                    <ShoppingBag className="w-6 h-6 group-hover:scale-110 transition-transform" />
+                                    <span>Dodaj do Koszyka</span>
                                 </button>
                             </motion.section>
                         )}
                     </form>
 
-                    {/* Testimonials */}
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6 }}
-                        viewport={{ once: true, margin: "-100px" }}
-                        className="mt-20"
-                    >
-                        <TestimonialsSection />
-                    </motion.div>
                 </div>
             </div>
         </main>

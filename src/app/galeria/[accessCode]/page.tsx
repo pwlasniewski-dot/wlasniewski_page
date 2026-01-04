@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Download, ShoppingCart, Check, X, Eye } from 'lucide-react';
+import Link from 'next/link';
+import { Download, ShoppingCart, Check, X, Eye, ArrowLeft } from 'lucide-react';
 import Image from 'next/image';
+import { useAuth } from '@/context/AuthContext';
 
 interface GalleryPhoto {
     id: number;
@@ -29,6 +31,7 @@ export default function ClientGalleryPage() {
     const router = useRouter();
     const accessCode = params?.accessCode as string;
 
+    const { isAuthenticated } = useAuth();
     const [gallery, setGallery] = useState<Gallery | null>(null);
     const [loading, setLoading] = useState(true);
     const [selectedPremium, setSelectedPremium] = useState<Set<number>>(new Set());
@@ -117,18 +120,30 @@ export default function ClientGalleryPage() {
         <div className="min-h-screen bg-black text-white py-12 px-4">
             <div className="max-w-7xl mx-auto">
                 {/* Header */}
-                <div className="mb-12 text-center">
-                    <h1 className="text-4xl md:text-6xl font-display font-bold text-gold-400 mb-4">
-                        Witaj, {gallery.client_name}! 📸
-                    </h1>
-                    <p className="text-xl text-zinc-400">
-                        Twoja galeria zdjęć jest gotowa
-                    </p>
-                    {gallery.expires_at && (
-                        <p className="text-sm text-yellow-400 mt-2">
-                            Galeria dostępna do: {new Date(gallery.expires_at).toLocaleDateString('pl-PL')}
-                        </p>
+                <div className="mb-12 relative">
+                    {isAuthenticated && (
+                        <Link
+                            href="/konto"
+                            className="absolute left-0 top-0 flex items-center gap-2 text-zinc-400 hover:text-white transition-colors py-2 px-4 bg-zinc-900/50 rounded-xl"
+                        >
+                            <ArrowLeft className="w-4 h-4" />
+                            <span>Wróć do konta</span>
+                        </Link>
                     )}
+
+                    <div className="text-center pt-10 md:pt-0">
+                        <h1 className="text-4xl md:text-6xl font-display font-bold text-gold-400 mb-4">
+                            Witaj, {gallery.client_name}! 📸
+                        </h1>
+                        <p className="text-xl text-zinc-400">
+                            Twoja galeria zdjęć jest gotowa
+                        </p>
+                        {gallery.expires_at && (
+                            <p className="text-sm text-yellow-400 mt-2">
+                                Galeria dostępna do: {new Date(gallery.expires_at).toLocaleDateString('pl-PL')}
+                            </p>
+                        )}
+                    </div>
                 </div>
 
                 {/* Standard Photos Section */}

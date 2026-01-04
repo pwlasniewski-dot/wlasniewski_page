@@ -3,8 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname } from 'next/navigation';
-import { Menu, X, ChevronDown } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
+import { Menu, X, ChevronDown, User, ShoppingBag, LogOut, Settings } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
+import { useCart } from '@/context/CartContext';
 
 interface MenuItem {
     id: number;
@@ -30,6 +32,7 @@ interface NavbarSettings {
 
 export default function Navbar() {
     const pathname = usePathname();
+    const router = useRouter();
     const isHome = pathname === '/';
     const [isOpen, setIsOpen] = useState(false);
     const [settings, setSettings] = useState<NavbarSettings>({});
@@ -40,6 +43,33 @@ export default function Navbar() {
     const [logoLoaded, setLogoLoaded] = useState(false);
     const [isNavbarVisible, setIsNavbarVisible] = useState(true);
     const [lastScrollY, setLastScrollY] = useState(0);
+    const { user, isAuthenticated, logout } = useAuth();
+    const { totalCount, setIsOpen: setIsCartOpen } = useCart();
+    const [isAccountOpen, setIsAccountOpen] = useState(false);
+
+    // Scroll Logic (Auto-hide & Sticky)
+    useEffect(() => {
+        let lastY = window.scrollY;
+
+        const handleScroll = () => {
+            const currentY = window.scrollY;
+
+            // Sticky background effect
+            setIsScrolled(currentY > 20);
+
+            // Auto-hide logic (Show on scroll UP, Hide on scroll DOWN)
+            if (currentY > lastY && currentY > 100) {
+                setIsNavbarVisible(false);
+            } else {
+                setIsNavbarVisible(true);
+            }
+
+            lastY = currentY;
+        };
+
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
 
 
 
@@ -533,18 +563,79 @@ export default function Navbar() {
                         </>
                     )}
 
-                    {/* MOBILE MENU BUTTON */}
-                    <button
-                        onClick={() => setIsOpen(!isOpen)}
-                        className="md:hidden p-2"
-                        aria-label="Otwórz menu"
-                    >
-                        {isOpen ? (
-                            <X className={`w-6 h-6 ${forceTransparent ? 'text-white' : (isScrolled ? 'text-zinc-700' : 'text-white')}`} />
-                        ) : (
-                            <Menu className={`w-6 h-6 ${forceTransparent ? 'text-white' : (isScrolled ? 'text-zinc-700' : 'text-white')}`} />
-                        )}
-                    </button>
+                    {/* RIGHT ACTIONS TRAY (Account + Cart) */}
+                    <div className="flex items-center gap-2 sm:gap-4 z-20">
+                        {/* Account Button */}
+                        <div className="relative">
+                            <button
+                                onClick={() => isAuthenticated ? setIsAccountOpen(!isAccountOpen) : router.push('/logowanie')}
+                                className={`flex items-center gap-2 px-3 py-2 rounded-full transition-all duration-300 ${forceTransparent
+                                    ? 'bg-white/10 hover:bg-white/20 text-white'
+                                    : (isScrolled ? 'bg-black/5 hover:bg-black/10 text-zinc-700' : 'bg-white/10 hover:bg-white/20 text-white')
+                                    }`}
+                                title={isAuthenticated ? "Twój profil" : "Zaloguj się"}
+                            >
+                                <User className="w-5 h-5" />
+                                <span className="hidden sm:inline text-sm font-medium">
+                                    {isAuthenticated ? user?.name?.split(' ')[0] : 'Konto'}
+                                </span>
+                            </button>
+
+                            {/* Account Dropdown */}
+                            {isAuthenticated && isAccountOpen && (
+                                <div className="absolute right-0 mt-2 w-56 bg-neutral-900 border border-white/10 shadow-2xl rounded-2xl overflow-hidden py-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                                    <div className="px-4 py-3 border-b border-white/5 mb-2">
+                                        <p className="text-xs text-zinc-500 uppercase tracking-widest font-bold">Witaj,</p>
+                                        <p className="text-sm font-bold text-white truncate">{user?.name}</p>
+                                    </div>
+                                    <Link
+                                        href="/konto"
+                                        onClick={() => setIsAccountOpen(false)}
+                                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-zinc-300 hover:bg-white/5 hover:text-gold-400 transition-colors"
+                                    >
+                                        <Settings className="w-4 h-4" />
+                                        Panel Klienta
+                                    </Link>
+                                    <button
+                                        onClick={() => { logout(); setIsAccountOpen(false); }}
+                                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-400 hover:bg-red-500/5 transition-colors text-left"
+                                    >
+                                        <LogOut className="w-4 h-4" />
+                                        Wyloguj się
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Cart Button */}
+                        <button
+                            onClick={() => setIsCartOpen(true)}
+                            className={`relative p-2.5 rounded-full transition-all duration-300 ${forceTransparent
+                                ? 'bg-white/10 hover:bg-white/20 text-white'
+                                : (isScrolled ? 'bg-black/5 hover:bg-black/10 text-zinc-700' : 'bg-white/10 hover:bg-white/20 text-white')
+                                }`}
+                            aria-label="Twój koszyk"
+                        >
+                            <ShoppingBag className="w-5 h-5" />
+                            {totalCount > 0 && (
+                                <span className="absolute -top-1 -right-1 w-5 h-5 bg-gold-600 text-black text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-black">
+                                    {totalCount}
+                                </span>
+                            )}
+                        </button>
+
+                        <button
+                            onClick={() => setIsOpen(!isOpen)}
+                            className="md:hidden p-2"
+                            aria-label="Otwórz menu"
+                        >
+                            {isOpen ? (
+                                <X className={`w-6 h-6 ${forceTransparent ? 'text-white' : (isScrolled ? 'text-zinc-700' : 'text-white')}`} />
+                            ) : (
+                                <Menu className={`w-6 h-6 ${forceTransparent ? 'text-white' : (isScrolled ? 'text-zinc-700' : 'text-white')}`} />
+                            )}
+                        </button>
+                    </div>
                 </div>
 
                 {/* MOBILE MENU */}

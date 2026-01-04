@@ -50,9 +50,9 @@ function SortableItem({ item, onEdit, onDelete, depth = 0 }: { item: MenuItem; o
                         </div>
                     </div>
                 </div>
-                <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => onEdit(item)} className="text-indigo-600 hover:bg-indigo-50 p-1 rounded">✏️</button>
-                    <button onClick={() => onDelete(item.id)} className="text-red-600 hover:bg-red-50 p-1 rounded">🗑️</button>
+                <div className="flex gap-2 opacity-100 transition-opacity">
+                    <button type="button" onPointerDown={(e) => e.stopPropagation()} onClick={() => onEdit(item)} className="text-zinc-600 hover:bg-zinc-100 p-2 rounded transition-colors relative z-10" title="Edytuj">✏️</button>
+                    <button type="button" onPointerDown={(e) => e.stopPropagation()} onClick={() => onDelete(item.id)} className="text-red-600 hover:bg-red-50 p-2 rounded transition-colors relative z-10" title="Usuń">🗑️</button>
                 </div>
             </div>
             {/* Render children recursively if any (for visual representation, though DnD might need flat list for sorting) */}
@@ -217,23 +217,57 @@ export default function AdminMenuPage() {
     };
 
     const handleDelete = async (id: number) => {
-        if (!confirm("Czy na pewno usunąć ten element?")) return;
+        // Validation
+        if (!id || isNaN(id)) {
+            alert("Błąd: Nieprawidłowe ID elementu. Odśwież stronę.");
+            return;
+        }
+
+        if (!confirm("Czy na pewno usunąć ten element? Operacja jest nieodwracalna.")) return;
+
         try {
             const token = localStorage.getItem('admin_token');
+            console.log(`🗑️ Deleting item ID: ${id}`);
+
             const res = await fetch(`/api/menu/items?id=${id}`, {
                 method: "DELETE",
                 headers: { "Authorization": `Bearer ${token}` }
             });
+
+            const data = await res.json();
+
             if (!res.ok) {
-                const error = await res.json();
-                console.error("Delete failed:", error);
-                alert(`Błąd usuwania: ${error.error || 'Nieznany błąd'}`);
+                console.error("Delete failed response:", data);
+                alert(`Błąd usuwania (Kod ${res.status}): ${data.error || 'Nieznany błąd serwera'}`);
                 return;
             }
+
+            // Success
+            console.log("✅ Delete success");
+            // Force verify visually
+            setMenuItems(prev => prev.filter(i => i.id !== id));
+            // Reload data
             fetchData();
         } catch (error) {
             console.error("Error deleting:", error);
-            alert("Błąd połączenia z serwerem");
+            alert(`Błąd połączenia: ${error instanceof Error ? error.message : 'Nieznany błąd'}`);
+        }
+    };
+
+    const handleResetB2B = async () => {
+        if (!confirm("⚠️ CZY NA PEWNO? To usunie CAŁE menu B2B i przywróci domyślne ustawienia. Tej operacji nie można cofnąć.")) return;
+
+        const token = localStorage.getItem('admin_token');
+        try {
+            // Fetch all B2B items first or just use a nuclear endpoint if we had one.
+            // Since we don't have a specific 'reset' endpoint, we will iterate delete locally for safety or create one.
+            // For now, let's warn user. 
+            // Better strategy: Just alert user this feature is manual deletion for now.
+            // OR iterate delete visible items.
+
+            alert("Funkcja Resetu logicznego w przygotowaniu. Proszę usuwać elementy ręcznie.");
+        } catch (e) {
+            alert("Błąd resetu.");
         }
     };
 
