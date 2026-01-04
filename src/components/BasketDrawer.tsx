@@ -6,7 +6,7 @@ import { X, ShoppingBag, Trash2, ArrowRight } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 
 export default function BasketDrawer() {
-    const { items, removeItem, totalAmount, isOpen, setIsOpen } = useCart();
+    const { items, removeItem, updateItem, totalAmount, isOpen, setIsOpen } = useCart();
 
     const formattedTotal = (totalAmount / 100).toFixed(2);
 
@@ -78,6 +78,37 @@ export default function BasketDrawer() {
                                                 </div>
                                                 <h4 className="font-bold text-white text-lg leading-snug">{item.title}</h4>
                                                 {item.subtitle && <p className="text-sm text-zinc-500">{item.subtitle}</p>}
+
+                                                {/* Gift Card Personalization Inputs */}
+                                                {item.type === 'gift_card' && (
+                                                    <div className="mt-4 space-y-3 p-3 bg-black/20 rounded-xl border border-white/5">
+                                                        <div>
+                                                            <label className="text-[10px] uppercase text-zinc-500 font-bold tracking-wider mb-1 block">Dla kogo (Imię)</label>
+                                                            <input
+                                                                type="text"
+                                                                placeholder="np. Anna"
+                                                                className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-amber-500 transition-colors placeholder:text-zinc-600"
+                                                                value={item.metadata?.recipient_name || ''}
+                                                                onChange={(e) => updateItem(item.id, {
+                                                                    metadata: { ...item.metadata, recipient_name: e.target.value }
+                                                                })}
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <label className="text-[10px] uppercase text-zinc-500 font-bold tracking-wider mb-1 block">Wiadomość (opcjonalne)</label>
+                                                            <textarea
+                                                                rows={2}
+                                                                placeholder="Najlepsze życzenia..."
+                                                                className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-amber-500 transition-colors placeholder:text-zinc-600 resize-none"
+                                                                value={item.metadata?.message || ''}
+                                                                onChange={(e) => updateItem(item.id, {
+                                                                    metadata: { ...item.metadata, message: e.target.value }
+                                                                })}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                )}
+
                                                 <div className="mt-4 flex items-center justify-between">
                                                     <span className="text-amber-500 font-extrabold text-xl">
                                                         {(item.price / 100).toFixed(2)} zł

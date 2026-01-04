@@ -40,6 +40,25 @@ export default function GalleriesAdminPage() {
 
     useEffect(() => {
         fetchGalleries();
+
+        // Check for auto-create params
+        if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search);
+            const createFor = params.get('createFor');
+            if (createFor) {
+                try {
+                    const userData = JSON.parse(decodeURIComponent(createFor));
+                    setNewGallery(prev => ({
+                        ...prev,
+                        client_name: userData.name || '',
+                        client_email: userData.email || ''
+                    }));
+                    setShowCreateModal(true);
+                } catch (e) {
+                    console.error('Failed to parse createFor params');
+                }
+            }
+        }
     }, []);
 
     const fetchGalleries = async () => {

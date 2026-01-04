@@ -19,6 +19,7 @@ export interface CartItem {
 interface CartContextType {
     items: CartItem[];
     addItem: (item: Omit<CartItem, 'id'>) => void;
+    updateItem: (id: string, updates: Partial<CartItem>) => void;
     removeItem: (id: string) => void;
     clearCart: () => void;
     totalCount: number;
@@ -61,6 +62,12 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         toast.success(`Dodano do koszyka: ${newItem.title}`);
     }, []);
 
+    const updateItem = useCallback((id: string, updates: Partial<CartItem>) => {
+        setItems(prev => prev.map(item =>
+            item.id === id ? { ...item, ...updates } : item
+        ));
+    }, []);
+
     const removeItem = useCallback((id: string) => {
         setItems(prev => prev.filter(item => item.id !== id));
         toast.info('Usunięto z koszyka');
@@ -78,6 +85,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         <CartContext.Provider value={{
             items,
             addItem,
+            updateItem,
             removeItem,
             clearCart,
             totalCount,

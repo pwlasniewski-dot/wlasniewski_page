@@ -169,6 +169,13 @@ export default function UsersPage() {
                                         <Edit2 className="w-5 h-5" />
                                     </button>
                                     <button
+                                        onClick={() => window.location.href = `/admin/galleries?createFor=${encodeURIComponent(JSON.stringify({ name: user.name, email: user.email }))}`}
+                                        className="text-green-400 hover:text-green-300 mr-4"
+                                        title="Utwórz galerię"
+                                    >
+                                        <Plus className="w-5 h-5" />
+                                    </button>
+                                    <button
                                         onClick={() => handleDelete(user.id)}
                                         className="text-red-400 hover:text-red-300"
                                     >

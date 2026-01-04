@@ -565,47 +565,49 @@ export default function Navbar() {
 
                     {/* RIGHT ACTIONS TRAY (Account + Cart) */}
                     <div className="flex items-center gap-2 sm:gap-4 z-20">
-                        {/* Account Button */}
-                        <div className="relative">
-                            <button
-                                onClick={() => isAuthenticated ? setIsAccountOpen(!isAccountOpen) : router.push('/logowanie')}
-                                className={`flex items-center gap-2 px-3 py-2 rounded-full transition-all duration-300 ${forceTransparent
-                                    ? 'bg-white/10 hover:bg-white/20 text-white'
-                                    : (isScrolled ? 'bg-black/5 hover:bg-black/10 text-zinc-700' : 'bg-white/10 hover:bg-white/20 text-white')
-                                    }`}
-                                title={isAuthenticated ? "Twój profil" : "Zaloguj się"}
-                            >
-                                <User className="w-5 h-5" />
-                                <span className="hidden sm:inline text-sm font-medium">
-                                    {isAuthenticated ? user?.name?.split(' ')[0] : 'Konto'}
-                                </span>
-                            </button>
+                        {/* Account Button - Hidden in B2B to avoid domain redirect issues */}
+                        {!isB2B && (
+                            <div className="relative">
+                                <button
+                                    onClick={() => isAuthenticated ? setIsAccountOpen(!isAccountOpen) : router.push('/logowanie')}
+                                    className={`flex items-center gap-2 px-3 py-2 rounded-full transition-all duration-300 ${forceTransparent
+                                        ? 'bg-white/10 hover:bg-white/20 text-white'
+                                        : (isScrolled ? 'bg-black/5 hover:bg-black/10 text-zinc-700' : 'bg-white/10 hover:bg-white/20 text-white')
+                                        }`}
+                                    title={isAuthenticated ? "Twój profil" : "Zaloguj się"}
+                                >
+                                    <User className="w-5 h-5" />
+                                    <span className="hidden sm:inline text-sm font-medium">
+                                        {isAuthenticated ? user?.name?.split(' ')[0] : 'Konto'}
+                                    </span>
+                                </button>
 
-                            {/* Account Dropdown */}
-                            {isAuthenticated && isAccountOpen && (
-                                <div className="absolute right-0 mt-2 w-56 bg-neutral-900 border border-white/10 shadow-2xl rounded-2xl overflow-hidden py-2 animate-in fade-in slide-in-from-top-2 duration-200">
-                                    <div className="px-4 py-3 border-b border-white/5 mb-2">
-                                        <p className="text-xs text-zinc-500 uppercase tracking-widest font-bold">Witaj,</p>
-                                        <p className="text-sm font-bold text-white truncate">{user?.name}</p>
+                                {/* Account Dropdown */}
+                                {isAuthenticated && isAccountOpen && (
+                                    <div className="absolute right-0 mt-2 w-56 bg-neutral-900 border border-white/10 shadow-2xl rounded-2xl overflow-hidden py-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                                        <div className="px-4 py-3 border-b border-white/5 mb-2">
+                                            <p className="text-xs text-zinc-500 uppercase tracking-widest font-bold">Witaj,</p>
+                                            <p className="text-sm font-bold text-white truncate">{user?.name}</p>
+                                        </div>
+                                        <Link
+                                            href="/konto"
+                                            onClick={() => setIsAccountOpen(false)}
+                                            className="flex items-center gap-3 px-4 py-2.5 text-sm text-zinc-300 hover:bg-white/5 hover:text-gold-400 transition-colors"
+                                        >
+                                            <Settings className="w-4 h-4" />
+                                            Panel Klienta
+                                        </Link>
+                                        <button
+                                            onClick={() => { logout(); setIsAccountOpen(false); }}
+                                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-400 hover:bg-red-500/5 transition-colors text-left"
+                                        >
+                                            <LogOut className="w-4 h-4" />
+                                            Wyloguj się
+                                        </button>
                                     </div>
-                                    <Link
-                                        href="/konto"
-                                        onClick={() => setIsAccountOpen(false)}
-                                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-zinc-300 hover:bg-white/5 hover:text-gold-400 transition-colors"
-                                    >
-                                        <Settings className="w-4 h-4" />
-                                        Panel Klienta
-                                    </Link>
-                                    <button
-                                        onClick={() => { logout(); setIsAccountOpen(false); }}
-                                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-400 hover:bg-red-500/5 transition-colors text-left"
-                                    >
-                                        <LogOut className="w-4 h-4" />
-                                        Wyloguj się
-                                    </button>
-                                </div>
-                            )}
-                        </div>
+                                )}
+                            </div>
+                        )}
 
                         {/* Cart Button */}
                         <button

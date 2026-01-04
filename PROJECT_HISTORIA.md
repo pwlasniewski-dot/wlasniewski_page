@@ -167,6 +167,32 @@ Ten plik służy do ścisłego monitorowania wszystkich zmian wprowadzanych w pr
 
 **Status:** ✅ **DONE & SECURED**
 
+### [2026-01-04] 🧠 Account Logic, Admin Integrations & Gift Card Inputs
+**Cel:** Poprawa UX dla logowania B2B, integracja zarządzania galeriami z listą użytkowników oraz przywrócenie pól personalizacji w koszyku.
+
+**Zrealizowane Zmiany:**
+1. **B2B Account Button Hiding:**
+   - Przycisk "Konto" w Navbarze jest teraz ukrywany, gdy użytkownik znajduje się w kontekście B2B (np. `b2b.wlasniewski.pl`). Zapobiega to przekierowaniom na główną domenę B2C przy próbie logowania.
+
+2. **Admin User-Gallery Integration:**
+   - Dodano przycisk "Utwórz galerię" (+) bezpośrednio na liście użytkowników w `/admin/users`.
+   - Kliknięcie przenosi do kreatora galerii `/admin/galleries` z automatycznie wypełnionym imieniem i e-mailem klienta (`createFor` param).
+   - Eliminuje to konieczność ręcznego kopiowania danych klienta.
+
+3. **Gift Card Personalization Inputs:**
+   - Przywrócono pola "Dla kogo (Imię)" i "Wiadomość" w bocznym panelu koszyka (`BasketDrawer`).
+   - Dane te zapisują się w `metadata` elementu koszyka i są przekazywane do zamówienia.
+   - Używa to nowej funkcji `updateItem` w `CartContext`.
+
+**Files Modified:**
+- `src/components/Navbar.tsx` (Conditional Account Button)
+- `src/app/admin/users/page.tsx` (Gallery Quick Action)
+- `src/app/admin/galleries/page.tsx` (Auto-fill Logic)
+- `src/components/BasketDrawer.tsx` (Inputs Restore)
+- `src/context/CartContext.tsx` (updateItem implementation)
+
+**Status:** ✅ **READY FOR TESTING** (Build Passed, Logic Verified)
+
 ### [2026-01-04] 🛡️ Security Hardening & Gift Card Premium Refactor
 **Cel:** Zabezpieczenie wrażliwych danych w API oraz gruntowna poprawa UX i estetyki modułu kart podarunkowych.
 
