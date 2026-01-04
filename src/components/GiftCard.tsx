@@ -137,40 +137,42 @@ export default function GiftCard({
 
     return (
         <motion.div
-            className={`relative overflow-hidden rounded-3xl ${isPrint ? '' : 'shadow-2xl hover:shadow-3xl'} transition-shadow duration-300`}
+            className={`relative overflow-hidden rounded-xl md:rounded-2xl ${isPrint ? '' : 'shadow-xl hover:shadow-2xl'} transition-shadow duration-300 w-full`}
             style={{
                 ...cardStyle,
-                aspectRatio: '1.588 / 1', // Standard credit card ratio (ISO/IEC 7810 ID-1)
+                aspectRatio: '1.586 / 1',
+                // For web, we ensure it doesn't get too small or too big
+                maxWidth: isPrint ? 'none' : '550px',
+                minWidth: isPrint ? 'auto' : '260px'
             }}
-            animate={!isPrint ? { scale: [1, 1.02, 1] } : {}}
+            animate={!isPrint ? { scale: [1, 1.01, 1] } : {}}
             transition={!isPrint ? { duration: 4, repeat: Infinity } : {}}
         >
             {/* Main background */}
             <div className={`absolute inset-0 bg-gradient-to-br ${config.bgGradient}`}></div>
 
             {/* Pattern overlay */}
-            <div className="absolute inset-0 opacity-10">
-                <div className="w-full h-full flex flex-wrap items-center justify-around content-around text-6xl">
-                    {Array(12).fill(0).map((_, i) => (
-                        <span key={i} className="opacity-40">{config.borderPattern.split('').map(c => c).join('')}</span>
+            <div className="absolute inset-0 opacity-5 pointer-events-none">
+                <div className="w-full h-full flex flex-wrap items-center justify-around content-around text-4xl sm:text-6xl overflow-hidden">
+                    {Array(8).fill(0).map((_, i) => (
+                        <span key={i} className="opacity-20 select-none whitespace-nowrap">{config.borderPattern}</span>
                     ))}
                 </div>
             </div>
 
             {/* Shine effect */}
             <motion.div
-                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"
-                animate={{ x: ['-100%', '100%'] }}
-                transition={{ duration: 3, repeat: Infinity }}
-                style={{ pointerEvents: 'none' }}
+                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent pointer-events-none"
+                animate={{ x: ['-100%', '200%'] }}
+                transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
             />
 
-            {/* Content */}
-            <div className={`relative h-full p-4 sm:p-6 flex flex-col justify-between ${config.textColor} z-10`}>
+            {/* Content Container */}
+            <div className={`relative h-full w-full p-2 sm:p-3 md:p-5 flex flex-col justify-between ${config.textColor} z-10 overflow-hidden`}>
                 {/* Top section - Logo and theme */}
-                <div className="flex items-start justify-between">
-                    {logoUrl && (
-                        <div className="relative w-10 h-10 sm:w-20 sm:h-20">
+                <div className="flex items-start justify-between shrink-0">
+                    {logoUrl ? (
+                        <div className="relative w-5 h-5 sm:w-8 sm:h-8 md:w-12 md:h-12">
                             <Image
                                 src={logoUrl}
                                 alt="Logo"
@@ -179,55 +181,62 @@ export default function GiftCard({
                                 quality={100}
                             />
                         </div>
-                    )}
-                    <div className="text-3xl sm:text-6xl">{config.icon}</div>
+                    ) : <div className="w-5 h-5 sm:w-8" />}
+                    <div className="text-lg sm:text-xl md:text-3xl">{config.icon}</div>
                 </div>
 
-                {/* Center section - Card title and message */}
-                <div className="flex-1 flex flex-col justify-center items-center text-center -mt-2">
-                    <h2 className="text-lg sm:text-3xl font-bold mb-1 drop-shadow-lg leading-tight">
+                {/* Center section - Card title and description */}
+                <div className="flex-1 flex flex-col justify-start items-center text-center px-1 sm:px-2 min-w-0 pt-0 sm:pt-1 md:pt-2">
+                    <h2 className={`font-bold mb-1 drop-shadow-xl leading-tight w-full line-clamp-2 ${displayTitle.length > 25 ? 'text-[10px] sm:text-xs md:text-base lg:text-lg' : 'text-[11px] sm:text-sm md:text-lg lg:text-xl'
+                        }`}>
                         {displayTitle}
                     </h2>
-                    <p className={`text-xs sm:text-base opacity-90 mb-2 drop-shadow leading-tight`}>
+                    <p className={`opacity-85 drop-shadow-md leading-tight line-clamp-2 max-w-[95%] font-medium ${displayDescription.length > 50 ? 'text-[7px] sm:text-[8px] md:text-[10px]' : 'text-[8px] sm:text-[9px] md:text-xs'
+                        }`}>
                         {displayDescription}
                     </p>
 
                     {recipientName && (
-                        <p className="text-xs sm:text-base italic opacity-75 mb-1">
-                            Dla: <span className="font-semibold">{recipientName}</span>
-                        </p>
+                        <div className="mt-1 sm:mt-1.5 py-0 px-2.5 bg-black/15 backdrop-blur-sm rounded-full border border-white/10 shadow-sm">
+                            <p className="text-[6px] sm:text-[8px] md:text-[10px] italic opacity-100 font-semibold tracking-tight">
+                                Dla: <span className="not-italic">{recipientName}</span>
+                            </p>
+                        </div>
                     )}
                 </div>
 
-                {/* Value and Code section - compacted for mobile */}
-                <div className="flex flex-col items-center gap-1 sm:gap-4 mt-auto">
-                    {orderId && (
-                        <div className="absolute bottom-2 right-4 text-[8px] sm:text-[10px] opacity-40 font-mono">
-                            REF: {orderId}
-                        </div>
-                    )}
+                {/* Bottom section - Value and Code */}
+                <div className="flex flex-col items-center gap-1 sm:gap-2 md:gap-3 mt-auto w-full shrink-0">
                     {/* Value */}
                     <div className="text-center">
-                        <p className="text-[10px] sm:text-sm opacity-75 mb-0.5">Wartość karty</p>
-                        <p className="text-2xl sm:text-5xl font-bold drop-shadow-lg leading-none">
+                        <p className="text-[6px] sm:text-[7px] md:text-[9px] opacity-60 mb-0 uppercase tracking-tighter sm:tracking-widest font-bold">Wartość karty</p>
+                        <p className="text-[14px] sm:text-lg md:text-2xl lg:text-3xl font-black drop-shadow-2xl leading-none">
                             {value} zł
                         </p>
                     </div>
 
-                    {/* Code */}
-                    {!hideCode ? (
-                        <div className="w-full bg-white/20 backdrop-blur-sm rounded-lg sm:rounded-xl p-1.5 sm:p-4 border border-white/40 mt-1 sm:mt-0">
-                            <p className="text-[9px] sm:text-xs opacity-75 text-center mb-0.5">KOD PROMOCYJNY</p>
-                            <p className="font-mono text-base sm:text-2xl font-bold text-center tracking-widest drop-shadow-md">
-                                {code}
-                            </p>
-                        </div>
-                    ) : (
-                        <div className="w-full bg-blue-500/10 backdrop-blur-sm rounded-lg sm:rounded-xl p-1.5 sm:p-4 border border-blue-400/30 mt-1 sm:mt-0">
-                            <p className="text-[9px] sm:text-xs opacity-75 text-center mb-0.5 text-blue-300">KOD WYSŁANY NA EMAIL</p>
-                            <p className="font-mono text-base sm:text-lg font-bold text-center text-blue-300 opacity-75">
-                                Po potwierddzeniu płatności
-                            </p>
+                    {/* Code / Payment Notice */}
+                    <div className="w-full max-w-[90%] sm:max-w-[85%] mx-auto pb-0.5">
+                        {!hideCode ? (
+                            <div className="bg-white/15 backdrop-blur-md rounded-lg p-0.5 sm:p-1 md:p-2 border border-white/20 shadow-lg">
+                                <p className="text-[5px] sm:text-[7px] md:text-[9px] opacity-60 text-center mb-0 uppercase font-bold tracking-widest leading-none">KOD PROMOCYJNY</p>
+                                <p className="font-mono text-xs sm:text-base md:text-lg lg:text-xl font-black text-center tracking-[0.1em] sm:tracking-[0.3em] md:tracking-[0.4em] drop-shadow-lg leading-tight">
+                                    {code}
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="bg-blue-600/15 backdrop-blur-md rounded-lg p-0.5 sm:p-1 md:p-1.5 border border-blue-400/30 shadow-xl">
+                                <p className="text-[5px] sm:text-[6px] md:text-[8px] opacity-80 text-center mb-0 text-blue-100 uppercase tracking-tighter sm:tracking-widest font-black leading-none py-0.5">DOSTĘPNY PO OPŁACENIU</p>
+                                <p className="hidden sm:block font-mono text-[6px] md:text-[8px] font-bold text-center text-white opacity-70 italic leading-none mt-0">
+                                    Wysłanie kodu na email
+                                </p>
+                            </div>
+                        )}
+                    </div>
+
+                    {orderId && (
+                        <div className="absolute bottom-1 right-4 text-[8px] md:text-[10px] opacity-40 font-mono font-bold">
+                            #ID: {orderId}
                         </div>
                     )}
                 </div>
@@ -236,20 +245,9 @@ export default function GiftCard({
             {/* Corner decorations for non-print view */}
             {!isPrint && (
                 <>
-                    <motion.div
-                        className="absolute top-2 right-4 text-3xl"
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 4, repeat: Infinity }}
-                    >
+                    <div className="absolute top-4 left-4 text-4xl opacity-10 pointer-events-none">
                         {config.icon}
-                    </motion.div>
-                    <motion.div
-                        className="absolute bottom-2 left-4 text-3xl"
-                        animate={{ rotate: -360 }}
-                        transition={{ duration: 5, repeat: Infinity }}
-                    >
-                        {config.icon}
-                    </motion.div>
+                    </div>
                 </>
             )}
         </motion.div>

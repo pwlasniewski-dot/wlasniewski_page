@@ -100,10 +100,10 @@ export default function GiftCardShopPage() {
         setSuccess('');
 
         try {
-            const url = editingId 
+            const url = editingId
                 ? `/api/admin/gift-cards/${editingId}`
                 : '/api/admin/gift-cards';
-            
+
             const method = editingId ? 'PUT' : 'POST';
 
             const res = await fetch(url, {
@@ -325,11 +325,17 @@ export default function GiftCardShopPage() {
 
                                 {/* Tytuł */}
                                 <div className="md:col-span-2">
-                                    <label className="block text-sm font-medium mb-2">
-                                        Tytuł Karty *
-                                    </label>
+                                    <div className="flex justify-between items-center mb-2">
+                                        <label className="block text-sm font-medium">
+                                            Tytuł Karty *
+                                        </label>
+                                        <span className={`text-[10px] ${formData.card_title.length > 30 ? 'text-amber-400' : 'text-zinc-500'}`}>
+                                            {formData.card_title.length}/35
+                                        </span>
+                                    </div>
                                     <input
                                         type="text"
+                                        maxLength={35}
                                         value={formData.card_title}
                                         onChange={(e) =>
                                             setFormData({
@@ -345,10 +351,16 @@ export default function GiftCardShopPage() {
 
                                 {/* Opis */}
                                 <div className="md:col-span-2">
-                                    <label className="block text-sm font-medium mb-2">
-                                        Opis Karty *
-                                    </label>
+                                    <div className="flex justify-between items-center mb-2">
+                                        <label className="block text-sm font-medium">
+                                            Opis Karty *
+                                        </label>
+                                        <span className={`text-[10px] ${formData.card_description.length > 65 ? 'text-amber-400' : 'text-zinc-500'}`}>
+                                            {formData.card_description.length}/75
+                                        </span>
+                                    </div>
                                     <textarea
+                                        maxLength={75}
                                         value={formData.card_description}
                                         onChange={(e) =>
                                             setFormData({
@@ -357,8 +369,8 @@ export default function GiftCardShopPage() {
                                             })
                                         }
                                         placeholder="np. Specjalny upominek na święta"
-                                        rows={3}
-                                        className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg focus:border-gold-500 outline-none"
+                                        rows={2}
+                                        className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg focus:border-gold-500 outline-none resize-none"
                                         required
                                     />
                                 </div>
@@ -431,11 +443,10 @@ export default function GiftCardShopPage() {
                                                         card.theme}
                                                 </h3>
                                                 <span
-                                                    className={`px-3 py-1 rounded-full text-xs font-bold ${
-                                                        card.status === 'active'
+                                                    className={`px-3 py-1 rounded-full text-xs font-bold ${card.status === 'active'
                                                             ? 'bg-green-500/20 text-green-300'
                                                             : 'bg-red-500/20 text-red-300'
-                                                    }`}
+                                                        }`}
                                                 >
                                                     {card.status === 'active' ? '✅ Aktywna' : '❌ Nieaktywna'}
                                                 </span>

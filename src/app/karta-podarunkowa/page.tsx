@@ -234,11 +234,11 @@ export default function GiftCardShop() {
                                 >
                                     <div className="relative rounded-2xl overflow-hidden bg-zinc-900 border border-zinc-800 hover:border-gold-500/50 transition-all p-6 h-full flex flex-col">
                                         {/* Card Preview */}
-                                        <div className="mb-6 rounded-xl overflow-hidden bg-black/40 p-4 flex items-center justify-center h-56 group-hover:bg-black/60 transition-colors">
-                                            <div className="w-full max-w-[320px]">
+                                        <div className="mb-6 rounded-xl overflow-hidden bg-black/40 p-2 sm:p-4 flex items-center justify-center h-48 sm:h-56 group-hover:bg-black/60 transition-colors">
+                                            <div className="w-full max-w-[280px] sm:max-w-[320px]">
                                                 <GiftCard
                                                     code={card.code}
-                                                    value={card.value}
+                                                    value={Math.round(card.value)}
                                                     theme={card.theme as any}
                                                     cardTitle={card.card_title}
                                                     cardDescription={card.card_description}
@@ -263,11 +263,11 @@ export default function GiftCardShop() {
                                                 {card.price < card.value ? (
                                                     <>
                                                         <span className="text-sm text-gold-400 font-medium bg-gold-400/10 px-2 py-0.5 rounded">RABAT</span>
-                                                        <span className="text-2xl font-bold text-white">{card.price} zł</span>
-                                                        <span className="text-sm text-zinc-500 line-through">{card.value} zł</span>
+                                                        <span className="text-2xl font-bold text-white">{Math.round(card.price)} zł</span>
+                                                        <span className="text-sm text-zinc-500 line-through">{Math.round(card.value)} zł</span>
                                                     </>
                                                 ) : (
-                                                    <span className="text-2xl font-bold text-white">{card.price} zł</span>
+                                                    <span className="text-2xl font-bold text-white">{Math.round(card.price)} zł</span>
                                                 )}
                                             </div>
 
