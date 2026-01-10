@@ -22,7 +22,8 @@ import {
     Menu,
     Users,
     ChevronDown,
-    Zap
+    Zap,
+    Briefcase
 } from 'lucide-react';
 
 const navigation = [
@@ -36,6 +37,7 @@ const navigation = [
         icon: Calendar,
         children: [
             { name: 'Złożone rezerwacje', href: '/admin/bookings' },
+            { name: 'Grafik / Dostępność', href: '/admin/availability' },
             { name: 'Zamówienia (Sklep)', href: '/admin/bookings/orders' },
             { name: 'Pakiety rezerwacji', href: '/admin/rezerwacja' },
         ]
@@ -61,6 +63,7 @@ const navigation = [
     { name: 'Zlecenia Dronowe', href: '/admin/drone-orders', icon: Zap },
     { name: 'Zapytania', href: '/admin/inquiries', icon: MessageSquare },
     { name: 'Użytkownicy', href: '/admin/users', icon: Users },
+    { name: 'Dostawcy (SaaS)', href: '/admin/providers', icon: Briefcase },
     { name: 'Analityka', href: '/admin/analytics', icon: BarChart3 },
     { name: 'Logi', href: '/admin/logs', icon: List },
     { name: 'Stopka', href: '/admin/footer', icon: FileText },

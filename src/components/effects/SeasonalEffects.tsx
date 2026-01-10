@@ -25,8 +25,8 @@ export default function SeasonalEffects() {
             });
     }, [pathname]); // Re-check on nav? Or just once. Usually global setting.
 
-    // Don't show on admin pages
-    if (pathname?.startsWith('/admin')) return null;
+    // Don't show on admin or panel pages
+    if (pathname?.startsWith('/admin') || pathname?.startsWith('/provider-panel') || pathname?.startsWith('/foto-wyzwanie/panel') || pathname?.startsWith('/galeria') || pathname?.startsWith('/client-panel')) return null;
 
     if (effect === 'none') return null;
 

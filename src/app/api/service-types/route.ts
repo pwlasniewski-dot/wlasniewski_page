@@ -8,7 +8,23 @@ export async function GET(request: NextRequest) {
         const serviceTypes = await prisma.serviceType.findMany({
             include: {
                 packages: {
-                    orderBy: { order: 'asc' }
+                    orderBy: { order: 'asc' },
+                    include: {
+                        provider: {
+                            select: {
+                                id: true,
+                                name: true,
+                                email: true,
+                                photographer_profile: {
+                                    select: {
+                                        avatar_url: true,
+                                        logo_url: true,
+                                        bio: true
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             },
             orderBy: { order: 'asc' }

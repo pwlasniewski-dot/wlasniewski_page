@@ -27,7 +27,18 @@ const TABLES = [
     'droneOrder',
     'analyticsSnapshot',
     'businessGoal',
-    'marketingTemplate'
+    'marketingTemplate',
+    'heroSlide',
+    'clientGallery',
+    'galleryPhoto',
+    'photoOrder',
+    'sessionInvite',
+    'challengeUser',
+    'challengeTimelineEvent',
+    'payout',
+    'providerAvailability',
+    'subscriber',
+    'newsletterCampaign'
 ];
 
 async function backup() {

@@ -242,6 +242,15 @@ export async function GET(request: Request) {
             orderBy: {
                 created_at: "desc",
             },
+            include: {
+                provider: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true
+                    }
+                }
+            }
         });
 
         return NextResponse.json({ bookings });

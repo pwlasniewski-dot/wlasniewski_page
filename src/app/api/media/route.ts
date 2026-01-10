@@ -24,10 +24,31 @@ export async function GET(request: NextRequest) {
                 });
             }
 
+            // Verify Token & Role
+            const authHeader = request.headers.get('authorization');
+            const token = authHeader?.split(' ')[1];
+            let userId: number | undefined;
+            let userRole: string | undefined;
+
+            if (token) {
+                const { jwtVerify } = await import('jose');
+                const secret = new TextEncoder().encode(process.env.JWT_SECRET || 'fallback-secret-change-this');
+                try {
+                    const { payload } = await jwtVerify(token, secret);
+                    userId = (payload as any).id;
+                    userRole = (payload as any).role;
+                } catch (e) { }
+            }
+
             // Standard: Get media with optional folder filter
             const whereClause: any = {};
             if (folder) {
                 whereClause.folder = folder;
+            }
+
+            // Security: Provider Isolation
+            if (userRole === 'PHOTOGRAPHER' && userId) {
+                whereClause.uploaded_by = userId;
             }
 
             const media = await prisma.mediaLibrary.findMany({

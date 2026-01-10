@@ -22,7 +22,7 @@ export async function requireAuth(request: NextRequest) {
         if (!authHeader) {
             authHeader = request.headers.get('AUTHORIZATION');
         }
-        
+
         const token = extractToken(authHeader);
 
         if (!token) {
@@ -42,10 +42,20 @@ export async function requireAuth(request: NextRequest) {
         }
 
         // Verify user exists in database
-        const user = await prisma.adminUser.findUnique({
-            where: { id: payload.id },
-            select: { id: true, email: true, name: true }
-        });
+        let user = null;
+
+        if (payload.role === 'PHOTOGRAPHER') {
+            user = await prisma.user.findUnique({
+                where: { id: payload.id },
+                select: { id: true, email: true, name: true, role: true }
+            });
+        } else {
+            // Default to AdminUser
+            user = await prisma.adminUser.findUnique({
+                where: { id: payload.id },
+                select: { id: true, email: true, name: true }
+            });
+        }
 
         if (!user) {
             return NextResponse.json(
@@ -55,7 +65,7 @@ export async function requireAuth(request: NextRequest) {
         }
 
         // Attach user to request (for TypeScript typing)
-        (request as AuthenticatedRequest).user = user;
+        (request as AuthenticatedRequest).user = user as any;
 
         return null; // null = authorized, continue
     } catch (error) {

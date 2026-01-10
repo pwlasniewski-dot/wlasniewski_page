@@ -50,8 +50,13 @@ export async function GET(request: NextRequest) {
             // Get all packages with service info
             packages = await prisma.package.findMany({
                 where: { is_active: true },
-                include: { service: true },
-                orderBy: [{ service_id: 'asc' }, { order: 'asc' }]
+                orderBy: [{ service_id: 'asc' }, { order: 'asc' }],
+                include: {
+                    service: true,
+                    provider: {
+                        select: { id: true, name: true, email: true }
+                    }
+                }
             });
         }
 

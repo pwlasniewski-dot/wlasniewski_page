@@ -72,7 +72,7 @@ export default function MediaPicker({ isOpen, onClose, onSelect, multiple = fals
 
     const fetchFolders = async () => {
         try {
-            const token = localStorage.getItem('admin_token');
+            const token = localStorage.getItem('admin_token') || localStorage.getItem('provider_token');
             const res = await fetch(`${getApiUrl('media')}?mode=folders`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -88,7 +88,7 @@ export default function MediaPicker({ isOpen, onClose, onSelect, multiple = fals
     const fetchMedia = async () => {
         setLoading(true);
         try {
-            const token = localStorage.getItem('admin_token');
+            const token = localStorage.getItem('admin_token') || localStorage.getItem('provider_token');
             const url = currentFolder
                 ? `${getApiUrl('media')}?folder=${encodeURIComponent(currentFolder)}`
                 : getApiUrl('media');
@@ -137,7 +137,7 @@ export default function MediaPicker({ isOpen, onClose, onSelect, multiple = fals
         let targetFolder = currentFolder || 'uploads';
         const uploadedIds: number[] = [];
 
-        const token = localStorage.getItem('admin_token');
+        const token = localStorage.getItem('admin_token') || localStorage.getItem('provider_token');
         if (!token) {
             toast.error('Nie jesteś zalogowany.');
             setUploading(false);
@@ -278,7 +278,7 @@ export default function MediaPicker({ isOpen, onClose, onSelect, multiple = fals
     const handleDelete = useCallback(async (ids: number[]) => {
         if (!confirm(`Czy na pewno chcesz usunąć ${ids.length} element(ów)?`)) return;
 
-        const token = localStorage.getItem('admin_token');
+        const token = localStorage.getItem('admin_token') || localStorage.getItem('provider_token');
         let successCount = 0;
 
         for (const id of ids) {
@@ -363,7 +363,7 @@ export default function MediaPicker({ isOpen, onClose, onSelect, multiple = fals
     const performBulkUpdate = async (ids: number[], updates: { folder?: string, alt_text?: string }) => {
         if (ids.length === 0) return;
 
-        const token = localStorage.getItem('admin_token');
+        const token = localStorage.getItem('admin_token') || localStorage.getItem('provider_token');
         try {
             const res = await fetch(`${getApiUrl('media')}`, {
                 method: 'PATCH',

@@ -23,6 +23,11 @@ type Booking = {
     challenge_id: number | null;
     status: string;
     created_at: string;
+    provider?: {
+        id: number;
+        name: string | null;
+        email: string;
+    };
 };
 
 export default function AdminBookingsPage() {
@@ -226,6 +231,7 @@ export default function AdminBookingsPage() {
                                 <tr>
                                     <th className="px-6 py-4">ID</th>
                                     <th className="px-6 py-4">Klient</th>
+                                    <th className="px-6 py-4">Dostawca</th>
                                     <th className="px-6 py-4">Usługa / Pakiet</th>
                                     <th className="px-6 py-4">Termin</th>
                                     <th className="px-6 py-4">Cena</th>
@@ -241,6 +247,25 @@ export default function AdminBookingsPage() {
                                             <div className="font-medium text-zinc-900">{booking.client_name}</div>
                                             <div className="text-zinc-500 text-xs">{booking.email}</div>
                                             {booking.phone && <div className="text-zinc-500 text-xs">{booking.phone}</div>}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            {booking.provider ? (
+                                                <div className="flex items-center gap-2 bg-indigo-50 px-2 py-1 rounded border border-indigo-100 w-fit">
+                                                    <div className="w-5 h-5 rounded-full bg-indigo-500 flex items-center justify-center text-[10px] font-bold text-white shrink-0">
+                                                        {booking.provider.name?.[0] || 'P'}
+                                                    </div>
+                                                    <div>
+                                                        <div className="font-medium text-zinc-900 text-xs">{booking.provider.name}</div>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center gap-2 px-2 py-1 w-fit">
+                                                    <div className="w-5 h-5 rounded-full bg-zinc-400 flex items-center justify-center text-[10px] font-bold text-white shrink-0">
+                                                        A
+                                                    </div>
+                                                    <div className="text-zinc-500 text-xs font-medium">Admin</div>
+                                                </div>
+                                            )}
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="font-medium text-zinc-900">{booking.service}</div>

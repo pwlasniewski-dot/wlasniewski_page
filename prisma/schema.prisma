@@ -350,6 +350,10 @@ model Booking {
   stripe_session_id String?
   photographer_id   Int?
   photographer      User?    @relation("PhotographerBookings", fields: [photographer_id], references: [id])
+  
+  // Reviews
+  client_rating     Int?     // 1-5 stars
+  client_review     String?  @db.Text
 
   @@map("bookings")
 }
@@ -384,6 +388,8 @@ model Package {
   updated_at        DateTime    @updatedAt
   available_hours   String?
   blocks_entire_day Boolean?
+  provider_id       Int?
+  provider          User?       @relation("ProviderPackages", fields: [provider_id], references: [id])
   service           ServiceType @relation(fields: [service_id], references: [id], onDelete: Cascade)
 
   @@unique([service_id, name])
@@ -464,6 +470,9 @@ model User {
   photographer_profile    PhotographerProfile? @relation(fields: [photographer_profile_id], references: [id])
   assigned_bookings       Booking[]           @relation("PhotographerBookings")
   assigned_galleries      ClientGallery[]     @relation("PhotographerGalleries")
+  owned_packages          Package[]           @relation("ProviderPackages")
+  payouts                 Payout[]
+  availability            ProviderAvailability[]
 
   @@map("users")
 }
@@ -476,11 +485,45 @@ model PhotographerProfile {
   base_commission   Int      @default(15) // percentage for the platform
   rating            Float    @default(5.0)
   portfolio_enabled Boolean  @default(true)
+  avatar_url        String?
+  logo_url          String?
+  highlight_photos  String?  // JSON array of image URLs
   created_at        DateTime @default(now())
   updated_at        DateTime @updatedAt
   user              User?
   
   @@map("photographer_profiles")
+}
+
+model Payout {
+  id           Int       @id @default(autoincrement())
+  user_id      Int
+  amount       Int       // Amount in lowest currency unit (e.g., grosze)
+  currency     String    @default("PLN")
+  status       String    @default("pending") // pending, approved, paid, rejected
+  admin_note   String?
+  booking_ids  String?   // JSON array of booking IDs included in this payout
+  created_at   DateTime  @default(now())
+  processed_at DateTime?
+  
+  user         User      @relation(fields: [user_id], references: [id])
+
+  @@map("payouts")
+}
+
+model ProviderAvailability {
+  id           Int      @id @default(autoincrement())
+  user_id      Int
+  date         DateTime
+  is_available Boolean  @default(true) // true = free, false = blocked (holiday/busy)
+  reason       String?  // Optional reason for unavailability
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+  
+  user         User     @relation(fields: [user_id], references: [id])
+
+  @@unique([user_id, date])
+  @@map("provider_availability")
 }
 
 model Basket {
@@ -864,4 +907,33 @@ model MarketingTemplate {
   updated_at DateTime @updatedAt
 
   @@map("marketing_templates")
+}
+
+// ========================================
+// NEWSLETTER & MAILING
+// ========================================
+
+model Subscriber {
+  id          Int      @id @default(autoincrement())
+  email       String   @unique
+  name        String?
+  is_active   Boolean  @default(true)
+  source      String?  // e.g. "footer", "checkout", "manual"
+  created_at  DateTime @default(now())
+  
+  @@map("subscribers")
+}
+
+model NewsletterCampaign {
+  id          Int      @id @default(autoincrement())
+  subject     String
+  content     String   @db.Text
+  status      String   @default("DRAFT") // DRAFT, SENT, SCHEDULED
+  sent_at     DateTime?
+  created_at  DateTime @default(now())
+  
+  // Analytics
+  sent_count  Int      @default(0)
+  
+  @@map("newsletter_campaigns")
 }

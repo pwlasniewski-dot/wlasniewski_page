@@ -28,10 +28,10 @@ export async function generateToken(payload: { id: number; email: string; role?:
 }
 
 // Verify JWT token
-export async function verifyToken(token: string): Promise<{ id: number; email: string } | null> {
+export async function verifyToken(token: string): Promise<{ id: number; email: string; role?: string } | null> {
     try {
         const { payload } = await jwtVerify(token, JWT_SECRET);
-        return payload as unknown as { id: number; email: string };
+        return payload as unknown as { id: number; email: string; role?: string };
     } catch (error) {
         console.error('JWT Verification failed:', error);
         return null;

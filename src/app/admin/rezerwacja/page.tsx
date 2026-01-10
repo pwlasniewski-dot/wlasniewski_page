@@ -29,6 +29,11 @@ interface Package {
     blocks_entire_day?: boolean; // true for weddings, false for sessions
     order: number;
     is_active: boolean;
+    provider?: {
+        id: number;
+        name: string | null;
+        email: string;
+    };
 }
 
 export default function AdminPackagesPage() {
@@ -38,6 +43,7 @@ export default function AdminPackagesPage() {
     const [showPackageForm, setShowPackageForm] = useState(false);
     const [editingServiceType, setEditingServiceType] = useState<ServiceType | null>(null);
     const [showServiceTypeForm, setShowServiceTypeForm] = useState(false);
+    const [filterOwner, setFilterOwner] = useState<'ALL' | 'ADMIN' | 'PROVIDER'>('ALL');
 
     // Load service types and packages
     useEffect(() => {
@@ -62,7 +68,17 @@ export default function AdminPackagesPage() {
     // Save package
     const handleSavePackage = async (pkg: Package, serviceId: number) => {
         if (!pkg.name || !pkg.hours || pkg.price === undefined) {
-            toast.error('Uzupełnij wymagane pola');
+            toast.error('Uzupełnij wymagane pola (Nazwa, Godziny, Cena)');
+            return;
+        }
+
+        if (pkg.price < 0) {
+            toast.error('Cena nie może być ujemna');
+            return;
+        }
+
+        if (pkg.hours <= 0) {
+            toast.error('Liczba godzin musi być większa od 0');
             return;
         }
 
@@ -76,7 +92,7 @@ export default function AdminPackagesPage() {
                     ...pkg,
                     service_id: serviceId,
                     features: typeof pkg.features === 'string' ? pkg.features : JSON.stringify(pkg.features || []),
-                    price: parseInt(String(pkg.price))
+                    price: Math.round(Number(pkg.price)) // Ensure integer
                 })
             });
 
@@ -252,8 +268,12 @@ export default function AdminPackagesPage() {
 
                             {/* Packages Grid */}
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-                                {service.packages.map((pkg) => (
-                                    <div key={pkg.id} className="bg-zinc-800 rounded-lg p-4 border border-zinc-700">
+                                {service.packages.filter(pkg => {
+                                    if (filterOwner === 'ADMIN') return !pkg.provider;
+                                    if (filterOwner === 'PROVIDER') return !!pkg.provider;
+                                    return true;
+                                }).map((pkg) => (
+                                    <div key={pkg.id} className={`bg-zinc-800 rounded-lg p-4 border ${pkg.provider ? 'border-indigo-500/30 ring-1 ring-indigo-500/10' : 'border-zinc-700'}`}>
                                         <div className="flex items-start justify-between mb-3">
                                             <div className="flex items-center gap-2">
                                                 <span className="text-2xl">{pkg.icon || '📦'}</span>
@@ -266,6 +286,18 @@ export default function AdminPackagesPage() {
                                                 {pkg.is_active ? 'Aktywny' : 'Nieaktywny'}
                                             </span>
                                         </div>
+
+                                        {pkg.provider && (
+                                            <div className="mb-3 flex items-center gap-2 bg-indigo-500/10 px-3 py-2 rounded border border-indigo-500/20">
+                                                <div className="w-5 h-5 rounded-full bg-indigo-500 flex items-center justify-center text-[10px] font-bold text-white">
+                                                    {pkg.provider.name?.[0] || 'P'}
+                                                </div>
+                                                <div className="text-xs text-indigo-300">
+                                                    <span className="font-semibold">{pkg.provider.name}</span>
+                                                    <span className="opacity-60 block text-[10px]">{pkg.provider.email}</span>
+                                                </div>
+                                            </div>
+                                        )}
 
                                         {pkg.subtitle && <p className="text-sm text-zinc-300 mb-2">{pkg.subtitle}</p>}
 

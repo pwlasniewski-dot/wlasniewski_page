@@ -144,7 +144,43 @@ Ten plik służy do ścisłego monitorowania wszystkich zmian wprowadzanych w pr
 3. **Migracje zamiast push**: Stosuj `prisma migrate` dla zmian w schemacie.
 4. **Logowanie**: Każda zmiana strukturalna musi być tutaj odnotowana z uzasadnieniem.
 
+## 🛡️ DATABASE & DEPLOYMENT PROTOCOLS (Kompendium Wiedzy)
+
+### 1. Stan Bazy Danych: Localhost vs Production (Neon)
+Obecnie pracujemy w systemie "Local First". Oznacza to rozbieżność struktur bazy danych, która jest **celowa i bezpieczna**.
+
+| Cecha | Localhost (Dev) | Production (Neon) | Status |
+| :--- | :--- | :--- | :--- |
+| **Baza** | `fotograf_local` | `neondb` | ✅ |
+| **Modele (Core)** | User, Portfolio, Settings, Orders | User, Portfolio, Settings, Orders | **Identyczne (1:1)** |
+| **Dane (Content)** | Pełna kopia produkcji (Holy Backup) | Dane "Żywe" | **Zsynchronizowane** |
+| **Newsletter** | `Subscriber`, `NewsletterCampaign` | ❌ (Brak tabel) | **Różnica (Do wdrożenia)** |
+| **Provider** | `User (role: PHOTOGRAPHER)` | ❌ (Brak konta) | **Różnica (Do wdrożenia)** |
+
+> [!NOTE]
+> **Dlaczego tak jest?**
+> Dzięki temu możesz psuć, testować i zmieniać newsletter lokalnie, a klienci na produkcji nie widzą błędów ani przestojów.
+
+### 2. PROTOKÓŁ WDROŻENIA (Deploy to Production)
+Kiedy uznasz, że Newsletter jest gotowy, wykonamy **Deploy**. To procedura one-way (tylko w jedną stronę).
+
+**Krok 1: Backup Produkcji (Safety)**
+*   Uruchomienie `npm run db:backup` na produkcji (aby mieć świeży zrzut przed zmianami).
+
+**Krok 2: Migracja Schematu (Schema)**
+*   Zmiana `.env` na PROD.
+*   Wykonanie komendy: `npx prisma migrate deploy` (Nigdy `db push`!).
+*   **Efekt:** Neon "dobuduje" tabelę `Subscriber` i `NewsletterCampaign` obok istniejących danych. Nic nie zostanie skasowane.
+
+**Krok 3: Publikacja Aplikacji (Netlify)**
+*   `git push` kodu na repozytorium.
+*   Netlify buduje nową wersję strony (z formularzem w stopce).
+
+**Krok 4: Data Seed (Uzupełnienie)**
+*   Jeśli potrzebujemy konta fotografa na produkcji, uruchamiamy tam `scripts/create-provider.ts`.
+
 ---
+
 
 ## Log Zmian
 
@@ -166,6 +202,89 @@ Ten plik służy do ścisłego monitorowania wszystkich zmian wprowadzanych w pr
    - Naprawiono przycisk usuwania (Kosz) w menu admina poprzez dodanie `e.stopPropagation()`.
 
 **Status:** ✅ **DONE & SECURED**
+
+### [2026-01-05] 🛡️ TOTAL Backup Strategy & Protocol Update
+**Cel:** Zapewnienie 100% pewności odzyskania danych całej platformy (B2C + B2B) przed testami.
+**Zrealizowane Operacje:**
+1. **Full JSON Dump**:
+   - Wykonano zrzut `scripts/backup-full.ts` do: `backups/2026-01-05T15-04-09-414Z`.
+   - Zawiera 40+ plików JSON (każda tabela osobno). Jest to "Surowa Kopia Bezpieczeństwa".
+
+2. **Holy Backup Patch & Sync**:
+   - Zaktualizowano `prisma/db-management.ts` o brakujące tabele: `heroSlide`, `clientGallery`, `galleryPhoto`, `photoOrder`, `sessionInvite`.
+   - Wykonano `npm run db:backup`, tworząc scalony plik: `backups/data/latest-holy-backup.json` (540KB).
+   - Jest to "Narzędzie Odtwarzania" (`db:restore`).
+
+**Uzasadnienie (Justification):**
+Posiadamy teraz dwa niezależne źródła prawdy:
+- **Folder (15:04)**: Do ręcznej analizy i wyciągania pojedynczych rekordów.
+- **Plik (15:05)**: Do automatycznego odtworzenia całej bazy jedną komendą (`db:restore`).
+Stan hostingu jest zabezpieczony w 100%.
+
+**Nowa Zasada:**
+> Każda migracja dodająca nową tabelę (`model` w schema.prisma) MUSI wiązać się z aktualizacją tablicy `TABLES` w pliku `prisma/db-management.ts`.
+
+**Status:** ✅ **BACKUP VERIFIED & SECURED**
+
+### [2026-01-05] 🚀 STRATEGIC PIVOT: Event Marketplace SaaS
+**Zdarzenie:** Przyjęcie nowej "Konstytucji Projektu" (SaaS Manifesto).
+**Opis Transformacji:**
+Platforma `wlasniewski.pl` przechodzi ewolucję z witryny osobistej w **Hub Usług Eventowych**.
+
+**Główne Postanowienia (Szczegóły w `SAAS_MANIFESTO.md`):**
+1. **Architektura Ról:** Admin (Właściciel) vs Provider (Wykonawca) vs Klient.
+2. **Finanse Centralne:** Płatności przyjmuje Admin, Dostawcy otrzymują wypłaty pomniejszone o prowizję.
+3. **Multikalendarz:** Możliwość rezerwacji wiązanych (Fotograf + DJ) z wykrywaniem kolizji terminów.
+4. **Account-First:** Dostęp do galerii i pełni funkcji tylko dla zalogowanych klientów.
+5. **Zero Loss & Security**: Rygorystyczne przestrzeganie procedur backupu przy rozbudowie schematu DB.
+
+**Status:** 📜 **VISION ADOPTED**
+
+### [2026-01-05] 🗄️ SaaS Database Schema Init
+**Cel:** Przygotowanie bazy danych pod architekturę Marketplace bez utraty danych.
+**Zrealizowane Zmiany:**
+1. **Nowe Modele:**
+   - `Payout`: Obsługa rozliczeń z dostawcami (statusy, kwoty).
+   - `ProviderAvailability`: Kalendarz dostępności per użytkownik.
+2. **Relacje:**
+   - Dodano `provider_id` do modelu `Package` (Dostawca może posiadać własne pakiety).
+   - Rozszerzono model `User` o relacje `payouts`, `availability` i `owned_packages`.
+3. **Bezpieczeństwo:**
+   - Zastosowano `npx prisma db push` (Changes were additive, no data loss occurred).
+   - Operacja zgodna z protokołem "Zero Loss".
+
+**Status:** ✅ **DB SYNCED**
+
+### [2026-01-05] 💼 Provider Panel Init (SaaS Core)
+**Cel:** Stworzenie podstawowego interfejsu dla dostawców usług (Fotografów).
+**Zrealizowane Moduły:**
+1. **Routing & Auth:**
+   - `/provider-panel/login`: Dedykowany ekran logowania (Design "Dark Premium").
+   - `ProviderLayout`: Middleware klient-side chroniący dostęp (wymaga `role: 'PHOTOGRAPHER'`).
+   - API `/api/auth/login`: Zaktualizowano o zwracanie roli użytkownika i zapis do tokena.
+2. **Dashboard UI:**
+   - `ProviderSidebar`: Uproszczona nawigacja (Pulpit, Pakiety, Grafik, Rozliczenia).
+   - `Dashboard`: Widgety statystyk (Przychód, Zlecenia, Status).
+3. **Data Seeding:**
+   - Skrypt `scripts/create-provider.ts` generuje konto testowe:
+     - Login: `fotograf@wlasniewski.pl`
+     - Hasło: `password123`
+     - Rola: `PHOTOGRAPHER`
+
+**Status:** ✅ **PANEL READY** (Można się logować i testować) (Dokumentacja zaktualizowana)
+
+### [2026-01-05] 🏠 Localhost Development Environment (Safety First)
+**Cel:** Całkowita izolacja prac rozwojowych od infrastruktury chmurowej (Neon).
+**Zrealizowane Zmiany:**
+1. **Localhost First Strategy:**
+   - Decyzja biznesowa: Prace nad nowymi funkcjami (Newsletter) odbywają się na lokalnej bazie danych.
+   - **Bezpieczeństwo:** Eliminacja ryzyka przypadkowego nadpisania produkcji lub wygaśnięcia brancha.
+   - **Deploy Flow:** Localhost -> (Testy) -> Neon Production.
+2. **Konfiguracja:**
+   - Przełączono `.env` na lokalną instancję PostgreSQL.
+   - Zaktualizowano `SAAS_MANIFESTO.md`.
+
+**Status:** ✅ **ENV SWITCHED TO LOCALHOST**
 
 ### [2026-01-04] 🧠 Account Logic, Admin Integrations & Gift Card Inputs
 **Cel:** Poprawa UX dla logowania B2B, integracja zarządzania galeriami z listą użytkowników oraz przywrócenie pól personalizacji w koszyku.
@@ -1364,6 +1483,48 @@ Business Insights
 - Optymalizacja SEO pod region Kujawsko-Pomorski i kwalifikacje techniczne (NSTS 01, ITC Level 1).
 - Wprowadzenie miar rentowności (Revenue Density) dla usług B2B i B2C.
 - **Status**: Zakończone (Done).
+
+---
+
+## 🔌 DANE DOSTĘPOWE (Local DB Connection)
+
+Jeśli chcesz połączyć się z bazą lokalną za pomocą zewnętrznego klienta (np. pgAdmin, DBeaver, TablePlus), użyj poniższych danych.
+
+> [!IMPORTANT]
+> Te dane działają TYLKO dla środowiska lokalnego (`.env`). Nie używaj ich do łączenia się z Neon (Produkcja).
+
+| Parametr | Wartość | Uwagi |
+| :--- | :--- | :--- |
+| **Host** | `localhost` | Nie używaj `http://`, po prostu `localhost` |
+| **Port** | `5432` | Standardowy port PostgreSQL |
+| **User** | `postgres` | Użytkownik główny (Superuser) |
+| **Password** | *(Sprawdź plik .env)* | Szukaj klucza `POSTGRES_PASSWORD` lub w `DATABASE_URL` |
+| **Database** | `fotograf_local` | Nazwa bazy developerskiej |
+| **SSL Mode** | `Disable` / `Prefer` | Lokalnie SSL nie jest wymagane |
+
+### Przykładowy Connection String
+`postgresql://postgres:[HASŁO]@localhost:5432/fotograf_local`
+
+---
+
+## ☁️ DANE DOSTĘPOWE (Neon Production)
+
+Aby podłączyć się do bazy produkcyjnej (Neon) jako **drugie połączenie** w swoim kliencie SQL:
+
+1.  Znajdź zmienną `DATABASE_URL` w pliku `.env` (jeśli masz wersję prod lokalnie) lub w panelu Netlify/Neon.
+2.  Adres ma format: `postgres://[USER]:[PASSWORD]@[HOST]/[DATABASE]?sslmode=require`
+
+| Parametr | Wartość | Uwagi |
+| :--- | :--- | :--- |
+| **Host** | `ep-....aws.neon.tech` | Unikalny host Twojego projektu Neon |
+| **Port** | `5432` | Standardowy port |
+| **User** | *(z connection stringa)* | Np. `neondb_owner_...` |
+| **Password** | *(z connection stringa)* | Długi ciąg znaków |
+| **Database** | `neondb` | Domyślna nazwa bazy w Neon |
+| **SSL Mode** | `Require` | **WYMAGANE** (Neon odrzuci połączenie bez SSL) |
+
+> [!CAUTION]
+> **To jest "ŻYWA" baza.** Każda zmiana (UPDATE, DELETE) jest natychmiast widoczna dla klientów. Bądź ostrożny!
 
 
 

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { getApiUrl } from "@/lib/api-config";
+import NewsletterForm from "./newsletter/NewsletterForm";
 
 interface FooterLink {
     id: string;
@@ -212,6 +213,15 @@ export default function Footer() {
                     <p className="mt-2 text-sm text-zinc-400">
                         {settings.tagline}
                     </p>
+
+                    {!isB2B && (
+                        <div className="mt-6">
+                            <p className="text-xs font-semibold mb-2 text-zinc-200">
+                                Bądź na bieżąco
+                            </p>
+                            <NewsletterForm source="footer" />
+                        </div>
+                    )}
                 </div>
 
                 {/* Oferta */}

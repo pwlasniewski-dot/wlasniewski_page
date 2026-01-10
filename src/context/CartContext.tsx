@@ -56,7 +56,12 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, [items, isInitialized]);
 
     const addItem = useCallback((newItem: Omit<CartItem, 'id'>) => {
-        const id = `${newItem.type}-${Date.now()}`;
+        // Use randomUUID if available, else fallback to random string
+        const uniqueSuffix = typeof crypto !== 'undefined' && crypto.randomUUID
+            ? crypto.randomUUID()
+            : Math.random().toString(36).substring(2, 9);
+
+        const id = `${newItem.type}-${Date.now()}-${uniqueSuffix}`;
         setItems(prev => [...prev, { ...newItem, id }]);
         setIsOpen(true);
         toast.success(`Dodano do koszyka: ${newItem.title}`);
