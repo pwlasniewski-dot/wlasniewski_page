@@ -181,7 +181,7 @@ export default function HeroSlider({ slides = [], interval = 6000 }: HeroSliderP
     }
 
     return (
-        <div className="relative w-full bg-black overflow-hidden" style={{ height: '100vh', minHeight: '600px' }}>
+        <div className="relative w-full bg-black overflow-hidden" style={{ height: '90vh', minHeight: '600px' }}>
             {/* Background Images */}
             <AnimatePresence mode="wait">
                 <motion.div
@@ -195,19 +195,19 @@ export default function HeroSlider({ slides = [], interval = 6000 }: HeroSliderP
                     <motion.div
                         className="w-full h-full bg-cover bg-no-repeat"
                         initial={{ scale: 1 }}
-                        animate={{ scale: 1.1 }}
+                        animate={{ scale: 1.02 }}
                         transition={{
-                            duration: 12,
+                            duration: 15,
                             ease: "linear",
                             repeat: 0
                         }}
-                        // [STABLE: 2025-12-23] KRYTYCZNE KADROWANIE (FRAMING)
-                        // center 15% na desktop oraz top center na mobile gwarantują,
-                        // że twarze na pionowych zdjęciach (wedding/portraits) nie są ucięte.
+                        // [UPDATED: 2026-01-10] POPRAWA KADROWANIA (FRAMING)
+                        // center 30% na desktop oraz center center na mobile
+                        // lepiej eksponuje postacie, nie ucinając głów.
                         style={{
                             backgroundImage: `url("${slideImage}")`,
-                            backgroundPosition: isMobile ? 'top center' : 'center 15%',
-                            transformOrigin: isMobile ? 'top center' : 'center 15%'
+                            backgroundPosition: isMobile ? 'center center' : 'center 30%',
+                            transformOrigin: isMobile ? 'center center' : 'center 30%'
                         }}
                     />
                 </motion.div>

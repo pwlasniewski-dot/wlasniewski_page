@@ -305,6 +305,16 @@ Ten plik służy do ścisłego monitorowania wszystkich zmian wprowadzanych w pr
 - **Admin UX**: Added explicit session-expired handling (401 toast) in the page editor to guide users back to login.
 - **B2B Search Fix**: Included 'start' and 'home' in search criteria for B2B root page discovery.
 
+### 2026-01-11: Deployment & Security Hardening
+- **Feature**: Facebook Button added to "About Me" (Transparent Outline).
+- **Feature**: History Gallery (Admin + Public) implemented with `HistoryPhoto` model.
+- **Security**: Hardcoded AWS credentials removed from scripts.
+- **Security**: Backup files (`backups/data/*.json`) removed from git tracking to prevent secret leaks.
+- **Incident**: Accidental work on `SAAS` branch in Production folder.
+    - **Recovery**: Executed "Surgical Recovery" plan.
+    - **Action**: Switched to `main`, cherry-picked History/FB features, manually checked out independent fixes (Offers, Dark Mode) from `SAAS`.
+    - **Outcome**: Production deployed cleanly WITHOUT experimental SaaS code. Zero Data Loss guarantee maintained.
+
 ### [2025-12-28] Holistic 401 Fix & Data Integrity Verification (Zero Lost)
 - **Problem**: 401 Unauthorized errors on admin actions and "duplicate slug" bug overwriting existing pages (e.g. portfolio).
 - **Fix**:

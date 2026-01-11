@@ -87,7 +87,8 @@ export default function HomeContent({ heroSlides, sections, homeData, orderedSec
 
     const getBackgroundClass = (bgColor?: string) => {
         switch (bgColor) {
-            case 'white': return 'bg-white text-black';
+            case 'white': return 'bg-white';
+            case 'zinc-100': return 'bg-zinc-100'; // Light Gray
             case 'zinc-800': return 'bg-zinc-800';
             case 'zinc-900': return 'bg-zinc-900';
             case 'gold-900': return 'bg-gradient-to-br from-gold-900/30 to-black';
@@ -97,27 +98,17 @@ export default function HomeContent({ heroSlides, sections, homeData, orderedSec
     };
 
     const getTextColorClass = (variant?: string, bgColor?: string) => {
-        // If variant is explicitly set, use it
-        if (variant === 'dark') {
+        // Dynamic Text Color based on Background
+        const isLight = bgColor === 'white' || bgColor === 'zinc-100' || bgColor === 'zinc-50';
+
+        if (isLight) {
             return {
-                heading: 'text-zinc-900',
+                heading: 'text-black',
                 body: 'text-zinc-700'
-            };
-        }
-        if (variant === 'light') {
-            return {
-                heading: 'text-gold-400',
-                body: 'text-zinc-300'
             };
         }
 
-        // Auto-detect based on background
-        if (bgColor === 'white') {
-            return {
-                heading: 'text-zinc-900',
-                body: 'text-zinc-700'
-            };
-        }
+        // Default Dark Mode Text
         return {
             heading: 'text-gold-400',
             body: 'text-zinc-300'
@@ -165,6 +156,19 @@ export default function HomeContent({ heroSlides, sections, homeData, orderedSec
                                             className={`prose prose-invert ${textColors.body} mb-8 text-base md:text-lg max-w-none`}
                                             dangerouslySetInnerHTML={{ __html: section.data.content }}
                                         />
+
+                                        {/* New Facebook Button */}
+                                        <div className="mt-12 flex justify-center">
+                                            <a
+                                                href="https://www.facebook.com/PiotrWlasniewskiFotografia"
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="px-8 py-3 border border-white/20 rounded-full text-white hover:bg-white/10 hover:border-gold-400 hover:text-gold-400 transition-all duration-300 backdrop-blur-sm"
+                                            >
+                                                Odwiedź mnie na Facebooku
+                                            </a>
+                                        </div>
+
                                         <div className={`flex flex-wrap gap-4 ${section.data.textPosition === 'center' ? 'justify-center' :
                                             section.data.textPosition === 'right' ? 'justify-end' :
                                                 'justify-start'
@@ -185,6 +189,18 @@ export default function HomeContent({ heroSlides, sections, homeData, orderedSec
                                                     {section.data.cta2Text}
                                                 </Link>
                                             )}
+                                            {/* Facebook Button (User Request) */}
+                                            <a
+                                                href="https://www.facebook.com/przemyslaw.wlasniewski.fotografia"
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="px-6 py-3 border border-white/20 text-white font-bold rounded-lg hover:bg-white/10 hover:border-white/40 transition-colors flex items-center gap-2"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                    <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
+                                                </svg>
+                                                Facebook
+                                            </a>
                                         </div>
                                     </div>
                                 </div>

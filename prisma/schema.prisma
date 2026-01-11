@@ -96,8 +96,20 @@ model Setting {
   portfolio_layout                  String?  @default("slider")
   gift_card_hero_opacity            Float?   @default(0.6)
   social_proof_enabled              Boolean  @default(true)
+  theme_mode                        String   @default("dark")
 
   @@map("settings")
+}
+
+model HistoryPhoto {
+  id        String   @id @default(uuid())
+  url       String
+  filename  String
+  width     Int?
+  height    Int?
+  createdAt DateTime @default(now())
+
+  @@map("history_photos")
 }
 
 model MenuItem {

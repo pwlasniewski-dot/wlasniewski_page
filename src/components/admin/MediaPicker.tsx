@@ -37,6 +37,9 @@ export default function MediaPicker({ isOpen, onClose, onSelect, multiple = fals
     const [searchTerm, setSearchTerm] = useState('');
     const [isDraggingFile, setIsDraggingFile] = useState(false);
     const [uploading, setUploading] = useState(false);
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(false);
+    const limit = 50;
 
     // Bulk Edit State
     const [isSelectionMode, setIsSelectionMode] = useState(multiple || inline);
@@ -51,7 +54,8 @@ export default function MediaPicker({ isOpen, onClose, onSelect, multiple = fals
     useEffect(() => {
         if (isOpen) {
             fetchFolders();
-            fetchMedia();
+            setPage(1);
+            fetchMedia(true);
             setSelectedItems([]);
             // In inline mode, we default to selection mode enabled for better UX
             setIsSelectionMode(multiple || inline);
@@ -62,17 +66,21 @@ export default function MediaPicker({ isOpen, onClose, onSelect, multiple = fals
         // If inline, fetch immediately on mount
         if (inline && !isOpen) {
             fetchFolders();
-            fetchMedia();
+            setPage(1);
+            fetchMedia(true);
         }
     }, [inline]);
 
     useEffect(() => {
-        if (isOpen || inline) fetchMedia();
-    }, [currentFolder]);
+        if (isOpen || inline) {
+            setPage(1);
+            fetchMedia(true);
+        }
+    }, [currentFolder, searchTerm]); // Also reset on search
 
     const fetchFolders = async () => {
         try {
-            const token = localStorage.getItem('admin_token');
+            const token = localStorage.getItem('admin_token') || localStorage.getItem('provider_token');
             const res = await fetch(`${getApiUrl('media')}?mode=folders`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -85,25 +93,46 @@ export default function MediaPicker({ isOpen, onClose, onSelect, multiple = fals
         }
     };
 
-    const fetchMedia = async () => {
+    const fetchMedia = async (isInitial = false) => {
         setLoading(true);
         try {
-            const token = localStorage.getItem('admin_token');
-            const url = currentFolder
-                ? `${getApiUrl('media')}?folder=${encodeURIComponent(currentFolder)}`
-                : getApiUrl('media');
+            const token = localStorage.getItem('admin_token') || localStorage.getItem('provider_token');
+            const currentPage = isInitial ? 1 : page;
+            const baseUrl = getApiUrl('media');
+            const params = new URLSearchParams();
 
-            const res = await fetch(url, {
+            if (currentFolder) params.append('folder', currentFolder);
+            params.append('limit', limit.toString());
+            params.append('page', currentPage.toString());
+
+            const res = await fetch(`${baseUrl}?${params.toString()}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const data = await res.json();
             if (data.success) {
-                setMedia(data.media);
+                if (isInitial) {
+                    setMedia(data.media);
+                } else {
+                    setMedia(prev => {
+                        const newItems = data.media.filter((newItem: MediaItem) => !prev.some(existing => existing.id === newItem.id));
+                        return [...prev, ...newItems];
+                    });
+                }
+                setHasMore(data.pagination?.hasMore || false);
             }
         } catch (error) {
             console.error('Failed to fetch media', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleLoadMore = () => {
+        if (!loading && hasMore) {
+            const nextPage = page + 1;
+            setPage(nextPage);
+            // We need to pass the next page directly because state update is async
+            setTimeout(() => fetchMedia(false), 0);
         }
     };
 
@@ -137,7 +166,7 @@ export default function MediaPicker({ isOpen, onClose, onSelect, multiple = fals
         let targetFolder = currentFolder || 'uploads';
         const uploadedIds: number[] = [];
 
-        const token = localStorage.getItem('admin_token');
+        const token = localStorage.getItem('admin_token') || localStorage.getItem('provider_token');
         if (!token) {
             toast.error('Nie jesteś zalogowany.');
             setUploading(false);
@@ -187,35 +216,65 @@ export default function MediaPicker({ isOpen, onClose, onSelect, multiple = fals
                 if (!presignedRes.ok) throw new Error(preError || 'Failed to get upload URL');
 
                 // 3. Direct Upload to S3
-                const s3Res = await fetch(uploadUrl, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': fileToUpload.type },
-                    body: fileToUpload,
-                });
+                try {
+                    const s3Res = await fetch(uploadUrl, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': fileToUpload.type },
+                        body: fileToUpload,
+                    });
 
-                if (!s3Res.ok) throw new Error('S3 Upload failed');
+                    if (!s3Res.ok) throw new Error('S3 Direct Upload failed');
 
-                // 4. Register in Database
-                const regRes = await fetch(`${getApiUrl('media')}/upload/register`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        fileName: key,
-                        publicUrl: publicUrl,
-                        fileSize: fileToUpload.size,
-                        mimeType: fileToUpload.type,
-                        folder: targetFolder
-                    }),
-                });
+                    // 4. Register in Database
+                    const regRes = await fetch(`${getApiUrl('media')}/upload/register`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            fileName: key,
+                            publicUrl: publicUrl,
+                            fileSize: fileToUpload.size,
+                            mimeType: fileToUpload.type,
+                            folder: targetFolder
+                        }),
+                    });
 
-                const data = await regRes.json();
-                if (data.success) {
-                    uploadedIds.push(data.media.id);
-                } else {
-                    throw new Error(data.error || 'Registration failed');
+                    const data = await regRes.json();
+                    if (data.success) {
+                        uploadedIds.push(data.media.id);
+                    } else {
+                        throw new Error(data.error || 'Registration failed');
+                    }
+                } catch (s3Err: any) {
+                    console.warn('[UPLOAD] Direct S3 PUT failed, trying server-side fallback...', s3Err);
+
+                    // FALLBACK: Use legacy POST /api/media/upload (Server-side handling)
+                    const formData = new FormData();
+                    formData.append('file', fileToUpload);
+                    formData.append('folder', targetFolder);
+
+                    const fallbackRes = await fetch(`${getApiUrl('media')}/upload`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: formData
+                    });
+
+                    if (!fallbackRes.ok) {
+                        const errData = await fallbackRes.json().catch(() => ({}));
+                        throw new Error(errData.error || 'Server-side fallback also failed');
+                    }
+
+                    const data = await fallbackRes.json();
+                    if (data.success) {
+                        uploadedIds.push(data.media.id);
+                        console.log(`[UPLOAD] Fallback successful for ${file.name}`);
+                    } else {
+                        throw new Error(data.error || 'Fallback registration failed');
+                    }
                 }
             } catch (error: any) {
                 console.error('Upload flow failed', error);
@@ -278,7 +337,7 @@ export default function MediaPicker({ isOpen, onClose, onSelect, multiple = fals
     const handleDelete = useCallback(async (ids: number[]) => {
         if (!confirm(`Czy na pewno chcesz usunąć ${ids.length} element(ów)?`)) return;
 
-        const token = localStorage.getItem('admin_token');
+        const token = localStorage.getItem('admin_token') || localStorage.getItem('provider_token');
         let successCount = 0;
 
         for (const id of ids) {
@@ -363,7 +422,7 @@ export default function MediaPicker({ isOpen, onClose, onSelect, multiple = fals
     const performBulkUpdate = async (ids: number[], updates: { folder?: string, alt_text?: string }) => {
         if (ids.length === 0) return;
 
-        const token = localStorage.getItem('admin_token');
+        const token = localStorage.getItem('admin_token') || localStorage.getItem('provider_token');
         try {
             const res = await fetch(`${getApiUrl('media')}`, {
                 method: 'PATCH',
@@ -547,19 +606,33 @@ export default function MediaPicker({ isOpen, onClose, onSelect, multiple = fals
                                 <p>Przeciągnij pliki tutaj</p>
                             </div>
                         ) : (
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-4 pb-20">
-                                {filteredMedia.map((item) => (
-                                    <MediaItemCard
-                                        key={item.id}
-                                        item={item}
-                                        isSelected={selectedItems.some(i => i.id === item.id)}
-                                        onToggle={toggleSelection}
-                                        onClick={handleItemClick} // Changed: pass the main handler
-                                        onDelete={handleDelete}
-                                        onDragStart={startDragMedia}
-                                        selectionMode={isSelectionMode}
-                                    />
-                                ))}
+                            <div className="flex flex-col gap-8 pb-32">
+                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-4">
+                                    {filteredMedia.map((item) => (
+                                        <MediaItemCard
+                                            key={item.id}
+                                            item={item}
+                                            isSelected={selectedItems.some(i => i.id === item.id)}
+                                            onToggle={toggleSelection}
+                                            onClick={handleItemClick} // Changed: pass the main handler
+                                            onDelete={handleDelete}
+                                            onDragStart={startDragMedia}
+                                            selectionMode={isSelectionMode}
+                                        />
+                                    ))}
+                                </div>
+
+                                {hasMore && (
+                                    <div className="flex justify-center py-4">
+                                        <button
+                                            onClick={handleLoadMore}
+                                            disabled={loading}
+                                            className="px-8 py-3 bg-zinc-800 text-white rounded-lg hover:bg-zinc-700 transition-colors border border-zinc-700 font-medium disabled:opacity-50"
+                                        >
+                                            {loading ? 'Ładowanie...' : 'Załaduj więcej'}
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>

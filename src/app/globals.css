@@ -3,8 +3,9 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Default: Dark Mode Enforced (User Request: Remove White Mode) */
+  --background: #09090b;
+  --foreground: #ededed;
 
   /* Font variables populated by layout.tsx */
   --font-display: var(--font-display);
@@ -15,11 +16,16 @@
   --font-cinzel: var(--font-cinzel);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Dark Mode (B2C Black Version & System Preference Override if needed) */
+.dark {
+  --background: #0a0a0a;
+  --foreground: #ededed;
+}
+
+/* B2B Layout - ALWAYS Dark */
+.b2b-layout {
+  --background: #0a0a0a;
+  --foreground: #ededed;
 }
 
 body {
@@ -140,6 +146,7 @@ body {
   /* Rich Text Content Fixes */
   .prose p:empty,
   .prose p:has(br:only-child) {
-    min-height: 1.5em; /* Preserve height for empty lines */
+    min-height: 1.5em;
+    /* Preserve height for empty lines */
   }
 }
