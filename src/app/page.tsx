@@ -109,9 +109,19 @@ export default async function HomePage() {
 
     // Fetch Hero Slider Interval (fallback to 6000ms)
     // We check both specific KV setting and generic settings if needed
-    const intervalSetting = await prisma.setting.findFirst({
-        where: { setting_key: 'hero_slider_interval' }
-    });
+    let intervalSetting = null;
+    try {
+        intervalSetting = await prisma.setting.findFirst({
+            where: { setting_key: 'hero_slider_interval' }
+        });
+    } catch (e: any) {
+        // If column missing (P2022), ignore and use fallback
+        if (e.code === 'P2022') {
+            console.warn('Settings column missing (theme_mode?), using default interval.');
+        } else {
+            console.error('Failed to fetch hero slider interval', e);
+        }
+    }
     const heroSliderInterval = intervalSetting?.setting_value ? parseInt(intervalSetting.setting_value) : 6000;
 
     return (
