@@ -21,6 +21,7 @@ export async function PUT(
             theme,
             card_title,
             card_description,
+            notes,
             status,
         } = body;
 
@@ -33,6 +34,7 @@ export async function PUT(
                 ...(theme && { theme }),
                 ...(card_title && { card_title }),
                 ...(card_description && { card_description }),
+                ...(notes && { notes }),
                 ...(status && { status }),
             },
         });

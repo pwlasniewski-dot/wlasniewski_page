@@ -113,7 +113,16 @@ export async function PATCH(request: NextRequest) {
     return withAuth(request, async () => {
         try {
             const body = await request.json();
-            const { id, is_used, notes } = body;
+            const {
+                id,
+                is_used,
+                notes,
+                card_title,
+                card_description,
+                recipient_name,
+                recipient_email,
+                value
+            } = body;
 
             if (!id) {
                 return NextResponse.json({ error: 'Gift card ID is required' }, { status: 400 });
@@ -126,8 +135,14 @@ export async function PATCH(request: NextRequest) {
                     updateData.used_at = new Date();
                 }
             }
-            if (notes !== undefined) {
-                updateData.notes = notes;
+            if (notes !== undefined) updateData.notes = notes;
+            if (card_title !== undefined) updateData.card_title = card_title;
+            if (card_description !== undefined) updateData.card_description = card_description;
+            if (recipient_name !== undefined) updateData.recipient_name = recipient_name;
+            if (recipient_email !== undefined) updateData.recipient_email = recipient_email;
+            if (value !== undefined) {
+                updateData.value = parseInt(value);
+                updateData.amount = parseInt(value); // Sync amount just in case
             }
 
             const giftCard = await prisma.giftCard.update({

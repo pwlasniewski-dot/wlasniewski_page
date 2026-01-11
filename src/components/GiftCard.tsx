@@ -7,7 +7,7 @@ import { motion } from 'framer-motion';
 interface GiftCardProps {
     code: string;
     value: number;
-    theme: 'christmas' | 'wosp' | 'valentines' | 'easter' | 'halloween' | 'mothers-day' | 'childrens-day' | 'wedding' | 'birthday';
+    theme: 'christmas' | 'wosp' | 'valentines' | 'easter' | 'halloween' | 'mothers-day' | 'childrens-day' | 'wedding' | 'birthday' | 'gold' | 'blue' | 'green';
     logoUrl?: string;
     recipientName?: string;
     senderName?: string;
@@ -109,6 +109,34 @@ const themeConfigs: Record<string, ThemeConfig> = {
         title: 'Urodziny',
         description: 'Wiele szczęścia!',
         borderPattern: '🎉🎂🎉🎂',
+        textColor: 'text-white'
+    },
+    // Generic Premium Themes
+    gold: {
+        bgGradient: 'from-amber-700 via-yellow-600 to-amber-900',
+        accentColor: 'text-yellow-200',
+        icon: '✨',
+        title: 'Wyjątkowy Prezent',
+        description: 'Chwile warte zapamiętania',
+        borderPattern: '✨✨✨✨',
+        textColor: 'text-white'
+    },
+    blue: {
+        bgGradient: 'from-blue-900 via-indigo-800 to-slate-900',
+        accentColor: 'text-blue-200',
+        icon: '🌟',
+        title: 'Wyjątkowy Prezent',
+        description: 'Chwile warte zapamiętania',
+        borderPattern: '🌟🌟🌟🌟',
+        textColor: 'text-white'
+    },
+    green: {
+        bgGradient: 'from-emerald-900 via-green-800 to-teal-900',
+        accentColor: 'text-emerald-200',
+        icon: '🌿',
+        title: 'Wyjątkowy Prezent',
+        description: 'Chwile warte zapamiętania',
+        borderPattern: '🌿🌿🌿🌿',
         textColor: 'text-white'
     }
 };

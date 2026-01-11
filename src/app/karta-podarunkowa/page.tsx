@@ -40,6 +40,7 @@ export default function GiftCardShop() {
     const [favorites, setFavorites] = useState<number[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [heroImage, setHeroImage] = useState<string | null>(null);
+    const [logoUrl, setLogoUrl] = useState<string | undefined>(undefined);
     const [heroOpacity, setHeroOpacity] = useState(0.6);
     const [pageSections, setPageSections] = useState<any[] | null>(null);
     const { addItem } = useCart();
@@ -59,6 +60,9 @@ export default function GiftCardShop() {
 
                 if (settingsData?.heroImage) {
                     setHeroImage(settingsData.heroImage);
+                }
+                if (settingsData?.logoUrl) {
+                    setLogoUrl(settingsData.logoUrl);
                 }
                 if (settingsData?.heroOpacity !== undefined) {
                     setHeroOpacity(settingsData.heroOpacity);
@@ -245,6 +249,7 @@ export default function GiftCardShop() {
                                                     cardTitle={card.card_title}
                                                     cardDescription={card.card_description}
                                                     hideCode={true}
+                                                    logoUrl={logoUrl}
                                                 />
                                             </div>
                                         </div>

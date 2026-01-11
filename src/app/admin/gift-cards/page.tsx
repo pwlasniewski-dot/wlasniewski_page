@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Gift, Mail, Printer, Copy, Trash2, Plus, Share2, Facebook, Send, ShoppingBag } from 'lucide-react';
+import { Gift, Mail, Printer, Copy, Trash2, Plus, Share2, Facebook, Send, ShoppingBag, Edit } from 'lucide-react';
 import GiftCard from '@/components/GiftCard';
 import toast from 'react-hot-toast';
 import { getApiUrl } from '@/lib/api-config';
@@ -16,7 +16,10 @@ const THEMES = [
     { id: 'mothers-day', label: 'Dzień Matki', icon: '💐' },
     { id: 'childrens-day', label: 'Dzień Dziecka', icon: '🎈' },
     { id: 'wedding', label: 'Ślub', icon: '💒' },
-    { id: 'birthday', label: 'Urodziny', icon: '🎂' }
+    { id: 'birthday', label: 'Urodziny', icon: '🎂' },
+    { id: 'gold', label: 'Złota (logo)', icon: '✨' },
+    { id: 'blue', label: 'Niebieska (logo)', icon: '🌟' },
+    { id: 'green', label: 'Zielona (logo)', icon: '🌿' }
 ] as const;
 
 interface GiftCard {
@@ -30,6 +33,7 @@ interface GiftCard {
     message?: string;
     card_title?: string;
     card_description?: string;
+    notes?: string;
     lowest_price_30d?: number;
     status?: string;
     created_at?: string;
@@ -40,6 +44,7 @@ export default function GiftCardsAdmin() {
     const [giftCards, setGiftCards] = useState<GiftCard[]>([]);
     const [loading, setLoading] = useState(false);
     const [showCreateModal, setShowCreateModal] = useState(false);
+    const [editingId, setEditingId] = useState<string | null>(null);
     const [logoUrl, setLogoUrl] = useState('');
     const [isAuthorized, setIsAuthorized] = useState(false);
     const [promoBarEnabled, setPromoBarEnabled] = useState(false);
@@ -61,6 +66,7 @@ export default function GiftCardsAdmin() {
         message: '',
         card_title: '',
         card_description: '',
+        notes: '',
         lowest_price_30d: 0
     });
 
@@ -219,6 +225,42 @@ export default function GiftCardsAdmin() {
         setFormData(prev => ({ ...prev, code }));
     };
 
+    const handleEdit = (card: GiftCard) => {
+        setEditingId(card.id || null);
+        setFormData({
+            code: card.code,
+            value: card.value,
+            theme: card.theme,
+            recipientEmail: card.recipient_email || '',
+            recipientName: card.recipient_name || '',
+            senderName: card.sender_name || '',
+            message: card.message || '',
+            card_title: card.card_title || '',
+            card_description: card.card_description || '',
+            notes: card.notes || '',
+            lowest_price_30d: card.lowest_price_30d || 0
+        });
+        setShowCreateModal(true);
+    };
+
+    const handleCloseModal = () => {
+        setShowCreateModal(false);
+        setEditingId(null);
+        setFormData({
+            code: '',
+            value: 100,
+            theme: 'christmas',
+            recipientEmail: '',
+            recipientName: '',
+            senderName: '',
+            message: '',
+            card_title: '',
+            card_description: '',
+            notes: '',
+            lowest_price_30d: 0
+        });
+    };
+
     const createCard = async () => {
         if (!formData.code || !formData.value || !formData.recipientEmail) {
             toast.error('Wypełnij wszystkie wymagane pola (kod, wartość, email)');
@@ -234,13 +276,20 @@ export default function GiftCardsAdmin() {
                 return;
             }
 
+            const isEdit = !!editingId;
+            const url = isEdit ? getApiUrl('gift-cards') : getApiUrl('gift-cards'); // Same endpoint, different method usually? No, PATCH is usually on same or ID.
+            // Wait, my PATCH in route.ts is on the base route but requires ID in body. Correct.
+
+            const method = isEdit ? 'PATCH' : 'POST';
+            const body = isEdit ? { ...formData, id: editingId } : formData;
+
             const res = await fetch(getApiUrl('gift-cards'), {
-                method: 'POST',
+                method: method,
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify(formData)
+                body: JSON.stringify(body)
             });
 
             if (res.status === 401) {
@@ -252,20 +301,8 @@ export default function GiftCardsAdmin() {
 
             const data = await res.json();
             if (data.success) {
-                toast.success('Karta podarunkowa utworzona');
-                setFormData({
-                    code: '',
-                    value: 100,
-                    theme: 'christmas',
-                    recipientEmail: '',
-                    recipientName: '',
-                    senderName: '',
-                    message: '',
-                    card_title: '',
-                    card_description: '',
-                    lowest_price_30d: 0
-                });
-                setShowCreateModal(false);
+                toast.success(isEdit ? 'Karta zaktualizowana' : 'Karta podarunkowa utworzona');
+                handleCloseModal();
                 fetchCards();
             } else {
                 toast.error(data.error || 'Błąd');
@@ -703,7 +740,7 @@ Otrzymałeś kartę podarunkową na sesję fotograficzną!
                     {/* Create Form */}
                     {showCreateModal && (
                         <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6 mb-8">
-                            <h2 className="text-xl font-bold text-white mb-6">Stwórz Nową Kartę</h2>
+                            <h2 className="text-xl font-bold text-white mb-6">{editingId ? 'Edytuj Kartę' : 'Stwórz Nową Kartę'}</h2>
 
                             <div className="grid md:grid-cols-2 gap-8">
                                 {/* Form */}
@@ -814,13 +851,25 @@ Otrzymałeś kartę podarunkową na sesję fotograficzną!
                                         />
                                     </div>
 
-                                    {/* Description */}
+                                    {/* Description - Card Text */}
                                     <div>
-                                        <label className="block text-sm font-medium text-zinc-400 mb-2">Opis w sklepie (Omnibus)</label>
+                                        <label className="block text-sm font-medium text-zinc-400 mb-2">Tekst na grafice karty</label>
                                         <textarea
                                             value={formData.card_description}
                                             onChange={e => setFormData(prev => ({ ...prev, card_description: e.target.value }))}
-                                            placeholder="Krótki tekst zachęcający widoczny pod kartą..."
+                                            placeholder="np. Życzenia pełnego sza! (widoczne na obrazku)"
+                                            rows={2}
+                                            className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:border-gold-500 focus:outline-none resize-none"
+                                        />
+                                    </div>
+
+                                    {/* Description - Shop Listing */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gold-400 mb-2">Opis oferty w sklepie (NIE widoczny na karcie)</label>
+                                        <textarea
+                                            value={formData.notes}
+                                            onChange={e => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                                            placeholder="np. Najczęściej wybierany pakiet. Pełna sesja zdjęciowa..."
                                             rows={2}
                                             className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:border-gold-500 focus:outline-none resize-none"
                                         />
@@ -846,10 +895,10 @@ Otrzymałeś kartę podarunkową na sesję fotograficzną!
                                             disabled={loading}
                                             className="flex-1 px-6 py-3 bg-gold-500 hover:bg-gold-400 text-black font-bold rounded-lg transition-all disabled:opacity-50"
                                         >
-                                            {loading ? 'Tworzenie...' : 'Stwórz Kartę'}
+                                            {loading ? 'Zapisywanie...' : (editingId ? 'Zaktualizuj Kartę' : 'Stwórz Kartę')}
                                         </button>
                                         <button
-                                            onClick={() => setShowCreateModal(false)}
+                                            onClick={handleCloseModal}
                                             className="px-6 py-3 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg transition-all"
                                         >
                                             Anuluj
@@ -955,6 +1004,12 @@ Otrzymałeś kartę podarunkową na sesję fotograficzną!
                                             className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded transition-all"
                                         >
                                             <Trash2 className="w-4 h-4" />
+                                        </button>
+                                        <button
+                                            onClick={() => handleEdit(card)}
+                                            className="px-3 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded transition-all"
+                                        >
+                                            <Edit className="w-4 h-4" />
                                         </button>
                                     </div>
 

@@ -13,6 +13,7 @@ interface IGiftCard {
     theme: string;
     card_title: string;
     card_description: string;
+    notes?: string;
     status: 'active' | 'inactive';
 }
 
@@ -22,6 +23,7 @@ interface FormData {
     theme: string;
     card_title: string;
     card_description: string;
+    notes: string;
     status: 'active' | 'inactive';
 }
 
@@ -35,6 +37,9 @@ const THEMES = [
     { value: 'childrens-day', label: '🎈 Dzień Dziecka' },
     { value: 'wedding', label: '💒 Ślub' },
     { value: 'birthday', label: '🎂 Urodziny' },
+    { value: 'gold', label: '✨ Złota (logo)' },
+    { value: 'blue', label: '🌟 Niebieska (logo)' },
+    { value: 'green', label: '🌿 Zielona (logo)' },
 ];
 
 export default function GiftCardShopPage() {
@@ -49,10 +54,12 @@ export default function GiftCardShopPage() {
         theme: 'christmas',
         card_title: '',
         card_description: '',
+        notes: '',
         status: 'active',
     });
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
+    const [logoUrl, setLogoUrl] = useState<string | undefined>(undefined);
 
     // Helper to get auth headers
     const getAuthHeaders = () => {
@@ -70,7 +77,22 @@ export default function GiftCardShopPage() {
             return;
         }
         fetchCards();
+        fetchSettings();
     }, [router]);
+
+    const fetchSettings = async () => {
+        try {
+            const res = await fetch('/api/settings');
+            if (res.ok) {
+                const data = await res.json();
+                if (data.settings?.logo_url) {
+                    setLogoUrl(data.settings.logo_url);
+                }
+            }
+        } catch (e) {
+            console.error('Failed to fetch settings', e);
+        }
+    };
 
     const fetchCards = async () => {
         try {
@@ -166,6 +188,7 @@ export default function GiftCardShopPage() {
             theme: 'christmas',
             card_title: '',
             card_description: '',
+            notes: '',
             status: 'active',
         });
         setEditingId(null);
@@ -179,6 +202,7 @@ export default function GiftCardShopPage() {
             theme: card.theme,
             card_title: card.card_title,
             card_description: card.card_description,
+            notes: card.notes || '',
             status: card.status,
         });
         setEditingId(card.id);
@@ -251,6 +275,7 @@ export default function GiftCardShopPage() {
                                             cardTitle={formData.card_title || 'KARTA PODARUNKOWA'}
                                             cardDescription={formData.card_description || 'Twój wyjątkowy upominek'}
                                             hideCode={false}
+                                            logoUrl={logoUrl}
                                         />
                                     </div>
                                 </div>
@@ -369,7 +394,7 @@ export default function GiftCardShopPage() {
                                 <div className="md:col-span-2">
                                     <div className="flex justify-between items-center mb-2">
                                         <label className="block text-sm font-medium">
-                                            Opis Karty *
+                                            Tekst na grafice karty *
                                         </label>
                                         <span className={`text-[10px] ${formData.card_description.length > 65 ? 'text-amber-400' : 'text-zinc-500'}`}>
                                             {formData.card_description.length}/75
@@ -384,10 +409,31 @@ export default function GiftCardShopPage() {
                                                 card_description: e.target.value,
                                             })
                                         }
-                                        placeholder="np. Specjalny upominek na święta"
+                                        placeholder="np. Specjalny upominek na święta (widoczne na karcie)"
                                         rows={2}
                                         className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg focus:border-gold-500 outline-none resize-none"
                                         required
+                                    />
+                                </div>
+
+                                {/* Sklep Description - Shop Listing */}
+                                <div className="md:col-span-2">
+                                    <div className="flex justify-between items-center mb-2">
+                                        <label className="block text-sm font-medium text-gold-400">
+                                            Opis oferty w sklepie (pod kartą)
+                                        </label>
+                                    </div>
+                                    <textarea
+                                        value={formData.notes}
+                                        onChange={(e) =>
+                                            setFormData({
+                                                ...formData,
+                                                notes: e.target.value,
+                                            })
+                                        }
+                                        placeholder="np. Najczęściej wybierany pakiet. Pełna sesja zdjęciowa..."
+                                        rows={3}
+                                        className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg focus:border-gold-500 outline-none resize-none"
                                     />
                                 </div>
                             </div>

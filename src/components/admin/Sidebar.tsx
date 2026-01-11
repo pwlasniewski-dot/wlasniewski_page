@@ -23,7 +23,8 @@ import {
     Users,
     ChevronDown,
     Zap,
-    Briefcase
+    Briefcase,
+    Shield
 } from 'lucide-react';
 
 const navigation = [
@@ -62,7 +63,8 @@ const navigation = [
     },
     { name: 'Zlecenia Dronowe', href: '/admin/drone-orders', icon: Zap },
     { name: 'Zapytania', href: '/admin/inquiries', icon: MessageSquare },
-    { name: 'Użytkownicy', href: '/admin/users', icon: Users },
+    { name: 'Klienci (CRM)', href: '/admin/clients', icon: Users },
+    { name: 'Administratorzy', href: '/admin/users', icon: Shield },
     { name: 'Generator Ofert', href: '/admin/offers/create', icon: FileText },
     { name: 'Analityka', href: '/admin/analytics', icon: BarChart3 },
     { name: 'Logi', href: '/admin/logs', icon: List },

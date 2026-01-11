@@ -20,6 +20,7 @@ export async function GET(request: NextRequest) {
                 theme: true,
                 card_title: true,
                 card_description: true,
+                notes: true,
                 status: true,
                 created_at: true,
             },
@@ -48,6 +49,7 @@ export async function POST(request: NextRequest) {
             theme,
             card_title,
             card_description,
+            notes,
             status = 'active',
         } = body;
 
@@ -79,6 +81,7 @@ export async function POST(request: NextRequest) {
                 theme,
                 card_title,
                 card_description,
+                notes,
                 status,
                 amount: parseInt(value),
                 recipient_name: 'Gift Card',

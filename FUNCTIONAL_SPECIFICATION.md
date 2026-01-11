@@ -80,6 +80,20 @@ System pozwala na obsługę klientów biznesowych (B2B) w ramach tej samej insta
 - **Formularz RFQ (Request for Quote)**: Dedykowany moduł kontaktu B2B (`B2BContactForm.tsx`) zbierający dane firmowe i szczegóły zlecenia, zintegrowany z systemem powiadomień.
 - **Branding B2B**: Automatyczne przełączanie na "Premium Dark Mode" oraz priorytetyzacja logotypu o oznaczeniu "B2B / Alternatywne".
 
+### 3.3. Moduł Kliencki (CRM) & Compliance [NEW: 2026-01-11]
+System został rozbudowany o dedykowany moduł zarządzania relacjami z klientem, zastępujący prostą listę użytkowników.
+
+- **Client 360 View**: Dashboard prezentujący pełny profil klienta w jednym modalnym oknie:
+    - **Finanse**: LTV (Lifetime Value), historia zakupów (karty podarunkowe), statusy płatności.
+    - **Operacje**: Historia rezerwacji, statusy sesji, notatki.
+    - **Aktywa**: Przypisane galerie zdjęć i koszyki zakupowe.
+- **GDPR Safe Anonymization**: Protokół bezpiecznego usuwania danych osobowych zgodnie z RODO.
+    - Zamiast kasować rekordy (co niszczy integralność finansową), system dokonuje **anonimizacji**.
+    - Dane wrażliwe (Imię, Email, Telefon) są nadpisywane pseudonimami (np. `deleted-uuid@deleted.local`).
+    - Historia transakcji i statystyki pozostają nienaruszone dla celów księgowych.
+    - Konto użytkownika zostaje trwale dezaktywowane.
+- **Separacja Uprawnień**: Wyraźny podział w nawigacji admina na "Klienci (CRM)" (biznes) i "Administratorzy" (zespół).
+
 ---
 
 ## 4. E-commerce i Promocje

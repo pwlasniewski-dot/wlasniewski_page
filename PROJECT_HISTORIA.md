@@ -149,6 +149,35 @@ Ten plik służy do ścisłego monitorowania wszystkich zmian wprowadzanych w pr
 
 ## Log Zmian
 
+### [2026-01-11] 🛡️ Admin CRM & GDPR Compliance Dashboard
+**Cel:** Przekształcenie prostej listy użytkowników w pełnoprawny moduł CRM oraz wdrożenie bezpiecznej anonimizacji danych (RODO) zamiast destrukcyjnego usuwania.
+
+**Zrealizowane Zmiany:**
+1.  **Client 360 Dashboard (`/admin/clients`)**:
+    *   **Widok Listy**: Dodano kolumny LTV (Lifetime Value) oraz liczniki zamówień/rezerwacji, pozwalające na szybką ocenę wartości klienta.
+    *   **Widok Szczegółowy**: Modal prezentujący pełną historię klienta:
+        *   **Finanse**: Łączna wydana kwota, lista zamówień (Gift Cards) ze statusami płatności.
+        *   **Operacje**: Lista rezerwacji sesji z datami i statusami.
+        *   **Relacje**: Przypisane galerie zdjęć i koszyki.
+    *   **Separacja Kontekstu**: Wyraźny podział w menu bocznym na "Klienci (CRM)" (dla biznesu) i "Administratorzy" (dla zespołu), co zapobiega pomyłkom w zarządzaniu uprawnieniami.
+
+2.  **GDPR/RODO "Safe Anonymization"**:
+    *   **Problem**: Tradycyjne "usuń użytkownika" niszczyło integralność danych finansowych (sierocące zamówienia, błędne raporty przychodów).
+    *   **Rozwiązanie**: Wdrożono mechanizm soft-anonymization.
+    *   **Działanie**: Kliknięcie "Anonimizuj" w panelu:
+        *   Zastępuje dane osobowe ciągami typu `deleted-123-timestamp@deleted.local` oraz `Użytkownik Usunięty (RODO)`.
+        *   Zachowuje kwoty transakcji, daty i powiązania biznesowe.
+        *   Dezaktywuje konto (brak możliwości logowania).
+    *   **Bezpieczeństwo**: Wymaga potwierdzenia w UI ("Strefa niebezpieczna").
+
+**Files Modified:**
+- `src/app/api/admin/clients/route.ts` (New API: List & Anonymize Logic)
+- `src/app/api/admin/clients/[id]/route.ts` (New API: Deep Details)
+- `src/app/admin/clients/page.tsx` (New Dashboard Page)
+- `src/components/admin/Sidebar.tsx` (Navigation Split: Users vs Clients)
+
+**Status:** ✅ **DONE & VERIFIED (Local)**
+
 ### [2026-01-04] 🛡️ Ultra-Strict B2B Routing & Holy Backup (Pre-Deploy)
 **Cel:** Ostateczna separacja kontekstu B2B oraz zabezpieczenie danych monitoringowych przed wdrożeniem.
 

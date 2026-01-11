@@ -31,6 +31,7 @@ export async function GET() {
                 card_description: true,
                 recipient_name: true,
                 message: true,
+                notes: true,
                 lowest_price_30d: true
             },
             distinct: ['theme', 'value'],
@@ -68,7 +69,7 @@ export async function GET() {
                 theme: theme,
                 price: basePrice,
                 lowest_price_30d: card.lowest_price_30d,
-                description: card.card_description || `Karta podarunkowa o wartości ${cardValue} zł`,
+                description: card.notes || `Karta podarunkowa o wartości ${cardValue} zł`,
                 available: true,
                 card_title: card.card_title,
                 card_description: card.card_description
@@ -80,7 +81,8 @@ export async function GET() {
             settings: {
                 heroImage: (settings as any)?.gift_card_hero_image || null,
                 heroOpacity: (settings as any)?.gift_card_hero_opacity || 0.6,
-                rotationInterval: (settings as any)?.gift_card_promo_rotation_interval || 5
+                rotationInterval: (settings as any)?.gift_card_promo_rotation_interval || 5,
+                logoUrl: (settings as any)?.logo_url || null
             }
         });
     } catch (error: any) {

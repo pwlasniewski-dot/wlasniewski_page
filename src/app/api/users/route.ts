@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
                     name: true,
                     role: true,
                     created_at: true,
-                }
+                },
             });
 
             return NextResponse.json({ success: true, user });
