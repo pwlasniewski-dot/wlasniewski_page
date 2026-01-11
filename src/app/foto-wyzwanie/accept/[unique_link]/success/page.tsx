@@ -105,11 +105,10 @@ export default function SuccessPage() {
 
                     <button
                         onClick={handleCopy}
-                        className={`w-full py-3 rounded-lg font-bold transition-colors flex items-center justify-center gap-2 ${
-                            copied
+                        className={`w-full py-3 rounded-lg font-bold transition-colors flex items-center justify-center gap-2 ${copied
                                 ? 'bg-green-600 text-white'
                                 : 'bg-gold-500 hover:bg-gold-600 text-black'
-                        }`}
+                            }`}
                     >
                         <Copy size={20} />
                         {copied ? 'Skopiowano!' : 'Kopiuj link'}
@@ -211,8 +210,8 @@ export default function SuccessPage() {
                 <div className="text-center text-zinc-500">
                     <p>
                         Czy masz pytania? Skontaktuj się na{' '}
-                        <a href="mailto:rezerwacje@wlasniewski.pl" className="text-gold-400 hover:text-gold-300">
-                            rezerwacje@wlasniewski.pl
+                        <a href="mailto:pwlasniewski@gmail.com" className="text-gold-400 hover:text-gold-300">
+                            pwlasniewski@gmail.com
                         </a>
                     </p>
                 </div>

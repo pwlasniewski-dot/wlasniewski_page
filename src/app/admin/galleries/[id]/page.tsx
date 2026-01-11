@@ -174,7 +174,7 @@ export default function GalleryDetailsPage() {
                 </div>
                 <div className="flex gap-2">
                     <a
-                        href={`/strefa-klienta/${gallery.access_code}`}
+                        href={`/galeria/${gallery.access_code}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg transition-colors border border-zinc-700"

@@ -8,6 +8,7 @@
 *   **CRITICAL FLAG:** `tls: { rejectUnauthorized: false }` w `src/lib/email/sender.ts` oraz `src/app/api/admin/test-email/route.ts`.
 *   **UWAGA:** Ta konfiguracja jest NIEZBĘDNA dla poprawnej komunikacji z serwerem `mail.wlasniewski.pl`. Nie usuwać bez konsultacji.
 *   **ZAKAZ**: Nigdy nie usuwaj tej flagi TLS, bo wysyłka maili natychmiast przestanie działać.
+*   **EMAIL ADDRESS**: Jedyny dozwolony adres kontaktowy/nadawcy to `pwlasniewski@gmail.com`. ZAKAZ używania `rezerwacje@wlasniewski.pl` lub innych wymyślonych aliasów.
 
 > [!CAUTION]
 > **## INCYDENT 2026-01-04: KATASTROFA BAZY PRODUKCYJNEJ (Post-Mortem: "Co Odjebałem")**

@@ -63,7 +63,6 @@ model Setting {
   payu_client_secret                String?
   payu_environment                  String   @default("sandbox")
   payu_merchant_pos_id              String?
-  payu_md5_key                      String?
   payu_notify_url                   String?
   portfolio_categories              String?
   seasonal_effect                   String?  @default("none")
@@ -93,8 +92,9 @@ model Setting {
   gift_card_promo_rotation_interval Int?     @default(5)
   gift_card_promo_title             String?  @default("Karty Podarunkowe")
   gift_card_hero_image              String?
-  portfolio_layout                  String?  @default("slider")
   gift_card_hero_opacity            Float?   @default(0.6)
+  payu_md5_key                      String?
+  portfolio_layout                  String?  @default("slider")
   social_proof_enabled              Boolean  @default(true)
   theme_mode                        String   @default("dark")
 
@@ -120,8 +120,8 @@ model MenuItem {
   parent_id  Int?
   order      Int        @default(0)
   is_active  Boolean    @default(true)
-  menu_type  String     @default("b2c")
   created_at DateTime   @default(now())
+  menu_type  String     @default("b2c")
   page       Page?      @relation(fields: [page_id], references: [id])
   parent     MenuItem?  @relation("MenuHierarchy", fields: [parent_id], references: [id])
   children   MenuItem[] @relation("MenuHierarchy")
@@ -151,8 +151,8 @@ model MediaLibrary {
   created_at              DateTime           @default(now())
   blog_featured           BlogPost[]
   challenge_photos        ChallengePhoto[]
-  hero_slides             HeroSlide[]
   hero_before_slides      HeroSlide[]        @relation("HeroBeforeImage")
+  hero_slides             HeroSlide[]
   uploader                AdminUser?         @relation(fields: [uploaded_by], references: [id])
   portfolio_covers        PortfolioSession[]
   portfolio_mobile_covers PortfolioSession[] @relation("MobileCover")
@@ -177,9 +177,9 @@ model PortfolioSession {
   display_order         Int           @default(0)
   created_at            DateTime      @default(now())
   updated_at            DateTime      @default(now()) @updatedAt
+  cover_image_mobile_id Int?
   highlighted_media_ids String?
   is_category_hero      Boolean       @default(false)
-  cover_image_mobile_id Int?
   cover_image           MediaLibrary? @relation(fields: [cover_image_id], references: [id])
   mobile_cover_image    MediaLibrary? @relation("MobileCover", fields: [cover_image_mobile_id], references: [id])
 
@@ -290,20 +290,20 @@ model AnalyticsEvent {
 }
 
 model HeroSlide {
-  id            Int          @id @default(autoincrement())
-  title         String?
-  subtitle      String?
-  button_text   String?
-  button_link   String?
-  image_id      Int
-  display_order Int          @default(0)
-  display_mode    String       @default("BOTH")
-  is_active       Boolean      @default(true)
-  is_before_after Boolean      @default(false)
+  id              Int           @id @default(autoincrement())
+  title           String?
+  subtitle        String?
+  button_text     String?
+  button_link     String?
+  image_id        Int
+  display_order   Int           @default(0)
+  display_mode    String        @default("BOTH")
+  is_active       Boolean       @default(true)
+  created_at      DateTime      @default(now())
   before_image_id Int?
-  created_at      DateTime     @default(now())
-  image           MediaLibrary @relation(fields: [image_id], references: [id])
+  is_before_after Boolean       @default(false)
   before_image    MediaLibrary? @relation("HeroBeforeImage", fields: [before_image_id], references: [id])
+  image           MediaLibrary  @relation(fields: [image_id], references: [id])
 
   @@map("hero_slides")
 }
@@ -361,6 +361,8 @@ model Booking {
   updated_at        DateTime @updatedAt
   stripe_session_id String?
   photographer_id   Int?
+  client_rating     Int?
+  client_review     String?
   photographer      User?    @relation("PhotographerBookings", fields: [photographer_id], references: [id])
 
   @@map("bookings")
@@ -396,6 +398,8 @@ model Package {
   updated_at        DateTime    @updatedAt
   available_hours   String?
   blocks_entire_day Boolean?
+  provider_id       Int?
+  users             User?       @relation(fields: [provider_id], references: [id])
   service           ServiceType @relation(fields: [service_id], references: [id], onDelete: Cascade)
 
   @@unique([service_id, name])
@@ -404,25 +408,25 @@ model Package {
 
 model GiftCardOrder {
   id                Int       @id @default(autoincrement())
-  order_number      String?   @unique
-  customer_name     String
+  gift_card_id      Int?
   customer_email    String
+  customer_name     String
+  recipient_name    String?
+  recipient_email   String?
+  message           String?
+  sender_name       String?
+  payment_method    String?
+  stripe_session_id String?
+  payu_order_id     String?
   amount_paid       Int
   currency          String    @default("PLN")
   payment_status    String    @default("pending")
-  payment_method    String?
-  stripe_session_id String?
   created_at        DateTime  @default(now())
   paid_at           DateTime?
-  card_id           Int
-  gift_card_id      Int?
-  template_id       Int?
-  recipient_email   String?
-  recipient_name    String?
-  sender_name       String?
-  message           String?
   access_token      String?   @unique
-  payu_order_id     String?
+  card_id           Int
+  order_number      String?   @unique
+  template_id       Int?
   user_id           Int?
   gift_card         GiftCard? @relation(fields: [gift_card_id], references: [id])
   user              User?     @relation(fields: [user_id], references: [id])
@@ -434,25 +438,25 @@ model GiftCard {
   id               Int             @id @default(autoincrement())
   code             String          @unique
   amount           Int
-  value            Int
-  currency         String          @default("PLN")
-  valid_until      DateTime?
-  is_active        Boolean         @default(true)
-  created_at       DateTime        @default(now())
-  redeemed_at      DateTime?
   recipient_email  String?
   recipient_name   String?
-  notes            String?
-  card_template    String?         @default("standard")
-  theme            String?         @default("christmas")
-  discount_type    String?         @default("amount")
-  sender_name      String?
   message          String?
+  created_at       DateTime        @default(now())
+  card_template    String?         @default("standard")
+  discount_type    String?         @default("amount")
+  notes            String?
+  valid_until      DateTime?
   card_description String?
   card_title       String?
-  lowest_price_30d Int?
+  sender_name      String?
   status           String          @default("active")
+  theme            String?         @default("christmas")
+  value            Int
+  currency         String          @default("PLN")
+  is_active        Boolean         @default(true)
+  lowest_price_30d Int?
   owner_id         Int?
+  redeemed_at      DateTime?
   orders           GiftCardOrder[]
   owner            User?           @relation("UserGiftCards", fields: [owner_id], references: [id])
 
@@ -460,22 +464,25 @@ model GiftCard {
 }
 
 model User {
-  id                      Int                 @id @default(autoincrement())
-  email                   String              @unique
+  id                      Int                     @id @default(autoincrement())
+  email                   String                  @unique
   password_hash           String
   name                    String?
   phone                   String?
-  role                    String              @default("CLIENT") // CLIENT, PHOTOGRAPHER
-  is_active               Boolean             @default(true)
-  photographer_profile_id Int?                @unique
-  created_at              DateTime            @default(now())
-  updated_at              DateTime            @updatedAt
-  orders                  GiftCardOrder[]
-  gift_cards              GiftCard[]          @relation("UserGiftCards")
+  role                    String                  @default("CLIENT")
+  is_active               Boolean                 @default(true)
+  photographer_profile_id Int?                    @unique
+  created_at              DateTime                @default(now())
+  updated_at              DateTime                @updatedAt
   baskets                 Basket[]
-  photographer_profile    PhotographerProfile? @relation(fields: [photographer_profile_id], references: [id])
-  assigned_bookings       Booking[]           @relation("PhotographerBookings")
-  assigned_galleries      ClientGallery[]     @relation("PhotographerGalleries")
+  assigned_bookings       Booking[]               @relation("PhotographerBookings")
+  assigned_galleries      ClientGallery[]         @relation("PhotographerGalleries")
+  orders                  GiftCardOrder[]
+  gift_cards              GiftCard[]              @relation("UserGiftCards")
+  packages                Package[]
+  payouts                 payouts[]
+  provider_availability   provider_availability[]
+  photographer_profile    PhotographerProfile?    @relation(fields: [photographer_profile_id], references: [id])
 
   @@map("users")
 }
@@ -484,40 +491,43 @@ model PhotographerProfile {
   id                Int      @id @default(autoincrement())
   bio               String?
   experience_years  Int?
-  specialties       String?  // JSON string or comma-separated
-  base_commission   Int      @default(15) // percentage for the platform
+  specialties       String?
+  base_commission   Int      @default(15)
   rating            Float    @default(5.0)
   portfolio_enabled Boolean  @default(true)
+  avatar_url        String?
+  logo_url          String?
   created_at        DateTime @default(now())
   updated_at        DateTime @updatedAt
+  highlight_photos  String?
   user              User?
-  
+
   @@map("photographer_profiles")
 }
 
 model Basket {
-  id          String       @id @default(cuid())
-  user_id     Int?
-  session_id  String?      @unique
-  created_at  DateTime     @default(now())
-  updated_at  DateTime     @updatedAt
-  items       BasketItem[]
-  user        User?        @relation(fields: [user_id], references: [id])
+  id         String       @id @default(cuid())
+  user_id    Int?
+  session_id String?      @unique
+  created_at DateTime     @default(now())
+  updated_at DateTime     @updatedAt
+  items      BasketItem[]
+  user       User?        @relation(fields: [user_id], references: [id])
 
   @@map("baskets")
 }
 
 model BasketItem {
-  id            String   @id @default(cuid())
-  basket_id     String
-  type          String   // 'booking' | 'gift_card'
-  product_id    String?  // ID pakietu lub szablonu karty
-  quantity      Int      @default(1)
-  price         Int      // Cena w groszach
-  metadata      String?  // JSON z danymi rezerwacji lub karty
-  created_at    DateTime @default(now())
-  updated_at    DateTime @updatedAt
-  basket        Basket   @relation(fields: [basket_id], references: [id], onDelete: Cascade)
+  id         String   @id @default(cuid())
+  basket_id  String
+  type       String
+  product_id String?
+  quantity   Int      @default(1)
+  price      Int
+  metadata   String?
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  basket     Basket   @relation(fields: [basket_id], references: [id], onDelete: Cascade)
 
   @@map("basket_items")
 }
@@ -876,4 +886,49 @@ model MarketingTemplate {
   updated_at DateTime @updatedAt
 
   @@map("marketing_templates")
+}
+
+model newsletter_campaigns {
+  id         Int       @id @default(autoincrement())
+  subject    String
+  content    String
+  status     String    @default("DRAFT")
+  sent_at    DateTime?
+  created_at DateTime  @default(now())
+  sent_count Int       @default(0)
+}
+
+model payouts {
+  id           Int       @id @default(autoincrement())
+  user_id      Int
+  amount       Int
+  currency     String    @default("PLN")
+  status       String    @default("pending")
+  admin_note   String?
+  booking_ids  String?
+  created_at   DateTime  @default(now())
+  processed_at DateTime?
+  users        User      @relation(fields: [user_id], references: [id])
+}
+
+model provider_availability {
+  id           Int      @id @default(autoincrement())
+  user_id      Int
+  date         DateTime
+  is_available Boolean  @default(true)
+  reason       String?
+  created_at   DateTime @default(now())
+  updated_at   DateTime
+  users        User     @relation(fields: [user_id], references: [id])
+
+  @@unique([user_id, date])
+}
+
+model subscribers {
+  id         Int      @id @default(autoincrement())
+  email      String   @unique
+  name       String?
+  is_active  Boolean  @default(true)
+  source     String?
+  created_at DateTime @default(now())
 }

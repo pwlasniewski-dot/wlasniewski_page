@@ -100,11 +100,16 @@ export default function CheckoutPage() {
 
             toast.success('Zamówienie przyjęte! Przekierowanie do płatności...');
 
-            // Redirect to order success/payment page
-            setTimeout(() => {
+            // Redirect to PayU payment page if URL provided
+            if (data.redirectUrl) {
+                clearCart();
+                window.location.href = data.redirectUrl;
+            } else {
+                // Fallback for zero-amount or errors (though API should handle this)
                 clearCart();
                 window.location.href = '/rezerwacja/potwierdzenie';
-            }, 1000);
+            }
+            // Fallback timeout removed as explicit redirect is better
 
         } catch (error: any) {
             console.error('Checkout error:', error);

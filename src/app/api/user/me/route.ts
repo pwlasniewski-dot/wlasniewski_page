@@ -31,6 +31,11 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ error: 'User not found' }, { status: 404 });
         }
 
+        const bookings = await prisma.booking.findMany({
+            where: { email: user.email },
+            orderBy: { date: 'desc' }
+        });
+
         return NextResponse.json({
             success: true,
             user: {
@@ -38,7 +43,8 @@ export async function GET(req: NextRequest) {
                 email: user.email,
                 name: user.name,
                 gift_cards: user.gift_cards,
-                orders: user.orders
+                orders: user.orders,
+                bookings: bookings // Adding real bookings here
             }
         });
 

@@ -598,6 +598,24 @@ export default function AdminBookingsPage() {
                             {!isEditing && (
                                 <div>
                                     <h3 className="text-lg font-semibold text-zinc-900 mb-3">Zmień status</h3>
+
+                                    {/* Gallery Management Quick Action */}
+                                    <div className="mb-6 pb-6 border-b border-zinc-200">
+                                        <Link
+                                            href={`/admin/galleries?createFor=${encodeURIComponent(JSON.stringify({
+                                                name: selectedBooking.client_name,
+                                                email: selectedBooking.email
+                                            }))}`}
+                                            className="flex items-center justify-center gap-2 w-full py-3 bg-zinc-900 hover:bg-black text-gold-500 font-bold rounded-xl transition-all shadow-lg shadow-gold-500/10"
+                                        >
+                                            <ImageIcon className="w-5 h-5" />
+                                            Zarządzaj Zdjęciami (Dodaj do Panelu Klienta)
+                                        </Link>
+                                        <p className="text-center text-xs text-zinc-500 mt-2">
+                                            Utworzy galerię dla tego klienta lub przeniesie do istniejącej.
+                                        </p>
+                                    </div>
+
                                     <div className="flex gap-2 flex-wrap">
                                         {selectedBooking.status !== "pending" && (
                                             <button

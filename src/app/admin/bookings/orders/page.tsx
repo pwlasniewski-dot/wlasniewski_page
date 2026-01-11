@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { AlertCircle, RefreshCw, Search, ArrowLeft, ShoppingBag } from 'lucide-react';
+import { AlertCircle, RefreshCw, Search, ArrowLeft, ShoppingBag, Image as ImageIcon } from 'lucide-react';
 import GiftCard from '@/components/GiftCard';
 import toast from 'react-hot-toast';
 import { getApiUrl } from '@/lib/api-config';
@@ -326,6 +326,21 @@ export default function AdminOrdersPage() {
                             </div>
 
                             <div className="md:col-span-2 border-t border-zinc-800 pt-6">
+                                <h3 className="text-sm font-medium text-zinc-500 uppercase tracking-wider mb-4">Zdjęcia i Galeria</h3>
+                                <Link
+                                    href={`/admin/galleries?createFor=${encodeURIComponent(JSON.stringify({
+                                        name: selectedOrder.recipientName || selectedOrder.customerName,
+                                        email: selectedOrder.recipientEmail || selectedOrder.customerEmail
+                                    }))}`}
+                                    className="flex items-center justify-center gap-2 w-full py-4 bg-zinc-800 hover:bg-zinc-700 hover:text-white text-gold-500 font-bold rounded-xl transition-all border border-zinc-700 hover:border-gold-500/50"
+                                >
+                                    <ImageIcon className="w-5 h-5" />
+                                    Zarządzaj Zdjęciami (Dodaj do Panelu Klienta)
+                                </Link>
+                                <p className="text-center text-xs text-zinc-500 mt-2 mb-6">
+                                    Jeśli to zamówienie karty, możesz od razu utworzyć galerię dla obdarowanego (jeśli podano email).
+                                </p>
+
                                 <h3 className="text-sm font-medium text-zinc-500 uppercase tracking-wider mb-4">Status i Akcje</h3>
                                 <div className="flex items-center justify-between bg-zinc-950 p-4 rounded-lg border border-zinc-800">
                                     <div className="flex items-center gap-3">

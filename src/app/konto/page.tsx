@@ -51,7 +51,7 @@ export default function AccountPage() {
                     if (userRes.ok) {
                         const data = await userRes.json();
                         setGiftCards(data.user.gift_cards || []);
-                        setBookings(data.user.orders || []);
+                        setBookings(data.user.bookings || []); // Corrected to use real bookings
                     }
 
                     if (challengeRes.ok) {

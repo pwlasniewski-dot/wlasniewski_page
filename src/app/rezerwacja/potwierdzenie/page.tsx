@@ -66,11 +66,11 @@ export default function PotwierdzeniePage() {
                         <p className="text-zinc-300 mb-2">
                             Masz pytania?
                         </p>
-                        <a 
-                            href="mailto:rezerwacje@wlasniewski.pl" 
+                        <a
+                            href="mailto:pwlasniewski@gmail.com"
                             className="text-amber-400 hover:text-amber-300 font-medium underline"
                         >
-                            rezerwacje@wlasniewski.pl
+                            pwlasniewski@gmail.com
                         </a>
                     </div>
 

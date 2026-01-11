@@ -26,6 +26,9 @@ interface OrderData {
     paid_at?: string;
     logoUrl?: string;
     customer_email: string;
+    recipient_name?: string;
+    sender_name?: string;
+    message?: string;
 }
 
 export default function AccessPage() {
@@ -210,6 +213,9 @@ export default function AccessPage() {
                                 cardDescription={order.gift_card.card_description}
                                 logoUrl={order.logoUrl}
                                 orderId={`ORD-${order.id}`}
+                                recipientName={order.recipient_name}
+                                senderName={order.sender_name}
+                                message={order.message}
                             />
                         </div>
                         <div className="hidden print:block text-black text-center mt-8 space-y-2 print-details">

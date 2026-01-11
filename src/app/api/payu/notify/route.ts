@@ -81,6 +81,117 @@ export async function POST(request: NextRequest) {
             // Try to detect resource type
             let handled = false;
 
+            // Handle CART transactions (Multi-item)
+            if (typeOrId === 'CART') {
+                const cartId = extOrderId;
+                console.log(`[PayU] Processing CART transaction: ${cartId}`);
+
+                // 1. Process Bookings
+                const bookings = await prisma.booking.findMany({
+                    where: { stripe_session_id: cartId }
+                });
+
+                for (const booking of bookings) {
+                    await prisma.booking.update({
+                        where: { id: booking.id },
+                        data: {
+                            status: 'confirmed',
+                            notes: `Paid via PayU (Cart: ${cartId}, PayU: ${orderId})`
+                        }
+                    });
+                    console.log(`[PayU] Booking #${booking.id} confirmed from Cart`);
+
+                    // Trigger Confirmation Email
+                    try {
+                        const { sendBookingConfirmationEmail } = await import('@/lib/email/booking');
+                        await sendBookingConfirmationEmail(booking);
+                        console.log(`[PayU] Email dispatched for booking #${booking.id}`);
+                    } catch (e) {
+                        console.error(`[PayU] Failed to send email for booking #${booking.id}`, e);
+                    }
+                }
+
+                // 2. Process Gift Cards (Iterate IDs to reuse single-item logic loop below or handle here)
+                // For simplicity/robustness, we'll handle activation here directly.
+                const giftCardOrders = await prisma.giftCardOrder.findMany({
+                    where: { payu_order_id: cartId },
+                    include: { gift_card: true }
+                });
+
+                for (const giftCardOrder of giftCardOrders) {
+                    const resourceId = giftCardOrder.id; // Local scope ID for logging/logic
+
+                    if (giftCardOrder.gift_card) {
+                        const { generateGiftCardCode } = await import('@/lib/gift-cards');
+                        const uniqueCode = generateGiftCardCode();
+                        const newCard = await prisma.giftCard.create({
+                            data: {
+                                code: uniqueCode,
+                                amount: giftCardOrder.gift_card.amount,
+                                value: giftCardOrder.gift_card.value,
+                                theme: giftCardOrder.gift_card.theme || 'christmas',
+                                card_template: giftCardOrder.gift_card.card_template || 'standard',
+                                card_title: giftCardOrder.gift_card.card_title,
+                                card_description: giftCardOrder.gift_card.card_description,
+                                recipient_email: giftCardOrder.recipient_email || giftCardOrder.customer_email,
+                                recipient_name: giftCardOrder.recipient_name || giftCardOrder.customer_name,
+                                sender_name: giftCardOrder.sender_name,
+                                message: giftCardOrder.message,
+                                status: 'active',
+                                owner_id: giftCardOrder.user_id
+                            }
+                        });
+
+                        await prisma.giftCardOrder.update({
+                            where: { id: resourceId },
+                            data: {
+                                payment_status: 'completed',
+                                paid_at: new Date(),
+                                gift_card_id: newCard.id
+                            },
+                        });
+
+                        // Refetch for email
+                        const updatedOrder = await prisma.giftCardOrder.findUnique({
+                            where: { id: resourceId },
+                            include: { gift_card: true }
+                        });
+
+                        if (updatedOrder && updatedOrder.gift_card) {
+                            // Send Client Email
+                            try {
+                                await sendGiftCardAccessEmail(
+                                    updatedOrder.customer_email,
+                                    updatedOrder.customer_name,
+                                    updatedOrder.gift_card,
+                                    updatedOrder.access_token || 'missing-token',
+                                    updatedOrder.recipient_name || undefined,
+                                    updatedOrder.recipient_email || undefined,
+                                    updatedOrder.sender_name || undefined,
+                                    updatedOrder.message || undefined,
+                                    updatedOrder.id,
+                                    updatedOrder.gift_card.theme || 'christmas'
+                                );
+                            } catch (e) { console.error('Email failed', e); }
+
+                            // Send Admin Email (Simplified inline or import logic)
+                            try {
+                                const { getAdminEmail, sendEmail } = await import('@/lib/email/sender');
+                                const adminEmail = await getAdminEmail();
+                                if (adminEmail) {
+                                    await sendEmail({
+                                        to: adminEmail,
+                                        subject: `💰 [CART] Nowa karta podarunkowa #${newCard.code}`,
+                                        html: `<p>Opłacono kartę w zamówieniu koszykowym ${cartId}. Kwota: ${(updatedOrder.amount_paid / 100).toFixed(2)} PLN.</p>`
+                                    });
+                                }
+                            } catch (e) { }
+                        }
+                    }
+                }
+                handled = true;
+            }
+
             // Check if it's a booking (simple numeric ID for bookings from checkout endpoint)
             if (!isNaN(resourceId)) {
                 const booking = await prisma.booking.findUnique({

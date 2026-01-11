@@ -35,14 +35,39 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [isOpen, setIsOpen] = useState(false);
     const [isInitialized, setIsInitialized] = useState(false);
 
-    // Initial load from localStorage
+    // Initial load from localStorage with Deduplication/Sanitization
     useEffect(() => {
         const savedCart = localStorage.getItem('shopping_cart');
         if (savedCart) {
             try {
-                setItems(JSON.parse(savedCart));
+                const parsedItems = JSON.parse(savedCart);
+                // Sanitize: Ensure uniqueness of IDs
+                const uniqueItems = parsedItems.map((item: CartItem, index: number) => {
+                    // Check if ID is unique in the list so far, if not or if invalid, regenerate
+                    // Actually, simpler: Just ensure we don't have duplicates. 
+                    // But if we have duplicate keys, we must fix them.
+                    // Let's just blindly rely on the check or regenerate if it looks like the old format 'type-timestamp'?
+                    // Safer: Re-generate ID if it conflicts with another item in this very array?
+                    // Simplest robust way: Map and ensure unique IDs.
+                    return { ...item, id: item.id || `restored-${index}-${Date.now()}` };
+                });
+
+                // Super robust de-dupe by ID:
+                const seen = new Set();
+                const sanitized = uniqueItems.map((item: CartItem) => {
+                    if (seen.has(item.id)) {
+                        // Conflict found, generate new ID
+                        return { ...item, id: `${item.type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}` };
+                    }
+                    seen.add(item.id);
+                    return item;
+                });
+
+                setItems(sanitized);
             } catch (e) {
                 console.error('Failed to parse cart from localStorage', e);
+                // Fallback: clear invalid data
+                localStorage.removeItem('shopping_cart');
             }
         }
         setIsInitialized(true);
@@ -56,7 +81,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, [items, isInitialized]);
 
     const addItem = useCallback((newItem: Omit<CartItem, 'id'>) => {
-        const id = `${newItem.type}-${Date.now()}`;
+        // Fix: Use random string to ensure uniqueness even if called rapidly
+        const id = `${newItem.type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         setItems(prev => [...prev, { ...newItem, id }]);
         setIsOpen(true);
         toast.success(`Dodano do koszyka: ${newItem.title}`);
