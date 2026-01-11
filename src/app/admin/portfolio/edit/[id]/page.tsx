@@ -7,6 +7,9 @@ import { Save, ArrowLeft, Image as ImageIcon, X, Star, Check } from 'lucide-reac
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import MediaPicker from '@/components/admin/MediaPicker';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, rectSortingStrategy } from '@dnd-kit/sortable';
+import { SortableGalleryItem } from '@/components/admin/SortableGalleryItem';
 
 export default function EditSessionPage() {
     const router = useRouter();
@@ -76,6 +79,9 @@ export default function EditSessionPage() {
                     }
                     return String(c);
                 });
+
+                // Deduplicate categories to prevent React key warnings
+                cats = Array.from(new Set(cats));
 
                 if (cats.length > 0) {
                     setCategories(cats);
@@ -153,6 +159,14 @@ export default function EditSessionPage() {
             const res = await fetch(getApiUrl('media'), {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
+
+            if (res.status === 401) {
+                localStorage.removeItem('admin_token');
+                toast.error('Sesja wygasła. Przekierowuję do logowania...');
+                router.push('/admin/login');
+                return;
+            }
+
             const data = await res.json();
 
             if (data.success) {
@@ -266,6 +280,40 @@ export default function EditSessionPage() {
                     : [...prev.highlighted_media_ids, id]
             };
         });
+    };
+
+    const sensors = useSensors(
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 8, // Require 8px movement before drag starts (prevents accidental clicks)
+            },
+        }),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        })
+    );
+
+    const handleDragEnd = (event: DragEndEvent) => {
+        const { active, over } = event;
+
+        if (active.id !== over?.id) {
+            setFormData((prev) => {
+                const oldIndex = prev.media_ids.indexOf(Number(active.id));
+                const newIndex = prev.media_ids.indexOf(Number(over!.id));
+
+                // Reorder media_ids
+                const newMediaIds = arrayMove(prev.media_ids, oldIndex, newIndex);
+
+                // We must also reorder galleryUrls to keep UI in sync!
+                // But galleryUrls matches media_ids by index.
+                setGalleryUrls(currentUrls => arrayMove(currentUrls, oldIndex, newIndex));
+
+                return {
+                    ...prev,
+                    media_ids: newMediaIds,
+                };
+            });
+        }
     };
 
     if (loading) {
@@ -411,44 +459,45 @@ export default function EditSessionPage() {
                 </div>
 
                 <div>
-                    <label className="block text-sm font-medium text-zinc-400 mb-2">Zdjęcia w galerii</label>
-                    <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-4 mb-4">
-                        {galleryUrls.map((url, index) => (
-                            <div key={index} className="relative aspect-square rounded-md overflow-hidden border border-zinc-700 group">
-                                <img src={url} alt={`Gallery ${index}`} className="h-full w-full object-cover" />
-                                <div className="absolute top-1 right-1 flex gap-1 bg-black/40 rounded p-1 backdrop-blur-sm">
-                                    <button
-                                        type="button"
-                                        onClick={() => toggleHighlight(index)}
-                                        className={`p-1 rounded-full ${formData.highlighted_media_ids.includes(formData.media_ids[index]) ? 'bg-gold-500 text-black' : 'bg-black/50 text-gold-500 hover:bg-black/70'}`}
-                                        title={formData.highlighted_media_ids.includes(formData.media_ids[index]) ? "Usuń z wyróżnionych" : "Wyróżnij w sliderze"}
-                                    >
-                                        <Star className="w-3 h-3" fill={formData.highlighted_media_ids.includes(formData.media_ids[index]) ? "currentColor" : "none"} />
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => removeGalleryImage(index)}
-                                        className="bg-red-500 text-white rounded-full p-1"
-                                    >
-                                        <X className="w-3 h-3" />
-                                    </button>
-                                </div>
-                                {formData.highlighted_media_ids.includes(formData.media_ids[index]) && (
-                                    <div className="absolute bottom-1 right-1">
-                                        <Star className="w-3 h-3 text-gold-500 drop-shadow-md" fill="currentColor" />
-                                    </div>
-                                )}
-                            </div>
-                        ))}
-                        <button
-                            type="button"
-                            onClick={() => setShowGalleryPicker(true)}
-                            className="aspect-square flex flex-col items-center justify-center border-2 border-dashed border-zinc-700 rounded-md hover:border-gold-500 hover:text-gold-500 text-zinc-400 transition-colors"
+                    <label className="block text-sm font-medium text-zinc-400 mb-2">Zdjęcia w galerii (Przeciągnij, aby zmienić kolejność)</label>
+
+                    <DndContext
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        onDragEnd={handleDragEnd}
+                    >
+                        <SortableContext
+                            items={formData.media_ids}
+                            strategy={rectSortingStrategy}
                         >
-                            <ImageIcon className="h-6 w-6 mb-1" />
-                            <span className="text-xs">Dodaj</span>
-                        </button>
-                    </div>
+                            <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-4 mb-4">
+                                {galleryUrls.map((url, index) => {
+                                    const id = formData.media_ids[index];
+                                    // Safety check if media_ids and galleryUrls went out of sync
+                                    if (!id) return null;
+
+                                    return (
+                                        <SortableGalleryItem
+                                            key={id}
+                                            id={id}
+                                            url={url}
+                                            isHighlighted={formData.highlighted_media_ids.includes(id)}
+                                            onToggleHighlight={() => toggleHighlight(index)}
+                                            onRemove={() => removeGalleryImage(index)}
+                                        />
+                                    );
+                                })}
+                                <button
+                                    type="button"
+                                    onClick={() => setShowGalleryPicker(true)}
+                                    className="aspect-square flex flex-col items-center justify-center border-2 border-dashed border-zinc-700 rounded-md hover:border-gold-500 hover:text-gold-500 text-zinc-400 transition-colors"
+                                >
+                                    <ImageIcon className="h-6 w-6 mb-1" />
+                                    <span className="text-xs">Dodaj</span>
+                                </button>
+                            </div>
+                        </SortableContext>
+                    </DndContext>
                 </div>
 
                 <MediaPicker

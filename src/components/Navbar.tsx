@@ -201,11 +201,17 @@ export default function Navbar() {
     const isNavbarTransparent = settings.navbar_transparent === true; // default false
     const navbarLayout = settings.navbar_layout || 'logo_center_menu_split';
 
-    // Homepage requirement: transparent navbar over full-screen hero
-    const forceTransparent = isHome;
-    const linkColorClass = forceTransparent
-        ? 'text-white hover:text-gold-400'
-        : (isScrolled ? 'text-zinc-700 hover:text-gold-500' : 'text-white hover:text-gold-400');
+    // Homepage requirement: transparent navbar over full-screen hero, BUT dark when scrolled
+    // Previously: const forceTransparent = isHome; (This kept it transparent forever)
+    const forceTransparent = isHome && !isScrolled;
+
+    // When scrolled, we have a dark background (bg-black/90), so text must be white.
+    // When transparent (at top of Home), text must be white (over dark hero).
+    // So distinct 'text-zinc-700' is only for a hypothetical White Sticky Header, which we don't seem to have here properly.
+    // For now, let's force White text for clean Dark Mode aesthetics.
+    const linkColorClass = isScrolled
+        ? 'text-zinc-200 hover:text-gold-500' // Scrolled (Dark background)
+        : 'text-white hover:text-gold-400';   // Transparent (Dark Hero background)
 
     const isActive = (href: string) => pathname === href;
 
@@ -222,14 +228,14 @@ export default function Navbar() {
 
     return (
         <header
-            className={`${(forceTransparent || isNavbarSticky) ? 'fixed left-0 right-0 top-0' : 'absolute top-0'} w-full z-[100] transition-all duration-300 ${forceTransparent
+            className={`${(isHome || isNavbarSticky) ? 'fixed left-0 right-0 top-0' : 'absolute top-0'} w-full z-[100] transition-all duration-300 ${forceTransparent
                 ? 'bg-transparent py-6'
                 : (isNavbarSticky
-                    ? (isNavbarTransparent && !isScrolled
+                    ? (isNavbarTransparent && !isScrolled && !isHome // Allow transparent setting for non-home pages if configured
                         ? 'bg-transparent py-6'
                         : 'bg-black/90 backdrop-blur-md py-4 border-b border-white/10 shadow-lg shadow-black/50')
                     : 'bg-transparent py-8')
-                } ${!isNavbarVisible && (forceTransparent || isNavbarSticky) ? '-translate-y-full' : 'translate-y-0'}`}
+                } ${!isNavbarVisible && (isHome || isNavbarSticky) ? '-translate-y-full' : 'translate-y-0'}`}
             style={{
                 fontFamily: navbarFontFamily,
                 transform: !isNavbarVisible && (forceTransparent || isNavbarSticky) ? 'translateY(-100%)' : 'translateY(0)',

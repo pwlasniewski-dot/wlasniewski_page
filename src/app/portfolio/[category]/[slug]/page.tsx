@@ -127,19 +127,39 @@ export default async function SessionPage({ params }: Props) {
                             buttonText: 'Zobacz Zdjęcia',
                             buttonLink: '#gallery' // smooth scroll anchor
                         }] : []),
-                        // First 5 gallery images as subsequent slides
-                        ...galleryImages.slice(0, 5).map((img, index) => ({
-                            id: img.id,
-                            image: img.url,
-                            title: session.title,
-                            subtitle: category,
-                            description: session.description || undefined,
-                            enabled: true,
-                            order: index + 1,
-                            textAnimation: 'fade' as const,
-                            buttonText: 'Zobacz Zdjęcia',
-                            buttonLink: '#gallery'
-                        }))
+                        // Gallery images logic:
+                        // 1. If there are starred (highlighted) images, show ALL of them (in order of appearance in gallery).
+                        // 2. If no stars, show first 5 images as fallback.
+                        ...(() => {
+                            // Parse highlighted IDs
+                            let highlightedIds: number[] = [];
+                            try {
+                                if (session.highlighted_media_ids) {
+                                    highlightedIds = typeof session.highlighted_media_ids === 'string'
+                                        ? JSON.parse(session.highlighted_media_ids)
+                                        : session.highlighted_media_ids;
+                                }
+                            } catch (e) { console.error('Error parsing highlighted_ids', e); }
+
+                            // Filter images that are highlighted
+                            const starredImages = galleryImages.filter(img => highlightedIds.includes(img.id));
+
+                            // Decide which set to use
+                            const slidesImages = starredImages.length > 0 ? starredImages : galleryImages.slice(0, 5);
+
+                            return slidesImages.map((img, index) => ({
+                                id: img.id,
+                                image: img.url,
+                                title: session.title,
+                                subtitle: category,
+                                description: session.description || undefined,
+                                enabled: true,
+                                order: index + 1,
+                                textAnimation: 'fade' as const,
+                                buttonText: 'Zobacz Zdjęcia',
+                                buttonLink: '#gallery'
+                            }));
+                        })()
                     ]}
                 />
 
