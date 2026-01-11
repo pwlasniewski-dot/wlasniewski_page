@@ -4,11 +4,23 @@ import Image from 'next/image';
 export const revalidate = 60; // Revalidate every minute
 
 export default async function HistoryPage() {
-    const photos = await prisma.historyPhoto.findMany({
-        orderBy: {
-            filename: 'asc'
+    let photos: any[] = [];
+    try {
+        photos = await prisma.historyPhoto.findMany({
+            orderBy: {
+                filename: 'asc'
+            }
+        });
+    } catch (e: any) {
+        // If table doesn't exist (P2021), return empty array to allow build to pass.
+        // This happens when deployment runs before migration.
+        if (e.code === 'P2021') {
+            console.warn('History table missing, skipping fetch during build.');
+            photos = [];
+        } else {
+            throw e;
         }
-    });
+    }
 
     return (
         <div className="min-h-screen pt-32 pb-20 container mx-auto px-4">
