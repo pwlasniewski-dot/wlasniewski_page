@@ -36,6 +36,7 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
     const [selectedCert, setSelectedCert] = React.useState<any>(null);
     const [activeCertSection, setActiveCertSection] = React.useState<any>(null);
     const [selectedCase, setSelectedCase] = React.useState<any>(null);
+    const [selectedGalleryImage, setSelectedGalleryImage] = React.useState<string | null>(null);
     if (!sections || sections.length === 0) return null;
 
     return (
@@ -174,6 +175,102 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                             </div>
                                         ))}
                                     </div>
+                                </div>
+                            </section>
+                        );
+
+                    case 'mini_gallery':
+                        const colClass = {
+                            2: 'grid-cols-1 sm:grid-cols-2',
+                            3: 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3',
+                            4: 'grid-cols-2 md:grid-cols-4',
+                            5: 'grid-cols-2 md:grid-cols-5',
+                            6: 'grid-cols-2 md:grid-cols-6'
+                        }[(data.mini_gallery_config?.columns || 4) as number] || 'grid-cols-2 md:grid-cols-4';
+
+                        const gapClass = `gap-${data.mini_gallery_config?.gap || 4}`;
+
+                        const cornerClass = {
+                            'square': 'rounded-none',
+                            'rounded': 'rounded-xl',
+                            'pill': 'rounded-full'
+                        }[(data.mini_gallery_config?.corners || 'square') as string] || 'rounded-none';
+
+                        const aspectRatio = {
+                            'square': 'aspect-square',
+                            'video': 'aspect-video',
+                            'portrait': 'aspect-[3/4]',
+                            'auto': ''
+                        }[(data.mini_gallery_config?.aspectRatio || 'square') as string];
+
+                        // Background handling
+                        const containerBg = data.mini_gallery_config?.backgroundColor
+                            ? { backgroundColor: data.mini_gallery_config.backgroundColor }
+                            : {}; // Default transparent if not set
+
+                        return (
+                            <section key={section.id} className="py-16 px-4 md:px-8" style={containerBg}>
+                                <div className="max-w-7xl mx-auto">
+                                    <div className={`grid ${colClass} ${gapClass}`}>
+                                        {(data.mini_gallery_items || []).map((item: any, idx: number) => (
+                                            <div
+                                                key={item.id || idx}
+                                                className={`relative group cursor-pointer ${item.spanCols > 1 ? `col-span-${item.spanCols}` : ''} ${item.spanRows > 1 ? `row-span-${item.spanRows}` : ''}`}
+                                                onClick={() => item.link ? window.location.href = item.link : setSelectedGalleryImage(item.image)}
+                                            >
+                                                <div className={`relative overflow-hidden w-full h-full ${cornerClass} ${aspectRatio} bg-zinc-900 border border-white/5`}>
+                                                    {item.image ? (
+                                                        <img
+                                                            src={item.image}
+                                                            alt={item.title || ''}
+                                                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                                                        />
+                                                    ) : (
+                                                        <div className="w-full h-full flex items-center justify-center text-zinc-800"><ImageIcon /></div>
+                                                    )}
+
+                                                    {/* Hover Overlay */}
+                                                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-4 text-center">
+                                                        {item.title && <h4 className="text-white font-bold text-lg mb-1 translate-y-4 group-hover:translate-y-0 transition-transform duration-300">{item.title}</h4>}
+                                                        {item.description && <p className="text-zinc-300 text-sm translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-75">{item.description}</p>}
+                                                        {!item.link && <Maximize2 className="text-white mt-4 opacity-50" size={20} />}
+                                                    </div>
+                                                </div>
+
+                                                {/* Below Text */}
+                                                {(data.mini_gallery_config?.textPosition === 'below' && (item.title || item.description)) && (
+                                                    <div className="mt-2">
+                                                        {item.title && <h5 className="text-white font-bold text-sm">{item.title}</h5>}
+                                                        {item.description && <p className="text-zinc-500 text-xs">{item.description}</p>}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {/* Lightbox */}
+                                    <AnimatePresence>
+                                        {selectedGalleryImage && (
+                                            <motion.div
+                                                initial={{ opacity: 0 }}
+                                                animate={{ opacity: 1 }}
+                                                exit={{ opacity: 0 }}
+                                                className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4 backdrop-blur-sm"
+                                                onClick={() => setSelectedGalleryImage(null)}
+                                            >
+                                                <button className="absolute top-8 right-8 text-white/50 hover:text-white transition-colors">
+                                                    <X size={48} />
+                                                </button>
+                                                <motion.img
+                                                    initial={{ scale: 0.9, opacity: 0 }}
+                                                    animate={{ scale: 1, opacity: 1 }}
+                                                    exit={{ scale: 0.9, opacity: 0 }}
+                                                    src={selectedGalleryImage}
+                                                    className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
+                                                />
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
                                 </div>
                             </section>
                         );
@@ -968,10 +1065,10 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                                     {/* Content Section */}
                                                     <div className="w-full lg:w-1/3 p-8 md:p-12 overflow-y-auto custom-scrollbar bg-zinc-900 flex flex-col border-t lg:border-t-0 lg:border-l border-white/10">
                                                         <div className="mb-6">
-                                                            <p className="text-yellow-500 text-xs font-black uppercase tracking-[0.2em] mb-2 flex items-center gap-2">
+                                                            <div className="text-yellow-500 text-xs font-black uppercase tracking-[0.2em] mb-2 flex items-center gap-2">
                                                                 <div className="w-2 h-2 bg-yellow-500 rounded-full" />
                                                                 {selectedCase.client || 'Realizacja'}
-                                                            </p>
+                                                            </div>
                                                             <h3 className="text-3xl md:text-4xl font-bold text-white leading-[1.1]">
                                                                 {selectedCase.title}
                                                             </h3>

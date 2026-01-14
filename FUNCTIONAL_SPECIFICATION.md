@@ -45,6 +45,7 @@ Strona składa się z modułów, które można dowolnie sortować (Drag & Drop),
     - Dodatek: "Floating Image" – obraz lewitujący nad tłem paralaksy.
 - **Info Band Editor**: Bloki informacyjne (np. "Dlaczego fotografia dronowa?"). Wsparcie dla różnych układów graficznych oraz **konfigurowalne linki** ("Szczegóły operacyjne"), które wyświetlają się tylko po podaniu adresu URL.
 - **Testimonials**: Integracja z modułem opinii klientów.
+- **Mini Gallery**: Zaawansowany moduł galerii "Pro" z obsługą gridu (2-6 kolumn), lightboxa i formatowania tekstu (RTF). Pozwala na precyzyjne sterowanie wyglądem (zaokrąglenia, tło) i układem treści (różne warianty położenia opisów).
 
 #### C. Challenge Banner (Visual Content Engine)
 Moduł odpowiedzialny za marketing wizualny, obsługujący dwa tryby:
@@ -795,8 +796,15 @@ Główna nawigacja witryny, synchronizowana z bazą danych przez `MenuItem`.
 
 ### 19.5. Komponent `Footer` (`src/components/Footer.tsx`)
 Stopka zintegrowana z systemem CMS.
-- **Podział**: Trzy kolumny linków (`oferta`, `lokalnie`, `inne`).
 - **Logika Fallbacków**: Jeśli w bazie brakuje danych dla danej sekcji, wyświetla predefiniowane "linki bezpieczeństwa".
+
+### 19.6. Komponent `MiniGallery` (`src/components/PageRenderer.tsx`)
+Moduł galerii o wysokiej konfigurowalności, renderowany dynamicznie.
+- **Parametry**: `columns` (2-6), `gap` (sm-xl), `aspectRatio`, `textPosition`.
+- **Funkcje**:
+    - **Lightbox**: Własna implementacja z obsługą nawigacji (Next/Prev) i swipe na mobile.
+    - **Rich Text**: Renderowanie HTML z `DOMPurify` dla bezpieczeństwa.
+    - **Performance**: Wykorzystuje `Next/Image` z automatycznym doborem rozmiarów (`sizes` prop) w zależności od układu kolumn.
 
 ---
 

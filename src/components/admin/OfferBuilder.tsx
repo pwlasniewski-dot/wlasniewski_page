@@ -2,7 +2,8 @@
 
 import React, { useState, useRef } from 'react';
 import { useReactToPrint } from 'react-to-print';
-import { Printer, Eye, Save, Plus, Trash2, ArrowRight } from 'lucide-react';
+import { Printer, Eye, Save, Plus, Trash2, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
+
 
 // Types for our Offer Data
 interface OfferData {
@@ -228,6 +229,49 @@ export default function OfferBuilder() {
         update('recommendationColumnIndex', index);
     };
 
+    // --- Column Reordering ---
+    const moveColumn = (index: number, direction: 'left' | 'right') => {
+        if (direction === 'left' && index === 0) return; // Can't move left if first (skipping label col 0? usually headers[0] is labels)
+        // Actually, pricingHeaders[0] is usually "ELEMENTY OFERTY" (the label column). moving that might be bad.
+        // Let's assume index 0 works like any other column, OR restrict it.
+        // The user said: "nagłówek 1, na miejsce nagłówka 2". If header 1 is the labels column, they probably don't want to move it.
+        // But if they mean the first *price* column (index 1), then yes.
+        // Let's allow moving indices 1..N. Index 0 is typically the row labels.
+
+        const newIndex = direction === 'left' ? index - 1 : index + 1;
+        if (newIndex < 1 || newIndex >= data.pricingHeaders.length) return; // Keep index 0 fixed
+
+        setData(prev => {
+            const newHeaders = [...prev.pricingHeaders];
+            const newFooterPrices = [...prev.footerPrices];
+            const newRows = prev.pricingRows.map(r => ({ ...r, values: [...r.values] }));
+
+            // Swap Headers
+            [newHeaders[index], newHeaders[newIndex]] = [newHeaders[newIndex], newHeaders[index]];
+
+            // Swap Footer Prices
+            [newFooterPrices[index], newFooterPrices[newIndex]] = [newFooterPrices[newIndex], newFooterPrices[index]];
+
+            // Swap Row Values
+            newRows.forEach(row => {
+                [row.values[index], row.values[newIndex]] = [row.values[newIndex], row.values[index]];
+            });
+
+            // Adjust Recommendation Index
+            let newRecIndex = prev.recommendationColumnIndex;
+            if (prev.recommendationColumnIndex === index) newRecIndex = newIndex;
+            else if (prev.recommendationColumnIndex === newIndex) newRecIndex = index;
+
+            return {
+                ...prev,
+                pricingHeaders: newHeaders,
+                footerPrices: newFooterPrices,
+                pricingRows: newRows,
+                recommendationColumnIndex: newRecIndex
+            };
+        });
+    };
+
     return (
         <div className="flex flex-col lg:flex-row h-screen bg-gray-100 overflow-hidden">
             {/* LEFT: EDITOR */}
@@ -353,21 +397,36 @@ export default function OfferBuilder() {
                                                     update('pricingHeaders', newHeaders);
                                                 }}
                                             />
-                                            <div className="flex justify-between items-center text-xs">
-                                                <label className="flex items-center gap-1 cursor-pointer">
-                                                    <input
-                                                        type="radio"
-                                                        name="recommend_col"
-                                                        checked={data.recommendationColumnIndex === idx}
-                                                        onChange={() => setRecommendedColumn(idx)}
-                                                    />
-                                                    <span className="text-gray-500">Wyróżn.</span>
-                                                </label>
-                                                {idx > 0 && (
-                                                    <button onClick={() => removeColumn(idx)} className="text-red-400 hover:text-red-600">
-                                                        <Trash2 size={12} />
-                                                    </button>
-                                                )}
+                                            <div className="flex justify-between items-center text-xs mt-1">
+                                                <div className="flex gap-1">
+                                                    {idx > 1 && (
+                                                        <button onClick={() => moveColumn(idx, 'left')} className="p-1 hover:bg-gray-200 rounded" title="Przesuń w lewo">
+                                                            <ChevronLeft size={12} />
+                                                        </button>
+                                                    )}
+                                                    {idx > 0 && idx < data.pricingHeaders.length - 1 && (
+                                                        <button onClick={() => moveColumn(idx, 'right')} className="p-1 hover:bg-gray-200 rounded" title="Przesuń w prawo">
+                                                            <ChevronRight size={12} />
+                                                        </button>
+                                                    )}
+                                                </div>
+
+                                                <div className="flex items-center gap-2">
+                                                    <label className="flex items-center gap-1 cursor-pointer">
+                                                        <input
+                                                            type="radio"
+                                                            name="recommend_col"
+                                                            checked={data.recommendationColumnIndex === idx}
+                                                            onChange={() => setRecommendedColumn(idx)}
+                                                        />
+                                                        <span className="text-gray-500 text-[10px]">Wyróżn.</span>
+                                                    </label>
+                                                    {idx > 0 && (
+                                                        <button onClick={() => removeColumn(idx)} className="text-red-400 hover:text-red-600">
+                                                            <Trash2 size={12} />
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                     ))}

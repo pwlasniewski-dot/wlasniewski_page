@@ -933,6 +933,26 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
                 )}
             </div>
 
+            {/* Bottom Action Bar */}
+            <div className="flex items-center justify-between pt-8 mt-8 border-t border-zinc-800">
+                <button
+                    onClick={scrollToTop}
+                    className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white rounded-md font-medium transition-colors flex items-center gap-2"
+                >
+                    <ArrowLeft className="w-5 h-5 rotate-90" />
+                    Wróć na górę
+                </button>
+
+                <button
+                    onClick={handleSubmit}
+                    disabled={saving}
+                    className="px-6 py-3 bg-gold-500 hover:bg-gold-400 text-black rounded-md font-bold disabled:opacity-50 flex items-center gap-2 shadow-lg shadow-gold-500/10"
+                >
+                    <Save className="w-5 h-5" />
+                    {saving ? 'Zapisywanie...' : 'Zapisz zmiany'}
+                </button>
+            </div>
+
             {/* Media Picker Modal */}
             <MediaPicker
                 isOpen={mediaPickerOpen}

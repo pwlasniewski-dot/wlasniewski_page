@@ -42,7 +42,7 @@ interface Feature {
     buttonLink?: string;
 }
 
-type SectionType = 'about' | 'features' | 'parallax' | 'info_band' | 'challenge_banner' | 'testimonials';
+type SectionType = 'about' | 'features' | 'parallax' | 'info_band' | 'challenge_banner' | 'testimonials' | 'mini_gallery';
 
 interface BaseSection {
     id: string;
@@ -171,7 +171,41 @@ interface ChallengeBannerSection extends BaseSection {
     };
 }
 
-type Section = AboutSection | FeaturesSection | ParallaxSection | InfoBandSection | ChallengeBannerSection | TestimonialsSection;
+
+// --- Mini Gallery Types ---
+interface MiniGalleryItem {
+    id: string;
+    image: string;
+    title?: string;
+    description?: string;
+    link?: string;
+    spanCols?: number;
+    spanRows?: number;
+}
+
+interface MiniGalleryConfig {
+    columns: number;
+    gap: number;
+    aspectRatio: 'square' | 'video' | 'portrait' | 'auto';
+    style: 'classic' | 'masonry' | 'floating';
+    textPosition: 'below' | 'overlay' | 'hover';
+    corners: 'square' | 'rounded' | 'pill';
+    backgroundColor?: string;
+    description?: string;
+    descriptionAlign?: 'left' | 'center' | 'right';
+    descriptionWidth?: 'narrow' | 'medium' | 'wide' | 'full';
+    descriptionPlacement?: 'top' | 'bottom';
+}
+
+interface MiniGallerySection extends BaseSection {
+    type: 'mini_gallery';
+    data: {
+        mini_gallery_items: MiniGalleryItem[];
+        mini_gallery_config: MiniGalleryConfig;
+    };
+}
+
+type Section = AboutSection | FeaturesSection | ParallaxSection | InfoBandSection | ChallengeBannerSection | TestimonialsSection | MiniGallerySection;
 
 export default function HomepageManager() {
     const router = useRouter();
@@ -182,7 +216,7 @@ export default function HomepageManager() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
-    const [currentPickerTarget, setCurrentPickerTarget] = useState<{ type: 'hero' | 'section' | 'advanced' | 'advanced_challenge' | 'rte', index: number, field?: string, subIndex?: number } | null>(null);
+    const [currentPickerTarget, setCurrentPickerTarget] = useState<{ type: 'hero' | 'section' | 'advanced' | 'advanced_challenge' | 'rte' | 'mini_gallery_item', index: number, field?: string, subIndex?: number } | null>(null);
 
     useEffect(() => {
         fetchHomepage();
@@ -414,6 +448,28 @@ export default function HomepageManager() {
         toast.success('Dodano Opinie (pamiętaj zapisać)');
     };
 
+    const addMiniGalleryTemplate = () => {
+        const tpl: MiniGallerySection = {
+            id: `minigallery-${Date.now()}`,
+            type: 'mini_gallery',
+            label: 'Mini Galeria',
+            enabled: true,
+            data: {
+                mini_gallery_items: [],
+                mini_gallery_config: {
+                    columns: 4,
+                    gap: 4,
+                    aspectRatio: 'square',
+                    style: 'classic',
+                    textPosition: 'below',
+                    corners: 'square'
+                }
+            }
+        };
+        setSections(prev => [...prev, tpl]);
+        toast.success('Dodano Mini Galerię (pamiętaj zapisać)');
+    };
+
     const addHeroSlideTemplate = () => {
         const tpl = templates.createHeroSlideTemplate();
         setHeroSlides(prev => [...prev, tpl]);
@@ -444,7 +500,7 @@ export default function HomepageManager() {
 
     // --- Media Picker ---
 
-    const openMediaPicker = (type: 'hero' | 'section' | 'advanced' | 'advanced_challenge' | 'rte', index: number, field?: string, subIndex?: number) => {
+    const openMediaPicker = (type: 'hero' | 'section' | 'advanced' | 'advanced_challenge' | 'rte' | 'mini_gallery_item', index: number, field?: string, subIndex?: number) => {
         setCurrentPickerTarget({ type, index, field, subIndex });
         setMediaPickerOpen(true);
     };
@@ -502,6 +558,14 @@ export default function HomepageManager() {
                 (section.data as any)[fieldName] = currentContent + imgTag;
             }
 
+            setSections(updated);
+        } else if (currentPickerTarget.type === 'mini_gallery_item') {
+            const updated = [...sections];
+            const section = updated[currentPickerTarget.index] as MiniGallerySection;
+            if (currentPickerTarget.subIndex !== undefined) {
+                const item = section.data.mini_gallery_items[currentPickerTarget.subIndex];
+                item.image = filePath;
+            }
             setSections(updated);
         } else {
             const updated = [...sections];
@@ -749,6 +813,53 @@ export default function HomepageManager() {
         setSections(newSections);
     };
 
+    // --- Mini Gallery Helpers ---
+    const addMiniGalleryItem = (index: number) => {
+        const newSections = [...sections];
+        const section = newSections[index] as MiniGallerySection;
+        section.data.mini_gallery_items.push({
+            id: Date.now().toString(),
+            image: '',
+            title: 'Nowe zdjęcie',
+            spanCols: 1,
+            spanRows: 1
+        });
+        setSections(newSections);
+    };
+
+    const removeMiniGalleryItem = (sectionIndex: number, itemIndex: number) => {
+        const newSections = [...sections];
+        const section = newSections[sectionIndex] as MiniGallerySection;
+        section.data.mini_gallery_items = section.data.mini_gallery_items.filter((_, i) => i !== itemIndex);
+        setSections(newSections);
+    };
+
+    const updateMiniGalleryItem = (sectionIndex: number, itemIndex: number, field: keyof MiniGalleryItem, value: any) => {
+        const newSections = [...sections];
+        const section = newSections[sectionIndex] as MiniGallerySection;
+        (section.data.mini_gallery_items[itemIndex] as any)[field] = value;
+        setSections(newSections);
+    };
+
+    const updateMiniGalleryConfig = (sectionIndex: number, field: keyof MiniGalleryConfig, value: any) => {
+        const newSections = [...sections];
+        const section = newSections[sectionIndex] as MiniGallerySection;
+        (section.data.mini_gallery_config as any)[field] = value;
+        setSections(newSections);
+    };
+
+    const moveMiniGalleryItem = (sectionIndex: number, itemIndex: number, direction: 'left' | 'right') => {
+        const newSections = [...sections];
+        const section = newSections[sectionIndex] as MiniGallerySection;
+        const items = section.data.mini_gallery_items;
+        const targetIndex = direction === 'left' ? itemIndex - 1 : itemIndex + 1;
+
+        if (targetIndex >= 0 && targetIndex < items.length) {
+            [items[itemIndex], items[targetIndex]] = [items[targetIndex], items[itemIndex]];
+            setSections(newSections);
+        }
+    };
+
 
     if (loading) return <div className="text-zinc-400 p-8">Ładowanie...</div>;
 
@@ -781,6 +892,7 @@ export default function HomepageManager() {
                 <button onClick={addInfoBandTemplate} className="px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-white rounded text-sm">Dodaj Info Band</button>
                 <button onClick={addChallengeBannerTemplate} className="px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-white rounded text-sm">Dodaj Foto Wyzwanie</button>
                 <button onClick={addTestimonialsTemplate} className="px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-white rounded text-sm">Dodaj Opinie</button>
+                <button onClick={addMiniGalleryTemplate} className="px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-white rounded text-sm border border-gold-500/30 text-gold-400">Dodaj Mini Galerię (Pro)</button>
             </div>
 
             <div className="space-y-8">
@@ -1363,6 +1475,217 @@ export default function HomepageManager() {
                                                 Panel Admin → Opinie
                                             </Link>
                                         </p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* MINI GALLERY EDITOR */}
+                            {section.type === 'mini_gallery' && (
+                                <div className="space-y-6">
+                                    {/* Config Bar */}
+                                    <div className="bg-zinc-800/50 p-4 rounded-lg border border-zinc-700 grid grid-cols-2 md:grid-cols-4 gap-4">
+                                        <div>
+                                            <label className="block text-xs text-zinc-400 mb-1">Kolumny</label>
+                                            <input
+                                                type="range" min="2" max="6" step="1"
+                                                value={section.data.mini_gallery_config.columns}
+                                                onChange={e => updateMiniGalleryConfig(index, 'columns', parseInt(e.target.value))}
+                                                className="w-full"
+                                            />
+                                            <div className="flex justify-between text-xs text-zinc-500">
+                                                <span>2</span><span>{section.data.mini_gallery_config.columns}</span><span>6</span>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs text-zinc-400 mb-1">Odstęp (Gap)</label>
+                                            <input
+                                                type="range" min="0" max="10" step="1"
+                                                value={section.data.mini_gallery_config.gap}
+                                                onChange={e => updateMiniGalleryConfig(index, 'gap', parseInt(e.target.value))}
+                                                className="w-full"
+                                            />
+                                            <div className="flex justify-between text-xs text-zinc-500">
+                                                <span>0</span><span>{section.data.mini_gallery_config.gap}</span><span>10</span>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs text-zinc-400 mb-1">Styl Rogów</label>
+                                            <select
+                                                value={section.data.mini_gallery_config.corners}
+                                                onChange={e => updateMiniGalleryConfig(index, 'corners', e.target.value)}
+                                                className="w-full bg-zinc-900 border border-zinc-700 rounded text-xs px-2 py-1 text-white"
+                                            >
+                                                <option value="square">Kwadratowe</option>
+                                                <option value="rounded">Zaokrąglone</option>
+                                                <option value="pill">Pigułka</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs text-zinc-400 mb-1">Pozycja Tekstu</label>
+                                            <select
+                                                value={section.data.mini_gallery_config.textPosition}
+                                                onChange={e => updateMiniGalleryConfig(index, 'textPosition', e.target.value)}
+                                                className="w-full bg-zinc-900 border border-zinc-700 rounded text-xs px-2 py-1 text-white"
+                                            >
+                                                <option value="below">Pod zdjęciem</option>
+                                                <option value="overlay">Na zdjęciu</option>
+                                                <option value="hover">Shover (Overlay)</option>
+                                            </select>
+                                        </div>
+                                        <div className="col-span-2 md:col-span-4 border-t border-zinc-700/50 pt-2 mt-2">
+                                            <div className="flex items-center gap-4">
+                                                <label className="text-xs text-zinc-400">Tło sekcji:</label>
+                                                <div className="flex items-center gap-2">
+                                                    <input
+                                                        type="color"
+                                                        value={section.data.mini_gallery_config.backgroundColor || '#000000'}
+                                                        onChange={e => updateMiniGalleryConfig(index, 'backgroundColor', e.target.value)}
+                                                        className="w-8 h-8 rounded cursor-pointer bg-transparent border-0"
+                                                    />
+                                                    <input
+                                                        type="text"
+                                                        value={section.data.mini_gallery_config.backgroundColor || ''}
+                                                        onChange={e => updateMiniGalleryConfig(index, 'backgroundColor', e.target.value)}
+                                                        placeholder="#000000"
+                                                        className="bg-zinc-900 border border-zinc-700 rounded text-xs px-2 py-1 text-white w-24"
+                                                    />
+                                                    <button
+                                                        onClick={() => updateMiniGalleryConfig(index, 'backgroundColor', '')}
+                                                        className="px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 text-xs rounded border border-zinc-700"
+                                                    >
+                                                        Reset (Przezroczyste)
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Description Editor */}
+                                    <div className="my-6 border-t border-zinc-700/50 pt-6">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <label className="block text-sm font-medium text-zinc-300">
+                                                Opis Sekcji (Profesjonalny)
+                                            </label>
+                                            <span className="text-xs text-zinc-500">
+                                                Obsługuje formatowanie, nagłówki i kolory
+                                            </span>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-4 mb-4">
+                                            <div>
+                                                <label className="block text-xs text-zinc-400 mb-1">Szerokość Opisu</label>
+                                                <select
+                                                    value={section.data.mini_gallery_config.descriptionWidth || 'medium'}
+                                                    onChange={e => updateMiniGalleryConfig(index, 'descriptionWidth', e.target.value)}
+                                                    className="w-full bg-zinc-900 border border-zinc-700 rounded text-xs px-2 py-1 text-white"
+                                                >
+                                                    <option value="narrow">Wąski (Compact)</option>
+                                                    <option value="medium">Średni (Standard)</option>
+                                                    <option value="wide">Szeroki (Wide)</option>
+                                                    <option value="full">Pełna szerokość (Full)</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs text-zinc-400 mb-1">Wyrównanie Kontenera</label>
+                                                <select
+                                                    value={section.data.mini_gallery_config.descriptionAlign || 'center'}
+                                                    onChange={e => updateMiniGalleryConfig(index, 'descriptionAlign', e.target.value)}
+                                                    className="w-full bg-zinc-900 border border-zinc-700 rounded text-xs px-2 py-1 text-white"
+                                                >
+                                                    <option value="left">Do lewej</option>
+                                                    <option value="center">Wyśrodkowany</option>
+                                                    <option value="right">Do prawej</option>
+                                                </select>
+                                            </div>
+                                            <div className="col-span-2">
+                                                <label className="block text-xs text-zinc-400 mb-1">Położenie Opisu</label>
+                                                <select
+                                                    value={section.data.mini_gallery_config.descriptionPlacement || 'top'}
+                                                    onChange={e => updateMiniGalleryConfig(index, 'descriptionPlacement', e.target.value)}
+                                                    className="w-full bg-zinc-900 border border-zinc-700 rounded text-xs px-2 py-1 text-white"
+                                                >
+                                                    <option value="top">Nad galerią (Standard)</option>
+                                                    <option value="bottom">Pod galerią</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <RichTextEditor
+                                            value={section.data.mini_gallery_config.description || ''}
+                                            onChange={(val) => updateMiniGalleryConfig(index, 'description', val)}
+                                            placeholder="Tutaj wpisz profesjonalny opis galerii (np. 300 słów)..."
+                                        />
+                                    </div>
+
+                                    {/* Items Grid */}
+                                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                        {section.data.mini_gallery_items.map((item, mIndex) => (
+                                            <div key={item.id || mIndex} className="bg-zinc-800/30 border border-zinc-700 rounded p-3 relative group">
+
+                                                {/* Image */}
+                                                <div className="aspect-square bg-zinc-900 rounded mb-2 overflow-hidden relative">
+                                                    {item.image ? (
+                                                        <img src={item.image} className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <div className="w-full h-full flex items-center justify-center text-zinc-600">Brak zdjęcia</div>
+                                                    )}
+
+                                                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                                        <button
+                                                            onClick={() => moveMiniGalleryItem(index, mIndex, 'left')}
+                                                            disabled={mIndex === 0}
+                                                            className="p-1.5 bg-zinc-800 rounded-full text-white hover:bg-zinc-700 disabled:opacity-50"
+                                                        >
+                                                            <ArrowLeft className="w-4 h-4" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => openMediaPicker('mini_gallery_item', index, undefined, mIndex)}
+                                                            className="p-1.5 bg-blue-600 rounded-full text-white hover:bg-blue-500"
+                                                        >
+                                                            <ImageIcon className="w-4 h-4" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => moveMiniGalleryItem(index, mIndex, 'right')}
+                                                            disabled={mIndex === section.data.mini_gallery_items.length - 1}
+                                                            className="p-1.5 bg-zinc-800 rounded-full text-white hover:bg-zinc-700 disabled:opacity-50"
+                                                        >
+                                                            <ArrowLeft className="w-4 h-4 rotate-180" />
+                                                        </button>
+                                                    </div>
+
+                                                    <button
+                                                        onClick={() => removeMiniGalleryItem(index, mIndex)}
+                                                        className="absolute top-1 right-1 p-1 bg-red-500 rounded-full text-white opacity-0 group-hover:opacity-100 hover:bg-red-600 transition-opacity"
+                                                    >
+                                                        <Trash2 className="w-3 h-3" />
+                                                    </button>
+                                                </div>
+
+                                                {/* Fields */}
+                                                <div className="space-y-2">
+                                                    <input
+                                                        type="text" placeholder="Tytuł"
+                                                        value={item.title || ''}
+                                                        onChange={e => updateMiniGalleryItem(index, mIndex, 'title', e.target.value)}
+                                                        className="w-full bg-transparent border-b border-zinc-700 focus:border-gold-500 text-xs text-white px-1 py-0.5 outline-none"
+                                                    />
+                                                    <input
+                                                        type="text" placeholder="Link (opcjonalny)"
+                                                        value={item.link || ''}
+                                                        onChange={e => updateMiniGalleryItem(index, mIndex, 'link', e.target.value)}
+                                                        className="w-full bg-transparent border-b border-zinc-700 focus:border-gold-500 text-xs text-zinc-400 px-1 py-0.5 outline-none"
+                                                    />
+                                                </div>
+                                            </div>
+                                        ))}
+
+                                        <button
+                                            onClick={() => addMiniGalleryItem(index)}
+                                            className="aspect-square border-2 border-dashed border-zinc-700 rounded hover:border-gold-500 hover:text-gold-500 text-zinc-500 flex flex-col items-center justify-center gap-2 transition-colors"
+                                        >
+                                            <Plus className="w-8 h-8" />
+                                            <span className="text-xs font-medium">Dodaj element</span>
+                                        </button>
                                     </div>
                                 </div>
                             )}

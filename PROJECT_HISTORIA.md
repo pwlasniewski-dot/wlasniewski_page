@@ -149,6 +149,42 @@ Ten plik służy do ścisłego monitorowania wszystkich zmian wprowadzanych w pr
 
 ## Log Zmian
 
+### [2026-01-14] 🎨 Mini Gallery Module & Admin Config
+**Cel:** Wdrożenie profesjonalnego modułu mini-galerii dostępnego na stronie głównej oraz podstronach B2B/B2C, z pełną konfiguracją z poziomu Page Buildera.
+
+**Zrealizowane Zmiany:**
+1. **Admin Page Builder UI (`PageBuilder.tsx`):**
+   - **Nowy Typ Sekcji:** Dodano obsługę `section.type === 'mini_gallery'`.
+   - **Konfiguracja:** Panel boczny umożliwia ustawienie liczby kolumn (2-6), odstępów (gap), stylu rogów (square/rounded/pill), formatu zdjęć (ratio) oraz tła sekcji.
+   - **Zarządzanie Elementami:** Drag & Drop dla elementów galerii, edycja tytułów/opisów/linków.
+   - **Media Picker Integration:** Poprawna obsługa kontekstu zdjęcia dla elementów mini galerii.
+   - **Bug Fix**: Naprawiono błędy składni i duplicacji kodu w `PageBuilder.tsx`.
+
+2. **Frontend Display (`PageRenderer.tsx` & `HomeContent.tsx`):**
+   - **Grid System:** Zaimplementowano responsywny grid oparty na konfiguracji.
+   - **Interactive UI:** Efekty hover z nakładką, tytułem i opisem.
+   - **Lightbox:** Prosty, pełnoekranowy podgląd zdjęć (state-based) z animacją `framer-motion`.
+   - **Homepage Support:** Zaktualizowano `HomeContent.tsx` o obsługę renderowania `mini_gallery`.
+
+3. **Maintenance & Fixes:**
+   - **Hydration Error Fixed:** Naprawiono nieprawidłowe zagnieżdżenie `div` wewnątrz `p` w `PageRenderer.tsx` (moduł B2B Clients).
+   - **Admin UI Improvements:** Dodano pasek akcji na dole edytora stron (`admin/pages/[slug]`) zawierający drugi przycisk "Zapisz zmiany" oraz "Wróć na górę".
+   - **Navbar Scroll Fix:** Naprawiono błąd, który powodował, że pasek nawigacji nie chował się podczas przewijania na stronie głównej (poprawa logiki `transform` w `Navbar.tsx`).
+
+4. **Mini Gallery Enhancements:**
+   - **Description Field:** Dodano zaawansowany edytor tekstu (`RichTextEditor`) oraz pełną kontrolę nad stylem (Szerokość, Wyrównanie) i położeniem (Nad/Pod galerią).
+   - **Lightbox Navigation:** Dodano strzałki (Poprzednie/Następne) do podglądu zdjęć w trybie pełnoekranowym (`HomeContent.tsx`).
+
+**Files Modified:**
+- `src/components/admin/PageBuilder.tsx`
+- `src/components/PageRenderer.tsx`
+- `src/app/HomeContent.tsx`
+- `src/app/admin/pages/strona-glowna/page.tsx`
+- `src/app/admin/pages/[slug]/page.tsx`
+
+**Status:** ✅ **DONE & VERIFIED (Build Passed & Logic Verified)**
+
+
 ### [2026-01-11] 🛡️ Admin CRM & GDPR Compliance Dashboard
 **Cel:** Przekształcenie prostej listy użytkowników w pełnoprawny moduł CRM oraz wdrożenie bezpiecznej anonimizacji danych (RODO) zamiast destrukcyjnego usuwania.
 
@@ -407,6 +443,28 @@ Ten plik służy do ścisłego monitorowania wszystkich zmian wprowadzanych w pr
 ### [Future Plans] Analityka Dronowa & Raporty BI
 
 
+
+### [2026-01-14] 🎨 Mini Gallery Module & Admin Config
+**Cel:** Wdrożenie profesjonalnego modułu mini-galerii dostępnego na stronie głównej oraz podstronach B2B/B2C, z pełną konfiguracją z poziomu Page Buildera.
+
+**Zrealizowane Zmiany:**
+1. **Admin Page Builder UI (`PageBuilder.tsx`):**
+   - **Nowy Typ Sekcji:** Dodano obsługę `section.type === 'mini_gallery'`.
+   - **Konfiguracja:** Panel boczny umożliwia ustawienie liczby kolumn (2-6), odstępów (gap), stylu rogów (square/rounded/pill), formatu zdjęć (ratio) oraz tła sekcji.
+   - **Zarządzanie Elementami:** Drag & Drop dla elementów galerii, edycja tytułów/opisów/linków.
+   - **Media Picker Integration:** Poprawna obsługa kontekstu zdjęcia dla elementów mini galerii.
+
+2. **Frontend Display (`PageRenderer.tsx`):**
+   - **Grid System:** Zaimplementowano responsywny grid oparty na konfiguracji.
+   - **Interactive UI:** Efekty hover z nakładką, tytułem i opisem.
+   - **Lightbox:** Prosty, pełnoekranowy podgląd zdjęć (state-based) z animacją `framer-motion`.
+   - **Styling:** Obsługa wariantów wyglądu (zaokrąglenia, tła).
+
+**Files Modified:**
+- `src/components/admin/PageBuilder.tsx`
+- `src/components/PageRenderer.tsx`
+
+**Status:** ✅ **DONE & VERIFIED (Local)**
 
 ### [2025-12-28] 🎨 InfoBand Links: Dynamic Control
 **Cel:** Umożliwienie administratorowi sterowania widocznością linku "Szczegóły operacyjne" na stronie głównej (lub B2B).

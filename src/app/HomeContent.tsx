@@ -4,8 +4,8 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { motion } from 'framer-motion';
-import { ArrowRight, Star, Check, Camera } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Camera, ChevronDown, Facebook, Instagram, Mail, MapPin, Phone, Send, User, X, Maximize2, Image as ImageIcon, ArrowLeft, ArrowRight, Star, Check } from 'lucide-react';
 import HeroSlider from '@/components/HeroSlider';
 
 import ContactForm from '@/components/ContactForm';
@@ -31,7 +31,7 @@ interface Testimonial {
 
 interface Section {
     id: string;
-    type: 'about' | 'features' | 'parallax' | 'info_band' | 'challenge_banner' | 'testimonials' | 'creative_slider' | 'hero' | 'rich_text' | 'image_text' | 'gallery' | 'contact' | 'thermal_slider' | 'hero_parallax';
+    type: 'about' | 'features' | 'parallax' | 'info_band' | 'challenge_banner' | 'testimonials' | 'creative_slider' | 'hero' | 'rich_text' | 'image_text' | 'gallery' | 'contact' | 'thermal_slider' | 'hero_parallax' | 'mini_gallery';
     enabled?: boolean;
     backgroundColor?: 'black' | 'zinc-900' | 'zinc-800' | 'gold-900' | 'white';
     textVariant?: 'light' | 'dark';
@@ -74,6 +74,7 @@ interface HomeContentProps {
 
 export default function HomeContent({ heroSlides, sections, homeData, orderedSections, testimonials, heroSliderInterval = 6000 }: HomeContentProps) {
     const [currentTestimonial, setCurrentTestimonial] = useState(0);
+    const [selectedGalleryImage, setSelectedGalleryImage] = useState<string | null>(null);
 
 
     // Auto-rotate testimonials
@@ -608,6 +609,178 @@ export default function HomeContent({ heroSlides, sections, homeData, orderedSec
                                     </div>
                                 ))}
                             </div>
+                        </div>
+                    </section>
+                );
+
+            case 'mini_gallery':
+                // Safe access to nested data structure
+                const miniData = section.data || {};
+                const config = miniData.mini_gallery_config || {};
+                const items = miniData.mini_gallery_items || [];
+
+                const colClass = {
+                    2: 'grid-cols-1 sm:grid-cols-2',
+                    3: 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3',
+                    4: 'grid-cols-2 md:grid-cols-4',
+                    5: 'grid-cols-2 md:grid-cols-5',
+                    6: 'grid-cols-2 md:grid-cols-6'
+                }[(config.columns || 4) as number] || 'grid-cols-2 md:grid-cols-4';
+
+                const gapClass = `gap-${config.gap || 4}`;
+
+                const cornerClass = {
+                    'square': 'rounded-none',
+                    'rounded': 'rounded-xl',
+                    'pill': 'rounded-full'
+                }[(config.corners || 'square') as string] || 'rounded-none';
+
+                const aspectRatio = {
+                    'square': 'aspect-square',
+                    'video': 'aspect-video',
+                    'portrait': 'aspect-[3/4]',
+                    'auto': ''
+                }[(config.aspectRatio || 'square') as string];
+
+                // Background handling - use config or section fallback
+                const containerBg = config.backgroundColor
+                    ? { backgroundColor: config.backgroundColor }
+                    : {};
+
+                return (
+                    <section
+                        key={section.id}
+                        className={`py-16 px-4 md:px-8 relative overflow-hidden`}
+                        style={containerBg}
+                    >
+                        <div className="max-w-[1920px] mx-auto">
+                            {/* Description Rendering Logic */}
+                            {(() => {
+                                const DescriptionBlock = () => (
+                                    config.description ? (
+                                        <div className={`mb-12 px-4 
+                                            ${config.descriptionWidth === 'narrow' ? 'max-w-2xl' :
+                                                config.descriptionWidth === 'wide' ? 'max-w-6xl' :
+                                                    config.descriptionWidth === 'full' ? 'max-w-full' : 'max-w-4xl'}
+                                            ${config.descriptionAlign === 'left' ? 'mr-auto ml-0 text-left' :
+                                                config.descriptionAlign === 'right' ? 'ml-auto mr-0 text-right' : 'mx-auto text-center'}
+                                        `}>
+                                            <div
+                                                className="prose prose-invert prose-lg text-zinc-200 leading-relaxed font-normal max-w-none"
+                                                dangerouslySetInnerHTML={{ __html: config.description }}
+                                            />
+                                            {config.descriptionAlign === 'center' || !config.descriptionAlign ? (
+                                                <div className="h-px w-24 bg-gradient-to-r from-transparent via-gold-500/50 to-transparent mx-auto mt-8" />
+                                            ) : null}
+                                        </div>
+                                    ) : null
+                                );
+
+                                return (
+                                    <>
+                                        {(!config.descriptionPlacement || config.descriptionPlacement === 'top') && <DescriptionBlock />}
+
+                                        <div className={`grid ${colClass} ${gapClass}`}>
+                                            {items.map((item: any, idx: number) => (
+                                                <div
+                                                    key={item.id || idx}
+                                                    className={`relative group cursor-pointer ${item.spanCols > 1 ? `col-span-${item.spanCols}` : ''} ${item.spanRows > 1 ? `row-span-${item.spanRows}` : ''}`}
+                                                    onClick={() => item.link ? window.location.href = item.link : setSelectedGalleryImage(item.image)}
+                                                >
+                                                    <div className={`relative overflow-hidden w-full h-full ${cornerClass} ${aspectRatio} bg-zinc-900 border border-white/5`}>
+                                                        {item.image ? (
+                                                            <img
+                                                                src={item.image}
+                                                                alt={item.title || ''}
+                                                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                                                            />
+                                                        ) : (
+                                                            <div className="w-full h-full flex items-center justify-center text-zinc-800"><ImageIcon /></div>
+                                                        )}
+
+                                                        {/* Hover Overlay */}
+                                                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-4 text-center">
+                                                            {item.title && <h4 className="text-white font-bold text-lg mb-1 translate-y-4 group-hover:translate-y-0 transition-transform duration-300">{item.title}</h4>}
+                                                            {item.description && <p className="text-zinc-300 text-sm translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-75">{item.description}</p>}
+                                                            {!item.link && <Maximize2 className="text-white mt-4 opacity-50" size={20} />}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Below Text */}
+                                                    {(config.textPosition === 'below' && (item.title || item.description)) && (
+                                                        <div className="mt-2 text-left">
+                                                            {item.title && <h5 className="text-white font-bold text-sm">{item.title}</h5>}
+                                                            {item.description && <p className="text-zinc-500 text-xs">{item.description}</p>}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        {config.descriptionPlacement === 'bottom' && (
+                                            <div className="mt-12">
+                                                <DescriptionBlock />
+                                            </div>
+                                        )}
+                                    </>
+                                );
+                            })()}
+
+                            {/* Lightbox */}
+                            <AnimatePresence>
+                                {selectedGalleryImage && (
+                                    <motion.div
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0 }}
+                                        className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4 backdrop-blur-sm"
+                                        onClick={() => setSelectedGalleryImage(null)}
+                                    >
+                                        <button className="absolute top-8 right-8 text-white/50 hover:text-white transition-colors z-[110]">
+                                            <X size={48} />
+                                        </button>
+
+                                        {/* Navigation Arrows */}
+                                        {items.length > 1 && (
+                                            <>
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        const currentIndex = items.findIndex((item: any) => item.image === selectedGalleryImage);
+                                                        const prevIndex = (currentIndex - 1 + items.length) % items.length;
+                                                        setSelectedGalleryImage(items[prevIndex].image);
+                                                    }}
+                                                    className="absolute left-4 md:left-8 top-1/2 -translate-y-1/2 p-3 bg-black/50 text-white/75 hover:text-white hover:bg-black/80 rounded-full transition-all z-[110]"
+                                                >
+                                                    <ArrowLeft size={32} />
+                                                </button>
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        const currentIndex = items.findIndex((item: any) => item.image === selectedGalleryImage);
+                                                        const nextIndex = (currentIndex + 1) % items.length;
+                                                        setSelectedGalleryImage(items[nextIndex].image);
+                                                    }}
+                                                    className="absolute right-4 md:right-8 top-1/2 -translate-y-1/2 p-3 bg-black/50 text-white/75 hover:text-white hover:bg-black/80 rounded-full transition-all z-[110]"
+                                                >
+                                                    <ArrowRight size={32} />
+                                                </button>
+                                            </>
+                                        )}
+
+                                        <motion.img
+                                            key={selectedGalleryImage} // Key change triggers animation
+                                            initial={{ scale: 0.9, opacity: 0 }}
+                                            animate={{ scale: 1, opacity: 1 }}
+                                            exit={{ scale: 0.9, opacity: 0 }}
+                                            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                                            src={selectedGalleryImage}
+                                            className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl select-none"
+                                            onClick={(e) => e.stopPropagation()}
+                                        />
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
                         </div>
                     </section>
                 );

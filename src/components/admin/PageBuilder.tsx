@@ -13,7 +13,7 @@ import {
 import RichTextEditor from './RichTextEditor';
 import MediaPicker from './MediaPicker';
 
-export type SectionType = 'hero_parallax' | 'hero' | 'rich_text' | 'image_text' | 'gallery' | 'contact' | 'thermal_slider' | 'contact_form' | 'hero_slider' | 'about' | 'features' | 'parallax' | 'info_band' | 'testimonials' | 'challenge_banner' | 'creative_slider' | 'certificates' | 'b2b_hero' | 'b2b_stats' | 'b2b_logos' | 'b2b_process' | 'b2b_cases' | 'b2b_contact' | 'b2b_video' | 'thermal_hero' | 'hero_video' | 'parallax_video' | 'thermal_report';
+export type SectionType = 'hero_parallax' | 'hero' | 'rich_text' | 'image_text' | 'gallery' | 'contact' | 'thermal_slider' | 'contact_form' | 'hero_slider' | 'about' | 'features' | 'parallax' | 'info_band' | 'testimonials' | 'challenge_banner' | 'creative_slider' | 'certificates' | 'b2b_hero' | 'b2b_stats' | 'b2b_logos' | 'b2b_process' | 'b2b_cases' | 'b2b_contact' | 'b2b_video' | 'thermal_hero' | 'hero_video' | 'parallax_video' | 'thermal_report' | 'mini_gallery';
 
 export interface SliderSlide {
     id: string;
@@ -27,6 +27,26 @@ export interface SliderSlide {
     textAnimation?: 'fade' | 'slide-up' | 'scale';
     is_before_after?: boolean;
     before_image?: string;
+}
+
+export interface MiniGalleryItem {
+    id: string;
+    image: string;
+    title?: string;
+    description?: string;
+    link?: string;
+    spanCols?: number;
+    spanRows?: number;
+}
+
+export interface MiniGalleryConfig {
+    columns: number;
+    gap: number;
+    aspectRatio: 'square' | 'video' | 'portrait' | 'auto';
+    style: 'classic' | 'masonry' | 'floating';
+    textPosition: 'below' | 'overlay' | 'hover';
+    corners: 'square' | 'rounded' | 'pill';
+    backgroundColor?: string;
 }
 
 export interface ThermalHeroSlide {
@@ -44,6 +64,68 @@ export interface ThermalHeroSlide {
     buttonLink?: string;
     buttonStyle?: 'gold' | 'white' | 'transparent';
     textAnimation?: 'fade' | 'slide-up' | 'scale';
+}
+
+export interface ThermalSectionData {
+    id: string;
+    category: string;
+    visualImage: string;
+    thermalImage: string;
+    description?: string;
+    labelLeft?: string;
+    labelRight?: string;
+}
+
+export interface PageSection {
+    id: string;
+    type: SectionType;
+    content?: string;
+    image?: string;
+    thermalImage?: string; // For thermal_slider (single)
+    thermalSections?: ThermalSectionData[]; // For thermal_slider (multiple)
+    title?: string;
+    subtitle?: string;
+    description?: string; // For hero (long text)
+    layout?: 'left' | 'right'; // For image_text
+    images?: string[]; // For gallery
+    tag?: string; // For hero / b2b titles
+    buttonText?: string; // For contact/hero
+    buttonLink?: string; // For contact/hero
+    labelRight?: string; // For thermal_slider
+    showCategoryTitle?: boolean; // For thermal_slider - show title above sections
+    slides?: SliderSlide[]; // For hero_slider
+    features?: FeatureItem[]; // For features
+    certificates?: CertificateItem[]; // For certificates
+    featureTitle?: string; // For B2B process box
+    featureContent?: string; // For B2B process box
+    b2b_stats?: B2BStat[];
+    b2b_logos?: B2BLogo[];
+    b2b_process?: B2BProcessStep[];
+    b2b_cases?: B2BCaseStudy[];
+    sectionLayout?: 'grid' | 'centered' | 'full'; // Layout options
+    featureSize?: 'normal' | 'large'; // Feature size options
+    certificateSize?: 'small' | 'medium' | 'large' | 'readable'; // Certificate size options
+    verifiedTag?: string; // For certificates
+    certTag?: string; // For certificates
+    descriptionLabel?: string; // For certificates
+    infoband_items?: InfoBandItem[];
+    logoHeight?: number; // For b2b_logos resizing
+    textAnimation?: 'fade' | 'slide-up' | 'scale'; // For parallax_video
+    thermal_hero_slides?: ThermalHeroSlide[];
+    thermal_reports?: ThermalReport[];
+    mini_gallery_items?: MiniGalleryItem[];
+    mini_gallery_config?: MiniGalleryConfig;
+    data?: any; // For legacy / homepage sections
+    // Video Section Properties
+    videoUrl?: string;
+    videoType?: 'youtube' | 'vimeo' | 'direct';
+    videoAutoPlay?: boolean;
+    videoMuted?: boolean;
+    videoLoop?: boolean;
+    switchInterval?: number; // For thermal_slider
+    overlayOpacity?: number; // For video modules
+    imageObjectFit?: 'cover' | 'contain'; // For image_text
+    backgroundColor?: 'black' | 'zinc-900' | 'zinc-950'; // For image_text
 }
 
 export interface ThermalReport {
@@ -188,7 +270,7 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove, openMedia
     onRemove: (id: string) => void;
     onUpdate: (id: string, data: Partial<PageSection>) => void;
     onMove: (id: string, direction: 'up' | 'down') => void;
-    openMediaPicker: (sectionId: string, options: { target: 'single' | 'gallery', context?: 'visual' | 'thermal' | 'before' | 'case_logo' | 'case_video' | 'video', index?: number }) => void;
+    openMediaPicker: (sectionId: string, options: { target: 'single' | 'gallery', context?: 'visual' | 'thermal' | 'before' | 'case_logo' | 'case_video' | 'video' | 'mini_gallery_item', index?: number }) => void;
 }) {
     const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: section.id });
     const style = { transform: CSS.Transform.toString(transform), transition };
@@ -409,6 +491,173 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove, openMedia
                                 className="w-24 h-24 flex items-center justify-center border-2 border-dashed border-zinc-700 rounded hover:border-zinc-500 text-zinc-500 hover:text-zinc-300 transition-colors"
                             >
                                 <Plus className="w-6 h-6" />
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* MINI GALLERY "PRO" */}
+                {section.type === 'mini_gallery' && (
+                    <div className="space-y-6">
+                        {/* Config Panel */}
+                        <div className="bg-zinc-950/50 p-4 rounded-lg border border-zinc-800">
+                            <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                <Layout size={14} /> Konfiguracja Siatki
+                            </h4>
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label className="block text-xs text-zinc-500 mb-1">Kolumny</label>
+                                    <select
+                                        value={section.mini_gallery_config?.columns || 4}
+                                        onChange={(e) => onUpdate(section.id, {
+                                            mini_gallery_config: { ...section.mini_gallery_config!, columns: parseInt(e.target.value) }
+                                        })}
+                                        className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-xs text-white"
+                                    >
+                                        {[2, 3, 4, 5, 6].map(n => <option key={n} value={n}>{n}</option>)}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-xs text-zinc-500 mb-1">Styl</label>
+                                    <select
+                                        value={section.mini_gallery_config?.style || 'classic'}
+                                        onChange={(e) => onUpdate(section.id, {
+                                            mini_gallery_config: { ...section.mini_gallery_config!, style: e.target.value as any }
+                                        })}
+                                        className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-xs text-white"
+                                    >
+                                        <option value="classic">Klasyczny (Siatka)</option>
+                                        <option value="masonry">Masonry (Cegiełki)</option>
+                                        <option value="floating">Floating (Pro)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-xs text-zinc-500 mb-1">Narożniki</label>
+                                    <select
+                                        value={section.mini_gallery_config?.corners || 'square'}
+                                        onChange={(e) => onUpdate(section.id, {
+                                            mini_gallery_config: { ...section.mini_gallery_config!, corners: e.target.value as any }
+                                        })}
+                                        className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-xs text-white"
+                                    >
+                                        <option value="square">Proste</option>
+                                        <option value="rounded">Zaokrąglone</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-xs text-zinc-500 mb-1">Pozycja Tekstu</label>
+                                    <select
+                                        value={section.mini_gallery_config?.textPosition || 'below'}
+                                        onChange={(e) => onUpdate(section.id, {
+                                            mini_gallery_config: { ...section.mini_gallery_config!, textPosition: e.target.value as any }
+                                        })}
+                                        className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-xs text-white"
+                                    >
+                                        <option value="below">Pod zdjęciem</option>
+                                        <option value="overlay">Na zdjęciu</option>
+                                        <option value="hover">Hover (Po najechaniu)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-xs text-zinc-500 mb-1">Gap (Odstęp)</label>
+                                    <input
+                                        type="range" min="0" max="10" step="1"
+                                        value={(section.mini_gallery_config?.gap !== undefined ? section.mini_gallery_config.gap : 4)}
+                                        onChange={(e) => onUpdate(section.id, {
+                                            mini_gallery_config: { ...section.mini_gallery_config!, gap: parseInt(e.target.value) }
+                                        })}
+                                        className="w-full"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Items List */}
+                        <div className="space-y-4">
+                            {section.mini_gallery_items?.map((item, idx) => (
+                                <div key={item.id} className="bg-zinc-900 border border-zinc-800 rounded-lg p-3 flex gap-4 items-start group hover:border-zinc-700 transition-colors">
+                                    {/* Image Selector */}
+                                    <div
+                                        className="w-20 h-20 shrink-0 bg-zinc-950 rounded border border-zinc-800 flex items-center justify-center cursor-pointer hover:border-zinc-500 overflow-hidden relative"
+                                        onClick={() => openMediaPicker(section.id, { target: 'single', context: 'mini_gallery_item', index: idx })}
+                                    >
+                                        {item.image ? (
+                                            <img src={item.image} className="w-full h-full object-cover" />
+                                        ) : (
+                                            <ImageIcon size={20} className="text-zinc-600" />
+                                        )}
+                                        <div className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 flex items-center justify-center transition-opacity">
+                                            <p className="text-[10px] text-white">Zmień</p>
+                                        </div>
+                                    </div>
+
+                                    {/* Inputs */}
+                                    <div className="flex-1 space-y-2">
+                                        <input
+                                            type="text"
+                                            value={item.title || ''}
+                                            onChange={(e) => {
+                                                const newItems = [...(section.mini_gallery_items || [])];
+                                                newItems[idx] = { ...item, title: e.target.value };
+                                                onUpdate(section.id, { mini_gallery_items: newItems });
+                                            }}
+                                            placeholder="Tytuł elementu..."
+                                            className="w-full bg-zinc-950 border border-zinc-800 rounded px-2 py-1.5 text-xs text-white focus:border-yellow-500 focus:outline-none"
+                                        />
+                                        <input
+                                            type="text"
+                                            value={item.description || ''}
+                                            onChange={(e) => {
+                                                const newItems = [...(section.mini_gallery_items || [])];
+                                                newItems[idx] = { ...item, description: e.target.value };
+                                                onUpdate(section.id, { mini_gallery_items: newItems });
+                                            }}
+                                            placeholder="Opis (opcjonalny)..."
+                                            className="w-full bg-zinc-950 border border-zinc-800 rounded px-2 py-1.5 text-xs text-zinc-400 focus:border-yellow-500 focus:outline-none"
+                                        />
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="text"
+                                                value={item.link || ''}
+                                                onChange={(e) => {
+                                                    const newItems = [...(section.mini_gallery_items || [])];
+                                                    newItems[idx] = { ...item, link: e.target.value };
+                                                    onUpdate(section.id, { mini_gallery_items: newItems });
+                                                }}
+                                                placeholder="Link (np. /oferta)..."
+                                                className="w-full flex-1 bg-zinc-950 border border-zinc-800 rounded px-2 py-1.5 text-xs text-zinc-400 focus:border-yellow-500 focus:outline-none"
+                                            />
+                                            {/* Span Controls - optional enhancement */}
+                                        </div>
+                                    </div>
+
+                                    {/* Actions */}
+                                    <button
+                                        onClick={() => {
+                                            const newItems = section.mini_gallery_items?.filter((_, i) => i !== idx);
+                                            onUpdate(section.id, { mini_gallery_items: newItems });
+                                        }}
+                                        className="text-zinc-600 hover:text-red-500 p-1"
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
+                                </div>
+                            ))}
+
+                            <button
+                                onClick={() => {
+                                    const newItem: MiniGalleryItem = {
+                                        id: crypto.randomUUID(),
+                                        image: '',
+                                        title: 'Nowy Element',
+                                        spanCols: 1,
+                                        spanRows: 1
+                                    };
+                                    onUpdate(section.id, { mini_gallery_items: [...(section.mini_gallery_items || []), newItem] });
+                                }}
+                                className="w-full py-3 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-lg text-sm text-zinc-300 font-medium flex items-center justify-center gap-2 transition-colors"
+                            >
+                                <Plus size={16} /> Dodaj Element
                             </button>
                         </div>
                     </div>
@@ -1961,11 +2210,11 @@ export default function PageBuilder({ sections, onChange }: PageBuilderProps) {
     // Global MediaPicker State
     const [showMediaPicker, setShowMediaPicker] = useState(false);
     const [mediaPickerTarget, setMediaPickerTarget] = useState<'single' | 'gallery'>('single');
-    const [mediaPickerContext, setMediaPickerContext] = useState<'visual' | 'thermal' | 'before' | 'case_logo' | 'case_video' | 'video' | null>(null);
+    const [mediaPickerContext, setMediaPickerContext] = useState<'visual' | 'thermal' | 'before' | 'case_logo' | 'case_video' | 'video' | 'mini_gallery_item' | null>(null);
     const [sectionEditIndex, setSectionEditIndex] = useState(-1);
     const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
 
-    const openMediaPicker = (sectionId: string, options: { target: 'single' | 'gallery', context?: 'visual' | 'thermal' | 'before' | 'case_logo' | 'case_video' | 'video', index?: number }) => {
+    const openMediaPicker = (sectionId: string, options: { target: 'single' | 'gallery', context?: 'visual' | 'thermal' | 'before' | 'case_logo' | 'case_video' | 'video' | 'mini_gallery_item', index?: number }) => {
         setActiveSectionId(sectionId);
         setMediaPickerTarget(options.target);
         setMediaPickerContext(options.context || null);
@@ -2026,7 +2275,7 @@ export default function PageBuilder({ sections, onChange }: PageBuilderProps) {
                 }
                 updateSection(activeSectionId, { thermal_reports: updated });
             }
-        } else if (['certificates', 'b2b_logos', 'b2b_cases'].includes(section.type)) {
+        } else if (['certificates', 'b2b_logos', 'b2b_cases', 'info_band'].includes(section.type)) {
             if (section.type === 'certificates') {
                 const updated = [...(section.certificates || [])];
                 if (sectionEditIndex >= 0) {
@@ -2052,6 +2301,13 @@ export default function PageBuilder({ sections, onChange }: PageBuilderProps) {
                     updateSection(activeSectionId, { infoband_items: updated });
                 }
             }
+        } else if (section.type === 'mini_gallery') {
+            const updated = [...(section.mini_gallery_items || [])];
+            if (sectionEditIndex >= 0) {
+                updated[sectionEditIndex] = { ...updated[sectionEditIndex], image: imageUrl };
+                updateSection(activeSectionId, { mini_gallery_items: updated });
+            }
+
         } else if (section.type === 'b2b_video' || (section.type === 'b2b_hero' && mediaPickerContext === ('video' as any))) {
             updateSection(activeSectionId, { videoUrl: imageUrl });
         } else if (section.type === 'b2b_cases' && mediaPickerContext === ('case_video' as any)) {
@@ -2150,6 +2406,16 @@ export default function PageBuilder({ sections, onChange }: PageBuilderProps) {
             newSection.overlayOpacity = 0.4;
         } else if (type === 'thermal_report') {
             newSection.thermal_reports = [];
+        } else if (type === 'mini_gallery') {
+            newSection.mini_gallery_items = [];
+            newSection.mini_gallery_config = {
+                columns: 4,
+                gap: 4,
+                aspectRatio: 'square',
+                style: 'classic',
+                textPosition: 'below',
+                corners: 'square'
+            };
         }
 
         onChange([...sections, newSection]);
@@ -2436,6 +2702,9 @@ export default function PageBuilder({ sections, onChange }: PageBuilderProps) {
                 </button>
                 <button onClick={() => addSection('certificates')} className="flex items-center gap-2 px-4 py-2 bg-yellow-600/20 hover:bg-yellow-600/30 border border-yellow-500/30 rounded text-sm text-yellow-400 transition-colors">
                     <ShieldCheck className="w-4 h-4" /> Certyfikaty
+                </button>
+                <button onClick={() => addSection('mini_gallery')} className="flex items-center gap-2 px-4 py-2 bg-pink-600/20 hover:bg-pink-600/30 border border-pink-500/30 rounded text-sm text-pink-400 transition-colors">
+                    <Layout className="w-4 h-4" /> Mini Gallery (Pro)
                 </button>
             </div>
 

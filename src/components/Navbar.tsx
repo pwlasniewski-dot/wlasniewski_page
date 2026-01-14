@@ -238,7 +238,7 @@ export default function Navbar() {
                 } ${!isNavbarVisible && (isHome || isNavbarSticky) ? '-translate-y-full' : 'translate-y-0'}`}
             style={{
                 fontFamily: navbarFontFamily,
-                transform: !isNavbarVisible && (forceTransparent || isNavbarSticky) ? 'translateY(-100%)' : 'translateY(0)',
+                transform: !isNavbarVisible && (isHome || isNavbarSticky) ? 'translateY(-100%)' : 'translateY(0)',
                 ...navStyle
             }}
         >
