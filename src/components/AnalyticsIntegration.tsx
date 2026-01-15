@@ -35,6 +35,20 @@ export default function AnalyticsIntegration({
                 </>
             )}
 
+            {/* Google Ads Tag AW-17548893646 */}
+            <Script
+                src="https://www.googletagmanager.com/gtag/js?id=AW-17548893646"
+                strategy="afterInteractive"
+            />
+            <Script id="google-ads-tag" strategy="afterInteractive">
+                {`
+                    window.dataLayer = window.dataLayer || [];
+                    function gtag(){dataLayer.push(arguments);}
+                    gtag('js', new Date());
+                    gtag('config', 'AW-17548893646');
+                `}
+            </Script>
+
             {/* Google Tag Manager */}
             {googleTagManagerId && (
                 <>

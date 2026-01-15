@@ -42,6 +42,11 @@ export default function ContactForm() {
 
             setStatus('success');
             setFormData({ name: '', email: '', message: '' });
+
+            // Event snippet for Przesłanie formularza kontaktowego conversion page
+            if (typeof window !== 'undefined' && (window as any).gtag) {
+                (window as any).gtag('event', 'conversion', { 'send_to': 'AW-17548893646/mNauCJy3h-YbEM67-69B' });
+            }
         } catch (error: any) {
             console.error('Contact form error:', error);
             setStatus('error');

@@ -149,6 +149,29 @@ Ten plik służy do ścisłego monitorowania wszystkich zmian wprowadzanych w pr
 
 ## Log Zmian
 
+### [2026-01-15] 📈 Google Tracking & Conversion Events
+**Cel:** Integracja kodów śledzących Google Ads (Global Tag) oraz konfiguracja zdarzeń konwersji (Page View, Contact Form, Booking Quote) zgodnie z wytycznymi.
+
+**Zrealizowane Zmiany:**
+1. **Global Google Tag:**
+   - Dodano tag `AW-17548893646` do `AnalyticsIntegration.tsx`.
+   - Zapewniono ładowanie skryptu na każdej stronie.
+
+2. **Conversion Events:**
+   - **Wyświetlenie strony (Potwierdzenie):** Dodano trigger konwersji przy wejściu na `/rezerwacja/potwierdzenie`.
+   - **Przesłanie formularza (Kontakt):** Dodano trigger po pomyślnej wysyłce formularza w `ContactForm.tsx`.
+   - **Prośba o wycenę (Rezerwacja):** Dodano trigger przy przejściu do podsumowania rezerwacji (`RezerwacjaPage.tsx`).
+   - **Kontakt (Page View):** Dodano trigger przy wejściu na stronę `/kontakt`.
+
+**Files Modified:**
+- `src/components/AnalyticsIntegration.tsx`
+- `src/components/ContactForm.tsx`
+- `src/app/rezerwacja/page.tsx`
+- `src/app/rezerwacja/potwierdzenie/page.tsx`
+- `src/app/kontakt/page.tsx`
+
+**Status:** ✅ **DONE & VERIFIED (Code)**
+
 ### [2026-01-14] 🎨 Mini Gallery Module & Admin Config
 **Cel:** Wdrożenie profesjonalnego modułu mini-galerii dostępnego na stronie głównej oraz podstronach B2B/B2C, z pełną konfiguracją z poziomu Page Buildera.
 

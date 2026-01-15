@@ -1,9 +1,16 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import Link from 'next/link';
 
 export default function PotwierdzeniePage() {
+    useEffect(() => {
+        // Event snippet for Wyświetlenie strony conversion page
+        if (typeof window !== 'undefined' && (window as any).gtag) {
+            (window as any).gtag('event', 'conversion', { 'send_to': 'AW-17548893646/MKMoCJm3h-YbEM67-69B' });
+        }
+    }, []);
+
     return (
         <main className="min-h-screen bg-gradient-to-b from-zinc-950 via-black to-zinc-950 py-20 px-4">
             <div className="max-w-2xl mx-auto">

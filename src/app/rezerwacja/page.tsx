@@ -374,6 +374,11 @@ export default function RezerwacjaPage() {
             gift_card_code: giftCard ? giftCard.code : null,
         };
 
+        // Event snippet for Prośba o wycenę conversion page
+        if (typeof window !== 'undefined' && (window as any).gtag) {
+            (window as any).gtag('event', 'conversion', { 'send_to': 'AW-17548893646/-bm8CJ-3h-YbEM67-69B' });
+        }
+
         addItem({
             type: 'booking',
             productId: chosenPackage.id.toString(),
@@ -842,8 +847,8 @@ export default function RezerwacjaPage() {
                                     type="submit"
                                     disabled={!isReadyToSubmit || submitting}
                                     className={`w-full mt-6 py-4 rounded-xl font-bold text-lg transition-all shadow-lg ${isReadyToSubmit
-                                            ? "bg-amber-600 text-white hover:bg-amber-500 shadow-amber-900/20"
-                                            : "bg-zinc-800 text-zinc-500 cursor-not-allowed"
+                                        ? "bg-amber-600 text-white hover:bg-amber-500 shadow-amber-900/20"
+                                        : "bg-zinc-800 text-zinc-500 cursor-not-allowed"
                                         } group flex items-center justify-center gap-2`}
                                 >
                                     <ShoppingBag className="w-6 h-6 group-hover:scale-110 transition-transform" />
