@@ -195,6 +195,8 @@ interface MiniGalleryConfig {
     descriptionAlign?: 'left' | 'center' | 'right';
     descriptionWidth?: 'narrow' | 'medium' | 'wide' | 'full';
     descriptionPlacement?: 'top' | 'bottom';
+    containerWidth?: 'full' | '3/4' | '1/2';
+    mobileColumns?: 1 | 2;
 }
 
 interface MiniGallerySection extends BaseSection {
@@ -1534,6 +1536,31 @@ export default function HomepageManager() {
                                         </div>
                                         <div className="col-span-2 md:col-span-4 border-t border-zinc-700/50 pt-2 mt-2">
                                             <div className="flex items-center gap-4">
+                                                <div className="flex-1">
+                                                    <label className="block text-xs text-zinc-400 mb-1">Układ Mobilny (Kolumny)</label>
+                                                    <select
+                                                        value={section.data.mini_gallery_config.mobileColumns || 1}
+                                                        onChange={e => updateMiniGalleryConfig(index, 'mobileColumns', parseInt(e.target.value))}
+                                                        className="w-full bg-zinc-900 border border-zinc-700 rounded text-xs px-2 py-1 text-white"
+                                                    >
+                                                        <option value={1}>1 Kolumna (Standard)</option>
+                                                        <option value={2}>2 Kolumny (Compact)</option>
+                                                    </select>
+                                                </div>
+                                                <div className="flex-1">
+                                                    <label className="block text-xs text-zinc-400 mb-1">Szerokość Desktop</label>
+                                                    <select
+                                                        value={section.data.mini_gallery_config.containerWidth || 'full'}
+                                                        onChange={e => updateMiniGalleryConfig(index, 'containerWidth', e.target.value)}
+                                                        className="w-full bg-zinc-900 border border-zinc-700 rounded text-xs px-2 py-1 text-white"
+                                                    >
+                                                        <option value="full">Pełna szerokość (100%)</option>
+                                                        <option value="3/4">Szeroka (75%)</option>
+                                                        <option value="1/2">Wąska (50%)</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-4 mt-3">
                                                 <label className="text-xs text-zinc-400">Tło sekcji:</label>
                                                 <div className="flex items-center gap-2">
                                                     <input

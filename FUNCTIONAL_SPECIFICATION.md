@@ -800,7 +800,7 @@ Stopka zintegrowana z systemem CMS.
 
 ### 19.6. Komponent `MiniGallery` (`src/components/PageRenderer.tsx`)
 Moduł galerii o wysokiej konfigurowalności, renderowany dynamicznie.
-- **Parametry**: `columns` (2-6), `gap` (sm-xl), `aspectRatio`, `textPosition`.
+- **Parametry**: `columns` (2-6), `gap` (sm-xl), `aspectRatio`, `textPosition`, `containerWidth` (Full/Wide/Narrow), `mobileColumns` (1/2).
 - **Funkcje**:
     - **Lightbox**: Własna implementacja z obsługą nawigacji (Next/Prev) i swipe na mobile.
     - **Rich Text**: Renderowanie HTML z `DOMPurify` dla bezpieczeństwa.

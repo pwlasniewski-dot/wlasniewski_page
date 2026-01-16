@@ -196,6 +196,7 @@ Ten plik służy do ścisłego monitorowania wszystkich zmian wprowadzanych w pr
 
 4. **Mini Gallery Enhancements:**
    - **Description Field:** Dodano zaawansowany edytor tekstu (`RichTextEditor`) oraz pełną kontrolę nad stylem (Szerokość, Wyrównanie) i położeniem (Nad/Pod galerią).
+   - **Layout Control:** Dodano opcje skalowania szerokości kontenera na desktopie (Full/75%/50%) oraz wyboru liczby kolumn na urządzeniach mobilnych (1 lub 2).
    - **Lightbox Navigation:** Dodano strzałki (Poprzednie/Następne) do podglądu zdjęć w trybie pełnoekranowym (`HomeContent.tsx`).
 
 **Files Modified:**

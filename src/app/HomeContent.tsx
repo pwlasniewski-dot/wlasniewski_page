@@ -680,7 +680,11 @@ export default function HomeContent({ heroSlides, sections, homeData, orderedSec
                                     <>
                                         {(!config.descriptionPlacement || config.descriptionPlacement === 'top') && <DescriptionBlock />}
 
-                                        <div className={`grid ${colClass} ${gapClass}`}>
+                                        <div className={`grid ${config.mobileColumns === 2 ? 'grid-cols-2' : 'grid-cols-1'} ${colClass} ${gapClass} 
+                                            ${(!config.containerWidth || config.containerWidth === 'full') ? 'w-full' :
+                                                config.containerWidth === '3/4' ? 'w-full md:w-3/4 mx-auto' :
+                                                    'w-full md:w-1/2 mx-auto'}
+                                        `}>
                                             {items.map((item: any, idx: number) => (
                                                 <div
                                                     key={item.id || idx}
