@@ -11,7 +11,8 @@ const EXCLUDED_IPS = [
 const BOT_USER_AGENTS = [
     'bot', 'crawler', 'spider', 'lighthouse',
     'headless', 'phantom', 'prerender', 'googlebot',
-    'bingbot', 'slackbot', 'facebookexternalhit'
+    'bingbot', 'slackbot', 'facebookexternalhit',
+    'netlify', 'vercel', 'bitballoon'
 ];
 
 function shouldTrack(req: NextRequest): boolean {
@@ -20,8 +21,18 @@ function shouldTrack(req: NextRequest): boolean {
         req.headers.get('x-real-ip') ||
         'unknown';
 
-    if (EXCLUDED_IPS.includes(ip)) {
+    // Parse excluded IPs from env (comma separated)
+    const adminIps = (process.env.ADMIN_IP || '').split(',').map(ip => ip.trim()).filter(Boolean);
+    const allExcluded = [...EXCLUDED_IPS, ...adminIps];
+
+    if (allExcluded.includes(ip)) {
         console.log('[Analytics] Skipped - excluded IP:', ip);
+        return false;
+    }
+
+    // Check for deploy preview headers
+    if (req.headers.get('x-traffic-type') === 'deploy-preview' || req.headers.get('x-netlify-drupal-log-level')) {
+        console.log('[Analytics] Skipped - deploy preview');
         return false;
     }
 

@@ -199,6 +199,14 @@ Ten plik służy do ścisłego monitorowania wszystkich zmian wprowadzanych w pr
    - **Layout Control:** Dodano opcje skalowania szerokości kontenera na desktopie (Full/75%/50%) oraz wyboru liczby kolumn na urządzeniach mobilnych (1 lub 2).
    - **Lightbox Navigation:** Dodano strzałki (Poprzednie/Następne) do podglądu zdjęć w trybie pełnoekranowym (`HomeContent.tsx`).
 
+5. **Analytics & Security Fixes:**
+   - **API Hardening:** Zabezpieczono endpoint `/api/analytics/dashboard` przed błędami 500 (parsowanie metadanych, URL).
+   - **Traffic Filtering:** Wdrożono ścisłe filtrowanie IP (Admin) oraz User-Agentów (Boty Deploy, Netlify) w celu oczyszczenia danych analitycznych.
+
+6. **Page Management Fixes:**
+   - **Page Creation:** Naprawiono błąd 500 przy tworzeniu nowych stron (`/api/pages`).
+   - **Logging:** Dodano szczegółowe logowanie błędów dla operacji CRUD na stronach.
+
 **Files Modified:**
 - `src/components/admin/PageBuilder.tsx`
 - `src/components/PageRenderer.tsx`

@@ -106,8 +106,10 @@ export async function GET(request: Request) {
             let device = 'desktop';
             if (event.metadata) {
                 try {
-                    const meta = JSON.parse(event.metadata);
-                    device = meta.device_type || meta.device || 'desktop';
+                    const meta = typeof event.metadata === 'string' ? JSON.parse(event.metadata) : event.metadata;
+                    if (meta) {
+                        device = meta.device_type || meta.device || 'desktop';
+                    }
                 } catch (e) {
                     // ignore parse errors
                 }
@@ -131,10 +133,15 @@ export async function GET(request: Request) {
                 let page = '/';
                 if (event.page_url) {
                     try {
-                        const url = new URL(event.page_url, 'http://localhost');
-                        page = url.pathname;
+                        // Check if it's a full URL
+                        if (event.page_url.startsWith('http')) {
+                            const url = new URL(event.page_url);
+                            page = url.pathname;
+                        } else {
+                            page = event.page_url;
+                        }
                     } catch {
-                        page = event.page_url;
+                        page = event.page_url || '/';
                     }
                 }
                 if (!pageViews[page]) {

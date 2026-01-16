@@ -98,31 +98,38 @@ export async function POST(request: NextRequest) {
                     }, { status: 400 });
                 }
 
-                page = await prisma.page.create({
-                    data: {
-                        slug,
-                        title,
-                        page_type: page_type || 'regular',
-                        content: content || '',
-                        is_published: is_published || false,
-                        is_in_menu: is_in_menu || false,
-                        menu_order: menu_order || 0,
-                        menu_title: menu_title || title,
-                        parent_page_id: parent_page_id || null,
-                        hero_image,
-                        hero_subtitle,
-                        content_images,
-                        parallax_sections,
-                        content_cards,
-                        about_photo,
-                        about_text_side,
-                        home_sections,
-                        sections,
-                        meta_title,
-                        meta_description,
-                        meta_keywords
-                    },
-                });
+                console.log('[API/Pages] Creating page with data:', { slug, title, page_type });
+
+                try {
+                    page = await prisma.page.create({
+                        data: {
+                            slug,
+                            title,
+                            page_type: page_type || 'regular',
+                            content: content || '',
+                            is_published: is_published || false,
+                            is_in_menu: is_in_menu || false,
+                            menu_order: menu_order || 0,
+                            menu_title: menu_title || title,
+                            parent_page_id: parent_page_id || null, // Ensure this is acceptable by Prisma
+                            hero_image,
+                            hero_subtitle,
+                            content_images,
+                            parallax_sections,
+                            content_cards,
+                            about_photo,
+                            about_text_side,
+                            home_sections,
+                            sections,
+                            meta_title,
+                            meta_description,
+                            meta_keywords
+                        },
+                    });
+                } catch (createError) {
+                    console.error('[API/Pages] Create failed:', createError);
+                    throw createError;
+                }
             }
 
             // ISR revalidation
@@ -139,7 +146,11 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ success: true, page });
         } catch (error) {
             console.error('Error in POST /api/pages:', error);
-            return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+            // Return more details in dev
+            return NextResponse.json({
+                error: 'Internal Server Error',
+                details: error instanceof Error ? error.message : String(error)
+            }, { status: 500 });
         }
     });
 }
