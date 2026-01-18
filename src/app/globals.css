@@ -14,6 +14,86 @@
   --font-lato: var(--font-lato);
   --font-great-vibes: var(--font-great-vibes);
   --font-cinzel: var(--font-cinzel);
+
+  /* === PREMIUM TEMPLATE SYSTEM === */
+
+  /* Typography System for Editorial Layouts */
+  --font-editorial-heading: var(--font-playfair);
+  /* Serif headings */
+  --font-editorial-body: var(--font-lato);
+  /* Readable body text */
+  --font-ui-modern: var(--font-inter);
+  /* Modern UI elements */
+  --font-ui-display: var(--font-outfit);
+  /* Display text, CTAs */
+
+  /* Typography Scale */
+  --text-hero: 3.5rem;
+  /* 56px */
+  --text-h1: 2.5rem;
+  /* 40px */
+  --text-h2: 2rem;
+  /* 32px */
+  --text-h3: 1.5rem;
+  /* 24px */
+  --text-body-large: 1.125rem;
+  /* 18px */
+  --text-body: 1rem;
+  /* 16px */
+  --text-small: 0.875rem;
+  /* 14px */
+
+  /* Whitespace & Rhythm System */
+  --space-section-xl: 120px;
+  /* Between major sections */
+  --space-editorial: 80px;
+  /* Editorial spacing */
+  --space-narrative: 60px;
+  /* Narrative blocks */
+  --space-element: 40px;
+  /* Between elements */
+  --space-text: 24px;
+  /* Between paragraphs */
+  --space-tight: 12px;
+  /* Tight spacing */
+
+  /* Container Widths */
+  --container-narrow: 720px;
+  /* Long-form text */
+  --container-editorial: 960px;
+  /* Editorial content */
+  --container-standard: 1280px;
+  /* Standard layouts */
+  --container-wide: 1440px;
+  /* Wide layouts */
+  --container-full: 1600px;
+  /* Galleries */
+
+  /* === Color Palettes by Session Type === */
+
+  /* Wedding Photography Palette (Romantic Classic) */
+  --wedding-cream: #FAF8F5;
+  --wedding-taupe: #8B7355;
+  --wedding-champagne: #C9A77C;
+  --wedding-gold: #D4AF87;
+  --wedding-brown: #3E3428;
+  --wedding-dark: #2C2416;
+
+  /* Communion Photography Palette (Pure Angelic) */
+  --communion-white: #F9F7F4;
+  --communion-blue: #9FBEDB;
+  --communion-beige: #E8D5C4;
+  --communion-gold: #D4A76A;
+  --communion-navy: #3C4A5E;
+  --communion-sky: #E8F4F8;
+
+  /* Family Photography Palette (Warm Natural) */
+  --family-cream: #F8F6F1;
+  --family-caramel: #B8956A;
+  --family-sage: #8FAA8E;
+  --family-sand: #E5D3C1;
+  --family-brown: #4A3F2F;
+  --family-warm: #A89078;
 }
 
 /* Dark Mode (B2C Black Version & System Preference Override if needed) */
@@ -148,5 +228,115 @@ body {
   .prose p:has(br:only-child) {
     min-height: 1.5em;
     /* Preserve height for empty lines */
+  }
+
+  /* === PREMIUM TEMPLATE ANIMATIONS === */
+
+  /* Fade In on Scroll (Intersection Observer) */
+  @keyframes fadeInScroll {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .fade-in-scroll {
+    opacity: 0;
+    animation: fadeInScroll 0.8s ease-out forwards;
+  }
+
+  .fade-in-scroll.visible {
+    animation-play-state: running;
+  }
+
+  /* Hover Lift for Cards/Images */
+  .hover-lift {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  .hover-lift:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 16px 32px rgba(0, 0, 0, 0.12);
+  }
+
+  /* Subtle Hover Scale */
+  .hover-scale {
+    transition: transform 0.4s ease;
+  }
+
+  .hover-scale:hover {
+    transform: scale(1.03);
+  }
+
+  /* Ken Burns Effect (Slow Zoom) */
+  @keyframes kenBurns {
+    0% {
+      transform: scale(1);
+    }
+
+    100% {
+      transform: scale(1.1);
+    }
+  }
+
+  .ken-burns {
+    animation: kenBurns 20s ease-in-out infinite alternate;
+  }
+
+  /* Smooth Gradient Overlay */
+  .gradient-overlay-dark {
+    position: relative;
+  }
+
+  .gradient-overlay-dark::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom,
+        rgba(0, 0, 0, 0) 0%,
+        rgba(0, 0, 0, 0.3) 60%,
+        rgba(0, 0, 0, 0.7) 100%);
+    pointer-events: none;
+  }
+
+  /* Premium Button Styles */
+  .btn-premium {
+    font-family: var(--font-ui-display);
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    padding: 14px 32px;
+    border-radius: 2px;
+    /* Subtle, not rounded */
+    background: linear-gradient(135deg, var(--wedding-taupe), var(--wedding-gold));
+    color: white;
+    border: none;
+    transition: all 0.3s ease;
+    cursor: pointer;
+  }
+
+  .btn-premium:hover {
+    transform: scale(1.05);
+    box-shadow: 0 8px 20px rgba(139, 115, 85, 0.3);
+  }
+
+  /* Editorial Spacing Utilities */
+  .editorial-spacing {
+    padding-top: var(--space-editorial);
+    padding-bottom: var(--space-editorial);
+  }
+
+  .narrative-spacing {
+    padding-top: var(--space-narrative);
+    padding-bottom: var(--space-narrative);
+  }
+
+  .section-spacing {
+    padding-top: var(--space-section-xl);
+    padding-bottom: var(--space-section-xl);
   }
 }

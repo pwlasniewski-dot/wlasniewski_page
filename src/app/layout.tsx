@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Cormorant_Garamond, Montserrat, Playfair_Display, Lato, Great_Vibes, Cinzel } from "next/font/google";
+import { Cormorant_Garamond, Montserrat, Playfair_Display, Lato, Great_Vibes, Cinzel, Inter, Outfit } from "next/font/google";
 import prisma from '@/lib/db/prisma'; // Added fonts
 
 // PERFORMANCE: Enable ISR (Incremental Static Regeneration)
@@ -31,6 +31,18 @@ const greatVibes = Great_Vibes({
 const cinzel = Cinzel({
     subsets: ["latin"],
     variable: "--font-cinzel",
+    display: "swap",
+});
+
+const inter = Inter({
+    subsets: ["latin"],
+    variable: "--font-inter",
+    display: "swap",
+});
+
+const outfit = Outfit({
+    subsets: ["latin"],
+    variable: "--font-outfit",
     display: "swap",
 });
 import AppShell from "@/components/AppShell";
@@ -162,7 +174,7 @@ export default function RootLayout({
     children: React.ReactNode;
 }>) {
     return (
-        <html lang="pl" className={`${cormorant.variable} ${montserrat.variable} ${playfair.variable} ${lato.variable} ${greatVibes.variable} ${cinzel.variable}`} suppressHydrationWarning>
+        <html lang="pl" className={`${cormorant.variable} ${montserrat.variable} ${playfair.variable} ${lato.variable} ${greatVibes.variable} ${cinzel.variable} ${inter.variable} ${outfit.variable}`} suppressHydrationWarning>
             <head>
                 <script
                     type="application/ld+json"

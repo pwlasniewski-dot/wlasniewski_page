@@ -589,7 +589,7 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
                     <p className="text-sm text-zinc-400 mb-4">
                         Dodawaj i układaj sekcje, aby zbudować unikalny wygląd strony.
                     </p>
-                    <PageBuilder sections={sections} onChange={setSections} />
+                    <PageBuilder sections={sections} onChange={setSections} pageType={formData.page_type} />
                 </div>
 
                 {/* LEGACY CONTENT - Only for specific pages */}

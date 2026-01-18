@@ -4,18 +4,21 @@ const path = require('path');
 const { execSync } = require('child_process');
 
 // 1. Detect Environment
+let dbUrl = process.env.DATABASE_URL || '';
 const envPath = path.join(process.cwd(), '.env');
-let isProduction = false;
-let dbUrl = '';
 
-if (fs.existsSync(envPath)) {
+if (!dbUrl && fs.existsSync(envPath)) {
     const envContent = fs.readFileSync(envPath, 'utf-8');
     const match = envContent.match(/DATABASE_URL=["']?(.*?)["']?$/m);
     if (match) {
         dbUrl = match[1];
-        if (dbUrl.includes('neon.tech') || dbUrl.includes('wlasniewski.pl')) {
-            isProduction = true;
-        }
+    }
+}
+
+let isProduction = false;
+if (dbUrl) {
+    if ((dbUrl.includes('neon.tech') || dbUrl.includes('wlasniewski.pl') || dbUrl.includes('accelerate.prisma-data.net')) && !dbUrl.includes('test_neon')) {
+        isProduction = true;
     }
 }
 

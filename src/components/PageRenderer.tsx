@@ -30,7 +30,17 @@ import ThermalHeroSlider from '@/components/ThermalHeroSlider';
 import HeroVideoSlider from '@/components/HeroVideoSlider';
 import ParallaxVideo from '@/components/ParallaxVideo';
 import ThermalReportShowcase from '@/components/ThermalReportShowcase';
-import { ShieldCheck, Zap, ArrowRight, Workflow, FileText, Briefcase, CheckCircle2, Maximize2, X, Camera, ImageIcon } from 'lucide-react';
+import { ShieldCheck, Zap, ArrowRight, Workflow, FileText, Briefcase, CheckCircle2, Maximize2, X, Camera, ImageIcon, Layout, Stars, Award, Type, LayoutTemplate } from 'lucide-react';
+
+// Editorial Components (Storytelling)
+import StoryHero from '@/components/sections/StoryHero';
+import MagazineLayout from '@/components/sections/MagazineLayout';
+import EditorialMasonry from '@/components/sections/MasonryGallery';
+import ClientStory from '@/components/sections/ClientStory';
+import ProcessTimeline from '@/components/sections/ProcessTimeline';
+import InvestmentTeaser from '@/components/sections/InvestmentTeaser';
+import NarrativeText from '@/components/sections/NarrativeText';
+import FeaturedCarousel from '@/components/sections/FeaturedCarousel';
 
 export default function PageRenderer({ sections }: { sections: PageSection[] }) {
     const [selectedCert, setSelectedCert] = React.useState<any>(null);
@@ -1246,6 +1256,120 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                     </div>
                                 </div>
                             </section>
+                        );
+
+                    // === Editorial / Storytelling Premium Sections ===
+                    case 'story_hero':
+                        return (
+                            <StoryHero
+                                key={section.id}
+                                image={data.image || ''}
+                                imagePosition={data.layout || 'left'}
+                                title={data.title || ''}
+                                subtitle={data.subtitle}
+                                content={data.content}
+                                buttonText={data.buttonText}
+                                buttonLink={data.buttonLink}
+                                backgroundColor={data.backgroundColor}
+                            />
+                        );
+
+                    case 'magazine_layout':
+                        return (
+                            <MagazineLayout
+                                key={section.id}
+                                title={data.title || ''}
+                                subtitle={data.subtitle}
+                                content={data.content}
+                                mainImage={data.image || ''}
+                                secondaryImage={data.secondaryImage}
+                                backgroundColor={data.backgroundColor}
+                                layout={data.layout || 'left'}
+                            />
+                        );
+
+                    case 'masonry_gallery':
+                        return (
+                            <EditorialMasonry
+                                key={section.id}
+                                images={data.images || []}
+                                title={data.title}
+                                subtitle={data.subtitle}
+                                columns={data.columns || 3}
+                            />
+                        );
+
+                    case 'client_story':
+                        return (
+                            <ClientStory
+                                key={section.id}
+                                clientName={data.subtitle || ''}
+                                storyTitle={data.title || ''}
+                                testimonial={data.content || ''}
+                                mainImage={data.image || ''}
+                                date={data.date}
+                            />
+                        );
+
+                    case 'process_timeline':
+                        return (
+                            <ProcessTimeline
+                                key={section.id}
+                                title={data.title || ''}
+                                subtitle={data.subtitle}
+                                steps={data.steps || []}
+                                backgroundColor={data.backgroundColor}
+                            />
+                        );
+
+                    case 'investment_teaser':
+                        // Fix for data structure mismatch: PageBuilder saves packages in 'features' array
+                        const packages = data.packages || (Array.isArray(data.features) && data.features.length > 0 && typeof data.features[0] === 'object'
+                            ? data.features.map((pkg: any) => ({
+                                id: pkg.id || 'pkg-' + Math.random(),
+                                name: pkg.title || 'Pakiet',
+                                price: pkg.buttonText || '',
+                                features: Array.isArray(pkg.items) ? pkg.items : [],
+                                isPopular: pkg.enabled
+                            }))
+                            : [{
+                                id: 'default',
+                                name: data.priceLabel || 'Pakiet',
+                                price: data.price || 'Zapytaj o cenę',
+                                features: Array.isArray(data.features) ? data.features : [] // Fallback if features is string[]
+                            }]
+                        );
+
+                        return (
+                            <InvestmentTeaser
+                                key={section.id}
+                                title={data.title || ''}
+                                subtitle={data.subtitle}
+                                packages={packages}
+                                buttonText={data.buttonText}
+                                buttonLink={data.buttonLink}
+                            />
+                        );
+
+                    case 'narrative_text':
+                        return (
+                            <NarrativeText
+                                key={section.id}
+                                title={data.title || ''}
+                                content={data.content || ''}
+                                dropCap={data.dropCap !== false}
+                                backgroundColor={data.backgroundColor}
+                            />
+                        );
+
+                    case 'featured_carousel':
+                        return (
+                            <FeaturedCarousel
+                                key={section.id}
+                                title={data.title || ''}
+                                subtitle={data.subtitle}
+                                slides={data.featured_items || data.slides || []}
+                            />
                         );
 
                     default:

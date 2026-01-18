@@ -5,7 +5,7 @@ import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, us
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import {
-    Plus, Trash2, GripVertical, Image as ImageIcon, Type, Layout,
+    Plus, Trash2, GripVertical, Image as ImageIcon, Type, Layout, LayoutTemplate,
     MoveUp, MoveDown, ShieldCheck, Stars, BarChart3, Award, Workflow,
     Briefcase, FileText, Zap, Building2, Maximize2, Thermometer, Cpu, Crosshair,
     Camera, Droplets, Map, Search, HardHat, Video, FileSearch
@@ -13,7 +13,7 @@ import {
 import RichTextEditor from './RichTextEditor';
 import MediaPicker from './MediaPicker';
 
-export type SectionType = 'hero_parallax' | 'hero' | 'rich_text' | 'image_text' | 'gallery' | 'contact' | 'thermal_slider' | 'contact_form' | 'hero_slider' | 'about' | 'features' | 'parallax' | 'info_band' | 'testimonials' | 'challenge_banner' | 'creative_slider' | 'certificates' | 'b2b_hero' | 'b2b_stats' | 'b2b_logos' | 'b2b_process' | 'b2b_cases' | 'b2b_contact' | 'b2b_video' | 'thermal_hero' | 'hero_video' | 'parallax_video' | 'thermal_report' | 'mini_gallery';
+export type SectionType = 'hero_parallax' | 'hero' | 'rich_text' | 'image_text' | 'gallery' | 'contact' | 'thermal_slider' | 'contact_form' | 'hero_slider' | 'about' | 'features' | 'parallax' | 'info_band' | 'testimonials' | 'challenge_banner' | 'creative_slider' | 'certificates' | 'b2b_hero' | 'b2b_stats' | 'b2b_logos' | 'b2b_process' | 'b2b_cases' | 'b2b_contact' | 'b2b_video' | 'thermal_hero' | 'hero_video' | 'parallax_video' | 'thermal_report' | 'mini_gallery' | 'story_hero' | 'magazine_layout' | 'masonry_gallery' | 'client_story' | 'process_timeline' | 'investment_teaser' | 'narrative_text' | 'featured_carousel';
 
 export interface SliderSlide {
     id: string;
@@ -262,6 +262,7 @@ export interface PageSection {
 interface PageBuilderProps {
     sections: PageSection[];
     onChange: (sections: PageSection[]) => void;
+    pageType?: string;
 }
 
 function SortableSection({ section, index, onRemove, onUpdate, onMove, openMediaPicker }: {
@@ -662,6 +663,104 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove, openMedia
                         </div>
                     </div>
                 )}
+
+                {/* STORY HERO - Premium Editorial Split Layout */}
+                {section.type === 'story_hero' && (
+                    <div className="space-y-4">
+                        <div className="bg-zinc-950/30 p-3 rounded border border-zinc-800 mb-4">
+                            <p className="text-xs text-zinc-500">
+                                📖 <strong className="text-yellow-500">Story Hero:</strong> Editorial split layout with image + text. Uses premium typography.
+                            </p>
+                        </div>
+
+                        {/* Image Selector */}
+                        <div>
+                            <label className="block text-xs text-zinc-400 mb-2">Featured Image</label>
+                            <div className="flex gap-4 items-center">
+                                {section.image && (
+                                    <div className="relative w-32 h-40 rounded border border-zinc-700 overflow-hidden">
+                                        <img src={section.image} alt="" className="w-full h-full object-cover" />
+                                    </div>
+                                )}
+                                <button
+                                    onClick={() => openMediaPicker(section.id, { target: 'single' })}
+                                    className="px-4 py-2 bg-zinc-800 border border-zinc-700 rounded text-sm text-zinc-300 hover:text-white"
+                                >
+                                    {section.image ? 'Change Image' : 'Select Image'}
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Layout & Content */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs text-zinc-400 mb-1">Image Position</label>
+                                <select
+                                    value={section.layout || 'left'}
+                                    onChange={(e) => onUpdate(section.id, { layout: e.target.value as 'left' | 'right' })}
+                                    className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
+                                >
+                                    <option value="left">Left</option>
+                                    <option value="right">Right</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-xs text-zinc-400 mb-1">Subtitle (Uppercase)</label>
+                                <input
+                                    type="text"
+                                    value={section.subtitle || ''}
+                                    onChange={(e) => onUpdate(section.id, { subtitle: e.target.value })}
+                                    className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white uppercase"
+                                    placeholder="NASZA PASJA"
+                                />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-xs text-zinc-400 mb-1">Headline (H1)</label>
+                            <input
+                                type="text"
+                                value={section.title || ''}
+                                onChange={(e) => onUpdate(section.id, { title: e.target.value })}
+                                className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white text-lg"
+                                placeholder="Chwile pełne emocji"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-xs text-zinc-400 mb-1">Story Content</label>
+                            <RichTextEditor
+                                value={section.content || ''}
+                                onChange={(val) => onUpdate(section.id, { content: val })}
+                                placeholder="Historia, emocje, narracja..."
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4 border-t border-zinc-800 pt-4">
+                            <div>
+                                <label className="block text-xs text-zinc-400 mb-1">Button Text</label>
+                                <input
+                                    type="text"
+                                    value={section.buttonText || ''}
+                                    onChange={(e) => onUpdate(section.id, { buttonText: e.target.value })}
+                                    className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
+                                    placeholder="Zobacz portfolio"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-zinc-400 mb-1">Button Link</label>
+                                <input
+                                    type="text"
+                                    value={section.buttonLink || ''}
+                                    onChange={(e) => onUpdate(section.id, { buttonLink: e.target.value })}
+                                    className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
+                                    placeholder="/portfolio"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* HERO */}
                 {section.type === 'hero' && (
                     <div className="space-y-4">
@@ -2083,6 +2182,371 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove, openMedia
                     </div>
                 )}
 
+                {/* MAGAZINE LAYOUT */}
+                {section.type === 'magazine_layout' && (
+                    <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs text-zinc-400 mb-2">Główne Zdjęcie</label>
+                                <div className="flex gap-4 items-center">
+                                    {section.image && (
+                                        <div className="relative w-24 h-32 rounded border border-zinc-700 overflow-hidden">
+                                            <img src={section.image} alt="" className="w-full h-full object-cover" />
+                                        </div>
+                                    )}
+                                    <button
+                                        onClick={() => openMediaPicker(section.id, { target: 'single' })}
+                                        className="px-3 py-1.5 bg-zinc-800 border border-zinc-700 rounded text-xs text-zinc-300 hover:text-white"
+                                    >
+                                        Wybierz
+                                    </button>
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-xs text-zinc-400 mb-2">Drugie Zdjęcie (Detail)</label>
+                                <div className="flex gap-4 items-center">
+                                    {section.thermalImage && (
+                                        <div className="relative w-24 h-32 rounded border border-zinc-700 overflow-hidden">
+                                            <img src={section.thermalImage} alt="" className="w-full h-full object-cover" />
+                                        </div>
+                                    )}
+                                    <button
+                                        onClick={() => openMediaPicker(section.id, { target: 'single', context: 'thermal' })}
+                                        className="px-3 py-1.5 bg-zinc-800 border border-zinc-700 rounded text-xs text-zinc-300 hover:text-white"
+                                    >
+                                        Wybierz
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs text-zinc-400 mb-1">Układ</label>
+                                <select
+                                    value={section.layout || 'left'}
+                                    onChange={(e) => onUpdate(section.id, { layout: e.target.value as any })}
+                                    className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
+                                >
+                                    <option value="left">Zdjęcie Główne Lewo</option>
+                                    <option value="right">Zdjęcie Główne Prawo</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-xs text-zinc-400 mb-1">Tag (Uppercase)</label>
+                                <input
+                                    type="text"
+                                    value={section.subtitle || ''}
+                                    onChange={(e) => onUpdate(section.id, { subtitle: e.target.value })}
+                                    className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
+                                />
+                            </div>
+                        </div>
+                        <div>
+                            <label className="block text-xs text-zinc-400 mb-1">Tytuł (Headline)</label>
+                            <input
+                                type="text"
+                                value={section.title || ''}
+                                onChange={(e) => onUpdate(section.id, { title: e.target.value })}
+                                className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white text-lg"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs text-zinc-400 mb-1">Treść</label>
+                            <RichTextEditor
+                                value={section.content || ''}
+                                onChange={(val) => onUpdate(section.id, { content: val })}
+                            />
+                        </div>
+                    </div>
+                )}
+
+                {/* MASONRY GALLERY */}
+                {section.type === 'masonry_gallery' && (
+                    <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs text-zinc-400 mb-1">Tytuł</label>
+                                <input
+                                    type="text"
+                                    value={section.title || ''}
+                                    onChange={(e) => onUpdate(section.id, { title: e.target.value })}
+                                    className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-zinc-400 mb-1">Tag</label>
+                                <input
+                                    type="text"
+                                    value={section.subtitle || ''}
+                                    onChange={(e) => onUpdate(section.id, { subtitle: e.target.value })}
+                                    className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
+                                />
+                            </div>
+                        </div>
+                        <div className="flex flex-wrap gap-2 mb-4">
+                            {section.images?.map((img, idx) => (
+                                <div key={idx} className="relative group w-20 h-20">
+                                    <img src={img} alt="" className="w-full h-full object-cover rounded border border-zinc-700" />
+                                    <button
+                                        onClick={() => {
+                                            const newImages = section.images?.filter((_, i) => i !== idx);
+                                            onUpdate(section.id, { images: newImages });
+                                        }}
+                                        className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100"
+                                    >
+                                        <Trash2 className="w-3 h-3" />
+                                    </button>
+                                </div>
+                            ))}
+                            <button
+                                onClick={() => openMediaPicker(section.id, { target: 'gallery' })}
+                                className="w-20 h-20 flex items-center justify-center border-2 border-dashed border-zinc-700 rounded text-zinc-500 hover:text-zinc-300"
+                            >
+                                <Plus className="w-5 h-5" />
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* CLIENT STORY */}
+                {section.type === 'client_story' && (
+                    <div className="space-y-4">
+                        <div className="flex gap-4">
+                            <div className="shrink-0">
+                                <label className="block text-xs text-zinc-400 mb-2">Zdjęcie Klienta</label>
+                                <div className="relative w-24 h-32 rounded border border-zinc-700 overflow-hidden bg-zinc-800">
+                                    {section.image ? (
+                                        <img src={section.image} className="w-full h-full object-cover" />
+                                    ) : (
+                                        <ImageIcon className="m-auto mt-8 text-zinc-700" size={24} />
+                                    )}
+                                    <button onClick={() => openMediaPicker(section.id, { target: 'single' })} className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 flex items-center justify-center text-[10px] text-white font-bold uppercase">Zmień</button>
+                                </div>
+                            </div>
+                            <div className="flex-1 space-y-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-xs text-zinc-400 mb-1">Imię Klienta / Pary</label>
+                                        <input
+                                            type="text"
+                                            value={section.tag || ''}
+                                            onChange={(e) => onUpdate(section.id, { tag: e.target.value })}
+                                            className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs text-zinc-400 mb-1">Tytuł Historii</label>
+                                        <input
+                                            type="text"
+                                            value={section.title || ''}
+                                            onChange={(e) => onUpdate(section.id, { title: e.target.value })}
+                                            className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-xs text-zinc-400 mb-1">Lokalizacja</label>
+                                        <input
+                                            type="text"
+                                            value={section.subtitle || ''}
+                                            onChange={(e) => onUpdate(section.id, { subtitle: e.target.value })}
+                                            className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs text-zinc-400 mb-1">Data</label>
+                                        <input
+                                            type="text"
+                                            value={section.buttonText || ''}
+                                            onChange={(e) => onUpdate(section.id, { buttonText: e.target.value })}
+                                            className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <label className="block text-xs text-zinc-400 mb-1">Testimonial (Treść)</label>
+                            <RichTextEditor
+                                value={section.content || ''}
+                                onChange={(val) => onUpdate(section.id, { content: val })}
+                            />
+                        </div>
+                    </div>
+                )}
+
+                {/* PROCESS TIMELINE */}
+                {section.type === 'process_timeline' && (
+                    <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs text-zinc-400 mb-1">Tytuł Sekcji</label>
+                                <input type="text" value={section.title || ''} onChange={e => onUpdate(section.id, { title: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white" />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-zinc-400 mb-1">Podtytuł</label>
+                                <input type="text" value={section.subtitle || ''} onChange={e => onUpdate(section.id, { subtitle: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white" />
+                            </div>
+                        </div>
+                        <div className="flex items-center justify-between mb-2">
+                            <h4 className="text-xs font-bold text-zinc-500 uppercase">Kroki Procesu</h4>
+                            <button
+                                onClick={() => {
+                                    const nextNum = (section.b2b_process?.length || 0) + 1;
+                                    const newStep: B2BProcessStep = { id: Math.random().toString(36).substr(2, 9), title: 'Nowy Krok', description: 'Opis...', stepNumber: `0${nextNum}` };
+                                    onUpdate(section.id, { b2b_process: [...(section.b2b_process || []), newStep] });
+                                }}
+                                className="text-xs bg-yellow-500/20 text-yellow-500 px-2 py-1 rounded border border-yellow-500/30 font-bold"
+                            >
+                                + DODAJ KROK
+                            </button>
+                        </div>
+                        <div className="space-y-3">
+                            {(section.b2b_process || []).map((step, pIndex) => (
+                                <div key={step.id} className="bg-zinc-800 p-4 rounded border border-zinc-700 flex gap-4 items-start">
+                                    <input type="text" value={step.stepNumber} onChange={e => { const up = [...section.b2b_process!]; up[pIndex].stepNumber = e.target.value; onUpdate(section.id, { b2b_process: up }); }} className="w-12 bg-zinc-900 border border-zinc-700 rounded text-center py-1 text-sm text-yellow-500 font-bold" />
+                                    <div className="flex-1 space-y-2">
+                                        <input type="text" value={step.title} onChange={e => { const up = [...section.b2b_process!]; up[pIndex].title = e.target.value; onUpdate(section.id, { b2b_process: up }); }} className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-1 text-sm text-white font-bold" />
+                                        <textarea value={step.description} onChange={e => { const up = [...section.b2b_process!]; up[pIndex].description = e.target.value; onUpdate(section.id, { b2b_process: up }); }} className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-1 text-xs text-zinc-400 h-16" />
+                                    </div>
+                                    <button onClick={() => onUpdate(section.id, { b2b_process: section.b2b_process!.filter((_, i) => i !== pIndex) })} className="text-zinc-600 hover:text-red-500"><Trash2 size={16} /></button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* INVESTMENT TEASER */}
+                {section.type === 'investment_teaser' && (
+                    <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs text-zinc-400 mb-1">Tytuł Sekcji</label>
+                                <input type="text" value={section.title || ''} onChange={e => onUpdate(section.id, { title: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white" />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-zinc-400 mb-1">Podtytuł</label>
+                                <input type="text" value={section.subtitle || ''} onChange={e => onUpdate(section.id, { subtitle: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white" />
+                            </div>
+                        </div>
+                        <div className="flex items-center justify-between mb-2">
+                            <h4 className="text-xs font-bold text-zinc-500 uppercase">Pakiety Ofertowe</h4>
+                            <button
+                                onClick={() => {
+                                    const newPkg: FeatureItem = { id: Math.random().toString(36).substr(2, 9), title: 'Nowy Pakiet', items: ['Cecha 1'], enabled: true, buttonText: 'od 1500 zł' };
+                                    onUpdate(section.id, { features: [...(section.features || []), newPkg] });
+                                }}
+                                className="text-xs bg-green-500/20 text-green-500 px-2 py-1 rounded border border-green-500/30 font-bold"
+                            >
+                                + DODAJ PAKIET
+                            </button>
+                        </div>
+                        <div className="space-y-4">
+                            {(section.features || []).map((pkg, fIndex) => (
+                                <div key={pkg.id} className="bg-zinc-800 p-4 rounded border border-zinc-700 space-y-3">
+                                    <div className="flex gap-4">
+                                        <div className="flex-1">
+                                            <label className="block text-[8px] text-zinc-500 uppercase mb-1">Nazwa Pakietu</label>
+                                            <input type="text" value={pkg.title} onChange={e => { const up = [...section.features!]; up[fIndex].title = e.target.value; onUpdate(section.id, { features: up }); }} className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-sm text-white font-bold" />
+                                        </div>
+                                        <div className="w-32">
+                                            <label className="block text-[8px] text-zinc-500 uppercase mb-1">Cena (Tekst)</label>
+                                            <input type="text" value={pkg.buttonText || ''} onChange={e => { const up = [...section.features!]; up[fIndex].buttonText = e.target.value; onUpdate(section.id, { features: up }); }} className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-sm text-yellow-500 font-bold" />
+                                        </div>
+                                        <div className="flex items-center pt-4">
+                                            <label className="flex items-center gap-1 cursor-pointer">
+                                                <input type="checkbox" checked={pkg.enabled} onChange={e => { const up = [...section.features!]; up[fIndex].enabled = e.target.checked; onUpdate(section.id, { features: up }); }} className="rounded bg-zinc-900" />
+                                                <span className="text-[10px] text-zinc-400">Popular</span>
+                                            </label>
+                                        </div>
+                                        <button onClick={() => onUpdate(section.id, { features: section.features!.filter((_, i) => i !== fIndex) })} className="text-zinc-600 hover:text-red-500 pt-4"><Trash2 size={16} /></button>
+                                    </div>
+                                    <textarea value={pkg.items.join(', ')} onChange={e => { const up = [...section.features!]; up[fIndex].items = e.target.value.split(',').map(s => s.trim()).filter(Boolean); onUpdate(section.id, { features: up }); }} placeholder="Cechy (oddziel przecinkami)..." className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs text-zinc-400 h-16" />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* NARRATIVE TEXT */}
+                {section.type === 'narrative_text' && (
+                    <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs text-zinc-400 mb-1">Tytuł (Headline)</label>
+                                <input type="text" value={section.title || ''} onChange={e => onUpdate(section.id, { title: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white" />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-zinc-400 mb-1">Podtytuł</label>
+                                <input type="text" value={section.subtitle || ''} onChange={e => onUpdate(section.id, { subtitle: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white" />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs text-zinc-400 mb-1">Kolumny</label>
+                                <select value={section.layout || 'left'} onChange={e => onUpdate(section.id, { layout: e.target.value as any })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white">
+                                    <option value="left">1 Kolumna</option>
+                                    <option value="right">2 Kolumny</option>
+                                </select>
+                            </div>
+                            <div className="flex items-center gap-2 pt-6">
+                                <input type="checkbox" checked={section.showCategoryTitle ?? true} onChange={e => onUpdate(section.id, { showCategoryTitle: e.target.checked })} className="rounded bg-zinc-800" />
+                                <label className="text-xs text-zinc-400">Pokaż Inicjał (Drop Cap)</label>
+                            </div>
+                        </div>
+                        <div>
+                            <RichTextEditor
+                                value={section.content || ''}
+                                onChange={(val) => onUpdate(section.id, { content: val })}
+                            />
+                        </div>
+                    </div>
+                )}
+
+                {/* FEATURED CAROUSEL */}
+                {section.type === 'featured_carousel' && (
+                    <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs text-zinc-400 mb-1">Tytuł Sekcji</label>
+                                <input type="text" value={section.title || ''} onChange={e => onUpdate(section.id, { title: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white" />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-zinc-400 mb-1">Podtytuł</label>
+                                <input type="text" value={section.subtitle || ''} onChange={e => onUpdate(section.id, { subtitle: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white" />
+                            </div>
+                        </div>
+                        <div className="flex items-center justify-between mb-2">
+                            <h4 className="text-xs font-bold text-zinc-500 uppercase">Slajdy Karuzeli</h4>
+                            <button
+                                onClick={() => {
+                                    const newSlide: SliderSlide = { id: Math.random().toString(36).substr(2, 9), image: '', title: 'Nowy Slajd', subtitle: 'Podtytuł' };
+                                    onUpdate(section.id, { slides: [...(section.slides || []), newSlide] });
+                                }}
+                                className="text-xs bg-blue-500/20 text-blue-500 px-2 py-1 rounded border border-blue-500/30 font-bold"
+                            >
+                                + DODAJ SLAJD
+                            </button>
+                        </div>
+                        <div className="space-y-3">
+                            {(section.slides || []).map((slide, sIndex) => (
+                                <div key={slide.id} className="bg-zinc-800 p-4 rounded border border-zinc-700 flex gap-4 items-center">
+                                    <div className="w-20 h-12 bg-zinc-900 rounded overflow-hidden relative group shrink-0">
+                                        {slide.image ? <img src={slide.image} className="w-full h-full object-cover" /> : <ImageIcon size={20} className="m-auto mt-3 text-zinc-700" />}
+                                        <button onClick={() => openMediaPicker(section.id, { target: 'single', index: sIndex })} className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 text-[8px] text-white font-bold uppercase transition-opacity">Zmień</button>
+                                    </div>
+                                    <div className="flex-1 grid grid-cols-2 gap-2">
+                                        <input type="text" value={slide.title} onChange={e => { const up = [...section.slides!]; up[sIndex].title = e.target.value; onUpdate(section.id, { slides: up }); }} placeholder="Tytuł" className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs text-white" />
+                                        <input type="text" value={slide.subtitle} onChange={e => { const up = [...section.slides!]; up[sIndex].subtitle = e.target.value; onUpdate(section.id, { slides: up }); }} placeholder="Tag" className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-[10px] text-zinc-400 uppercase font-bold" />
+                                    </div>
+                                    <button onClick={() => onUpdate(section.id, { slides: section.slides!.filter((_, i) => i !== sIndex) })} className="text-zinc-600 hover:text-red-500"><Trash2 size={16} /></button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 {/* THERMAL REPORT SHOWCASE */}
                 {section.type === 'thermal_report' && (
                     <div className="space-y-6">
@@ -2199,7 +2663,7 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove, openMedia
     );
 }
 
-export default function PageBuilder({ sections, onChange }: PageBuilderProps) {
+export default function PageBuilder({ sections, onChange, pageType }: PageBuilderProps) {
     const sensors = useSensors(
         useSensor(PointerSensor),
         useSensor(KeyboardSensor, {
@@ -2300,6 +2764,18 @@ export default function PageBuilder({ sections, onChange }: PageBuilderProps) {
                     updated[sectionEditIndex] = { ...updated[sectionEditIndex], image: imageUrl };
                     updateSection(activeSectionId, { infoband_items: updated });
                 }
+            }
+        } else if (section.type === 'magazine_layout') {
+            if (mediaPickerContext === 'thermal') {
+                updateSection(activeSectionId, { thermalImage: imageUrl });
+            } else {
+                updateSection(activeSectionId, { image: imageUrl });
+            }
+        } else if (section.type === 'featured_carousel') {
+            const updated = [...(section.slides || [])];
+            if (sectionEditIndex >= 0) {
+                updated[sectionEditIndex] = { ...updated[sectionEditIndex], image: imageUrl };
+                updateSection(activeSectionId, { slides: updated });
             }
         } else if (section.type === 'mini_gallery') {
             const updated = [...(section.mini_gallery_items || [])];
@@ -2416,7 +2892,56 @@ export default function PageBuilder({ sections, onChange }: PageBuilderProps) {
                 textPosition: 'below',
                 corners: 'square'
             };
+        } else if (type === 'magazine_layout') {
+            newSection.title = 'Nasza Misja i <span class="text-yellow-500">Wizja</span>';
+            newSection.subtitle = 'O NAS';
+            newSection.image = '';
+            newSection.thermalImage = '';
+            newSection.layout = 'left';
+            newSection.content = 'Opowiedz historię swojej marki w unikalnym, redakcyjnym stylu...';
+        } else if (type === 'masonry_gallery') {
+            newSection.title = 'Najnowsze Realizacje';
+            newSection.subtitle = 'PORTFOLIO';
+            newSection.images = [];
+        } else if (type === 'client_story') {
+            newSection.title = 'Historia Miłości Ani i Marcina';
+            newSection.tag = 'ANIA & MARCIN';
+            newSection.subtitle = 'Pałac Goetz, Brzesko';
+            newSection.buttonText = '15.06.2024';
+            newSection.content = 'To był wyjątkowy dzień, pełen emocji i niezapomnianych chwil...';
+            newSection.image = '';
+        } else if (type === 'process_timeline') {
+            newSection.title = 'Jak pracujemy';
+            newSection.subtitle = 'PROCES';
+            newSection.b2b_process = [
+                { id: Math.random().toString(36).substr(2, 9), title: 'Pierwsze spotkanie', description: 'Poznajemy Wasze oczekiwania i wspólnie planujemy dzień.', stepNumber: '01' },
+                { id: Math.random().toString(36).substr(2, 9), title: 'Dzień Ślubu', description: 'Jesteśmy z Wami, dyskretnie łapiąc każdy ważny moment.', stepNumber: '02' },
+                { id: Math.random().toString(36).substr(2, 9), title: 'Dostarczenie zdjęć', description: 'W ciągu 30 dni otrzymujecie gotową galerię online.', stepNumber: '03' }
+            ];
+        } else if (type === 'investment_teaser') {
+            newSection.title = 'Wybierz swój pakiet';
+            newSection.subtitle = 'INWESTYCJA';
+            newSection.features = [
+                { id: Math.random().toString(36).substr(2, 9), title: 'Pakiet Silver', items: ['10h reportażu', '300 zdjęć', 'Galeria online'], enabled: false, buttonText: 'od 3500 zł' },
+                { id: Math.random().toString(36).substr(2, 9), title: 'Pakiet Gold', items: ['12h reportażu', '500 zdjęć', 'Album premium'], enabled: true, buttonText: 'od 5000 zł' },
+                { id: Math.random().toString(36).substr(2, 9), title: 'Sesja Narzeczeńska', items: ['2h sesji', '30 zdjęć', 'Piękna pamiątka'], enabled: false, buttonText: 'od 800 zł' }
+            ];
+        } else if (type === 'narrative_text') {
+            newSection.title = 'Koncepcja Artystyczna';
+            newSection.subtitle = 'NASZA FILOZOFIA';
+            newSection.layout = 'left';
+            newSection.showCategoryTitle = true;
+            newSection.content = '<p>Zaczynamy od pasji do światła i autentyczności. Każdy kadr to dla nas nowa opowieść...</p>';
+        } else if (type === 'featured_carousel') {
+            newSection.title = 'Kluczowe Realizacje';
+            newSection.subtitle = 'WYRÓŻNIONE';
+            newSection.slides = [];
+        } else if (type === 'story_hero') {
+            newSection.title = 'Chwile pełne emocji';
+            newSection.subtitle = 'NASZA PASJA';
+            newSection.layout = 'left';
         }
+
 
         onChange([...sections, newSection]);
     };
@@ -2615,59 +3140,61 @@ export default function PageBuilder({ sections, onChange }: PageBuilderProps) {
 
     return (
         <div className="space-y-6">
-            {/* Quick Templates Panel */}
-            <div className="p-6 bg-zinc-900/50 rounded-2xl border border-zinc-800 mb-8 relative overflow-hidden group">
-                <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                    <Stars size={80} />
-                </div>
-                <div className="relative z-10">
-                    <h3 className="text-sm font-bold text-white mb-4 uppercase tracking-[0.2em] flex items-center gap-2">
-                        <Stars size={16} className="text-yellow-500" /> Szybki Start: Szablony Biznesowe
-                    </h3>
-                    <div className="flex flex-wrap gap-3">
-                        <button
-                            onClick={() => applyTemplate('thermal')}
-                            className="px-5 py-3 bg-white/5 hover:bg-yellow-500 hover:text-black text-white text-xs font-bold rounded-xl transition-all border border-white/5 flex items-center gap-2"
-                        >
-                            <Zap size={14} /> Ekspert Termowizji
-                        </button>
-                        <button
-                            onClick={() => applyTemplate('construction')}
-                            className="px-5 py-3 bg-white/5 hover:bg-yellow-500 hover:text-black text-white text-xs font-bold rounded-xl transition-all border border-white/5 flex items-center gap-2"
-                        >
-                            <Building2 size={14} /> Monitoring & Dron
-                        </button>
-                        <button
-                            onClick={() => applyTemplate('google_360')}
-                            className="px-5 py-3 bg-white/5 hover:bg-yellow-500 hover:text-black text-white text-xs font-bold rounded-xl transition-all border border-white/5 flex items-center gap-2"
-                        >
-                            <Camera size={14} /> Wizytówka Google 360
-                        </button>
-                        <button
-                            onClick={() => applyTemplate('building_analysis')}
-                            className="px-5 py-3 bg-white/5 hover:bg-yellow-500 hover:text-black text-white text-xs font-bold rounded-xl transition-all border border-white/5 flex items-center gap-2"
-                        >
-                            <ShieldCheck size={14} /> Analiza Budynków
-                        </button>
-                        <button
-                            onClick={() => applyTemplate('master_business')}
-                            className="px-5 py-3 bg-blue-500/10 hover:bg-blue-500 hover:text-white text-blue-400 text-xs font-bold rounded-xl transition-all border border-blue-500/20 flex items-center gap-2"
-                        >
-                            <Stars size={14} /> PEŁNA OFERTA (Master)
-                        </button>
-                        <div className="h-10 w-px bg-zinc-800 mx-2 hidden md:block" />
-                        <button
-                            onClick={() => { if (confirm('Na pewno wyczyścić stronę?')) onChange([]); }}
-                            className="px-5 py-3 bg-red-900/20 hover:bg-red-600 text-red-500 hover:text-white text-xs font-bold rounded-xl transition-all border border-red-500/10 flex items-center gap-2"
-                        >
-                            <Trash2 size={14} /> Wyczyść sekcje
-                        </button>
+            {/* Quick Templates Panel - Only for B2B */}
+            {(pageType === 'b2b' || pageType === 'dron') && (
+                <div className="p-6 bg-zinc-900/50 rounded-2xl border border-zinc-800 mb-8 relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                        <Stars size={80} />
                     </div>
-                    <p className="mt-4 text-[10px] text-zinc-500 italic">
-                        Wybierz szablon, aby automatycznie wygenerować sprawdzony układ sekcji dla konkretnej branży.
-                    </p>
+                    <div className="relative z-10">
+                        <h3 className="text-sm font-bold text-white mb-4 uppercase tracking-[0.2em] flex items-center gap-2">
+                            <Stars size={16} className="text-yellow-500" /> Szybki Start: Szablony Biznesowe
+                        </h3>
+                        <div className="flex flex-wrap gap-3">
+                            <button
+                                onClick={() => applyTemplate('thermal')}
+                                className="px-5 py-3 bg-white/5 hover:bg-yellow-500 hover:text-black text-white text-xs font-bold rounded-xl transition-all border border-white/5 flex items-center gap-2"
+                            >
+                                <Zap size={14} /> Ekspert Termowizji
+                            </button>
+                            <button
+                                onClick={() => applyTemplate('construction')}
+                                className="px-5 py-3 bg-white/5 hover:bg-yellow-500 hover:text-black text-white text-xs font-bold rounded-xl transition-all border border-white/5 flex items-center gap-2"
+                            >
+                                <Building2 size={14} /> Monitoring & Dron
+                            </button>
+                            <button
+                                onClick={() => applyTemplate('google_360')}
+                                className="px-5 py-3 bg-white/5 hover:bg-yellow-500 hover:text-black text-white text-xs font-bold rounded-xl transition-all border border-white/5 flex items-center gap-2"
+                            >
+                                <Camera size={14} /> Wizytówka Google 360
+                            </button>
+                            <button
+                                onClick={() => applyTemplate('building_analysis')}
+                                className="px-5 py-3 bg-white/5 hover:bg-yellow-500 hover:text-black text-white text-xs font-bold rounded-xl transition-all border border-white/5 flex items-center gap-2"
+                            >
+                                <ShieldCheck size={14} /> Analiza Budynków
+                            </button>
+                            <button
+                                onClick={() => applyTemplate('master_business')}
+                                className="px-5 py-3 bg-blue-500/10 hover:bg-blue-500 hover:text-white text-blue-400 text-xs font-bold rounded-xl transition-all border border-blue-500/20 flex items-center gap-2"
+                            >
+                                <Stars size={14} /> PEŁNA OFERTA (Master)
+                            </button>
+                            <div className="h-10 w-px bg-zinc-800 mx-2 hidden md:block" />
+                            <button
+                                onClick={() => { if (confirm('Na pewno wyczyścić stronę?')) onChange([]); }}
+                                className="px-5 py-3 bg-red-900/20 hover:bg-red-600 text-red-500 hover:text-white text-xs font-bold rounded-xl transition-all border border-red-500/10 flex items-center gap-2"
+                            >
+                                <Trash2 size={14} /> Wyczyść sekcje
+                            </button>
+                        </div>
+                        <p className="mt-4 text-[10px] text-zinc-500 italic">
+                            Wybierz szablon, aby automatycznie wygenerować sprawdzony układ sekcji dla konkretnej branży.
+                        </p>
+                    </div>
                 </div>
-            </div>
+            )}
 
             <div className="flex gap-2 flex-wrap">
                 <button onClick={() => addSection('hero_parallax')} className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded text-sm text-white transition-colors">
@@ -2685,14 +3212,14 @@ export default function PageBuilder({ sections, onChange }: PageBuilderProps) {
                 <button onClick={() => addSection('hero')} className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded text-sm text-white transition-colors">
                     <Layout className="w-4 h-4" /> Prosty Hero
                 </button>
+                <button onClick={() => addSection('story_hero')} className="flex items-center gap-2 px-4 py-2 bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 rounded text-sm text-emerald-400 transition-colors">
+                    <Type className="w-4 h-4" /> Story Hero 📖
+                </button>
                 <button onClick={() => addSection('contact')} className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded text-sm text-white transition-colors">
                     <MoveUp className="w-4 h-4" /> CTA / Kontakt
                 </button>
                 <button onClick={() => addSection('contact_form')} className="flex items-center gap-2 px-4 py-2 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 rounded text-sm text-blue-400 transition-colors">
                     <Layout className="w-4 h-4" /> Formularz Kontaktowy
-                </button>
-                <button onClick={() => addSection('thermal_slider')} className="flex items-center gap-2 px-4 py-2 bg-gold-600/20 hover:bg-gold-600/30 border border-gold-500/30 rounded text-sm text-gold-400 transition-colors">
-                    <Layout className="w-4 h-4" /> Thermal Slider
                 </button>
                 <button onClick={() => addSection('hero_slider')} className="flex items-center gap-2 px-4 py-2 bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 rounded text-sm text-purple-400 transition-colors">
                     <Layout className="w-4 h-4" /> Hero Slider (Multislide)
@@ -2703,50 +3230,81 @@ export default function PageBuilder({ sections, onChange }: PageBuilderProps) {
                 <button onClick={() => addSection('certificates')} className="flex items-center gap-2 px-4 py-2 bg-yellow-600/20 hover:bg-yellow-600/30 border border-yellow-500/30 rounded text-sm text-yellow-400 transition-colors">
                     <ShieldCheck className="w-4 h-4" /> Certyfikaty
                 </button>
-                <button onClick={() => addSection('mini_gallery')} className="flex items-center gap-2 px-4 py-2 bg-pink-600/20 hover:bg-pink-600/30 border border-pink-500/30 rounded text-sm text-pink-400 transition-colors">
-                    <Layout className="w-4 h-4" /> Mini Gallery (Pro)
+
+                <div className="w-full h-px bg-zinc-800 my-2" />
+                <span className="w-full text-[10px] font-bold text-zinc-600 uppercase tracking-widest mb-1 ml-1">Editorial & Storytelling (Premium)</span>
+
+                <button onClick={() => addSection('magazine_layout')} className="flex items-center gap-2 px-4 py-2 bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/30 rounded text-sm text-indigo-400 transition-colors">
+                    <Layout className="w-4 h-4" /> Magazine Layout 📖
+                </button>
+                <button onClick={() => addSection('masonry_gallery')} className="flex items-center gap-2 px-4 py-2 bg-rose-600/20 hover:bg-rose-600/30 border border-rose-500/30 rounded text-sm text-rose-400 transition-colors">
+                    <ImageIcon className="w-4 h-4" /> Masonry Gallery 🖼️
+                </button>
+                <button onClick={() => addSection('client_story')} className="flex items-center gap-2 px-4 py-2 bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 rounded text-sm text-emerald-400 transition-colors">
+                    <Stars className="w-4 h-4" /> Client Story ✍️
+                </button>
+                <button onClick={() => addSection('process_timeline')} className="flex items-center gap-2 px-4 py-2 bg-amber-600/20 hover:bg-amber-600/30 border border-amber-500/30 rounded text-sm text-amber-400 transition-colors">
+                    <Workflow className="w-4 h-4" /> Process Timeline ⏳
+                </button>
+                <button onClick={() => addSection('investment_teaser')} className="flex items-center gap-2 px-4 py-2 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 rounded text-sm text-blue-400 transition-colors">
+                    <Award className="w-4 h-4" /> Investment Teaser 💎
+                </button>
+                <button onClick={() => addSection('narrative_text')} className="flex items-center gap-2 px-4 py-2 bg-zinc-600/20 hover:bg-zinc-600/30 border border-zinc-500/30 rounded text-sm text-zinc-400 transition-colors">
+                    <Type className="w-4 h-4" /> Narrative Text 🖋️
+                </button>
+                <button onClick={() => addSection('featured_carousel')} className="flex items-center gap-2 px-4 py-2 bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 rounded text-sm text-purple-400 transition-colors">
+                    <LayoutTemplate className="w-4 h-4" /> Featured Carousel 🎡
                 </button>
             </div>
 
-            <div className="flex gap-2 flex-wrap border-t border-zinc-800 pt-4 mt-2">
-                <span className="w-full text-[10px] font-bold text-zinc-600 uppercase tracking-widest mb-1 ml-1">Moduły B2B Premium</span>
-                <button onClick={() => addSection('b2b_hero')} className="flex items-center gap-2 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/50 rounded text-sm text-zinc-300 transition-colors group">
-                    <Stars className="w-4 h-4 text-yellow-500" /> B2B Hero
-                </button>
-                <button onClick={() => addSection('b2b_stats')} className="flex items-center gap-2 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/50 rounded text-sm text-zinc-300 transition-colors group">
-                    <BarChart3 className="w-4 h-4 text-blue-500" /> B2B Stats
-                </button>
-                <button onClick={() => addSection('b2b_logos')} className="flex items-center gap-2 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/50 rounded text-sm text-zinc-300 transition-colors group">
-                    <Award className="w-4 h-4 text-purple-500" /> B2B Logos
-                </button>
-                <button onClick={() => addSection('b2b_process')} className="flex items-center gap-2 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/50 rounded text-sm text-zinc-300 transition-colors group">
-                    <Workflow className="w-4 h-4 text-green-500" /> B2B Process
-                </button>
-                <button onClick={() => addSection('b2b_cases')} className="flex items-center gap-2 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/50 rounded text-sm text-zinc-300 transition-colors group">
-                    <Briefcase className="w-4 h-4 text-orange-500" /> B2B Cases
-                </button>
-                <button onClick={() => addSection('b2b_contact')} className="flex items-center gap-2 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/50 rounded text-sm text-zinc-300 transition-colors group">
-                    <FileText className="w-4 h-4 text-red-500" /> B2B RFQ
-                </button>
-                <button onClick={() => addSection('info_band')} className="flex items-center gap-2 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/50 rounded text-sm text-zinc-300 transition-colors group">
-                    <Layout className="w-4 h-4 text-blue-400" /> InfoBand (White)
-                </button>
-                <button onClick={() => addSection('b2b_video')} className="flex items-center gap-2 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/50 rounded text-sm text-zinc-300 transition-colors group">
-                    <Video className="w-4 h-4 text-orange-400" /> B2B Video
-                </button>
-                <button onClick={() => addSection('thermal_hero')} className="flex items-center gap-2 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/50 rounded text-sm text-zinc-300 transition-colors group">
-                    <Thermometer className="w-4 h-4 text-red-500" /> Thermal Hero
-                </button>
-                <button onClick={() => addSection('hero_video')} className="flex items-center gap-2 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/50 rounded text-sm text-zinc-300 transition-colors group">
-                    <Video className="w-4 h-4 text-blue-500" /> Hero Video Slider
-                </button>
-                <button onClick={() => addSection('parallax_video')} className="flex items-center gap-2 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/50 rounded text-sm text-zinc-300 transition-colors group">
-                    <MoveUp className="w-4 h-4 text-purple-500" /> Parallax Video
-                </button>
-                <button onClick={() => addSection('thermal_report')} className="flex items-center gap-2 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/50 rounded text-sm text-zinc-300 transition-colors group">
-                    <FileSearch className="w-4 h-4 text-yellow-500" /> Thermal Reports
-                </button>
-            </div>
+            {/* Moduły B2B Premium - Only for B2B */}
+            {(pageType === 'b2b' || pageType === 'dron') && (
+                <div className="flex gap-2 flex-wrap border-t border-zinc-800 pt-4 mt-2">
+                    <span className="w-full text-[10px] font-bold text-zinc-600 uppercase tracking-widest mb-1 ml-1">Moduły B2B Premium</span>
+                    <button onClick={() => addSection('b2b_hero')} className="flex items-center gap-2 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/50 rounded text-sm text-zinc-300 transition-colors group">
+                        <Stars className="w-4 h-4 text-yellow-500" /> B2B Hero
+                    </button>
+                    <button onClick={() => addSection('b2b_stats')} className="flex items-center gap-2 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/50 rounded text-sm text-zinc-300 transition-colors group">
+                        <BarChart3 className="w-4 h-4 text-blue-500" /> B2B Stats
+                    </button>
+                    <button onClick={() => addSection('b2b_logos')} className="flex items-center gap-2 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/50 rounded text-sm text-zinc-300 transition-colors group">
+                        <Award className="w-4 h-4 text-purple-500" /> B2B Logos
+                    </button>
+                    <button onClick={() => addSection('b2b_process')} className="flex items-center gap-2 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/50 rounded text-sm text-zinc-300 transition-colors group">
+                        <Workflow className="w-4 h-4 text-green-500" /> B2B Process
+                    </button>
+                    <button onClick={() => addSection('b2b_cases')} className="flex items-center gap-2 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/50 rounded text-sm text-zinc-300 transition-colors group">
+                        <Briefcase className="w-4 h-4 text-orange-500" /> B2B Cases
+                    </button>
+                    <button onClick={() => addSection('b2b_contact')} className="flex items-center gap-2 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/50 rounded text-sm text-zinc-300 transition-colors group">
+                        <FileText className="w-4 h-4 text-red-500" /> B2B RFQ
+                    </button>
+                    <button onClick={() => addSection('info_band')} className="flex items-center gap-2 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/50 rounded text-sm text-zinc-300 transition-colors group">
+                        <Layout className="w-4 h-4 text-blue-400" /> InfoBand (White)
+                    </button>
+                    <button onClick={() => addSection('b2b_video')} className="flex items-center gap-2 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/50 rounded text-sm text-zinc-300 transition-colors group">
+                        <Video className="w-4 h-4 text-orange-400" /> B2B Video
+                    </button>
+                    <button onClick={() => addSection('thermal_hero')} className="flex items-center gap-2 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/50 rounded text-sm text-zinc-300 transition-colors group">
+                        <Thermometer className="w-4 h-4 text-red-500" /> Thermal Hero
+                    </button>
+                    <button onClick={() => addSection('hero_video')} className="flex items-center gap-2 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/50 rounded text-sm text-zinc-300 transition-colors group">
+                        <Video className="w-4 h-4 text-blue-500" /> Hero Video Slider
+                    </button>
+                    <button onClick={() => addSection('parallax_video')} className="flex items-center gap-2 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/50 rounded text-sm text-zinc-300 transition-colors group">
+                        <MoveUp className="w-4 h-4 text-purple-500" /> Parallax Video
+                    </button>
+                    <button onClick={() => addSection('thermal_report')} className="flex items-center gap-2 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/50 rounded text-sm text-zinc-300 transition-colors group">
+                        <FileSearch className="w-4 h-4 text-yellow-500" /> Thermal Reports
+                    </button>
+                    <button onClick={() => addSection('thermal_slider')} className="flex items-center gap-2 px-4 py-2 bg-gold-600/10 hover:bg-gold-600/20 border border-gold-500/20 rounded text-sm text-gold-400 transition-colors">
+                        <Layout className="w-4 h-4" /> Thermal Slider
+                    </button>
+                    <button onClick={() => addSection('mini_gallery')} className="flex items-center gap-2 px-4 py-2 bg-pink-600/10 hover:bg-pink-600/20 border border-pink-500/20 rounded text-sm text-pink-400 transition-colors">
+                        <Layout className="w-4 h-4" /> Mini Gallery (Pro)
+                    </button>
+                </div>
+            )}
 
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                 <SortableContext items={sections.map(s => s.id)} strategy={verticalListSortingStrategy}>
