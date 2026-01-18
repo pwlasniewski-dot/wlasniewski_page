@@ -9,14 +9,27 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getApiUrl } from '@/lib/api-config';
-import { Save, ArrowLeft, Plus, Trash2, Image as ImageIcon, Eye, EyeOff, MoveUp, MoveDown, Layout, LayoutTemplate } from 'lucide-react';
+import {
+    Layout, GripVertical, Image as ImageIcon, Type, Save, Plus, Trash2,
+    ArrowLeft, Eye, EyeOff, MoveUp, MoveDown, LayoutTemplate, X,
+    ShieldCheck, Workflow, Award, Stars, FileText, Video, Thermometer, FileSearch,
+    Briefcase, BarChart3
+} from 'lucide-react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import MediaPicker from '@/components/admin/MediaPicker';
 import RichTextEditor from '@/components/admin/RichTextEditor';
 import templates from '@/lib/homepageModuleTemplates';
 
-// --- Types ---
+import {
+    PageSection as Section,
+    FeatureItem,
+    BannerItem,
+    MiniGalleryItem,
+    MiniGalleryConfig,
+    StoryGridItem,
+    SectionType as PBSectionType
+} from '@/components/admin/PageBuilder';
 
 interface HeroSlide {
     id: string;
@@ -42,91 +55,39 @@ interface Feature {
     buttonLink?: string;
 }
 
-type SectionType = 'about' | 'features' | 'parallax' | 'info_band' | 'challenge_banner' | 'testimonials' | 'mini_gallery';
+type SectionType = 'about' | 'features' | 'parallax' | 'info_band' | 'challenge_banner' | 'testimonials' | 'mini_gallery' | 'stories_grid' | 'chronological_gallery' |
+    'magazine_layout' | 'masonry_gallery' | 'client_story' | 'process_timeline' | 'investment_teaser' | 'narrative_text' | 'featured_carousel' | 'b2b_hero' | 'b2b_stats' | 'b2b_logos' | 'b2b_process' | 'b2b_cases' | 'b2b_contact' | 'b2b_video' | 'thermal_hero' | 'hero_video' | 'parallax_video' | 'thermal_report' | 'thermal_slider';
 
-interface BaseSection {
+interface ChronologicalItem {
     id: string;
-    type: SectionType;
-    label: string; // Display name in admin
-    enabled: boolean;
-    backgroundColor?: 'black' | 'zinc-900' | 'zinc-800' | 'gold-900' | 'white';
+    image: string;
+    description?: string;
 }
 
-interface AboutSection {
-    id: string;
-    type: 'about';
+type EditorSection = Section & {
+    enabled?: boolean;
     label?: string;
-    enabled: boolean;
-    backgroundColor?: 'black' | 'zinc-900' | 'zinc-800' | 'gold-900' | 'white';
+    backgroundColor?: 'black' | 'zinc-900' | 'zinc-950' | 'zinc-800' | 'gold-900' | 'white' | string;
+    data?: any;
     textVariant?: 'light' | 'dark';
-    data: {
-        title: string;
-        content: string;
-        image: string;
-        imageShape?: 'square' | 'circle';
-        imageSize?: number;
-        position?: 'left' | 'center' | 'right';
-        cta1Text?: string;
-        cta1Link?: string;
-        cta2Text?: string;
-        cta2Link?: string;
-        // New structure for multiple blocks
-        blocks?: {
-            id: string;
-            title: string;
-            content: string;
-            image: string;
-            imageShape?: 'square' | 'circle';
-            imageSize?: number;
-            position: 'left' | 'right';
-        }[];
-    };
-}
+};
 
-interface FeaturesSection extends BaseSection {
-    type: 'features';
-    data: {
-        features: Feature[];
-        sectionLayout?: 'grid' | 'centered';
-        featureSize?: 'normal' | 'large';
-    };
-}
-
-interface ParallaxSection extends BaseSection {
-    type: 'parallax';
-    data: {
-        image: string;
-        image_desktop?: string;
-        image_mobile?: string;
-        title: string;
-        floatingImage?: boolean;
-        parallaxSpeed?: number;
-        imageOffset?: number;
-        textOpacity?: number;
-        overlayOpacity?: number;
-        textColor?: string;
-        textAnimation?: string;
-        height?: string;
-    };
-}
-
-interface InfoBandSection extends BaseSection {
-    type: 'info_band';
-    data: {
-        image: string;
-        title: string;
-        content: string;
-        position?: 'left' | 'center' | 'right';
-    };
-}
-
-interface TestimonialsSection extends BaseSection {
-    type: 'testimonials';
-    data: {
-        title: string;
-        subtitle: string;
-    };
-}
+type AboutSection = EditorSection;
+type FeaturesSection = EditorSection;
+type ParallaxSection = EditorSection;
+type InfoBandSection = EditorSection;
+type ChallengeBannerSection = EditorSection;
+type TestimonialsSection = EditorSection;
+type MiniGallerySection = EditorSection;
+type StoriesGridSection = EditorSection;
+type ChronologicalGallerySection = EditorSection;
+type MagazineSection = EditorSection;
+type MasonryGallerySection = EditorSection;
+type ClientStorySection = EditorSection;
+type ProcessTimelineSection = EditorSection;
+type InvestmentTeaserSection = EditorSection;
+type NarrativeTextSection = EditorSection;
+type FeaturedCarouselSection = EditorSection;
 
 interface BannerItem {
     id: string;
@@ -143,82 +104,25 @@ interface BannerItem {
     imageShape?: 'square' | 'circle';
 }
 
-interface ChallengeBannerSection extends BaseSection {
-    type: 'challenge_banner';
-    data: {
-        title: string;
-        content: string;
-        buttonText: string;
-        buttonLink: string;
-        // Visual effects
-        effect: 'none' | 'carousel' | 'masonry' | 'puzzle' | 'orbiting3d';
-        photos: string[];
-        // Advanced Mode
-        advanced?: {
-            enabled: boolean;
-            items: BannerItem[];
-            config: {
-                autoScroll: boolean;
-                interval: number;
-                height: string;
-                floating: boolean;
-                loop?: boolean;
-                imageSize?: number;
-                layout?: 'full' | 'split';
-                position?: 'left' | 'right';
-            };
-        };
-    };
-}
+
 
 
 // --- Mini Gallery Types ---
-interface MiniGalleryItem {
-    id: string;
-    image: string;
-    title?: string;
-    description?: string;
-    link?: string;
-    spanCols?: number;
-    spanRows?: number;
-}
 
-interface MiniGalleryConfig {
-    columns: number;
-    gap: number;
-    aspectRatio: 'square' | 'video' | 'portrait' | 'auto';
-    style: 'classic' | 'masonry' | 'floating';
-    textPosition: 'below' | 'overlay' | 'hover';
-    corners: 'square' | 'rounded' | 'pill';
-    backgroundColor?: string;
-    description?: string;
-    descriptionAlign?: 'left' | 'center' | 'right';
-    descriptionWidth?: 'narrow' | 'medium' | 'wide' | 'full';
-    descriptionPlacement?: 'top' | 'bottom';
-    containerWidth?: 'full' | '3/4' | '1/2';
-    mobileColumns?: 1 | 2;
-}
 
-interface MiniGallerySection extends BaseSection {
-    type: 'mini_gallery';
-    data: {
-        mini_gallery_items: MiniGalleryItem[];
-        mini_gallery_config: MiniGalleryConfig;
-    };
-}
+// --- Stories Grid Types ---
 
-type Section = AboutSection | FeaturesSection | ParallaxSection | InfoBandSection | ChallengeBannerSection | TestimonialsSection | MiniGallerySection;
 
 export default function HomepageManager() {
     const router = useRouter();
     const [heroSlides, setHeroSlides] = useState<HeroSlide[]>([]);
-    const [sections, setSections] = useState<Section[]>([]);
+    const [sections, setSections] = useState<EditorSection[]>([]);
     const [pageId, setPageId] = useState<number | null>(null);
 
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
-    const [currentPickerTarget, setCurrentPickerTarget] = useState<{ type: 'hero' | 'section' | 'advanced' | 'advanced_challenge' | 'rte' | 'mini_gallery_item', index: number, field?: string, subIndex?: number } | null>(null);
+    const [currentPickerTarget, setCurrentPickerTarget] = useState<{ type: 'hero' | 'section' | 'advanced' | 'advanced_challenge' | 'rte' | 'mini_gallery_item' | 'story_cover' | 'chronological_gallery' | 'masonry_gallery' | 'featured_carousel_slide', index: number, field?: string, subIndex?: number } | null>(null);
 
     useEffect(() => {
         fetchHomepage();
@@ -456,6 +360,7 @@ export default function HomepageManager() {
             type: 'mini_gallery',
             label: 'Mini Galeria',
             enabled: true,
+            backgroundColor: 'black',
             data: {
                 mini_gallery_items: [],
                 mini_gallery_config: {
@@ -472,6 +377,60 @@ export default function HomepageManager() {
         toast.success('Dodano Mini Galerię (pamiętaj zapisać)');
     };
 
+    const addStoriesGridTemplate = () => {
+        const tpl = templates.createStoriesGridTemplate() as StoriesGridSection;
+        setSections(prev => [tpl, ...prev]);
+        toast.success('Dodano Stories Grid na górę (pamiętaj zapisać)');
+    };
+
+    const addChronologicalGalleryTemplate = () => {
+        const tpl = templates.createChronologicalGalleryTemplate() as ChronologicalGallerySection;
+        setSections(prev => [tpl, ...prev]);
+        toast.success('Dodano Chronological Gallery na górę (pamiętaj zapisać)');
+    };
+
+    const addMagazineLayoutTemplate = () => {
+        const tpl = templates.createMagazineLayoutTemplate() as MagazineSection;
+        setSections(prev => [tpl, ...prev]);
+        toast.success('Dodano Magazine Layout na górę (pamiętaj zapisać)');
+    };
+
+    const addMasonryGalleryTemplate = () => {
+        const tpl = templates.createMasonryGalleryTemplate() as MasonryGallerySection;
+        setSections(prev => [tpl, ...prev]);
+        toast.success('Dodano Masonry Gallery na górę (pamiętaj zapisać)');
+    };
+
+    const addClientStoryTemplate = () => {
+        const tpl = templates.createClientStoryTemplate() as ClientStorySection;
+        setSections(prev => [tpl, ...prev]);
+        toast.success('Dodano Client Story na górę (pamiętaj zapisać)');
+    };
+
+    const addProcessTimelineTemplate = () => {
+        const tpl = templates.createProcessTimelineTemplate() as ProcessTimelineSection;
+        setSections(prev => [tpl, ...prev]);
+        toast.success('Dodano Process Timeline na górę (pamiętaj zapisać)');
+    };
+
+    const addInvestmentTeaserTemplate = () => {
+        const tpl = templates.createInvestmentTeaserTemplate() as InvestmentTeaserSection;
+        setSections(prev => [tpl, ...prev]);
+        toast.success('Dodano Investment Teaser na górę (pamiętaj zapisać)');
+    };
+
+    const addNarrativeTextTemplate = () => {
+        const tpl = templates.createNarrativeTextTemplate() as NarrativeTextSection;
+        setSections(prev => [tpl, ...prev]);
+        toast.success('Dodano Narrative Text na górę (pamiętaj zapisać)');
+    };
+
+    const addFeaturedCarouselTemplate = () => {
+        const tpl = templates.createFeaturedCarouselTemplate() as FeaturedCarouselSection;
+        setSections(prev => [tpl, ...prev]);
+        toast.success('Dodano Featured Carousel na górę (pamiętaj zapisać)');
+    };
+
     const addHeroSlideTemplate = () => {
         const tpl = templates.createHeroSlideTemplate();
         setHeroSlides(prev => [...prev, tpl]);
@@ -481,13 +440,22 @@ export default function HomepageManager() {
     // --- Add all modules at once (szybkie wypełnienie wszystkimi moduły) ---
     const addAllModulesAtOnce = () => {
         // Clear existing sections and add all templates
-        const allSections: Section[] = [
+        const allSections: EditorSection[] = [
             templates.createAboutSectionTemplate() as AboutSection,
             templates.createFeaturesSectionTemplate() as FeaturesSection,
             templates.createParallaxSectionTemplate() as ParallaxSection,
             templates.createInfoBandTemplate() as InfoBandSection,
             templates.createChallengeBannerTemplate() as ChallengeBannerSection,
-            templates.createTestimonialsTemplate() as TestimonialsSection
+            templates.createTestimonialsTemplate() as TestimonialsSection,
+            templates.createStoriesGridTemplate() as StoriesGridSection,
+            templates.createChronologicalGalleryTemplate() as ChronologicalGallerySection,
+            templates.createMagazineLayoutTemplate() as MagazineSection,
+            templates.createMasonryGalleryTemplate() as MasonryGallerySection,
+            templates.createClientStoryTemplate() as ClientStorySection,
+            templates.createProcessTimelineTemplate() as ProcessTimelineSection,
+            templates.createInvestmentTeaserTemplate() as InvestmentTeaserSection,
+            templates.createNarrativeTextTemplate() as NarrativeTextSection,
+            templates.createFeaturedCarouselTemplate() as FeaturedCarouselSection
         ];
         setSections(allSections);
 
@@ -502,7 +470,7 @@ export default function HomepageManager() {
 
     // --- Media Picker ---
 
-    const openMediaPicker = (type: 'hero' | 'section' | 'advanced' | 'advanced_challenge' | 'rte' | 'mini_gallery_item', index: number, field?: string, subIndex?: number) => {
+    const openMediaPicker = (type: 'hero' | 'section' | 'advanced' | 'advanced_challenge' | 'rte' | 'mini_gallery_item' | 'story_cover' | 'chronological_gallery' | 'masonry_gallery' | 'featured_carousel_slide', index: number, field?: string, subIndex?: number) => {
         setCurrentPickerTarget({ type, index, field, subIndex });
         setMediaPickerOpen(true);
     };
@@ -569,27 +537,78 @@ export default function HomepageManager() {
                 item.image = filePath;
             }
             setSections(updated);
+        } else if (currentPickerTarget.type === 'story_cover') {
+            const updated = [...sections];
+            const section = updated[currentPickerTarget.index] as StoriesGridSection;
+            if (currentPickerTarget.subIndex !== undefined) {
+                const item = section.data.stories_items[currentPickerTarget.subIndex];
+                item.image = filePath;
+            }
+            setSections(updated);
+        } else if (currentPickerTarget.type === 'chronological_gallery') {
+            const sectionIdx = currentPickerTarget.index;
+            setSections(prevSections => prevSections.map((sec, idx) => {
+                if (idx !== sectionIdx) return sec;
+
+                const newData = { ...(sec.data || {}) };
+                const currentItems = Array.isArray(newData.chronological_items) ? newData.chronological_items : [];
+
+                const newItems: ChronologicalItem[] = filePaths.map(path => ({
+                    id: Math.random().toString(36).substr(2, 9),
+                    image: path,
+                    description: ''
+                }));
+
+                return {
+                    ...sec,
+                    data: { ...newData, chronological_items: [...currentItems, ...newItems] }
+                };
+            }));
+        } else if (currentPickerTarget.type === 'masonry_gallery') {
+            const sectionIdx = currentPickerTarget.index;
+            setSections(prevSections => prevSections.map((sec, idx) => {
+                if (idx !== sectionIdx) return sec;
+
+                const newData = { ...(sec.data || {}) };
+                const currentImages = Array.isArray(newData.images) ? newData.images : [];
+
+                return {
+                    ...sec,
+                    data: { ...newData, images: [...currentImages, ...filePaths] }
+                };
+            }));
+        } else if (currentPickerTarget.type === 'featured_carousel_slide') {
+            const updated = [...sections];
+            const section = updated[currentPickerTarget.index];
+            if (currentPickerTarget.subIndex !== undefined && section.data?.items) {
+                section.data.items[currentPickerTarget.subIndex].image = filePath;
+                setSections(updated);
+            }
         } else {
             const updated = [...sections];
             const section = updated[currentPickerTarget.index];
+            const fieldName = currentPickerTarget.field || 'image'; // Default to 'image' if no field specified
 
             if (section.type === 'about' || section.type === 'parallax' || section.type === 'info_band') {
-                // Handle different image fields for sections
+                // Handle complex nested updates for legacy sections
                 if (currentPickerTarget.subIndex !== undefined && (section.data as any).blocks) {
-                    // Update specific block image
                     (section.data as any).blocks[currentPickerTarget.subIndex].image = filePath;
-                } else if (currentPickerTarget.field === 'image_desktop') {
+                } else if (fieldName === 'image_desktop') {
                     (section.data as any).image_desktop = filePath;
-                } else if (currentPickerTarget.field === 'image_mobile') {
+                } else if (fieldName === 'image_mobile') {
                     (section.data as any).image_mobile = filePath;
                 } else {
-                    (section.data as any).image = filePath;
+                    // Fallback for standard fields in these sections
+                    (section.data as any)[fieldName] = filePath;
                 }
-            } else if (section.type === 'challenge_banner') {
-                // For challenge banner, we might be selecting multiple photos for the effect
-                if (currentPickerTarget.field === 'photos') {
-                    (section.data as any).photos = filePaths;
-                }
+            } else if (section.type === 'challenge_banner' && fieldName === 'photos') {
+                // Challenge banner special field
+                (section.data as any).photos = filePaths;
+            } else {
+                // Generic handler for all other sections (including Magazine Layout)
+                // This allows openMediaPicker('section', index, 'secondaryImage') to work
+                if (!section.data) section.data = {};
+                (section.data as any)[fieldName] = filePath;
             }
 
             setSections(updated);
@@ -669,6 +688,9 @@ export default function HomepageManager() {
 
     const updateSectionData = (index: number, field: string, value: any) => {
         const newSections = [...sections];
+        if (!newSections[index].data) {
+            newSections[index].data = {};
+        }
         (newSections[index].data as any)[field] = value;
         setSections(newSections);
     };
@@ -725,7 +747,7 @@ export default function HomepageManager() {
     const removeFeature = (sectionIndex: number, featureIndex: number) => {
         const newSections = [...sections];
         const section = newSections[sectionIndex] as FeaturesSection;
-        section.data.features = section.data.features.filter((_, i) => i !== featureIndex);
+        section.data.features = section.data.features.filter((_: any, i: number) => i !== featureIndex);
         setSections(newSections);
     };
 
@@ -866,20 +888,21 @@ export default function HomepageManager() {
     if (loading) return <div className="text-zinc-400 p-8">Ładowanie...</div>;
 
     return (
-        <div className="max-w-7xl pb-20">
-            <div className="flex items-center justify-between mb-8">
+        <div className="min-h-screen bg-black text-white p-8 pb-32">
+            <div className="sticky top-0 z-50 bg-black/90 backdrop-blur-md border-b border-white/10 p-4 -mx-8 -mt-8 mb-8 flex items-center justify-between shadow-lg">
                 <div className="flex items-center gap-4">
-                    <Link href="/admin/pages" className="p-2 rounded-full hover:bg-zinc-800 text-zinc-400">
-                        <ArrowLeft className="h-6 w-6" />
+                    <Link href="/admin/pages" className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors">
+                        <ArrowLeft className="w-5 h-5" />
+                        <span>Powrót</span>
                     </Link>
-                    <h1 className="text-2xl font-semibold text-white">Zarządzanie stroną główną</h1>
+                    <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-zinc-500 bg-clip-text text-transparent">Zarządzanie stroną główną</h1>
                 </div>
                 <button
                     onClick={handleSave}
                     disabled={saving}
-                    className="px-4 py-2 bg-gold-500 hover:bg-gold-400 text-black rounded-md font-medium disabled:opacity-50 flex items-center gap-2"
+                    className="flex items-center gap-2 bg-gradient-to-r from-gold-600 to-gold-500 hover:from-gold-500 hover:to-gold-400 text-black px-6 py-2 rounded font-semibold transition-all shadow-[0_0_15px_rgba(234,179,8,0.3)] disabled:opacity-50"
                 >
-                    <Save className="w-4 h-4" />
+                    <Save className="w-5 h-5" />
                     {saving ? 'Zapisywanie...' : 'Zapisz zmiany'}
                 </button>
             </div>
@@ -895,6 +918,16 @@ export default function HomepageManager() {
                 <button onClick={addChallengeBannerTemplate} className="px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-white rounded text-sm">Dodaj Foto Wyzwanie</button>
                 <button onClick={addTestimonialsTemplate} className="px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-white rounded text-sm">Dodaj Opinie</button>
                 <button onClick={addMiniGalleryTemplate} className="px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-white rounded text-sm border border-gold-500/30 text-gold-400">Dodaj Mini Galerię (Pro)</button>
+                <button onClick={addStoriesGridTemplate} className="px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-white rounded text-sm border border-pink-500/30 text-pink-400">Dodaj Stories Grid</button>
+                <button onClick={addChronologicalGalleryTemplate} className="px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-white rounded text-sm border border-cyan-500/30 text-cyan-400">Dodaj Chronological Gallery</button>
+
+                <button onClick={addMagazineLayoutTemplate} className="px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-white rounded text-sm border border-indigo-500/30 text-indigo-400">Dodaj Magazine Layout</button>
+                <button onClick={addMasonryGalleryTemplate} className="px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-white rounded text-sm border border-green-500/30 text-green-400">Dodaj Masonry Gallery</button>
+                <button onClick={addClientStoryTemplate} className="px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-white rounded text-sm border border-purple-500/30 text-purple-400">Dodaj Client Story</button>
+                <button onClick={addProcessTimelineTemplate} className="px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-white rounded text-sm border border-orange-500/30 text-orange-400">Dodaj Timeline</button>
+                <button onClick={addInvestmentTeaserTemplate} className="px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-white rounded text-sm border border-yellow-500/30 text-yellow-400">Dodaj Investment</button>
+                <button onClick={addNarrativeTextTemplate} className="px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-white rounded text-sm border border-gray-500/30 text-gray-400">Dodaj Tekst Narracyjny</button>
+                <button onClick={addFeaturedCarouselTemplate} className="px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-white rounded text-sm border border-blue-500/30 text-blue-400">Dodaj Karuzelę</button>
             </div>
 
             <div className="space-y-8">
@@ -1368,6 +1401,84 @@ export default function HomepageManager() {
                                     </div>
                                 </div>
 
+                            )}
+
+                            {/* MAGAZINE LAYOUT EDITOR */}
+                            {section.type === 'magazine_layout' && (
+                                <div className="space-y-4">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-xs text-zinc-400 mb-2">Główne Zdjęcie</label>
+                                            <div className="flex gap-4 items-center">
+                                                {section.data.image && (
+                                                    <div className="relative w-24 h-32 rounded border border-zinc-700 overflow-hidden">
+                                                        <img src={section.data.image} alt="" className="w-full h-full object-cover" />
+                                                    </div>
+                                                )}
+                                                <button
+                                                    onClick={() => openMediaPicker('section', index, 'image')}
+                                                    className="px-3 py-1.5 bg-zinc-800 border border-zinc-700 rounded text-xs text-zinc-300 hover:text-white"
+                                                >
+                                                    Wybierz
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs text-zinc-400 mb-2">Drugie Zdjęcie (Detail)</label>
+                                            <div className="flex gap-4 items-center">
+                                                {section.data.secondaryImage && (
+                                                    <div className="relative w-24 h-32 rounded border border-zinc-700 overflow-hidden">
+                                                        <img src={section.data.secondaryImage} alt="" className="w-full h-full object-cover" />
+                                                    </div>
+                                                )}
+                                                <button
+                                                    onClick={() => openMediaPicker('section', index, 'secondaryImage')}
+                                                    className="px-3 py-1.5 bg-zinc-800 border border-zinc-700 rounded text-xs text-zinc-300 hover:text-white"
+                                                >
+                                                    Wybierz
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-xs text-zinc-400 mb-1">Układ</label>
+                                            <select
+                                                value={section.data.layout || 'left'}
+                                                onChange={(e) => updateSectionData(index, 'layout', e.target.value)}
+                                                className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
+                                            >
+                                                <option value="left">Zdjęcie Główne Lewo</option>
+                                                <option value="right">Zdjęcie Główne Prawo</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs text-zinc-400 mb-1">Tag (Uppercase)</label>
+                                            <input
+                                                type="text"
+                                                value={section.data.subtitle || ''}
+                                                onChange={(e) => updateSectionData(index, 'subtitle', e.target.value)}
+                                                className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs text-zinc-400 mb-1">Tytuł (Headline)</label>
+                                        <input
+                                            type="text"
+                                            value={section.data.title || ''}
+                                            onChange={(e) => updateSectionData(index, 'title', e.target.value)}
+                                            className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white text-lg"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs text-zinc-400 mb-1">Treść</label>
+                                        <RichTextEditor
+                                            value={section.data.content || ''}
+                                            onChange={(val) => updateSectionData(index, 'content', val)}
+                                        />
+                                    </div>
+                                </div>
                             )}
 
                             {/* INFO BAND EDITOR */}
@@ -2011,6 +2122,617 @@ export default function HomepageManager() {
                                             </div>
                                         </div>
                                     )}
+                                </div>
+                            )}
+
+                            {/* STORIES GRID EDITOR */}
+                            {section.type === 'stories_grid' && (
+                                <div className="space-y-4">
+                                    <div className="grid md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm text-zinc-400 mb-1">Tytuł</label>
+                                            <input type="text" value={section.data.title} onChange={e => updateSectionData(index, 'title', e.target.value)} className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-white" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm text-zinc-400 mb-1">Podtytuł</label>
+                                            <input type="text" value={section.data.subtitle} onChange={e => updateSectionData(index, 'subtitle', e.target.value)} className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-white" />
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="block text-xs font-bold text-zinc-500 uppercase">Historie</label>
+                                        {(section.data.stories_items || []).map((story, sIdx) => (
+                                            <div key={story.id} className="bg-zinc-800 p-3 rounded border border-zinc-700 flex gap-4 items-start">
+                                                <div className="w-16 h-24 shrink-0 bg-zinc-900 border border-zinc-600 rounded overflow-hidden relative group cursor-pointer"
+                                                    onClick={() => openMediaPicker('story_cover', index, undefined, sIdx)}
+                                                >
+                                                    {story.image ? <img src={story.image} className="w-full h-full object-cover" /> : <div className="flex items-center justify-center h-full text-zinc-600"><ImageIcon size={16} /></div>}
+                                                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-[9px] text-white font-bold uppercase">Zmień</div>
+                                                </div>
+                                                <div className="flex-1 space-y-2">
+                                                    <input
+                                                        type="text"
+                                                        value={story.title}
+                                                        onChange={e => {
+                                                            const newItems = [...section.data.stories_items];
+                                                            newItems[sIdx].title = e.target.value;
+                                                            updateSectionData(index, 'stories_items', newItems);
+                                                        }}
+                                                        placeholder="Tytuł Historii"
+                                                        className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs text-white"
+                                                    />
+                                                    <input
+                                                        type="text"
+                                                        value={story.link}
+                                                        onChange={e => {
+                                                            const newItems = [...section.data.stories_items];
+                                                            newItems[sIdx].link = e.target.value;
+                                                            updateSectionData(index, 'stories_items', newItems);
+                                                        }}
+                                                        placeholder="Link (np. /historie/asia-i-tomek)"
+                                                        className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs text-blue-400"
+                                                    />
+                                                    <input
+                                                        type="text"
+                                                        value={story.category}
+                                                        onChange={e => {
+                                                            const newItems = [...section.data.stories_items];
+                                                            newItems[sIdx].category = e.target.value;
+                                                            updateSectionData(index, 'stories_items', newItems);
+                                                        }}
+                                                        placeholder="Kategoria"
+                                                        className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs text-zinc-400"
+                                                    />
+                                                </div>
+                                                <button
+                                                    onClick={() => {
+                                                        const newItems = section.data.stories_items.filter((_, i) => i !== sIdx);
+                                                        updateSectionData(index, 'stories_items', newItems);
+                                                    }}
+                                                    className="text-zinc-500 hover:text-red-500"
+                                                >
+                                                    <Trash2 size={14} />
+                                                </button>
+                                            </div>
+                                        ))}
+                                        <button
+                                            onClick={() => {
+                                                const newStory: StoryGridItem = { id: Math.random().toString(36).substr(2, 9), title: 'Nowa Historia', image: '', link: '', category: 'Reportaż' };
+                                                const newItems = [...(section.data.stories_items || []), newStory];
+                                                updateSectionData(index, 'stories_items', newItems);
+                                            }}
+                                            className="w-full py-2 border-2 border-dashed border-zinc-700 rounded text-zinc-400 hover:border-gold-500 hover:text-gold-500 transition-colors text-xs font-bold uppercase"
+                                        >
+                                            + Dodaj Historię
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* CHRONOLOGICAL GALLERY EDITOR */}
+                            {section.type === 'chronological_gallery' && (
+                                <div className="space-y-4">
+                                    <div className="grid md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm text-zinc-400 mb-1">Tytuł Galerii</label>
+                                            <input type="text" value={section.data.title} onChange={e => updateSectionData(index, 'title', e.target.value)} className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-white" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm text-zinc-400 mb-1">Układ</label>
+                                            <select
+                                                value={section.data.gallery_layout || 'grid'}
+                                                onChange={e => updateSectionData(index, 'gallery_layout', e.target.value)}
+                                                className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-white"
+                                            >
+                                                <option value="grid">Siatka (Grid)</option>
+                                                <option value="list">Lista (Kolumna)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <label className="block text-xs font-bold text-zinc-500 uppercase">Zdjęcia ({section.data.chronological_items?.length || 0})</label>
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={() => updateSectionData(index, 'chronological_items', [])}
+                                                    className="text-xs text-red-500 hover:text-red-400 px-2 py-1"
+                                                >
+                                                    Wyczyść
+                                                </button>
+                                                <button
+                                                    onClick={() => openMediaPicker('chronological_gallery', index)}
+                                                    className="text-xs bg-cyan-500/20 text-cyan-400 px-2 py-1 rounded border border-cyan-500/30 font-bold"
+                                                >
+                                                    + MASOWO
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-4 gap-2 max-h-60 overflow-y-auto p-2 bg-zinc-900/50 rounded border border-zinc-800">
+                                            {(section.data.chronological_items || []).map((item, cIdx) => (
+                                                <div key={item.id || cIdx} className="relative aspect-square group">
+                                                    <img src={item.image} className="w-full h-full object-cover rounded bg-zinc-800" />
+                                                    <button
+                                                        onClick={() => {
+                                                            const newItems = section.data.chronological_items.filter((_, i) => i !== cIdx);
+                                                            updateSectionData(index, 'chronological_items', newItems);
+                                                        }}
+                                                        className="absolute top-0 right-0 bg-red-500 text-white p-0.5 rounded-bl opacity-0 group-hover:opacity-100 transition-opacity"
+                                                    >
+                                                        <X size={12} />
+                                                    </button>
+                                                    <input
+                                                        type="text"
+                                                        value={item.description || ''}
+                                                        onChange={(e) => {
+                                                            const newItems = [...section.data.chronological_items];
+                                                            newItems[cIdx].description = e.target.value;
+                                                            updateSectionData(index, 'chronological_items', newItems);
+                                                        }}
+                                                        placeholder="Opis..."
+                                                        className="absolute bottom-0 left-0 w-full bg-black/70 text-[8px] text-white px-1 border-none focus:ring-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                    />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* MASONRY GALLERY EDITOR */}
+                            {section.type === 'masonry_gallery' && (
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <h4 className="text-xs font-bold text-zinc-500 uppercase">Masonry Gallery</h4>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-xs text-zinc-400 mb-1">Tytuł Sekcji</label>
+                                            <input
+                                                type="text"
+                                                value={section.data?.title || ''}
+                                                onChange={(e) => updateSectionData(index, 'title', e.target.value)}
+                                                className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs text-zinc-400 mb-1">Podtytuł</label>
+                                            <input
+                                                type="text"
+                                                value={section.data?.subtitle || ''}
+                                                onChange={(e) => updateSectionData(index, 'subtitle', e.target.value)}
+                                                className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
+                                        {(section.data?.images || []).map((img: string, idx: number) => (
+                                            <div key={idx} className="relative group w-20 h-20">
+                                                <img src={img} alt="" className="w-full h-full object-cover rounded border border-zinc-700" />
+                                                <button
+                                                    onClick={() => {
+                                                        const newImages = section.data?.images?.filter((_: string, i: number) => i !== idx);
+                                                        updateSectionData(index, 'images', newImages);
+                                                    }}
+                                                    className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100"
+                                                >
+                                                    <Trash2 className="w-3 h-3" />
+                                                </button>
+                                            </div>
+                                        ))}
+                                        <button
+                                            onClick={() => openMediaPicker('masonry_gallery', index)}
+                                            className="w-20 h-20 flex items-center justify-center border-2 border-dashed border-zinc-700 rounded text-zinc-500 hover:text-zinc-300"
+                                        >
+                                            <Plus className="w-5 h-5" />
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* CLIENT STORY EDITOR */}
+                            {section.type === 'client_story' && (
+                                <div className="space-y-4">
+                                    <div className="flex gap-4">
+                                        <div className="shrink-0">
+                                            <label className="block text-xs text-zinc-400 mb-2">Zdjęcie Klienta</label>
+                                            <div className="relative w-24 h-32 rounded border border-zinc-700 overflow-hidden bg-zinc-800">
+                                                {section.data?.image ? (
+                                                    <img src={section.data.image} className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <ImageIcon className="m-auto mt-8 text-zinc-700" size={24} />
+                                                )}
+                                                <button onClick={() => openMediaPicker('section', index, 'image')} className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 flex items-center justify-center text-[10px] text-white font-bold uppercase">Zmień</button>
+                                            </div>
+                                        </div>
+                                        <div className="flex-1 space-y-4">
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="block text-xs text-zinc-400 mb-1">Imię Klienta / Pary</label>
+                                                    <input
+                                                        type="text"
+                                                        value={section.data?.tag || ''}
+                                                        onChange={(e) => updateSectionData(index, 'tag', e.target.value)}
+                                                        className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs text-zinc-400 mb-1">Tytuł Historii</label>
+                                                    <input
+                                                        type="text"
+                                                        value={section.data?.title || ''}
+                                                        onChange={(e) => updateSectionData(index, 'title', e.target.value)}
+                                                        className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="block text-xs text-zinc-400 mb-1">Lokalizacja</label>
+                                                    <input
+                                                        type="text"
+                                                        value={section.data?.subtitle || ''}
+                                                        onChange={(e) => updateSectionData(index, 'subtitle', e.target.value)}
+                                                        className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs text-zinc-400 mb-1">Tekst Przycisku</label>
+                                                    <input
+                                                        type="text"
+                                                        value={section.data?.buttonText || ''}
+                                                        onChange={(e) => updateSectionData(index, 'buttonText', e.target.value)}
+                                                        className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs text-zinc-400 mb-1">Testimonial (Treść)</label>
+                                        <RichTextEditor
+                                            value={section.data?.content || ''}
+                                            onChange={(val) => updateSectionData(index, 'content', val)}
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* PROCESS TIMELINE EDITOR */}
+                            {section.type === 'process_timeline' && (
+                                <div className="space-y-4">
+                                    <div className="flex gap-4">
+                                        <div className="flex-1 space-y-4">
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="block text-xs text-zinc-400 mb-1">Tytuł Sekcji</label>
+                                                    <input
+                                                        type="text"
+                                                        value={section.data?.title || ''}
+                                                        onChange={(e) => updateSectionData(index, 'title', e.target.value)}
+                                                        className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs text-zinc-400 mb-1">Podtytuł</label>
+                                                    <input
+                                                        type="text"
+                                                        value={section.data?.subtitle || ''}
+                                                        onChange={(e) => updateSectionData(index, 'subtitle', e.target.value)}
+                                                        className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <h4 className="text-xs font-bold text-zinc-500 uppercase">Kroki Procesu</h4>
+                                            <button
+                                                onClick={() => {
+                                                    const newSteps = [...(section.data?.steps || [])];
+                                                    newSteps.push({
+                                                        id: Math.random().toString(36).substr(2, 9),
+                                                        title: 'Nowy Krok',
+                                                        description: 'Opis kroku...'
+                                                    });
+                                                    updateSectionData(index, 'steps', newSteps);
+                                                }}
+                                                className="text-xs bg-zinc-800 hover:bg-zinc-700 text-white px-2 py-1 rounded flex items-center gap-1"
+                                            >
+                                                <Plus className="w-3 h-3" /> Dodaj Krok
+                                            </button>
+                                        </div>
+                                        <div className="space-y-2">
+                                            {(section.data?.steps || []).map((step: any, sIdx: number) => (
+                                                <div key={sIdx} className="bg-zinc-900 border border-zinc-800 p-3 rounded">
+                                                    <div className="flex justify-between items-start mb-2">
+                                                        <span className="text-xs font-mono text-zinc-500">Krok {sIdx + 1}</span>
+                                                        <button
+                                                            onClick={() => {
+                                                                const newSteps = section.data?.steps.filter((_: any, i: number) => i !== sIdx);
+                                                                updateSectionData(index, 'steps', newSteps);
+                                                            }}
+                                                            className="text-red-400 hover:text-red-300"
+                                                        >
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                                        <input
+                                                            type="text"
+                                                            value={step.title || ''}
+                                                            onChange={(e) => {
+                                                                const newSteps = [...section.data.steps];
+                                                                newSteps[sIdx].title = e.target.value;
+                                                                updateSectionData(index, 'steps', newSteps);
+                                                            }}
+                                                            className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white"
+                                                            placeholder="Tytuł kroku"
+                                                        />
+                                                        <textarea
+                                                            value={step.description || ''}
+                                                            onChange={(e) => {
+                                                                const newSteps = [...section.data.steps];
+                                                                newSteps[sIdx].description = e.target.value;
+                                                                updateSectionData(index, 'steps', newSteps);
+                                                            }}
+                                                            className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white h-20"
+                                                            placeholder="Opis kroku"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* INVESTMENT TEASER EDITOR */}
+                            {section.type === 'investment_teaser' && (
+                                <div className="space-y-4">
+                                    <div className="flex gap-4">
+                                        <div className="shrink-0">
+                                            <label className="block text-xs text-zinc-400 mb-2">Zdjęcie Tła</label>
+                                            <div className="relative w-24 h-32 rounded border border-zinc-700 overflow-hidden bg-zinc-800">
+                                                {section.data?.image ? (
+                                                    <img src={section.data.image} className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <ImageIcon className="m-auto mt-8 text-zinc-700" size={24} />
+                                                )}
+                                                <button onClick={() => openMediaPicker('section', index, 'image')} className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 flex items-center justify-center text-[10px] text-white font-bold uppercase">Zmień</button>
+                                            </div>
+                                        </div>
+                                        <div className="flex-1 space-y-4">
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="block text-xs text-zinc-400 mb-1">Tytuł</label>
+                                                    <input
+                                                        type="text"
+                                                        value={section.data?.title || ''}
+                                                        onChange={(e) => updateSectionData(index, 'title', e.target.value)}
+                                                        className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs text-zinc-400 mb-1">Cena (od)</label>
+                                                    <input
+                                                        type="text"
+                                                        value={section.data?.price || ''}
+                                                        onChange={(e) => updateSectionData(index, 'price', e.target.value)}
+                                                        className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs text-zinc-400 mb-1">Opis</label>
+                                                <textarea
+                                                    value={section.data?.description || ''}
+                                                    onChange={(e) => updateSectionData(index, 'description', e.target.value)}
+                                                    className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white h-20"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs text-zinc-400 mb-1">Tekst Przycisku</label>
+                                                <input
+                                                    type="text"
+                                                    value={section.data.buttonText || ''}
+                                                    onChange={(e) => updateSectionData(index, 'buttonText', e.target.value)}
+                                                    className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs text-zinc-400 mb-1">Link Przycisku</label>
+                                                <input
+                                                    type="text"
+                                                    value={section.data?.buttonLink || ''}
+                                                    onChange={(e) => updateSectionData(index, 'buttonLink', e.target.value)}
+                                                    className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
+                                                    placeholder="/kontakt"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <h4 className="text-xs font-bold text-zinc-500 uppercase">Cechy Oferty</h4>
+                                            <button
+                                                onClick={() => {
+                                                    const newFeatures = [...(section.data.features || [])];
+                                                    newFeatures.push('Nowa Cecha');
+                                                    updateSectionData(index, 'features', newFeatures);
+                                                }}
+                                                className="text-xs bg-zinc-800 hover:bg-zinc-700 text-white px-2 py-1 rounded flex items-center gap-1"
+                                            >
+                                                <Plus className="w-3 h-3" /> Dodaj Cechę
+                                            </button>
+                                        </div>
+                                        <div className="space-y-2">
+                                            {(section.data.features || []).map((feature: string, fIdx: number) => (
+                                                <div key={fIdx} className="flex gap-2">
+                                                    <input
+                                                        type="text"
+                                                        value={feature}
+                                                        onChange={(e) => {
+                                                            const newFeatures = [...section.data.features];
+                                                            newFeatures[fIdx] = e.target.value;
+                                                            updateSectionData(index, 'features', newFeatures);
+                                                        }}
+                                                        className="flex-1 bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white"
+                                                    />
+                                                    <button
+                                                        onClick={() => {
+                                                            const newFeatures = section.data.features.filter((_: string, i: number) => i !== fIdx);
+                                                            updateSectionData(index, 'features', newFeatures);
+                                                        }}
+                                                        className="text-red-400 hover:text-red-300 px-2"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* NARRATIVE TEXT EDITOR */}
+                            {section.type === 'narrative_text' && (
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-xs text-zinc-400 mb-1">Tytuł Sekcji (Opcjonalnie)</label>
+                                        <input
+                                            type="text"
+                                            value={section.data?.title || ''}
+                                            onChange={(e) => updateSectionData(index, 'title', e.target.value)}
+                                            className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white mb-2"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs text-zinc-400 mb-1">Dłuższy Tekst z Formatowaniem</label>
+                                        <RichTextEditor
+                                            value={section.data?.content || ''}
+                                            onChange={(val) => updateSectionData(index, 'content', val)}
+                                        />
+                                    </div>
+                                    <div className="flex gap-4">
+                                        <div className="flex-1">
+                                            <label className="block text-xs text-zinc-400 mb-1">Kolor Tła</label>
+                                            <select
+                                                value={section.data?.bgColor || 'black'}
+                                                onChange={(e) => updateSectionData(index, 'bgColor', e.target.value)}
+                                                className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
+                                            >
+                                                <option value="black">Czarny</option>
+                                                <option value="zinc-900">Ciemny Szary</option>
+                                                <option value="white">Biały</option>
+                                            </select>
+                                        </div>
+                                        <div className="flex-1">
+                                            <label className="block text-xs text-zinc-400 mb-1">Wyrównanie Tekstu</label>
+                                            <select
+                                                value={section.data?.alignment || 'left'}
+                                                onChange={(e) => updateSectionData(index, 'alignment', e.target.value)}
+                                                className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
+                                            >
+                                                <option value="left">Do Lewej</option>
+                                                <option value="center">Wyśrodkowane</option>
+                                                <option value="right">Do Prawej</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* FEATURED CAROUSEL EDITOR */}
+                            {section.type === 'featured_carousel' && (
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <h4 className="text-xs font-bold text-zinc-500 uppercase">Slajdy Promowane</h4>
+                                        <button
+                                            onClick={() => {
+                                                const newItems = [...(section.data?.items || [])];
+                                                newItems.push({
+                                                    image: '',
+                                                    title: 'Nowy Slajd',
+                                                    subtitle: 'Opis',
+                                                    link: '#'
+                                                });
+                                                updateSectionData(index, 'items', newItems);
+                                            }}
+                                            className="text-xs bg-zinc-800 hover:bg-zinc-700 text-white px-2 py-1 rounded flex items-center gap-1"
+                                        >
+                                            <Plus className="w-3 h-3" /> Dodaj Slajd
+                                        </button>
+                                    </div>
+                                    <div className="space-y-4">
+                                        {(section.data?.items || []).map((item: any, i: number) => (
+                                            <div key={i} className="bg-zinc-900 border border-zinc-800 p-3 rounded flex gap-4">
+                                                <div className="shrink-0 w-20 h-20 bg-zinc-800 rounded overflow-hidden relative group">
+                                                    {item.image ? (
+                                                        <img src={item.image} className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <ImageIcon className="text-zinc-600 m-auto mt-6" />
+                                                    )}
+                                                    <button
+                                                        onClick={() => openMediaPicker('featured_carousel_slide', index, 'image', i)}
+                                                        className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-[10px] uppercase font-bold"
+                                                    >
+                                                        Zmień
+                                                    </button>
+                                                </div>
+                                                <div className="flex-1 space-y-2">
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        <input
+                                                            type="text"
+                                                            value={item.title || ''}
+                                                            onChange={(e) => {
+                                                                const newItems = [...(section.data?.items || [])];
+                                                                newItems[i].title = e.target.value;
+                                                                updateSectionData(index, 'items', newItems);
+                                                            }}
+                                                            placeholder="Tytuł"
+                                                            className="bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-xs text-white"
+                                                        />
+                                                        <input
+                                                            type="text"
+                                                            value={item.subtitle || ''}
+                                                            onChange={(e) => {
+                                                                const newItems = [...(section.data?.items || [])];
+                                                                newItems[i].subtitle = e.target.value;
+                                                                updateSectionData(index, 'items', newItems);
+                                                            }}
+                                                            placeholder="Podtytuł"
+                                                            className="bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-xs text-white"
+                                                        />
+                                                    </div>
+                                                    <div className="flex gap-2">
+                                                        <input
+                                                            type="text"
+                                                            value={item.link || ''}
+                                                            onChange={(e) => {
+                                                                const newItems = [...section.data.items];
+                                                                newItems[i].link = e.target.value;
+                                                                updateSectionData(index, 'items', newItems);
+                                                            }}
+                                                            placeholder="Link"
+                                                            className="flex-1 bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-xs text-white"
+                                                        />
+                                                        <button
+                                                            onClick={() => {
+                                                                const newItems = section.data.items.filter((_: any, idx: number) => idx !== i);
+                                                                updateSectionData(index, 'items', newItems);
+                                                            }}
+                                                            className="text-red-400 hover:text-red-300 px-2"
+                                                        >
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             )}
 

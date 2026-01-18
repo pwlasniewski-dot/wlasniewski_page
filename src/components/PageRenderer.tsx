@@ -41,6 +41,8 @@ import ProcessTimeline from '@/components/sections/ProcessTimeline';
 import InvestmentTeaser from '@/components/sections/InvestmentTeaser';
 import NarrativeText from '@/components/sections/NarrativeText';
 import FeaturedCarousel from '@/components/sections/FeaturedCarousel';
+import StoriesGrid from '@/components/sections/StoriesGrid';
+import ChronologicalGallery from '@/components/sections/ChronologicalGallery';
 
 export default function PageRenderer({ sections }: { sections: PageSection[] }) {
     const [selectedCert, setSelectedCert] = React.useState<any>(null);
@@ -64,6 +66,8 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                 image={data.image || ''}
                                 title={data.title || ''}
                                 height="min-h-[70vh]"
+                                fontFamily={data.fontFamily}
+                                textAnimation={data.textAnimation}
                             />
                         );
 
@@ -1369,6 +1373,35 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                 title={data.title || ''}
                                 subtitle={data.subtitle}
                                 slides={data.featured_items || data.slides || []}
+                            />
+                        );
+
+                    case 'process_timeline':
+                        return (
+                            <ProcessTimeline
+                                key={section.id}
+                                title={data.title || ''}
+                                subtitle={data.subtitle}
+                                steps={data.timeline_steps || []}
+                            />
+                        );
+
+                    case 'stories_grid':
+                        return (
+                            <StoriesGrid
+                                key={section.id}
+                                title={data.title}
+                                subtitle={data.subtitle}
+                                items={data.stories_items || []}
+                            />
+                        );
+
+                    case 'chronological_gallery':
+                        return (
+                            <ChronologicalGallery
+                                key={section.id}
+                                items={data.chronological_items || []}
+                                layout={data.gallery_layout || 'grid'}
                             />
                         );
 

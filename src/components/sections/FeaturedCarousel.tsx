@@ -29,7 +29,7 @@ export default function FeaturedCarousel({
     slides,
     title,
     subtitle,
-    backgroundColor = 'transparent',
+    backgroundColor = '#ffffff',
 }: FeaturedCarouselProps) {
     if (!slides || slides.length === 0) return null;
 
@@ -47,8 +47,8 @@ export default function FeaturedCarousel({
                         )}
                         {title && (
                             <h2
-                                className="text-4xl md:text-5xl text-[var(--wedding-brown)]"
-                                style={{ fontFamily: 'var(--font-editorial-heading)' }}
+                                className="text-4xl md:text-6xl text-[var(--wedding-brown)] italic"
+                                style={{ fontFamily: 'var(--font-editorial-heading)', fontWeight: 400 }}
                             >
                                 {title}
                             </h2>
@@ -78,13 +78,17 @@ export default function FeaturedCarousel({
                         {slides.map((slide) => (
                             <SwiperSlide key={slide.id}>
                                 <div className="relative w-full h-full group">
-                                    <Image
-                                        src={slide.image}
-                                        alt={slide.title || 'Slide'}
-                                        fill
-                                        className="object-cover transition-transform duration-[10000ms] ease-linear group-hover:scale-110"
-                                        sizes="100vw"
-                                    />
+                                    {slide.image ? (
+                                        <Image
+                                            src={slide.image}
+                                            alt={slide.title || 'Slide'}
+                                            fill
+                                            className="object-cover transition-transform duration-[10000ms] ease-linear group-hover:scale-110"
+                                            sizes="100vw"
+                                        />
+                                    ) : (
+                                        <div className="w-full h-full bg-zinc-200" />
+                                    )}
 
                                     {/* Overlay Content */}
                                     {(slide.title || slide.subtitle) && (
@@ -95,7 +99,7 @@ export default function FeaturedCarousel({
                                                 className="space-y-4"
                                             >
                                                 {slide.subtitle && (
-                                                    <p className="text-white/90 text-sm uppercase tracking-[0.5em] font-medium drop-shadow-lg">
+                                                    <p className="text-white text-sm uppercase tracking-[0.5em] font-light drop-shadow-lg">
                                                         {slide.subtitle}
                                                     </p>
                                                 )}

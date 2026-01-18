@@ -36,8 +36,8 @@ export default function ProcessTimeline({
                     )}
                     {title && (
                         <h2
-                            className="text-4xl md:text-5xl text-[var(--wedding-brown)]"
-                            style={{ fontFamily: 'var(--font-editorial-heading)' }}
+                            className="text-4xl md:text-6xl text-[var(--wedding-brown)] italic"
+                            style={{ fontFamily: 'var(--font-editorial-heading)', fontWeight: 400 }}
                         >
                             {title}
                         </h2>
@@ -71,7 +71,7 @@ export default function ProcessTimeline({
                                             {step.title}
                                         </h3>
                                         <p
-                                            className="text-lg text-gray-700 leading-relaxed"
+                                            className="text-lg text-[var(--wedding-brown)] leading-relaxed opacity-90"
                                             style={{ fontFamily: 'var(--font-editorial-body)' }}
                                         >
                                             {step.description}

@@ -52,6 +52,21 @@ Moduł odpowiedzialny za marketing wizualny, obsługujący dwa tryby:
 - **Simple Mode**: Galerie typu Carousel, Masonry, Puzzle, Orbiting 3D.
 - **Advanced Mode**: Zaawansowany slider zintegrowany z wyzwaniami fotograficznymi, obsługujący animowane przejścia i precyzyjne pozycjonowanie treści.
 
+### 2.10. Chronological Gallery (Timeline)
+- **Cel:** Prezentacja zdjęć w układzie narracyjnym (Chronologicznym).
+- **Funkcje:**
+  - Sortowanie zdjęć (A-Z).
+  - Układ Grid (Siatka) lub List (Lista).
+  - Lightbox z nawigacją.
+  - **Refinement:** Subtelna typografia (Italic Serif), jasne tło.
+- **Zarządzanie:** Page Builder (Dodawanie itemów, wybór układu).
+
+### 2.2. Moduł Stories (Wasze Historie) [NEW: 2026-01-18]
+Nowy moduł służący do budowania narracji i prezentowania reportaży w sposób wizualnie angażujący.
+- **Stories Grid**: Siatka kafelkowa prezentująca okładki historii.
+    - **UI**: Jasny motyw (Light Theme), cienie, hover effects.
+    - **Funkcje**: Tytuł, podtytuł (kategoria), zdjęcie, link.
+
 ---
 
 ## 3. Moduł Biznesowy: Rezerwacje i Sprzedaż
@@ -242,6 +257,7 @@ Aktualizuje wybrane pola ustawień.
   "notes": "Prośba o sesję w plenerze."
 }
 ```
+Last Updated: 2026-01-18
 
 #### PATCH (Admin - Zmiana Statusu)
 - **Body**:

@@ -150,6 +150,66 @@ Ten plik służy do ścisłego monitorowania wszystkich zmian wprowadzanych w pr
 ## Log Zmian
 
 
+### v2.0.5 - Stability & Editor Hardening (2026-01-18) [Build Verified]
+**Cel:** Eliminacja błędów krytycznych edytora (crashe przy dodawaniu zdjęć) oraz zabezpieczenie frontend przed pustymi źródłami obrazów.
+
+**Zrealizowane Zmiany:**
+1. **Media Picker Crash Fix (Page Builder):**
+   - **Problem:** Dodawanie zdjęć do nowych/pustych sekcji (Masonry, Chronological) powodowało błąd `Cannot read properties of undefined`.
+   - **Fix:** Przepisano logikę `handleMediaSelect` w `page.tsx`. Wdrożono **Immutable State Updates** (wzorzec `prevSections.map`) oraz rygorystyczne sprawdzanie istnienia obiektów `data`.
+   - **Efekt:** Całkowita eliminacja crashy edytora przy interakcji z mediami.
+
+2. **Frontend Rendering Safeguards:**
+   - **Problem:** Konsola sypała błędami `Empty string passed to src` gdy obrazek nie został jeszcze wybrany.
+   - **Fix:** Dodano strażników (Guard Clauses) w komponentach `ClientStory`, `FeaturedCarousel`, `MasonryGallery` i `ChronologicalGallery`.
+   - **Efekt:** Puste sekcje renderują teraz bezpieczne placeholdery lub ukrywają się, zamiast powodować błędy hydracji.
+
+3. **Editor Types Correction:**
+   - Poprawiono typowanie funkcji usuwania/edycji elementów (`removeFeature`), eliminując błędy TypeScript `implicit any`.
+
+**Status:** ✅ **STABLE & ROBUST**
+
+### v2.0.4 - Stories Module & UI Refinement (2026-01-18) [Build Verified]
+- **Stories Module**:
+    - Wdrożono `StoriesGrid.tsx` (Grid) oraz `ChronologicalGallery.tsx` (Timeline).
+    - Zastosowano **jasny motyw (Light Theme)** i subtelną typografię editorial (Italic Serif).
+- **UI/UX Refinement**:
+    - Poprawiono widoczność `ProcessTimeline` (brakujący renderer).
+    - Ujednolicono fonty ("subtle typography") we wszystkich modułach.
+    - `FeaturedCarousel` używa teraz białego tła domyślnie.
+    - **Magazine Layout**: Dodano białą ramkę i głębszy cień dla zdjęć, oraz poprawiono renderowanie tytułów HTML.
+    - **Nawigacja**: Historie otwierają się w nowym oknie (`target="_blank"`) zgodnie z życzeniem klienta.
+    - **Chronological Gallery**: Poprawiono wygląd (jasne tło, większe zdjęcia w liście).
+- **Bug Fixes**:
+    - Naprawiono błąd `empty src` w `MagazineLayout`.
+    - Poprawiono widoczność `ChronologicalGallery` na froncie.
+
+### v2.0.3 - Hero Parallax & Page Builder Enhancements (2026-01-17)
+**Cel:** Wdrożenie modułu "Wasze Historie" (Stories) oraz wzbogacenie sekcji Hero Parallax o opcje typograficzne i animacje.
+
+**Zrealizowane Zmiany:**
+1. **Stories Module (Nowa Funkcjonalność):**
+   - **`StoriesGrid` Component:** Nowa sekcja gridowa prezentująca historie (reportaże) z tytułem, zdjęciem okładkowym i dedykowanym efektem hover (cień).
+   - **`ChronologicalGallery` Component:** Zaawansowana galeria szczegółowa z możliwością sortowania zdjęć (A-Z) oraz masowego zarządzania w Page Builderze.
+   - **CMS Integration:** Pełna obsługa obu komponentów w `PageBuilder.tsx` (Nowe przyciski w sekcji "Kreator Strony") oraz rendering w `PageRenderer.tsx`.
+
+2. **Hero Parallax Enhancements:**
+   - **Font Controls:** Dodano wybór rodziny czcionek: Sans, Serif, Display, Handwriting.
+   - **Text Animation:** Rozszerzono opcje animacji o wariant "Artistic" (Blur + Letter Spacing) oraz Scale/Slide-Up.
+   - **UI Editor:** Zaktualizowano panel boczny Page Buildera o nowe selektory dla sekcji `hero_parallax`.
+
+3. **Mobile Fixes:**
+   - Poprawiono `MagazineLayout` (problem z uciętym drugim zdjęciem na mobile).
+
+**Files Modified:**
+- `src/components/admin/PageBuilder.tsx` (UI & Config)
+- `src/components/PageRenderer.tsx` (Rendering Logic)
+- `src/components/StoriesGrid.tsx` (New Component)
+- `src/components/ChronologicalGallery.tsx` (New Component)
+- `src/components/ParallaxSection.tsx` (Props update)
+
+**Status:** ✅ **DONE & VERIFIED (Build Passed)**
+
 ### [2026-01-16] 🛡️ Production Status Verification
 **Cel:** Sprawdzenie integralności bazy produkcyjnej Neon oraz weryfikacja poprawności codziennych backupów.
 

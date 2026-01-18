@@ -10,6 +10,7 @@ interface NarrativeTextProps {
     backgroundColor?: string;
     columns?: 1 | 2;
     dropCap?: boolean;
+    alignment?: 'left' | 'center' | 'right';
 }
 
 export default function NarrativeText({
@@ -19,6 +20,7 @@ export default function NarrativeText({
     backgroundColor = 'var(--wedding-cream)',
     columns = 1,
     dropCap = true,
+    alignment = 'left',
 }: NarrativeTextProps) {
     return (
         <section className="narrative-spacing" style={{ backgroundColor }}>
@@ -51,7 +53,7 @@ export default function NarrativeText({
                     viewport={{ once: true }}
                     transition={{ duration: 0.8 }}
                     className={`prose prose-lg max-w-none prose-p:leading-[1.8] prose-p:text-gray-700/90 ${columns === 2 ? 'md:columns-2 md:gap-12' : ''
-                        }`}
+                        } ${alignment === 'center' ? 'text-center mx-auto' : alignment === 'right' ? 'text-right ml-auto' : 'text-left mr-auto'}`}
                     style={{
                         fontFamily: 'var(--font-editorial-body)',
                         // Simple dropcap logic would require splitting content, 

@@ -17,6 +17,16 @@ import AdvancedBanner from '@/components/AdvancedBanner';
 import CreativeSlider from '@/components/CreativeSlider';
 import WhiteInfoBand from '@/components/WhiteInfoBand';
 import PhotoChallengeBanner from '@/components/PhotoChallengeBanner';
+// Premium Modules
+import StoriesGrid from '@/components/sections/StoriesGrid';
+import ChronologicalGallery from '@/components/sections/ChronologicalGallery';
+import MagazineLayout from '@/components/sections/MagazineLayout';
+import EditorialMasonry from '@/components/sections/MasonryGallery';
+import ClientStory from '@/components/sections/ClientStory';
+import ProcessTimeline from '@/components/sections/ProcessTimeline';
+import InvestmentTeaser from '@/components/sections/InvestmentTeaser';
+import NarrativeText from '@/components/sections/NarrativeText';
+import FeaturedCarousel from '@/components/sections/FeaturedCarousel';
 // Banners are rendered in AppShell
 interface Testimonial {
     id: number;
@@ -31,13 +41,15 @@ interface Testimonial {
 
 interface Section {
     id: string;
-    type: 'about' | 'features' | 'parallax' | 'info_band' | 'challenge_banner' | 'testimonials' | 'creative_slider' | 'hero' | 'rich_text' | 'image_text' | 'gallery' | 'contact' | 'thermal_slider' | 'hero_parallax' | 'mini_gallery';
+    type: 'about' | 'features' | 'parallax' | 'info_band' | 'challenge_banner' | 'testimonials' | 'creative_slider' | 'hero' | 'rich_text' | 'image_text' | 'gallery' | 'contact' | 'thermal_slider' | 'hero_parallax' | 'mini_gallery' |
+    'stories_grid' | 'chronological_gallery' | 'magazine_layout' | 'masonry_gallery' | 'client_story' | 'process_timeline' | 'investment_teaser' | 'narrative_text' | 'featured_carousel';
     enabled?: boolean;
     backgroundColor?: 'black' | 'zinc-900' | 'zinc-800' | 'gold-900' | 'white';
     textVariant?: 'light' | 'dark';
     data?: any;
     // PageBuilder fields
     image?: string;
+    thermalImage?: string;
     title?: string;
     subtitle?: string;
     tag?: string;
@@ -787,6 +799,133 @@ export default function HomeContent({ heroSlides, sections, homeData, orderedSec
                             </AnimatePresence>
                         </div>
                     </section>
+                );
+
+
+            // NEW PREMIUM MODULES
+
+            case 'stories_grid':
+                return (
+                    <StoriesGrid
+                        key={section.id}
+                        title={section.data?.title}
+                        subtitle={section.data?.subtitle}
+                        items={section.data?.stories_items || []}
+                    />
+                );
+
+            case 'chronological_gallery':
+                return (
+                    <ChronologicalGallery
+                        key={section.id}
+                        items={section.data?.chronological_items || []}
+                        layout={section.data?.gallery_layout || 'grid'}
+                        title={section.data?.title}
+                    />
+                );
+
+            case 'magazine_layout':
+                return (
+                    <MagazineLayout
+                        key={section.id}
+                        title={section.data?.title || section.title || ''}
+                        subtitle={section.data?.subtitle || section.subtitle}
+                        content={section.data?.content || section.content}
+                        mainImage={section.data?.image || section.image || ''}
+                        secondaryImage={section.data?.secondaryImage || section.thermalImage}
+                        backgroundColor={section.data?.backgroundColor || section.backgroundColor}
+                        layout={section.data?.layout || section.layout || 'left'}
+                    />
+                );
+
+            case 'masonry_gallery':
+                return (
+                    <EditorialMasonry
+                        key={section.id}
+                        images={section.data?.images || []}
+                        title={section.data?.title}
+                        subtitle={section.data?.subtitle}
+                        columns={section.data?.columns || 3}
+                    />
+                );
+
+            case 'client_story':
+                return (
+                    <ClientStory
+                        key={section.id}
+                        clientName={section.data?.tag || section.data?.subtitle || ''}
+                        storyTitle={section.data?.title || ''}
+                        testimonial={section.data?.content || ''}
+                        mainImage={section.data?.image || ''}
+                        location={section.data?.subtitle || ''}
+                        date={section.data?.date}
+                    />
+                );
+
+            case 'process_timeline':
+                return (
+                    <ProcessTimeline
+                        key={section.id}
+                        title={section.data?.title || ''}
+                        subtitle={section.data?.subtitle}
+                        steps={section.data?.steps || section.data?.timeline_steps || []}
+                        backgroundColor={section.data?.backgroundColor}
+                    />
+                );
+
+            case 'investment_teaser':
+                const packages = section.data?.packages || (Array.isArray(section.data?.features) && section.data.features.length > 0 && typeof section.data.features[0] === 'object'
+                    ? section.data.features.map((pkg: any) => ({
+                        id: pkg.id || 'pkg-' + Math.random(),
+                        name: pkg.title || 'Pakiet',
+                        price: pkg.buttonText || '',
+                        features: Array.isArray(pkg.items) ? pkg.items : [],
+                        isPopular: pkg.enabled
+                    }))
+                    : [{
+                        id: 'default',
+                        name: section.data?.priceLabel || 'Pakiet',
+                        price: section.data?.price || 'Zapytaj o cenę',
+                        features: Array.isArray(section.data?.features) ? section.data.features : []
+                    }]
+                );
+
+                return (
+                    <InvestmentTeaser
+                        key={section.id}
+                        title={section.data?.title || ''}
+                        subtitle={section.data?.subtitle}
+                        packages={packages}
+                        buttonText={section.data?.buttonText}
+                        buttonLink={section.data?.buttonLink}
+                    />
+                );
+
+            case 'narrative_text':
+                return (
+                    <NarrativeText
+                        key={section.id}
+                        title={section.data?.title || ''}
+                        content={section.data?.content || ''}
+                        dropCap={section.data?.dropCap !== false}
+                        backgroundColor={section.data?.bgColor || section.data?.backgroundColor}
+                        alignment={section.data?.alignment}
+                    />
+                );
+
+            case 'featured_carousel':
+                return (
+                    <FeaturedCarousel
+                        key={section.id}
+                        title={section.data?.title || ''}
+                        subtitle={section.data?.subtitle}
+                        slides={(section.data?.items || section.data?.slides || []).map((slide: any, idx: number) => ({
+                            id: slide.id || `slide-${idx}`,
+                            image: slide.image,
+                            title: slide.title,
+                            subtitle: slide.subtitle
+                        }))}
+                    />
                 );
 
             case 'contact':

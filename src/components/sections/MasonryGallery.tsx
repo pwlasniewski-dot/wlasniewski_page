@@ -20,8 +20,12 @@ export default function MasonryGallery({
     if (!images || images.length === 0) return null;
 
     // Split images into columns
+    const validImages = images.filter(img => img && img.trim() !== '');
+    if (validImages.length === 0) return null;
+
+    // Split images into columns
     const columnsData: string[][] = Array.from({ length: columns }, () => []);
-    images.forEach((img, idx) => {
+    validImages.forEach((img, idx) => {
         columnsData[idx % columns].push(img);
     });
 

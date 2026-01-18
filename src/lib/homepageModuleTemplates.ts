@@ -1,4 +1,4 @@
-// Szablony modułów dla strony głównej
+
 import { v4 as uuidv4 } from 'uuid';
 
 export function createHeroSlideTemplate() {
@@ -109,7 +109,7 @@ export function createChallengeBannerTemplate() {
             buttonText: 'Dołącz',
             buttonLink: '/foto-wyzwanie',
             effect: 'carousel',
-            photos: ['/assets/placeholder/ch1.jpg','/assets/placeholder/ch2.jpg'],
+            photos: ['/assets/placeholder/ch1.jpg', '/assets/placeholder/ch2.jpg'],
             advanced: {
                 enabled: true,
                 items: [
@@ -127,10 +127,10 @@ export function createChallengeBannerTemplate() {
                         imageShape: 'square'
                     }
                 ],
-                config: { 
-                    autoScroll: true, 
-                    interval: 5, 
-                    height: '600px', 
+                config: {
+                    autoScroll: true,
+                    interval: 5,
+                    height: '600px',
                     floating: true,
                     loop: true,
                     layout: 'full'
@@ -154,6 +154,150 @@ export function createTestimonialsTemplate() {
     };
 }
 
+export function createStoriesGridTemplate() {
+    return {
+        id: `stories-${uuidv4()}`,
+        type: 'stories_grid',
+        label: 'Siatka Historii',
+        enabled: true,
+        backgroundColor: 'white',
+        data: {
+            title: 'Wybierzcie swoją historię',
+            subtitle: 'Zobacz reportaże',
+            stories_items: [
+                { id: `story-${uuidv4()}`, title: 'Przykładowa Historia', image: '/assets/placeholder/story-1.jpg', link: '#', category: 'Reportaż' }
+            ]
+        }
+    };
+}
+
+export function createChronologicalGalleryTemplate() {
+    return {
+        id: `chrono-${uuidv4()}`,
+        type: 'chronological_gallery',
+        label: 'Galeria Chronologiczna',
+        enabled: true,
+        backgroundColor: 'white',
+        data: {
+            title: 'Jak pracuję?',
+            gallery_layout: 'list',
+            chronological_items: [
+                { id: `chrono-${uuidv4()}`, image: '/assets/placeholder/chrono-1.jpg', description: 'Przygotowania' }
+            ]
+        }
+    };
+}
+
+export function createMagazineLayoutTemplate() {
+    return {
+        id: `magazine-${uuidv4()}`,
+        type: 'magazine_layout',
+        label: 'Magazine Layout',
+        enabled: true,
+        backgroundColor: 'white',
+        data: {
+            title: 'Magazyn',
+            subtitle: 'Historia',
+            image: '/assets/placeholder/hero-default.jpg',
+            secondaryImage: '/assets/placeholder/about.jpg',
+            content: '<p>Wpisz treść artykułu...</p>',
+            layout: 'left'
+        }
+    };
+}
+
+export function createMasonryGalleryTemplate() {
+    return {
+        id: `masonry-${uuidv4()}`,
+        type: 'masonry_gallery',
+        label: 'Masonry Gallery',
+        enabled: true,
+        backgroundColor: 'white',
+        title: 'Galeria',
+        subtitle: 'Mozaika',
+        images: ['/assets/placeholder/hero-default.jpg', '/assets/placeholder/about.jpg']
+    };
+}
+
+export function createClientStoryTemplate() {
+    return {
+        id: `client-story-${uuidv4()}`,
+        type: 'client_story',
+        label: 'Client Story',
+        enabled: true,
+        backgroundColor: 'white',
+        image: '/assets/placeholder/info.jpg',
+        title: 'Historia Klienta',
+        tag: 'Anna & Piotr',
+        subtitle: 'Warszawa',
+        buttonText: '2025',
+        content: '<p>Wspaniała historia...</p>'
+    };
+}
+
+export function createProcessTimelineTemplate() {
+    return {
+        id: `timeline-${uuidv4()}`,
+        type: 'process_timeline',
+        label: 'Process Timeline',
+        enabled: true,
+        backgroundColor: 'white',
+        title: 'Proces Współpracy',
+        subtitle: 'Krok po kroku',
+        data: {
+            steps: [
+                { id: `step-${uuidv4()}`, title: 'Spotkanie', description: 'Omówienie szczegółów' },
+                { id: `step-${uuidv4()}`, title: 'Sesja', description: 'Realizacja zdjęć' },
+                { id: `step-${uuidv4()}`, title: 'Oddanie zdjęć', description: 'Galeria online' }
+            ]
+        }
+    };
+}
+
+export function createInvestmentTeaserTemplate() {
+    return {
+        id: `investment-${uuidv4()}`,
+        type: 'investment_teaser',
+        label: 'Investment Teaser',
+        enabled: true,
+        backgroundColor: 'zinc-900',
+        title: 'Oferta',
+        subtitle: 'Inwestycja w wspomnienia',
+        buttonText: 'Zobacz Ofertę',
+        buttonLink: '/oferta',
+        image: '/assets/placeholder/parallax.jpg'
+    };
+}
+
+export function createNarrativeTextTemplate() {
+    return {
+        id: `narrative-${uuidv4()}`,
+        type: 'narrative_text',
+        label: 'Narrative Text',
+        enabled: true,
+        backgroundColor: 'white',
+        content: '<p>Wpisz swój narracyjny tekst tutaj...</p>'
+    };
+}
+
+export function createFeaturedCarouselTemplate() {
+    return {
+        id: `carousel-${uuidv4()}`,
+        type: 'featured_carousel',
+        label: 'Featured Carousel',
+        enabled: true,
+        backgroundColor: 'white',
+        title: 'Wyróżnione',
+        subtitle: 'Najlepsze momenty',
+        data: {
+            items: [
+                { id: `feat-${uuidv4()}`, image: '/assets/placeholder/hero-default.jpg', title: 'Moment 1' },
+                { id: `feat-${uuidv4()}`, image: '/assets/placeholder/about.jpg', title: 'Moment 2' }
+            ]
+        }
+    };
+}
+
 export default {
     createHeroSlideTemplate,
     createAboutSectionTemplate,
@@ -161,5 +305,14 @@ export default {
     createParallaxSectionTemplate,
     createInfoBandTemplate,
     createChallengeBannerTemplate,
-    createTestimonialsTemplate
+    createTestimonialsTemplate,
+    createStoriesGridTemplate,
+    createChronologicalGalleryTemplate,
+    createMagazineLayoutTemplate,
+    createMasonryGalleryTemplate,
+    createClientStoryTemplate,
+    createProcessTimelineTemplate,
+    createInvestmentTeaserTemplate,
+    createNarrativeTextTemplate,
+    createFeaturedCarouselTemplate
 };

@@ -34,15 +34,21 @@ export default function ClientStory({
                         whileInView={{ opacity: 1, scale: 1 }}
                         viewport={{ once: true }}
                         transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
-                        className="md:col-span-5 relative aspect-[3/4] overflow-hidden rounded-sm shadow-xl"
+                        className="md:col-span-5 relative aspect-[3/4] overflow-hidden rounded-sm shadow-xl bg-zinc-100"
                     >
-                        <Image
-                            src={mainImage}
-                            alt={clientName}
-                            fill
-                            className="object-cover"
-                            sizes="(max-width: 768px) 100vw, 40vw"
-                        />
+                        {mainImage ? (
+                            <Image
+                                src={mainImage}
+                                alt={clientName}
+                                fill
+                                className="object-cover"
+                                sizes="(max-width: 768px) 100vw, 40vw"
+                            />
+                        ) : (
+                            <div className="w-full h-full flex items-center justify-center text-zinc-300 bg-zinc-100">
+                                <span className="text-sm uppercase tracking-widest">No Image</span>
+                            </div>
+                        )}
                     </motion.div>
 
                     {/* Story Content */}

@@ -8,12 +8,12 @@ import {
     Plus, Trash2, GripVertical, Image as ImageIcon, Type, Layout, LayoutTemplate,
     MoveUp, MoveDown, ShieldCheck, Stars, BarChart3, Award, Workflow,
     Briefcase, FileText, Zap, Building2, Maximize2, Thermometer, Cpu, Crosshair,
-    Camera, Droplets, Map, Search, HardHat, Video, FileSearch
+    Camera, Droplets, Map, Search, HardHat, Video, FileSearch, X
 } from 'lucide-react';
 import RichTextEditor from './RichTextEditor';
 import MediaPicker from './MediaPicker';
 
-export type SectionType = 'hero_parallax' | 'hero' | 'rich_text' | 'image_text' | 'gallery' | 'contact' | 'thermal_slider' | 'contact_form' | 'hero_slider' | 'about' | 'features' | 'parallax' | 'info_band' | 'testimonials' | 'challenge_banner' | 'creative_slider' | 'certificates' | 'b2b_hero' | 'b2b_stats' | 'b2b_logos' | 'b2b_process' | 'b2b_cases' | 'b2b_contact' | 'b2b_video' | 'thermal_hero' | 'hero_video' | 'parallax_video' | 'thermal_report' | 'mini_gallery' | 'story_hero' | 'magazine_layout' | 'masonry_gallery' | 'client_story' | 'process_timeline' | 'investment_teaser' | 'narrative_text' | 'featured_carousel';
+export type SectionType = 'hero_parallax' | 'hero' | 'rich_text' | 'image_text' | 'gallery' | 'contact' | 'thermal_slider' | 'contact_form' | 'hero_slider' | 'about' | 'features' | 'parallax' | 'info_band' | 'testimonials' | 'challenge_banner' | 'creative_slider' | 'certificates' | 'b2b_hero' | 'b2b_stats' | 'b2b_logos' | 'b2b_process' | 'b2b_cases' | 'b2b_contact' | 'b2b_video' | 'thermal_hero' | 'hero_video' | 'parallax_video' | 'thermal_report' | 'mini_gallery' | 'story_hero' | 'magazine_layout' | 'masonry_gallery' | 'client_story' | 'process_timeline' | 'investment_teaser' | 'narrative_text' | 'featured_carousel' | 'stories_grid' | 'chronological_gallery';
 
 export interface SliderSlide {
     id: string;
@@ -66,67 +66,7 @@ export interface ThermalHeroSlide {
     textAnimation?: 'fade' | 'slide-up' | 'scale';
 }
 
-export interface ThermalSectionData {
-    id: string;
-    category: string;
-    visualImage: string;
-    thermalImage: string;
-    description?: string;
-    labelLeft?: string;
-    labelRight?: string;
-}
 
-export interface PageSection {
-    id: string;
-    type: SectionType;
-    content?: string;
-    image?: string;
-    thermalImage?: string; // For thermal_slider (single)
-    thermalSections?: ThermalSectionData[]; // For thermal_slider (multiple)
-    title?: string;
-    subtitle?: string;
-    description?: string; // For hero (long text)
-    layout?: 'left' | 'right'; // For image_text
-    images?: string[]; // For gallery
-    tag?: string; // For hero / b2b titles
-    buttonText?: string; // For contact/hero
-    buttonLink?: string; // For contact/hero
-    labelRight?: string; // For thermal_slider
-    showCategoryTitle?: boolean; // For thermal_slider - show title above sections
-    slides?: SliderSlide[]; // For hero_slider
-    features?: FeatureItem[]; // For features
-    certificates?: CertificateItem[]; // For certificates
-    featureTitle?: string; // For B2B process box
-    featureContent?: string; // For B2B process box
-    b2b_stats?: B2BStat[];
-    b2b_logos?: B2BLogo[];
-    b2b_process?: B2BProcessStep[];
-    b2b_cases?: B2BCaseStudy[];
-    sectionLayout?: 'grid' | 'centered' | 'full'; // Layout options
-    featureSize?: 'normal' | 'large'; // Feature size options
-    certificateSize?: 'small' | 'medium' | 'large' | 'readable'; // Certificate size options
-    verifiedTag?: string; // For certificates
-    certTag?: string; // For certificates
-    descriptionLabel?: string; // For certificates
-    infoband_items?: InfoBandItem[];
-    logoHeight?: number; // For b2b_logos resizing
-    textAnimation?: 'fade' | 'slide-up' | 'scale'; // For parallax_video
-    thermal_hero_slides?: ThermalHeroSlide[];
-    thermal_reports?: ThermalReport[];
-    mini_gallery_items?: MiniGalleryItem[];
-    mini_gallery_config?: MiniGalleryConfig;
-    data?: any; // For legacy / homepage sections
-    // Video Section Properties
-    videoUrl?: string;
-    videoType?: 'youtube' | 'vimeo' | 'direct';
-    videoAutoPlay?: boolean;
-    videoMuted?: boolean;
-    videoLoop?: boolean;
-    switchInterval?: number; // For thermal_slider
-    overlayOpacity?: number; // For video modules
-    imageObjectFit?: 'cover' | 'contain'; // For image_text
-    backgroundColor?: 'black' | 'zinc-900' | 'zinc-950'; // For image_text
-}
 
 export interface ThermalReport {
     id: string;
@@ -147,6 +87,20 @@ export interface ThermalSectionData {
     description?: string;
     labelLeft?: string;
     labelRight?: string;
+}
+
+export interface StoryGridItem {
+    id: string;
+    title: string;
+    image: string;
+    link: string;
+    category?: string;
+}
+
+export interface ChronologicalGalleryItem {
+    id: string;
+    image: string;
+    description?: string;
 }
 
 export interface CertificateItem {
@@ -243,7 +197,13 @@ export interface PageSection {
     descriptionLabel?: string; // For certificates
     infoband_items?: InfoBandItem[];
     logoHeight?: number; // For b2b_logos resizing
-    textAnimation?: 'fade' | 'slide-up' | 'scale'; // For parallax_video
+    textAnimation?: 'fade' | 'slide-up' | 'scale' | 'artistic'; // For parallax_video & hero_parallax
+    fontFamily?: 'sans' | 'serif' | 'display' | 'handwriting'; // For hero_parallax
+    stories_items?: StoryGridItem[]; // For stories_grid
+    chronological_items?: ChronologicalGalleryItem[]; // For chronological_gallery
+    gallery_layout?: 'grid' | 'list'; // For chronological_gallery
+    mini_gallery_items?: MiniGalleryItem[];
+    mini_gallery_config?: MiniGalleryConfig;
     thermal_hero_slides?: ThermalHeroSlide[];
     thermal_reports?: ThermalReport[];
     data?: any; // For legacy / homepage sections
@@ -271,7 +231,7 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove, openMedia
     onRemove: (id: string) => void;
     onUpdate: (id: string, data: Partial<PageSection>) => void;
     onMove: (id: string, direction: 'up' | 'down') => void;
-    openMediaPicker: (sectionId: string, options: { target: 'single' | 'gallery', context?: 'visual' | 'thermal' | 'before' | 'case_logo' | 'case_video' | 'video' | 'mini_gallery_item', index?: number }) => void;
+    openMediaPicker: (sectionId: string, options: { target: 'single' | 'gallery', context?: 'visual' | 'thermal' | 'before' | 'case_logo' | 'case_video' | 'video' | 'mini_gallery_item' | 'story_cover' | 'chronological', index?: number }) => void;
 }) {
     const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: section.id });
     const style = { transform: CSS.Transform.toString(transform), transition };
@@ -321,6 +281,36 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove, openMedia
                                 className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
                             />
                         </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs text-zinc-400 mb-1">Czcionka</label>
+                                <select
+                                    value={section.fontFamily || 'sans'}
+                                    onChange={(e) => onUpdate(section.id, { fontFamily: e.target.value as any })}
+                                    className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
+                                >
+                                    <option value="sans">Sans (Nowoczesna)</option>
+                                    <option value="serif">Serif (Elegancka)</option>
+                                    <option value="display">Display (Ozdobna)</option>
+                                    <option value="handwriting">Handwriting (Podpis)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-xs text-zinc-400 mb-1">Animacja Tekstu</label>
+                                <select
+                                    value={section.textAnimation || 'fade'}
+                                    onChange={(e) => onUpdate(section.id, { textAnimation: e.target.value as any })}
+                                    className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
+                                >
+                                    <option value="fade">Zanikanie (Fade)</option>
+                                    <option value="slide-up">Wjazd od dołu</option>
+                                    <option value="scale">Powiększenie</option>
+                                    <option value="artistic">Artystyczna (Blur)</option>
+                                </select>
+                            </div>
+                        </div>
+
                         <div>
                             <label className="block text-xs text-zinc-400 mb-1">Zdjęcie tła</label>
                             <div className="flex items-center gap-4">
@@ -893,6 +883,116 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove, openMedia
                                     className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
                                 />
                             </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* STORIES GRID EDITOR */}
+                {section.type === 'stories_grid' && (
+                    <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs text-zinc-400 mb-1">Tytuł Sekcji</label>
+                                <input type="text" value={section.title || ''} onChange={e => onUpdate(section.id, { title: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white" />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-zinc-400 mb-1">Podtytuł</label>
+                                <input type="text" value={section.subtitle || ''} onChange={e => onUpdate(section.id, { subtitle: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white" />
+                            </div>
+                        </div>
+                        <div className="flex items-center justify-between mb-2">
+                            <h4 className="text-xs font-bold text-zinc-500 uppercase">Kafelki Historii</h4>
+                            <button
+                                onClick={() => {
+                                    const newStory: StoryGridItem = { id: Math.random().toString(36).substr(2, 9), title: 'Nowa Historia', image: '', link: '', category: 'Reportaż' };
+                                    onUpdate(section.id, { stories_items: [...(section.stories_items || []), newStory] });
+                                }}
+                                className="text-xs bg-pink-500/20 text-pink-400 px-2 py-1 rounded border border-pink-500/30 font-bold"
+                            >
+                                + DODAJ HISTORIĘ
+                            </button>
+                        </div>
+                        <div className="space-y-3">
+                            {(section.stories_items || []).map((story, idx) => (
+                                <div key={story.id} className="bg-zinc-800 p-3 rounded border border-zinc-700 flex gap-4 items-start">
+                                    <div className="w-16 h-24 shrink-0 bg-zinc-900 border border-zinc-600 rounded overflow-hidden relative group cursor-pointer"
+                                        onClick={() => openMediaPicker(section.id, { target: 'single', context: 'story_cover', index: idx })}
+                                    >
+                                        {story.image ? <img src={story.image} className="w-full h-full object-cover" /> : <div className="flex items-center justify-center h-full text-zinc-600"><ImageIcon size={16} /></div>}
+                                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-[9px] text-white font-bold uppercase">Zmień</div>
+                                    </div>
+                                    <div className="flex-1 space-y-2">
+                                        <input type="text" value={story.title} onChange={e => { const up = [...section.stories_items!]; up[idx].title = e.target.value; onUpdate(section.id, { stories_items: up }); }} placeholder="Tytuł Historii" className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs text-white" />
+                                        <input type="text" value={story.link} onChange={e => { const up = [...section.stories_items!]; up[idx].link = e.target.value; onUpdate(section.id, { stories_items: up }); }} placeholder="Link (np. /historie/asia-i-tomek)" className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs text-blue-400" />
+                                        <input type="text" value={story.category} onChange={e => { const up = [...section.stories_items!]; up[idx].category = e.target.value; onUpdate(section.id, { stories_items: up }); }} placeholder="Kategoria" className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs text-zinc-400" />
+                                    </div>
+                                    <button onClick={() => onUpdate(section.id, { stories_items: section.stories_items!.filter((_, i) => i !== idx) })} className="text-zinc-500 hover:text-red-500"><Trash2 size={14} /></button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* CHRONOLOGICAL GALLERY EDITOR */}
+                {section.type === 'chronological_gallery' && (
+                    <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs text-zinc-400 mb-1">Tytuł Galerii</label>
+                                <input type="text" value={section.title || ''} onChange={e => onUpdate(section.id, { title: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white" />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-zinc-400 mb-1">Układ</label>
+                                <select
+                                    value={section.gallery_layout || 'grid'}
+                                    onChange={e => onUpdate(section.id, { gallery_layout: e.target.value as any })}
+                                    className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white text-xs"
+                                >
+                                    <option value="grid">Siatka (Grid)</option>
+                                    <option value="list">Lista (Kolumna)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div className="flex items-center justify-between mb-2">
+                            <h4 className="text-xs font-bold text-zinc-500 uppercase">Zdjęcia ({section.chronological_items?.length || 0})</h4>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => onUpdate(section.id, { chronological_items: [] })}
+                                    className="text-xs text-red-500 hover:text-red-400 px-2 py-1"
+                                >
+                                    Wyczyść
+                                </button>
+                                <button
+                                    onClick={() => openMediaPicker(section.id, { target: 'gallery', context: 'chronological' })}
+                                    className="text-xs bg-cyan-500/20 text-cyan-400 px-2 py-1 rounded border border-cyan-500/30 font-bold"
+                                >
+                                    + DODAJ MASOWO
+                                </button>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-4 gap-2 max-h-60 overflow-y-auto p-2 bg-zinc-900/50 rounded border border-zinc-800">
+                            {(section.chronological_items || []).map((item, idx) => (
+                                <div key={item.id || idx} className="relative aspect-square group">
+                                    <img src={item.image} className="w-full h-full object-cover rounded bg-zinc-800" />
+                                    <button
+                                        onClick={() => onUpdate(section.id, { chronological_items: section.chronological_items!.filter((_, i) => i !== idx) })}
+                                        className="absolute top-0 right-0 bg-red-500 text-white p-0.5 rounded-bl opacity-0 group-hover:opacity-100 transition-opacity"
+                                    >
+                                        <X size={12} />
+                                    </button>
+                                    <input
+                                        type="text"
+                                        value={item.description || ''}
+                                        onChange={(e) => {
+                                            const items = [...section.chronological_items!];
+                                            items[idx].description = e.target.value;
+                                            onUpdate(section.id, { chronological_items: items });
+                                        }}
+                                        placeholder="Opis..."
+                                        className="absolute bottom-0 left-0 w-full bg-black/70 text-[8px] text-white px-1 border-none focus:ring-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    />
+                                </div>
+                            ))}
                         </div>
                     </div>
                 )}
@@ -1984,682 +2084,842 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove, openMedia
                                         </div>
                                     </div>
                                     <textarea value={item.description} onChange={e => { const up = [...section.infoband_items!]; up[iIndex].description = e.target.value; onUpdate(section.id, { infoband_items: up }); }} placeholder="Krótki opis..." className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-xs text-zinc-400 h-16" />
-                                </div>
-                            ))}
-                        </div>
-                    </div>
+                                </div >
+                            ))
+                            }
+                        </div >
+                    </div >
                 )}
 
                 {/* B2B RFQ */}
-                {section.type === 'b2b_contact' && (
-                    <div className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-xs text-zinc-500 mb-1">Tytuł Sekcji RFQ</label>
-                                <input type="text" value={section.title || ''} onChange={e => onUpdate(section.id, { title: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white" placeholder="np. Zapytanie Ofertowe" />
-                            </div>
-                            <div>
-                                <label className="block text-xs text-zinc-500 mb-1">Podtytuł</label>
-                                <input type="text" value={section.subtitle || ''} onChange={e => onUpdate(section.id, { subtitle: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white" />
+                {
+                    section.type === 'b2b_contact' && (
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs text-zinc-500 mb-1">Tytuł Sekcji RFQ</label>
+                                    <input type="text" value={section.title || ''} onChange={e => onUpdate(section.id, { title: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white" placeholder="np. Zapytanie Ofertowe" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs text-zinc-500 mb-1">Podtytuł</label>
+                                    <input type="text" value={section.subtitle || ''} onChange={e => onUpdate(section.id, { subtitle: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white" />
+                                </div>
                             </div>
                         </div>
-                    </div>
-                )}
+                    )
+                }
 
                 {/* THERMAL HERO SLIDER */}
-                {section.type === 'thermal_hero' && (
-                    <div className="space-y-6">
-                        <div className="grid grid-cols-2 gap-4 bg-zinc-800/30 p-4 rounded-xl border border-zinc-700/50 mb-4">
-                            <div>
-                                <label className="block text-[10px] text-zinc-500 uppercase font-black mb-1">Czas zmiany (sekundy)</label>
-                                <input
-                                    type="number"
-                                    value={section.switchInterval || 10}
-                                    onChange={e => onUpdate(section.id, { switchInterval: parseInt(e.target.value) })}
-                                    className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-sm text-white"
-                                    placeholder="np. 10"
-                                />
-                            </div>
-                        </div>
-                        <div className="flex items-center justify-between">
-                            <h4 className="text-sm font-bold text-white uppercase tracking-wider">Slajdy Thermal Hero</h4>
-                            <button
-                                onClick={() => {
-                                    const newSlide: ThermalHeroSlide = {
-                                        id: Math.random().toString(36).substr(2, 9),
-                                        category: 'ANALIZA TERMICZNA',
-                                        title: 'Tytuł <span class="text-yellow-500">Slajdu</span>',
-                                        visualMedia: '',
-                                        thermalMedia: '',
-                                        mediaType: 'image'
-                                    };
-                                    onUpdate(section.id, { thermal_hero_slides: [...(section.thermal_hero_slides || []), newSlide] });
-                                }}
-                                className="px-3 py-1.5 bg-yellow-500/20 border border-yellow-500/30 text-yellow-400 text-xs font-bold rounded hover:bg-yellow-500/30 transition-all flex items-center gap-1"
-                            >
-                                <Plus size={14} /> Dodaj slajd
-                            </button>
-                        </div>
-                        {(section.thermal_hero_slides || []).map((slide, sIndex) => (
-                            <div key={slide.id} className="bg-zinc-800/50 p-6 rounded-xl border border-zinc-700 space-y-4">
-                                <div className="flex items-center justify-between mb-2">
-                                    <input type="text" value={slide.category} onChange={e => { const up = [...section.thermal_hero_slides!]; up[sIndex].category = e.target.value; onUpdate(section.id, { thermal_hero_slides: up }); }} className="bg-zinc-700 border border-zinc-600 rounded px-3 py-1 text-xs text-yellow-500 font-black uppercase tracking-widest" placeholder="Kategoria" />
-                                    <button onClick={() => onUpdate(section.id, { thermal_hero_slides: section.thermal_hero_slides!.filter((_, i) => i !== sIndex) })} className="text-zinc-500 hover:text-red-500"><Trash2 size={16} /></button>
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-4">
-                                        <div>
-                                            <label className="block text-[10px] text-zinc-500 uppercase font-black mb-1">Widok Optyczny (L)</label>
-                                            <div className="flex gap-2">
-                                                <div className="w-16 h-16 bg-zinc-900 rounded overflow-hidden border border-zinc-600 shrink-0">
-                                                    {slide.visualMedia && (slide.mediaType === 'video' ? <Video className="m-auto mt-5 text-zinc-700" size={20} /> : <img src={slide.visualMedia} className="w-full h-full object-cover" />)}
-                                                </div>
-                                                <button onClick={() => openMediaPicker(section.id, { target: 'single', context: 'visual', index: sIndex })} className="flex-1 bg-zinc-700 hover:bg-zinc-600 rounded text-[10px] font-bold text-zinc-300 uppercase px-2">Wybierz Media</button>
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label className="block text-[10px] text-zinc-500 uppercase font-black mb-1">Widok Termiczny (R)</label>
-                                            <div className="flex gap-2">
-                                                <div className="w-16 h-16 bg-zinc-900 rounded overflow-hidden border border-zinc-600 shrink-0">
-                                                    {slide.thermalMedia && (slide.mediaType === 'video' ? <Video className="m-auto mt-5 text-zinc-700" size={20} /> : <img src={slide.thermalMedia} className="w-full h-full object-cover" />)}
-                                                </div>
-                                                <button onClick={() => openMediaPicker(section.id, { target: 'single', context: 'thermal', index: sIndex })} className="flex-1 bg-zinc-700 hover:bg-zinc-600 rounded text-[10px] font-bold text-zinc-300 uppercase px-2">Wybierz Media</button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="space-y-3">
-                                        <select value={slide.mediaType || 'image'} onChange={e => { const up = [...section.thermal_hero_slides!]; up[sIndex].mediaType = e.target.value as any; onUpdate(section.id, { thermal_hero_slides: up }); }} className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-1.5 text-xs text-white">
-                                            <option value="image">Format: Zdjęcie</option>
-                                            <option value="video">Format: Wideo</option>
-                                        </select>
-                                        <input type="text" value={slide.title} onChange={e => { const up = [...section.thermal_hero_slides!]; up[sIndex].title = e.target.value; onUpdate(section.id, { thermal_hero_slides: up }); }} placeholder="Tytuł Slajdu (HTML)" className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-1.5 text-xs text-white" />
-                                        <input type="text" value={slide.subtitle || ''} onChange={e => { const up = [...section.thermal_hero_slides!]; up[sIndex].subtitle = e.target.value; onUpdate(section.id, { thermal_hero_slides: up }); }} placeholder="Podtytuł" className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-1.5 text-xs text-zinc-400" />
-                                        <div className="grid grid-cols-2 gap-2">
-                                            <input type="text" value={slide.buttonText || ''} onChange={e => { const up = [...section.thermal_hero_slides!]; up[sIndex].buttonText = e.target.value; onUpdate(section.id, { thermal_hero_slides: up }); }} placeholder="Tekst przycisku" className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-1.5 text-[10px] text-white" />
-                                            <input type="text" value={slide.buttonLink || ''} onChange={e => { const up = [...section.thermal_hero_slides!]; up[sIndex].buttonLink = e.target.value; onUpdate(section.id, { thermal_hero_slides: up }); }} placeholder="Link przycisku" className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-1.5 text-[10px] text-zinc-400" />
-                                        </div>
-                                        <select value={slide.buttonStyle || 'gold'} onChange={e => { const up = [...section.thermal_hero_slides!]; up[sIndex].buttonStyle = e.target.value as any; onUpdate(section.id, { thermal_hero_slides: up }); }} className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-1.5 text-[10px] text-white">
-                                            <option value="gold">Styl: Gold</option>
-                                            <option value="white">Styl: White</option>
-                                            <option value="transparent">Styl: Transparent</option>
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
-
-                {/* HERO VIDEO SLIDER */}
-                {section.type === 'hero_video' && (
-                    <div className="space-y-6">
-                        <div className="flex items-center justify-between">
-                            <h4 className="text-sm font-bold text-white uppercase tracking-wider">Slajdy Wideo Hero</h4>
-                            <button
-                                onClick={() => {
-                                    const newSlide: any = { id: Math.random().toString(36).substr(2, 9), title: 'Tytuł Wideo', videoUrl: '', overlayOpacity: 0.4 };
-                                    onUpdate(section.id, { slides: [...(section.slides || []), newSlide] });
-                                }}
-                                className="px-3 py-1.5 bg-blue-500/20 border border-blue-500/30 text-blue-400 text-xs font-bold rounded hover:bg-blue-500/30 transition-all flex items-center gap-1"
-                            >
-                                <Plus size={14} /> Dodaj slajd
-                            </button>
-                        </div>
-                        {(section.slides || []).map((slide, sIndex) => (
-                            <div key={slide.id} className="bg-zinc-800/50 p-4 rounded-lg border border-zinc-700 grid grid-cols-2 gap-4">
-                                <div className="space-y-3">
-                                    <div className="flex gap-2">
-                                        <div className="w-16 h-16 bg-zinc-900 rounded border border-zinc-600 flex items-center justify-center text-blue-500 shrink-0">
-                                            <Video size={24} />
-                                        </div>
-                                        <button onClick={() => openMediaPicker(section.id, { target: 'single', index: sIndex })} className="flex-1 bg-zinc-700 hover:bg-zinc-600 rounded text-[10px] font-bold text-zinc-300 uppercase px-2">Wgraj Wideo</button>
-                                    </div>
-                                    <input type="text" value={slide.title} onChange={e => { const up = [...section.slides!]; up[sIndex].title = e.target.value; onUpdate(section.id, { slides: up }); }} placeholder="Tytuł" className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs text-white font-bold" />
-                                </div>
-                                <div className="space-y-2">
-                                    <input type="text" value={slide.subtitle || ''} onChange={e => { const up = [...section.slides!]; up[sIndex].subtitle = e.target.value; onUpdate(section.id, { slides: up }); }} placeholder="Podtytuł" className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs text-zinc-400" />
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-[10px] text-zinc-500 uppercase font-black">Overlay</span>
-                                        <input type="range" min="0" max="1" step="0.1" value={slide.overlayOpacity ?? 0.4} onChange={e => { const up = [...section.slides!]; (up[sIndex] as any).overlayOpacity = parseFloat(e.target.value); onUpdate(section.id, { slides: up }); }} className="flex-1" />
-                                    </div>
-                                    <button onClick={() => onUpdate(section.id, { slides: section.slides!.filter((_, i) => i !== sIndex) })} className="w-full py-1 text-[10px] font-bold text-red-500 hover:bg-red-500/10 rounded border border-red-500/20 uppercase transition-all">Usuń Slajd</button>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
-
-                {/* PARALLAX VIDEO */}
-                {section.type === 'parallax_video' && (
-                    <div className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-4">
+                {
+                    section.type === 'thermal_hero' && (
+                        <div className="space-y-6">
+                            <div className="grid grid-cols-2 gap-4 bg-zinc-800/30 p-4 rounded-xl border border-zinc-700/50 mb-4">
                                 <div>
-                                    <label className="block text-xs text-zinc-500 mb-1">Wideo Paralaksa</label>
-                                    <div className="flex gap-3">
-                                        <div className="w-20 h-20 bg-zinc-900 rounded border border-zinc-700 flex items-center justify-center text-purple-500 shrink-0">
-                                            <Video size={32} />
-                                        </div>
-                                        <button onClick={() => openMediaPicker(section.id, { target: 'single' })} className="flex-1 border-2 border-dashed border-zinc-700 rounded text-xs font-bold text-zinc-500 hover:text-white hover:border-zinc-500 transition-all uppercase">Wybierz Wideo</button>
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className="block text-xs text-zinc-500 mb-1">Tytuł (HTML)</label>
-                                    <div className="text-[10px] text-zinc-500 font-mono mb-1">
-                                        Wsparcie dla HTML: <span className="text-yellow-500">&lt;span class="text-yellow-500"&gt;text&lt;/span&gt;</span>
-                                    </div>
-                                    <textarea
-                                        value={section.title || ''}
-                                        onChange={e => onUpdate(section.id, { title: e.target.value })}
-                                        className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white font-bold h-20 font-mono"
-                                        placeholder="Tytuł sekcji..."
+                                    <label className="block text-[10px] text-zinc-500 uppercase font-black mb-1">Czas zmiany (sekundy)</label>
+                                    <input
+                                        type="number"
+                                        value={section.switchInterval || 10}
+                                        onChange={e => onUpdate(section.id, { switchInterval: parseInt(e.target.value) })}
+                                        className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-sm text-white"
+                                        placeholder="np. 10"
                                     />
                                 </div>
                             </div>
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="block text-xs text-zinc-500 mb-1">Podtytuł</label>
-                                    <input type="text" value={section.subtitle || ''} onChange={e => onUpdate(section.id, { subtitle: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-zinc-400" />
+                            <div className="flex items-center justify-between">
+                                <h4 className="text-sm font-bold text-white uppercase tracking-wider">Slajdy Thermal Hero</h4>
+                                <button
+                                    onClick={() => {
+                                        const newSlide: ThermalHeroSlide = {
+                                            id: Math.random().toString(36).substr(2, 9),
+                                            category: 'ANALIZA TERMICZNA',
+                                            title: 'Tytuł <span class="text-yellow-500">Slajdu</span>',
+                                            visualMedia: '',
+                                            thermalMedia: '',
+                                            mediaType: 'image'
+                                        };
+                                        onUpdate(section.id, { thermal_hero_slides: [...(section.thermal_hero_slides || []), newSlide] });
+                                    }}
+                                    className="px-3 py-1.5 bg-yellow-500/20 border border-yellow-500/30 text-yellow-400 text-xs font-bold rounded hover:bg-yellow-500/30 transition-all flex items-center gap-1"
+                                >
+                                    <Plus size={14} /> Dodaj slajd
+                                </button>
+                            </div>
+                            {(section.thermal_hero_slides || []).map((slide, sIndex) => (
+                                <div key={slide.id} className="bg-zinc-800/50 p-6 rounded-xl border border-zinc-700 space-y-4">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <input type="text" value={slide.category} onChange={e => { const up = [...section.thermal_hero_slides!]; up[sIndex].category = e.target.value; onUpdate(section.id, { thermal_hero_slides: up }); }} className="bg-zinc-700 border border-zinc-600 rounded px-3 py-1 text-xs text-yellow-500 font-black uppercase tracking-widest" placeholder="Kategoria" />
+                                        <button onClick={() => onUpdate(section.id, { thermal_hero_slides: section.thermal_hero_slides!.filter((_, i) => i !== sIndex) })} className="text-zinc-500 hover:text-red-500"><Trash2 size={16} /></button>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-4">
+                                            <div>
+                                                <label className="block text-[10px] text-zinc-500 uppercase font-black mb-1">Widok Optyczny (L)</label>
+                                                <div className="flex gap-2">
+                                                    <div className="w-16 h-16 bg-zinc-900 rounded overflow-hidden border border-zinc-600 shrink-0">
+                                                        {slide.visualMedia && (slide.mediaType === 'video' ? <Video className="m-auto mt-5 text-zinc-700" size={20} /> : <img src={slide.visualMedia} className="w-full h-full object-cover" />)}
+                                                    </div>
+                                                    <button onClick={() => openMediaPicker(section.id, { target: 'single', context: 'visual', index: sIndex })} className="flex-1 bg-zinc-700 hover:bg-zinc-600 rounded text-[10px] font-bold text-zinc-300 uppercase px-2">Wybierz Media</button>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className="block text-[10px] text-zinc-500 uppercase font-black mb-1">Widok Termiczny (R)</label>
+                                                <div className="flex gap-2">
+                                                    <div className="w-16 h-16 bg-zinc-900 rounded overflow-hidden border border-zinc-600 shrink-0">
+                                                        {slide.thermalMedia && (slide.mediaType === 'video' ? <Video className="m-auto mt-5 text-zinc-700" size={20} /> : <img src={slide.thermalMedia} className="w-full h-full object-cover" />)}
+                                                    </div>
+                                                    <button onClick={() => openMediaPicker(section.id, { target: 'single', context: 'thermal', index: sIndex })} className="flex-1 bg-zinc-700 hover:bg-zinc-600 rounded text-[10px] font-bold text-zinc-300 uppercase px-2">Wybierz Media</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="space-y-3">
+                                            <select value={slide.mediaType || 'image'} onChange={e => { const up = [...section.thermal_hero_slides!]; up[sIndex].mediaType = e.target.value as any; onUpdate(section.id, { thermal_hero_slides: up }); }} className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-1.5 text-xs text-white">
+                                                <option value="image">Format: Zdjęcie</option>
+                                                <option value="video">Format: Wideo</option>
+                                            </select>
+                                            <input type="text" value={slide.title} onChange={e => { const up = [...section.thermal_hero_slides!]; up[sIndex].title = e.target.value; onUpdate(section.id, { thermal_hero_slides: up }); }} placeholder="Tytuł Slajdu (HTML)" className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-1.5 text-xs text-white" />
+                                            <input type="text" value={slide.subtitle || ''} onChange={e => { const up = [...section.thermal_hero_slides!]; up[sIndex].subtitle = e.target.value; onUpdate(section.id, { thermal_hero_slides: up }); }} placeholder="Podtytuł" className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-1.5 text-xs text-zinc-400" />
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <input type="text" value={slide.buttonText || ''} onChange={e => { const up = [...section.thermal_hero_slides!]; up[sIndex].buttonText = e.target.value; onUpdate(section.id, { thermal_hero_slides: up }); }} placeholder="Tekst przycisku" className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-1.5 text-[10px] text-white" />
+                                                <input type="text" value={slide.buttonLink || ''} onChange={e => { const up = [...section.thermal_hero_slides!]; up[sIndex].buttonLink = e.target.value; onUpdate(section.id, { thermal_hero_slides: up }); }} placeholder="Link przycisku" className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-1.5 text-[10px] text-zinc-400" />
+                                            </div>
+                                            <select value={slide.buttonStyle || 'gold'} onChange={e => { const up = [...section.thermal_hero_slides!]; up[sIndex].buttonStyle = e.target.value as any; onUpdate(section.id, { thermal_hero_slides: up }); }} className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-1.5 text-[10px] text-white">
+                                                <option value="gold">Styl: Gold</option>
+                                                <option value="white">Styl: White</option>
+                                                <option value="transparent">Styl: Transparent</option>
+                                            </select>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div>
-                                    <label className="block text-xs text-zinc-500 mb-1">Overlay Opacity</label>
-                                    <input type="number" step="0.1" min="0" max="1" value={section.overlayOpacity ?? 0.4} onChange={e => onUpdate(section.id, { overlayOpacity: parseFloat(e.target.value) })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white" />
+                            ))}
+                        </div>
+                    )
+                }
+
+                {/* HERO VIDEO SLIDER */}
+                {
+                    section.type === 'hero_video' && (
+                        <div className="space-y-6">
+                            <div className="flex items-center justify-between">
+                                <h4 className="text-sm font-bold text-white uppercase tracking-wider">Slajdy Wideo Hero</h4>
+                                <button
+                                    onClick={() => {
+                                        const newSlide: any = { id: Math.random().toString(36).substr(2, 9), title: 'Tytuł Wideo', videoUrl: '', overlayOpacity: 0.4 };
+                                        onUpdate(section.id, { slides: [...(section.slides || []), newSlide] });
+                                    }}
+                                    className="px-3 py-1.5 bg-blue-500/20 border border-blue-500/30 text-blue-400 text-xs font-bold rounded hover:bg-blue-500/30 transition-all flex items-center gap-1"
+                                >
+                                    <Plus size={14} /> Dodaj slajd
+                                </button>
+                            </div>
+                            {(section.slides || []).map((slide, sIndex) => (
+                                <div key={slide.id} className="bg-zinc-800/50 p-4 rounded-lg border border-zinc-700 grid grid-cols-2 gap-4">
+                                    <div className="space-y-3">
+                                        <div className="flex gap-2">
+                                            <div className="w-16 h-16 bg-zinc-900 rounded border border-zinc-600 flex items-center justify-center text-blue-500 shrink-0">
+                                                <Video size={24} />
+                                            </div>
+                                            <button onClick={() => openMediaPicker(section.id, { target: 'single', index: sIndex })} className="flex-1 bg-zinc-700 hover:bg-zinc-600 rounded text-[10px] font-bold text-zinc-300 uppercase px-2">Wgraj Wideo</button>
+                                        </div>
+                                        <input type="text" value={slide.title} onChange={e => { const up = [...section.slides!]; up[sIndex].title = e.target.value; onUpdate(section.id, { slides: up }); }} placeholder="Tytuł" className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs text-white font-bold" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <input type="text" value={slide.subtitle || ''} onChange={e => { const up = [...section.slides!]; up[sIndex].subtitle = e.target.value; onUpdate(section.id, { slides: up }); }} placeholder="Podtytuł" className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs text-zinc-400" />
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-[10px] text-zinc-500 uppercase font-black">Overlay</span>
+                                            <input type="range" min="0" max="1" step="0.1" value={slide.overlayOpacity ?? 0.4} onChange={e => { const up = [...section.slides!]; (up[sIndex] as any).overlayOpacity = parseFloat(e.target.value); onUpdate(section.id, { slides: up }); }} className="flex-1" />
+                                        </div>
+                                        <button onClick={() => onUpdate(section.id, { slides: section.slides!.filter((_, i) => i !== sIndex) })} className="w-full py-1 text-[10px] font-bold text-red-500 hover:bg-red-500/10 rounded border border-red-500/20 uppercase transition-all">Usuń Slajd</button>
+                                    </div>
                                 </div>
-                                <div>
-                                    <label className="block text-xs text-zinc-500 mb-1">Animacja Tekstu</label>
-                                    <select
-                                        value={section.textAnimation || 'slide-up'}
-                                        onChange={e => onUpdate(section.id, { textAnimation: e.target.value as any })}
-                                        className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white"
-                                    >
-                                        <option value="fade">Zanikanie (Fade)</option>
-                                        <option value="slide-up">Wjazd od dołu (Slide Up)</option>
-                                        <option value="scale">Powiększenie (Scale)</option>
-                                    </select>
+                            ))}
+                        </div>
+                    )
+                }
+
+                {/* PARALLAX VIDEO */}
+                {
+                    section.type === 'parallax_video' && (
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-xs text-zinc-500 mb-1">Wideo Paralaksa</label>
+                                        <div className="flex gap-3">
+                                            <div className="w-20 h-20 bg-zinc-900 rounded border border-zinc-700 flex items-center justify-center text-purple-500 shrink-0">
+                                                <Video size={32} />
+                                            </div>
+                                            <button onClick={() => openMediaPicker(section.id, { target: 'single' })} className="flex-1 border-2 border-dashed border-zinc-700 rounded text-xs font-bold text-zinc-500 hover:text-white hover:border-zinc-500 transition-all uppercase">Wybierz Wideo</button>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs text-zinc-500 mb-1">Tytuł (HTML)</label>
+                                        <div className="text-[10px] text-zinc-500 font-mono mb-1">
+                                            Wsparcie dla HTML: <span className="text-yellow-500">&lt;span class="text-yellow-500"&gt;text&lt;/span&gt;</span>
+                                        </div>
+                                        <textarea
+                                            value={section.title || ''}
+                                            onChange={e => onUpdate(section.id, { title: e.target.value })}
+                                            className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white font-bold h-20 font-mono"
+                                            placeholder="Tytuł sekcji..."
+                                        />
+                                    </div>
+                                </div>
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-xs text-zinc-500 mb-1">Podtytuł</label>
+                                        <input type="text" value={section.subtitle || ''} onChange={e => onUpdate(section.id, { subtitle: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-zinc-400" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs text-zinc-500 mb-1">Overlay Opacity</label>
+                                        <input type="number" step="0.1" min="0" max="1" value={section.overlayOpacity ?? 0.4} onChange={e => onUpdate(section.id, { overlayOpacity: parseFloat(e.target.value) })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs text-zinc-500 mb-1">Animacja Tekstu</label>
+                                        <select
+                                            value={section.textAnimation || 'slide-up'}
+                                            onChange={e => onUpdate(section.id, { textAnimation: e.target.value as any })}
+                                            className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white"
+                                        >
+                                            <option value="fade">Zanikanie (Fade)</option>
+                                            <option value="slide-up">Wjazd od dołu (Slide Up)</option>
+                                            <option value="scale">Powiększenie (Scale)</option>
+                                        </select>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                )}
+                    )
+                }
 
                 {/* MAGAZINE LAYOUT */}
-                {section.type === 'magazine_layout' && (
-                    <div className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-xs text-zinc-400 mb-2">Główne Zdjęcie</label>
-                                <div className="flex gap-4 items-center">
-                                    {section.image && (
-                                        <div className="relative w-24 h-32 rounded border border-zinc-700 overflow-hidden">
-                                            <img src={section.image} alt="" className="w-full h-full object-cover" />
-                                        </div>
-                                    )}
-                                    <button
-                                        onClick={() => openMediaPicker(section.id, { target: 'single' })}
-                                        className="px-3 py-1.5 bg-zinc-800 border border-zinc-700 rounded text-xs text-zinc-300 hover:text-white"
+                {
+                    section.type === 'magazine_layout' && (
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs text-zinc-400 mb-2">Główne Zdjęcie</label>
+                                    <div className="flex gap-4 items-center">
+                                        {section.image && (
+                                            <div className="relative w-24 h-32 rounded border border-zinc-700 overflow-hidden">
+                                                <img src={section.image} alt="" className="w-full h-full object-cover" />
+                                            </div>
+                                        )}
+                                        <button
+                                            onClick={() => openMediaPicker(section.id, { target: 'single' })}
+                                            className="px-3 py-1.5 bg-zinc-800 border border-zinc-700 rounded text-xs text-zinc-300 hover:text-white"
+                                        >
+                                            Wybierz
+                                        </button>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-xs text-zinc-400 mb-2">Drugie Zdjęcie (Detail)</label>
+                                    <div className="flex gap-4 items-center">
+                                        {section.thermalImage && (
+                                            <div className="relative w-24 h-32 rounded border border-zinc-700 overflow-hidden">
+                                                <img src={section.thermalImage} alt="" className="w-full h-full object-cover" />
+                                            </div>
+                                        )}
+                                        <button
+                                            onClick={() => openMediaPicker(section.id, { target: 'single', context: 'thermal' })}
+                                            className="px-3 py-1.5 bg-zinc-800 border border-zinc-700 rounded text-xs text-zinc-300 hover:text-white"
+                                        >
+                                            Wybierz
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs text-zinc-400 mb-1">Układ</label>
+                                    <select
+                                        value={section.layout || 'left'}
+                                        onChange={(e) => onUpdate(section.id, { layout: e.target.value as any })}
+                                        className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
                                     >
-                                        Wybierz
-                                    </button>
+                                        <option value="left">Zdjęcie Główne Lewo</option>
+                                        <option value="right">Zdjęcie Główne Prawo</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-xs text-zinc-400 mb-1">Tag (Uppercase)</label>
+                                    <input
+                                        type="text"
+                                        value={section.subtitle || ''}
+                                        onChange={(e) => onUpdate(section.id, { subtitle: e.target.value })}
+                                        className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
+                                    />
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-xs text-zinc-400 mb-2">Drugie Zdjęcie (Detail)</label>
-                                <div className="flex gap-4 items-center">
-                                    {section.thermalImage && (
-                                        <div className="relative w-24 h-32 rounded border border-zinc-700 overflow-hidden">
-                                            <img src={section.thermalImage} alt="" className="w-full h-full object-cover" />
-                                        </div>
-                                    )}
-                                    <button
-                                        onClick={() => openMediaPicker(section.id, { target: 'single', context: 'thermal' })}
-                                        className="px-3 py-1.5 bg-zinc-800 border border-zinc-700 rounded text-xs text-zinc-300 hover:text-white"
-                                    >
-                                        Wybierz
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-xs text-zinc-400 mb-1">Układ</label>
-                                <select
-                                    value={section.layout || 'left'}
-                                    onChange={(e) => onUpdate(section.id, { layout: e.target.value as any })}
-                                    className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
-                                >
-                                    <option value="left">Zdjęcie Główne Lewo</option>
-                                    <option value="right">Zdjęcie Główne Prawo</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-xs text-zinc-400 mb-1">Tag (Uppercase)</label>
-                                <input
-                                    type="text"
-                                    value={section.subtitle || ''}
-                                    onChange={(e) => onUpdate(section.id, { subtitle: e.target.value })}
-                                    className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
-                                />
-                            </div>
-                        </div>
-                        <div>
-                            <label className="block text-xs text-zinc-400 mb-1">Tytuł (Headline)</label>
-                            <input
-                                type="text"
-                                value={section.title || ''}
-                                onChange={(e) => onUpdate(section.id, { title: e.target.value })}
-                                className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white text-lg"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-xs text-zinc-400 mb-1">Treść</label>
-                            <RichTextEditor
-                                value={section.content || ''}
-                                onChange={(val) => onUpdate(section.id, { content: val })}
-                            />
-                        </div>
-                    </div>
-                )}
-
-                {/* MASONRY GALLERY */}
-                {section.type === 'masonry_gallery' && (
-                    <div className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-xs text-zinc-400 mb-1">Tytuł</label>
+                                <label className="block text-xs text-zinc-400 mb-1">Tytuł (Headline)</label>
                                 <input
                                     type="text"
                                     value={section.title || ''}
                                     onChange={(e) => onUpdate(section.id, { title: e.target.value })}
-                                    className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
+                                    className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white text-lg"
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs text-zinc-400 mb-1">Tag</label>
-                                <input
-                                    type="text"
-                                    value={section.subtitle || ''}
-                                    onChange={(e) => onUpdate(section.id, { subtitle: e.target.value })}
-                                    className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
+                                <label className="block text-xs text-zinc-400 mb-1">Treść</label>
+                                <RichTextEditor
+                                    value={section.content || ''}
+                                    onChange={(val) => onUpdate(section.id, { content: val })}
                                 />
                             </div>
                         </div>
-                        <div className="flex flex-wrap gap-2 mb-4">
-                            {section.images?.map((img, idx) => (
-                                <div key={idx} className="relative group w-20 h-20">
-                                    <img src={img} alt="" className="w-full h-full object-cover rounded border border-zinc-700" />
-                                    <button
-                                        onClick={() => {
-                                            const newImages = section.images?.filter((_, i) => i !== idx);
-                                            onUpdate(section.id, { images: newImages });
-                                        }}
-                                        className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100"
-                                    >
-                                        <Trash2 className="w-3 h-3" />
-                                    </button>
+                    )
+                }
+
+                {/* MASONRY GALLERY */}
+                {
+                    section.type === 'masonry_gallery' && (
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs text-zinc-400 mb-1">Tytuł</label>
+                                    <input
+                                        type="text"
+                                        value={section.title || ''}
+                                        onChange={(e) => onUpdate(section.id, { title: e.target.value })}
+                                        className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
+                                    />
                                 </div>
-                            ))}
-                            <button
-                                onClick={() => openMediaPicker(section.id, { target: 'gallery' })}
-                                className="w-20 h-20 flex items-center justify-center border-2 border-dashed border-zinc-700 rounded text-zinc-500 hover:text-zinc-300"
-                            >
-                                <Plus className="w-5 h-5" />
-                            </button>
+                                <div>
+                                    <label className="block text-xs text-zinc-400 mb-1">Tag</label>
+                                    <input
+                                        type="text"
+                                        value={section.subtitle || ''}
+                                        onChange={(e) => onUpdate(section.id, { subtitle: e.target.value })}
+                                        className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
+                                    />
+                                </div>
+                            </div>
+                            <div className="flex flex-wrap gap-2 mb-4">
+                                {section.images?.map((img, idx) => (
+                                    <div key={idx} className="relative group w-20 h-20">
+                                        <img src={img} alt="" className="w-full h-full object-cover rounded border border-zinc-700" />
+                                        <button
+                                            onClick={() => {
+                                                const newImages = section.images?.filter((_, i) => i !== idx);
+                                                onUpdate(section.id, { images: newImages });
+                                            }}
+                                            className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100"
+                                        >
+                                            <Trash2 className="w-3 h-3" />
+                                        </button>
+                                    </div>
+                                ))}
+                                <button
+                                    onClick={() => openMediaPicker(section.id, { target: 'gallery' })}
+                                    className="w-20 h-20 flex items-center justify-center border-2 border-dashed border-zinc-700 rounded text-zinc-500 hover:text-zinc-300"
+                                >
+                                    <Plus className="w-5 h-5" />
+                                </button>
+                            </div>
                         </div>
-                    </div>
-                )}
+                    )
+                }
 
                 {/* CLIENT STORY */}
-                {section.type === 'client_story' && (
-                    <div className="space-y-4">
-                        <div className="flex gap-4">
-                            <div className="shrink-0">
-                                <label className="block text-xs text-zinc-400 mb-2">Zdjęcie Klienta</label>
-                                <div className="relative w-24 h-32 rounded border border-zinc-700 overflow-hidden bg-zinc-800">
-                                    {section.image ? (
-                                        <img src={section.image} className="w-full h-full object-cover" />
-                                    ) : (
-                                        <ImageIcon className="m-auto mt-8 text-zinc-700" size={24} />
-                                    )}
-                                    <button onClick={() => openMediaPicker(section.id, { target: 'single' })} className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 flex items-center justify-center text-[10px] text-white font-bold uppercase">Zmień</button>
+                {
+                    section.type === 'client_story' && (
+                        <div className="space-y-4">
+                            <div className="flex gap-4">
+                                <div className="shrink-0">
+                                    <label className="block text-xs text-zinc-400 mb-2">Zdjęcie Klienta</label>
+                                    <div className="relative w-24 h-32 rounded border border-zinc-700 overflow-hidden bg-zinc-800">
+                                        {section.image ? (
+                                            <img src={section.image} className="w-full h-full object-cover" />
+                                        ) : (
+                                            <ImageIcon className="m-auto mt-8 text-zinc-700" size={24} />
+                                        )}
+                                        <button onClick={() => openMediaPicker(section.id, { target: 'single' })} className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 flex items-center justify-center text-[10px] text-white font-bold uppercase">Zmień</button>
+                                    </div>
+                                </div>
+                                <div className="flex-1 space-y-4">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-xs text-zinc-400 mb-1">Imię Klienta / Pary</label>
+                                            <input
+                                                type="text"
+                                                value={section.tag || ''}
+                                                onChange={(e) => onUpdate(section.id, { tag: e.target.value })}
+                                                className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs text-zinc-400 mb-1">Tytuł Historii</label>
+                                            <input
+                                                type="text"
+                                                value={section.title || ''}
+                                                onChange={(e) => onUpdate(section.id, { title: e.target.value })}
+                                                className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-xs text-zinc-400 mb-1">Lokalizacja</label>
+                                            <input
+                                                type="text"
+                                                value={section.subtitle || ''}
+                                                onChange={(e) => onUpdate(section.id, { subtitle: e.target.value })}
+                                                className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs text-zinc-400 mb-1">Data</label>
+                                            <input
+                                                type="text"
+                                                value={section.buttonText || ''}
+                                                onChange={(e) => onUpdate(section.id, { buttonText: e.target.value })}
+                                                className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                            <div className="flex-1 space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-xs text-zinc-400 mb-1">Imię Klienta / Pary</label>
-                                        <input
-                                            type="text"
-                                            value={section.tag || ''}
-                                            onChange={(e) => onUpdate(section.id, { tag: e.target.value })}
-                                            className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs text-zinc-400 mb-1">Tytuł Historii</label>
-                                        <input
-                                            type="text"
-                                            value={section.title || ''}
-                                            onChange={(e) => onUpdate(section.id, { title: e.target.value })}
-                                            className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
-                                        />
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-xs text-zinc-400 mb-1">Lokalizacja</label>
-                                        <input
-                                            type="text"
-                                            value={section.subtitle || ''}
-                                            onChange={(e) => onUpdate(section.id, { subtitle: e.target.value })}
-                                            className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs text-zinc-400 mb-1">Data</label>
-                                        <input
-                                            type="text"
-                                            value={section.buttonText || ''}
-                                            onChange={(e) => onUpdate(section.id, { buttonText: e.target.value })}
-                                            className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
-                                        />
-                                    </div>
-                                </div>
+                            <div>
+                                <label className="block text-xs text-zinc-400 mb-1">Testimonial (Treść)</label>
+                                <RichTextEditor
+                                    value={section.content || ''}
+                                    onChange={(val) => onUpdate(section.id, { content: val })}
+                                />
                             </div>
                         </div>
-                        <div>
-                            <label className="block text-xs text-zinc-400 mb-1">Testimonial (Treść)</label>
-                            <RichTextEditor
-                                value={section.content || ''}
-                                onChange={(val) => onUpdate(section.id, { content: val })}
-                            />
-                        </div>
-                    </div>
-                )}
+                    )
+                }
 
                 {/* PROCESS TIMELINE */}
-                {section.type === 'process_timeline' && (
-                    <div className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-xs text-zinc-400 mb-1">Tytuł Sekcji</label>
-                                <input type="text" value={section.title || ''} onChange={e => onUpdate(section.id, { title: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white" />
-                            </div>
-                            <div>
-                                <label className="block text-xs text-zinc-400 mb-1">Podtytuł</label>
-                                <input type="text" value={section.subtitle || ''} onChange={e => onUpdate(section.id, { subtitle: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white" />
-                            </div>
-                        </div>
-                        <div className="flex items-center justify-between mb-2">
-                            <h4 className="text-xs font-bold text-zinc-500 uppercase">Kroki Procesu</h4>
-                            <button
-                                onClick={() => {
-                                    const nextNum = (section.b2b_process?.length || 0) + 1;
-                                    const newStep: B2BProcessStep = { id: Math.random().toString(36).substr(2, 9), title: 'Nowy Krok', description: 'Opis...', stepNumber: `0${nextNum}` };
-                                    onUpdate(section.id, { b2b_process: [...(section.b2b_process || []), newStep] });
-                                }}
-                                className="text-xs bg-yellow-500/20 text-yellow-500 px-2 py-1 rounded border border-yellow-500/30 font-bold"
-                            >
-                                + DODAJ KROK
-                            </button>
-                        </div>
-                        <div className="space-y-3">
-                            {(section.b2b_process || []).map((step, pIndex) => (
-                                <div key={step.id} className="bg-zinc-800 p-4 rounded border border-zinc-700 flex gap-4 items-start">
-                                    <input type="text" value={step.stepNumber} onChange={e => { const up = [...section.b2b_process!]; up[pIndex].stepNumber = e.target.value; onUpdate(section.id, { b2b_process: up }); }} className="w-12 bg-zinc-900 border border-zinc-700 rounded text-center py-1 text-sm text-yellow-500 font-bold" />
-                                    <div className="flex-1 space-y-2">
-                                        <input type="text" value={step.title} onChange={e => { const up = [...section.b2b_process!]; up[pIndex].title = e.target.value; onUpdate(section.id, { b2b_process: up }); }} className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-1 text-sm text-white font-bold" />
-                                        <textarea value={step.description} onChange={e => { const up = [...section.b2b_process!]; up[pIndex].description = e.target.value; onUpdate(section.id, { b2b_process: up }); }} className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-1 text-xs text-zinc-400 h-16" />
-                                    </div>
-                                    <button onClick={() => onUpdate(section.id, { b2b_process: section.b2b_process!.filter((_, i) => i !== pIndex) })} className="text-zinc-600 hover:text-red-500"><Trash2 size={16} /></button>
+                {
+                    section.type === 'process_timeline' && (
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs text-zinc-400 mb-1">Tytuł Sekcji</label>
+                                    <input type="text" value={section.title || ''} onChange={e => onUpdate(section.id, { title: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white" />
                                 </div>
-                            ))}
+                                <div>
+                                    <label className="block text-xs text-zinc-400 mb-1">Podtytuł</label>
+                                    <input type="text" value={section.subtitle || ''} onChange={e => onUpdate(section.id, { subtitle: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white" />
+                                </div>
+                            </div>
+                            <div className="flex items-center justify-between mb-2">
+                                <h4 className="text-xs font-bold text-zinc-500 uppercase">Kroki Procesu</h4>
+                                <button
+                                    onClick={() => {
+                                        const nextNum = (section.b2b_process?.length || 0) + 1;
+                                        const newStep: B2BProcessStep = { id: Math.random().toString(36).substr(2, 9), title: 'Nowy Krok', description: 'Opis...', stepNumber: `0${nextNum}` };
+                                        onUpdate(section.id, { b2b_process: [...(section.b2b_process || []), newStep] });
+                                    }}
+                                    className="text-xs bg-yellow-500/20 text-yellow-500 px-2 py-1 rounded border border-yellow-500/30 font-bold"
+                                >
+                                    + DODAJ KROK
+                                </button>
+                            </div>
+                            <div className="space-y-3">
+                                {(section.b2b_process || []).map((step, pIndex) => (
+                                    <div key={step.id} className="bg-zinc-800 p-4 rounded border border-zinc-700 flex gap-4 items-start">
+                                        <input type="text" value={step.stepNumber} onChange={e => { const up = [...section.b2b_process!]; up[pIndex].stepNumber = e.target.value; onUpdate(section.id, { b2b_process: up }); }} className="w-12 bg-zinc-900 border border-zinc-700 rounded text-center py-1 text-sm text-yellow-500 font-bold" />
+                                        <div className="flex-1 space-y-2">
+                                            <input type="text" value={step.title} onChange={e => { const up = [...section.b2b_process!]; up[pIndex].title = e.target.value; onUpdate(section.id, { b2b_process: up }); }} className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-1 text-sm text-white font-bold" />
+                                            <textarea value={step.description} onChange={e => { const up = [...section.b2b_process!]; up[pIndex].description = e.target.value; onUpdate(section.id, { b2b_process: up }); }} className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-1 text-xs text-zinc-400 h-16" />
+                                        </div>
+                                        <button onClick={() => onUpdate(section.id, { b2b_process: section.b2b_process!.filter((_, i) => i !== pIndex) })} className="text-zinc-600 hover:text-red-500"><Trash2 size={16} /></button>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
-                    </div>
-                )}
+                    )
+                }
 
                 {/* INVESTMENT TEASER */}
-                {section.type === 'investment_teaser' && (
-                    <div className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-xs text-zinc-400 mb-1">Tytuł Sekcji</label>
-                                <input type="text" value={section.title || ''} onChange={e => onUpdate(section.id, { title: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white" />
-                            </div>
-                            <div>
-                                <label className="block text-xs text-zinc-400 mb-1">Podtytuł</label>
-                                <input type="text" value={section.subtitle || ''} onChange={e => onUpdate(section.id, { subtitle: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white" />
-                            </div>
-                        </div>
-                        <div className="flex items-center justify-between mb-2">
-                            <h4 className="text-xs font-bold text-zinc-500 uppercase">Pakiety Ofertowe</h4>
-                            <button
-                                onClick={() => {
-                                    const newPkg: FeatureItem = { id: Math.random().toString(36).substr(2, 9), title: 'Nowy Pakiet', items: ['Cecha 1'], enabled: true, buttonText: 'od 1500 zł' };
-                                    onUpdate(section.id, { features: [...(section.features || []), newPkg] });
-                                }}
-                                className="text-xs bg-green-500/20 text-green-500 px-2 py-1 rounded border border-green-500/30 font-bold"
-                            >
-                                + DODAJ PAKIET
-                            </button>
-                        </div>
+                {
+                    section.type === 'investment_teaser' && (
                         <div className="space-y-4">
-                            {(section.features || []).map((pkg, fIndex) => (
-                                <div key={pkg.id} className="bg-zinc-800 p-4 rounded border border-zinc-700 space-y-3">
-                                    <div className="flex gap-4">
-                                        <div className="flex-1">
-                                            <label className="block text-[8px] text-zinc-500 uppercase mb-1">Nazwa Pakietu</label>
-                                            <input type="text" value={pkg.title} onChange={e => { const up = [...section.features!]; up[fIndex].title = e.target.value; onUpdate(section.id, { features: up }); }} className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-sm text-white font-bold" />
-                                        </div>
-                                        <div className="w-32">
-                                            <label className="block text-[8px] text-zinc-500 uppercase mb-1">Cena (Tekst)</label>
-                                            <input type="text" value={pkg.buttonText || ''} onChange={e => { const up = [...section.features!]; up[fIndex].buttonText = e.target.value; onUpdate(section.id, { features: up }); }} className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-sm text-yellow-500 font-bold" />
-                                        </div>
-                                        <div className="flex items-center pt-4">
-                                            <label className="flex items-center gap-1 cursor-pointer">
-                                                <input type="checkbox" checked={pkg.enabled} onChange={e => { const up = [...section.features!]; up[fIndex].enabled = e.target.checked; onUpdate(section.id, { features: up }); }} className="rounded bg-zinc-900" />
-                                                <span className="text-[10px] text-zinc-400">Popular</span>
-                                            </label>
-                                        </div>
-                                        <button onClick={() => onUpdate(section.id, { features: section.features!.filter((_, i) => i !== fIndex) })} className="text-zinc-600 hover:text-red-500 pt-4"><Trash2 size={16} /></button>
-                                    </div>
-                                    <textarea value={pkg.items.join(', ')} onChange={e => { const up = [...section.features!]; up[fIndex].items = e.target.value.split(',').map(s => s.trim()).filter(Boolean); onUpdate(section.id, { features: up }); }} placeholder="Cechy (oddziel przecinkami)..." className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs text-zinc-400 h-16" />
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs text-zinc-400 mb-1">Tytuł Sekcji</label>
+                                    <input type="text" value={section.title || ''} onChange={e => onUpdate(section.id, { title: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white" />
                                 </div>
-                            ))}
+                                <div>
+                                    <label className="block text-xs text-zinc-400 mb-1">Podtytuł</label>
+                                    <input type="text" value={section.subtitle || ''} onChange={e => onUpdate(section.id, { subtitle: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white" />
+                                </div>
+                            </div>
+                            <div className="flex items-center justify-between mb-2">
+                                <h4 className="text-xs font-bold text-zinc-500 uppercase">Pakiety Ofertowe</h4>
+                                <button
+                                    onClick={() => {
+                                        const newPkg: FeatureItem = { id: Math.random().toString(36).substr(2, 9), title: 'Nowy Pakiet', items: ['Cecha 1'], enabled: true, buttonText: 'od 1500 zł' };
+                                        onUpdate(section.id, { features: [...(section.features || []), newPkg] });
+                                    }}
+                                    className="text-xs bg-green-500/20 text-green-500 px-2 py-1 rounded border border-green-500/30 font-bold"
+                                >
+                                    + DODAJ PAKIET
+                                </button>
+                            </div>
+                            <div className="space-y-4">
+                                {(section.features || []).map((pkg, fIndex) => (
+                                    <div key={pkg.id} className="bg-zinc-800 p-4 rounded border border-zinc-700 space-y-3">
+                                        <div className="flex gap-4">
+                                            <div className="flex-1">
+                                                <label className="block text-[8px] text-zinc-500 uppercase mb-1">Nazwa Pakietu</label>
+                                                <input type="text" value={pkg.title} onChange={e => { const up = [...section.features!]; up[fIndex].title = e.target.value; onUpdate(section.id, { features: up }); }} className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-sm text-white font-bold" />
+                                            </div>
+                                            <div className="w-32">
+                                                <label className="block text-[8px] text-zinc-500 uppercase mb-1">Cena (Tekst)</label>
+                                                <input type="text" value={pkg.buttonText || ''} onChange={e => { const up = [...section.features!]; up[fIndex].buttonText = e.target.value; onUpdate(section.id, { features: up }); }} className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-sm text-yellow-500 font-bold" />
+                                            </div>
+                                            <div className="flex items-center pt-4">
+                                                <label className="flex items-center gap-1 cursor-pointer">
+                                                    <input type="checkbox" checked={pkg.enabled} onChange={e => { const up = [...section.features!]; up[fIndex].enabled = e.target.checked; onUpdate(section.id, { features: up }); }} className="rounded bg-zinc-900" />
+                                                    <span className="text-[10px] text-zinc-400">Popular</span>
+                                                </label>
+                                            </div>
+                                            <button onClick={() => onUpdate(section.id, { features: section.features!.filter((_, i) => i !== fIndex) })} className="text-zinc-600 hover:text-red-500 pt-4"><Trash2 size={16} /></button>
+                                        </div>
+                                        <textarea value={pkg.items.join(', ')} onChange={e => { const up = [...section.features!]; up[fIndex].items = e.target.value.split(',').map(s => s.trim()).filter(Boolean); onUpdate(section.id, { features: up }); }} placeholder="Cechy (oddziel przecinkami)..." className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs text-zinc-400 h-16" />
+                                    </div>
+                                ))}
+                            </div>
                         </div>
-                    </div>
-                )}
+                    )
+                }
 
                 {/* NARRATIVE TEXT */}
-                {section.type === 'narrative_text' && (
-                    <div className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-xs text-zinc-400 mb-1">Tytuł (Headline)</label>
-                                <input type="text" value={section.title || ''} onChange={e => onUpdate(section.id, { title: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white" />
-                            </div>
-                            <div>
-                                <label className="block text-xs text-zinc-400 mb-1">Podtytuł</label>
-                                <input type="text" value={section.subtitle || ''} onChange={e => onUpdate(section.id, { subtitle: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white" />
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-xs text-zinc-400 mb-1">Kolumny</label>
-                                <select value={section.layout || 'left'} onChange={e => onUpdate(section.id, { layout: e.target.value as any })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white">
-                                    <option value="left">1 Kolumna</option>
-                                    <option value="right">2 Kolumny</option>
-                                </select>
-                            </div>
-                            <div className="flex items-center gap-2 pt-6">
-                                <input type="checkbox" checked={section.showCategoryTitle ?? true} onChange={e => onUpdate(section.id, { showCategoryTitle: e.target.checked })} className="rounded bg-zinc-800" />
-                                <label className="text-xs text-zinc-400">Pokaż Inicjał (Drop Cap)</label>
-                            </div>
-                        </div>
-                        <div>
-                            <RichTextEditor
-                                value={section.content || ''}
-                                onChange={(val) => onUpdate(section.id, { content: val })}
-                            />
-                        </div>
-                    </div>
-                )}
-
-                {/* FEATURED CAROUSEL */}
-                {section.type === 'featured_carousel' && (
-                    <div className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-xs text-zinc-400 mb-1">Tytuł Sekcji</label>
-                                <input type="text" value={section.title || ''} onChange={e => onUpdate(section.id, { title: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white" />
-                            </div>
-                            <div>
-                                <label className="block text-xs text-zinc-400 mb-1">Podtytuł</label>
-                                <input type="text" value={section.subtitle || ''} onChange={e => onUpdate(section.id, { subtitle: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white" />
-                            </div>
-                        </div>
-                        <div className="flex items-center justify-between mb-2">
-                            <h4 className="text-xs font-bold text-zinc-500 uppercase">Slajdy Karuzeli</h4>
-                            <button
-                                onClick={() => {
-                                    const newSlide: SliderSlide = { id: Math.random().toString(36).substr(2, 9), image: '', title: 'Nowy Slajd', subtitle: 'Podtytuł' };
-                                    onUpdate(section.id, { slides: [...(section.slides || []), newSlide] });
-                                }}
-                                className="text-xs bg-blue-500/20 text-blue-500 px-2 py-1 rounded border border-blue-500/30 font-bold"
-                            >
-                                + DODAJ SLAJD
-                            </button>
-                        </div>
-                        <div className="space-y-3">
-                            {(section.slides || []).map((slide, sIndex) => (
-                                <div key={slide.id} className="bg-zinc-800 p-4 rounded border border-zinc-700 flex gap-4 items-center">
-                                    <div className="w-20 h-12 bg-zinc-900 rounded overflow-hidden relative group shrink-0">
-                                        {slide.image ? <img src={slide.image} className="w-full h-full object-cover" /> : <ImageIcon size={20} className="m-auto mt-3 text-zinc-700" />}
-                                        <button onClick={() => openMediaPicker(section.id, { target: 'single', index: sIndex })} className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 text-[8px] text-white font-bold uppercase transition-opacity">Zmień</button>
-                                    </div>
-                                    <div className="flex-1 grid grid-cols-2 gap-2">
-                                        <input type="text" value={slide.title} onChange={e => { const up = [...section.slides!]; up[sIndex].title = e.target.value; onUpdate(section.id, { slides: up }); }} placeholder="Tytuł" className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs text-white" />
-                                        <input type="text" value={slide.subtitle} onChange={e => { const up = [...section.slides!]; up[sIndex].subtitle = e.target.value; onUpdate(section.id, { slides: up }); }} placeholder="Tag" className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-[10px] text-zinc-400 uppercase font-bold" />
-                                    </div>
-                                    <button onClick={() => onUpdate(section.id, { slides: section.slides!.filter((_, i) => i !== sIndex) })} className="text-zinc-600 hover:text-red-500"><Trash2 size={16} /></button>
+                {
+                    section.type === 'narrative_text' && (
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs text-zinc-400 mb-1">Tytuł (Headline)</label>
+                                    <input type="text" value={section.title || ''} onChange={e => onUpdate(section.id, { title: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white" />
                                 </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                {/* THERMAL REPORT SHOWCASE */}
-                {section.type === 'thermal_report' && (
-                    <div className="space-y-6">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-xs text-zinc-500 mb-1">Tytuł Sekcji</label>
-                                <input type="text" value={section.title || ''} onChange={e => onUpdate(section.id, { title: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white font-bold" />
-                            </div>
-                            <div>
-                                <label className="block text-xs text-zinc-500 mb-1">Podtytuł</label>
-                                <input type="text" value={section.subtitle || ''} onChange={e => onUpdate(section.id, { subtitle: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-zinc-400" />
-                            </div>
-                        </div>
-
-                        {/* CTA Editor */}
-                        <div className="bg-yellow-500/5 p-6 rounded-3xl border border-yellow-500/10 space-y-4">
-                            <div className="flex items-center gap-2 mb-2">
-                                <Stars size={16} className="text-yellow-500" />
-                                <h4 className="text-[10px] font-black text-yellow-500 uppercase tracking-widest">Sekcja "Potrzebujesz analizy?" (CTA)</h4>
+                                <div>
+                                    <label className="block text-xs text-zinc-400 mb-1">Podtytuł</label>
+                                    <input type="text" value={section.subtitle || ''} onChange={e => onUpdate(section.id, { subtitle: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white" />
+                                </div>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-[10px] text-zinc-500 mb-1 uppercase font-black">Tytuł CTA</label>
-                                    <input type="text" value={section.featureTitle || ''} onChange={e => onUpdate(section.id, { featureTitle: e.target.value })} className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-1.5 text-xs text-white" placeholder="np. Potrzebujesz profesjonalnej analizy?" />
+                                    <label className="block text-xs text-zinc-400 mb-1">Kolumny</label>
+                                    <select value={section.layout || 'left'} onChange={e => onUpdate(section.id, { layout: e.target.value as any })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white">
+                                        <option value="left">1 Kolumna</option>
+                                        <option value="right">2 Kolumny</option>
+                                    </select>
+                                </div>
+                                <div className="flex items-center gap-2 pt-6">
+                                    <input type="checkbox" checked={section.showCategoryTitle ?? true} onChange={e => onUpdate(section.id, { showCategoryTitle: e.target.checked })} className="rounded bg-zinc-800" />
+                                    <label className="text-xs text-zinc-400">Pokaż Inicjał (Drop Cap)</label>
+                                </div>
+                            </div>
+                            <div>
+                                <RichTextEditor
+                                    value={section.content || ''}
+                                    onChange={(val) => onUpdate(section.id, { content: val })}
+                                />
+                            </div>
+                        </div>
+                    )
+                }
+
+                {/* FEATURED CAROUSEL */}
+                {
+                    section.type === 'featured_carousel' && (
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs text-zinc-400 mb-1">Tytuł Sekcji</label>
+                                    <input type="text" value={section.title || ''} onChange={e => onUpdate(section.id, { title: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white" />
                                 </div>
                                 <div>
-                                    <label className="block text-[10px] text-zinc-500 mb-1 uppercase font-black">Przycisk CTA</label>
-                                    <input type="text" value={section.buttonText || ''} onChange={e => onUpdate(section.id, { buttonText: e.target.value })} className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-1.5 text-xs text-white" placeholder="np. DOWIEDZ SIĘ WIĘCEJ" />
+                                    <label className="block text-xs text-zinc-400 mb-1">Podtytuł</label>
+                                    <input type="text" value={section.subtitle || ''} onChange={e => onUpdate(section.id, { subtitle: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white" />
                                 </div>
                             </div>
-                            <div>
-                                <label className="block text-[10px] text-zinc-500 mb-1 uppercase font-black">Opis CTA</label>
-                                <textarea value={section.featureContent || ''} onChange={e => onUpdate(section.id, { featureContent: e.target.value })} className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-1.5 text-xs text-zinc-300 min-h-[60px]" placeholder="Opis działania raportów..." />
+                            <div className="flex items-center justify-between mb-2">
+                                <h4 className="text-xs font-bold text-zinc-500 uppercase">Slajdy Karuzeli</h4>
+                                <button
+                                    onClick={() => {
+                                        const newSlide: SliderSlide = { id: Math.random().toString(36).substr(2, 9), image: '', title: 'Nowy Slajd', subtitle: 'Podtytuł' };
+                                        onUpdate(section.id, { slides: [...(section.slides || []), newSlide] });
+                                    }}
+                                    className="text-xs bg-blue-500/20 text-blue-500 px-2 py-1 rounded border border-blue-500/30 font-bold"
+                                >
+                                    + DODAJ SLAJD
+                                </button>
                             </div>
-                            <div>
-                                <label className="block text-[10px] text-zinc-500 mb-1 uppercase font-black">Link Przycisku</label>
-                                <input type="text" value={section.buttonLink || ''} onChange={e => onUpdate(section.id, { buttonLink: e.target.value })} className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-1.5 text-xs text-white" placeholder="np. /kontakt lub #rfq" />
+                            <div className="space-y-3">
+                                {(section.slides || []).map((slide, sIndex) => (
+                                    <div key={slide.id} className="bg-zinc-800 p-4 rounded border border-zinc-700 flex gap-4 items-center">
+                                        <div className="w-20 h-12 bg-zinc-900 rounded overflow-hidden relative group shrink-0">
+                                            {slide.image ? <img src={slide.image} className="w-full h-full object-cover" /> : <ImageIcon size={20} className="m-auto mt-3 text-zinc-700" />}
+                                            <button onClick={() => openMediaPicker(section.id, { target: 'single', index: sIndex })} className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 text-[8px] text-white font-bold uppercase transition-opacity">Zmień</button>
+                                        </div>
+                                        <div className="flex-1 grid grid-cols-2 gap-2">
+                                            <input type="text" value={slide.title} onChange={e => { const up = [...section.slides!]; up[sIndex].title = e.target.value; onUpdate(section.id, { slides: up }); }} placeholder="Tytuł" className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs text-white" />
+                                            <input type="text" value={slide.subtitle} onChange={e => { const up = [...section.slides!]; up[sIndex].subtitle = e.target.value; onUpdate(section.id, { slides: up }); }} placeholder="Tag" className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-[10px] text-zinc-400 uppercase font-bold" />
+                                        </div>
+                                        <button onClick={() => onUpdate(section.id, { slides: section.slides!.filter((_, i) => i !== sIndex) })} className="text-zinc-600 hover:text-red-500"><Trash2 size={16} /></button>
+                                    </div>
+                                ))}
                             </div>
                         </div>
+                    )
+                }
 
-                        <div className="flex items-center justify-between">
-                            <h4 className="text-xs font-black text-zinc-600 uppercase tracking-widest">Baza Raportów PDF</h4>
-                            <button
-                                onClick={() => {
-                                    const newReport: ThermalReport = { id: Math.random().toString(36).substr(2, 9), title: 'Nowy Raport', date: '30.12.2025', location: 'Toruń PL', equipment: 'DJI Mavic 3 Thermal', pdfUrl: '', thumbnailUrl: '', type: 'INSPEKCJA PV' };
-                                    onUpdate(section.id, { thermal_reports: [...(section.thermal_reports || []), newReport] });
-                                }}
-                                className="text-[10px] bg-yellow-500/10 text-yellow-500 px-3 py-1 rounded-full border border-yellow-500/20 hover:bg-yellow-500/20 font-black uppercase tracking-widest"
-                            >
-                                + DODAJ RAPORT
-                            </button>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {(section.thermal_reports || []).map((rep, rIndex) => (
-                                <div key={rep.id} className="bg-zinc-800/80 p-5 rounded-2xl border border-white/5 space-y-4 hover:border-yellow-500/20 transition-all group">
-                                    <div className="flex items-start justify-between">
-                                        <div className="w-12 h-12 bg-zinc-900 rounded-xl border border-zinc-700 flex items-center justify-center text-yellow-500 shrink-0">
-                                            <FileText size={24} />
-                                        </div>
-                                        <div className="flex-1 ml-4 space-y-1">
-                                            <input type="text" value={rep.title} onChange={e => { const up = [...section.thermal_reports!]; up[rIndex].title = e.target.value; onUpdate(section.id, { thermal_reports: up }); }} className="w-full bg-transparent border-none p-0 text-sm text-white font-bold" placeholder="Tytuł raportu" />
-                                            <input type="text" value={rep.type} onChange={e => { const up = [...section.thermal_reports!]; up[rIndex].type = e.target.value; onUpdate(section.id, { thermal_reports: up }); }} className="w-full bg-transparent border-none p-0 text-[10px] text-yellow-500/60 font-black uppercase tracking-tighter" placeholder="TYP: PV / BUDYNEK" />
-                                        </div>
-                                        <button onClick={() => onUpdate(section.id, { thermal_reports: section.thermal_reports!.filter((_, i) => i !== rIndex) })} className="text-zinc-600 hover:text-red-500 ml-2"><Trash2 size={16} /></button>
+                {/* THERMAL REPORT SHOWCASE */}
+                {
+                    section.type === 'thermal_report' && (
+                        <div className="space-y-6">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs text-zinc-500 mb-1">Tytuł Sekcji</label>
+                                    <input type="text" value={section.title || ''} onChange={e => onUpdate(section.id, { title: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white font-bold" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs text-zinc-500 mb-1">Podtytuł</label>
+                                    <input type="text" value={section.subtitle || ''} onChange={e => onUpdate(section.id, { subtitle: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-zinc-400" />
+                                </div>
+                            </div>
+
+                            {/* CTA Editor */}
+                            <div className="bg-yellow-500/5 p-6 rounded-3xl border border-yellow-500/10 space-y-4">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <Stars size={16} className="text-yellow-500" />
+                                    <h4 className="text-[10px] font-black text-yellow-500 uppercase tracking-widest">Sekcja "Potrzebujesz analizy?" (CTA)</h4>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-[10px] text-zinc-500 mb-1 uppercase font-black">Tytuł CTA</label>
+                                        <input type="text" value={section.featureTitle || ''} onChange={e => onUpdate(section.id, { featureTitle: e.target.value })} className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-1.5 text-xs text-white" placeholder="np. Potrzebujesz profesjonalnej analizy?" />
                                     </div>
-                                    <div className="grid grid-cols-2 gap-3 pb-3 border-b border-white/5">
-                                        <div className="space-y-1">
-                                            <label className="text-[8px] text-zinc-600 uppercase font-black">Data</label>
-                                            <input type="text" value={rep.date} onChange={e => { const up = [...section.thermal_reports!]; up[rIndex].date = e.target.value; onUpdate(section.id, { thermal_reports: up }); }} className="w-full bg-zinc-900/50 border border-zinc-700 rounded px-2 py-1 text-[10px] text-zinc-300" />
-                                        </div>
-                                        <div className="space-y-1">
-                                            <label className="text-[8px] text-zinc-600 uppercase font-black">Lokalizacja</label>
-                                            <input type="text" value={rep.location} onChange={e => { const up = [...section.thermal_reports!]; up[rIndex].location = e.target.value; onUpdate(section.id, { thermal_reports: up }); }} className="w-full bg-zinc-900/50 border border-zinc-700 rounded px-2 py-1 text-[10px] text-zinc-300" />
-                                        </div>
-                                    </div>
-                                    <div className="space-y-3">
-                                        <div className="flex items-center gap-3">
-                                            <div className="flex-1">
-                                                <label className="text-[8px] text-zinc-600 uppercase font-black mb-1 block">Miniaturka</label>
-                                                <div className="flex gap-2">
-                                                    <div className="w-10 h-10 bg-zinc-900 rounded overflow-hidden border border-zinc-700 shrink-0 flex items-center justify-center">
-                                                        {rep.thumbnailUrl ? (
-                                                            <img src={rep.thumbnailUrl} className="w-full h-full object-cover" />
-                                                        ) : (
-                                                            <ImageIcon size={16} className="text-zinc-700" />
-                                                        )}
-                                                    </div>
-                                                    <button onClick={() => openMediaPicker(section.id, { target: 'single', context: 'visual', index: rIndex })} className="flex-1 py-1.5 bg-zinc-700 hover:bg-zinc-600 text-[10px] font-bold text-white rounded uppercase px-2 transition-colors">
-                                                        {rep.thumbnailUrl ? 'Zmień Foto' : 'Wybierz Foto'}
-                                                    </button>
-                                                </div>
-                                            </div>
-                                            <div className="flex-1">
-                                                <label className="text-[8px] text-zinc-600 uppercase font-black mb-1 block">PDF Raport</label>
-                                                <div className="flex gap-2">
-                                                    <div className={`w-10 h-10 rounded overflow-hidden border shrink-0 flex items-center justify-center transition-colors ${rep.pdfUrl ? 'bg-red-500/10 border-red-500/30 text-red-500' : 'bg-zinc-900 border-zinc-700 text-zinc-700'}`}>
-                                                        <FileText size={16} />
-                                                    </div>
-                                                    <button onClick={() => openMediaPicker(section.id, { target: 'single', context: 'thermal', index: rIndex })} className={`flex-1 py-1.5 rounded text-[10px] font-bold uppercase transition-all border ${rep.pdfUrl ? 'bg-zinc-900 text-yellow-500 border-yellow-500/20 hover:border-yellow-500' : 'bg-zinc-800 text-zinc-400 border-transparent hover:bg-zinc-700'}`}>
-                                                        {rep.pdfUrl ? 'Zmień PDF' : 'Wgraj PDF'}
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <input type="text" value={rep.equipment} onChange={e => { const up = [...section.thermal_reports!]; up[rIndex].equipment = e.target.value; onUpdate(section.id, { thermal_reports: up }); }} placeholder="Sprzęt pomiarowy" className="w-full bg-zinc-900/50 border border-zinc-700 rounded px-3 py-1.5 text-[10px] text-zinc-500 italic" />
+                                    <div>
+                                        <label className="block text-[10px] text-zinc-500 mb-1 uppercase font-black">Przycisk CTA</label>
+                                        <input type="text" value={section.buttonText || ''} onChange={e => onUpdate(section.id, { buttonText: e.target.value })} className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-1.5 text-xs text-white" placeholder="np. DOWIEDZ SIĘ WIĘCEJ" />
                                     </div>
                                 </div>
-                            ))}
+                                <div>
+                                    <label className="block text-[10px] text-zinc-500 mb-1 uppercase font-black">Opis CTA</label>
+                                    <textarea value={section.featureContent || ''} onChange={e => onUpdate(section.id, { featureContent: e.target.value })} className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-1.5 text-xs text-zinc-300 min-h-[60px]" placeholder="Opis działania raportów..." />
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] text-zinc-500 mb-1 uppercase font-black">Link Przycisku</label>
+                                    <input type="text" value={section.buttonLink || ''} onChange={e => onUpdate(section.id, { buttonLink: e.target.value })} className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-1.5 text-xs text-white" placeholder="np. /kontakt lub #rfq" />
+                                </div>
+                            </div>
+
+                            <div className="flex items-center justify-between">
+                                <h4 className="text-xs font-black text-zinc-600 uppercase tracking-widest">Baza Raportów PDF</h4>
+                                <button
+                                    onClick={() => {
+                                        const newReport: ThermalReport = { id: Math.random().toString(36).substr(2, 9), title: 'Nowy Raport', date: '30.12.2025', location: 'Toruń PL', equipment: 'DJI Mavic 3 Thermal', pdfUrl: '', thumbnailUrl: '', type: 'INSPEKCJA PV' };
+                                        onUpdate(section.id, { thermal_reports: [...(section.thermal_reports || []), newReport] });
+                                    }}
+                                    className="text-[10px] bg-yellow-500/10 text-yellow-500 px-3 py-1 rounded-full border border-yellow-500/20 hover:bg-yellow-500/20 font-black uppercase tracking-widest"
+                                >
+                                    + DODAJ RAPORT
+                                </button>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {(section.thermal_reports || []).map((rep, rIndex) => (
+                                    <div key={rep.id} className="bg-zinc-800/80 p-5 rounded-2xl border border-white/5 space-y-4 hover:border-yellow-500/20 transition-all group">
+                                        <div className="flex items-start justify-between">
+                                            <div className="w-12 h-12 bg-zinc-900 rounded-xl border border-zinc-700 flex items-center justify-center text-yellow-500 shrink-0">
+                                                <FileText size={24} />
+                                            </div>
+                                            <div className="flex-1 ml-4 space-y-1">
+                                                <input type="text" value={rep.title} onChange={e => { const up = [...section.thermal_reports!]; up[rIndex].title = e.target.value; onUpdate(section.id, { thermal_reports: up }); }} className="w-full bg-transparent border-none p-0 text-sm text-white font-bold" placeholder="Tytuł raportu" />
+                                                <input type="text" value={rep.type} onChange={e => { const up = [...section.thermal_reports!]; up[rIndex].type = e.target.value; onUpdate(section.id, { thermal_reports: up }); }} className="w-full bg-transparent border-none p-0 text-[10px] text-yellow-500/60 font-black uppercase tracking-tighter" placeholder="TYP: PV / BUDYNEK" />
+                                            </div>
+                                            <button onClick={() => onUpdate(section.id, { thermal_reports: section.thermal_reports!.filter((_, i) => i !== rIndex) })} className="text-zinc-600 hover:text-red-500 ml-2"><Trash2 size={16} /></button>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-3 pb-3 border-b border-white/5">
+                                            <div className="space-y-1">
+                                                <label className="text-[8px] text-zinc-600 uppercase font-black">Data</label>
+                                                <input type="text" value={rep.date} onChange={e => { const up = [...section.thermal_reports!]; up[rIndex].date = e.target.value; onUpdate(section.id, { thermal_reports: up }); }} className="w-full bg-zinc-900/50 border border-zinc-700 rounded px-2 py-1 text-[10px] text-zinc-300" />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <label className="text-[8px] text-zinc-600 uppercase font-black">Lokalizacja</label>
+                                                <input type="text" value={rep.location} onChange={e => { const up = [...section.thermal_reports!]; up[rIndex].location = e.target.value; onUpdate(section.id, { thermal_reports: up }); }} className="w-full bg-zinc-900/50 border border-zinc-700 rounded px-2 py-1 text-[10px] text-zinc-300" />
+                                            </div>
+                                        </div>
+                                        <div className="space-y-3">
+                                            <div className="flex items-center gap-3">
+                                                <div className="flex-1">
+                                                    <label className="text-[8px] text-zinc-600 uppercase font-black mb-1 block">Miniaturka</label>
+                                                    <div className="flex gap-2">
+                                                        <div className="w-10 h-10 bg-zinc-900 rounded overflow-hidden border border-zinc-700 shrink-0 flex items-center justify-center">
+                                                            {rep.thumbnailUrl ? (
+                                                                <img src={rep.thumbnailUrl} className="w-full h-full object-cover" />
+                                                            ) : (
+                                                                <ImageIcon size={16} className="text-zinc-700" />
+                                                            )}
+                                                        </div>
+                                                        <button onClick={() => openMediaPicker(section.id, { target: 'single', context: 'visual', index: rIndex })} className="flex-1 py-1.5 bg-zinc-700 hover:bg-zinc-600 text-[10px] font-bold text-white rounded uppercase px-2 transition-colors">
+                                                            {rep.thumbnailUrl ? 'Zmień Foto' : 'Wybierz Foto'}
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <div className="flex-1">
+                                                    <label className="text-[8px] text-zinc-600 uppercase font-black mb-1 block">PDF Raport</label>
+                                                    <div className="flex gap-2">
+                                                        <div className={`w-10 h-10 rounded overflow-hidden border shrink-0 flex items-center justify-center transition-colors ${rep.pdfUrl ? 'bg-red-500/10 border-red-500/30 text-red-500' : 'bg-zinc-900 border-zinc-700 text-zinc-700'}`}>
+                                                            <FileText size={16} />
+                                                        </div>
+                                                        <button onClick={() => openMediaPicker(section.id, { target: 'single', context: 'thermal', index: rIndex })} className={`flex-1 py-1.5 rounded text-[10px] font-bold uppercase transition-all border ${rep.pdfUrl ? 'bg-zinc-900 text-yellow-500 border-yellow-500/20 hover:border-yellow-500' : 'bg-zinc-800 text-zinc-400 border-transparent hover:bg-zinc-700'}`}>
+                                                            {rep.pdfUrl ? 'Zmień PDF' : 'Wgraj PDF'}
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <input type="text" value={rep.equipment} onChange={e => { const up = [...section.thermal_reports!]; up[rIndex].equipment = e.target.value; onUpdate(section.id, { thermal_reports: up }); }} placeholder="Sprzęt pomiarowy" className="w-full bg-zinc-900/50 border border-zinc-700 rounded px-3 py-1.5 text-[10px] text-zinc-500 italic" />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
-                    </div>
-                )}
-            </div>
-        </div>
+                    )
+                }
+                {/* STORY HERO - Premium Editorial Split Layout */}
+                {
+                    section.type === 'story_hero' && (
+                        <div className="space-y-4">
+                            {/* ... existing story_hero content or if it was removed in previous steps, re-add or skip if it's already there ... */}
+                            {/* Wait, I saw story_hero earlier. I should just append my new blocks. */}
+                        </div>
+                    )
+                }
+                {/* Re-adding previous block closure to ensure I don't break anything, actually I'll just append to the end of thermal_report block */}
+
+                {/* STORIES GRID */}
+                {
+                    section.type === 'stories_grid' && (
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs text-zinc-400 mb-1">Tytuł Sekcji</label>
+                                    <input type="text" value={section.title || ''} onChange={e => onUpdate(section.id, { title: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs text-zinc-400 mb-1">Podtytuł</label>
+                                    <input type="text" value={section.subtitle || ''} onChange={e => onUpdate(section.id, { subtitle: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white" />
+                                </div>
+                            </div>
+
+                            <div className="flex items-center justify-between mb-2">
+                                <h4 className="text-xs font-bold text-zinc-500 uppercase">Kafelki Historii</h4>
+                                <button
+                                    onClick={() => {
+                                        const newStory: StoryGridItem = { id: Math.random().toString(36).substr(2, 9), title: 'Nowa Historia', image: '', link: '', category: '' };
+                                        onUpdate(section.id, { stories_items: [...(section.stories_items || []), newStory] });
+                                    }}
+                                    className="text-xs bg-yellow-500/20 text-yellow-500 px-2 py-1 rounded border border-yellow-500/30 font-bold"
+                                >
+                                    + DODAJ HISTORIĘ
+                                </button>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {(section.stories_items || []).map((item, idx) => (
+                                    <div key={item.id} className="bg-zinc-800 p-4 rounded border border-zinc-700 flex gap-4 items-start relative group">
+                                        <div className="w-20 h-24 bg-zinc-900 rounded overflow-hidden relative border border-zinc-600 shrink-0">
+                                            {item.image ? (
+                                                <img src={item.image} className="w-full h-full object-cover" />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center text-zinc-700"><ImageIcon size={20} /></div>
+                                            )}
+                                            <button onClick={() => openMediaPicker(section.id, { target: 'single', context: 'visual', index: idx })} className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 flex items-center justify-center text-[9px] text-white font-bold uppercase transition-opacity">Zmień</button>
+                                        </div>
+                                        <div className="flex-1 space-y-2">
+                                            <input type="text" value={item.title} onChange={e => { const up = [...section.stories_items!]; up[idx].title = e.target.value; onUpdate(section.id, { stories_items: up }); }} placeholder="Tytuł Historii" className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs text-white mobile-bounce" />
+                                            <input type="text" value={item.category || ''} onChange={e => { const up = [...section.stories_items!]; up[idx].category = e.target.value; onUpdate(section.id, { stories_items: up }); }} placeholder="Kategoria (np. WESELE)" className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-[10px] text-yellow-500 font-bold uppercase" />
+                                            <input type="text" value={item.link} onChange={e => { const up = [...section.stories_items!]; up[idx].link = e.target.value; onUpdate(section.id, { stories_items: up }); }} placeholder="Link (np. /historie/ola-i-tomek)" className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs text-zinc-400" />
+                                        </div>
+                                        <button onClick={() => onUpdate(section.id, { stories_items: section.stories_items!.filter((_, i) => i !== idx) })} className="absolute top-2 right-2 text-zinc-600 hover:text-red-500"><Trash2 size={14} /></button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )
+                }
+
+                {/* CHRONOLOGICAL GALLERY */}
+                {
+                    section.type === 'chronological_gallery' && (
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                                <h4 className="text-xs font-bold text-zinc-500 uppercase">Chronologiczna Galeria</h4>
+                                <div className="flex gap-2">
+                                    <select
+                                        value={section.gallery_layout || 'grid'}
+                                        onChange={(e) => onUpdate(section.id, { gallery_layout: e.target.value as any })}
+                                        className="bg-zinc-800 border border-zinc-700 rounded text-xs text-white px-2 py-1"
+                                    >
+                                        <option value="grid">Siatka (Grid)</option>
+                                        <option value="list">Lista (Kolumna)</option>
+                                    </select>
+                                    <button
+                                        onClick={() => {
+                                            // Sort items by filename
+                                            const sorted = [...(section.chronological_items || [])].sort((a, b) => {
+                                                const nameA = a.image.split('/').pop() || '';
+                                                const nameB = b.image.split('/').pop() || '';
+                                                return nameA.localeCompare(nameB, undefined, { numeric: true, sensitivity: 'base' });
+                                            });
+                                            onUpdate(section.id, { chronological_items: sorted });
+                                        }}
+                                        className="text-xs bg-blue-500/20 text-blue-500 px-2 py-1 rounded border border-blue-500/30 font-bold hover:bg-blue-500/30 transition-colors"
+                                    >
+                                        A-Z SORTUJ
+                                    </button>
+                                    <button
+                                        onClick={() => openMediaPicker(section.id, { target: 'gallery' })}
+                                        className="text-xs bg-yellow-500/20 text-yellow-500 px-2 py-1 rounded border border-yellow-500/30 font-bold hover:bg-yellow-500/30 transition-colors"
+                                    >
+                                        + DODAJ ZDJĘCIA
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
+                                {(section.chronological_items || []).map((item, idx) => (
+                                    <div key={item.id} className="relative group aspect-square bg-zinc-800 rounded overflow-hidden border border-zinc-700">
+                                        <img src={item.image} className="w-full h-full object-cover" />
+                                        <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-2">
+                                            <textarea
+                                                value={item.description || ''}
+                                                onChange={(e) => {
+                                                    const up = [...(section.chronological_items || [])];
+                                                    up[idx].description = e.target.value;
+                                                    onUpdate(section.id, { chronological_items: up });
+                                                }}
+                                                placeholder="Opis..."
+                                                className="w-full bg-transparent text-[10px] text-white border-b border-zinc-600 focus:border-yellow-500 outline-none resize-none h-12 mb-6"
+                                            />
+                                            <button
+                                                onClick={() => {
+                                                    const up = section.chronological_items!.filter((_, i) => i !== idx);
+                                                    onUpdate(section.id, { chronological_items: up });
+                                                }}
+                                                className="absolute top-1 right-1 p-1 text-red-500 hover:text-red-400 bg-black/50 rounded-full"
+                                            >
+                                                <Trash2 size={12} />
+                                            </button>
+                                        </div>
+                                        <span className="absolute bottom-1 right-1 text-[8px] bg-black/50 text-zinc-400 px-1 rounded pointer-events-none">
+                                            {item.image.split('/').pop()?.slice(0, 10)}...
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )
+                }
+            </div >
+        </div >
     );
 }
 
@@ -2674,11 +2934,11 @@ export default function PageBuilder({ sections, onChange, pageType }: PageBuilde
     // Global MediaPicker State
     const [showMediaPicker, setShowMediaPicker] = useState(false);
     const [mediaPickerTarget, setMediaPickerTarget] = useState<'single' | 'gallery'>('single');
-    const [mediaPickerContext, setMediaPickerContext] = useState<'visual' | 'thermal' | 'before' | 'case_logo' | 'case_video' | 'video' | 'mini_gallery_item' | null>(null);
+    const [mediaPickerContext, setMediaPickerContext] = useState<'visual' | 'thermal' | 'before' | 'case_logo' | 'case_video' | 'video' | 'mini_gallery_item' | 'story_cover' | 'chronological' | null>(null);
     const [sectionEditIndex, setSectionEditIndex] = useState(-1);
     const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
 
-    const openMediaPicker = (sectionId: string, options: { target: 'single' | 'gallery', context?: 'visual' | 'thermal' | 'before' | 'case_logo' | 'case_video' | 'video' | 'mini_gallery_item', index?: number }) => {
+    const openMediaPicker = (sectionId: string, options: { target: 'single' | 'gallery', context?: 'visual' | 'thermal' | 'before' | 'case_logo' | 'case_video' | 'video' | 'mini_gallery_item' | 'story_cover' | 'chronological', index?: number }) => {
         setActiveSectionId(sectionId);
         setMediaPickerTarget(options.target);
         setMediaPickerContext(options.context || null);
@@ -2800,6 +3060,27 @@ export default function PageBuilder({ sections, onChange, pageType }: PageBuilde
             }
         } else if (section.type === 'parallax_video') {
             updateSection(activeSectionId, { videoUrl: imageUrl });
+        } else if (section.type === 'stories_grid') {
+            const updated = [...(section.stories_items || [])];
+            if (sectionEditIndex >= 0) {
+                updated[sectionEditIndex] = { ...updated[sectionEditIndex], image: imageUrl };
+                updateSection(activeSectionId, { stories_items: updated });
+            }
+        } else if (section.type === 'chronological_gallery') {
+            if (mediaPickerTarget === 'gallery') {
+                const newUrls = Array.isArray(url) ? url : [url];
+                const newItems: ChronologicalGalleryItem[] = newUrls.map(u => ({
+                    id: Math.random().toString(36).substr(2, 9),
+                    image: u,
+                    description: ''
+                }));
+                updateSection(activeSectionId, { chronological_items: [...(section.chronological_items || []), ...newItems] });
+            } else if (sectionEditIndex >= 0) {
+                // Handle single item update
+                const updated = [...(section.chronological_items || [])];
+                updated[sectionEditIndex] = { ...updated[sectionEditIndex], image: imageUrl };
+                updateSection(activeSectionId, { chronological_items: updated });
+            }
         } else if (mediaPickerTarget === 'single') {
             updateSection(activeSectionId, { image: imageUrl });
         } else {
@@ -2940,6 +3221,13 @@ export default function PageBuilder({ sections, onChange, pageType }: PageBuilde
             newSection.title = 'Chwile pełne emocji';
             newSection.subtitle = 'NASZA PASJA';
             newSection.layout = 'left';
+        } else if (type === 'stories_grid') {
+            newSection.title = 'Wasze Historie';
+            newSection.subtitle = 'REPORTAŻE';
+            newSection.stories_items = [];
+        } else if (type === 'chronological_gallery') {
+            newSection.chronological_items = [];
+            newSection.gallery_layout = 'grid';
         }
 
 
@@ -3231,6 +3519,13 @@ export default function PageBuilder({ sections, onChange, pageType }: PageBuilde
                     <ShieldCheck className="w-4 h-4" /> Certyfikaty
                 </button>
 
+                <button onClick={() => addSection('stories_grid')} className="flex items-center gap-2 px-4 py-2 bg-pink-600/20 hover:bg-pink-600/30 border border-pink-500/30 rounded text-sm text-pink-400 transition-colors">
+                    <Layout className="w-4 h-4" /> Stories Grid (Wasze Historie)
+                </button>
+                <button onClick={() => addSection('chronological_gallery')} className="flex items-center gap-2 px-4 py-2 bg-cyan-600/20 hover:bg-cyan-600/30 border border-cyan-500/30 rounded text-sm text-cyan-400 transition-colors">
+                    <ImageIcon className="w-4 h-4" /> Chronological Gallery 📸
+                </button>
+
                 <div className="w-full h-px bg-zinc-800 my-2" />
                 <span className="w-full text-[10px] font-bold text-zinc-600 uppercase tracking-widest mb-1 ml-1">Editorial & Storytelling (Premium)</span>
 
@@ -3255,6 +3550,7 @@ export default function PageBuilder({ sections, onChange, pageType }: PageBuilde
                 <button onClick={() => addSection('featured_carousel')} className="flex items-center gap-2 px-4 py-2 bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 rounded text-sm text-purple-400 transition-colors">
                     <LayoutTemplate className="w-4 h-4" /> Featured Carousel 🎡
                 </button>
+
             </div>
 
             {/* Moduły B2B Premium - Only for B2B */}

@@ -160,6 +160,7 @@ System wykorzystuje znormalizowany model danych z silnymi relacjami.
 | **Identity** | `AdminUser` | JWT Auth, Role: ADMIN/USER. |
 | **CMS** | `Page`, `MenuItem` | Hierarchiczna nawigacja, JSON Sections. |
 | **E-commerce** | `Booking`, `GiftCard` | Płatności asynchroniczne, walidacja kodów, statusy blokujące kalendarz. |
+| **Modules** | `HeroParallax`, `StoriesGrid`, `ChronologicalGallery`, `MagazineLayout`, `ThermalHero`, `ThermalSlider` | Sekcje dynamiczne i interaktywne. |
 | **Media** | `MediaLibrary` | Metadane S3, optymalizacja formatów. |
 | **Challenges** | `PhotoChallenge`, `ChallengeSetting` | Silnik wiralowy, system negocjacji terminów, dedykowana konfiguracja (HQ, Radius). |
 | **Analytics** | `AnalyticsEvent`, `Snapshot` | Śledzenie konwersji, BI Dashboard. |
@@ -253,4 +254,4 @@ System jest oceniony jako **100% Ready for Production**. Wszystkie krytyczne bł
 ---
 
 *Opracowane przez: Senior Architect Antigravity*
-*Ostatnia aktualizacja: 2026-01-14*
+*Ostatnia aktualizacja: 2026-01-18*

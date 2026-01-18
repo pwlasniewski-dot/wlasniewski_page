@@ -12,20 +12,21 @@ interface ParallaxSectionProps {
     title?: string;
     subtitle?: string;
 
-    // Configuration matches logic from previous component for compatibility
-    height?: string; // Tailwind class e.g. "min-h-screen"
+    // Configuration
+    height?: string;
     overlayOpacity?: number;
     textOpacity?: number;
     textColor?: string;
-    textAnimation?: 'fade' | 'slide-up' | 'scale';
+    fontFamily?: 'sans' | 'serif' | 'display' | 'handwriting';
+    textAnimation?: 'fade' | 'slide-up' | 'scale' | 'artistic';
 
-    // Legacy/Unused but kept for strict prop compatibility if spread
+    // Legacy/Unused but kept for compatibility
     floatingImage?: boolean;
     parallaxSpeed?: number;
-    imageOffset?: number; // kept for compatibility but logic is internal now
+    imageOffset?: number;
     children?: React.ReactNode;
 
-    // Allow alternate prop names from CMS
+    // Allow alternate prop names
     imageSrc?: string;
 }
 
@@ -41,6 +42,7 @@ export default function ParallaxSection({
     overlayOpacity = 0.4,
     textColor = '#FFFFFF',
     textOpacity = 1,
+    fontFamily = 'display',
     textAnimation = 'slide-up',
     children
 }: ParallaxSectionProps) {
@@ -56,51 +58,46 @@ export default function ParallaxSection({
     }, []);
 
     useEffect(() => {
-        // Priority: Mobile Specific -> Desktop Specific -> Generic -> ImageSrc (CMS)
         const selected = isMobile && image_mobile
             ? image_mobile
             : image_desktop || image || imageSrc || '';
         setFinalImage(selected);
     }, [isMobile, image_mobile, image_desktop, image, imageSrc]);
 
-    // Track scroll progress of this specific section
     const { scrollYProgress } = useScroll({
         target: ref,
         offset: ["start end", "end start"]
     });
 
-    // SMOOTH SCROLL PHYSICS
-    // We map scroll 0..1 to Y transform.
-    // To prevent gaps, we need the image to be taller than the container.
-    // Implementation:
-    // Container: h-full (relative)
-    // Image: h-[120%] (absolute), top: -10% (centered)
-    // Movement: -10% to +10% of section height is the safe range.
-    // Let's use pixels for better control or % relative to image.
-
-    // We move the image slowly against the scroll direction.
-    // "start end" (bottom of viewport) -> y: -50px
-    // "end start" (top of viewport) -> y: 50px
-    // This allows the image to travel 100px total.
-    // With 120% height, we have plenty of buffer.
-
     const springY = useSpring(scrollYProgress, {
-        stiffness: 80, // Lower stiffness for smoother transitions
-        damping: 30,  // Balanced damping
+        stiffness: 80,
+        damping: 30,
         restDelta: 0.001
     });
 
     const yRange = isMobile ? ["-15%", "15%"] : ["-25%", "25%"];
     const y = useTransform(springY, [0, 1], yRange);
 
-    // Text Animations
+    // Font Styles Map
+    const fontClasses = {
+        'sans': 'font-sans',
+        'serif': 'font-serif',
+        'display': 'font-display',
+        'handwriting': 'font-handwriting' // Ensure this exists in tailwind config or use a specific class
+    };
+
+    const activeFont = fontClasses[fontFamily] || 'font-display';
+
+    // Animation Variants
     const textVariants = {
         'fade': { initial: { opacity: 0 }, animate: { opacity: textOpacity } },
         'slide-up': { initial: { opacity: 0, y: 50 }, animate: { opacity: textOpacity, y: 0 } },
-        'scale': { initial: { opacity: 0, scale: 0.9 }, animate: { opacity: textOpacity, scale: 1 } }
+        'scale': { initial: { opacity: 0, scale: 0.9 }, animate: { opacity: textOpacity, scale: 1 } },
+        'artistic': {
+            initial: { opacity: 0, filter: 'blur(10px)', letterSpacing: '0.5em' },
+            animate: { opacity: textOpacity, filter: 'blur(0px)', letterSpacing: 'normal' }
+        }
     };
-
-
 
     return (
         <section
@@ -108,7 +105,6 @@ export default function ParallaxSection({
             className={`relative w-full ${height} overflow-hidden bg-black flex items-center justify-center`}
         >
             {/* BACKGROUND LAYER */}
-            {/* Absolute container that is TALLER than the section */}
             <div className="absolute inset-x-0 -top-[30%] h-[160%] z-0 pointer-events-none">
                 {finalImage && (
                     <motion.div
@@ -119,44 +115,43 @@ export default function ParallaxSection({
                             className="absolute inset-0 bg-cover bg-no-repeat"
                             style={{
                                 backgroundImage: `url(${finalImage})`,
-                                backgroundPosition: 'center 15%' // Face-safe alignment
+                                backgroundPosition: 'center 15%'
                             }}
                         />
                     </motion.div>
                 )}
             </div>
 
-            {/* EDGE BLURS (Vignette/Fade) */}
+            {/* EDGE BLURS */}
             <div className="absolute top-0 left-0 w-full h-32 md:h-64 bg-gradient-to-b from-black via-black/60 to-transparent z-10 pointer-events-none" />
             <div className="absolute bottom-0 left-0 w-full h-32 md:h-64 bg-gradient-to-t from-black via-black/60 to-transparent z-10 pointer-events-none" />
 
-            {/* OVERLAY LAYER */}
+            {/* OVERLAY */}
             <div
                 className="absolute inset-0 z-10 bg-black pointer-events-none"
                 style={{ opacity: overlayOpacity }}
             />
 
-            {/* CONTENT LAYER */}
+            {/* CONTENT */}
             <div className="relative z-20 w-full max-w-7xl mx-auto px-6 flex items-center justify-center text-center">
                 {children || (
                     <motion.div
                         initial={textVariants[textAnimation].initial}
                         whileInView={textVariants[textAnimation].animate}
                         viewport={{ once: true, margin: "-20%" }}
-                        transition={{ duration: 0.8, ease: "easeOut" }}
+                        transition={{ duration: 1.2, ease: "easeOut" }} // Slower duration for artistic feel
                     >
                         <h2
-                            className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-display font-bold tracking-tight drop-shadow-2xl"
+                            className={`text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight drop-shadow-2xl ${activeFont}`}
                             style={{
                                 color: textColor,
-                                textShadow: '0 4px 20px rgba(0,0,0,0.5)'
+                                textShadow: '0 4px 30px rgba(0,0,0,0.8)' // Stronger shadow for readability
                             }}
-                        >
-                            {title}
-                        </h2>
+                            dangerouslySetInnerHTML={{ __html: title || '' }}
+                        />
                         {subtitle && (
                             <p
-                                className="text-lg md:text-2xl font-light tracking-wide mt-4"
+                                className="text-lg md:text-2xl font-light tracking-wide mt-6 max-w-3xl mx-auto leading-relaxed"
                                 style={{
                                     color: (textColor === '#FFFFFF' || textColor === 'white') ? '#e4e4e7' : '#18181b',
                                     textShadow: '0 2px 10px rgba(0,0,0,0.5)'
