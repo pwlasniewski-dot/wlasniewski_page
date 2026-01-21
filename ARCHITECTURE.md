@@ -160,7 +160,7 @@ System wykorzystuje znormalizowany model danych z silnymi relacjami.
 | **Identity** | `AdminUser` | JWT Auth, Role: ADMIN/USER. |
 | **CMS** | `Page`, `MenuItem` | Hierarchiczna nawigacja, JSON Sections. |
 | **E-commerce** | `Booking`, `GiftCard` | Płatności asynchroniczne, walidacja kodów, statusy blokujące kalendarz. |
-| **Modules** | `HeroParallax`, `StoriesGrid`, `ChronologicalGallery`, `MagazineLayout`, `ThermalHero`, `ThermalSlider` | Sekcje dynamiczne i interaktywne. |
+| **Modules** | `HeroParallax`, `StoriesGrid`, `ChronologicalGallery`, `MagazineLayout`, `ThermalHero`, `ThermalSlider`, `FloatingButton` | Sekcje dynamiczne i interaktywne. |
 | **Media** | `MediaLibrary` | Metadane S3, optymalizacja formatów. |
 | **Challenges** | `PhotoChallenge`, `ChallengeSetting` | Silnik wiralowy, system negocjacji terminów, dedykowana konfiguracja (HQ, Radius). |
 | **Analytics** | `AnalyticsEvent`, `Snapshot` | Śledzenie konwersji, BI Dashboard. |

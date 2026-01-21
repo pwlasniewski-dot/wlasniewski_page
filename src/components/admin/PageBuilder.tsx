@@ -13,7 +13,7 @@ import {
 import RichTextEditor from './RichTextEditor';
 import MediaPicker from './MediaPicker';
 
-export type SectionType = 'hero_parallax' | 'hero' | 'rich_text' | 'image_text' | 'gallery' | 'contact' | 'thermal_slider' | 'contact_form' | 'hero_slider' | 'about' | 'features' | 'parallax' | 'info_band' | 'testimonials' | 'challenge_banner' | 'creative_slider' | 'certificates' | 'b2b_hero' | 'b2b_stats' | 'b2b_logos' | 'b2b_process' | 'b2b_cases' | 'b2b_contact' | 'b2b_video' | 'thermal_hero' | 'hero_video' | 'parallax_video' | 'thermal_report' | 'mini_gallery' | 'story_hero' | 'magazine_layout' | 'masonry_gallery' | 'client_story' | 'process_timeline' | 'investment_teaser' | 'narrative_text' | 'featured_carousel' | 'stories_grid' | 'chronological_gallery';
+export type SectionType = 'hero_parallax' | 'hero' | 'rich_text' | 'image_text' | 'gallery' | 'contact' | 'thermal_slider' | 'contact_form' | 'hero_slider' | 'about' | 'features' | 'parallax' | 'info_band' | 'testimonials' | 'challenge_banner' | 'creative_slider' | 'certificates' | 'b2b_hero' | 'b2b_stats' | 'b2b_logos' | 'b2b_process' | 'b2b_cases' | 'b2b_contact' | 'b2b_video' | 'thermal_hero' | 'hero_video' | 'parallax_video' | 'thermal_report' | 'mini_gallery' | 'story_hero' | 'magazine_layout' | 'masonry_gallery' | 'client_story' | 'process_timeline' | 'investment_teaser' | 'narrative_text' | 'featured_carousel' | 'stories_grid' | 'chronological_gallery' | 'floating_button';
 
 export interface SliderSlide {
     id: string;
@@ -2315,13 +2315,13 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove, openMedia
                                 <div>
                                     <label className="block text-xs text-zinc-400 mb-2">Drugie Zdjęcie (Detail)</label>
                                     <div className="flex gap-4 items-center">
-                                        {section.thermalImage && (
+                                        {section.secondaryImage && (
                                             <div className="relative w-24 h-32 rounded border border-zinc-700 overflow-hidden">
-                                                <img src={section.thermalImage} alt="" className="w-full h-full object-cover" />
+                                                <img src={section.secondaryImage} alt="" className="w-full h-full object-cover" />
                                             </div>
                                         )}
                                         <button
-                                            onClick={() => openMediaPicker(section.id, { target: 'single', context: 'thermal' })}
+                                            onClick={() => openMediaPicker(section.id, { target: 'single', context: 'secondary' })}
                                             className="px-3 py-1.5 bg-zinc-800 border border-zinc-700 rounded text-xs text-zinc-300 hover:text-white"
                                         >
                                             Wybierz
@@ -2918,6 +2918,64 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove, openMedia
                         </div>
                     )
                 }
+
+                {/* FLOATING BUTTON */}
+                {
+                    section.type === 'floating_button' && (
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs text-zinc-400 mb-1">Tekst przycisku</label>
+                                    <input
+                                        type="text"
+                                        value={section.buttonText || ''}
+                                        onChange={e => onUpdate(section.id, { buttonText: e.target.value })}
+                                        className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
+                                        placeholder="np. Wróć"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs text-zinc-400 mb-1">Link</label>
+                                    <input
+                                        type="text"
+                                        value={section.buttonLink || ''}
+                                        onChange={e => onUpdate(section.id, { buttonLink: e.target.value })}
+                                        className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
+                                        placeholder="np. / lub /portfolio"
+                                    />
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs text-zinc-400 mb-1">Pozycja</label>
+                                    <select
+                                        value={section.layout || 'bottom-right'}
+                                        onChange={e => onUpdate(section.id, { layout: e.target.value as any })}
+                                        className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
+                                    >
+                                        <option value="top-left">Góra Lewy (Top-Left)</option>
+                                        <option value="top-right">Góra Prawy (Top-Right)</option>
+                                        <option value="bottom-left">Dół Lewy (Bottom-Left)</option>
+                                        <option value="bottom-right">Dół Prawy (Bottom-Right)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-xs text-zinc-400 mb-1">Ikona</label>
+                                    <select
+                                        value={section.imagePosition || 'arrow-left'}
+                                        onChange={e => onUpdate(section.id, { imagePosition: e.target.value as any })}
+                                        className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
+                                    >
+                                        <option value="arrow-left">Strzałka Lewo</option>
+                                        <option value="arrow-right">Strzałka Prawo</option>
+                                        <option value="home">Dom (Home)</option>
+                                        <option value="external">Link Zewnętrzny</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    )
+                }
             </div >
         </div >
     );
@@ -3026,8 +3084,8 @@ export default function PageBuilder({ sections, onChange, pageType }: PageBuilde
                 }
             }
         } else if (section.type === 'magazine_layout') {
-            if (mediaPickerContext === 'thermal') {
-                updateSection(activeSectionId, { thermalImage: imageUrl });
+            if (mediaPickerContext === 'thermal' || mediaPickerContext === 'secondary') {
+                updateSection(activeSectionId, { secondaryImage: imageUrl });
             } else {
                 updateSection(activeSectionId, { image: imageUrl });
             }
@@ -3228,6 +3286,11 @@ export default function PageBuilder({ sections, onChange, pageType }: PageBuilde
         } else if (type === 'chronological_gallery') {
             newSection.chronological_items = [];
             newSection.gallery_layout = 'grid';
+        } else if (type === 'floating_button') {
+            newSection.buttonText = 'Wróć';
+            newSection.buttonLink = '/';
+            newSection.layout = 'bottom-right';
+            newSection.imagePosition = 'arrow-left'; // abusing this field for icon
         }
 
 
@@ -3549,6 +3612,9 @@ export default function PageBuilder({ sections, onChange, pageType }: PageBuilde
                 </button>
                 <button onClick={() => addSection('featured_carousel')} className="flex items-center gap-2 px-4 py-2 bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 rounded text-sm text-purple-400 transition-colors">
                     <LayoutTemplate className="w-4 h-4" /> Featured Carousel 🎡
+                </button>
+                <button onClick={() => addSection('floating_button')} className="flex items-center gap-2 px-4 py-2 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 rounded text-sm text-blue-400 transition-colors">
+                    <Layout className="w-4 h-4" /> Floating Button 🧭
                 </button>
 
             </div>

@@ -1,4 +1,3 @@
-// Deploy with manually fixed Root Directory
 'use client';
 
 import { useState, useEffect } from 'react';

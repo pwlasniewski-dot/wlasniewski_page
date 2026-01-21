@@ -43,6 +43,7 @@ import NarrativeText from '@/components/sections/NarrativeText';
 import FeaturedCarousel from '@/components/sections/FeaturedCarousel';
 import StoriesGrid from '@/components/sections/StoriesGrid';
 import ChronologicalGallery from '@/components/sections/ChronologicalGallery';
+import FloatingButton from '@/components/sections/FloatingButton';
 
 export default function PageRenderer({ sections }: { sections: PageSection[] }) {
     const [selectedCert, setSelectedCert] = React.useState<any>(null);
@@ -103,7 +104,7 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                             initial={{ opacity: 0, x: data.layout === 'right' ? 20 : -20 }}
                                             whileInView={{ opacity: 1, x: 0 }}
                                             transition={{ duration: 0.8 }}
-                                            className={`relative rounded-3xl overflow-hidden border border-white/5 shadow-2xl group ${data.layout === 'right' ? 'lg:order-2' : ''}`}
+                                            className={`relative rounded-3xl overflow-hidden shadow-2xl group ${data.layout === 'right' ? 'lg:order-2' : ''}`}
                                         >
                                             <div className={`aspect-[4/3] md:aspect-auto md:h-[600px] w-full relative overflow-hidden bg-zinc-900`}>
                                                 {data.image ? (
@@ -232,7 +233,7 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                                 className={`relative group cursor-pointer ${item.spanCols > 1 ? `col-span-${item.spanCols}` : ''} ${item.spanRows > 1 ? `row-span-${item.spanRows}` : ''}`}
                                                 onClick={() => item.link ? window.location.href = item.link : setSelectedGalleryImage(item.image)}
                                             >
-                                                <div className={`relative overflow-hidden w-full h-full ${cornerClass} ${aspectRatio} bg-zinc-900 border border-white/5`}>
+                                                <div className={`relative overflow-hidden w-full h-full ${cornerClass} ${aspectRatio} bg-zinc-900`}>
                                                     {item.image ? (
                                                         <img
                                                             src={item.image}
@@ -385,7 +386,7 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                         {data.title && <h2 className="text-3xl md:text-5xl font-display font-bold text-white mb-4 text-center">{data.title}</h2>}
                                         {data.subtitle && <p className="text-zinc-400 max-w-2xl mx-auto text-center">{data.subtitle}</p>}
                                     </div>
-                                    <div className="rounded-2xl overflow-hidden shadow-2xl border border-white/5 bg-zinc-900/50 p-2">
+                                    <div className="rounded-2xl overflow-hidden shadow-2xl bg-zinc-900/50 p-2">
                                         <ThermalSlider
                                             visualImage={data.image}
                                             thermalImage={data.thermalImage}
@@ -610,7 +611,7 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                             className="group"
                                         >
                                             <div className="relative p-1 rounded-[32px] bg-gradient-to-b from-white/10 to-transparent transition-all duration-500 group-hover:from-yellow-500/40 group-hover:to-yellow-500/5 shadow-2xl h-full">
-                                                <div className={`bg-zinc-950 rounded-[30px] h-full border border-white/5 relative overflow-hidden flex flex-col ${section.certificateSize === 'readable' ? 'p-10 md:p-16' :
+                                                <div className={`bg-zinc-950 rounded-[30px] h-full relative overflow-hidden flex flex-col ${section.certificateSize === 'readable' ? 'p-10 md:p-16' :
                                                     section.certificateSize === 'large' ? 'p-8 md:p-10' : 'p-6'
                                                     }`}>
                                                     {/* Inner Glow */}
@@ -619,7 +620,7 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                                     {/* Main Certificate Display Area - Priority on visibility */}
                                                     <div
                                                         onClick={() => { setSelectedCert(cert); setActiveCertSection(section); }}
-                                                        className={`relative rounded-2xl overflow-hidden bg-zinc-900 border border-white/5 cursor-pointer group/img flex items-center justify-center p-4 shadow-inner ${section.certificateSize === 'readable' ? 'aspect-[3/4] mb-12 border-white/10' :
+                                                        className={`relative rounded-2xl overflow-hidden bg-zinc-900 cursor-pointer group/img flex items-center justify-center p-4 shadow-inner ${section.certificateSize === 'readable' ? 'aspect-[3/4] mb-12 border-white/10' :
                                                             section.certificateSize === 'large' ? 'aspect-[3/4] mb-8' :
                                                                 section.certificateSize === 'small' ? 'aspect-[3/4] mb-4' :
                                                                     'aspect-[3/4] mb-6'
@@ -772,7 +773,7 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                     </div>
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                                         {data.b2b_stats?.map((stat: any, i: number) => (
-                                            <motion.div key={stat.id} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} className="relative p-10 bg-zinc-900/30 border border-white/5 rounded-3xl hover:border-white/10 transition-colors group text-center">
+                                            <motion.div key={stat.id} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} className="relative p-10 bg-zinc-900/30 rounded-3xl hover:bg-zinc-900/50 transition-colors group text-center">
                                                 <div className="text-5xl md:text-6xl font-black text-white mb-4 tracking-tighter flex items-center justify-center gap-1 group-hover:scale-110 transition-transform duration-500">
                                                     {stat.prefix && <span className="text-yellow-500 text-3xl font-bold">{stat.prefix}</span>}
                                                     {stat.value}
@@ -788,7 +789,7 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
 
                     case 'b2b_logos':
                         return (
-                            <section key={section.id} className="py-16 bg-zinc-900/30 border-y border-white/5 px-4 md:px-6">
+                            <section key={section.id} className="py-16 bg-zinc-900/30 px-4 md:px-6">
                                 <div className="max-w-[1400px] mx-auto">
                                     <h4 className="text-center text-zinc-500 text-[10px] font-black uppercase tracking-[0.4em] mb-12">Zaufali nam liderzy branży</h4>
                                     <div className="flex flex-wrap justify-center gap-12 md:gap-24 items-center opacity-40 grayscale transition-all duration-700 hover:grayscale-0 hover:opacity-100">
@@ -1363,6 +1364,7 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                 content={data.content || ''}
                                 dropCap={data.dropCap !== false}
                                 backgroundColor={data.backgroundColor}
+                                columns={data.columns}
                             />
                         );
 
@@ -1402,6 +1404,17 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                 key={section.id}
                                 items={data.chronological_items || []}
                                 layout={data.gallery_layout || 'grid'}
+                            />
+                        );
+
+                    case 'floating_button':
+                        return (
+                            <FloatingButton
+                                key={section.id}
+                                text={data.buttonText}
+                                link={data.buttonLink}
+                                position={data.layout as any}
+                                iconType={data.imagePosition as any}
                             />
                         );
 

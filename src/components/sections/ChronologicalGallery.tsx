@@ -53,21 +53,19 @@ export default function ChronologicalGallery({
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true, margin: "-100px" }}
                             transition={{ duration: 0.8, delay: index * 0.1 }}
-                            className="mb-16 md:mb-32 last:mb-0"
+                            className="mb-4 md:mb-8 last:mb-0"
                         >
-                            <div
-                                className="relative w-full aspect-[3/2] md:aspect-[16/10] overflow-hidden rounded-sm shadow-xl"
-                            >
+                            <div className="relative w-full shadow-lg">
                                 {item.image ? (
-                                    <Image
+                                    /* using standard img to preserve natural aspect ratio for mixed orientation (vertical/horizontal) */
+                                    <img
                                         src={item.image}
                                         alt={item.description || `Photo ${index + 1}`}
-                                        fill
-                                        className="object-cover"
-                                        sizes="(max-width: 1024px) 100vw, 1200px" // Larger size hint
+                                        className="w-full h-auto block rounded-sm"
+                                        loading="lazy"
                                     />
                                 ) : (
-                                    <div className="w-full h-full bg-zinc-100" />
+                                    <div className="w-full aspect-video bg-zinc-100" />
                                 )}
                             </div>
                             {item.description && (

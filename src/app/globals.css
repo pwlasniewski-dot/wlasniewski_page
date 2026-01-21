@@ -3,9 +3,9 @@
 @tailwind utilities;
 
 :root {
-  /* Default: Dark Mode Enforced (User Request: Remove White Mode) */
-  --background: #09090b;
-  --foreground: #ededed;
+  /* Reverting to Light Mode as default based on user feedback */
+  --background: #ffffff;
+  --foreground: #171717;
 
   /* Font variables populated by layout.tsx */
   --font-display: var(--font-display);

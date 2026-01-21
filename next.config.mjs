@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+    // transpilePackages: ['swiper', 'ssr-window', 'dom7'], // CDN Fallback used
     images: {
         unoptimized: true,
         qualities: [60, 75, 85, 100],

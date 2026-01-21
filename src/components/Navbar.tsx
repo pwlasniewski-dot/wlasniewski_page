@@ -57,10 +57,12 @@ export default function Navbar() {
             // Sticky background effect
             setIsScrolled(currentY > 20);
 
-            // Auto-hide logic (Show on scroll UP, Hide on scroll DOWN)
+            // Auto-hide logic
+            // Hide when scrolling down and not at the very top (buffer of 100px)
             if (currentY > lastY && currentY > 100) {
                 setIsNavbarVisible(false);
             } else {
+                // Show when scrolling up
                 setIsNavbarVisible(true);
             }
 
@@ -228,17 +230,16 @@ export default function Navbar() {
 
     return (
         <header
-            className={`${(isHome || isNavbarSticky) ? 'fixed left-0 right-0 top-0' : 'absolute top-0'} w-full z-[100] transition-all duration-300 ${forceTransparent
-                ? 'bg-transparent py-6'
+            className={`${(isHome || isNavbarSticky) ? 'fixed left-0 right-0 top-0' : 'absolute top-0'} w-full z-[100] transition-transform duration-300 ease-in-out ${forceTransparent
+                ? 'bg-transparent py-4'
                 : (isNavbarSticky
-                    ? (isNavbarTransparent && !isScrolled && !isHome // Allow transparent setting for non-home pages if configured
-                        ? 'bg-transparent py-6'
-                        : 'bg-black/90 backdrop-blur-md py-4 border-b border-white/10 shadow-lg shadow-black/50')
-                    : 'bg-transparent py-8')
-                } ${!isNavbarVisible && (isHome || isNavbarSticky) ? '-translate-y-full' : 'translate-y-0'}`}
+                    ? (isNavbarTransparent && !isScrolled && !isHome
+                        ? 'bg-transparent py-4'
+                        : 'bg-black/90 backdrop-blur-md py-4 shadow-lg shadow-black/50')
+                    : 'bg-transparent py-6')
+                } ${isNavbarVisible ? 'translate-y-0' : '-translate-y-full'}`}
             style={{
                 fontFamily: navbarFontFamily,
-                transform: !isNavbarVisible && (isHome || isNavbarSticky) ? 'translateY(-100%)' : 'translateY(0)',
                 ...navStyle
             }}
         >

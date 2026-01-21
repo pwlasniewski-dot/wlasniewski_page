@@ -43,6 +43,7 @@ Strona składa się z modułów, które można dowolnie sortować (Drag & Drop),
 - **Parallax Editor**: Sekcja z efektem paralaksy. 
     - Parametry: Szybkość przewijania, kontrola wysokości, kolor tekstu, opasłość nakładki.
     - Dodatek: "Floating Image" – obraz lewitujący nad tłem paralaksy.
+    - **Optymalizacja**: Zastosowano bezpośrednie mapowanie scrolla (bez sprężynowania) dla wyeliminowania drgań (stuttering).
 - **Info Band Editor**: Bloki informacyjne (np. "Dlaczego fotografia dronowa?"). Wsparcie dla różnych układów graficznych oraz **konfigurowalne linki** ("Szczegóły operacyjne"), które wyświetlają się tylko po podaniu adresu URL.
 - **Testimonials**: Integracja z modułem opinii klientów.
 - **Mini Gallery**: Zaawansowany moduł galerii "Pro" z obsługą gridu (2-6 kolumn), lightboxa i formatowania tekstu (RTF). Pozwala na precyzyjne sterowanie wyglądem (zaokrąglenia, tło) i układem treści (różne warianty położenia opisów).
@@ -60,6 +61,18 @@ Moduł odpowiedzialny za marketing wizualny, obsługujący dwa tryby:
   - Lightbox z nawigacją.
   - **Refinement:** Subtelna typografia (Italic Serif), jasne tło.
 - **Zarządzanie:** Page Builder (Dodawanie itemów, wybór układu).
+
+### 2.11. Floating Navigation Button (Nawigacja Pływająca) [NEW: 2026-01-19]
+- **Cel:** Zapewnienie szybkiego dostępu do kluczowych akcji (np. Powrót do Home, Kontakt) niezależnie od przewinięcia strony.
+- **Funkcje:**
+    - **Sticky Position**: Przycisk "przyklejony" do krawędzi ekranu (Fixed).
+    - **Konfiguracja**:
+        - Tekst przycisku (np. "Wróć").
+        - Link docelowy.
+        - Pozycja (Lewy/Prawy Dół, Lewa/Prawa Góra).
+        - Ikona (Wybór z zestawu lucide-react).
+    - **Responsywność**: Dostosowany wygląd na mobile i desktop.
+    - **Zarządzanie**: Dedykowana sekcja `floating_button` w Page Builderze.
 
 ### 2.2. Moduł Stories (Wasze Historie) [NEW: 2026-01-18]
 Nowy moduł służący do budowania narracji i prezentowania reportaży w sposób wizualnie angażujący.

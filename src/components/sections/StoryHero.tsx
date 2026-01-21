@@ -33,20 +33,10 @@ export default function StoryHero({
             style={{ backgroundColor }}
         >
             <div className="container mx-auto px-6 max-w-7xl">
-                <div
-                    className={`grid md:grid-cols-2 gap-12 items-center ${!isImageLeft ? 'md:flex-row-reverse' : ''
-                        }`}
-                    style={{
-                        gridTemplateColumns: isImageLeft
-                            ? '1fr 1fr'
-                            : '1fr 1fr',
-                        direction: isImageLeft ? 'ltr' : 'rtl',
-                    }}
-                >
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
                     {/* Image Side */}
                     <div
-                        className="relative aspect-[4/5] overflow-hidden rounded-sm"
-                        style={{ direction: 'ltr' }}
+                        className={`relative aspect-[4/5] overflow-hidden rounded-sm ${!isImageLeft ? 'md:order-last' : ''}`}
                     >
                         <Image
                             src={image}
@@ -59,7 +49,7 @@ export default function StoryHero({
                     </div>
 
                     {/* Text Side */}
-                    <div className="space-y-6" style={{ direction: 'ltr' }}>
+                    <div className="space-y-6">
                         {subtitle && (
                             <p className="text-sm uppercase tracking-widest text-gray-600 font-medium">
                                 {subtitle}

@@ -203,7 +203,7 @@ export default function Footer() {
 
 
     return (
-        <footer className={`mt-16 border-t ${isB2B ? 'border-zinc-900 bg-black text-zinc-400' : 'border-zinc-800 bg-zinc-950'} relative z-10 isolate`}>
+        <footer className={`mt-16 border-t ${isB2B ? 'border-zinc-900 bg-black text-zinc-400' : 'border-zinc-800 bg-black'} relative z-10 isolate`}>
 
             <div className="mx-auto max-w-7xl px-4 py-10 grid gap-8 md:grid-cols-2 lg:grid-cols-4">
                 {/* Brand + tagline */}

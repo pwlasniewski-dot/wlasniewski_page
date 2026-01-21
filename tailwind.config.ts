@@ -13,6 +13,10 @@ const config: Config = {
         display: ["var(--font-display)", "Cormorant Garamond", "serif"],
         // Tekst bieżący / UI
         sans: ["var(--font-sans)", "Montserrat", "sans-serif"],
+        // Elegancka szeryfowa (Playfair)
+        serif: ["var(--font-playfair)", "Playfair Display", "serif"],
+        // Odręczna (Great Vibes)
+        handwriting: ["var(--font-great-vibes)", "Great Vibes", "cursive"],
       },
       colors: {
         background: "var(--background)",

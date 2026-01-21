@@ -150,6 +150,100 @@ Ten plik służy do ścisłego monitorowania wszystkich zmian wprowadzanych w pr
 ## Log Zmian
 
 
+### v2.0.12 - Visual Regressions & Parallax Fixes (2026-01-21)
+**Cel:** Poprawa regresji wizualnych (czarne ramki, niepożądane linie w navbarze) oraz optymalizacja płynności sekcji Parallax.
+
+**Zrealizowane Zmiany:**
+1. **Parallax Performance Optimization:**
+   - Usunięto `useSpring` z `ParallaxSection.tsx` na rzecz bezpośredniego mapowania `scrollYProgress`.
+   - Wyeliminowało to efekt "stutteringu" (skakania) podczas przewijania, szczególnie w górę.
+
+2. **Navbar Visual Fixes:**
+   - Usunięto warunkowe klasy `border-b` i `border-white/5` z `Navbar.tsx`.
+   - Wyeliminowało to wizualny defekt "czarnej linii przecinającej tekst" podczas przewijania.
+
+3. **Visual Cleanup:**
+   - Usunięto zbędne obramowania z `TestimonialsSection.tsx`.
+   - Zidentyfikowano źródło "niebieskiej poświaty" (blue glow) jako element `preact-border-shadow-host` (Dev Tool Overlay), a nie błąd w kodzie strony.
+
+**Status:** ✅ **DONE & VERIFIED**
+
+### v2.0.11 - Admin Cleanup & Hero Slider Mount Fix (2026-01-19)
+**Cel:** Usunięcie mylących sekcji "Legacy" z panelu admina dla strony "O mnie" oraz naprawa skoku animacji Hero Slidera przy nawigacji.
+
+**Zrealizowane Zmiany:**
+1. **Admin UI Cleanup (Legacy Removal):**
+   - Usunięto bloki "Sekcje Parallax (Legacy)" oraz "Kafelki z treścią (Legacy)" z edytora strony dla sluga `o-mnie`.
+   - Moduły te były przestarzałe i nie wpływały na frontend, a ich obecność sugerowała błędy (czarne plamy/niemożność usunięcia).
+
+2. **Hero Slider Animation Glitch Fix:**
+   - Zmieniono tryb `AnimatePresence` na `popLayout` oraz dostosowano stan początkowy (`initial`) tła.
+   - Wyeliminowano "mignięcie" (flash/jump) przy przejściu na podstronę z poziomu strony głównej (Client-Side Navigation).
+
+**Status:** ✅ **DONE**
+
+### v2.0.10 - Bug Fixes & Stability (2026-01-19)
+**Cel:** Eliminacja błędów konsoli (404) spowodowanych brakującymi grafikami placeholderów.
+
+**Zrealizowane Zmiany:**
+1. **Placeholder Image Fix:**
+   - Wykryto i naprawiono ścieżki do nieistniejących plików tymczasowych (`story-1.jpg`, `chrono-1.jpg`, `ch1.jpg` i inne) w pliku `homepageModuleTemplates.ts`.
+   - Podmieniono je na istniejący asset `hero-default.jpg` oraz `about.jpg`, co wyeliminowało błędy 404 w konsoli.
+
+**Status:** ✅ **DONE**
+
+### v2.0.9 - Floating Navigation Button (2026-01-19)
+**Cel:** Dodanie możliwości konfiguracji pływającego przycisku nawigacyjnego, ułatwiającego powrót na stronę główną lub do innej sekcji.
+
+**Zrealizowane Zmiany:**
+1. **Floating Button Module:**
+   - Stworzono konfigurowalny komponent `FloatingButton` (tekst, link, pozycja, ikona).
+   - Zintegrowano z `PageBuilder` (nowy typ sekcji: `floating_button`, panel konfiguracyjny, przycisk w toolbarze).
+   - Zintegrowano z `PageRenderer`.
+
+**Status:** ✅ **DONE**
+
+### v2.0.7 - Story Hero Mobile Layout Fix (2026-01-19) [Pending Verification]
+**Cel:** Poprawa wyglądu sekcji "Story Hero" na urządzeniach mobilnych, gdzie układ 2-kolumnowy był wymuszony, powodując nieczytelność.
+
+**Zrealizowane Zmiany:**
+1. **StoryHero Mobile Layout:**
+   - Usunięto style inline (`style={{ gridTemplateColumns... }}`), które wymuszały układ 2-kolumnowy na wszystkich ekranach.
+   - Zastąpiono logikę `layout` i `direction` klasami Tailwind CSS (`grid-cols-1 md:grid-cols-2`).
+   - Zastosowano `md:order-last` dla obrazka w wariancie "Image Right" na desktopie, zachowując naturalny flow (Image -> Text) na mobilu (Image Top).
+   - Efekt: Na mobile sekcja układa się w jeden stos (Stack), a zdjęcie jest pełnej szerokości. Na desktopie zachowano wybór strony (Lewa/Prawa).
+
+**Status:** ✅ **DONE (Verification Pending)**
+
+### v2.0.8 - Chronological Gallery Refinement (2026-01-19)
+**Cel:** Poprawa czytelności galerii chronologicznej (Timeline) kroz zmniejszenie odstępów i wyświetlanie pełnych kadrów zdjęć pionowych.
+
+**Zrealizowane Zmiany:**
+1. **Gallery List Layout:**
+   - Zastąpiono `Next/Image` standardowym znacznikiem `<img>` w trybie listy, usuwając wymuszone proporcje `aspect-[3/2]`.
+   - Efekt: Zdjęcia pionowe (portrait) wyświetlają się w całości (natural height), bez przycinania (object-cover).
+   - Zmniejszono marginesy między zdjęciami z `mb-16 md:mb-32` na `mb-4 md:mb-8`, tworząc bardziej spójny "feed".
+
+**Status:** ✅ **DONE**
+
+### v2.0.6 - Bug Fixes & Refinements (2026-01-18) [Build Pending]
+**Cel:** Naprawa zgłoszonych błędów w Magazine Layout, Narrative Text oraz Hero Parallax.
+
+**Zrealizowane Zmiany:**
+1. **Magazine Layout Fix:**
+   - Poprawiono obsługę drugiego zdjęcia (detail content). Admin zapisywał to jako `thermalImage`, a `PageRenderer` oczekiwał `secondaryImage`.
+   - Zaktualizowano `PageBuilder.tsx` o poprawną logikę zapisu i kontekst media pickera.
+
+2. **Narrative Text Fix:**
+   - Naprawiono brak przekazywania parametru `columns` do komponentu.
+   - 2-kolumnowy layout teraz działa poprawnie.
+
+3. **Hero Parallax Styling:**
+   - Dodano brakujące definicje fontów `serif` (Playfair) i `handwriting` (Great Vibes) do `tailwind.config.ts`.
+   - Umożliwia to poprawne działanie wyboru typografii w sekcji Hero.
+
+**Status:** ✅ **APPLIED (Verification Pending)**
+
 ### v2.0.5 - Stability & Editor Hardening (2026-01-18) [Build Verified]
 **Cel:** Eliminacja błędów krytycznych edytora (crashe przy dodawaniu zdjęć) oraz zabezpieczenie frontend przed pustymi źródłami obrazów.
 
@@ -158,7 +252,13 @@ Ten plik służy do ścisłego monitorowania wszystkich zmian wprowadzanych w pr
    - **Problem:** Dodawanie zdjęć do nowych/pustych sekcji (Masonry, Chronological) powodowało błąd `Cannot read properties of undefined`.
    - **Fix:** Przepisano logikę `handleMediaSelect` w `page.tsx`. Wdrożono **Immutable State Updates** (wzorzec `prevSections.map`) oraz rygorystyczne sprawdzanie istnienia obiektów `data`.
    - **Efekt:** Całkowita eliminacja crashy edytora przy interakcji z mediami.
-
+4. **Build Config Fix (CSS) [REVERTED]:**
+   - **Problem:** `swiper` CSS imports causing Webpack/Sucrase parser errors in `CarouselGallery`.
+   - **Attempt:** Moved Swiper CSS imports to `src/app/layout.tsx` (Global Scope).
+   - **Result:** Failed (Sucrase error moved to globals.css). Reverted to clean state.
+5. **Build Cache Clean:**
+   - **Problem:** Persistent `sucrase` errors.
+   - **Fix:** Deleted `.next` directory to force fresh build.
 2. **Frontend Rendering Safeguards:**
    - **Problem:** Konsola sypała błędami `Empty string passed to src` gdy obrazek nie został jeszcze wybrany.
    - **Fix:** Dodano strażników (Guard Clauses) w komponentach `ClientStory`, `FeaturedCarousel`, `MasonryGallery` i `ChronologicalGallery`.

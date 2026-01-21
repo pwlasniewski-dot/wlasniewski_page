@@ -25,8 +25,8 @@ export function createAboutSectionTemplate() {
             title: 'O mnie',
             content: '<p>Krótki opis o mnie...</p>',
             image: '/assets/placeholder/about.jpg',
-            image_desktop: '/assets/placeholder/about-desktop.jpg',
-            image_mobile: '/assets/placeholder/about-mobile.jpg',
+            image_desktop: '/assets/placeholder/about.jpg',
+            image_mobile: '/assets/placeholder/about.jpg',
             cta1Text: 'Czytaj więcej',
             cta1Link: '/o-mnie',
             cta2Text: '',
@@ -87,8 +87,8 @@ export function createInfoBandTemplate() {
         backgroundColor: 'white',
         data: {
             image: '/assets/placeholder/info.jpg',
-            image_desktop: '/assets/placeholder/info-desktop.jpg',
-            image_mobile: '/assets/placeholder/info-mobile.jpg',
+            image_desktop: '/assets/placeholder/info.jpg',
+            image_mobile: '/assets/placeholder/info.jpg',
             title: 'Informacja',
             content: '<p>Krótka informacja</p>',
             position: 'left'
@@ -109,14 +109,14 @@ export function createChallengeBannerTemplate() {
             buttonText: 'Dołącz',
             buttonLink: '/foto-wyzwanie',
             effect: 'carousel',
-            photos: ['/assets/placeholder/ch1.jpg', '/assets/placeholder/ch2.jpg'],
+            photos: ['/assets/placeholder/hero-default.jpg', '/assets/placeholder/hero-default.jpg'],
             advanced: {
                 enabled: true,
                 items: [
                     {
                         id: `item-${uuidv4()}`,
                         type: 'image',
-                        src: '/assets/placeholder/challenge-1.jpg',
+                        src: '/assets/placeholder/hero-default.jpg',
                         title: 'Wyzwanie 1',
                         subtitle: 'Opis',
                         ctaText: 'Dołącz',
@@ -165,7 +165,7 @@ export function createStoriesGridTemplate() {
             title: 'Wybierzcie swoją historię',
             subtitle: 'Zobacz reportaże',
             stories_items: [
-                { id: `story-${uuidv4()}`, title: 'Przykładowa Historia', image: '/assets/placeholder/story-1.jpg', link: '#', category: 'Reportaż' }
+                { id: `story-${uuidv4()}`, title: 'Przykładowa Historia', image: '/assets/placeholder/hero-default.jpg', link: '#', category: 'Reportaż' }
             ]
         }
     };
@@ -182,7 +182,7 @@ export function createChronologicalGalleryTemplate() {
             title: 'Jak pracuję?',
             gallery_layout: 'list',
             chronological_items: [
-                { id: `chrono-${uuidv4()}`, image: '/assets/placeholder/chrono-1.jpg', description: 'Przygotowania' }
+                { id: `chrono-${uuidv4()}`, image: '/assets/placeholder/hero-default.jpg', description: 'Przygotowania' }
             ]
         }
     };

@@ -183,7 +183,7 @@ export default function HeroSlider({ slides = [], interval = 6000 }: HeroSliderP
     return (
         <div className="relative w-full bg-black overflow-hidden" style={{ height: '90vh', minHeight: '600px' }}>
             {/* Background Images */}
-            <AnimatePresence>
+            <AnimatePresence mode="popLayout">
                 <motion.div
                     key={`bg-${currentSlide}`}
                     initial={{ opacity: 0 }}

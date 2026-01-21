@@ -69,14 +69,8 @@ export default function ParallaxSection({
         offset: ["start end", "end start"]
     });
 
-    const springY = useSpring(scrollYProgress, {
-        stiffness: 80,
-        damping: 30,
-        restDelta: 0.001
-    });
-
     const yRange = isMobile ? ["-15%", "15%"] : ["-25%", "25%"];
-    const y = useTransform(springY, [0, 1], yRange);
+    const y = useTransform(scrollYProgress, [0, 1], yRange);
 
     // Font Styles Map
     const fontClasses = {

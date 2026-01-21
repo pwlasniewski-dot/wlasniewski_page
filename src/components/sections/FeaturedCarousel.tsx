@@ -6,10 +6,10 @@ import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, Pagination, EffectFade } from 'swiper/modules';
 import { motion } from 'framer-motion';
 
-// Import Swiper styles
-import 'swiper/css';
-import 'swiper/css/pagination';
-import 'swiper/css/effect-fade';
+// Import Swiper styles - MOVED TO GLOBALS.CSS to fix Build Error
+// import 'swiper/css';
+// import 'swiper/css/pagination';
+// import 'swiper/css/effect-fade';
 
 interface CarouselSlide {
     id: string;

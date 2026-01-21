@@ -45,6 +45,9 @@ const outfit = Outfit({
     variable: "--font-outfit",
     display: "swap",
 });
+
+// REMOVED LOCAL IMPORTS TO FIX BUILD (WEBPACK/SUCRASE ISSUE)
+
 import AppShell from "@/components/AppShell";
 import "./globals.css";
 import { Suspense } from "react";
@@ -176,6 +179,7 @@ export default function RootLayout({
     return (
         <html lang="pl" className={`${cormorant.variable} ${montserrat.variable} ${playfair.variable} ${lato.variable} ${greatVibes.variable} ${cinzel.variable} ${inter.variable} ${outfit.variable}`} suppressHydrationWarning>
             <head>
+                <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@12/swiper-bundle.min.css" />
                 <script
                     type="application/ld+json"
                     dangerouslySetInnerHTML={{

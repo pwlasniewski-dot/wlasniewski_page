@@ -51,16 +51,16 @@ export default function TestimonialsSection() {
 
     return (
         <section className="mb-16">
-            <h2 className="text-2xl font-bold text-white text-center mb-8">
+            <h2 className="text-2xl font-bold text-[var(--wedding-brown)] text-center mb-12 uppercase tracking-widest font-serif">
                 Zaufali mi
             </h2>
-            <div className="grid md:grid-cols-3 gap-6">
+            <div className="grid md:grid-cols-3 gap-8">
                 {testimonials.map((t) => (
-                    <div key={t.id} className="bg-zinc-900/50 border border-zinc-800 p-6 rounded-2xl backdrop-blur-sm">
-                        <div className="flex items-center gap-4 mb-4">
+                    <div key={t.id} className="bg-zinc-900/50 p-8 rounded-sm shadow-lg hover:transform hover:-translate-y-1 transition-all duration-300">
+                        <div className="flex items-center gap-4 mb-6">
                             <div
-                                className="relative shrink-0 rounded-full overflow-hidden bg-zinc-800 border border-zinc-700"
-                                style={{ width: 48, height: 48 }}
+                                className="relative shrink-0 rounded-full overflow-hidden border border-gold-500/30"
+                                style={{ width: 56, height: 56 }}
                             >
                                 {t.client_photo ? (
                                     <Image
@@ -70,17 +70,17 @@ export default function TestimonialsSection() {
                                         className="object-cover"
                                     />
                                 ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-xl">👤</div>
+                                    <div className="w-full h-full flex items-center justify-center text-xl bg-zinc-800 text-gold-500">👤</div>
                                 )}
                             </div>
                             <div>
-                                <div className="font-bold text-white">{t.client_name}</div>
-                                <div className="flex text-amber-500 text-xs">
+                                <div className="font-bold text-zinc-100 font-serif text-lg">{t.client_name}</div>
+                                <div className="flex text-gold-500 text-xs gap-0.5">
                                     {"★".repeat(t.rating)}
                                 </div>
                             </div>
                         </div>
-                        <p className="text-zinc-300 text-sm italic leading-relaxed">
+                        <p className="text-zinc-400 text-sm italic leading-relaxed font-serif">
                             "{t.testimonial_text}"
                         </p>
                     </div>
