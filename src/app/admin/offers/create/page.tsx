@@ -1,8 +1,9 @@
 
+
 import OfferBuilder from "@/components/admin/OfferBuilder";
 
 export const metadata = {
-    title: "Generator Ofert | Admin"
+    title: "Nowa Oferta | Admin"
 };
 
 export default function CreateOfferPage() {

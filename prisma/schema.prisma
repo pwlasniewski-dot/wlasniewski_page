@@ -463,6 +463,7 @@ model GiftCard {
   @@map("gift_cards")
 }
 
+
 model User {
   id                      Int                     @id @default(autoincrement())
   email                   String                  @unique
@@ -483,9 +484,93 @@ model User {
   payouts                 payouts[]
   provider_availability   provider_availability[]
   photographer_profile    PhotographerProfile?    @relation(fields: [photographer_profile_id], references: [id])
+  offers                  Offer[]
+  contracts               Contract[]
 
   @@map("users")
 }
+
+model Offer {
+  id           Int           @id @default(autoincrement())
+  slug         String        @unique
+  offerNumber  String?       @unique // B2C-2026-001, B2B-2026-001
+  title        String
+  type         String        @default("b2c") // b2b, b2c
+  category     String?       // e.g., "wedding", "roof_inspection", "birthday"
+  status       String        @default("draft") // draft, sent, accepted, rejected, expired
+  valid_until  DateTime?
+  client_id    Int?
+  client_email String? // Fallback if no user created yet
+  is_template  Boolean       @default(false)
+  created_at   DateTime      @default(now())
+  updated_at   DateTime      @updatedAt
+  user         User?         @relation(fields: [client_id], references: [id])
+  sections     OfferSection[]
+  contract     Contract?
+  negotiations Negotiation[]
+  pdf_url      String?       // S3 URL
+  drive_url    String?       // Google Drive URL
+  template_data Json?        // Full state of the A4 template editor
+  total_price  Int           @default(0)
+
+  @@map("offers")
+}
+
+model OfferSection {
+  id            Int         @id @default(autoincrement())
+  offer_id      Int
+  title         String
+  description   String?
+  order         Int         @default(0)
+  items         OfferItem[]
+  offer         Offer       @relation(fields: [offer_id], references: [id], onDelete: Cascade)
+
+  @@map("offer_sections")
+}
+
+model OfferItem {
+  id          Int          @id @default(autoincrement())
+  section_id  Int
+  title       String
+  description String?
+  price       Int          @default(0)
+  quantity    Int          @default(1)
+  is_optional Boolean      @default(false)
+  section     OfferSection @relation(fields: [section_id], references: [id], onDelete: Cascade)
+
+  @@map("offer_items")
+}
+
+model Contract {
+  id              Int       @id @default(autoincrement())
+  contract_number String?   @unique // UMW-B2C-2026-001
+  offer_id        Int       @unique
+  client_id       Int?
+  status          String    @default("pending") // pending, signed
+  content         String?   // Legal text with HTML/Markdown support
+  signed_at       DateTime?
+  pdf_url         String?   // S3 URL
+  drive_url       String?   // Google Drive URL
+  created_at      DateTime  @default(now())
+  offer           Offer     @relation(fields: [offer_id], references: [id])
+  user            User?     @relation(fields: [client_id], references: [id])
+
+  @@map("contracts")
+}
+
+model Negotiation {
+  id             Int      @id @default(autoincrement())
+  offer_id       Int
+  message        String?
+  proposed_price Int?
+  proposed_items String?  // JSON string storing item-level proposals
+  status         String   @default("open") // open, resolved, closed
+  created_at     DateTime @default(now())
+  offer          Offer    @relation(fields: [offer_id], references: [id])
+
+  @@map("negotiations")
+}
+
 
 model PhotographerProfile {
   id                Int      @id @default(autoincrement())
@@ -931,4 +1016,70 @@ model subscribers {
   is_active  Boolean  @default(true)
   source     String?
   created_at DateTime @default(now())
+}
+
+// Professional CRM - Client Management
+model Client {
+  id            Int       @id @default(autoincrement())
+  firstName     String
+  lastName      String
+  email         String?
+  phone         String?
+  address       String?
+  city          String?
+  postalCode    String?
+  idNumber      String?   // Dowód osobisty
+  notes         String?   @db.Text
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Relations
+  offers        ClientOffer[]
+  contracts     ClientContract[]
+  
+  @@index([email])
+  @@index([lastName])
+  @@map("clients")
+}
+
+model ClientOffer {
+  id            Int       @id @default(autoincrement())
+  clientId      Int
+  client        Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  
+  title         String
+  offerData     Json      // Cały stan OfferBuilder (wszystkie dane formularza)
+  pdfUrl        String?   // Link do S3
+  driveUrl      String?   // Link do Google Drive
+  status        String    @default("draft") // draft, sent, accepted, rejected
+  validUntil    DateTime?
+  sentAt        DateTime?
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  @@index([clientId])
+  @@index([status])
+  @@map("client_offers")
+}
+
+model ClientContract {
+  id            Int       @id @default(autoincrement())
+  clientId      Int
+  client        Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  
+  title         String
+  contractData  Json      // Cały stan ContractBuilder
+  pdfUrl        String?   // Link do S3
+  driveUrl      String?   // Link do Google Drive
+  status        String    @default("draft") // draft, sent, signed
+  signedAt      DateTime?
+  sentAt        DateTime?
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  @@index([clientId])
+  @@index([status])
+  @@map("client_contracts")
 }

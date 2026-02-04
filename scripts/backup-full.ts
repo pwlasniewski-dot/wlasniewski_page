@@ -5,102 +5,55 @@ import path from 'path';
 
 const prisma = new PrismaClient();
 
-const MODELS = [
-    'AdminUser',
-    'Setting',
-    'MenuItem',
-    'MediaLibrary',
-    'PortfolioSession',
-    'BlogPost',
-    'Testimonial',
-    'PromoCode',
-    'Inquiry',
-    'EmailSubscriber',
-    'AnalyticsEvent',
-    'HeroSlide',
-    'Page',
-    'Booking',
-    'ServiceType',
-    'Package',
-    'GiftCardOrder',
-    'GiftCard',
-    'User',
-    'SessionInvite',
-    'ChallengePackage',
-    'ChallengeLocation',
-    'ChallengeUser',
-    'PhotoChallenge',
-    'ChallengeTimelineEvent',
-    'ChallengeSetting',
-    'ChallengeGallery',
-    'ChallengePhoto',
-    'ClientGallery',
-    'GalleryPhoto',
-    'PhotoOrder',
-    'SystemSettings',
-    'PageEffect',
-    'SystemLog',
-    'ErrorNote',
-    'BusinessGoal',
-    'ScrumTask',
-    'MarketingAction',
-    'DroneOrder',
-    'AnalyticsSnapshot',
-    'MarketingTemplate'
-];
-
 async function backup() {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const backupDir = path.join(process.cwd(), 'backups', timestamp);
+    const backupDir = path.join(process.cwd(), 'backups', `backup-${timestamp}`);
 
     if (!fs.existsSync(backupDir)) {
         fs.mkdirSync(backupDir, { recursive: true });
     }
 
-    console.log(`Starting backup to: ${backupDir}`);
+    console.log(`Starting backup to ${backupDir}...`);
 
-    for (const modelName of MODELS) {
+    const models = [
+        'adminUser', 'setting', 'historyPhoto', 'menuItem', 'mediaLibrary',
+        'portfolioSession', 'blogPost', 'testimonial', 'promoCode', 'inquiry',
+        'emailSubscriber', 'analyticsEvent', 'heroSlide', 'page', 'booking',
+        'serviceType', 'package', 'giftCardOrder', 'giftCard', 'user',
+        'photographerProfile', 'basket', 'basketItem', 'sessionInvite',
+        'challengePackage', 'challengeLocation', 'challengeUser', 'photoChallenge',
+        'challengeTimelineEvent', 'challengeSetting', 'challengeGallery',
+        'challengePhoto', 'clientGallery', 'galleryPhoto', 'photoOrder',
+        'systemSettings', 'pageEffect', 'systemLog', 'errorNote',
+        'businessGoal', 'scrumTask', 'marketingAction', 'droneOrder',
+        'analyticsSnapshot', 'marketingTemplate', 'newsletter_campaigns',
+        'payouts', 'provider_availability', 'subscribers',
+        'client', 'clientOffer', 'clientContract',
+        'offer', 'offerSection', 'offerItem', 'contract', 'negotiation'
+    ];
+
+    for (const model of models) {
         try {
-            // Prisma models are accessed with lowercased first letter
-            const prismaModelName = modelName.charAt(0).toLowerCase() + modelName.slice(1);
             // @ts-ignore
-            const model = prisma[prismaModelName];
-
-            if (!model) {
-                console.warn(`⚠️ Skipped ${modelName}: Not found in Prisma Client as ${prismaModelName}`);
-                continue;
-            }
-
-            const data = await model.findMany();
-            if (data) {
-                const filePath = path.join(backupDir, `${modelName}.json`);
-                fs.writeFileSync(filePath, JSON.stringify(data, (key, value) =>
-                    typeof value === 'bigint' ? value.toString() : value
-                    , 2));
-                console.log(`✅ Backed up ${modelName}: ${data.length} records`);
-            }
-        } catch (error) {
-            console.error(`❌ Failed to backup ${modelName}:`, error);
+            const data = await prisma[model].findMany();
+            fs.writeFileSync(
+                path.join(backupDir, `${model}.json`),
+                JSON.stringify(data, null, 2)
+            );
+            console.log(`✓ Backed up ${model} (${data.length} records)`);
+        } catch (e) {
+            console.error(`✗ Failed to backup ${model}:`, e);
         }
-    }
-
-    // Also backup public/uploads if exists
-    // We cannot zip easily without external tools in this env, but we can list files to verify
-    console.log('--- Content Verification ---');
-    try {
-        const uploadDir = path.join(process.cwd(), 'public', 'uploads');
-        if (fs.existsSync(uploadDir)) {
-            console.log(`✅ Uploads directory exists at ${uploadDir}`);
-        } else {
-            console.log(`⚠️ Uploads directory NOT found at ${uploadDir} (Images might be on S3)`);
-        }
-    } catch (e) {
-        console.log('Error checking uploads dir');
     }
 
     console.log('Backup completed successfully.');
 }
 
 backup()
-    .catch(console.error)
-    .finally(() => prisma.$disconnect());
+    .catch((e) => {
+        console.error(e);
+        process.exit(1);
+    })
+    .finally(async () => {
+        await prisma.$disconnect();
+    });

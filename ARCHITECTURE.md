@@ -37,8 +37,16 @@ graph TD
     
     FE -- Payments --> P24
     FE -- Payments --> PayU
+
     FE -- Notifications --> SMTP
 ```
+
+### 2.1. Client Portal Architecture (v3.0 Add-on)
+Architektura serwisu zostanie rozszerzona o bezpieczny portal klienta:
+- **Route**: `/strefa-klienta/*`
+- **Auth**: Niezależny system logowania dla klientów (User Role: `CLIENT`).
+- **Data Access**: Klient ma dostęp wyłącznie do rekordów (`Offer`, `Contract`, `Booking`, `ClientGallery`) powiązanych z jego `UserId`.
+- **Interakcja**: Portal wykorzystuje Server Actions do bezpiecznej komunikacji z API (akceptacja ofert, negocjacje).
 
 ---
 

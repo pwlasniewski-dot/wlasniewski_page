@@ -123,6 +123,16 @@ System został rozbudowany o dedykowany moduł zarządzania relacjami z klientem
     - Konto użytkownika zostaje trwale dezaktywowane.
 - **Separacja Uprawnień**: Wyraźny podział w nawigacji admina na "Klienci (CRM)" (biznes) i "Administratorzy" (zespół).
 
+### 3.4. Generator Ofert i Portal Klienta (v3.0 - Planned)
+System w v3.0 wprowadzi kompleksowy przepływ pracy nad ofertą:
+- **Offer Generator**: Narzędzie dla fotografa do tworzenia spersonalizowanych ofert B2B/B2C (PDF/Link).
+- **Client Portal**: Dedykowana strefa (`/strefa-klienta`), gdzie klient po zalogowaniu może:
+    - Przeglądać aktywne oferty.
+    - Negocjować warunki (komentarze, prośby o zmianę).
+    - Akceptować ofertę (co generuje Umowę).
+    - Podpisywać umowy (cyfrowo lub pobierać PDF).
+- **Integracja Chmurowa**: Wszystkie dokumenty (Oferty, Umowy) są archiwizowane na S3 oraz (opcjonalnie) synchronizowane z Google Drive.
+
 ---
 
 ## 4. E-commerce i Promocje

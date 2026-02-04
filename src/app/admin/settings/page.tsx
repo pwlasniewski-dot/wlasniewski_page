@@ -67,6 +67,10 @@ export default function SettingsPage() {
         gift_card_promo_rotation_interval: '5',
         gift_card_hero_image: '', // Store background image
         gift_card_hero_opacity: 0.6,
+        // Google Drive Integration
+        google_drive_client_id: '',
+        google_drive_client_secret: '',
+        google_drive_refresh_token: '',
         // Home Page
         hero_slider_interval: '6000',
     });
@@ -1122,6 +1126,63 @@ export default function SettingsPage() {
                             Zdjęcia ułożone jedno pod drugim. Użytkownik przewija w dół. Klasyczny, czytelny układ.
                         </p>
                     </button>
+                </div>
+            </div>
+
+            {/* Google Drive Integration Settings */}
+            <div className="bg-zinc-900 shadow rounded-lg border border-zinc-800 p-6">
+                <h2 className="text-lg font-medium text-white mb-4">Google Drive - Integracja</h2>
+                <p className="text-sm text-zinc-400 mb-6">Skonfiguruj dostęp do Google Drive, aby automatycznie przesyłać wygenerowane oferty i umowy.</p>
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium text-zinc-400 mb-1">Client ID (OAuth 2.0)</label>
+                        <input
+                            type="text"
+                            value={settings.google_drive_client_id || ''}
+                            onChange={e => setSettings(s => ({ ...s, google_drive_client_id: e.target.value }))}
+                            placeholder="XXX.apps.googleusercontent.com"
+                            className="block w-full rounded-md border-zinc-700 bg-zinc-800 text-white shadow-sm focus:border-gold-500 focus:ring-gold-500 sm:text-sm px-3 py-2"
+                        />
+                        <p className="mt-1 text-xs text-zinc-500">Znajdź w Google Cloud Console → Credentials → OAuth 2.0 Client ID (Desktop app)</p>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-zinc-400 mb-1">Client Secret (OAuth 2.0)</label>
+                        <input
+                            type="password"
+                            value={settings.google_drive_client_secret || ''}
+                            onChange={e => setSettings(s => ({ ...s, google_drive_client_secret: e.target.value }))}
+                            placeholder="••••••••••••••••••"
+                            className="block w-full rounded-md border-zinc-700 bg-zinc-800 text-white shadow-sm focus:border-gold-500 focus:ring-gold-500 sm:text-sm px-3 py-2"
+                        />
+                        <p className="mt-1 text-xs text-zinc-500">Klucz dostępu. Przechowywany bezpiecznie w bazie danych.</p>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-zinc-400 mb-1">Refresh Token (Opcjonalnie)</label>
+                        <input
+                            type="password"
+                            value={settings.google_drive_refresh_token || ''}
+                            onChange={e => setSettings(s => ({ ...s, google_drive_refresh_token: e.target.value }))}
+                            placeholder="••••••••••••••••••"
+                            className="block w-full rounded-md border-zinc-700 bg-zinc-800 text-white shadow-sm focus:border-gold-500 focus:ring-gold-500 sm:text-sm px-3 py-2"
+                        />
+                        <p className="mt-1 text-xs text-zinc-500">Token odświeżający. Zazwyczaj generowany automatycznie po autoryzacji.</p>
+                    </div>
+
+                    <div className="bg-blue-900/20 p-4 rounded-lg border border-blue-900/50">
+                        <p className="text-xs text-blue-300">
+                            <strong>ℹ️ Konfiguracja:</strong> Aby włączyć integrację z Google Drive:
+                            <ol className="mt-2 list-decimal list-inside space-y-1 ml-2">
+                                <li>Przejdź do <a href="https://console.cloud.google.com" target="_blank" className="underline hover:text-blue-200">Google Cloud Console</a></li>
+                                <li>Utwórz nowy projekt lub wybierz istniejący</li>
+                                <li>Aktywuj API Google Drive</li>
+                                <li>Utwórz OAuth 2.0 Credentials (Type: Desktop app)</li>
+                                <li>Skopiuj Client ID i Client Secret poniżej</li>
+                                <li>Zapisz ustawienia</li>
+                            </ol>
+                        </p>
+                    </div>
                 </div>
             </div>
 

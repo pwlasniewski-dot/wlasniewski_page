@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useReactToPrint } from 'react-to-print';
-import { Printer, Eye, Save, Plus, Trash2, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Printer, Eye, Save, Plus, Trash2, ArrowRight, ChevronLeft, ChevronRight, Share2, Cloud, Mail, CheckCircle, FileCheck, X } from 'lucide-react';
+import { useSearchParams, useRouter } from 'next/navigation';
 
 
 // Types for our Offer Data
@@ -144,15 +145,124 @@ const INITIAL_DATA: OfferData = {
     }
 };
 
-export default function OfferBuilder() {
-    const [data, setData] = useState<OfferData>(INITIAL_DATA);
+interface OfferBuilderProps {
+    initialData?: Partial<OfferData>;
+    onSave?: (data: OfferData) => Promise<void>;
+    saveButtonText?: string;
+}
+
+export default function OfferBuilder({ initialData, onSave, saveButtonText }: OfferBuilderProps = {}) {
+    const searchParams = useSearchParams();
+    const router = useRouter(); // For cancel action
+    const clientId = searchParams.get('client_id');
+    const type = searchParams.get('type')?.toLowerCase() || 'b2c';
+
+    const [data, setData] = useState<OfferData>({
+        ...INITIAL_DATA,
+        ...initialData  // Merge auto-filled data
+    });
     const componentRef = useRef<HTMLDivElement>(null);
     const [scale, setScale] = useState(0.8);
+    const [isSaving, setIsSaving] = useState(false);
+    const [lastSavedId, setLastSavedId] = useState<number | null>(null);
+
+    // Auto-fill client data if clientId is present
+    useEffect(() => {
+        if (clientId) {
+            fetchClientData(clientId);
+        }
+    }, [clientId]);
+
+    const fetchClientData = async (id: string) => {
+        try {
+            const token = localStorage.getItem('admin_token');
+            const res = await fetch(`/api/admin/clients/${id}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const json = await res.json();
+                if (json.success && json.client) {
+                    const client = json.client;
+                    setData(prev => ({
+                        ...prev,
+                        contactName: client.name || '',
+                        contactEmail: client.email || '',
+                        contactPhone: client.phone || '',
+                    }));
+                }
+            }
+        } catch (error) {
+            console.error('Error auto-filling client data:', error);
+        }
+    };
 
     const handlePrint = useReactToPrint({
         contentRef: componentRef,
         documentTitle: `Oferta_${data.title.replace(/ /g, '_')}`,
     });
+
+    const handleSave = async () => {
+        setIsSaving(true);
+        try {
+            const token = localStorage.getItem('admin_token');
+            const res = await fetch('/api/admin/offers', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    title: data.title,
+                    slug: `offer-${Date.now()}`,
+                    type: type,
+                    client_id: clientId ? parseInt(clientId) : null,
+                    template_data: data // Wrap the A4 builder state
+                })
+            });
+            const result = await res.json();
+            if (res.ok) {
+                setLastSavedId(result.offer.id);
+                if (onSave) await onSave(data);
+                alert('Oferta zapisana pomyślnie!');
+            } else {
+                alert(`Błąd: ${result.error || result.details || 'Nieznany błąd'}`);
+            }
+        } catch (error) {
+            alert('Błąd podczas zapisywania oferty');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleCancel = () => {
+        if (confirm('Czy na pewno chcesz anulować? Wszystkie niezapisane zmiany zostaną utracone.')) {
+            router.back();
+        }
+    };
+
+    const handleAction = async (action: 's3' | 'drive' | 'email' | 'all') => {
+        if (!lastSavedId) {
+            alert('Najpierw zapisz ofertę!');
+            return;
+        }
+        const token = localStorage.getItem('admin_token');
+        const endpoint = `/api/admin/offers/${lastSavedId}/${action === 'all' ? 'send-all' : `save-${action === 'email' ? 'email' : action}`}`;
+
+        try {
+            const res = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                alert(`Akcja ${action.toUpperCase()} wykonana pomyślnie!`);
+            } else {
+                const err = await res.json();
+                alert(`Błąd: ${err.error || action}`);
+            }
+        } catch (error) {
+            alert('Błąd połączenia');
+        }
+    };
 
     // Helper to update fields
     const update = (field: keyof OfferData, value: any) => {
@@ -272,19 +382,60 @@ export default function OfferBuilder() {
         });
     };
 
+    const isB2B = type === 'b2b';
+    const mainColor = isB2B ? '#3b82f6' : '#c5a059'; // Blue for B2B, Gold for B2C
+
     return (
-        <div className="flex flex-col lg:flex-row h-screen bg-gray-100 overflow-hidden">
+        <div className={`flex flex-col lg:flex-row h-screen overflow-hidden ${isB2B ? 'bg-zinc-950 text-white' : 'bg-gray-100 text-gray-900'}`}>
             {/* LEFT: EDITOR */}
-            <div className="w-full lg:w-5/12 bg-white border-r border-gray-200 overflow-y-auto p-6 shadow-xl z-10 text-gray-900">
-                <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-xl font-bold text-gray-900">Kreator Ofert</h2>
-                    <button
-                        onClick={() => handlePrint()}
-                        className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700 transition"
-                    >
-                        <Printer size={18} /> Drukuj PDF
-                    </button>
+            <div className={`w-full lg:w-5/12 border-r overflow-y-auto p-6 shadow-xl z-10 ${isB2B ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-gray-200'}`}>
+                <div className="flex items-center justify-between mb-6 border-b pb-4">
+                    <div>
+                        <h2 className={`text-xl font-bold ${isB2B ? 'text-white' : 'text-gray-900'}`}>Kreator Ofert</h2>
+                        <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded border ${isB2B ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 'bg-[#c5a059]/10 text-[#c5a059] border-[#c5a059]/20'}`}>
+                            TRYB {type.toUpperCase()}
+                        </span>
+                    </div>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={handleCancel}
+                            className="flex items-center gap-2 bg-zinc-200 text-zinc-700 hover:bg-zinc-300 px-4 py-2 rounded shadow transition font-bold"
+                        >
+                            <X size={18} /> Anuluj
+                        </button>
+                        <button
+                            onClick={handleSave}
+                            disabled={isSaving}
+                            className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded shadow hover:bg-green-700 transition disabled:opacity-50 font-bold"
+                        >
+                            <Save size={18} /> {isSaving ? 'Zapisywanie...' : 'Zapisz'}
+                        </button>
+                        <button
+                            onClick={handlePrint}
+                            className="flex items-center gap-2 bg-zinc-700 text-white px-4 py-2 rounded shadow hover:bg-zinc-600 transition font-bold"
+                        >
+                            <Printer size={18} /> Drukuj
+                        </button>
+                    </div>
                 </div>
+
+                {/* Storage Actions (Persistent once saved) */}
+                {lastSavedId && (
+                    <div className="bg-zinc-800/50 border border-zinc-700 rounded-xl p-4 mb-6 flex flex-wrap gap-2 justify-center shadow-inner">
+                        <button onClick={() => handleAction('s3')} className="flex items-center gap-1.5 bg-blue-600/10 text-blue-400 border border-blue-500/30 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-blue-600/20 transition">
+                            <Cloud size={14} /> S3
+                        </button>
+                        <button onClick={() => handleAction('drive')} className="flex items-center gap-1.5 bg-green-600/10 text-green-400 border border-green-500/30 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-green-600/20 transition">
+                            <Share2 size={14} /> Drive
+                        </button>
+                        <button onClick={() => handleAction('email')} className="flex items-center gap-1.5 bg-purple-600/10 text-purple-400 border border-purple-500/30 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-purple-600/20 transition">
+                            <Mail size={14} /> Email
+                        </button>
+                        <button onClick={() => handleAction('all')} className="flex items-center gap-1.5 bg-orange-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-orange-700 transition shadow-lg">
+                            <FileCheck size={14} /> Wyślij Wszystko
+                        </button>
+                    </div>
+                )}
 
                 <div className="space-y-6">
                     {/* 1. Header & Contact */}

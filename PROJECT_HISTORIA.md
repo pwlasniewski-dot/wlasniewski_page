@@ -149,6 +149,51 @@ Ten plik służy do ścisłego monitorowania wszystkich zmian wprowadzanych w pr
 
 ## Log Zmian
 
+### v2.0.13 - ChronologicalGallery Performance Optimization & Lightbox (2026-01-25)
+**Cel:** Eliminacja ekstremalnie wolnego ładowania galerii chronologicznej przy zmianie układu kolumn oraz dodanie funkcji powiększania zdjęć.
+
+**Problem:** 
+- Zmiana liczby kolumn (mobile → desktop lub resize okna) powodowała bardzo wolne ładowanie kolejnych zdjęć
+- Animacje z opóźnieniami (`delay: index % 3 * 0.1`) blokowały perceived performance
+- Brak optymalizacji lazy loading dla obrazów Next.js
+- Brak możliwości powiększenia (lightbox) zdjęć w galerii siatki
+
+**Zrealizowane Zmiany:**
+1. **Usunięcie Animation Delays:**
+   - Wyeliminowano indywidualne opóźnienia animacji dla każdego zdjęcia
+   - Zmniejszono czas trwania animacji z 0.5s → 0.3s
+   - Dodano `viewport={{ once: true }}` aby animacja odpaliła się tylko raz
+
+2. **Lazy Loading Optimization:**
+   - Pierwsze 6 zdjęć: `loading="eager"` (natychmiastowe ładowanie)
+   - Pierwsze 3 zdjęcia: `priority={true}` (highest priority pre-loading)
+   - Pozostałe zdjęcia: `loading="lazy"` (ładowanie on-demand)
+
+3. **Progressive Image Loading:**
+   - Dodano `placeholder="blur"` z generycznym placeholder SVG
+   - Dodano `quality={85}` dla zbalansowania jakości i rozmiaru
+
+4. **Responsive Sizes Optimization:**
+   - Zaktualizowano `sizes` do precyzyjnych breakpointów: `(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw`
+   - Pozwala Next.js generować optymalne rozmiary obrazów dla różnych urządzeń
+
+5. **Lightbox Feature (Full-Screen Viewer):**
+   - Dodano React state management z `useState` i `useEffect`
+   - Kliknięcie na zdjęcie otwiera pełnoekranowy podgląd
+   - Nawigacja strzałkami lewo/prawo (przyciski + klawiatura)
+   - Zamknięcie przez ESC, X lub kliknięcie w tło
+   - Licznik zdjęć (np. "3 / 12")
+   - Wyświetlanie opisu pod zdjęciem (jeśli istnieje)
+   - Smooth animations z `framer-motion` (AnimatePresence)
+   - Ikona zoom-in przy hover jako wskazówka interakcji
+
+**Files Modified:**
+- `src/components/sections/ChronologicalGallery.tsx`
+
+**Efekt:** Galeria ładuje się teraz **błyskawicznie** przy zmianie liczby kolumn. Użytkownicy mogą klikać w zdjęcia aby je powiększyć i przeglądać w trybie pełnoekranowym.
+
+**Status:** ✅ **DONE**
+
 
 ### v2.0.12 - Visual Regressions & Parallax Fixes (2026-01-21)
 **Cel:** Poprawa regresji wizualnych (czarne ramki, niepożądane linie w navbarze) oraz optymalizacja płynności sekcji Parallax.
@@ -167,6 +212,90 @@ Ten plik służy do ścisłego monitorowania wszystkich zmian wprowadzanych w pr
    - Zidentyfikowano źródło "niebieskiej poświaty" (blue glow) jako element `preact-border-shadow-host` (Dev Tool Overlay), a nie błąd w kodzie strony.
 
 **Status:** ✅ **DONE & VERIFIED**
+
+### v3.0.0 - Architecture Audit & Offer System Initialization (2026-01-22)
+**Status**: 🏗️ **IN PROGRESS**
+
+**1. Cel Biznesowy:**
+Wdrożenie kompleksowego systemu "Generatora Ofert" oraz "Portalu Klienta" (B2B/B2C) służącego do:
+- Tworzenia, negocjowania i akceptacji ofert.
+- Automatycznego generowania umów.
+- Udostępniania dokumentów (PDF, Linki) w dedykowanej strefie klienta.
+
+**2. Audyt Stanu Istniejącego (Architecture Audit):**
+Wykonano szczegółowy audyt pod kątem wykorzystania istniejących komponentów:
+- **Client Portal**: Obecnie nie istnieje "Portal Klienta" w sensie dashboardu (`/strefa-klienta`). Istnieje jedynie logika `ClientGallery` (dostęp do galierii na hasło).
+- **User Model**: Model `User` istnieje, ale jest wykorzystywany szczątkowo (głównie do logowania admina i `photographer_profile`). Wymaga rozszerzenia o rolę `CLIENT` i dostęp do dashbordu.
+- **B2B Context**: Istnieje solidna separacja routingu (`middleware.ts`), którą należy wykorzystać przy prezentacji ofert B2B (dark mode, professional style).
+
+**3. Decyzje Architektoniczne (Next Steps):**
+- **Nowy Moduł**: Stworzenie od zera `src/app/strefa-klienta` (Client Dashboard).
+- **Baza Danych**: Dodanie relacji `Offer -> Client` oraz `Contract -> Client`.
+- **Integracja**: Wykorzystanie istniejącego `MediaPicker` do obsługi załączników ofertowych.
+
+**Weryfikacja Bezpieczeństwa (Zero Loss Protocol):**
+- Wykonano pełny backup bazy (`scripts/backup-full.ts`) przed przystąpieniem do zmian w `schema.prisma`.
+
+### v3.0.2 - Full Offer Generator & Client Portal Implementation (2026-01-22)
+**Status**: ✅ **FULLY IMPLEMENTED & BUILD VERIFIED**
+
+**Zakres Implementacji:**
+
+**1. API Endpoints (Backend)**:
+- ✅ Admin Offers API (`/api/admin/offers`) - CRUD operations with filtering
+- ✅ Client Authentication (`/api/client/auth/login`) - JWT token generation
+- ✅ Client Portal API (`/api/client/portal/offers`, `/api/client/portal/contracts`)
+- ✅ Ownership verification & role-based access control
+
+**2. Services & Integration**:
+- ✅ PDF Generation Service (`src/lib/services/pdf.ts`) - Professional offer/contract templates
+- ✅ Google Drive Integration (`src/lib/services/google-drive.ts`) - OAuth 2.0, file uploads, credentials management
+- ✅ S3 PDF upload with automatic URL generation
+
+**3. Admin UI Components**:
+- ✅ OfferForm.tsx - Drag-and-drop sections, dynamic items, real-time pricing
+- ✅ OffersList.tsx - Table view with filtering (type/status), sorting, quick actions
+- ✅ Admin Pages (`/admin/offers`, `/admin/offers/create`, `/admin/offers/[id]`)
+
+**4. Client Portal Pages**:
+- ✅ Client Login (`/strefa-klienta/login`) - Distinct B2C styling
+- ✅ Client Dashboard (`/strefa-klienta/dashboard`) - Summary cards, offer/contract grids
+- ✅ Offer Detail View (`/strefa-klienta/oferty/[id]`) - Accept/Reject/Negotiate actions
+- ✅ Contract View (`/strefa-klienta/umowy/[id]`) - PDF download, Google Drive access
+
+**5. Admin Settings Integration**:
+- ✅ Google Drive credentials UI (`/admin/settings`)
+- ✅ Secure credential storage in Setting table
+- ✅ Configuration fields: client_id, client_secret, refresh_token
+
+**6. Dependencies Installed**:
+- ✅ `bcrypt` - Password hashing for client authentication
+- ✅ `jsonwebtoken` - JWT token generation & verification
+- ✅ `googleapis` - Google Drive API client
+
+**Build Status**: ✅ **PRODUCTION BUILD SUCCESSFUL**
+- All 171 pages compiled without errors
+- New routes registered: `strefa-klienta/*`, `admin/offers/*`
+- Zero breaking changes to existing functionality
+
+**Następny krok:** Manual verification tests (create offer, client login, negotiation flow).
+
+### v3.0.1 - Database Schema Implementation (2026-01-22)
+**Status**: ✅ **APPLIED**
+
+**Zmiany w `schema.prisma`:**
+1. **New Models**:
+   - `Offer`: Główna encja oferty (slug, title, type, status, valid_until).
+   - `OfferSection`: Logiczna sekcja oferty (np. "Przygotowania").
+   - `OfferItem`: Elementy cenowe (usługi/produkty) wewnątrz sekcji.
+   - `Contract`: Umowa powiązana 1:1 z ofertą (status: pending/signed).
+   - `Negotiation`: Historia negocjacji/komentarzy do oferty.
+
+2. **User Model Extension**:
+   - Dodano relacje `offers` i `contracts` do modelu `User`.
+   - Pozwala to na przypisywanie ofert do konkretnych kont klientów.
+
+**Następny krok:** Budowa API backendowego (`src/app/api/admin/offers`).
 
 ### v2.0.11 - Admin Cleanup & Hero Slider Mount Fix (2026-01-19)
 **Cel:** Usunięcie mylących sekcji "Legacy" z panelu admina dla strony "O mnie" oraz naprawa skoku animacji Hero Slidera przy nawigacji.

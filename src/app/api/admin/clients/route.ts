@@ -1,7 +1,7 @@
-
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { withAuth } from '@/lib/auth/middleware';
+import bcrypt from 'bcrypt';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,12 +23,16 @@ export async function GET(request: NextRequest) {
                             assigned_galleries: true
                         }
                     },
-                    // Fetch recent history for preview (detailed view will be handled client-side or specific endpoint if needed)
-                    // We can include basic aggregate stats here
+                    // Fetch recent history for preview
                     orders: {
                         select: {
                             amount_paid: true,
                             created_at: true
+                        }
+                    },
+                    offers: {
+                        select: {
+                            status: true
                         }
                     }
                 }
@@ -38,6 +42,7 @@ export async function GET(request: NextRequest) {
             const formattedClients = clients.map(client => {
                 const totalSpent = client.orders.reduce((sum, order) => sum + order.amount_paid, 0);
                 const lastOrder = client.orders.length > 0 ? client.orders[0].created_at : null;
+                const acceptedOffersCount = client.offers.filter(o => o.status === 'accepted').length;
 
                 return {
                     id: client.id,
@@ -50,7 +55,8 @@ export async function GET(request: NextRequest) {
                         bookingsCount: client._count.assigned_bookings,
                         galleriesCount: client._count.assigned_galleries,
                         totalSpent: totalSpent,
-                        lastActive: lastOrder
+                        lastActive: lastOrder,
+                        acceptedOffersCount: acceptedOffersCount
                     }
                 };
             });
@@ -59,6 +65,48 @@ export async function GET(request: NextRequest) {
         } catch (error) {
             console.error('Fetch clients error:', error);
             return NextResponse.json({ error: 'Failed to fetch clients' }, { status: 500 });
+        }
+    });
+}
+
+// POST: Create a new client user
+export async function POST(request: NextRequest) {
+    return withAuth(request, async (req) => {
+        try {
+            const body = await req.json();
+            const { name, email, phone, password } = body;
+
+            if (!name || !email || !password) {
+                return NextResponse.json({ error: 'Name, email and password are required' }, { status: 400 });
+            }
+
+            // Check if email already exists
+            const existingUser = await prisma.user.findUnique({
+                where: { email }
+            });
+
+            if (existingUser) {
+                return NextResponse.json({ error: 'User with this email already exists' }, { status: 400 });
+            }
+
+            // Hash password
+            const password_hash = await bcrypt.hash(password, 10);
+
+            // Create client user
+            const user = await prisma.user.create({
+                data: {
+                    name,
+                    email,
+                    phone,
+                    password_hash,
+                    role: 'CLIENT'
+                }
+            });
+
+            return NextResponse.json({ success: true, client: user });
+        } catch (error) {
+            console.error('Create client error:', error);
+            return NextResponse.json({ error: 'Failed to create client' }, { status: 500 });
         }
     });
 }
