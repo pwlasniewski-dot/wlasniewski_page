@@ -73,6 +73,12 @@ export default function SettingsPage() {
         google_drive_refresh_token: '',
         // Home Page
         hero_slider_interval: '6000',
+        // B2B Basic Info (linked to b2b_footer_config)
+        b2b_brand_name: '',
+        b2b_tagline: '',
+        b2b_phone: '',
+        b2b_email: '',
+        b2b_footer_config: '',
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -135,6 +141,19 @@ export default function SettingsPage() {
                             console.warn('Failed to parse portfolio_categories JSON', e);
                         }
                     }
+                    // Parse B2B footer config for contact fields
+                    if (newSettings.b2b_footer_config) {
+                        try {
+                            const b2bConfig = JSON.parse(newSettings.b2b_footer_config);
+                            newSettings.b2b_brand_name = b2bConfig.brand_name || '';
+                            newSettings.b2b_tagline = b2bConfig.tagline || '';
+                            newSettings.b2b_phone = b2bConfig.phone || '';
+                            newSettings.b2b_email = b2bConfig.email || '';
+                        } catch (e) {
+                            console.error('Failed to parse b2b_footer_config', e);
+                        }
+                    }
+
                     return newSettings;
                 });
             }
@@ -212,6 +231,31 @@ export default function SettingsPage() {
             // The backend calculates 'payu_environment' based on 'payu_test_mode'
             // If we send 'payu_environment', it overrides the calculation because it's a direct column match
             delete (settingsToSave as any).payu_environment;
+
+            // Prepare B2B footer config update
+            if (settings.b2b_brand_name || settings.b2b_phone || settings.b2b_email) {
+                let existingB2bConfig = { brand_name: '', tagline: '', phone: '', email: '', sections: {} };
+                if (settings.b2b_footer_config) {
+                    try {
+                        existingB2bConfig = JSON.parse(settings.b2b_footer_config);
+                    } catch (e) { }
+                }
+
+                const updatedB2bConfig = {
+                    ...existingB2bConfig,
+                    brand_name: settings.b2b_brand_name,
+                    tagline: settings.b2b_tagline,
+                    phone: settings.b2b_phone,
+                    email: settings.b2b_email,
+                };
+                settingsToSave.b2b_footer_config = JSON.stringify(updatedB2bConfig);
+            }
+
+            // Remove temporary frontend-only fields
+            delete settingsToSave.b2b_brand_name;
+            delete settingsToSave.b2b_tagline;
+            delete settingsToSave.b2b_phone;
+            delete settingsToSave.b2b_email;
 
             // Save main settings
             const res = await fetch(getApiUrl('settings'), {
@@ -583,43 +627,87 @@ export default function SettingsPage() {
                         <p className="mt-2 text-xs text-zinc-500">Przesuń suwak, aby dostosować szerokość logo w nawigacji. Wysokość dopasuje się automatycznie.</p>
                     </div>
 
-                    {/* Dark/White-bg Logo */}
-                    <div>
-                        <label className="block text-sm font-medium text-zinc-400 mb-2">Logo B2B / Alternatywne</label>
-                        <div className="flex flex-col gap-4">
-                            <div className="relative w-full h-32 bg-zinc-800 rounded-lg border border-zinc-600 flex items-center justify-center overflow-hidden">
-                                {settings.logo_dark_url ? (
-                                    <img src={settings.logo_dark_url} alt="Logo B2B" className="max-h-full max-w-full object-contain p-2" />
-                                ) : (
-                                    <span className="text-zinc-400 text-sm">Brak logo</span>
-                                )}
-                            </div>
-                            <div className="flex gap-2">
-                                <button
-                                    onClick={() => openImagePicker('logo_dark_url')}
-                                    className="flex-1 bg-zinc-800 text-white px-3 py-2 rounded-md hover:bg-zinc-700 transition-colors text-sm flex items-center justify-center gap-2 border border-zinc-600"
-                                >
-                                    <ImageIcon className="w-4 h-4" />
-                                    Wybierz Logo
-                                </button>
-                                {settings.logo_dark_url && (
-                                    <button
-                                        onClick={() => setSettings(s => ({ ...s, logo_dark_url: '' }))}
-                                        className="bg-red-900/30 text-red-400 px-3 py-2 rounded-md hover:bg-red-900/50 transition-colors text-sm border border-red-900/50"
-                                    >
-                                        Usuń
-                                    </button>
-                                )}
-                            </div>
-                            <input
-                                type="text"
-                                value={settings.logo_dark_url || ''}
-                                onChange={e => setSettings(s => ({ ...s, logo_dark_url: e.target.value }))}
-                                placeholder="https://..."
-                                className="block w-full rounded-md border-zinc-700 bg-zinc-800 text-zinc-500 text-xs shadow-sm focus:border-gold-500 focus:ring-gold-500 px-2 py-1"
-                            />
+                    {/* B2B Branding & Contact */}
+                    <div className="md:col-span-2 bg-zinc-900 shadow rounded-lg border border-gold-500/30 p-6 mt-4">
+                        <div className="flex items-center gap-2 mb-4">
+                            <div className="w-2 h-2 rounded-full bg-gold-500" />
+                            <h2 className="text-lg font-medium text-white">Informacje B2B (aeroanaliza.pl)</h2>
                         </div>
-                        <p className="mt-2 text-xs text-zinc-500">Logo używane w strefie B2B oraz na jasnych tłach.</p>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="md:col-span-2">
+                                <label className="block text-sm font-medium text-zinc-400 mb-2">Logo B2B / Alternatywne</label>
+                                <div className="flex flex-col gap-4">
+                                    <div className="relative w-full h-32 bg-zinc-800 rounded-lg border border-zinc-600 flex items-center justify-center overflow-hidden">
+                                        {settings.logo_dark_url ? (
+                                            <img src={settings.logo_dark_url} alt="Logo B2B" className="max-h-full max-w-full object-contain p-2" />
+                                        ) : (
+                                            <span className="text-zinc-400 text-sm">Brak logo</span>
+                                        )}
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => openImagePicker('logo_dark_url')}
+                                            className="flex-1 bg-zinc-800 text-white px-3 py-2 rounded-md hover:bg-zinc-700 transition-colors text-sm flex items-center justify-center gap-2 border border-zinc-600"
+                                        >
+                                            <ImageIcon className="w-4 h-4" />
+                                            Wybierz Logo B2B
+                                        </button>
+                                        {settings.logo_dark_url && (
+                                            <button
+                                                onClick={() => setSettings(s => ({ ...s, logo_dark_url: '' }))}
+                                                className="bg-red-900/30 text-red-400 px-3 py-2 rounded-md hover:bg-red-900/50 transition-colors text-sm border border-red-900/50"
+                                            >
+                                                Usuń
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-zinc-400 mb-1">Nazwa Marki B2B</label>
+                                <input
+                                    type="text"
+                                    value={settings.b2b_brand_name || ''}
+                                    onChange={e => setSettings(s => ({ ...s, b2b_brand_name: e.target.value }))}
+                                    placeholder="np. FOTO-DRON Solutions"
+                                    className="block w-full rounded-md border-zinc-700 bg-zinc-800 text-white shadow-sm focus:border-gold-500 focus:ring-gold-500 sm:text-sm px-3 py-2"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-zinc-400 mb-1">E-mail B2B</label>
+                                <input
+                                    type="email"
+                                    value={settings.b2b_email || ''}
+                                    onChange={e => setSettings(s => ({ ...s, b2b_email: e.target.value }))}
+                                    placeholder="biuro@..."
+                                    className="block w-full rounded-md border-zinc-700 bg-zinc-800 text-white shadow-sm focus:border-gold-500 focus:ring-gold-500 sm:text-sm px-3 py-2"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-zinc-400 mb-1">Telefon B2B</label>
+                                <input
+                                    type="text"
+                                    value={settings.b2b_phone || ''}
+                                    onChange={e => setSettings(s => ({ ...s, b2b_phone: e.target.value }))}
+                                    placeholder="+48 ..."
+                                    className="block w-full rounded-md border-zinc-700 bg-zinc-800 text-white shadow-sm focus:border-gold-500 focus:ring-gold-500 sm:text-sm px-3 py-2"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-zinc-400 mb-1">Tagline B2B</label>
+                                <input
+                                    type="text"
+                                    value={settings.b2b_tagline || ''}
+                                    onChange={e => setSettings(s => ({ ...s, b2b_tagline: e.target.value }))}
+                                    placeholder="Krótki opis pod nazwą"
+                                    className="block w-full rounded-md border-zinc-700 bg-zinc-800 text-white shadow-sm focus:border-gold-500 focus:ring-gold-500 sm:text-sm px-3 py-2"
+                                />
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -1171,7 +1259,7 @@ export default function SettingsPage() {
                     </div>
 
                     <div className="bg-blue-900/20 p-4 rounded-lg border border-blue-900/50">
-                        <p className="text-xs text-blue-300">
+                        <div className="text-xs text-blue-300">
                             <strong>ℹ️ Konfiguracja:</strong> Aby włączyć integrację z Google Drive:
                             <ol className="mt-2 list-decimal list-inside space-y-1 ml-2">
                                 <li>Przejdź do <a href="https://console.cloud.google.com" target="_blank" className="underline hover:text-blue-200">Google Cloud Console</a></li>
@@ -1181,7 +1269,7 @@ export default function SettingsPage() {
                                 <li>Skopiuj Client ID i Client Secret poniżej</li>
                                 <li>Zapisz ustawienia</li>
                             </ol>
-                        </p>
+                        </div>
                     </div>
                 </div>
             </div>

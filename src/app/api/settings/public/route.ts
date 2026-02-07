@@ -49,6 +49,8 @@ export async function GET(request: NextRequest) {
             // Social Proof
             social_proof_enabled: settings.social_proof_enabled,
             social_proof_total_clients: settings.social_proof_total_clients,
+            // B2B Branding
+            b2b_footer_config: await getSetting('b2b_footer_config'),
             // Photo Challenge
             challenge: await getChallengeSettings()
         };

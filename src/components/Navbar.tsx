@@ -7,6 +7,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { Menu, X, ChevronDown, User, ShoppingBag, LogOut, Settings } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
+import { isB2BContext, B2B_DOMAINS } from '@/lib/context';
 
 interface MenuItem {
     id: number;
@@ -86,16 +87,17 @@ export default function Navbar() {
             const port = window.location.port;
             const path = window.location.pathname;
 
-            const isB2BContext = host.includes('b2b') ||
-                host.includes('dron') ||
-                port === '3001' ||
-                path.startsWith('/b2b');
+            const isB2BContextActive = isB2BContext({
+                hostname: host,
+                port: port,
+                pathname: path
+            });
 
-            setIsB2B(isB2BContext);
+            setIsB2B(isB2BContextActive);
 
             // 2. Fetch Menu for this context
             try {
-                const type = isB2BContext ? 'b2b' : 'b2c';
+                const type = isB2BContextActive ? 'b2b' : 'b2c';
                 // Add timestamp to prevent caching
                 const res = await fetch(`/api/menu?type=${type}&t=${Date.now()}`, {
                     cache: 'no-store',
@@ -137,7 +139,9 @@ export default function Navbar() {
         // If we are on a B2B domain (not localhost), we can show "clean" links 
         // because middleware handles the rewrite.
         const host = typeof window !== 'undefined' ? window.location.hostname : '';
-        const isB2BHost = host.includes('b2b') || host.includes('dron');
+        const isB2BHost = B2B_DOMAINS.some(d => host.toLowerCase() === d.toLowerCase()) ||
+            host.includes('b2b') ||
+            host.includes('dron');
 
         // On B2B dedicated domain: clean the /b2b prefix (handled by middleware)
         if (isB2BHost && href.startsWith('/b2b')) {
@@ -617,21 +621,23 @@ export default function Navbar() {
                         )}
 
                         {/* Cart Button */}
-                        <button
-                            onClick={() => setIsCartOpen(true)}
-                            className={`relative p-2.5 rounded-full transition-all duration-300 ${forceTransparent
-                                ? 'bg-white/10 hover:bg-white/20 text-white'
-                                : (isScrolled ? 'bg-black/5 hover:bg-black/10 text-zinc-700' : 'bg-white/10 hover:bg-white/20 text-white')
-                                }`}
-                            aria-label="Twój koszyk"
-                        >
-                            <ShoppingBag className="w-5 h-5" />
-                            {totalCount > 0 && (
-                                <span className="absolute -top-1 -right-1 w-5 h-5 bg-gold-600 text-black text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-black">
-                                    {totalCount}
-                                </span>
-                            )}
-                        </button>
+                        {!isB2B && (
+                            <button
+                                onClick={() => setIsCartOpen(true)}
+                                className={`relative p-2.5 rounded-full transition-all duration-300 ${forceTransparent
+                                    ? 'bg-white/10 hover:bg-white/20 text-white'
+                                    : (isScrolled ? 'bg-black/5 hover:bg-black/10 text-zinc-700' : 'bg-white/10 hover:bg-white/20 text-white')
+                                    }`}
+                                aria-label="Twój koszyk"
+                            >
+                                <ShoppingBag className="w-5 h-5" />
+                                {totalCount > 0 && (
+                                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-gold-600 text-black text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-black">
+                                        {totalCount}
+                                    </span>
+                                )}
+                            </button>
+                        )}
 
                         <button
                             onClick={() => setIsOpen(!isOpen)}

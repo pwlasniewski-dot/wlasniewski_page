@@ -167,6 +167,13 @@ export default function FooterSettingsPage() {
                 }),
             });
 
+            if (res.status === 401) {
+                toast.error('Sesja wygasła. Zaloguj się ponownie.');
+                localStorage.removeItem('admin_token');
+                window.location.href = '/admin/login';
+                return;
+            }
+
             if (res.ok) {
                 toast.success(`Zapisano ustawienia stopki ${activeTab.toUpperCase()}`);
             } else {

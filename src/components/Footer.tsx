@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { getApiUrl } from "@/lib/api-config";
+import { isB2BContext } from "@/lib/context";
 
 interface FooterLink {
     id: string;
@@ -119,10 +120,11 @@ export default function Footer() {
             const port = window.location.port;
             const path = window.location.pathname;
 
-            if (host.includes('b2b') || host.includes('dron') || port === '3001' || path.startsWith('/b2b')) {
-                return true;
-            }
-            return false;
+            return isB2BContext({
+                hostname: host,
+                port: port,
+                pathname: path
+            });
         };
         const activeIsB2B = checkB2B();
         setIsB2B(activeIsB2B);
@@ -133,6 +135,7 @@ export default function Footer() {
                 // Fetch footer settings
                 const res = await fetch(getApiUrl('settings'));
                 const data = await res.json();
+                const type = activeIsB2B ? 'b2b' : 'b2c';
                 let footerConfig = activeIsB2B ? defaultB2BSettings : defaultSettings;
 
                 if (data.success && data.settings) {

@@ -12,11 +12,16 @@ import ScrollToTop from "@/components/ScrollToTop";
 import { CartProvider } from '@/context/CartContext';
 import { AuthProvider } from '@/context/AuthContext';
 import BasketDrawer from '@/components/BasketDrawer';
+import { isB2BContext } from '@/lib/context';
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
     const isAdmin = pathname?.startsWith('/admin');
-    const isB2B = pathname?.startsWith('/b2b') || pathname?.startsWith('/dron');
+    const isB2B = isB2BContext({
+        pathname,
+        hostname: typeof window !== 'undefined' ? window.location.hostname : undefined,
+        port: typeof window !== 'undefined' ? window.location.port : undefined
+    });
     const isHome = pathname === '/';
 
     return (
@@ -38,7 +43,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                     </div>
                 )}
                 {!isAdmin && <ScrollToTop />}
-                {!isAdmin && <BasketDrawer />}
+                {!isAdmin && !isB2B && <BasketDrawer />}
             </CartProvider>
         </AuthProvider>
     );
