@@ -5,7 +5,7 @@
 # to the primary B2C domain (wlasniewski.pl).
 
 # Serve aeroanaliza.pl directly (don't redirect to primary domain)
-https://aeroanaliza.pl/*  /:splat  200
-https://www.aeroanaliza.pl/*  /:splat  200
+https://aeroanaliza.pl/*  /:splat  200!
+https://www.aeroanaliza.pl/*  /:splat  200!
 
 # Default behavior for other paths is handled by Next.js Middleware
