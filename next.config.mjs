@@ -13,6 +13,7 @@ const nextConfig = {
             },
         ],
     },
+    serverExternalPackages: ['@react-pdf/renderer'],
     // Skip database dependency during build
     experimental: {
         serverActions: {
@@ -35,7 +36,7 @@ const nextConfig = {
         if (isServer) {
             // On server side, allow Prisma but mark for external bundling
             // This helps when using Prisma Data Proxy (engine won't be bundled)
-            config.externals = [...(config.externals || [])];
+            config.externals = [...(config.externals || []), '@react-pdf/renderer'];
         }
         return config;
     },

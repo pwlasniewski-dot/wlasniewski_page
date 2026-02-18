@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
+import { requireAuth } from '@/lib/auth/middleware';
 
 export async function POST(request: NextRequest) {
     try {
@@ -63,6 +64,9 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
+    const authError = await requireAuth(request);
+    if (authError) return authError;
+
     try {
         // Simple stats for now
         const totalViews = await prisma.analyticsEvent.count({
@@ -139,6 +143,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+    const authError = await requireAuth(request);
+    if (authError) return authError;
+
     try {
         await prisma.analyticsEvent.deleteMany({});
         return NextResponse.json({ success: true, message: 'Analytics Reset' });

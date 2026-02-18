@@ -3,6 +3,7 @@ import { PrismaClient } from "@prisma/client";
 import { sendEmail } from "@/lib/email/sender";
 import { generateClientEmail, generateAdminEmail, generateBookingConfirmedEmail } from "@/lib/email-templates";
 import { logSystem } from "@/lib/logger";
+import { requireAuth } from "@/lib/auth/middleware";
 
 import prisma from '@/lib/db/prisma';
 
@@ -236,9 +237,12 @@ export async function GET(request: Request) {
             return NextResponse.json({ availability });
         }
 
-        // Default: List all bookings (for Admin)
-        // In a real app, check for admin session here
+        // Default: List all bookings (Admin only)
+        const authError = await requireAuth(request as any);
+        if (authError) return authError;
+
         const bookings = await prisma.booking.findMany({
+            where: { status: { not: 'archived' } },
             orderBy: {
                 created_at: "desc",
             },
@@ -365,18 +369,20 @@ export async function DELETE(request: Request) {
     }
 
     try {
-        await prisma.booking.delete({
+        // Soft delete — archive instead of destroy (zero-loss policy)
+        await prisma.booking.update({
             where: { id: parseInt(id) },
+            data: { status: 'archived' },
         });
 
-        await logSystem('INFO', 'BOOKING', `Booking #${id} deleted by admin`, { bookingId: id });
+        await logSystem('INFO', 'BOOKING', `Booking #${id} archived by admin`, { bookingId: id });
 
-        return NextResponse.json({ ok: true, message: "Rezerwacja została usunięta" });
+        return NextResponse.json({ ok: true, message: "Rezerwacja została zarchiwizowana" });
     } catch (error) {
-        console.error("Error deleting booking:", error);
-        await logSystem('ERROR', 'BOOKING', `Booking #${id} deletion failed`, { error: String(error) });
+        console.error("Error archiving booking:", error);
+        await logSystem('ERROR', 'BOOKING', `Booking #${id} archive failed`, { error: String(error) });
         return NextResponse.json(
-            { ok: false, message: "Błąd podczas usuwania rezerwacji" },
+            { ok: false, message: "Błąd podczas archiwizacji rezerwacji" },
             { status: 500 }
         );
     }

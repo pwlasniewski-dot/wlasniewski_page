@@ -1,8 +1,9 @@
 // API Route: GET /api/galleries/[accessCode]
-// Client access to gallery
+// Also handles: DELETE /api/galleries/[id] (numeric ID or access code)
 
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
+import { withAuth } from '@/lib/auth/middleware';
 
 export async function GET(
     request: NextRequest,
@@ -27,6 +28,9 @@ export async function GET(
                         order_index: true,
                         // Don't expose file_url for premium photos yet
                     }
+                },
+                products: {
+                    where: { is_active: true }
                 }
             }
         });
@@ -58,6 +62,23 @@ export async function GET(
         const standard_photos = gallery.photos.filter(p => p.is_standard);
         const premium_photos = gallery.photos.filter(p => !p.is_standard);
 
+        // Get paid premium photo IDs
+        const paidOrders = await prisma.photoOrder.findMany({
+            where: {
+                gallery_id: gallery.id,
+                payment_status: 'paid'
+            },
+            select: { photo_ids: true }
+        });
+
+        const paidPhotoIds = new Set<number>();
+        paidOrders.forEach(order => {
+            try {
+                const ids = JSON.parse(order.photo_ids) as number[];
+                ids.forEach(id => paidPhotoIds.add(id));
+            } catch (e) { }
+        });
+
         return NextResponse.json({
             success: true,
             gallery: {
@@ -68,6 +89,8 @@ export async function GET(
                 expires_at: gallery.expires_at,
                 standard_photos,
                 premium_photos,
+                paid_photo_ids: Array.from(paidPhotoIds),
+                products: gallery.products,
             }
         });
     } catch (error) {
@@ -77,4 +100,38 @@ export async function GET(
             { status: 500 }
         );
     }
+}
+
+export async function DELETE(
+    request: NextRequest,
+    { params }: { params: Promise<{ accessCode: string }> }
+) {
+    return withAuth(request, async () => {
+        try {
+            const { accessCode } = await params;
+
+            // Support both numeric ID and access code
+            const numericId = parseInt(accessCode);
+            const where = !isNaN(numericId)
+                ? { id: numericId }
+                : { access_code: accessCode };
+
+            const gallery = await prisma.clientGallery.findUnique({
+                where,
+                select: { id: true }
+            });
+
+            if (!gallery) {
+                return NextResponse.json({ error: 'Galeria nie istnieje' }, { status: 404 });
+            }
+
+            await prisma.galleryPhoto.deleteMany({ where: { gallery_id: gallery.id } });
+            await prisma.clientGallery.delete({ where: { id: gallery.id } });
+
+            return NextResponse.json({ success: true, message: 'Galeria usunięta' });
+        } catch (error) {
+            console.error('Error deleting gallery:', error);
+            return NextResponse.json({ error: 'Błąd usuwania galerii' }, { status: 500 });
+        }
+    });
 }

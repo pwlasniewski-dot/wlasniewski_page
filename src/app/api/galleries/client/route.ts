@@ -25,11 +25,14 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ error: 'User not found' }, { status: 404 });
         }
 
-        // Find all galleries where client_email matches
+        // Find all galleries where client_email matches OR client_id matches
         const galleries = await prisma.clientGallery.findMany({
             where: {
-                client_email: user.email,
-                is_active: true
+                is_active: true,
+                OR: [
+                    { client_email: user.email },
+                    { client_id: user.id }
+                ]
             },
             include: {
                 _count: {

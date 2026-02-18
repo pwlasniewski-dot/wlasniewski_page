@@ -55,7 +55,10 @@ export default function LoginPage() {
                         />
                     </div>
                     <div>
-                        <label className="block text-sm text-zinc-400 mb-1">Hasło</label>
+                        <div className="flex justify-between items-center mb-1">
+                            <label className="block text-sm text-zinc-400">Hasło</label>
+                            <Link href="/logowanie/przypomnij-haslo" className="text-xs text-gold-500 hover:text-gold-400">Nie pamiętasz hasła?</Link>
+                        </div>
                         <input
                             type="password"
                             required

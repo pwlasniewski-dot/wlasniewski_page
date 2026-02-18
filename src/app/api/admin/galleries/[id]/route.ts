@@ -70,6 +70,14 @@ export async function PUT(
             const gallery = await prisma.clientGallery.update({
                 where: { id: galleryId },
                 data: updateData,
+                include: {
+                    photos: {
+                        orderBy: { order_index: 'asc' }
+                    },
+                    orders: {
+                        orderBy: { created_at: 'desc' }
+                    }
+                }
             });
 
             return NextResponse.json({

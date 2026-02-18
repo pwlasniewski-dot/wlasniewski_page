@@ -63,6 +63,7 @@ model Setting {
   payu_client_secret                String?
   payu_environment                  String   @default("sandbox")
   payu_merchant_pos_id              String?
+  payu_md5_key                      String?
   payu_notify_url                   String?
   portfolio_categories              String?
   seasonal_effect                   String?  @default("none")
@@ -92,9 +93,8 @@ model Setting {
   gift_card_promo_rotation_interval Int?     @default(5)
   gift_card_promo_title             String?  @default("Karty Podarunkowe")
   gift_card_hero_image              String?
-  gift_card_hero_opacity            Float?   @default(0.6)
-  payu_md5_key                      String?
   portfolio_layout                  String?  @default("slider")
+  gift_card_hero_opacity            Float?   @default(0.6)
   social_proof_enabled              Boolean  @default(true)
   theme_mode                        String   @default("dark")
 
@@ -120,8 +120,8 @@ model MenuItem {
   parent_id  Int?
   order      Int        @default(0)
   is_active  Boolean    @default(true)
-  created_at DateTime   @default(now())
   menu_type  String     @default("b2c")
+  created_at DateTime   @default(now())
   page       Page?      @relation(fields: [page_id], references: [id])
   parent     MenuItem?  @relation("MenuHierarchy", fields: [parent_id], references: [id])
   children   MenuItem[] @relation("MenuHierarchy")
@@ -177,9 +177,9 @@ model PortfolioSession {
   display_order         Int           @default(0)
   created_at            DateTime      @default(now())
   updated_at            DateTime      @default(now()) @updatedAt
-  cover_image_mobile_id Int?
   highlighted_media_ids String?
   is_category_hero      Boolean       @default(false)
+  cover_image_mobile_id Int?
   cover_image           MediaLibrary? @relation(fields: [cover_image_id], references: [id])
   mobile_cover_image    MediaLibrary? @relation("MobileCover", fields: [cover_image_mobile_id], references: [id])
 
@@ -299,9 +299,9 @@ model HeroSlide {
   display_order   Int           @default(0)
   display_mode    String        @default("BOTH")
   is_active       Boolean       @default(true)
-  created_at      DateTime      @default(now())
-  before_image_id Int?
   is_before_after Boolean       @default(false)
+  before_image_id Int?
+  created_at      DateTime      @default(now())
   before_image    MediaLibrary? @relation("HeroBeforeImage", fields: [before_image_id], references: [id])
   image           MediaLibrary  @relation(fields: [image_id], references: [id])
 
@@ -408,25 +408,25 @@ model Package {
 
 model GiftCardOrder {
   id                Int       @id @default(autoincrement())
-  gift_card_id      Int?
-  customer_email    String
+  order_number      String?   @unique
   customer_name     String
-  recipient_name    String?
-  recipient_email   String?
-  message           String?
-  sender_name       String?
-  payment_method    String?
-  stripe_session_id String?
-  payu_order_id     String?
+  customer_email    String
   amount_paid       Int
   currency          String    @default("PLN")
   payment_status    String    @default("pending")
+  payment_method    String?
+  stripe_session_id String?
   created_at        DateTime  @default(now())
   paid_at           DateTime?
-  access_token      String?   @unique
   card_id           Int
-  order_number      String?   @unique
+  gift_card_id      Int?
   template_id       Int?
+  recipient_email   String?
+  recipient_name    String?
+  sender_name       String?
+  message           String?
+  access_token      String?   @unique
+  payu_order_id     String?
   user_id           Int?
   gift_card         GiftCard? @relation(fields: [gift_card_id], references: [id])
   user              User?     @relation(fields: [user_id], references: [id])
@@ -438,31 +438,30 @@ model GiftCard {
   id               Int             @id @default(autoincrement())
   code             String          @unique
   amount           Int
-  recipient_email  String?
-  recipient_name   String?
-  message          String?
-  created_at       DateTime        @default(now())
-  card_template    String?         @default("standard")
-  discount_type    String?         @default("amount")
-  notes            String?
-  valid_until      DateTime?
-  card_description String?
-  card_title       String?
-  sender_name      String?
-  status           String          @default("active")
-  theme            String?         @default("christmas")
   value            Int
   currency         String          @default("PLN")
+  valid_until      DateTime?
   is_active        Boolean         @default(true)
-  lowest_price_30d Int?
-  owner_id         Int?
+  created_at       DateTime        @default(now())
   redeemed_at      DateTime?
+  recipient_email  String?
+  recipient_name   String?
+  notes            String?
+  card_template    String?         @default("standard")
+  theme            String?         @default("christmas")
+  discount_type    String?         @default("amount")
+  sender_name      String?
+  message          String?
+  card_description String?
+  card_title       String?
+  lowest_price_30d Int?
+  status           String          @default("active")
+  owner_id         Int?
   orders           GiftCardOrder[]
   owner            User?           @relation("UserGiftCards", fields: [owner_id], references: [id])
 
   @@map("gift_cards")
 }
-
 
 model User {
   id                      Int                     @id @default(autoincrement())
@@ -470,60 +469,70 @@ model User {
   password_hash           String
   name                    String?
   phone                   String?
-  role                    String                  @default("CLIENT")
-  is_active               Boolean                 @default(true)
-  photographer_profile_id Int?                    @unique
   created_at              DateTime                @default(now())
   updated_at              DateTime                @updatedAt
+  is_active               Boolean                 @default(true)
+  photographer_profile_id Int?                    @unique
+  role                    String                  @default("CLIENT")
+  last_failed_login       DateTime?
+  last_login              DateTime?
+  address                 String?
+  city                    String?
+  postal_code             String?
+  reset_token             String?                 @unique
+  reset_token_expires     DateTime?
   baskets                 Basket[]
   assigned_bookings       Booking[]               @relation("PhotographerBookings")
+  client_galleries        ClientGallery[]         @relation("ClientGalleries")
   assigned_galleries      ClientGallery[]         @relation("PhotographerGalleries")
+  contracts               Contract[]
   orders                  GiftCardOrder[]
   gift_cards              GiftCard[]              @relation("UserGiftCards")
+  offers                  Offer[]
   packages                Package[]
   payouts                 payouts[]
   provider_availability   provider_availability[]
   photographer_profile    PhotographerProfile?    @relation(fields: [photographer_profile_id], references: [id])
-  offers                  Offer[]
-  contracts               Contract[]
 
   @@map("users")
 }
 
 model Offer {
-  id           Int           @id @default(autoincrement())
-  slug         String        @unique
-  offerNumber  String?       @unique // B2C-2026-001, B2B-2026-001
-  title        String
-  type         String        @default("b2c") // b2b, b2c
-  category     String?       // e.g., "wedding", "roof_inspection", "birthday"
-  status       String        @default("draft") // draft, sent, accepted, rejected, expired
-  valid_until  DateTime?
-  client_id    Int?
-  client_email String? // Fallback if no user created yet
-  is_template  Boolean       @default(false)
-  created_at   DateTime      @default(now())
-  updated_at   DateTime      @updatedAt
-  user         User?         @relation(fields: [client_id], references: [id])
-  sections     OfferSection[]
-  contract     Contract?
-  negotiations Negotiation[]
-  pdf_url      String?       // S3 URL
-  drive_url    String?       // Google Drive URL
-  template_data Json?        // Full state of the A4 template editor
-  total_price  Int           @default(0)
+  id               Int            @id @default(autoincrement())
+  slug             String         @unique
+  offerNumber      String?        @unique
+  title            String
+  type             String         @default("b2c")
+  category         String?
+  status           String         @default("draft")
+  valid_until      DateTime?
+  client_id        Int?
+  client_email     String?
+  is_template      Boolean        @default(false)
+  created_at       DateTime       @default(now())
+  updated_at       DateTime       @updatedAt
+  pdf_url          String?
+  drive_url        String?
+  template_data    Json?
+  total_price      Int            @default(0)
+  client_selection Json?
+  negotiation_enabled Boolean @default(true)
+  contract         Contract?
+  negotiations     Negotiation[]
+  sections         OfferSection[]
+  user             User?          @relation(fields: [client_id], references: [id])
 
   @@map("offers")
 }
 
 model OfferSection {
-  id            Int         @id @default(autoincrement())
-  offer_id      Int
-  title         String
-  description   String?
-  order         Int         @default(0)
-  items         OfferItem[]
-  offer         Offer       @relation(fields: [offer_id], references: [id], onDelete: Cascade)
+  id          Int         @id @default(autoincrement())
+  offer_id    Int
+  title       String
+  description String?
+  order       Int         @default(0)
+  items       OfferItem[]
+  offer       Offer       @relation(fields: [offer_id], references: [id], onDelete: Cascade)
 
   @@map("offer_sections")
 }
@@ -543,17 +552,17 @@ model OfferItem {
 
 model Contract {
   id              Int       @id @default(autoincrement())
-  contract_number String?   @unique // UMW-B2C-2026-001
+  contract_number String?   @unique
   offer_id        Int       @unique
   client_id       Int?
-  status          String    @default("pending") // pending, signed
-  content         String?   // Legal text with HTML/Markdown support
+  status          String    @default("pending")
+  content         String?
   signed_at       DateTime?
-  pdf_url         String?   // S3 URL
-  drive_url       String?   // Google Drive URL
+  pdf_url         String?
+  drive_url       String?
   created_at      DateTime  @default(now())
-  offer           Offer     @relation(fields: [offer_id], references: [id])
   user            User?     @relation(fields: [client_id], references: [id])
+  offer           Offer     @relation(fields: [offer_id], references: [id])
 
   @@map("contracts")
 }
@@ -563,14 +572,13 @@ model Negotiation {
   offer_id       Int
   message        String?
   proposed_price Int?
-  proposed_items String?  // JSON string storing item-level proposals
-  status         String   @default("open") // open, resolved, closed
+  proposed_items String?
+  status         String   @default("open")
   created_at     DateTime @default(now())
   offer          Offer    @relation(fields: [offer_id], references: [id])
 
   @@map("negotiations")
 }
-
 
 model PhotographerProfile {
   id                Int      @id @default(autoincrement())
@@ -580,10 +588,10 @@ model PhotographerProfile {
   base_commission   Int      @default(15)
   rating            Float    @default(5.0)
   portfolio_enabled Boolean  @default(true)
-  avatar_url        String?
-  logo_url          String?
   created_at        DateTime @default(now())
   updated_at        DateTime @updatedAt
+  avatar_url        String?
+  logo_url          String?
   highlight_photos  String?
   user              User?
 
@@ -786,20 +794,23 @@ model ChallengePhoto {
 }
 
 model ClientGallery {
-  id                Int            @id @default(autoincrement())
-  booking_id        Int?           @unique
+  id                Int              @id @default(autoincrement())
+  booking_id        Int?             @unique
   client_email      String
   client_name       String
-  access_code       String         @unique
+  access_code       String           @unique
   expires_at        DateTime?
-  standard_count    Int            @default(0)
-  price_per_premium Int            @default(2000)
-  is_active         Boolean        @default(true)
-  created_at        DateTime       @default(now())
-  updated_at        DateTime       @updatedAt
+  standard_count    Int              @default(0)
+  price_per_premium Int              @default(2000)
+  is_active         Boolean          @default(true)
+  created_at        DateTime         @default(now())
+  updated_at        DateTime         @updatedAt
   photographer_id   Int?
-  photographer      User?          @relation("PhotographerGalleries", fields: [photographer_id], references: [id])
+  client_id         Int?
+  client            User?            @relation("ClientGalleries", fields: [client_id], references: [id])
+  photographer      User?            @relation("PhotographerGalleries", fields: [photographer_id], references: [id])
   photos            GalleryPhoto[]
+  products          GalleryProduct[]
   orders            PhotoOrder[]
 
   @@map("client_galleries")
@@ -821,6 +832,22 @@ model GalleryPhoto {
   @@map("gallery_photos")
 }
 
+model GalleryProduct {
+  id          Int            @id @default(autoincrement())
+  gallery_id  Int?
+  title       String
+  description String?
+  price       Int
+  image_url   String?
+  video_url   String?
+  is_active   Boolean        @default(true)
+  created_at  DateTime       @default(now())
+  updated_at  DateTime       @updatedAt
+  gallery     ClientGallery? @relation(fields: [gallery_id], references: [id])
+
+  @@map("gallery_products")
+}
+
 model PhotoOrder {
   id             Int           @id @default(autoincrement())
   gallery_id     Int
@@ -833,6 +860,7 @@ model PhotoOrder {
   paid_at        DateTime?
   created_at     DateTime      @default(now())
   updated_at     DateTime      @updatedAt
+  product_ids    String?
   gallery        ClientGallery @relation(fields: [gallery_id], references: [id], onDelete: Cascade)
 
   @@map("photo_orders")
@@ -1018,67 +1046,60 @@ model subscribers {
   created_at DateTime @default(now())
 }
 
-// Professional CRM - Client Management
 model Client {
-  id            Int       @id @default(autoincrement())
-  firstName     String
-  lastName      String
-  email         String?
-  phone         String?
-  address       String?
-  city          String?
-  postalCode    String?
-  idNumber      String?   // Dowód osobisty
-  notes         String?   @db.Text
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  
-  // Relations
-  offers        ClientOffer[]
-  contracts     ClientContract[]
-  
+  id         Int              @id @default(autoincrement())
+  firstName  String
+  lastName   String
+  email      String?
+  phone      String?
+  address    String?
+  city       String?
+  postalCode String?
+  idNumber   String?
+  notes      String?
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+  contracts  ClientContract[]
+  offers     ClientOffer[]
+
   @@index([email])
   @@index([lastName])
   @@map("clients")
 }
 
 model ClientOffer {
-  id            Int       @id @default(autoincrement())
-  clientId      Int
-  client        Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  
-  title         String
-  offerData     Json      // Cały stan OfferBuilder (wszystkie dane formularza)
-  pdfUrl        String?   // Link do S3
-  driveUrl      String?   // Link do Google Drive
-  status        String    @default("draft") // draft, sent, accepted, rejected
-  validUntil    DateTime?
-  sentAt        DateTime?
-  
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  
+  id         Int       @id @default(autoincrement())
+  clientId   Int
+  title      String
+  offerData  Json
+  pdfUrl     String?
+  driveUrl   String?
+  status     String    @default("draft")
+  validUntil DateTime?
+  sentAt     DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  client     Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
   @@index([clientId])
   @@index([status])
   @@map("client_offers")
 }
 
 model ClientContract {
-  id            Int       @id @default(autoincrement())
-  clientId      Int
-  client        Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  
-  title         String
-  contractData  Json      // Cały stan ContractBuilder
-  pdfUrl        String?   // Link do S3
-  driveUrl      String?   // Link do Google Drive
-  status        String    @default("draft") // draft, sent, signed
-  signedAt      DateTime?
-  sentAt        DateTime?
-  
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  
+  id           Int       @id @default(autoincrement())
+  clientId     Int
+  title        String
+  contractData Json
+  pdfUrl       String?
+  driveUrl     String?
+  status       String    @default("draft")
+  signedAt     DateTime?
+  sentAt       DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  client       Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
   @@index([clientId])
   @@index([status])
   @@map("client_contracts")

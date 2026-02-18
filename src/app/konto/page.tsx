@@ -17,11 +17,12 @@ import {
     Star,
     Image as ImageIcon,
     CheckCircle2,
-    ShoppingCart
+    ShoppingCart,
+    FileText
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-type Tab = 'overview' | 'sessions' | 'bookings' | 'settings' | 'partner';
+type Tab = 'overview' | 'sessions' | 'bookings' | 'documents' | 'gift_cards' | 'settings' | 'partner';
 
 export default function AccountPage() {
     const router = useRouter();
@@ -32,6 +33,8 @@ export default function AccountPage() {
     const [bookings, setBookings] = useState<any[]>([]);
     const [challenges, setChallenges] = useState<any[]>([]);
     const [galleries, setGalleries] = useState<any[]>([]);
+    const [offers, setOffers] = useState<any[]>([]);
+    const [contracts, setContracts] = useState<any[]>([]);
 
     useEffect(() => {
         if (!authLoading && !token) {
@@ -51,7 +54,9 @@ export default function AccountPage() {
                     if (userRes.ok) {
                         const data = await userRes.json();
                         setGiftCards(data.user.gift_cards || []);
-                        setBookings(data.user.bookings || []); // Corrected to use real bookings
+                        setBookings(data.user.bookings || []);
+                        setOffers(data.user.offers || []);
+                        setContracts(data.user.contracts || []);
                     }
 
                     if (challengeRes.ok) {
@@ -127,6 +132,8 @@ export default function AccountPage() {
                         <TabButton id="overview" label="Przegląd" active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} icon={<Star className="w-4 h-4" />} />
                         <TabButton id="sessions" label="Zdjęcia z sesji" active={activeTab === 'sessions'} onClick={() => setActiveTab('sessions')} icon={<ImageIcon className="w-4 h-4" />} count={challenges.length + galleries.length} />
                         <TabButton id="bookings" label="Rezerwacje" active={activeTab === 'bookings'} onClick={() => setActiveTab('bookings')} icon={<Calendar className="w-4 h-4" />} count={bookings.length} />
+                        <TabButton id="documents" label="Oferty i Umowy" active={activeTab === 'documents'} onClick={() => setActiveTab('documents')} icon={<FileText className="w-4 h-4" />} count={offers.length + contracts.length} />
+                        <TabButton id="gift_cards" label="Karty Podarunkowe" active={activeTab === 'gift_cards'} onClick={() => setActiveTab('gift_cards')} icon={<Gift className="w-4 h-4" />} count={giftCards.length} />
                         <TabButton id="settings" label="Ustawienia" active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} icon={<UserIcon className="w-4 h-4" />} />
                         {user?.role === 'PHOTOGRAPHER' && (
                             <TabButton id="partner" label="Strefa Partnera" active={activeTab === 'partner'} onClick={() => setActiveTab('partner')} icon={<Star className="w-4 h-4 text-gold-500" />} />
@@ -147,6 +154,8 @@ export default function AccountPage() {
                         {activeTab === 'overview' && renderOverview()}
                         {activeTab === 'sessions' && renderSessions()}
                         {activeTab === 'bookings' && renderBookingsTab()}
+                        {activeTab === 'documents' && renderDocumentsTab()}
+                        {activeTab === 'gift_cards' && renderGiftCards()}
                         {activeTab === 'settings' && renderSettingsTab()}
                         {activeTab === 'partner' && renderPartnerTab()}
                     </motion.div>
@@ -225,11 +234,11 @@ export default function AccountPage() {
                             onAction={() => setActiveTab('sessions')}
                         />
                         <QuickCard
-                            title="Twoje rezerwacje"
-                            value={bookings.length > 0 ? `${bookings.length} aktywnych` : 'Zaplanuj sesję'}
-                            icon={<Calendar className="w-5 h-5" />}
-                            actionLabel="Zarządzaj"
-                            onAction={() => setActiveTab('bookings')}
+                            title="Twoje dokumenty"
+                            value={(offers.length + contracts.length) > 0 ? `${offers.length + contracts.length} dokumentów` : 'Brak dokumentów'}
+                            icon={<FileText className="w-5 h-5" />}
+                            actionLabel="Oferty i Umowy"
+                            onAction={() => setActiveTab('documents')}
                         />
                     </div>
                     {renderGiftCards()}
@@ -354,6 +363,132 @@ export default function AccountPage() {
                     )}
                 </div>
             </div>
+        );
+    }
+
+    function renderDocumentsTab() {
+        return (
+            <div className="space-y-12">
+                {/* Offers Section */}
+                <section>
+                    <div className="flex items-center justify-between mb-8">
+                        <div>
+                            <h2 className="text-3xl font-bold mb-2">Twoje Oferty</h2>
+                            <p className="text-zinc-500">Przeglądaj przygotowane propozycje współpracy.</p>
+                        </div>
+                    </div>
+
+                    {offers.length === 0 ? (
+                        <div className="bg-zinc-900/20 border border-zinc-800 p-12 rounded-[2rem] text-center">
+                            <FileText className="w-12 h-12 text-zinc-700 mx-auto mb-4" />
+                            <h3 className="text-lg font-bold mb-1">Brak aktywnych ofert</h3>
+                            <p className="text-zinc-500 text-sm">Nie masz obecnie żadnych otwartych ofert.</p>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 gap-4">
+                            {offers.map((offer) => (
+                                <Link
+                                    key={offer.id}
+                                    href={`/strefa-klienta/oferty/${offer.id}`} // Keep legacy link for now, or update to modal? Keeping link.
+                                    className="bg-zinc-900/50 border border-zinc-800 p-6 rounded-[2rem] hover:border-gold-500/30 transition-all flex flex-col md:flex-row justify-between items-center gap-6 group"
+                                >
+                                    <div className="flex items-center gap-5 w-full md:w-auto">
+                                        <div className="w-14 h-14 bg-zinc-800 rounded-2xl flex items-center justify-center text-gold-500">
+                                            <FileText className="w-6 h-6" />
+                                        </div>
+                                        <div>
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <h4 className="font-bold text-lg group-hover:text-gold-400 transition-colors">{offer.title}</h4>
+                                                <StatusBadge status={offer.status} />
+                                            </div>
+                                            <p className="text-zinc-500 text-sm flex gap-3">
+                                                <span>#{offer.offerNumber || offer.id}</span>
+                                                <span>•</span>
+                                                <span>{new Date(offer.created_at).toLocaleDateString()}</span>
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="text-right w-full md:w-auto flex items-center justify-between md:justify-end gap-6">
+                                        <div>
+                                            <p className="text-xs text-zinc-500 uppercase tracking-widest mb-1">Wartość</p>
+                                            <p className="text-xl font-bold text-white">{offer.total_price} PLN</p>
+                                        </div>
+                                        <div className="w-10 h-10 bg-zinc-800 rounded-full flex items-center justify-center text-zinc-400 group-hover:bg-gold-600 group-hover:text-black transition-all">
+                                            <ChevronRight className="w-5 h-5" />
+                                        </div>
+                                    </div>
+                                </Link>
+                            ))}
+                        </div>
+                    )}
+                </section>
+
+                {/* Contracts Section */}
+                {contracts.length > 0 && (
+                    <section>
+                        <div className="flex items-center justify-between mb-8">
+                            <div>
+                                <h2 className="text-3xl font-bold mb-2">Umowy</h2>
+                                <p className="text-zinc-500">Podpisane dokumenty i formalności.</p>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-4">
+                            {contracts.map((contract) => (
+                                <Link
+                                    key={contract.id}
+                                    href={`/strefa-klienta/umowy/${contract.id}`}
+                                    className="bg-zinc-900/50 border border-zinc-800 p-6 rounded-[2rem] hover:border-gold-500/30 transition-all flex flex-col md:flex-row justify-between items-center gap-6 group"
+                                >
+                                    <div className="flex items-center gap-5 w-full md:w-auto">
+                                        <div className="w-14 h-14 bg-zinc-800 rounded-2xl flex items-center justify-center text-green-500">
+                                            <CheckCircle2 className="w-6 h-6" />
+                                        </div>
+                                        <div>
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <h4 className="font-bold text-lg group-hover:text-gold-400 transition-colors">{contract.offer.title}</h4>
+                                                <StatusBadge status={contract.status} />
+                                            </div>
+                                            <p className="text-zinc-500 text-sm">
+                                                Dotyczy oferty: #{contract.offer.offerNumber || 'N/A'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="w-10 h-10 bg-zinc-800 rounded-full flex items-center justify-center text-zinc-400 group-hover:bg-gold-600 group-hover:text-black transition-all">
+                                        <ChevronRight className="w-5 h-5" />
+                                    </div>
+                                </Link>
+                            ))}
+                        </div>
+                    </section>
+                )}
+            </div>
+        );
+    }
+
+    function StatusBadge({ status }: { status: string }) {
+        const styles: Record<string, string> = {
+            draft: 'bg-zinc-800 text-zinc-400',
+            sent: 'bg-blue-500/20 text-blue-500',
+            accepted: 'bg-green-500/20 text-green-500',
+            rejected: 'bg-red-500/20 text-red-500',
+            signed: 'bg-green-500/20 text-green-500',
+            pending: 'bg-yellow-500/20 text-yellow-500'
+        };
+
+        const labels: Record<string, string> = {
+            draft: 'Szkic',
+            sent: 'Wysłana',
+            accepted: 'Zaakceptowana',
+            rejected: 'Odrzucona',
+            signed: 'Podpisana',
+            pending: 'Oczekuje'
+        };
+
+        return (
+            <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider ${styles[status] || styles.draft}`}>
+                {labels[status] || status}
+            </span>
         );
     }
 

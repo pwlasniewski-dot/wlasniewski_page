@@ -1,22 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import OfferForm from '@/components/admin/offers/OfferForm';
+import OfferBuilder from '@/components/admin/OfferBuilder';
 
 export default function EditOfferPage({ params }: { params: Promise<{ id: string }> }) {
     const [offer, setOffer] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const router = useRouter();
-    const [id, setId] = useState<string>('');
-
-    useEffect(() => {
-        const unwrapParams = async () => {
-            const resolvedParams = await params;
-            setId(resolvedParams.id);
-        };
-        unwrapParams();
-    }, [params]);
+    const resParams: any = React.use(params);
+    const id = resParams.id;
 
     useEffect(() => {
         if (id) {
@@ -59,5 +52,18 @@ export default function EditOfferPage({ params }: { params: Promise<{ id: string
         return <div className="text-center py-8 text-red-500">Oferta nie znaleziona</div>;
     }
 
-    return <OfferForm initialData={offer} />;
+    // Convert saved data to OfferBuilder data format
+    // If template_data exists, use it. Otherwise fallback to base fields
+    const initialBuilderData = offer.template_data || {
+        title: offer.title,
+        // ... other fields could be mapped if needed, 
+        // but A4 Builder usually relies on template_data
+    };
+
+    return (
+        <OfferBuilder
+            offerId={parseInt(id)}
+            initialData={initialBuilderData}
+        />
+    );
 }

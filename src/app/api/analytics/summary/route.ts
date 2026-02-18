@@ -1,9 +1,14 @@
 
 import { NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { getAISuggestions } from '@/lib/ai-suggestions';
+import { requireAuth } from '@/lib/auth/middleware';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+    const authError = await requireAuth(request);
+    if (authError) return authError;
+
     try {
         // Get total revenue from bookings
         const bookings = await prisma.booking.findMany({

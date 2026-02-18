@@ -79,12 +79,19 @@ export async function GET(
             }
         }
 
-        // Read file from S3
-        // file_url is the full S3 URL where photo is stored
-        // Redirect directly to S3 for download
-        return NextResponse.redirect(photo.file_url, {
+        // Fetch file from S3 and stream it with attachment header
+        const s3Response = await fetch(photo.file_url);
+        if (!s3Response.ok) {
+            throw new Error('Failed to fetch from S3');
+        }
+
+        const filename = photo.file_url.split('/').pop() || `photo-${photo.id}.jpg`;
+
+        return new Response(s3Response.body, {
             headers: {
-                'Content-Disposition': `attachment; filename="photo-${photo.id}.jpg"`,
+                'Content-Type': s3Response.headers.get('Content-Type') || 'image/jpeg',
+                'Content-Disposition': `attachment; filename="${filename}"`,
+                'Cache-Control': 'no-cache',
             }
         });
     } catch (error) {

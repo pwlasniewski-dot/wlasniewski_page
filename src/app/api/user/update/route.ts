@@ -62,9 +62,29 @@ export async function PUT(req: NextRequest) {
             updateData.password_hash = await bcrypt.hash(newPassword, 10);
         }
 
-        const updatedUser = await prisma.user.update({
-            where: { id: user.id },
-            data: updateData
+        const updatedUser = await prisma.$transaction(async (tx) => {
+            const updated = await tx.user.update({
+                where: { id: user.id },
+                data: updateData
+            });
+
+            if (updateData.email) {
+                console.log(`[User Update] Email changing to ${updateData.email}. Syncing related records...`);
+
+                // Update Offers
+                await tx.offer.updateMany({
+                    where: { client_id: user.id },
+                    data: { client_email: updateData.email }
+                });
+
+                // Update Galleries
+                await tx.clientGallery.updateMany({
+                    where: { client_id: user.id },
+                    data: { client_email: updateData.email }
+                });
+            }
+
+            return updated;
         });
 
         return NextResponse.json({

@@ -9,8 +9,13 @@ export async function POST(request: NextRequest) {
         const body = await request.json();
         const { email, newPassword, masterKey } = body;
 
-        // Simple master key protection (set in env)
-        const expectedKey = process.env.ADMIN_MASTER_KEY || 'WLASNIEWSKI2024RESET';
+        // SECURITY: Master key MUST be set via environment variable.
+        // If ADMIN_MASTER_KEY is not set, this endpoint is disabled.
+        const expectedKey = process.env.ADMIN_MASTER_KEY;
+        if (!expectedKey) {
+            console.error('[Emergency Reset] ADMIN_MASTER_KEY env var not set — endpoint disabled');
+            return NextResponse.json({ error: 'Endpoint niedostępny' }, { status: 503 });
+        }
 
         if (masterKey !== expectedKey) {
             return NextResponse.json({ error: 'Nieprawidłowy klucz' }, { status: 401 });

@@ -14,11 +14,11 @@ export async function POST(
     try {
         const { accessCode } = await params;
         const body = await request.json();
-        const { photo_ids } = body;
+        const { photo_ids = [], product_ids = [] } = body;
 
-        if (!photo_ids || !Array.isArray(photo_ids) || photo_ids.length === 0) {
+        if ((!photo_ids || photo_ids.length === 0) && (!product_ids || product_ids.length === 0)) {
             return NextResponse.json(
-                { success: false, error: 'Brak wybranych zdjęć' },
+                { success: false, error: 'Brak wybranych zdjęć lub produktów' },
                 { status: 400 }
             );
         }
@@ -43,12 +43,12 @@ export async function POST(
             );
         }
 
-        // Verify all photos exist and are premium
+        // Verify premium photos
         const photos = await prisma.galleryPhoto.findMany({
             where: {
                 id: { in: photo_ids },
                 gallery_id: gallery.id,
-                is_standard: false, // Only premium photos can be ordered
+                is_standard: false,
             }
         });
 
@@ -59,15 +59,37 @@ export async function POST(
             );
         }
 
+        // Verify products
+        const products = product_ids.length > 0 ? await prisma.galleryProduct.findMany({
+            where: {
+                id: { in: product_ids },
+                // Ensure product belongs to this gallery OR is global (if we supported global products in future, but for now we enforced gallery_id in Admin)
+                // Actually, schema allows null gallery_id. If we want to allow global products, we should check:
+                // OR: [{ gallery_id: gallery.id }, { gallery_id: null }]
+                // But for now let's stick to what we implemented in Admin (assigned to gallery)
+                gallery_id: gallery.id
+            }
+        }) : [];
+
+        if (products.length !== product_ids.length) {
+            return NextResponse.json(
+                { success: false, error: 'Niektóre produkty nie są dostępne' },
+                { status: 400 }
+            );
+        }
+
         // Calculate total
         const photo_count = photos.length;
-        const total_amount = photo_count * gallery.price_per_premium;
+        const photos_total = photo_count * gallery.price_per_premium;
+        const products_total = products.reduce((acc: number, curr: { price: number }) => acc + curr.price, 0);
+        const total_amount = photos_total + products_total;
 
         // Create order in database first
         const order = await prisma.photoOrder.create({
             data: {
                 gallery_id: gallery.id,
                 photo_ids: JSON.stringify(photo_ids),
+                product_ids: JSON.stringify(product_ids),
                 photo_count,
                 total_amount,
                 payment_status: 'pending',
@@ -82,8 +104,24 @@ export async function POST(
             const ip = request.headers.get('x-forwarded-for') || '127.0.0.1';
             const continueUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/galeria/${accessCode}/order/${order.id}/success`;
 
+            const payuProducts = [];
+            if (photo_count > 0) {
+                payuProducts.push({
+                    name: 'Zdjęcia Premium',
+                    unitPrice: gallery.price_per_premium,
+                    quantity: photo_count
+                });
+            }
+            products.forEach((p: { title: string; price: number }) => {
+                payuProducts.push({
+                    name: p.title,
+                    unitPrice: p.price,
+                    quantity: 1
+                });
+            });
+
             const payuResponse = await createPayUOrder({
-                description: `Zdjęcia premium - Galeria ${gallery.client_name}`,
+                description: `Zamówienie - Galeria ${gallery.client_name}`,
                 currencyCode: 'PLN',
                 totalAmount: total_amount, // Already in grosze (cents)
                 extOrderId: `GALLERY_${order.id}_${Date.now()}`,
@@ -93,13 +131,7 @@ export async function POST(
                     lastName: gallery.client_name.split(' ')[1] || 'Unknown',
                     language: 'pl'
                 },
-                products: [
-                    {
-                        name: 'Zdjęcia Premium',
-                        unitPrice: gallery.price_per_premium,
-                        quantity: photo_count
-                    }
-                ],
+                products: payuProducts,
                 continueUrl: continueUrl
             }, ip);
 

@@ -41,7 +41,8 @@ export async function POST(request: Request) {
                         email: customer.email,
                         password_hash: hashedPassword,
                         name: customer.name,
-                        phone: customer.phone
+                        phone: customer.phone,
+                        role: 'CLIENT',
                     }
                 });
                 userId = newUser.id;
@@ -67,8 +68,7 @@ export async function POST(request: Request) {
                         email: customer.email,
                         client_name: customer.name,
                         phone: customer.phone,
-                        user_id: userId,
-                        stripe_session_id: cartId // Link to Cart ID
+                        stripe_session_id: cartId // Link to Cart ID for payment tracking
                     }
                 });
                 createdResourceIds.push(`Booking #${booking.id}`);

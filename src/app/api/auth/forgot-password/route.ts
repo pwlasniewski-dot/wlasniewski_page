@@ -1,0 +1,52 @@
+import { NextRequest, NextResponse } from 'next/server';
+import prisma from '@/lib/db/prisma';
+import crypto from 'crypto';
+import { sendEmail } from '@/lib/email/sender';
+
+export async function POST(req: NextRequest) {
+    try {
+        const { email } = await req.json();
+
+        if (!email) {
+            return NextResponse.json({ error: 'Email jest wymagany' }, { status: 400 });
+        }
+
+        const user = await prisma.user.findUnique({
+            where: { email }
+        });
+
+        if (!user) {
+            // We return 200 for security reasons even if user doesn't exist
+            return NextResponse.json({ success: true, message: 'Jeśli adres istnieje, wysłano instrukcje resetowania' });
+        }
+
+        // Generate secure reset token
+        const resetToken = crypto.randomBytes(32).toString('hex');
+        const resetTokenExpires = new Date(Date.now() + 3600000); // 1 hour
+
+        await prisma.user.update({
+            where: { id: user.id },
+            data: {
+                reset_token: resetToken,
+                reset_token_expires: resetTokenExpires
+            }
+        });
+
+        const resetLink = `${process.env.NEXT_PUBLIC_BASE_URL}/logowanie/ustaw-nowe-haslo?token=${resetToken}`;
+
+        await sendEmail({
+            to: user.email,
+            subject: 'Resetowanie hasła - Przemysław Właśniewski Fotografia',
+            template: 'password-reset',
+            data: {
+                name: user.name || 'Użytkowniku',
+                resetLink
+            }
+        });
+
+        return NextResponse.json({ success: true, message: 'Wysłano e-mail z instrukcjami' });
+    } catch (error) {
+        console.error('Forgot password error:', error);
+        return NextResponse.json({ error: 'Błąd serwera' }, { status: 500 });
+    }
+}
