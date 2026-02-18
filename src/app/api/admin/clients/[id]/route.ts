@@ -11,71 +11,81 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         try {
             const userId = parseInt(id);
 
+            // 1. Fetch the base client (no relations)
             const client = await prisma.user.findUnique({
-                where: { id: userId },
-                include: {
-                    // Full history for the detail modal
-                    orders: {
-                        orderBy: { created_at: 'desc' },
-                        include: {
-                            gift_card: true
-                        }
-                    },
-                    assigned_bookings: {
-                        orderBy: { date: 'desc' }
-                    },
-                    assigned_galleries: {
-                        orderBy: { created_at: 'desc' },
-                        include: {
-                            photos: {
-                                take: 1
-                            }
-                        }
-                    },
-                    client_galleries: {
-                        orderBy: { created_at: 'desc' },
-                        include: {
-                            photos: {
-                                take: 1
-                            }
-                        }
-                    },
-                    baskets: {
-                        include: { items: true },
-                        orderBy: { updated_at: 'desc' },
-                        take: 1
-                    },
-                    offers: {
-                        orderBy: { created_at: 'desc' },
-                        include: {
-                            sections: { include: { items: true } }
-                        }
-                    }
-                }
+                where: { id: userId }
             });
 
             if (!client) {
                 return NextResponse.json({ success: false, error: 'Client not found' }, { status: 404 });
             }
 
-            // Also fetch offers by email (for offers created before client_id was linked)
-            const userEmail = (client as any).email;
-            const offersByEmail = await prisma.offer.findMany({
-                where: {
-                    client_email: userEmail,
-                    client_id: null // Only those not already linked by ID
-                },
-                orderBy: { created_at: 'desc' },
-                include: {
-                    sections: { include: { items: true } }
-                }
-            });
+            const clientEmail = client.email;
 
-            // Merge: offers by ID + offers by email (deduplicated)
-            const allOffers = [...((client as any).offers || []), ...offersByEmail]
+            // 2. Fetch all related data independently
+            const [
+                orders,
+                bookings,
+                clientGalleries,
+                assignedGalleries,
+                basket,
+                offersById,
+                offersByEmail
+            ] = await Promise.all([
+                prisma.giftCardOrder.findMany({
+                    where: { user_id: userId },
+                    orderBy: { created_at: 'desc' },
+                    include: { gift_card: true }
+                }).catch(() => []),
+                prisma.booking.findMany({
+                    where: { email: clientEmail },
+                    orderBy: { date: 'desc' }
+                }).catch(() => []),
+                prisma.clientGallery.findMany({
+                    where: { client_id: userId },
+                    orderBy: { created_at: 'desc' },
+                    include: { photos: { take: 1 } }
+                }).catch(() => []),
+                prisma.clientGallery.findMany({
+                    where: { photographer_id: userId }, // "assigned" context
+                    orderBy: { created_at: 'desc' },
+                    include: { photos: { take: 1 } }
+                }).catch(() => []),
+                prisma.basket.findFirst({
+                    where: { user_id: userId },
+                    include: { items: true },
+                    orderBy: { updated_at: 'desc' }
+                }).catch(() => null),
+                prisma.offer.findMany({
+                    where: { client_id: userId },
+                    orderBy: { created_at: 'desc' },
+                    include: { sections: { include: { items: true } } }
+                }).catch(() => []),
+                prisma.offer.findMany({
+                    where: {
+                        client_email: clientEmail,
+                        client_id: null
+                    },
+                    orderBy: { created_at: 'desc' },
+                    include: { sections: { include: { items: true } } }
+                }).catch(() => [])
+            ]);
+
+            // Deduplicate offers (by ID + by Email)
+            const allOffers = [...offersById, ...offersByEmail]
                 .filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
 
-            return NextResponse.json({ success: true, client: { ...client, offers: allOffers } });
+            const fullClient = {
+                ...client,
+                orders,
+                assigned_bookings: bookings,
+                client_galleries: clientGalleries,
+                assigned_galleries: assignedGalleries,
+                baskets: basket ? [basket] : [],
+                offers: allOffers
+            };
+
+            return NextResponse.json({ success: true, client: fullClient });
         } catch (error) {
             console.error('Fetch client details error:', error);
             return NextResponse.json({ error: 'Failed to fetch details' }, { status: 500 });
