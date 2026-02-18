@@ -15,15 +15,11 @@ export async function GET(request: NextRequest) {
                 where: { role: 'CLIENT' },
                 orderBy: { created_at: 'desc' },
                 include: {
-                    _count: {
-                        select: {
-                            orders: true,
-                            assigned_bookings: true,
-                            client_galleries: true
-                        }
-                    },
                     orders: {
                         select: { amount_paid: true, created_at: true }
+                    },
+                    assigned_bookings: {
+                        select: { id: true }
                     },
                     offers: {
                         select: {
@@ -126,9 +122,6 @@ export async function GET(request: NextRequest) {
                     phone: client.phone,
                     created_at: client.created_at,
                     stats: {
-                        ordersCount: client._count.orders,
-                        bookingsCount: client._count.assigned_bookings,
-                        galleriesCount: client._count.client_galleries,
                         totalSpent,
                         lastActive: lastOrder,
                         // Offer
@@ -149,6 +142,7 @@ export async function GET(request: NextRequest) {
                         // Booking
                         nextBookingDate: latestBooking?.date || null,
                         bookingStatus: latestBooking?.status || null,
+                        hasBookings: client.assigned_bookings.length > 0 || latestBookingMap.has(client.email),
                     }
                 };
             });
