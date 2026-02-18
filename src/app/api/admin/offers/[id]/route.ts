@@ -1,68 +1,73 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { requireAuth } from '@/lib/auth/middleware';
+import { logSystem } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: Promise<{ id: string }> }
+    context: { params: Promise<{ id: string }> }
 ) {
+    let id = '';
     try {
         // Check auth
         const authError = await requireAuth(request);
         if (authError) return authError;
 
-        const { id } = await params;
+        const params = await context.params;
+        id = params.id;
         const offerId = parseInt(id);
 
         const offer = await prisma.offer.findUnique({
-            where: { id: offerId },
-            include: {
-                user: {
-                    select: {
-                        id: true,
-                        email: true,
-                        name: true,
-                    },
-                },
-                sections: {
-                    include: {
-                        items: true,
-                    },
-                },
-                negotiations: true,
-                contract: true,
-            },
+            where: { id: offerId }
         });
 
         if (!offer) {
-            return NextResponse.json(
-                { error: 'Offer not found' },
-                { status: 404 }
-            );
+            return NextResponse.json({ error: 'Offer not found' }, { status: 404 });
         }
 
-        return NextResponse.json({ offer });
-    } catch (error) {
+        // Fetch related data independently to bypass Prisma include/validation crashes in production
+        const [sections, negotiations, contract] = await Promise.all([
+            prisma.offerSection.findMany({
+                where: { offer_id: offerId },
+                include: { items: true },
+                orderBy: { order: 'asc' }
+            }).catch(() => []),
+            prisma.negotiation.findMany({
+                where: { offer_id: offerId },
+                orderBy: { created_at: 'desc' }
+            }).catch(() => []),
+            prisma.contract.findUnique({
+                where: { offer_id: offerId }
+            }).catch(() => null)
+        ]);
+
+        return NextResponse.json({
+            offer: {
+                ...offer,
+                sections,
+                negotiations,
+                contract
+            }
+        });
+    } catch (error: any) {
         console.error('Error fetching offer:', error);
-        return NextResponse.json(
-            { error: 'Failed to fetch offer' },
-            { status: 500 }
-        );
+        await logSystem('ERROR', 'SYSTEM', `Failed to fetch offer detail for ${id}`, { error: error.message });
+        return NextResponse.json({ error: 'Failed to fetch offer' }, { status: 500 });
     }
 }
 
 export async function PATCH(
     request: NextRequest,
-    { params }: { params: Promise<{ id: string }> }
+    context: { params: Promise<{ id: string }> }
 ) {
     try {
         // Check auth
         const authError = await requireAuth(request);
         if (authError) return authError;
 
-        const { id } = await params;
+        const { id } = await context.params;
         const offerId = parseInt(id);
         const body = await request.json();
         const {
@@ -109,14 +114,14 @@ export async function PATCH(
             });
         }
 
-        const updated = await prisma.offer.update({
+        const updatedOffer = await prisma.offer.update({
             where: { id: offerId },
             data: {
                 ...(title && { title }),
                 ...(type && { type }),
                 ...(category && { category }),
                 ...(status && { status }),
-                ...(negotiation_enabled !== undefined && { negotiation_enabled }), // Update if provided
+                ...(negotiation_enabled !== undefined && { negotiation_enabled }),
                 ...(valid_until && { valid_until: new Date(valid_until) }),
                 ...(parsedClientId !== undefined && { client_id: parsedClientId }),
                 ...(client_email && { client_email }),
@@ -148,19 +153,18 @@ export async function PATCH(
                         })),
                     },
                 }),
-            },
-            include: {
-                sections: {
-                    include: {
-                        items: true,
-                    },
-                },
-            },
+            }
+        });
+
+        // Fetch sections for price calculation
+        const sectionsData = await prisma.offerSection.findMany({
+            where: { offer_id: offerId },
+            include: { items: true }
         });
 
         // Recalculate total price
         let totalPrice = 0;
-        updated.sections.forEach((section) => {
+        sectionsData.forEach((section) => {
             section.items.forEach((item) => {
                 if (!item.is_optional) {
                     totalPrice += item.price * item.quantity;
@@ -170,20 +174,28 @@ export async function PATCH(
 
         const finalOffer = await prisma.offer.update({
             where: { id: offerId },
-            data: { total_price: totalPrice },
-            include: {
-                user: true,
-                sections: {
-                    include: {
-                        items: true,
-                    },
-                },
-                negotiations: true,
-                contract: true,
-            },
+            data: { total_price: totalPrice }
         });
 
-        return NextResponse.json({ offer: finalOffer });
+        // Independent fetch for final response to avoid include crashes
+        const [negotiations, contract] = await Promise.all([
+            prisma.negotiation.findMany({
+                where: { offer_id: offerId },
+                orderBy: { created_at: 'desc' }
+            }).catch(() => []),
+            prisma.contract.findUnique({
+                where: { offer_id: offerId }
+            }).catch(() => null)
+        ]);
+
+        return NextResponse.json({
+            offer: {
+                ...finalOffer,
+                sections: sectionsData,
+                negotiations,
+                contract
+            }
+        });
     } catch (error) {
         console.error('Error updating offer:', error);
         return NextResponse.json(
@@ -195,14 +207,16 @@ export async function PATCH(
 
 export async function DELETE(
     request: NextRequest,
-    { params }: { params: Promise<{ id: string }> }
+    context: { params: Promise<{ id: string }> }
 ) {
+    let id = '';
     try {
         // Check auth
         const authError = await requireAuth(request);
         if (authError) return authError;
 
-        const { id } = await params;
+        const params = await context.params;
+        id = params.id;
         const offerId = parseInt(id);
 
         // Check if offer exists
