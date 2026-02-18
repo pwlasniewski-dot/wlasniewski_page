@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { withAuth } from '@/lib/auth/middleware';
+import { logSystem } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
