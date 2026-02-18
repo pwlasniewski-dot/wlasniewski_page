@@ -14,6 +14,14 @@ interface Offer {
     created_at: string;
     valid_until?: string;
     client_email?: string;
+    template_data?: any;
+    user?: {
+        id: number;
+        email: string;
+        name: string;
+        last_login?: string;
+        last_failed_login?: string;
+    };
     contract?: {
         id: number;
         status: string;
@@ -205,85 +213,157 @@ export default function OffersList() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-800">
-                            {offers.map((offer) => (
-                                <tr key={offer.id} className="hover:bg-slate-800/50 transition-colors group">
-                                    <td className="px-6 py-4">
-                                        <div className="flex flex-col">
-                                            <Link href={`/admin/offers/${offer.id}`} className="text-white font-semibold hover:text-blue-400 text-lg transition-colors">
-                                                {offer.title}
-                                            </Link>
-                                            <span className="text-slate-500 text-sm">{offer.client_email || 'Brak emaila'}</span>
-                                            <span className="text-slate-600 text-xs font-mono mt-1">{offer.slug}</span>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 align-top pt-5">
-                                        {getTypeBadge(offer.type)}
-                                    </td>
-                                    <td className="px-6 py-4 text-center align-top pt-5">
-                                        {getStatusBadge(offer.status)}
-                                    </td>
-                                    <td className="px-6 py-4 text-right text-white font-mono text-lg align-top pt-5">
-                                        {offer.total_price.toLocaleString('pl-PL')} <span className="text-slate-600 text-sm">PLN</span>
-                                    </td>
-                                    <td className="px-6 py-4 text-center align-top pt-5">
-                                        {offer.contract ? (
-                                            <Link href={`/admin/offers/${offer.id}/contract`}>
-                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium ${offer.contract.status === 'signed'
-                                                    ? 'bg-purple-900/50 text-purple-300 border border-purple-700'
-                                                    : 'bg-slate-800 text-slate-400 border border-slate-700'
-                                                    }`}>
-                                                    {offer.contract.status === 'signed' ? 'Podpisana' : 'Oczekująca'}
-                                                </span>
-                                            </Link>
-                                        ) : (
-                                            <Link href={`/admin/offers/${offer.id}/contract`}>
-                                                <button className="text-xs text-slate-500 hover:text-purple-400 border border-dashed border-slate-700 px-2 py-1 rounded hover:border-purple-500/50 transition-colors">
-                                                    + Dodaj
+                            {offers.map((offer) => {
+                                // Extract detailed data from template_data if available
+                                const td = offer.template_data as any;
+                                const rawName = td?.contactName || offer.user?.name || 'Brak danych';
+                                const clientName = (rawName === 'undefined undefined' || !rawName) ? 'Brak danych' : rawName;
+                                const clientEmail = offer.client_email || td?.contactEmail || offer.user?.email || 'Brak emaila';
+                                const clientPhone = td?.contactPhone || '—';
+                                const clientCity = td?.contactLocation || '—';
+                                const clientZip = td?.contactZip || '—';
+                                const clientAddress = td?.contactAddress || '—';
+
+                                return (
+                                    <tr key={offer.id} className="hover:bg-slate-800/50 transition-colors group">
+                                        <td className="px-6 py-4">
+                                            <div className="flex flex-col gap-1">
+                                                <Link href={`/admin/offers/${offer.id}`} className="text-white font-bold hover:text-blue-400 text-lg transition-colors leading-tight">
+                                                    {offer.title}
+                                                </Link>
+
+                                                {/* Detailed Client Info */}
+                                                <div className="bg-slate-950/40 p-3 rounded-lg border border-slate-800/50 mt-1 max-w-sm">
+                                                    <div className="flex items-center justify-between mb-1">
+                                                        <span className="text-blue-400 font-bold text-sm">{clientName}</span>
+                                                        {(offer.user?.id || clientEmail) && (
+                                                            <Link
+                                                                href={`/admin/clients?email=${encodeURIComponent(clientEmail)}`}
+                                                                className="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded hover:bg-blue-600 hover:text-white transition-colors flex items-center gap-1"
+                                                            >
+                                                                👤 PROFIL
+                                                            </Link>
+                                                        )}
+                                                    </div>
+
+                                                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                                                        <div className="flex flex-col">
+                                                            <span className="text-slate-500 uppercase text-[9px] font-bold tracking-wider">Miasto</span>
+                                                            <span className="text-slate-300">{clientCity}</span>
+                                                        </div>
+                                                        <div className="flex flex-col">
+                                                            <span className="text-slate-500 uppercase text-[9px] font-bold tracking-wider">Telefon</span>
+                                                            <span className="text-slate-300">{clientPhone}</span>
+                                                        </div>
+                                                        <div className="flex flex-col col-span-2 mt-1">
+                                                            <span className="text-slate-500 uppercase text-[9px] font-bold tracking-wider">Email</span>
+                                                            <span className="text-slate-300 truncate">{clientEmail}</span>
+                                                        </div>
+                                                        <div className="flex flex-col mt-1">
+                                                            <span className="text-slate-500 uppercase text-[9px] font-bold tracking-wider">Adres</span>
+                                                            <span className="text-slate-300">{clientAddress}</span>
+                                                        </div>
+                                                        <div className="flex flex-col mt-1">
+                                                            <span className="text-slate-500 uppercase text-[9px] font-bold tracking-wider">Kod Pocztowy</span>
+                                                            <span className="text-slate-300">{clientZip}</span>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Login Status */}
+                                                    {offer.user && (
+                                                        <div className="mt-2 pt-2 border-t border-slate-800/50 flex flex-col gap-1">
+                                                            <div className="flex justify-between items-center text-[10px]">
+                                                                <span className="text-slate-500 font-medium">Ostatnie logowanie:</span>
+                                                                <span className={offer.user.last_login ? "text-emerald-400" : "text-slate-600"}>
+                                                                    {offer.user.last_login
+                                                                        ? new Date(offer.user.last_login).toLocaleString('pl-PL')
+                                                                        : 'Nigdy'}
+                                                                </span>
+                                                            </div>
+                                                            {offer.user.last_failed_login && (
+                                                                <div className="flex justify-between items-center text-[10px]">
+                                                                    <span className="text-slate-500 font-medium text-red-400/80">Nieudana próba:</span>
+                                                                    <span className="text-red-400/80">
+                                                                        {new Date(offer.user.last_failed_login).toLocaleString('pl-PL')}
+                                                                    </span>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                <span className="text-slate-600 text-[10px] font-mono mt-1 opacity-50"># {offer.slug}</span>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 align-top pt-5">
+                                            {getTypeBadge(offer.type)}
+                                        </td>
+                                        <td className="px-6 py-4 text-center align-top pt-5">
+                                            {getStatusBadge(offer.status)}
+                                        </td>
+                                        <td className="px-6 py-4 text-right text-white font-mono text-lg align-top pt-5">
+                                            {offer.total_price.toLocaleString('pl-PL')} <span className="text-slate-600 text-sm">PLN</span>
+                                        </td>
+                                        <td className="px-6 py-4 text-center align-top pt-5">
+                                            {offer.contract ? (
+                                                <Link href={`/admin/offers/${offer.id}/contract`}>
+                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium ${offer.contract.status === 'signed'
+                                                        ? 'bg-purple-900/50 text-purple-300 border border-purple-700'
+                                                        : 'bg-slate-800 text-slate-400 border border-slate-700'
+                                                        }`}>
+                                                        {offer.contract.status === 'signed' ? 'Podpisana' : 'Oczekująca'}
+                                                    </span>
+                                                </Link>
+                                            ) : (
+                                                <Link href={`/admin/offers/${offer.id}/contract`}>
+                                                    <button className="text-xs text-slate-500 hover:text-purple-400 border border-dashed border-slate-700 px-2 py-1 rounded hover:border-purple-500/50 transition-colors">
+                                                        + Dodaj
+                                                    </button>
+                                                </Link>
+                                            )}
+                                        </td>
+                                        <td className="px-6 py-4 align-top pt-4">
+                                            <div className="flex justify-end gap-2 items-center opacity-80 group-hover:opacity-100 transition-opacity">
+
+                                                {/* PDF */}
+                                                <a
+                                                    href={`/api/offers/${offer.id}/pdf`}
+                                                    target="_blank"
+                                                    className="p-2 text-slate-400 hover:text-red-400 hover:bg-slate-800 rounded-lg transition-all"
+                                                    title="Pobierz PDF"
+                                                >
+                                                    📄
+                                                </a>
+
+                                                {/* Preview/Link */}
+                                                <button
+                                                    onClick={() => copyOfferLink(offer)}
+                                                    className="p-2 text-slate-400 hover:text-blue-400 hover:bg-slate-800 rounded-lg transition-all relative"
+                                                    title="Kopiuj link dla klienta"
+                                                >
+                                                    {copySuccess === offer.id ? '✅' : '🔗'}
                                                 </button>
-                                            </Link>
-                                        )}
-                                    </td>
-                                    <td className="px-6 py-4 align-top pt-4">
-                                        <div className="flex justify-end gap-2 items-center opacity-80 group-hover:opacity-100 transition-opacity">
 
-                                            {/* PDF */}
-                                            <a
-                                                href={`/api/offers/${offer.id}/pdf`}
-                                                target="_blank"
-                                                className="p-2 text-slate-400 hover:text-red-400 hover:bg-slate-800 rounded-lg transition-all"
-                                                title="Pobierz PDF"
-                                            >
-                                                📄
-                                            </a>
+                                                {/* Edit */}
+                                                <Link href={`/admin/offers/${offer.id}`}>
+                                                    <button className="px-3 py-1.5 bg-slate-800 text-slate-300 rounded-lg hover:bg-blue-600 hover:text-white text-sm font-medium transition-all mx-1">
+                                                        Edytuj
+                                                    </button>
+                                                </Link>
 
-                                            {/* Preview/Link */}
-                                            <button
-                                                onClick={() => copyOfferLink(offer)}
-                                                className="p-2 text-slate-400 hover:text-blue-400 hover:bg-slate-800 rounded-lg transition-all relative"
-                                                title="Kopiuj link dla klienta"
-                                            >
-                                                {copySuccess === offer.id ? '✅' : '🔗'}
-                                            </button>
-
-                                            {/* Edit */}
-                                            <Link href={`/admin/offers/${offer.id}`}>
-                                                <button className="px-3 py-1.5 bg-slate-800 text-slate-300 rounded-lg hover:bg-blue-600 hover:text-white text-sm font-medium transition-all mx-1">
-                                                    Edytuj
+                                                {/* Delete */}
+                                                <button
+                                                    onClick={() => deleteOffer(offer.id)}
+                                                    className="p-2 text-slate-600 hover:text-red-500 hover:bg-red-900/20 rounded-lg transition-all"
+                                                    title="Usuń ofertę"
+                                                >
+                                                    🗑️
                                                 </button>
-                                            </Link>
-
-                                            {/* Delete */}
-                                            <button
-                                                onClick={() => deleteOffer(offer.id)}
-                                                className="p-2 text-slate-600 hover:text-red-500 hover:bg-red-900/20 rounded-lg transition-all"
-                                                title="Usuń ofertę"
-                                            >
-                                                🗑️
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                )
+                            })}
                         </tbody>
                     </table>
                 </div>

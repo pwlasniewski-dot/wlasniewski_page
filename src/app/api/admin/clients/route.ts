@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { withAuth } from '@/lib/auth/middleware';
 import bcrypt from 'bcrypt';
+import { sendEmail } from '@/lib/email/sender';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,39 +11,112 @@ export async function GET(request: NextRequest) {
     return withAuth(request, async (req) => {
         try {
             const clients = await prisma.user.findMany({
-                where: {
-                    role: 'CLIENT'
-                },
+                where: { role: 'CLIENT' },
                 orderBy: { created_at: 'desc' },
                 include: {
-                    // Count relations for the list view
                     _count: {
                         select: {
                             orders: true,
                             assigned_bookings: true,
-                            assigned_galleries: true
+                            client_galleries: true
                         }
                     },
-                    // Fetch recent history for preview
                     orders: {
-                        select: {
-                            amount_paid: true,
-                            created_at: true
-                        }
+                        select: { amount_paid: true, created_at: true }
                     },
                     offers: {
                         select: {
-                            status: true
+                            id: true,
+                            status: true,
+                            total_price: true,
+                            category: true,
+                            type: true,
+                            template_data: true,
+                            created_at: true,
+                            contract: {
+                                select: { id: true, status: true, signed_at: true }
+                            }
+                        },
+                        orderBy: { created_at: 'desc' }
+                    },
+                    client_galleries: {
+                        select: {
+                            id: true,
+                            standard_count: true,
+                            photos: { select: { id: true } },
+                            orders: { select: { id: true, payment_status: true } }
                         }
                     }
                 }
             });
 
-            // Calculate LTV (Lifetime Value)
+            // Fetch bookings by email for LTV + type info
+            const allClientEmails = clients.map(c => c.email);
+            const bookingsByEmail = await prisma.booking.groupBy({
+                by: ['email'],
+                where: {
+                    email: { in: allClientEmails },
+                    status: { in: ['confirmed', 'completed'] }
+                },
+                _sum: { price: true }
+            });
+            const bookingRevenueMap = new Map(
+                bookingsByEmail.map(b => [b.email, b._sum.price || 0])
+            );
+
+            // Fetch latest booking per client for type/date info
+            const latestBookings = await prisma.booking.findMany({
+                where: { email: { in: allClientEmails } },
+                select: {
+                    email: true,
+                    service: true,
+                    package: true,
+                    date: true,
+                    status: true,
+                    price: true
+                },
+                orderBy: { date: 'desc' }
+            });
+            const latestBookingMap = new Map<string, typeof latestBookings[0]>();
+            for (const b of latestBookings) {
+                if (!latestBookingMap.has(b.email)) {
+                    latestBookingMap.set(b.email, b);
+                }
+            }
+
             const formattedClients = clients.map(client => {
-                const totalSpent = client.orders.reduce((sum, order) => sum + order.amount_paid, 0);
+                const giftCardRevenue = client.orders.reduce((sum, o) => sum + o.amount_paid, 0);
+                const bookingRevenue = bookingRevenueMap.get(client.email) || 0;
+                const totalSpent = giftCardRevenue + bookingRevenue;
                 const lastOrder = client.orders.length > 0 ? client.orders[0].created_at : null;
-                const acceptedOffersCount = client.offers.filter(o => o.status === 'accepted').length;
+
+                // Offer analysis
+                const latestOffer = client.offers[0] || null;
+                const offerStatus = latestOffer?.status || null;
+                const approvedAmount = latestOffer?.status === 'accepted'
+                    ? (latestOffer.total_price || 0)
+                    : null;
+
+                // Job type from offer category or booking service
+                const offerCategory = latestOffer?.category ||
+                    (latestOffer?.template_data as any)?.category || null;
+                const latestBooking = latestBookingMap.get(client.email);
+                const jobType = offerCategory || latestBooking?.service || null;
+                const isKomunia = !!(jobType?.toLowerCase().includes('komunia') ||
+                    jobType?.toLowerCase().includes('communion'));
+
+                // Contract analysis
+                const latestContract = latestOffer?.contract || null;
+                const contractStatus = latestContract?.status || null;
+
+                // Gallery analysis (client's own galleries)
+                const gallery = client.client_galleries[0] || null;
+                const photosExpected = gallery?.standard_count || 0;
+                const photosAdded = gallery?.photos?.length || 0;
+                const isPaid = gallery?.orders?.some(
+                    (o: { payment_status: string }) =>
+                        o.payment_status === 'paid' || o.payment_status === 'completed'
+                ) || false;
 
                 return {
                     id: client.id,
@@ -53,10 +127,27 @@ export async function GET(request: NextRequest) {
                     stats: {
                         ordersCount: client._count.orders,
                         bookingsCount: client._count.assigned_bookings,
-                        galleriesCount: client._count.assigned_galleries,
-                        totalSpent: totalSpent,
+                        galleriesCount: client._count.client_galleries,
+                        totalSpent,
                         lastActive: lastOrder,
-                        acceptedOffersCount: acceptedOffersCount
+                        // Offer
+                        offerStatus,
+                        offersCount: client.offers.length,
+                        approvedAmount,
+                        // Contract
+                        contractStatus,
+                        contractSignedAt: latestContract?.signed_at || null,
+                        // Gallery
+                        photosExpected,
+                        photosAdded,
+                        hasGallery: !!gallery,
+                        isPaid,
+                        // Job type
+                        jobType,
+                        isKomunia,
+                        // Booking
+                        nextBookingDate: latestBooking?.date || null,
+                        bookingStatus: latestBooking?.status || null,
                     }
                 };
             });
@@ -102,6 +193,24 @@ export async function POST(request: NextRequest) {
                     role: 'CLIENT'
                 }
             });
+
+            // Send welcome email (without password — security best practice)
+            try {
+                await sendEmail({
+                    to: email,
+                    subject: 'Witaj w Panelu Klienta — Przemysław Właśniewski',
+                    template: 'welcome-client',
+                    data: {
+                        name,
+                        email,
+                        loginUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'https://wlasniewski.pl'}/logowanie`
+                        // Password NOT included — admin should communicate it separately and securely
+                    }
+                });
+            } catch (emailError) {
+                console.error('Failed to send welcome email:', emailError);
+                // We don't fail the whole request if email fails, but we log it
+            }
 
             return NextResponse.json({ success: true, client: user });
         } catch (error) {

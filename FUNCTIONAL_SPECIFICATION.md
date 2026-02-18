@@ -109,7 +109,7 @@ System pozwala na obsługę klientów biznesowych (B2B) w ramach tej samej insta
 - **Formularz RFQ (Request for Quote)**: Dedykowany moduł kontaktu B2B (`B2BContactForm.tsx`) zbierający dane firmowe i szczegóły zlecenia, zintegrowany z systemem powiadomień.
 - **Branding B2B**: Automatyczne przełączanie na "Premium Dark Mode" oraz priorytetyzacja logotypu o oznaczeniu "B2B / Alternatywne".
 
-### 3.3. Moduł Kliencki (CRM) & Compliance [NEW: 2026-01-11]
+### 3.3. Moduł Kliencki (CRM) & Compliance [UPDATED: 2026-02-18]
 System został rozbudowany o dedykowany moduł zarządzania relacjami z klientem, zastępujący prostą listę użytkowników.
 
 - **Client 360 View**: Dashboard prezentujący pełny profil klienta w jednym modalnym oknie:

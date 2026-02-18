@@ -1,9 +1,33 @@
 import React from 'react';
-import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
+import { Document, Page, Text, View, StyleSheet, Font } from '@react-pdf/renderer';
+import path from 'path';
+
+const fontsPath = path.join(process.cwd(), 'public', 'fonts');
+
+// Use standard Windows system font for definitive Polish support in isolated process
+const systemFont = 'C:/Windows/Fonts/arial.ttf';
+
+Font.register({
+    family: 'Montserrat',
+    fonts: [
+        { src: systemFont, fontWeight: 400 },
+        { src: systemFont, fontWeight: 600 },
+        { src: systemFont, fontWeight: 700 },
+    ]
+});
 
 const styles = StyleSheet.create({
-    page: { padding: 30 },
-    title: { fontSize: 24, marginBottom: 20 },
+    page: {
+        padding: 30,
+        fontFamily: 'Montserrat',
+        fontSize: 10,
+        lineHeight: 1.5,
+    },
+    title: {
+        fontSize: 24,
+        marginBottom: 20,
+        fontWeight: 700,
+    },
     section: { marginBottom: 10 },
 });
 

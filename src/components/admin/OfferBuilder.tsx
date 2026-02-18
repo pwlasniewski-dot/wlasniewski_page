@@ -2,7 +2,11 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useReactToPrint } from 'react-to-print';
-import { Printer, Eye, Save, Plus, Trash2, ArrowRight, ChevronLeft, ChevronRight, Share2, Cloud, Mail, CheckCircle, FileCheck, X } from 'lucide-react';
+import {
+    Printer, Eye, Save, Plus, Trash2, ArrowRight, ChevronLeft, ChevronRight,
+    Share2, Cloud, Mail, FileCheck, X, Check, ExternalLink, Settings, Image as ImageIcon, FileText
+} from 'lucide-react';
+import toast from 'react-hot-toast';
 import { useSearchParams, useRouter } from 'next/navigation';
 
 
@@ -14,6 +18,8 @@ interface OfferData {
     contactLocation: string;
     contactPhone: string;
     contactEmail: string;
+    contactZip: string;
+    contactAddress: string;
 
     eventLocation: string;
     eventDate: string;
@@ -66,6 +72,17 @@ interface OfferData {
         albumAdvantage: string;
         footerDisclaimer: string;
     };
+
+    sectionVisibility: {
+        eventInfo: boolean;
+        preparations: boolean;
+        features: boolean;
+        pricing: boolean;
+        album: boolean;
+        delivery: boolean;
+    };
+    negotiation_enabled?: boolean; // New field
+    category?: string; // New field
 }
 
 const INITIAL_DATA: OfferData = {
@@ -75,6 +92,8 @@ const INITIAL_DATA: OfferData = {
     contactLocation: "Toruń",
     contactPhone: "530788694",
     contactEmail: "pwlasniewski@gmail.com / www.wlasniewski.pl",
+    contactZip: "87-100",
+    contactAddress: "ul. Szeroka 1",
 
     eventLocation: "Parafia w Toruniu",
     eventDate: "30 maja 2026 r.",
@@ -141,30 +160,46 @@ const INITIAL_DATA: OfferData = {
         prepBefore: "Przed uroczystością",
         prepDay: "W dniu Komunii",
         albumAdvantage: "Zaleta Pamiątek Albumowych",
-        footerDisclaimer: "Wystawiamy pełne rachunki/faktury. Legalna działalność gospodarcza to gwarancja bezpieczeństwa Państwa wpłat."
-    }
+        footerDisclaimer: "Ogólne warunki współpracy",
+    },
+
+    sectionVisibility: {
+        eventInfo: true,
+        preparations: true,
+        features: true,
+        pricing: true,
+        album: true,
+        delivery: true
+    },
+    negotiation_enabled: true,
+    category: 'standard'
 };
 
 interface OfferBuilderProps {
+    offerId?: number; // Added for edit mode
     initialData?: Partial<OfferData>;
     onSave?: (data: OfferData) => Promise<void>;
     saveButtonText?: string;
 }
 
-export default function OfferBuilder({ initialData, onSave, saveButtonText }: OfferBuilderProps = {}) {
+export default function OfferBuilder({ offerId, initialData, onSave, saveButtonText }: OfferBuilderProps = {}) {
     const searchParams = useSearchParams();
-    const router = useRouter(); // For cancel action
+    const router = useRouter();
     const clientId = searchParams.get('client_id');
+    const clientEmailParam = searchParams.get('clientEmail');
     const type = searchParams.get('type')?.toLowerCase() || 'b2c';
 
     const [data, setData] = useState<OfferData>({
         ...INITIAL_DATA,
-        ...initialData  // Merge auto-filled data
+        contactZip: '',
+        contactAddress: '',
+        contactEmail: clientEmailParam || '', // Pre-fill email from URL immediately
+        ...initialData
     });
     const componentRef = useRef<HTMLDivElement>(null);
     const [scale, setScale] = useState(0.8);
     const [isSaving, setIsSaving] = useState(false);
-    const [lastSavedId, setLastSavedId] = useState<number | null>(null);
+    const [lastSavedId, setLastSavedId] = useState<number | null>(offerId || null);
 
     // Auto-fill client data if clientId is present
     useEffect(() => {
@@ -185,9 +220,14 @@ export default function OfferBuilder({ initialData, onSave, saveButtonText }: Of
                     const client = json.client;
                     setData(prev => ({
                         ...prev,
+                        // User model has single 'name' field, not firstName/lastName
                         contactName: client.name || '',
                         contactEmail: client.email || '',
                         contactPhone: client.phone || '',
+                        contactLocation: client.city || prev.contactLocation,
+                        // User model uses snake_case: postal_code, not postalCode
+                        contactZip: client.postal_code || '',
+                        contactAddress: client.address || '',
                     }));
                 }
             }
@@ -205,17 +245,23 @@ export default function OfferBuilder({ initialData, onSave, saveButtonText }: Of
         setIsSaving(true);
         try {
             const token = localStorage.getItem('admin_token');
-            const res = await fetch('/api/admin/offers', {
-                method: 'POST',
+            const url = lastSavedId ? `/api/admin/offers/${lastSavedId}` : '/api/admin/offers';
+            const method = lastSavedId ? 'PATCH' : 'POST';
+
+            const res = await fetch(url, {
+                method: method,
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
                     title: data.title,
-                    slug: `offer-${Date.now()}`,
+                    slug: lastSavedId ? undefined : `offer-${Date.now()}`,
                     type: type,
-                    client_id: clientId ? parseInt(clientId) : null,
+                    client_id: clientId ? parseInt(clientId) : undefined,
+                    client_email: data.contactEmail, // Sync email to top level
+                    negotiation_enabled: data.negotiation_enabled,
+                    category: data.category,
                     template_data: data // Wrap the A4 builder state
                 })
             });
@@ -223,9 +269,16 @@ export default function OfferBuilder({ initialData, onSave, saveButtonText }: Of
             if (res.ok) {
                 setLastSavedId(result.offer.id);
                 if (onSave) await onSave(data);
-                alert('Oferta zapisana pomyślnie!');
-            } else {
-                alert(`Błąd: ${result.error || result.details || 'Nieznany błąd'}`);
+                // Redirect back to Client CRM if clientId exists
+                if (clientId) {
+                    toast.success('Oferta zapisana! Powrót do klienta...');
+                    setTimeout(() => {
+                        window.location.href = `/admin/clients/${clientId}?tab=offers`;
+                    }, 1000);
+                } else {
+                    const publicLink = `${window.location.origin}/konto`;
+                    alert(`Oferta zapisana pomyślnie!\n\nKlient może zobaczyć ofertę po zalogowaniu do:\n${publicLink}`);
+                }
             }
         } catch (error) {
             alert('Błąd podczas zapisywania oferty');
@@ -235,8 +288,20 @@ export default function OfferBuilder({ initialData, onSave, saveButtonText }: Of
     };
 
     const handleCancel = () => {
+        if (lastSavedId && clientId) {
+            window.location.href = `/admin/clients/${clientId}?tab=offers`;
+            return;
+        }
+        if (lastSavedId) {
+            router.push('/admin/offers');
+            return;
+        }
         if (confirm('Czy na pewno chcesz anulować? Wszystkie niezapisane zmiany zostaną utracone.')) {
-            router.back();
+            if (clientId) {
+                window.location.href = `/admin/clients/${clientId}?tab=offers`;
+            } else {
+                router.back();
+            }
         }
     };
 
@@ -246,7 +311,7 @@ export default function OfferBuilder({ initialData, onSave, saveButtonText }: Of
             return;
         }
         const token = localStorage.getItem('admin_token');
-        const endpoint = `/api/admin/offers/${lastSavedId}/${action === 'all' ? 'send-all' : `save-${action === 'email' ? 'email' : action}`}`;
+        const endpoint = `/api/admin/offers/${lastSavedId}/${action === 'all' ? 'send-all' : `${action === 'email' ? 'send-email' : `save-${action}`}`}`;
 
         try {
             const res = await fetch(endpoint, {
@@ -254,7 +319,11 @@ export default function OfferBuilder({ initialData, onSave, saveButtonText }: Of
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
-                alert(`Akcja ${action.toUpperCase()} wykonana pomyślnie!`);
+                const result = await res.json();
+                let message = `Akcja ${action.toUpperCase()} wykonana pomyślnie!`;
+                if (action === 's3' && result.pdfUrl) message += `\nPlik PDF: ${result.pdfUrl}`;
+                if (action === 'drive' && result.driveUrl) message += `\nLink Drive: ${result.driveUrl}`;
+                alert(message);
             } else {
                 const err = await res.json();
                 alert(`Błąd: ${err.error || action}`);
@@ -264,12 +333,39 @@ export default function OfferBuilder({ initialData, onSave, saveButtonText }: Of
         }
     };
 
+    const handleDelete = async () => {
+        if (!lastSavedId) return;
+        if (!confirm('Czy na pewno chcesz USUNĄĆ tę ofertę? Ta operacja jest nieodwracalna.')) return;
+
+        try {
+            const token = localStorage.getItem('admin_token');
+            const res = await fetch(`/api/admin/offers/${lastSavedId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (res.ok) {
+                toast.success('Oferta została usunięta.');
+                if (clientId) {
+                    window.location.href = `/admin/clients/${clientId}?tab=offers`;
+                } else {
+                    router.push('/admin/offers');
+                }
+            } else {
+                toast.error('Błąd podczas usuwania oferty.');
+            }
+        } catch (error) {
+            console.error(error);
+            toast.error('Błąd serwera.');
+        }
+    };
+
     // Helper to update fields
     const update = (field: keyof OfferData, value: any) => {
         setData(prev => ({ ...prev, [field]: value }));
     };
 
-    const updateNested = (parent: keyof OfferData, key: string, value: string) => {
+    const updateNested = (parent: keyof OfferData, key: string, value: any) => {
         setData(prev => ({
             ...prev,
             [parent]: {
@@ -401,15 +497,52 @@ export default function OfferBuilder({ initialData, onSave, saveButtonText }: Of
                             onClick={handleCancel}
                             className="flex items-center gap-2 bg-zinc-200 text-zinc-700 hover:bg-zinc-300 px-4 py-2 rounded shadow transition font-bold"
                         >
-                            <X size={18} /> Anuluj
+                            <X size={18} /> {lastSavedId ? 'Zamknij' : 'Anuluj'}
                         </button>
+                        {lastSavedId && (
+                            <button
+                                onClick={() => router.push('/admin/offers')}
+                                className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700 transition font-bold"
+                            >
+                                <Check size={18} /> Zakończ
+                            </button>
+                        )}
+
+                        {lastSavedId && (
+                            <button
+                                onClick={handleDelete}
+                                className="flex items-center gap-2 bg-red-600/10 text-red-500 hover:bg-red-600 hover:text-white px-3 py-2 rounded shadow transition font-bold border border-red-500/20"
+                                title="Usuń ofertę"
+                            >
+                                <Trash2 size={18} />
+                            </button>
+                        )}
+
+                        <label className="flex items-center gap-2 cursor-pointer bg-zinc-200 dark:bg-zinc-800 px-3 py-2 rounded border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-700 transition" title="Włącz/Wyłącz negocjacje">
+                            <input
+                                type="checkbox"
+                                checked={data.negotiation_enabled ?? true}
+                                onChange={e => update('negotiation_enabled', e.target.checked)}
+                                className="w-4 h-4 accent-green-500"
+                            />
+                            <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">Negocjacje</span>
+                        </label>
                         <button
                             onClick={handleSave}
                             disabled={isSaving}
                             className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded shadow hover:bg-green-700 transition disabled:opacity-50 font-bold"
                         >
-                            <Save size={18} /> {isSaving ? 'Zapisywanie...' : 'Zapisz'}
+                            <Save size={18} /> {isSaving ? 'Zapisywanie...' : lastSavedId ? 'Aktualizuj' : 'Zapisz'}
                         </button>
+                        {lastSavedId && (
+                            <a
+                                href={`/strefa-klienta/oferty/${lastSavedId}`}
+                                target="_blank"
+                                className="flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded shadow hover:bg-purple-700 transition font-bold"
+                            >
+                                <ExternalLink size={18} /> Podgląd
+                            </a>
+                        )}
                         <button
                             onClick={handlePrint}
                             className="flex items-center gap-2 bg-zinc-700 text-white px-4 py-2 rounded shadow hover:bg-zinc-600 transition font-bold"
@@ -440,18 +573,49 @@ export default function OfferBuilder({ initialData, onSave, saveButtonText }: Of
                 <div className="space-y-6">
                     {/* 1. Header & Contact */}
                     <Section title="1. Nagłówek i Kontakt">
+                        <div className="mb-4">
+                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Kategoria Oferty</label>
+                            <select
+                                value={data.category || 'standard'}
+                                onChange={e => update('category', e.target.value)}
+                                className="w-full p-2 border border-gray-300 rounded text-black"
+                            >
+                                <option value="standard">Standardowa</option>
+                                <option value="komunia">Komunia Święta</option>
+                                <option value="slub">Ślub</option>
+                                <option value="b2b">B2B</option>
+                            </select>
+                            <p className="text-[10px] text-gray-400 mt-1">Wybierz "Komunia Święta", aby włączyć licznik dzieci.</p>
+                        </div>
                         <Input label="Tytuł Główny" value={data.title} onChange={v => update('title', v)} />
                         <Input label="Podtytuł (Accent)" value={data.subtitle} onChange={v => update('subtitle', v)} />
                         <div className="border-t pt-2 mt-2">
                             <Input label="Imię Nazwisko" value={data.contactName} onChange={v => update('contactName', v)} />
                             <Input label="Miasto" value={data.contactLocation} onChange={v => update('contactLocation', v)} />
+                            <div className="grid grid-cols-2 gap-2">
+                                <Input label="Kod Pocztowy" value={data.contactZip} onChange={v => update('contactZip', v)} />
+                                <Input label="Ulica / Adres" value={data.contactAddress} onChange={v => update('contactAddress', v)} />
+                            </div>
                             <Input label="Telefon" value={data.contactPhone} onChange={v => update('contactPhone', v)} />
                             <Input label="Email / WWW" value={data.contactEmail} onChange={v => update('contactEmail', v)} />
                         </div>
                     </Section>
 
                     {/* 2. Event Info */}
-                    <Section title="2. Informacje o Wydarzeniu">
+                    <Section
+                        title="2. Informacje o Wydarzeniu"
+                        action={
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <span className="text-[10px] text-zinc-500 uppercase font-bold">Pokaż w PDF</span>
+                                <input
+                                    type="checkbox"
+                                    checked={data.sectionVisibility.eventInfo}
+                                    onChange={e => updateNested('sectionVisibility', 'eventInfo', e.target.checked)}
+                                    className="accent-gold-500"
+                                />
+                            </label>
+                        }
+                    >
                         <div className="grid grid-cols-2 gap-2 text-xs font-bold text-gray-500 mb-1">
                             <span>Etykieta</span>
                             <span>Wartość</span>
@@ -475,7 +639,20 @@ export default function OfferBuilder({ initialData, onSave, saveButtonText }: Of
                     </Section>
 
                     {/* 3. Preparations */}
-                    <Section title="3. Proces Przygotowań">
+                    <Section
+                        title="3. Proces Przygotowań"
+                        action={
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <span className="text-[10px] text-zinc-500 uppercase font-bold">Pokaż w PDF</span>
+                                <input
+                                    type="checkbox"
+                                    checked={data.sectionVisibility.preparations}
+                                    onChange={e => updateNested('sectionVisibility', 'preparations', e.target.checked)}
+                                    className="accent-gold-500"
+                                />
+                            </label>
+                        }
+                    >
                         <Input label="Nagłówek Sekcji" value={data.sectionTitles.preparations} onChange={v => updateNested('sectionTitles', 'preparations', v)} />
 
                         <div className="border-t pt-2 mt-2 space-y-2">
@@ -491,7 +668,20 @@ export default function OfferBuilder({ initialData, onSave, saveButtonText }: Of
                     </Section>
 
                     {/* 4. Standards */}
-                    <Section title="4. Standardy Współpracy">
+                    <Section
+                        title="4. Standardy Współpracy"
+                        action={
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <span className="text-[10px] text-zinc-500 uppercase font-bold">Pokaż w PDF</span>
+                                <input
+                                    type="checkbox"
+                                    checked={data.sectionVisibility.features}
+                                    onChange={e => updateNested('sectionVisibility', 'features', e.target.checked)}
+                                    className="accent-gold-500"
+                                />
+                            </label>
+                        }
+                    >
                         <Input label="Nagłówek Sekcji" value={data.sectionTitles.standards} onChange={v => updateNested('sectionTitles', 'standards', v)} />
                         <div className="mt-2 space-y-2">
                             {data.features.map((f, i) => (
@@ -597,7 +787,7 @@ export default function OfferBuilder({ initialData, onSave, saveButtonText }: Of
                                             {row.values.map((val, colIdx) => (
                                                 <div key={colIdx} className="w-32">
                                                     <input
-                                                        className={`w-full border border-gray-300 rounded px-1 py-1 text-xs text-gray-900 ${colIdx === 0 ? 'font-bold' : ''}`}
+                                                        className={`w-full border border-zinc-700 bg-zinc-950 rounded px-2 py-1.5 text-xs text-white outline-none focus:border-gold-500 ${colIdx === 0 ? 'font-bold' : ''}`}
                                                         value={val}
                                                         onChange={(e) => {
                                                             const newRows = [...data.pricingRows];
@@ -789,91 +979,109 @@ export default function OfferBuilder({ initialData, onSave, saveButtonText }: Of
                                 </div>
                             </header>
 
-                            <div className="offer-event-info">
-                                <div><b>{data.labels.location}:</b> {data.eventLocation}</div>
-                                <div><b>{data.labels.date}:</b> {data.eventDate}</div>
-                                <div><b>{data.labels.count}:</b> {data.eventCount}</div>
-                                <div><b>{data.labels.team}:</b> {data.eventTeam}</div>
-                            </div>
-
-                            <h2 className="offer-h2">{data.sectionTitles.preparations}</h2>
-                            <div className="offer-grid">
-                                <div className="offer-prep-item">
-                                    <b>{data.labels.prepBefore}:</b>
-                                    {data.preparations.before}
+                            {data.sectionVisibility.eventInfo && (
+                                <div className="offer-event-info">
+                                    <div><b>{data.labels.location}:</b> {data.eventLocation}</div>
+                                    <div><b>{data.labels.date}:</b> {data.eventDate}</div>
+                                    <div><b>{data.labels.count}:</b> {data.eventCount}</div>
+                                    <div><b>{data.labels.team}:</b> {data.eventTeam}</div>
                                 </div>
-                                <div className="offer-prep-item">
-                                    <b>{data.labels.prepDay}:</b>
-                                    {data.preparations.dayOf}
-                                </div>
-                            </div>
+                            )}
 
-                            <h2 className="offer-h2">{data.sectionTitles.standards}</h2>
-                            <ul className="offer-list">
-                                {data.features.map((f, i) => (
-                                    <li key={i} dangerouslySetInnerHTML={{ __html: f.replace(':', ':</b>').replace(/^/, '<b>') }} />
-                                ))}
-                            </ul>
+                            {data.sectionVisibility.preparations && (
+                                <>
+                                    <h2 className="offer-h2">{data.sectionTitles.preparations}</h2>
+                                    <div className="offer-grid">
+                                        <div className="offer-prep-item">
+                                            <b>{data.labels.prepBefore}:</b>
+                                            {data.preparations.before}
+                                        </div>
+                                        <div className="offer-prep-item">
+                                            <b>{data.labels.prepDay}:</b>
+                                            {data.preparations.dayOf}
+                                        </div>
+                                    </div>
+                                </>
+                            )}
 
-                            <table className="offer-table">
-                                <thead>
-                                    <tr>
-                                        {data.pricingHeaders.map((header, idx) => {
-                                            const isRec = idx === data.recommendationColumnIndex;
-                                            return (
-                                                <th
-                                                    key={idx}
-                                                    className={`offer-th ${idx === 0 ? 'left' : ''} ${isRec ? 'rec' : ''}`}
-                                                    style={{ width: `${100 / data.pricingHeaders.length}%` }}
-                                                >
-                                                    {isRec && <div className="rec-label">{data.recommendationLabel}</div>}
-                                                    {header}
-                                                </th>
-                                            );
-                                        })}
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {data.pricingRows.map((row, i) => (
-                                        <tr key={i}>
-                                            {row.values.map((val, colIdx) => {
-                                                const isRec = colIdx === data.recommendationColumnIndex;
-                                                const isHeader = row.isHeader;
-                                                const displayVal = isHeader ? `<b>${val}</b>` : val;
+                            {data.sectionVisibility.features && (
+                                <>
+                                    <h2 className="offer-h2">{data.sectionTitles.standards}</h2>
+                                    <ul className="offer-list">
+                                        {data.features.map((f, i) => (
+                                            <li key={i} dangerouslySetInnerHTML={{ __html: f.replace(':', ':</b>').replace(/^/, '<b>') }} />
+                                        ))}
+                                    </ul>
+                                </>
+                            )}
+
+                            {data.sectionVisibility.pricing && (
+                                <table className="offer-table">
+                                    <thead>
+                                        <tr>
+                                            {data.pricingHeaders.map((header, idx) => {
+                                                const isRec = idx === data.recommendationColumnIndex;
                                                 return (
-                                                    <td
-                                                        key={colIdx}
-                                                        className={`offer-td ${colIdx === 0 ? 'left' : ''} ${isRec ? 'rec' : ''}`}
-                                                        dangerouslySetInnerHTML={{ __html: displayVal }}
-                                                    />
+                                                    <th
+                                                        key={idx}
+                                                        className={`offer-th ${idx === 0 ? 'left' : ''} ${isRec ? 'rec' : ''}`}
+                                                        style={{ width: `${100 / data.pricingHeaders.length}%` }}
+                                                    >
+                                                        {isRec && <div className="rec-label">{data.recommendationLabel}</div>}
+                                                        {header}
+                                                    </th>
                                                 );
                                             })}
                                         </tr>
-                                    ))}
-                                    <tr>
-                                        {data.footerPrices.map((price, idx) => {
-                                            const isRec = idx === data.recommendationColumnIndex;
-                                            return (
-                                                <td key={idx} className={`offer-td ${idx === 0 ? 'left' : ''} ${isRec ? 'rec' : ''}`}>
-                                                    {idx === 0 ? price : <span className="price-tag">{price}</span>}
-                                                </td>
-                                            );
-                                        })}
-                                    </tr>
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody>
+                                        {data.pricingRows.map((row, i) => (
+                                            <tr key={i}>
+                                                {row.values.map((val, colIdx) => {
+                                                    const isRec = colIdx === data.recommendationColumnIndex;
+                                                    const isHeader = row.isHeader;
+                                                    const displayVal = isHeader ? `<b>${val}</b>` : val;
+                                                    return (
+                                                        <td
+                                                            key={colIdx}
+                                                            className={`offer-td ${colIdx === 0 ? 'left' : ''} ${isRec ? 'rec' : ''}`}
+                                                            dangerouslySetInnerHTML={{ __html: displayVal }}
+                                                        />
+                                                    );
+                                                })}
+                                            </tr>
+                                        ))}
+                                        <tr>
+                                            {data.footerPrices.map((price, idx) => {
+                                                const isRec = idx === data.recommendationColumnIndex;
+                                                return (
+                                                    <td key={idx} className={`offer-td ${idx === 0 ? 'left' : ''} ${isRec ? 'rec' : ''}`}>
+                                                        {idx === 0 ? price : <span className="price-tag">{price}</span>}
+                                                    </td>
+                                                );
+                                            })}
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            )}
 
-                            <div className="desc-box">
-                                <b>{data.labels.albumAdvantage}:</b><br />
-                                {data.albumDescription}
-                            </div>
+                            {data.sectionVisibility.album && (
+                                <div className="desc-box">
+                                    <b>{data.labels.albumAdvantage}:</b><br />
+                                    {data.albumDescription}
+                                </div>
+                            )}
 
-                            <h2 className="offer-h2">{data.sectionTitles.delivery}</h2>
-                            <ul className="offer-list" style={{ marginBottom: '20px' }}>
-                                {Object.values(data.deliveryTerms).map((t, i) => (
-                                    <li key={i} dangerouslySetInnerHTML={{ __html: t.replace(':', ':</b>').replace(/^/, '<b>') }} />
-                                ))}
-                            </ul>
+                            {data.sectionVisibility.delivery && (
+                                <>
+                                    <h2 className="offer-h2">{data.sectionTitles.delivery}</h2>
+                                    <ul className="offer-list" style={{ marginBottom: '20px' }}>
+                                        {Object.values(data.deliveryTerms).map((t, i) => (
+                                            <li key={i} dangerouslySetInnerHTML={{ __html: t.replace(':', ':</b>').replace(/^/, '<b>') }} />
+                                        ))}
+                                    </ul>
+                                </>
+                            )}
 
                             <div className="offer-footer" dangerouslySetInnerHTML={{ __html: `${data.labels.footerDisclaimer}<br><b>${data.footerCompany}</b>` }} />
                         </div>
@@ -884,27 +1092,26 @@ export default function OfferBuilder({ initialData, onSave, saveButtonText }: Of
     );
 }
 
-function Section({ title, children }: { title: string, children: React.ReactNode }) {
-    return (
-        <div className="border border-gray-200 rounded p-4 bg-white">
-            <h3 className="font-semibold text-gray-700 mb-3 border-b pb-1">{title}</h3>
-            <div className="space-y-3">
-                {children}
-            </div>
+// Helper Components
+const Section = ({ title, children, action }: { title: string; children: React.ReactNode; action?: React.ReactNode }) => (
+    <div className="bg-zinc-800/20 border border-zinc-700/50 rounded-xl p-4 mb-4">
+        <div className="flex justify-between items-center mb-3">
+            <h3 className="font-bold text-sm text-zinc-400 uppercase tracking-widest">{title}</h3>
+            {action}
         </div>
-    );
-}
+        <div className="space-y-3">{children}</div>
+    </div>
+);
 
-function Input({ label, value, onChange }: { label: string, value: string, onChange: (v: string) => void }) {
-    return (
-        <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">{label}</label>
-            <textarea
-                rows={value.length > 40 ? 4 : 2}
-                className="w-full border border-gray-300 rounded px-2 py-2 text-sm focus:border-blue-500 outline-none text-gray-900 bg-white shadow-sm"
-                value={value}
-                onChange={e => onChange(e.target.value)}
-            />
-        </div>
-    );
-}
+const Input = ({ label, value, onChange, placeholder = "" }: { label: string; value: string | boolean; onChange: (v: string) => void; placeholder?: string }) => (
+    <div>
+        {label && <label className="text-[10px] uppercase font-bold text-zinc-500 mb-1 block">{label}</label>}
+        <input
+            type="text"
+            value={String(value)}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={placeholder}
+            className="w-full bg-zinc-950 border border-zinc-700 rounded px-3 py-1.5 text-sm text-white outline-none focus:border-gold-500 transition-colors"
+        />
+    </div>
+);

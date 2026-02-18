@@ -2,12 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 export default function ContractSigningPage({ params }: { params: Promise<{ id: string }> }) {
     const router = useRouter();
     const [contract, setContract] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [signing, setSigning] = useState(false);
+    const [signError, setSignError] = useState<string | null>(null);
 
     const [contractId, setContractId] = useState<string | null>(null);
 
@@ -27,15 +29,12 @@ export default function ContractSigningPage({ params }: { params: Promise<{ id: 
 
     const fetchContract = async () => {
         try {
-            const token = localStorage.getItem('client_token');
+            const token = localStorage.getItem('client_token') || localStorage.getItem('user_token');
             if (!token) {
-                router.push('/strefa-klienta/login');
+                router.push('/logowanie');
                 return;
             }
 
-            // Using the portal offers endpoint which includes contract, 
-            // but we might need a specific endpoint if we don't have the offer ID handy.
-            // Assuming params.id is CONTRACT ID for now based on URL structure /umowy/[id]
             const res = await fetch(`/api/client/portal/contracts/${contractId}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -43,8 +42,8 @@ export default function ContractSigningPage({ params }: { params: Promise<{ id: 
             if (res.ok) {
                 const data = await res.json();
                 setContract(data.contract);
-            } else {
-                // handle error
+            } else if (res.status === 401) {
+                router.push('/logowanie');
             }
         } catch (error) {
             console.error(error);
@@ -54,8 +53,9 @@ export default function ContractSigningPage({ params }: { params: Promise<{ id: 
     };
 
     const handleSign = async () => {
-        const token = localStorage.getItem('client_token');
+        const token = localStorage.getItem('client_token') || localStorage.getItem('user_token');
         setSigning(true);
+        setSignError(null);
         try {
             const res = await fetch(`/api/client/portal/contracts/${contractId}/sign`, {
                 method: 'POST',
@@ -63,22 +63,32 @@ export default function ContractSigningPage({ params }: { params: Promise<{ id: 
             });
 
             if (res.ok) {
-                alert('Umowa podpisana pomyślnie!'); // Replace with nice modal
-                fetchContract(); // Reload status
+                await fetchContract(); // Reload to show signed status
+            } else {
+                const data = await res.json();
+                setSignError(data.error || 'Błąd podczas podpisywania umowy');
             }
         } catch (error) {
             console.error(error);
-            alert('Błąd podczas podpisywania');
+            setSignError('Błąd połączenia. Spróbuj ponownie.');
         } finally {
             setSigning(false);
         }
     };
+
 
     if (loading) return <div className="min-h-screen flex items-center justify-center">Ładowanie...</div>;
     if (!contract) return <div className="min-h-screen flex items-center justify-center">Nie znaleziono umowy.</div>;
 
     return (
         <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+            <div className="max-w-4xl mx-auto mb-6">
+                <Link href="/konto">
+                    <button className="text-gray-600 hover:text-black flex items-center gap-2 text-sm font-medium transition-colors">
+                        <span>←</span> Wróć do pulpitu
+                    </button>
+                </Link>
+            </div>
             <div className="max-w-4xl mx-auto bg-white shadow-xl rounded-xl overflow-hidden">
                 <div className="bg-slate-900 px-6 py-4 text-white flex justify-between items-center">
                     <h1 className="text-2xl font-bold">Umowa</h1>
@@ -97,7 +107,7 @@ export default function ContractSigningPage({ params }: { params: Promise<{ id: 
                         <div className="border-t pt-8">
                             <h3 className="text-lg font-bold mb-4 text-black">Podpis</h3>
                             <p className="text-sm text-gray-600 mb-4">
-                                Klikając "Podpisz umowę", potwierdzasz przeczytanie i akceptację powyższych warunków.
+                                Klikając &quot;Podpisz umowę&quot;, potwierdzasz przeczytanie i akceptację powyższych warunków.
                             </p>
                             <button
                                 onClick={handleSign}
@@ -106,6 +116,12 @@ export default function ContractSigningPage({ params }: { params: Promise<{ id: 
                             >
                                 {signing ? 'Przetwarzanie...' : '✍️ PODPISZ UMOWĘ'}
                             </button>
+                            {signError && (
+                                <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2">
+                                    <span className="text-red-500">⚠️</span>
+                                    <p className="text-red-700 text-sm font-medium">{signError}</p>
+                                </div>
+                            )}
                         </div>
                     )}
 
@@ -122,9 +138,31 @@ export default function ContractSigningPage({ params }: { params: Promise<{ id: 
                                     target="_blank"
                                     className="ml-auto text-green-700 underline hover:text-green-900"
                                 >
-                                    Pobierz PDF
+                                    Pobierz PDF (Umowa)
                                 </a>
                             )}
+                        </div>
+                    )}
+
+                    {contract.offer_id && (
+                        <div className="mt-12 bg-gray-100 p-6 rounded-xl">
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="text-xl font-bold text-gray-800">Podgląd Oferty</h3>
+                                <a
+                                    href={`/api/client/portal/offers/${contract.offer_id}/pdf`}
+                                    target="_blank"
+                                    className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1"
+                                >
+                                    Pobierz PDF
+                                </a>
+                            </div>
+                            <div className="aspect-[210/297] w-full bg-white shadow-lg overflow-hidden rounded-lg">
+                                <iframe
+                                    src={`/api/client/portal/offers/${contract.offer_id}/pdf#toolbar=0&navpanes=0`}
+                                    className="w-full h-full border-0"
+                                    title="Podgląd Oferty"
+                                />
+                            </div>
                         </div>
                     )}
                 </div>

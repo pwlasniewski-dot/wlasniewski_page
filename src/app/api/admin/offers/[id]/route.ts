@@ -75,7 +75,8 @@ export async function PATCH(
             sections,
             pdf_url,
             drive_url,
-            category, // Added category
+            category,
+            negotiation_enabled, // Added negotiation_enabled
         } = body;
 
         // Check if offer exists
@@ -115,6 +116,7 @@ export async function PATCH(
                 ...(type && { type }),
                 ...(category && { category }),
                 ...(status && { status }),
+                ...(negotiation_enabled !== undefined && { negotiation_enabled }), // Update if provided
                 ...(valid_until && { valid_until: new Date(valid_until) }),
                 ...(parsedClientId !== undefined && { client_id: parsedClientId }),
                 ...(client_email && { client_email }),

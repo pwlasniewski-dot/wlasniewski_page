@@ -25,7 +25,10 @@ export async function GET(request: NextRequest) {
 
         // Build where clause
         const where: any = {};
-        if (type) where.type = type;
+        if (type) {
+            // Case-insensitive match for b2c/b2b
+            where.type = type.toLowerCase();
+        }
         if (status) where.status = status;
 
         // Fetch offers with related data
@@ -41,6 +44,8 @@ export async function GET(request: NextRequest) {
                             id: true,
                             email: true,
                             name: true,
+                            last_login: true,
+                            last_failed_login: true,
                         },
                     },
                     sections: {
@@ -62,9 +67,16 @@ export async function GET(request: NextRequest) {
             offset,
         });
     } catch (error) {
-        console.error('Error fetching offers:', error);
+        console.error('❌ Error fetching offers:', error);
+
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        const errorStack = error instanceof Error ? error.stack : '';
+
+        // Log details to console for easier debugging in Next.js logs
+        console.error(`[Admin Offers API] CRITICAL ERROR: ${errorMsg}\nStack: ${errorStack}`);
+
         return NextResponse.json(
-            { error: 'Failed to fetch offers' },
+            { error: 'Failed to fetch offers', details: errorMsg },
             { status: 500 }
         );
     }

@@ -89,6 +89,15 @@ Zasada nienaruszalności modułów niezwiązanych z bieżącym zadaniem. Agent/D
 
 ## 4. Przepływ Danych (Data Flow Diagrams)
 
+
+### 4.2. Offer & Contract Flow (Client Portal) [NEW: 2026-02-18]
+
+- **GET /api/client/portal/contracts/[id]**: Pobiera umowę klienta z weryfikacją własności (client_id lub client_email).
+- **POST /api/client/portal/contracts/[id]/sign**: Podpisuje umowę (status=signed, signed_at=now), wysyła email do admina i klienta.
+- **PATCH /api/client/portal/offers/[id]**: Akceptacja/odrzucenie oferty + notyfikacja email do admina.
+- **GET /api/admin/clients**: Rozbudowane o dane ofert, umów, galerii klienta, typów zleceń.
+- **CRM Dashboard**: Tabela z kolumnami: Typ zlecenia, Oferta, Umowa, Galeria (progress bar), Kwota, Sesja. KPI bar, sortowanie, filtrowanie.
+
 ### 4.1. Rezerwacja Sesji & Płatność
 ```mermaid
 sequenceDiagram

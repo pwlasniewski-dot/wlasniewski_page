@@ -90,11 +90,12 @@ interface EmailData {
     template?: string;
     data?: Record<string, any>;
     html?: string;
+    attachments?: any[];
 }
 
 export async function sendEmail(emailData: EmailData) {
     try {
-        const { to, subject, template, data, html } = emailData;
+        const { to, subject, template, data, html, attachments, replyTo, bcc } = emailData;
         const config = await getSMTPConfig();
 
         let emailHtml = html;
@@ -110,8 +111,11 @@ export async function sendEmail(emailData: EmailData) {
         const result = await transport.sendMail({
             from: config.from,
             to,
+            replyTo,
+            bcc,
             subject,
             html: emailHtml,
+            attachments
         });
 
         await logSystem('INFO', 'EMAIL', 'Email sent successfully', { messageId: result.messageId, to, subject });
@@ -315,7 +319,15 @@ function renderTemplate(template: string, data: Record<string, any>): string {
         </div>
     </div>
 </body>
-</html>`
+</html>`,
+        'welcome-client': (d) => {
+            const { generateWelcomeClientEmail } = require('@/lib/email-templates');
+            return generateWelcomeClientEmail(d);
+        },
+        'password-reset': (d) => {
+            const { generatePasswordResetEmail } = require('@/lib/email-templates');
+            return generatePasswordResetEmail(d);
+        }
     };
 
     const templateFn = templates[template];

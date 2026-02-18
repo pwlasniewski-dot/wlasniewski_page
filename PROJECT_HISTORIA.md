@@ -96,7 +96,33 @@ graph TD
 *   **UI FRAMING**: HeroSlider uses `backgroundPosition: 'center 15%'` for desktop.
 *   **CLEANUP**: Archiwa w `backups/ARCHIVE_MESS`. Nie dodawaj plików `.md` do roota.
 
+
+### 7. CRM & CLIENT CONSOLIDATION (Unified Data) [NEW: 2026-02-17]
+*   **STATUS:** W trakcie wdrażania.
+*   **CEL:** Pełna integracja Zarządzania Klientem (CRM) w jednym widoku.
+*   **ZMIANA MODELU DANYCH:**
+    *   `ClientGallery` zyskało bezpośrednią relację do `User` (`client_id`).
+    *   Wcześniej galerie były "wiszące", połączone tylko przez string `client_email`.
+    *   Wykonano migrację danych (`scripts/migrate-galleries.ts`), łącząc 4 zagubione galerie (w tym Oli Goral) z kontami użytkowników.
+*   **ZASADA #1:** Galerie muszą być przypisane do `client_id` (User), a nie tylko `photographer_id` czy `email`.
+*   **ZASADA #2:** CRM `/admin/clients/[id]` staje się centrum dowodzenia - koniec z osobnymi stronami dla każdego zasobu klienta.
+*   **ZASADA #3 (Email Sync):** Przy każdej zmianie `email` w CRM lub profilu klienta, system automatycznie (kaskadowo) aktualizuje ten adres w powiązanych Ofertach i Galeriach. Gwarantuje to, że dokumenty nigdy nie zostaną "odpięte" od klienta.
+
+### 9. SYSTEM COHERENCE — BOOKING, AUTH, OFFERS, GALLERIES [NEW: 2026-02-18]
+*   **STATUS:** Wdrożone i zweryfikowane.
+*   **ZASADA BEZPIECZEŃSTWA #1:** `GET /api/bookings` (lista wszystkich rezerwacji) MUSI być chronione przez `requireAuth`. Dostęp tylko dla admina.
+*   **ZASADA BEZPIECZEŃSTWA #2:** ZAKAZ wysyłania hasła w plaintext w emailu. Welcome email dla klienta zawiera tylko link do logowania (`/logowanie`).
+*   **ZASADA ROLI:** Każdy użytkownik tworzony przez `/api/auth/register` lub `/api/basket/checkout` MUSI mieć `role: 'CLIENT'`. Bez tego klient nie pojawia się w CRM.
+*   **ZASADA SOFT DELETE:** `DELETE /api/bookings` NIE usuwa danych — ustawia `status: 'archived'`. Zero-loss policy.
+*   **ZASADA GALERII:** `/api/galleries/client` pobiera galerie po `client_email` LUB `client_id` (oba systemy powiązań).
+*   **ZASADA LTV:** LTV klienta w CRM = suma `GiftCardOrder.amount_paid` + suma `Booking.price` (status: confirmed/completed).
+*   **ZASADA OFFERBUILDER:** `fetchClientData` w `OfferBuilder.tsx` używa `client.name` (nie `firstName`/`lastName`) i `client.postal_code` (nie `postalCode`). Model `User` ma jedno pole `name`.
+*   **ZASADA PANELU KLIENTA:** `/konto` ma zakładkę "Karty Podarunkowe" (id: `gift_cards`). Typ `Tab` musi zawierać `'gift_cards'`.
+*   **ZASADA URL:** Link podglądu oferty wskazuje na `/konto` (nie na deprecated `/strefa-klienta/oferty/[id]`).
+
 ---
+
+### 8. ARCHIWUM ZADAŃ (Legacy Tasks)
 
 ### 7. B2B TWIN-ENGINE ARCHITECTURE [NEW: 2025-12-28]
 *   **STATUS:** 100% sprawny (Wdrożono na `wlasniewski.pl/b2b` oraz subdomeny).
@@ -148,6 +174,35 @@ Ten plik służy do ścisłego monitorowania wszystkich zmian wprowadzanych w pr
 ---
 
 ## Log Zmian
+
+### [2026-02-18]  CRM Dashboard Rozbudowa & Offer/Contract Flow
+
+**Zmiany:**
+- **CRM Panel Klienta** (/admin/clients): Całkowita przebudowa tabeli - dodano kolumny: Typ zlecenia (Komunia/Inne), Oferta (statusy: Do zatwierdzenia/Negocjuje/Zatwierdzona/Odrzucona), Umowa (Oczekuje/Podpisana + data), Galeria (progress bar: zdjęcia do dodania/dodane/zapłacone), Kwota zatwierdzona, Sesja (data + status). Dodano pasek KPI (łączne LTV, oferty do zatwierdzenia, podpisane umowy), sortowanie kolumn, filtr po statusie oferty.
+- **API /api/admin/clients**: Rozbudowano o dane ofert (status, kwota), umów (status, signed_at), galerii klienta (standard_count, liczba zdjęć, payment_status), typów zleceń (z pola service bookingu lub category oferty).
+- **Nowy endpoint GET /api/client/portal/contracts/[id]**: Pobiera umowę klienta z weryfikacją własności.
+- **Nowy endpoint POST /api/client/portal/contracts/[id]/sign**: Podpisywanie umowy - aktualizuje status/signed_at, wysyła email do admina i klienta.
+- **Notyfikacje email**: Admin otrzymuje email gdy klient zaakceptuje lub odrzuci ofertę (PATCH /api/client/portal/offers/[id]).
+- **UI umowy** (/strefa-klienta/umowy/[id]): Usunięto lert(), zastąpiono stanem signError z wyświetlaniem błędu w UI.
+
+**Decyzje:**
+- client_galleries (nie ssigned_galleries) to galerie klienta w schemacie Prisma.
+- payment_status (nie status) w modelu PhotoOrder.
+- JWT erifyToken zwraca tylko {id, email} - imię klienta pobierane z bazy przy podpisywaniu umowy.
+- Typ zlecenia wykrywany z offer.category lub ooking.service (pole service w Booking).
+
+
+### v3.0.3 - Client CRM Schema Extension (2026-02-15)
+**Cel:** Rozszerzenie modelu użytkownika o dane adresowe oraz mechanizm bezpiecznego resetowania haseł.
+
+**Zrealizowane Zmiany:**
+1. **Schema Update (`prisma/schema.prisma`):**
+   - Dodano pola: `address`, `city`, `postal_code` (dane adresowe dla CRM i Ofert).
+   - Dodano pola: `reset_token`, `reset_token_expires` (bezpieczeństwo / zapomniane hasło).
+2. **Database Migration:** Wykonano `npx prisma db push` oraz regenerację klienta Prisma.
+3. **Dokumentacja:** Zaktualizowano `PROJECT_HISTORIA.md` oraz plan wdrożenia.
+
+**Status:** ✅ **DONE**
 
 ### v2.0.13 - ChronologicalGallery Performance Optimization & Lightbox (2026-01-25)
 **Cel:** Eliminacja ekstremalnie wolnego ładowania galerii chronologicznej przy zmianie układu kolumn oraz dodanie funkcji powiększania zdjęć.
@@ -291,9 +346,10 @@ Wykonano szczegółowy audyt pod kątem wykorzystania istniejących komponentów
    - `Contract`: Umowa powiązana 1:1 z ofertą (status: pending/signed).
    - `Negotiation`: Historia negocjacji/komentarzy do oferty.
 
-2. **User Model Extension**:
-   - Dodano relacje `offers` i `contracts` do modelu `User`.
-   - Pozwala to na przypisywanie ofert do konkretnych kont klientów.
+2.### v3.0.4 - Password Recovery & CRM Audit
+- **Implementacja**: System odzyskiwania hasła (API + UI).
+- **Audit**: Pełna weryfikacja CRM i Generatora Ofert.
+- **Build**: Potwierdzona stabilność buildu produkcyjnego.
 
 **Następny krok:** Budowa API backendowego (`src/app/api/admin/offers`).
 
@@ -1517,9 +1573,9 @@ s control
 
 **🎯 Success Criteria (Faza 1)**:
 - [ ] ✅ /admin login works
-- [ ] ✅ /rezerwacja shows packages
-- [ ] ✅ Homepage displays
-- [ ] ✅ All API endpoints respond
+- [x] Implement Password Recovery flow (Backend + UI)
+- [ ] Professional HTML Email Notifications setup
+- [ ] Client Portal Refinement (My Galleries section)
 - [ ] ✅ npm run build succeeds
 - [ ] ✅ No database connection errors
 - [ ] ✅ Production deployment stable
@@ -1806,3 +1862,23 @@ Business Insights
 
 
 
+
+### v3.0.5 - Gallery Layout & Album Shop Integration (2026-02-18)
+**Cel:** Przebudowa galerii klienta (pionowy layout) oraz integracja sklepu z albumami w procesie zamawiania zdjęć.
+
+**Zrealizowane Zmiany:**
+1. **Gallery Layout Refactoring:**
+   - Zastąpiono układ tabularyczny (Standard/Premium) pionowym stosem (Standard -> Premium -> Sklep).
+   - Usunięto zaokrąglenia i filtry (blur/grayscale) ze zdjęć Premium dla spójnego wyglądu.
+   - Wyrównano siatkę Premium do 3 kolumn (match Standard).
+
+2. **Album Shop Integration:**
+   - Dodano sekcję "Sklep z Albumami" w galerii klienta.
+   - Zintegrowano wybór produktów z koszykiem (Checkout).
+   - Zaktualizowano API PayU o obsługę płatności za produkty dodatkowe.
+
+3. **Database Schema Extension:**
+   - Dodano model `GalleryProduct`.
+   - Rozszerzono `Offer` o pole `client_selection` (JSON) do zapisu wyboru pakietu przez klienta.
+
+**Status:** ✅ **DONE**

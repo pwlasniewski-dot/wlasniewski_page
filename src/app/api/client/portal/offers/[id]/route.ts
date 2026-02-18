@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { verifyToken, extractToken } from '@/lib/auth/jwt';
+import { sendEmail, getAdminEmail } from '@/lib/email/sender';
 
 export const dynamic = 'force-dynamic';
 
@@ -127,15 +128,73 @@ export async function PATCH(
 
         // Handle different actions
         if (action === 'accept') {
-            await prisma.offer.update({
+            await (prisma.offer.update as any)({
                 where: { id: offerId },
-                data: { status: 'accepted' },
+                data: {
+                    status: 'accepted',
+                    client_selection: body.client_selection ?? undefined
+                },
             });
+
+            // Notify admin
+            try {
+                const adminEmail = await getAdminEmail();
+                const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://wlasniewski.pl';
+                const selectionInfo = body.client_selection?.selectedPackage
+                    ? `Wybrany pakiet: <strong>${body.client_selection.selectedPackage.name}</strong> — ${body.client_selection.selectedPackage.price}`
+                    : body.client_selection?.childCount
+                        ? `Liczba dzieci: <strong>${body.client_selection.childCount}</strong>`
+                        : '';
+                if (adminEmail) {
+                    await sendEmail({
+                        to: adminEmail,
+                        subject: `✅ Oferta zaakceptowana — ${offer.title}`,
+                        html: `
+<div style="font-family:Arial,sans-serif;padding:20px;background:#0a0a0a;color:#fff;max-width:600px;margin:0 auto;">
+  <h2 style="color:#4ade80;">✅ Klient zaakceptował ofertę!</h2>
+  <div style="background:#111;border:1px solid #222;border-radius:8px;padding:20px;margin:16px 0;">
+    <p style="color:#888;margin:0 0 4px;font-size:12px;text-transform:uppercase;letter-spacing:2px;">Oferta</p>
+    <p style="color:#c5a059;font-size:18px;font-weight:bold;margin:0;">${offer.title}</p>
+    <p style="color:#555;font-size:12px;margin:6px 0 0;">Klient: ${decoded.email}</p>
+  </div>
+  ${selectionInfo ? `<p style="color:#ccc;font-size:14px;">${selectionInfo}</p>` : ''}
+  <p style="color:#ccc;font-size:14px;">Łączna wartość: <strong style="color:#c5a059;">${body.client_selection?.totalPrice ? body.client_selection.totalPrice.toLocaleString('pl-PL') + ' PLN' : 'N/A'}</strong></p>
+  <div style="text-align:center;margin:24px 0;">
+    <a href="${appUrl}/admin/clients" style="display:inline-block;background:#c5a059;color:#000;text-decoration:none;padding:14px 32px;border-radius:8px;font-weight:bold;">Przejdź do panelu →</a>
+  </div>
+</div>`
+                    });
+                }
+            } catch (emailError) {
+                console.error('[Offer Accept] Failed to send admin notification:', emailError);
+            }
         } else if (action === 'reject') {
             await prisma.offer.update({
                 where: { id: offerId },
                 data: { status: 'rejected' },
             });
+
+            // Notify admin
+            try {
+                const adminEmail = await getAdminEmail();
+                const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://wlasniewski.pl';
+                if (adminEmail) {
+                    await sendEmail({
+                        to: adminEmail,
+                        subject: `❌ Oferta odrzucona — ${offer.title}`,
+                        html: `
+<div style="font-family:Arial,sans-serif;padding:20px;background:#0a0a0a;color:#fff;max-width:600px;margin:0 auto;">
+  <h2 style="color:#f87171;">❌ Klient odrzucił ofertę</h2>
+  <p style="color:#ccc;">Oferta <strong>${offer.title}</strong> została odrzucona przez klienta ${decoded.email}.</p>
+  <div style="text-align:center;margin:24px 0;">
+    <a href="${appUrl}/admin/clients" style="display:inline-block;background:#c5a059;color:#000;text-decoration:none;padding:14px 32px;border-radius:8px;font-weight:bold;">Przejdź do panelu →</a>
+  </div>
+</div>`
+                    });
+                }
+            } catch (emailError) {
+                console.error('[Offer Reject] Failed to send admin notification:', emailError);
+            }
         } else if (action === 'negotiate' && message) {
             await prisma.negotiation.create({
                 data: {

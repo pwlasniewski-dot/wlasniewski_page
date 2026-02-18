@@ -3,8 +3,14 @@
 import bcrypt from 'bcryptjs';
 import { SignJWT, jwtVerify } from 'jose';
 
+// SECURITY: JWT_SECRET should be set via environment variable.
+// The fallback is used for local development only — set JWT_SECRET in production!
+if (!process.env.JWT_SECRET) {
+    console.error('[SECURITY WARNING] JWT_SECRET is not set in environment variables! Using fallback — NOT safe for production.');
+}
+
 const JWT_SECRET = new TextEncoder().encode(
-    process.env.JWT_SECRET || 'fallback-secret-change-this'
+    process.env.JWT_SECRET || 'wlasniewski-fotograf-jwt-secret-2024-production'
 );
 const SALT_ROUNDS = 10;
 
