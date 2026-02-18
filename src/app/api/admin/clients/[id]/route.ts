@@ -86,8 +86,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             };
 
             return NextResponse.json({ success: true, client: fullClient });
-        } catch (error) {
+        } catch (error: any) {
             console.error('Fetch client details error:', error);
+            await logSystem('ERROR', 'SYSTEM', `Failed to fetch client detail for ${id}`, { error: error.message, stack: error.stack });
             return NextResponse.json({ error: 'Failed to fetch details' }, { status: 500 });
         }
     });
