@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { withAuth } from '@/lib/auth/middleware';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
+import { logSystem } from '@/lib/logger';
 import { sendEmail } from '@/lib/email/sender';
 
 export const dynamic = 'force-dynamic';
@@ -153,8 +154,9 @@ export async function GET(request: NextRequest) {
             });
 
             return NextResponse.json({ success: true, clients: formattedClients });
-        } catch (error) {
+        } catch (error: any) {
             console.error('Fetch clients error:', error);
+            await logSystem('ERROR', 'SYSTEM', 'Failed to fetch clients', { error: error.message, stack: error.stack });
             return NextResponse.json({ error: 'Failed to fetch clients' }, { status: 500 });
         }
     });
@@ -213,8 +215,9 @@ export async function POST(request: NextRequest) {
             }
 
             return NextResponse.json({ success: true, client: user });
-        } catch (error) {
+        } catch (error: any) {
             console.error('Create client error:', error);
+            await logSystem('ERROR', 'SYSTEM', 'Failed to create client', { error: error.message });
             return NextResponse.json({ error: 'Failed to create client' }, { status: 500 });
         }
     });
