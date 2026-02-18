@@ -102,8 +102,8 @@ export async function GET(request: NextRequest) {
                     (latestOffer?.template_data as any)?.category || null;
                 const latestBooking = latestBookingMap.get(client.email);
                 const jobType = offerCategory || latestBooking?.service || null;
-                const isKomunia = !!(jobType?.toLowerCase().includes('komunia') ||
-                    jobType?.toLowerCase().includes('communion'));
+                const jobTypeLower = jobType?.toLowerCase() || '';
+                const isKomunia = jobTypeLower.includes('komunia') || jobTypeLower.includes('communion');
 
                 // Contract analysis
                 const latestContract = latestOffer?.contract || null;
