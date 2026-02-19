@@ -96,6 +96,8 @@ export async function GET(req: NextRequest) {
                 id: userResult.id,
                 email: userResult.email,
                 name: userResult.name,
+                role: userResult.role,
+                permissions: (userResult as any).permissions ?? null,
                 gift_cards: giftCards,
                 orders: orders,
                 bookings: bookings,

@@ -6,16 +6,16 @@
 // ─── BRAND (eksportowane dla sender.ts) ──────────────────────
 
 export const brandColors = {
-    gold: '#c5a059',
-    goldLight: '#d4b87a',
-    black: '#0a0a0a',
-    darkGray: '#111111',
-    cardBg: '#161616',
-    border: '#2a2a2a',
-    borderGold: 'rgba(197,160,89,0.35)',
-    lightGray: '#888888',
-    white: '#f5f5f5',
-    green: '#4ade80',
+  gold: '#c5a059',
+  goldLight: '#d4b87a',
+  black: '#0a0a0a',
+  darkGray: '#111111',
+  cardBg: '#161616',
+  border: '#2a2a2a',
+  borderGold: 'rgba(197,160,89,0.35)',
+  lightGray: '#888888',
+  white: '#f5f5f5',
+  green: '#4ade80',
 };
 
 // baseStyles eksportowane dla sender.ts (challenge templates)
@@ -40,46 +40,48 @@ export const baseStyles = `
 // ─── TYPY ────────────────────────────────────────────────────
 
 export interface BookingEmailData {
-    clientName: string;
-    service: string;
-    packageName: string;
-    date: string;
-    time?: string;
-    location?: string;
-    price: number;
-    originalPrice?: number;
-    promoCode?: string;
-    giftCardCode?: string;
-    notes?: string;
-    phone?: string;
-    email: string;
+  clientName: string;
+  service: string;
+  packageName: string;
+  date: string;
+  time?: string;
+  location?: string;
+  price: number;
+  originalPrice?: number;
+  promoCode?: string;
+  giftCardCode?: string;
+  notes?: string;
+  phone?: string;
+  email: string;
 }
 
 export interface OfferEmailData {
-    clientName: string;
-    offerNumber: string;
-    offerTitle: string;
-    offerCategory?: string;
-    totalPrice: number | string;
-    validUntil?: string;
-    offerUrl?: string;
-    type?: 'b2b' | 'b2c';
-    summaryHtml?: string;
+  clientName: string;
+  offerNumber: string;
+  offerTitle: string;
+  offerCategory?: string;
+  totalPrice: number | string;
+  validUntil?: string;
+  offerUrl?: string;
+  type?: 'b2b' | 'b2c';
+  summaryHtml?: string;
+  hasPdf?: boolean; // Added this
 }
 
 export interface ContractEmailData {
-    clientName: string;
-    contractNumber: string;
-    offerTitle: string;
-    portalUrl: string;
+  clientName: string;
+  contractNumber: string;
+  offerTitle: string;
+  portalUrl: string;
+  hasPdf?: boolean; // Added this
 }
 
 export interface GalleryEmailData {
-    clientName: string;
-    accessCode: string;
-    galleryUrl: string;
-    expiresAt: string;
-    standardCount?: number;
+  clientName: string;
+  accessCode: string;
+  galleryUrl: string;
+  expiresAt: string;
+  standardCount?: number;
 }
 
 // ─── INTERNAL BRAND CONSTANTS ────────────────────────────────
@@ -87,7 +89,7 @@ export interface GalleryEmailData {
 // ─── SHARED LAYOUT ───────────────────────────────────────────
 
 function emailShell(content: string, preheader = ''): string {
-    return `<!DOCTYPE html>
+  return `<!DOCTYPE html>
 <html lang="pl">
 <head>
   <meta charset="UTF-8">
@@ -160,20 +162,20 @@ function emailShell(content: string, preheader = ''): string {
 }
 
 function goldDivider(): string {
-    return `<table width="100%" cellpadding="0" cellspacing="0" style="margin:28px 0;">
+  return `<table width="100%" cellpadding="0" cellspacing="0" style="margin:28px 0;">
       <tr><td style="height:1px;background:linear-gradient(90deg,transparent,#c5a059,transparent);"></td></tr>
     </table>`;
 }
 
 function detailRow(label: string, value: string, highlight = false): string {
-    return `<tr>
+  return `<tr>
       <td style="padding:12px 0;border-bottom:1px solid #222;color:#888;font-size:13px;font-weight:400;">${label}</td>
       <td style="padding:12px 0;border-bottom:1px solid #222;text-align:right;color:${highlight ? '#c5a059' : '#f5f5f5'};font-size:13px;font-weight:${highlight ? '600' : '500'};">${value}</td>
     </tr>`;
 }
 
 function ctaButton(text: string, url: string, color = '#c5a059'): string {
-    return `<table cellpadding="0" cellspacing="0" style="margin:32px auto 0;">
+  return `<table cellpadding="0" cellspacing="0" style="margin:32px auto 0;">
       <tr>
         <td style="border-radius:8px;background:${color};">
           <a href="${url}" class="btn" style="display:inline-block;padding:16px 40px;color:#000;font-size:14px;font-weight:700;text-decoration:none;letter-spacing:1px;text-transform:uppercase;border-radius:8px;">${text}</a>
@@ -183,25 +185,25 @@ function ctaButton(text: string, url: string, color = '#c5a059'): string {
 }
 
 function infoBox(content: string, borderColor = '#c5a059'): string {
-    return `<table width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0;background:#1a1a1a;border:1px solid ${borderColor};border-radius:10px;">
+  return `<table width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0;background:#1a1a1a;border:1px solid ${borderColor};border-radius:10px;">
       <tr><td style="padding:24px;">${content}</td></tr>
     </table>`;
 }
 
 function heading(text: string): string {
-    return `<h2 style="color:#f5f5f5;font-size:22px;font-weight:600;margin:0 0 8px;line-height:1.3;">${text}</h2>`;
+  return `<h2 style="color:#f5f5f5;font-size:22px;font-weight:600;margin:0 0 8px;line-height:1.3;">${text}</h2>`;
 }
 
 function subtext(text: string): string {
-    return `<p style="color:#888;font-size:14px;line-height:1.7;margin:0 0 24px;">${text}</p>`;
+  return `<p style="color:#888;font-size:14px;line-height:1.7;margin:0 0 24px;">${text}</p>`;
 }
 
 // ─── 1. WELCOME — NOWY KLIENT ────────────────────────────────
 
 export function generateWelcomeClientEmail(data: { name: string; email: string; password?: string }): string {
-    const loginUrl = `${process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL || 'https://wlasniewski.pl'}/logowanie`;
+  const loginUrl = `${process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL || 'https://wlasniewski.pl'}/logowanie`;
 
-    const content = `
+  const content = `
       ${heading(`Witaj, ${data.name}! 👋`)}
       ${subtext('Twoje konto klienta zostało właśnie utworzone. Masz teraz dostęp do prywatnego panelu, w którym znajdziesz swoje oferty, umowy i galerie zdjęć.')}
 
@@ -219,8 +221,8 @@ export function generateWelcomeClientEmail(data: { name: string; email: string; 
           <div style="color:#c5a059;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:2px;margin-bottom:12px;">Co znajdziesz w panelu?</div>
           <table cellpadding="0" cellspacing="0">
             ${['📋 Dedykowane oferty cenowe', '📄 Umowy do podpisania online', '🖼️ Prywatne galerie zdjęć', '📅 Status Twoich rezerwacji'].map(item =>
-        `<tr><td style="padding:5px 0;color:#aaa;font-size:13px;">${item}</td></tr>`
-    ).join('')}
+    `<tr><td style="padding:5px 0;color:#aaa;font-size:13px;">${item}</td></tr>`
+  ).join('')}
           </table>
         </td></tr>
       </table>
@@ -231,20 +233,20 @@ export function generateWelcomeClientEmail(data: { name: string; email: string; 
       <p style="color:#555;font-size:12px;text-align:center;margin:0;">Cieszę się na naszą współpracę! W razie pytań — odpowiedz na tego maila.</p>
     `;
 
-    return emailShell(content, `Witaj ${data.name}! Twoje konto klienta jest gotowe.`);
+  return emailShell(content, `Witaj ${data.name}! Twoje konto klienta jest gotowe.`);
 }
 
 // ─── 2. OFERTA — EMAIL DO KLIENTA ────────────────────────────
 
 export function generateOfferEmail(data: OfferEmailData): string {
-    const portalUrl = `${process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL || 'https://wlasniewski.pl'}/konto`;
-    const content = `
+  const portalUrl = `${process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL || 'https://wlasniewski.pl'}/konto`;
+  const content = `
       <div style="display:inline-block;background:rgba(197,160,89,0.1);border:1px solid rgba(197,160,89,0.3);border-radius:6px;padding:6px 14px;margin-bottom:20px;">
         <span style="color:#c5a059;font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;">Nowa Oferta · ${data.offerNumber}</span>
       </div>
 
       ${heading(data.offerTitle)}
-      ${subtext(`Przygotowałem dla Ciebie dedykowaną ofertę fotograficzną. Poniżej znajdziesz szczegóły — pełna wersja w załączonym pliku PDF.`)}
+      ${subtext(`Przygotowałem dla Ciebie dedykowaną ofertę fotograficzną. Poniżej znajdziesz szczegóły${data.hasPdf ? ' — pełna wersja w załączonym pliku PDF' : ''}.`)}
 
       ${infoBox(`
         <div style="color:#888;font-size:11px;text-transform:uppercase;letter-spacing:2px;margin-bottom:16px;">Szczegóły oferty</div>
@@ -267,10 +269,12 @@ export function generateOfferEmail(data: OfferEmailData): string {
         </div>
       ` : ''}
 
+      ${data.hasPdf ? `
       <div style="background:#111;border-radius:10px;border:1px solid rgba(197,160,89,0.2);padding:20px;margin:24px 0;text-align:center;">
         <div style="color:#888;font-size:12px;margin-bottom:8px;">📎 Pełna oferta dostępna w załączniku PDF</div>
         <div style="color:#555;font-size:11px;">Otwórz załącznik, aby zobaczyć kompletne zestawienie pakietów i warunki współpracy.</div>
       </div>
+      ` : ''}
 
       ${ctaButton('Przejdź do Panelu Klienta →', data.offerUrl || portalUrl)}
 
@@ -278,20 +282,20 @@ export function generateOfferEmail(data: OfferEmailData): string {
       <p style="color:#555;font-size:12px;text-align:center;margin:0;">Masz pytania? Zadzwoń: <a href="tel:+48530788694" style="color:#c5a059;text-decoration:none;">530 788 694</a> lub odpowiedz na tego maila.</p>
     `;
 
-    return emailShell(content, `Oferta ${data.offerNumber}: ${data.offerTitle} — ${data.totalPrice} PLN`);
+  return emailShell(content, `Oferta ${data.offerNumber}: ${data.offerTitle} — ${data.totalPrice} PLN`);
 }
 
 // ─── 3. UMOWA — EMAIL DO KLIENTA ─────────────────────────────
 
 export function generateContractEmail(data: ContractEmailData): string {
-    // data.portalUrl powinno być: https://wlasniewski.pl/konto
-    const content = `
+  // data.portalUrl powinno być: https://wlasniewski.pl/konto
+  const content = `
       <div style="display:inline-block;background:rgba(74,222,128,0.08);border:1px solid rgba(74,222,128,0.25);border-radius:6px;padding:6px 14px;margin-bottom:20px;">
         <span style="color:#4ade80;font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;">📄 Umowa gotowa · ${data.contractNumber}</span>
       </div>
 
       ${heading(`Cześć, ${data.clientName}!`)}
-      ${subtext(`Twoja umowa do oferty <strong style="color:#f5f5f5;">${data.offerTitle}</strong> jest gotowa. Możesz ją przejrzeć i pobrać w swoim panelu klienta. Umowa w formacie PDF znajduje się w załączniku do tej wiadomości.`)}
+      ${subtext(`Twoja umowa do oferty <strong style="color:#f5f5f5;">${data.offerTitle}</strong> jest gotowa. Możesz ją przejrzeć i pobrać w swoim panelu klienta.${data.hasPdf ? ' Umowa w formacie PDF znajduje się w załączniku do tej wiadomości.' : ''}`)}
 
       ${infoBox(`
         <div style="color:#888;font-size:11px;text-transform:uppercase;letter-spacing:2px;margin-bottom:16px;">Szczegóły umowy</div>
@@ -313,14 +317,14 @@ export function generateContractEmail(data: ContractEmailData): string {
       <p style="color:#555;font-size:12px;text-align:center;margin:0;">Masz pytania do umowy? Odpowiedz na tego maila lub zadzwoń: <a href="tel:+48530788694" style="color:#c5a059;text-decoration:none;">530 788 694</a></p>
     `;
 
-    return emailShell(content, `Umowa ${data.contractNumber} gotowa do podpisania`);
+  return emailShell(content, `Umowa ${data.contractNumber} gotowa do podpisania`);
 }
 
 // ─── 4. GALERIA — EMAIL DO KLIENTA ───────────────────────────
 
 export function generateGalleryEmail(data: GalleryEmailData): string {
-    // data.galleryUrl powinno być: https://wlasniewski.pl/galeria/[accessCode]
-    const content = `
+  // data.galleryUrl powinno być: https://wlasniewski.pl/galeria/[accessCode]
+  const content = `
       <div style="display:inline-block;background:rgba(197,160,89,0.1);border:1px solid rgba(197,160,89,0.3);border-radius:6px;padding:6px 14px;margin-bottom:20px;">
         <span style="color:#c5a059;font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;">🖼️ Twoja Galeria jest gotowa!</span>
       </div>
@@ -357,16 +361,16 @@ export function generateGalleryEmail(data: GalleryEmailData): string {
       <p style="color:#555;font-size:12px;text-align:center;margin:0;">Masz pytania? Odpowiedz na tego maila lub zadzwoń: <a href="tel:+48530788694" style="color:#c5a059;text-decoration:none;">530 788 694</a></p>
     `;
 
-    return emailShell(content, `Twoja galeria zdjęć jest gotowa! Kod: ${data.accessCode}`);
+  return emailShell(content, `Twoja galeria zdjęć jest gotowa! Kod: ${data.accessCode}`);
 }
 
 // ─── 5. REZERWACJA — POTWIERDZENIE (KLIENT) ──────────────────
 
 export function generateClientEmail(data: BookingEmailData): string {
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL || 'https://wlasniewski.pl';
-    const hasDiscount = data.originalPrice && data.originalPrice > data.price;
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL || 'https://wlasniewski.pl';
+  const hasDiscount = data.originalPrice && data.originalPrice > data.price;
 
-    const content = `
+  const content = `
       ${heading(`Cześć, ${data.clientName}! 👋`)}
       ${subtext('Dziękuję za zaufanie i rezerwację sesji fotograficznej! Otrzymałem Twoje zgłoszenie i wkrótce skontaktuję się z Tobą, aby potwierdzić wszystkie szczegóły.')}
 
@@ -400,14 +404,14 @@ export function generateClientEmail(data: BookingEmailData): string {
       <p style="color:#555;font-size:12px;text-align:center;margin:16px 0 0;">Lub zaloguj się do panelu: <a href="${appUrl}/konto" style="color:#c5a059;">${appUrl}/konto</a></p>
     `;
 
-    return emailShell(content, `Rezerwacja przyjęta: ${data.service} · ${data.date}`);
+  return emailShell(content, `Rezerwacja przyjęta: ${data.service} · ${data.date}`);
 }
 
 // ─── 6. REZERWACJA — POTWIERDZONA (KLIENT) ───────────────────
 
 export function generateBookingConfirmedEmail(data: BookingEmailData): string {
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL || 'https://wlasniewski.pl';
-    const content = `
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL || 'https://wlasniewski.pl';
+  const content = `
       <div style="text-align:center;margin-bottom:24px;">
         <div style="display:inline-block;background:rgba(74,222,128,0.1);border:2px solid rgba(74,222,128,0.4);border-radius:50%;width:64px;height:64px;line-height:64px;font-size:28px;">✅</div>
       </div>
@@ -433,16 +437,16 @@ export function generateBookingConfirmedEmail(data: BookingEmailData): string {
       <p style="color:#555;font-size:12px;text-align:center;margin:16px 0 0;">Panel klienta: <a href="${appUrl}/konto" style="color:#c5a059;">${appUrl}/konto</a></p>
     `;
 
-    return emailShell(content, `Rezerwacja potwierdzona: ${data.service} · ${data.date}`);
+  return emailShell(content, `Rezerwacja potwierdzona: ${data.service} · ${data.date}`);
 }
 
 // ─── 7. REZERWACJA — ADMIN ───────────────────────────────────
 
 export function generateAdminEmail(data: BookingEmailData): string {
-    const hasDiscount = data.originalPrice && data.originalPrice > data.price;
-    const adminUrl = `${process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL || 'https://wlasniewski.pl'}/admin/bookings`;
+  const hasDiscount = data.originalPrice && data.originalPrice > data.price;
+  const adminUrl = `${process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL || 'https://wlasniewski.pl'}/admin/bookings`;
 
-    const content = `
+  const content = `
       <div style="display:inline-block;background:rgba(74,222,128,0.08);border:1px solid rgba(74,222,128,0.25);border-radius:6px;padding:6px 14px;margin-bottom:20px;">
         <span style="color:#4ade80;font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;">🎉 Nowa Rezerwacja!</span>
       </div>
@@ -494,24 +498,24 @@ export function generateAdminEmail(data: BookingEmailData): string {
       ${ctaButton('👉 Zarządzaj rezerwacją', adminUrl, '#4ade80')}
     `;
 
-    return emailShell(content, `Nowa rezerwacja: ${data.clientName} · ${data.service} · ${data.date}`);
+  return emailShell(content, `Nowa rezerwacja: ${data.clientName} · ${data.service} · ${data.date}`);
 }
 
 // ─── 8. CHALLENGE — ZAPROSZENIE ──────────────────────────────
 
 interface ChallengeEmailData {
-    inviterName: string;
-    inviteeName: string;
-    inviterEmail?: string;
-    inviteeEmail?: string;
-    link: string;
-    packageName: string;
-    locationName?: string;
-    dates?: string[];
+  inviterName: string;
+  inviteeName: string;
+  inviterEmail?: string;
+  inviteeEmail?: string;
+  link: string;
+  packageName: string;
+  locationName?: string;
+  dates?: string[];
 }
 
 export function generateChallengeInviteEmail(data: ChallengeEmailData): string {
-    const content = `
+  const content = `
       <div style="display:inline-block;background:rgba(197,160,89,0.1);border:1px solid rgba(197,160,89,0.3);border-radius:6px;padding:6px 14px;margin-bottom:20px;">
         <span style="color:#c5a059;font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;">📸 Foto Wyzwanie!</span>
       </div>
@@ -530,11 +534,11 @@ export function generateChallengeInviteEmail(data: ChallengeEmailData): string {
       ${ctaButton('👉 Zobacz i zaakceptuj wyzwanie', data.link)}
     `;
 
-    return emailShell(content, `${data.inviterName} zaprasza Cię na sesję fotograficzną!`);
+  return emailShell(content, `${data.inviterName} zaprasza Cię na sesję fotograficzną!`);
 }
 
 export function generateChallengeCreatedEmail(data: ChallengeEmailData): string {
-    const content = `
+  const content = `
       ${heading(`Cześć, ${data.inviterName}!`)}
       ${subtext(`Twoje wyzwanie dla <strong style="color:#f5f5f5;">${data.inviteeName}</strong> zostało utworzone. Wysłaliśmy zaproszenie na podany adres e-mail.`)}
 
@@ -546,11 +550,11 @@ export function generateChallengeCreatedEmail(data: ChallengeEmailData): string 
       ${ctaButton('📊 Sprawdź status wyzwania', data.link)}
     `;
 
-    return emailShell(content, `Wyzwanie dla ${data.inviteeName} zostało wysłane`);
+  return emailShell(content, `Wyzwanie dla ${data.inviteeName} zostało wysłane`);
 }
 
 export function generateChallengeAcceptedEmail(data: ChallengeEmailData): string {
-    const content = `
+  const content = `
       <div style="text-align:center;margin-bottom:24px;">
         <div style="display:inline-block;background:rgba(74,222,128,0.1);border:2px solid rgba(74,222,128,0.4);border-radius:50%;width:64px;height:64px;line-height:64px;font-size:28px;">🎉</div>
       </div>
@@ -561,13 +565,13 @@ export function generateChallengeAcceptedEmail(data: ChallengeEmailData): string
       ${ctaButton('📊 Zobacz szczegóły', data.link)}
     `;
 
-    return emailShell(content, `${data.inviteeName} zaakceptował zaproszenie na sesję!`);
+  return emailShell(content, `${data.inviteeName} zaakceptował zaproszenie na sesję!`);
 }
 
 // ─── 9. RESET HASŁA ──────────────────────────────────────────
 
 export function generatePasswordResetEmail(data: { name: string; resetLink: string }): string {
-    const content = `
+  const content = `
       ${heading(`Cześć, ${data.name}!`)}
       ${subtext('Otrzymałem prośbę o zresetowanie hasła do Twojego konta w panelu klienta. Jeśli to Ty — kliknij poniższy przycisk.')}
 
@@ -585,5 +589,5 @@ export function generatePasswordResetEmail(data: { name: string; resetLink: stri
       `, '#333')}
     `;
 
-    return emailShell(content, `Reset hasła dla ${data.name}`);
+  return emailShell(content, `Reset hasła dla ${data.name}`);
 }

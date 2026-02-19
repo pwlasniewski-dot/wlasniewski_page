@@ -64,6 +64,7 @@ export default function EditOfferPage({ params }: { params: Promise<{ id: string
         <OfferBuilder
             offerId={parseInt(id)}
             initialData={initialBuilderData}
+            offerStatus={offer.status}
         />
     );
 }

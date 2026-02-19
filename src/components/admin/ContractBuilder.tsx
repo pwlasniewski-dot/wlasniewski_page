@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useReactToPrint } from 'react-to-print';
 import {
     Printer, Save, FileCheck, Cloud, Share2, Mail, X, ArrowLeft,
-    Bold, Italic, List, Heading1, Heading2, Heading3, Type, Eye, EyeOff, Plus
+    Bold, Italic, List, Heading1, Heading2, Heading3, Type, Eye, EyeOff, Plus, FileEdit
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -21,6 +21,7 @@ interface ContractData {
     totalPrice: string;
     content: string; // The legal markdown/HTML
     signedAt: string | null;
+    signature: string; // Added signature field
 }
 
 const DEFAULT_CONTRACT_TEMPLATE = `
@@ -63,7 +64,8 @@ export default function ContractBuilder() {
         packageDetails: '',
         totalPrice: '0',
         content: DEFAULT_CONTRACT_TEMPLATE,
-        signedAt: null
+        signedAt: null,
+        signature: 'Przemysław Właśniewski'
     });
 
     const [isSaving, setIsSaving] = useState(false);
@@ -160,6 +162,11 @@ export default function ContractBuilder() {
     });
 
     const handleSave = async () => {
+        if (!data.signature || data.signature.length < 5) {
+            toast.error('Proszę złożyć czytelny podpis Wykonawcy!');
+            return;
+        }
+
         setIsSaving(true);
         try {
             const token = localStorage.getItem('admin_token');
@@ -317,6 +324,23 @@ export default function ContractBuilder() {
                         className="w-full h-full bg-zinc-900 text-zinc-200 p-8 resize-none outline-none font-mono text-sm leading-relaxed"
                         placeholder="Zacznij pisać treść umowy..."
                     />
+
+                    {/* Signature Panel */}
+                    <div className="absolute bottom-0 left-0 right-0 bg-zinc-900/95 backdrop-blur border-t border-zinc-800 p-6 flex flex-col gap-4">
+                        <div>
+                            <label className="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-2">
+                                <FileEdit size={14} className="text-yellow-500" />
+                                Twój Podpis Klawiaturowy (Obowiązkowy)
+                            </label>
+                            <input
+                                type="text"
+                                placeholder="Wpisz Imię i Nazwisko Wykonawcy"
+                                value={data.signature}
+                                onChange={e => setData(prev => ({ ...prev, signature: e.target.value }))}
+                                className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-3 text-white font-serif italic text-xl outline-none focus:border-yellow-500 transition shadow-inner"
+                            />
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -331,16 +355,22 @@ export default function ContractBuilder() {
                             {replacedContent}
                         </div>
 
-                        <div className="mt-[50mm] flex justify-between border-t border-black pt-4 italic text-sm">
-                            <div className="w-1/3">
-                                <p>Podpis Wykonawcy</p>
-                                <div className="h-20"></div>
-                                <p className="font-bold">Przemysław Właśniewski</p>
+                        <div className="mt-[60mm] flex justify-between gap-12 pt-8">
+                            <div className="w-1/2 flex flex-col items-center">
+                                <div className="w-full h-32 border-b border-zinc-300 flex items-end justify-center pb-4">
+                                    <span className="font-serif italic text-2xl text-zinc-800 opacity-90 select-none">
+                                        {data.signature || '...........................................'}
+                                    </span>
+                                </div>
+                                <p className="mt-4 font-bold text-center">Przemysław Właśniewski</p>
+                                <p className="text-[9pt] text-zinc-500 uppercase tracking-widest mt-1">Wykonawca</p>
                             </div>
-                            <div className="w-1/3 text-right">
-                                <p>Podpis Zleceniodawcy</p>
-                                <div className="h-20 border-b border-dashed border-black/20"></div>
-                                <p className="font-bold">{data.clientName}</p>
+                            <div className="w-1/2 flex flex-col items-center">
+                                <div className="w-full h-32 border-b-2 border-zinc-800 flex items-end justify-center pb-2">
+                                    <span className="text-[8pt] text-zinc-400 italic">Podpis czytelny Zleceniodawcy</span>
+                                </div>
+                                <p className="mt-4 font-bold text-center">{data.clientName || '...........................................'}</p>
+                                <p className="text-[9pt] text-zinc-500 uppercase tracking-widest mt-1">Zleceniodawca</p>
                             </div>
                         </div>
                     </div>

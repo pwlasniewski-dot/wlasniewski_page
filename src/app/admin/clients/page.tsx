@@ -139,7 +139,7 @@ function ClientsContent() {
     const [sortField, setSortField] = useState<string>('created_at');
     const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
     const [filterOffer, setFilterOffer] = useState<string>('all');
-    const [newClient, setNewClient] = useState({ name: '', email: '', phone: '', password: '' });
+    const [newClient, setNewClient] = useState({ name: '', email: '', phone: '' });
     const [rodoClient, setRodoClient] = useState<Client | null>(null);
     const [rodoLoading, setRodoLoading] = useState(false);
 
@@ -174,7 +174,7 @@ function ClientsContent() {
             if (res.ok) {
                 toast.success('Klient utworzony');
                 setShowCreateModal(false);
-                setNewClient({ name: '', email: '', phone: '', password: '' });
+                setNewClient({ name: '', email: '', phone: '' });
                 fetchClients();
             } else {
                 toast.error(data.error || 'Błąd tworzenia klienta');
@@ -319,7 +319,7 @@ function ClientsContent() {
                                         Galeria
                                     </th>
                                     <th className="px-4 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider cursor-pointer hover:text-zinc-300" onClick={() => toggleSort('totalSpent')}>
-                                        Kwota <SortIcon field="totalSpent" />
+                                        Wydane (LTV) <SortIcon field="totalSpent" />
                                     </th>
                                     <th className="px-4 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">
                                         Sesja
@@ -527,7 +527,6 @@ function ClientsContent() {
                                         { label: 'Imię i Nazwisko', key: 'name', type: 'text', placeholder: 'Jan Kowalski', required: true },
                                         { label: 'Email', key: 'email', type: 'email', placeholder: 'jan@example.com', required: true },
                                         { label: 'Telefon', key: 'phone', type: 'tel', placeholder: '+48 123 456 789', required: false },
-                                        { label: 'Hasło startowe', key: 'password', type: 'password', placeholder: 'Minimum 6 znaków', required: true },
                                     ].map(f => (
                                         <div key={f.key}>
                                             <label className="block text-sm text-zinc-400 mb-1">{f.label}</label>
@@ -541,7 +540,10 @@ function ClientsContent() {
                                             />
                                         </div>
                                     ))}
-                                    <p className="text-xs text-zinc-500">Klient otrzyma e-mail powitalny. Hasło przekaż bezpiecznym kanałem.</p>
+                                    <div className="bg-amber-900/20 border border-amber-700/30 rounded-lg p-3">
+                                        <p className="text-xs text-amber-400 font-medium">🔐 Klient sam ustawi hasło</p>
+                                        <p className="text-xs text-zinc-500 mt-1">Po utworzeniu konta, klient otrzyma email z linkiem do ustawienia własnego hasła. Nie musisz go przekazywać.</p>
+                                    </div>
                                 </div>
                                 <div className="p-6 border-t border-zinc-800 flex justify-end gap-3">
                                     <button type="button" onClick={() => setShowCreateModal(false)} className="px-4 py-2 text-zinc-400 hover:text-white transition-colors font-medium text-sm">

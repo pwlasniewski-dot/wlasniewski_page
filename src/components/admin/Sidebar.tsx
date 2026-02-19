@@ -66,7 +66,7 @@ const navigation = [
     { name: 'Zapytania', href: '/admin/inquiries', icon: MessageSquare },
     { name: 'Klienci (CRM)', href: '/admin/clients', icon: Users },
     { name: 'Administratorzy', href: '/admin/users', icon: Shield },
-    { name: 'Generator Ofert i Umów', href: '/admin/generator-ofert-umow', icon: FileText },
+
     { name: 'Analityka', href: '/admin/analytics', icon: BarChart3 },
     { name: 'Logi', href: '/admin/logs', icon: List },
     { name: 'Stopka', href: '/admin/footer', icon: FileText },

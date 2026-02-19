@@ -27,7 +27,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             const [
                 orders,
                 bookings,
-                clientGalleries,
+                galleriesById,
+                galleriesByEmail,
                 assignedGalleries,
                 basket,
                 offersById,
@@ -44,6 +45,14 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
                 }).catch(() => []),
                 prisma.clientGallery.findMany({
                     where: { client_id: userId },
+                    orderBy: { created_at: 'desc' },
+                    include: { photos: { take: 1 } }
+                }).catch(() => []),
+                prisma.clientGallery.findMany({
+                    where: {
+                        client_email: clientEmail,
+                        client_id: null // Only those not already linked strictly to THIS ID to avoid obvious overlap, though we deduplicate anyway
+                    },
                     orderBy: { created_at: 'desc' },
                     include: { photos: { take: 1 } }
                 }).catch(() => []),
@@ -76,11 +85,15 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             const allOffers = [...offersById, ...offersByEmail]
                 .filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
 
+            // Deduplicate galleries
+            const allGalleries = [...galleriesById, ...galleriesByEmail]
+                .filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
+
             const fullClient = {
                 ...client,
                 orders,
                 assigned_bookings: bookings,
-                client_galleries: clientGalleries,
+                client_galleries: allGalleries,
                 assigned_galleries: assignedGalleries,
                 baskets: basket ? [basket] : [],
                 offers: allOffers
@@ -102,7 +115,19 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
             const userId = parseInt(id);
             const body = await req.json();
 
-            // Fetch current user to check for email change
+            // --- Permissions-only update ---
+            if (body.permissions !== undefined) {
+                if (typeof body.permissions !== 'object' || Array.isArray(body.permissions)) {
+                    return NextResponse.json({ error: 'Invalid permissions object' }, { status: 400 });
+                }
+                await prisma.$executeRaw`
+                    UPDATE users SET permissions = ${JSON.stringify(body.permissions)}::jsonb WHERE id = ${userId}
+                `;
+                await logSystem('INFO', 'SYSTEM', `Updated permissions for client #${userId}`, { permissions: body.permissions });
+                return NextResponse.json({ success: true, permissions: body.permissions });
+            }
+
+            // --- Profile update ---
             const currentUser = await prisma.user.findUnique({
                 where: { id: userId },
                 select: { email: true }
@@ -130,18 +155,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
                 if (emailChanged) {
                     console.log(`[CRM] Email changed from ${currentUser.email} to ${body.email}. Syncing records...`);
-
-                    // Update Offers
-                    await tx.offer.updateMany({
-                        where: { client_id: userId },
-                        data: { client_email: body.email }
-                    });
-
-                    // Update Galleries
-                    await tx.clientGallery.updateMany({
-                        where: { client_id: userId },
-                        data: { client_email: body.email }
-                    });
+                    await tx.offer.updateMany({ where: { client_id: userId }, data: { client_email: body.email } });
+                    await tx.clientGallery.updateMany({ where: { client_id: userId }, data: { client_email: body.email } });
                 }
 
                 return updated;
@@ -149,8 +164,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
             return NextResponse.json({ success: true, client: updatedClient });
         } catch (error) {
-            console.error('Update client details error:', error);
-            return NextResponse.json({ error: 'Failed to update details' }, { status: 500 });
+            console.error('Update client error:', error);
+            return NextResponse.json({ error: 'Failed to update' }, { status: 500 });
         }
     });
 }

@@ -7,7 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import {
     User, Calendar, Image as ImageIcon,
     FileText, Shield, Trash2, ExternalLink, RefreshCw,
-    ChevronLeft, Save, Mail, MapPin, Phone, Edit, Plus
+    ChevronLeft, Save, Mail, MapPin, Phone, Edit, Plus, Lock, CheckCircle2
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import GalleryAdmin from '@/components/admin/GalleryAdmin';
@@ -38,6 +38,7 @@ interface ClientDetails {
     client_galleries: any[]; // New field
     contracts: any[];
     baskets: any[];
+    permissions?: Record<string, boolean> | null;
 }
 
 function ClientDetailsContent({ id }: { id: string }) {
@@ -45,8 +46,12 @@ function ClientDetailsContent({ id }: { id: string }) {
     const searchParams = useSearchParams();
     const [client, setClient] = useState<ClientDetails | null>(null);
     const [loading, setLoading] = useState(true);
-    const tabFromUrl = searchParams.get('tab') as 'overview' | 'galleries' | 'offers' | 'contracts' | 'settings' | null;
-    const [activeTab, setActiveTab] = useState<'overview' | 'galleries' | 'offers' | 'contracts' | 'settings'>(tabFromUrl || 'overview');
+    const tabFromUrl = searchParams.get('tab') as 'overview' | 'galleries' | 'offers' | 'contracts' | 'settings' | 'permissions' | null;
+    const [activeTab, setActiveTab] = useState<'overview' | 'galleries' | 'offers' | 'contracts' | 'settings' | 'permissions'>(tabFromUrl || 'overview');
+    const [permissions, setPermissions] = useState<Record<string, boolean>>({
+        galleries: true, offers: true, contracts: true, bookings: true, gift_cards: true
+    });
+    const [isSavingPerms, setIsSavingPerms] = useState(false);
     const [editingGalleryId, setEditingGalleryId] = useState<number | null>(null);
     const [isCreatingGallery, setIsCreatingGallery] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
@@ -87,6 +92,10 @@ function ClientDetailsContent({ id }: { id: string }) {
                     postal_code: data.client.postal_code || '',
                     is_active: data.client.is_active ?? true
                 });
+                // Load persisted permissions or default all to true
+                if (data.client.permissions && typeof data.client.permissions === 'object') {
+                    setPermissions({ galleries: true, offers: true, contracts: true, bookings: true, gift_cards: true, ...data.client.permissions });
+                }
             } else {
                 toast.error('Nie znaleziono klienta');
                 router.push('/admin/clients');
@@ -172,6 +181,28 @@ function ClientDetailsContent({ id }: { id: string }) {
         }
     };
 
+    const handleSavePermissions = async () => {
+        if (!client) return;
+        try {
+            setIsSavingPerms(true);
+            const token = localStorage.getItem('admin_token');
+            const res = await fetch(`/api/admin/clients/${client.id}`, {
+                method: 'PATCH',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ permissions })
+            });
+            if (res.ok) {
+                toast.success('Uprawnienia zapisane');
+            } else {
+                toast.error('Błąd zapisu uprawnień');
+            }
+        } catch {
+            toast.error('Błąd połączenia');
+        } finally {
+            setIsSavingPerms(false);
+        }
+    };
+
     if (loading) {
         return (
             <div className="min-h-screen bg-zinc-950 flex items-center justify-center text-zinc-500">
@@ -226,6 +257,7 @@ function ClientDetailsContent({ id }: { id: string }) {
                             { id: 'offers', label: `Oferty (${client.offers?.length || 0})`, icon: Calendar },
                             { id: 'contracts', label: `Umowy (${client.contracts?.length || 0})`, icon: FileText },
                             { id: 'settings', label: 'Edycja Danych', icon: Edit },
+                            { id: 'permissions', label: 'Dostęp Klienta', icon: Lock },
                         ].map((tab) => (
                             <button
                                 key={tab.id}
@@ -526,8 +558,17 @@ function ClientDetailsContent({ id }: { id: string }) {
                                         </div>
                                         <div className="flex items-center gap-8">
                                             <div className="text-right">
-                                                <p className="text-2xl font-bold text-white">{offer.total_price.toLocaleString()} PLN</p>
-                                                <p className="text-xs uppercase font-bold text-zinc-500 tracking-wider">Wartość</p>
+                                                {offer.status === 'accepted' ? (
+                                                    <>
+                                                        <p className="text-2xl font-bold text-white">{offer.total_price.toLocaleString()} PLN</p>
+                                                        <p className="text-xs uppercase font-bold text-zinc-500 tracking-wider">Wartość</p>
+                                                    </>
+                                                ) : (
+                                                    <div className="flex flex-col items-end">
+                                                        <span className="text-xs font-bold text-zinc-500 uppercase">Wartość</span>
+                                                        <span className="text-sm font-bold text-zinc-400">Po zatwierdzeniu</span>
+                                                    </div>
+                                                )}
                                             </div>
                                             <div className="flex gap-2">
                                                 <NextLink href={`/admin/offers/${offer.id}`} className="p-3 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-white border border-zinc-700 hover:border-zinc-500 transition-all">
@@ -672,6 +713,48 @@ function ClientDetailsContent({ id }: { id: string }) {
                                 </div>
                             </div>
                         </div>
+                    </div>
+                )}
+
+                {/* PERMISSIONS TAB */}
+                {activeTab === 'permissions' && (
+                    <div className="max-w-lg">
+                        <div className="mb-8">
+                            <h2 className="text-2xl font-bold mb-2 flex items-center gap-2"><Lock className="w-6 h-6 text-gold-500" /> Dostęp Klienta do Portalu</h2>
+                            <p className="text-zinc-500 text-sm">Włącz lub wyłącz dostęp do poszczególnych sekcji portalu klienta. Wyłączone sekcje nie będą widoczne jako zakładki dla klienta.</p>
+                        </div>
+
+                        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl divide-y divide-zinc-800 mb-6">
+                            {[
+                                { key: 'galleries', label: 'Galerie i Zdjęcia', desc: 'Dostęp do galerii i wyzwań fotograficznych' },
+                                { key: 'offers', label: 'Oferty', desc: 'Przeglądanie i akceptowanie ofert' },
+                                { key: 'contracts', label: 'Umowy', desc: 'Podgląd i podpisywanie umów' },
+                                { key: 'bookings', label: 'Rezerwacje', desc: 'Historia rezerwacji i terminów sesji' },
+                                { key: 'gift_cards', label: 'Karty Podarunkowe', desc: 'Portfel kart podarunkowych' },
+                            ].map(({ key, label, desc }) => (
+                                <div key={key} className="flex items-center justify-between p-5">
+                                    <div>
+                                        <p className="font-medium text-white">{label}</p>
+                                        <p className="text-xs text-zinc-500 mt-0.5">{desc}</p>
+                                    </div>
+                                    <button
+                                        onClick={() => setPermissions(prev => ({ ...prev, [key]: !prev[key] }))}
+                                        className={`w-12 h-6 rounded-full transition-colors relative flex-shrink-0 ${permissions[key] !== false ? 'bg-gold-500' : 'bg-zinc-700'}`}
+                                    >
+                                        <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${permissions[key] !== false ? 'translate-x-6' : 'translate-x-0.5'}`} />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+
+                        <button
+                            onClick={handleSavePermissions}
+                            disabled={isSavingPerms}
+                            className="flex items-center gap-2 px-6 py-3 bg-gold-600 hover:bg-gold-500 disabled:bg-zinc-700 text-black font-bold rounded-xl transition-all"
+                        >
+                            {isSavingPerms ? <RefreshCw className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                            Zapisz uprawnienia
+                        </button>
                     </div>
                 )}
             </div>

@@ -235,12 +235,7 @@ export async function POST(
                             <!-- Content Injection -->
                             ${offerSummaryHtml}
 
-                            <!-- Footer Price -->
-                            <div class="total-price">
-                                <div class="total-label">Inwestycja (Pakiet Rekomendowany):</div>
-                                <div class="total-amount">${offer.total_price} PLN</div>
-                                <div style="font-size: 11px; color: #999;">Podane kwoty są kwotami brutto.</div>
-                            </div>
+
 
                             <!-- PDF Call to Action (Conditional) -->
                             ${offer.pdf_url ? `

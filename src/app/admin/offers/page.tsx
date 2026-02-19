@@ -1,5 +1,5 @@
-import OffersList from '@/components/admin/offers/OffersList';
+import { redirect } from 'next/navigation';
 
 export default function OffersPage() {
-    return <OffersList />;
+    redirect('/admin/clients');
 }

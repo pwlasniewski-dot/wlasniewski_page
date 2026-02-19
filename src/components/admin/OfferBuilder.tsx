@@ -180,9 +180,10 @@ interface OfferBuilderProps {
     initialData?: Partial<OfferData>;
     onSave?: (data: OfferData) => Promise<void>;
     saveButtonText?: string;
+    offerStatus?: string;
 }
 
-export default function OfferBuilder({ offerId, initialData, onSave, saveButtonText }: OfferBuilderProps = {}) {
+export default function OfferBuilder({ offerId, initialData, onSave, saveButtonText, offerStatus }: OfferBuilderProps = {}) {
     const searchParams = useSearchParams();
     const router = useRouter();
     const clientId = searchParams.get('client_id');
@@ -293,7 +294,7 @@ export default function OfferBuilder({ offerId, initialData, onSave, saveButtonT
             return;
         }
         if (lastSavedId) {
-            router.push('/admin/offers');
+            router.push('/admin/clients');
             return;
         }
         if (confirm('Czy na pewno chcesz anulować? Wszystkie niezapisane zmiany zostaną utracone.')) {
@@ -349,7 +350,7 @@ export default function OfferBuilder({ offerId, initialData, onSave, saveButtonT
                 if (clientId) {
                     window.location.href = `/admin/clients/${clientId}?tab=offers`;
                 } else {
-                    router.push('/admin/offers');
+                    router.push('/admin/clients');
                 }
             } else {
                 toast.error('Błąd podczas usuwania oferty.');
@@ -357,6 +358,43 @@ export default function OfferBuilder({ offerId, initialData, onSave, saveButtonT
         } catch (error) {
             console.error(error);
             toast.error('Błąd serwera.');
+        }
+    };
+
+    const handleUpdateStatus = async (newStatus: string) => {
+        if (!lastSavedId) {
+            alert('Najpierw zapisz ofertę!');
+            return;
+        }
+        setIsSaving(true);
+        try {
+            const token = localStorage.getItem('admin_token');
+            const res = await fetch(`/api/admin/offers/${lastSavedId}`, {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ status: newStatus })
+            });
+            if (res.ok) {
+                toast.success(`Status zmieniony`);
+                if (newStatus === 'pending') {
+                    // Wyślij powiadomienie
+                    await fetch(`/api/admin/offers/${lastSavedId}/send-email`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    toast.success('Powiadomienie email wysłane do klienta.');
+                }
+                setTimeout(() => window.location.reload(), 1500);
+            } else {
+                toast.error('Błąd zmiany statusu');
+            }
+        } catch (error) {
+            toast.error('Błąd serwera');
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -484,25 +522,39 @@ export default function OfferBuilder({ offerId, initialData, onSave, saveButtonT
     return (
         <div className={`flex flex-col lg:flex-row h-screen overflow-hidden ${isB2B ? 'bg-zinc-950 text-white' : 'bg-gray-100 text-gray-900'}`}>
             {/* LEFT: EDITOR */}
-            <div className={`w-full lg:w-5/12 border-r overflow-y-auto p-6 shadow-xl z-10 ${isB2B ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-gray-200'}`}>
-                <div className="flex items-center justify-between mb-6 border-b pb-4">
-                    <div>
-                        <h2 className={`text-xl font-bold ${isB2B ? 'text-white' : 'text-gray-900'}`}>Kreator Ofert</h2>
-                        <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded border ${isB2B ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 'bg-[#c5a059]/10 text-[#c5a059] border-[#c5a059]/20'}`}>
-                            TRYB {type.toUpperCase()}
-                        </span>
+            <div className={`w-full lg:w-7/12 border-r overflow-y-auto p-6 shadow-xl z-10 ${isB2B ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-gray-200'}`}>
+                <div className="flex flex-wrap items-center justify-between mb-6 border-b pb-4 gap-4">
+                    <div className="flex items-center gap-4">
+                        <div>
+                            <h2 className={`text-xl font-bold ${isB2B ? 'text-white' : 'text-gray-900'}`}>Kreator Ofert</h2>
+                            <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded border ${isB2B ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 'bg-[#c5a059]/10 text-[#c5a059] border-[#c5a059]/20'}`}>
+                                TRYB {type.toUpperCase()}
+                            </span>
+                        </div>
+                        {offerStatus && (
+                            <div className={`px-3 py-1 text-xs font-bold uppercase rounded-full border ${offerStatus === 'accepted' ? 'bg-green-500/10 text-green-500 border-green-500/20' :
+                                offerStatus === 'rejected' ? 'bg-red-500/10 text-red-500 border-red-500/20' :
+                                    offerStatus === 'pending' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
+                                        'bg-zinc-500/10 text-zinc-400 border-zinc-500/20'
+                                }`}>
+                                {offerStatus === 'draft' ? 'Szkic' :
+                                    offerStatus === 'pending' ? 'Oczekuje na klienta' :
+                                        offerStatus === 'accepted' ? 'Zaakceptowana' :
+                                            offerStatus === 'rejected' ? 'Odrzucona' : offerStatus}
+                            </div>
+                        )}
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                         <button
                             onClick={handleCancel}
-                            className="flex items-center gap-2 bg-zinc-200 text-zinc-700 hover:bg-zinc-300 px-4 py-2 rounded shadow transition font-bold"
+                            className="flex items-center justify-center gap-2 bg-zinc-200 text-zinc-700 hover:bg-zinc-300 px-4 py-2 rounded shadow transition font-bold whitespace-nowrap"
                         >
                             <X size={18} /> {lastSavedId ? 'Zamknij' : 'Anuluj'}
                         </button>
                         {lastSavedId && (
                             <button
-                                onClick={() => router.push('/admin/offers')}
-                                className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700 transition font-bold"
+                                onClick={() => router.push(clientId ? `/admin/clients/${clientId}` : '/admin/clients')}
+                                className="flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700 transition font-bold whitespace-nowrap"
                             >
                                 <Check size={18} /> Zakończ
                             </button>
@@ -511,14 +563,14 @@ export default function OfferBuilder({ offerId, initialData, onSave, saveButtonT
                         {lastSavedId && (
                             <button
                                 onClick={handleDelete}
-                                className="flex items-center gap-2 bg-red-600/10 text-red-500 hover:bg-red-600 hover:text-white px-3 py-2 rounded shadow transition font-bold border border-red-500/20"
+                                className="flex items-center justify-center gap-2 bg-red-600/10 text-red-500 hover:bg-red-600 hover:text-white px-3 py-2 rounded shadow transition font-bold border border-red-500/20 whitespace-nowrap"
                                 title="Usuń ofertę"
                             >
                                 <Trash2 size={18} />
                             </button>
                         )}
 
-                        <label className="flex items-center gap-2 cursor-pointer bg-zinc-200 dark:bg-zinc-800 px-3 py-2 rounded border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-700 transition" title="Włącz/Wyłącz negocjacje">
+                        <label className="flex items-center justify-center gap-2 cursor-pointer bg-zinc-200 dark:bg-zinc-800 px-3 py-2 rounded border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-700 transition whitespace-nowrap" title="Włącz/Wyłącz negocjacje">
                             <input
                                 type="checkbox"
                                 checked={data.negotiation_enabled ?? true}
@@ -534,6 +586,27 @@ export default function OfferBuilder({ offerId, initialData, onSave, saveButtonT
                         >
                             <Save size={18} /> {isSaving ? 'Zapisywanie...' : lastSavedId ? 'Aktualizuj' : 'Zapisz'}
                         </button>
+
+                        {/* Dynamic status buttons */}
+                        {lastSavedId && offerStatus === 'draft' && (
+                            <button
+                                onClick={() => handleUpdateStatus('pending')}
+                                disabled={isSaving}
+                                className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700 transition disabled:opacity-50 font-bold"
+                            >
+                                <Share2 size={18} /> Wyślij do zatwierdzenia
+                            </button>
+                        )}
+                        {lastSavedId && (offerStatus === 'rejected' || offerStatus === 'accepted') && (
+                            <button
+                                onClick={() => handleUpdateStatus('pending')}
+                                disabled={isSaving}
+                                className="flex items-center gap-2 bg-orange-600 text-white px-4 py-2 rounded shadow hover:bg-orange-700 transition disabled:opacity-50 font-bold"
+                            >
+                                <Share2 size={18} /> Wyślij ponownie
+                            </button>
+                        )}
+
                         {lastSavedId && (
                             <a
                                 href={`/strefa-klienta/oferty/${lastSavedId}`}
@@ -567,6 +640,26 @@ export default function OfferBuilder({ offerId, initialData, onSave, saveButtonT
                         <button onClick={() => handleAction('all')} className="flex items-center gap-1.5 bg-orange-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-orange-700 transition shadow-lg">
                             <FileCheck size={14} /> Wyślij Wszystko
                         </button>
+                    </div>
+                )}
+
+                {/* Explicit Admin Context Banner */}
+                {lastSavedId && offerStatus === 'draft' && (
+                    <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl flex items-start gap-3">
+                        <span className="text-amber-500 mt-0.5">⚠️</span>
+                        <div>
+                            <p className="text-amber-500 font-bold text-sm mb-1">Status: Szkic (Tylko do odczytu dla klienta)</p>
+                            <p className="text-amber-400/80 text-xs">Klient widzi tę ofertę pod linkiem, ale <b>nie ma możliwości</b> jej akceptacji, odrzucenia ani negocjacji. Użyj przycisku <span className="text-white">„Wyślij do zatwierdzenia”</span>, aby odblokować te opcje dla klienta.</p>
+                        </div>
+                    </div>
+                )}
+                {lastSavedId && offerStatus === 'pending' && (
+                    <div className="mb-6 p-4 bg-blue-500/10 border border-blue-500/30 rounded-xl flex items-start gap-3">
+                        <span className="text-blue-400 mt-0.5">📨</span>
+                        <div>
+                            <p className="text-blue-400 font-bold text-sm mb-1">Status: Oczekuje na decyzję</p>
+                            <p className="text-blue-300/80 text-xs">Klient ma pełny dostęp do oferty. Może ją przeglądać, akceptować pakiety (odblokowane przyciski), odrzucać lub przesyłać wiadomości w ramach negocjacji.</p>
+                        </div>
                     </div>
                 )}
 
@@ -865,7 +958,7 @@ export default function OfferBuilder({ offerId, initialData, onSave, saveButtonT
             </div>
 
             {/* RIGHT: PREVIEW (A4) */}
-            <div className="w-full lg:w-7/12 bg-gray-500 overflow-hidden relative flex flex-col items-center">
+            <div className="w-full lg:w-5/12 bg-gray-500 overflow-hidden relative flex flex-col items-center">
                 {/* Preview Toolbar */}
                 <div className="absolute top-4 z-20 bg-white rounded shadow-lg p-2 flex items-center gap-4 text-xs font-bold text-gray-700">
                     <span>Podgląd: {Math.round(scale * 100)}%</span>

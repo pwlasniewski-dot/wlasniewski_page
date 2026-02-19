@@ -1,0 +1,165 @@
+﻿ID: 737
+Message: Failed to fetch clients
+Metadata (Raw):
+{"error":"\nInvalid `prisma.user.findMany()` invocation:\n\n{\n  where: {\n    role: \"CLIENT\"\n  },\n  orderBy: {\n    created_at: \"desc\"\n  },\n  include: {\n    _count: {\n      select: {\n        orders: true,\n        assigned_bookings: true,\n        client_galleries: true,\n        ~~~~~~~~~~~~~~~~\n?       baskets?: true,\n?       assigned_galleries?: true,\n?       gift_cards?: true,\n?       packages?: true,\n?       payouts?: true,\n?       provider_availability?: true,\n?       offers?: true,\n?       contracts?: true\n      }\n    },\n    orders: {\n      select: {\n        amount_paid: true,\n        created_at: true\n      }\n    },\n    offers: {\n      select: {\n        id: true,\n        status: true,\n        total_price: true,\n        category: true,\n        type: true,\n        template_data: true,\n        created_at: true,\n        contract: {\n          select: {\n            id: true,\n            status: true,\n            signed_at: true\n          }\n        }\n      },\n      orderBy: {\n        created_at: \"desc\"\n      }\n    },\n    client_galleries: {\n      select: {\n        id: true,\n        standard_count: true,\n        photos: {\n          select: {\n            id: true\n          }\n        },\n        orders: {\n          select: {\n            id: true,\n            payment_status: true\n          }\n        }\n      }\n    }\n  }\n}\n\nUnknown field `client_galleries` for select statement on model `UserCountOutputType`. Available options are marked with ?.","stack":"PrismaClientValidationError: \nInvalid `prisma.user.findMany()` invocation:\n\n{\n  where: {\n    role: \"CLIENT\"\n  },\n  orderBy: {\n    created_at: \"desc\"\n  },\n  include: {\n    _count: {\n      select: {\n        orders: true,\n        assigned_bookings: true,\n        client_galleries: true,\n        ~~~~~~~~~~~~~~~~\n?       baskets?: true,\n?       assigned_galleries?: true,\n?       gift_cards?: true,\n?       packages?: true,\n?       payouts?: true,\n?       provider_availability?: true,\n?       offers?: true,\n?       contracts?: true\n      }\n    },\n    orders: {\n      select: {\n        amount_paid: true,\n        created_at: true\n      }\n    },\n    offers: {\n      select: {\n        id: true,\n        status: true,\n        total_price: true,\n        category: true,\n        type: true,\n        template_data: true,\n        created_at: true,\n        contract: {\n          select: {\n            id: true,\n            status: true,\n            signed_at: true\n          }\n        }\n      },\n      orderBy: {\n        created_at: \"desc\"\n      }\n    },\n    client_galleries: {\n      select: {\n        id: true,\n        standard_count: true,\n        photos: {\n          select: {\n            id: true\n          }\n        },\n        orders: {\n          select: {\n            id: true,\n            payment_status: true\n          }\n        }\n      }\n    }\n  }\n}\n\nUnknown field `client_galleries` for select statement on model `UserCountOutputType`. Available options are marked with ?.\n    at wn (/var/task/node_modules/@prisma/client/runtime/library.js:29:1363)\n    at $n.handleRequestError (/var/task/node_modules/@prisma/client/runtime/library.js:121:6958)\n    at $n.handleAndLogRequestError (/var/task/node_modules/@prisma/client/runtime/library.js:121:6623)\n    at $n.request (/var/task/node_modules/@prisma/client/runtime/library.js:121:6307)\n    at async l (/var/task/node_modules/@prisma/client/runtime/library.js:130:9633)\n    at async /var/task/.next/server/app/api/admin/clients/route.js:1:5990\n    at async rN.do (/var/task/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:5:21042)\n    at async rN.handle (/var/task/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:5:25860)\n    at async k (/var/task/.next/server/app/api/admin/clients/route.js:1:13047)\n    at async rN.handleResponse (/var/task/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:1:105568)"}
+--- ERROR STACK/DETAILS ---
+
+Invalid `prisma.user.findMany()` invocation:
+
+{
+  where: {
+    role: "CLIENT"
+  },
+  orderBy: {
+    created_at: "desc"
+  },
+  include: {
+    _count: {
+      select: {
+        orders: true,
+        assigned_bookings: true,
+        client_galleries: true,
+        ~~~~~~~~~~~~~~~~
+?       baskets?: true,
+?       assigned_galleries?: true,
+?       gift_cards?: true,
+?       packages?: true,
+?       payouts?: true,
+?       provider_availability?: true,
+?       offers?: true,
+?       contracts?: true
+      }
+    },
+    orders: {
+      select: {
+        amount_paid: true,
+        created_at: true
+      }
+    },
+    offers: {
+      select: {
+        id: true,
+        status: true,
+        total_price: true,
+        category: true,
+        type: true,
+        template_data: true,
+        created_at: true,
+        contract: {
+          select: {
+            id: true,
+            status: true,
+            signed_at: true
+          }
+        }
+      },
+      orderBy: {
+        created_at: "desc"
+      }
+    },
+    client_galleries: {
+      select: {
+        id: true,
+        standard_count: true,
+        photos: {
+          select: {
+            id: true
+          }
+        },
+        orders: {
+          select: {
+            id: true,
+            payment_status: true
+          }
+        }
+      }
+    }
+  }
+}
+
+Unknown field `client_galleries` for select statement on model `UserCountOutputType`. Available options are marked with ?.
+PrismaClientValidationError: 
+Invalid `prisma.user.findMany()` invocation:
+
+{
+  where: {
+    role: "CLIENT"
+  },
+  orderBy: {
+    created_at: "desc"
+  },
+  include: {
+    _count: {
+      select: {
+        orders: true,
+        assigned_bookings: true,
+        client_galleries: true,
+        ~~~~~~~~~~~~~~~~
+?       baskets?: true,
+?       assigned_galleries?: true,
+?       gift_cards?: true,
+?       packages?: true,
+?       payouts?: true,
+?       provider_availability?: true,
+?       offers?: true,
+?       contracts?: true
+      }
+    },
+    orders: {
+      select: {
+        amount_paid: true,
+        created_at: true
+      }
+    },
+    offers: {
+      select: {
+        id: true,
+        status: true,
+        total_price: true,
+        category: true,
+        type: true,
+        template_data: true,
+        created_at: true,
+        contract: {
+          select: {
+            id: true,
+            status: true,
+            signed_at: true
+          }
+        }
+      },
+      orderBy: {
+        created_at: "desc"
+      }
+    },
+    client_galleries: {
+      select: {
+        id: true,
+        standard_count: true,
+        photos: {
+          select: {
+            id: true
+          }
+        },
+        orders: {
+          select: {
+            id: true,
+            payment_status: true
+          }
+        }
+      }
+    }
+  }
+}
+
+Unknown field `client_galleries` for select statement on model `UserCountOutputType`. Available options are marked with ?.
+    at wn (/var/task/node_modules/@prisma/client/runtime/library.js:29:1363)
+    at $n.handleRequestError (/var/task/node_modules/@prisma/client/runtime/library.js:121:6958)
+    at $n.handleAndLogRequestError (/var/task/node_modules/@prisma/client/runtime/library.js:121:6623)
+    at $n.request (/var/task/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at async l (/var/task/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at async /var/task/.next/server/app/api/admin/clients/route.js:1:5990
+    at async rN.do (/var/task/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:5:21042)
+    at async rN.handle (/var/task/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:5:25860)
+    at async k (/var/task/.next/server/app/api/admin/clients/route.js:1:13047)
+    at async rN.handleResponse (/var/task/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:1:105568)

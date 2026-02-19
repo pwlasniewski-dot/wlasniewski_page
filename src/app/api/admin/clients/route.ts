@@ -170,54 +170,67 @@ export async function POST(request: NextRequest) {
     return withAuth(request, async (req) => {
         try {
             const body = await req.json();
-            const { name, email, phone, password } = body;
+            const { name, email, phone } = body;
 
-            if (!name || !email || !password) {
-                return NextResponse.json({ error: 'Name, email and password are required' }, { status: 400 });
+            if (!name || !email) {
+                return NextResponse.json({ error: 'Name and email are required' }, { status: 400 });
             }
 
             // Check if email already exists
-            const existingUser = await prisma.user.findUnique({
-                where: { email }
-            });
-
+            const existingUser = await prisma.user.findUnique({ where: { email } });
             if (existingUser) {
                 return NextResponse.json({ error: 'User with this email already exists' }, { status: 400 });
             }
 
-            // Hash password
-            const password_hash = await bcrypt.hash(password, 10);
+            // Generate a secure one-time token for password setup
+            const { randomBytes } = await import('crypto');
+            const resetToken = randomBytes(32).toString('hex');
+            const resetTokenExpires = new Date(Date.now() + 72 * 60 * 60 * 1000); // 72 hours
 
-            // Create client user
+            // Create client user with a locked placeholder password (they'll set their own)
+            const placeholderHash = await bcrypt.hash(`LOCKED_${resetToken}_${Date.now()}`, 10);
+
             const user = await prisma.user.create({
                 data: {
                     name,
                     email,
                     phone,
-                    password_hash,
-                    role: 'CLIENT'
+                    password_hash: placeholderHash,
+                    role: 'CLIENT',
+                    reset_token: resetToken,
+                    reset_token_expires: resetTokenExpires,
                 }
             });
 
-            // Send welcome email (without password — security best practice)
+            // Set default full permissions for admin-created clients
+            const defaultPerms = JSON.stringify({ galleries: true, offers: true, contracts: true, bookings: true, gift_cards: true });
+            await prisma.$executeRawUnsafe(
+                `UPDATE users SET permissions = $1::jsonb WHERE id = $2`,
+                defaultPerms,
+                user.id
+            );
+
+            // Build the password-setup link
+            const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://wlasniewski.pl';
+            const setupUrl = `${appUrl}/logowanie/ustaw-haslo?token=${resetToken}`;
+
+            // Send welcome email with password setup link
             try {
                 await sendEmail({
                     to: email,
-                    subject: 'Witaj w Panelu Klienta — Przemysław Właśniewski',
+                    subject: `Witaj ${name} w panelu klienta na stronie fotografa Przemka Właśniewskiego`,
                     template: 'welcome-client',
                     data: {
                         name,
                         email,
-                        loginUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'https://wlasniewski.pl'}/logowanie`
-                        // Password NOT included — admin should communicate it separately and securely
+                        loginUrl: setupUrl,
                     }
                 });
             } catch (emailError) {
                 console.error('Failed to send welcome email:', emailError);
-                // We don't fail the whole request if email fails, but we log it
             }
 
-            return NextResponse.json({ success: true, client: user });
+            return NextResponse.json({ success: true, client: { id: user.id, name: user.name, email: user.email } });
         } catch (error: any) {
             console.error('Create client error:', error);
             await logSystem('ERROR', 'SYSTEM', 'Failed to create client', { error: error.message });

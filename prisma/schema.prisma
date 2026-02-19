@@ -481,6 +481,7 @@ model User {
   postal_code             String?
   reset_token             String?                 @unique
   reset_token_expires     DateTime?
+  permissions             Json?
   baskets                 Basket[]
   assigned_bookings       Booking[]               @relation("PhotographerBookings")
   client_galleries        ClientGallery[]         @relation("ClientGalleries")
@@ -553,7 +554,7 @@ model OfferItem {
 model Contract {
   id              Int       @id @default(autoincrement())
   contract_number String?   @unique
-  offer_id        Int       @unique
+  offer_id        Int?      @unique
   client_id       Int?
   status          String    @default("pending")
   content         String?
@@ -562,7 +563,7 @@ model Contract {
   drive_url       String?
   created_at      DateTime  @default(now())
   user            User?     @relation(fields: [client_id], references: [id])
-  offer           Offer     @relation(fields: [offer_id], references: [id])
+  offer           Offer?    @relation(fields: [offer_id], references: [id])
 
   @@map("contracts")
 }

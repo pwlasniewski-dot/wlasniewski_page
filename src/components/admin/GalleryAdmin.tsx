@@ -79,6 +79,7 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
         image_url: '',
         video_url: ''
     });
+    const [isUploadingProductImage, setIsUploadingProductImage] = useState(false);
 
     useEffect(() => {
         if (galleryId) {
@@ -188,6 +189,33 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
             toast.error('Błąd serwera');
         } finally {
             setCreating(false);
+        }
+    };
+
+    const handleProductImageUpload = async (file: File) => {
+        setIsUploadingProductImage(true);
+        try {
+            const token = localStorage.getItem('admin_token');
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const res = await fetch(getApiUrl('admin/products/upload'), {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: formData
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                setNewProduct(prev => ({ ...prev, image_url: data.url }));
+                toast.success('Zdjęcie wgrane');
+            } else {
+                toast.error(data.error || 'Błąd uploadu');
+            }
+        } catch (error) {
+            toast.error('Błąd połączenia');
+        } finally {
+            setIsUploadingProductImage(false);
         }
     };
 
@@ -475,22 +503,57 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
                             onChange={e => setNewProduct({ ...newProduct, description: e.target.value })}
                             className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:border-gold-500 outline-none transition-all text-sm h-24"
                         />
-                        <div className="flex gap-4">
-                            <input
-                                type="number"
-                                placeholder="Cena (PLN)"
-                                value={newProduct.price || ''}
-                                onChange={e => setNewProduct({ ...newProduct, price: parseFloat(e.target.value) })}
-                                className="w-1/3 bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:border-gold-500 outline-none transition-all text-sm"
-                                required
-                            />
-                            <input
-                                type="url"
-                                placeholder="URL Zdjęcia okładki (opcjonalne)"
-                                value={newProduct.image_url || ''}
-                                onChange={e => setNewProduct({ ...newProduct, image_url: e.target.value })}
-                                className="flex-1 bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:border-gold-500 outline-none transition-all text-sm"
-                            />
+                        <div className="space-y-2">
+                            <div className="flex gap-4">
+                                <input
+                                    type="number"
+                                    placeholder="Cena (PLN)"
+                                    value={newProduct.price || ''}
+                                    onChange={e => setNewProduct({ ...newProduct, price: parseFloat(e.target.value) })}
+                                    className="w-1/3 bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:border-gold-500 outline-none transition-all text-sm"
+                                    required
+                                />
+                                <div className="flex-1 relative">
+                                    <input
+                                        type="file"
+                                        id="product-image-upload"
+                                        className="hidden"
+                                        accept="image/*"
+                                        onChange={(e) => e.target.files?.[0] && handleProductImageUpload(e.target.files[0])}
+                                        disabled={isUploadingProductImage}
+                                    />
+                                    <label
+                                        htmlFor="product-image-upload"
+                                        className={`w-full h-full flex items-center justify-center gap-2 border border-dashed rounded-xl cursor-pointer transition-all text-xs font-bold uppercase tracking-widest ${newProduct.image_url ? 'border-green-500/50 text-green-400 bg-green-500/5' : 'border-zinc-800 text-zinc-500 hover:border-gold-500/50 hover:text-gold-400 bg-black'
+                                            }`}
+                                    >
+                                        {isUploadingProductImage ? (
+                                            <div className="w-4 h-4 border-2 border-gold-500 border-t-transparent rounded-full animate-spin" />
+                                        ) : newProduct.image_url ? (
+                                            <><Check size={14} /> Zdjęcie Gotowe</>
+                                        ) : (
+                                            <><Upload size={14} /> Wgraj Zdjęcie</>
+                                        )}
+                                    </label>
+                                </div>
+                            </div>
+                            {newProduct.image_url && (
+                                <div className="flex items-center gap-3 p-2 bg-zinc-900/50 rounded-lg border border-zinc-800 animate-in fade-in slide-in-from-top-1">
+                                    <div className="w-10 h-10 relative rounded overflow-hidden flex-shrink-0">
+                                        <Image src={newProduct.image_url} alt="Preview" fill className="object-cover" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-[10px] text-zinc-500 truncate">{newProduct.image_url}</p>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setNewProduct({ ...newProduct, image_url: '' })}
+                                        className="p-1 hover:bg-red-500/20 text-zinc-500 hover:text-red-400 rounded transition-all"
+                                    >
+                                        <X size={14} />
+                                    </button>
+                                </div>
+                            )}
                         </div>
                         <input
                             type="url"

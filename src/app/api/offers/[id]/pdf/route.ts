@@ -56,17 +56,20 @@ export async function GET(
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
-        // Clean the offer object to ensure only plain data is passed
-        const cleanOffer = JSON.parse(JSON.stringify(offer));
+        // If a stored PDF URL exists (uploaded via S3), redirect to it
+        if (offer.pdf_url) {
+            return NextResponse.redirect(offer.pdf_url, { status: 302 });
+        }
 
-        const pdfBuffer = await generateOfferPDF(cleanOffer);
-
-        return new NextResponse(pdfBuffer as any, {
-            headers: {
-                'Content-Type': 'application/pdf',
-                'Content-Disposition': `attachment; filename="oferta-${offer.slug}.pdf"`,
+        // No stored PDF: return a helpful error
+        console.warn(`[PDF API] No pdf_url for offer ${offerId}. PDF not yet generated.`);
+        return NextResponse.json(
+            {
+                error: 'PDF nie jest jeszcze dostępny.',
+                message: 'Administrator musi najpierw wygenerować i zapisać PDF przez panel admina (przycisk S3 w edytorze oferty).',
             },
-        });
+            { status: 404 }
+        );
     } catch (error) {
         console.error('Error serving PDF:', error);
         return NextResponse.json({ error: 'Failed to generate PDF' }, { status: 500 });

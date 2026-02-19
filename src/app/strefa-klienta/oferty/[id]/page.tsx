@@ -13,6 +13,7 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
     const [showNegotiationForm, setShowNegotiationForm] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [showSignaturePad, setShowSignaturePad] = useState(false);
+    const [unlockRequested, setUnlockRequested] = useState(false);
 
     const [selectedOptionalItems, setSelectedOptionalItems] = useState<Set<number>>(new Set());
     // New: Communion Split Logic
@@ -258,6 +259,33 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
         handleAction('accept');
     };
 
+    const handleUnlockRequest = async () => {
+        try {
+            const token = localStorage.getItem('client_token') || localStorage.getItem('user_token');
+            if (!token) return;
+
+            setSubmitting(true);
+            const response = await fetch(`/api/client/portal/offers/${offerId}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    action: 'request_unlock'
+                }),
+            });
+
+            if (response.ok) {
+                setUnlockRequested(true);
+            }
+        } catch (error) {
+            console.error('Error requesting unlock:', error);
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
     if (loading) {
         return (
             <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center">
@@ -286,9 +314,10 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
         );
     }
 
-    const canAccept = offer.status === 'sent';
-    const canReject = offer.status === 'sent';
-    const canNegotiate = offer.status === 'sent';
+    const isPending = offer.status === 'sent' || offer.status === 'pending';
+    const canAccept = isPending;
+    const canReject = isPending;
+    const canNegotiate = isPending;
     const isB2B = offer.type === 'b2b';
 
     return (
@@ -303,10 +332,10 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
                                 <span>←</span> Wróć do pulpitu ("Oferty i Umowy")
                             </button>
                         </Link>
-                        <span className={`px-4 py-2 rounded-full text-sm font-bold ${offer.status === 'sent' ? 'bg-blue-500' :
+                        <span className={`px-4 py-2 rounded-full text-sm font-bold ${isPending ? 'bg-blue-500' :
                             offer.status === 'accepted' ? 'bg-green-500' : 'bg-gray-500'
                             }`}>
-                            {offer.status === 'sent' && '📨 Oczekuje na akcję'}
+                            {isPending && '📨 Oczekuje na akcję'}
                             {offer.status === 'accepted' && '✅ Zaakceptowana'}
                             {offer.status === 'rejected' && '❌ Odrzucona'}
                         </span>
@@ -584,8 +613,8 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
                                                                         <div className="flex items-center justify-center gap-1">
                                                                             <button
                                                                                 onClick={(e) => { e.stopPropagation(); updateSplitCount(idx, -1); }}
-                                                                                disabled={offer.status !== 'sent'} // Disable if accepted/rejected
-                                                                                className={`w-6 h-6 rounded bg-white shadow text-blue-600 font-bold hover:bg-blue-100 ${offer.status !== 'sent' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                                                disabled={!isPending} // Disable if accepted/rejected
+                                                                                className={`w-6 h-6 rounded bg-white shadow text-blue-600 font-bold hover:bg-blue-100 ${!isPending ? 'opacity-50 cursor-not-allowed' : ''}`}
                                                                             >-</button>
                                                                             <input
                                                                                 type="number"
@@ -593,13 +622,13 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
                                                                                 value={count}
                                                                                 onClick={(e) => e.stopPropagation()}
                                                                                 onChange={(e) => setSplitCountDirect(idx, e.target.value)}
-                                                                                disabled={offer.status !== 'sent'}
-                                                                                className={`w-12 text-center border border-blue-200 rounded p-1 text-sm font-bold bg-white ${offer.status !== 'sent' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                                                disabled={!isPending}
+                                                                                className={`w-12 text-center border border-blue-200 rounded p-1 text-sm font-bold bg-white ${!isPending ? 'opacity-50 cursor-not-allowed' : ''}`}
                                                                             />
                                                                             <button
                                                                                 onClick={(e) => { e.stopPropagation(); updateSplitCount(idx, 1); }}
-                                                                                disabled={offer.status !== 'sent'}
-                                                                                className={`w-6 h-6 rounded bg-white shadow text-blue-600 font-bold hover:bg-blue-100 ${offer.status !== 'sent' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                                                disabled={!isPending}
+                                                                                className={`w-6 h-6 rounded bg-white shadow text-blue-600 font-bold hover:bg-blue-100 ${!isPending ? 'opacity-50 cursor-not-allowed' : ''}`}
                                                                             >+</button>
                                                                         </div>
                                                                         {count > 0 && (
@@ -817,6 +846,32 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
                                     </button>
                                 )}
                             </div>
+                        </div>
+                    )
+                }
+
+                {/* Request Unlock (If accepted/rejected) */}
+                {
+                    (offer.status === 'accepted' || offer.status === 'rejected') && (
+                        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-amber-500">
+                            <h3 className="text-lg font-semibold text-gray-900 mb-2">Zauważyłeś błąd?</h3>
+                            <p className="text-gray-600 mb-4 text-sm">
+                                Wybrałeś zły pakiet lub chcesz zmienić liczbę osób, a oferta jest już zablokowana?
+                                Możesz poprosić o ponowne odblokowanie opcji wyboru.
+                            </p>
+                            {unlockRequested ? (
+                                <div className="px-6 py-3 bg-green-50 text-green-700 rounded-lg border border-green-200 font-medium inline-block">
+                                    ✓ Prośba o odblokowanie została wysłana do administratora. Oczekuj na email.
+                                </div>
+                            ) : (
+                                <button
+                                    onClick={handleUnlockRequest}
+                                    disabled={submitting}
+                                    className="px-6 py-3 bg-amber-500 text-white rounded-lg hover:bg-amber-600 disabled:bg-gray-400 font-semibold"
+                                >
+                                    {submitting ? 'Wysyłanie...' : 'Poproś o odblokowanie edycji'}
+                                </button>
+                            )}
                         </div>
                     )
                 }

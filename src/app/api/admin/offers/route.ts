@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { requireAuth } from '@/lib/auth/middleware';
 import { generateOfferNumber } from '@/lib/services/numbering';
+import { sendEmail } from '@/lib/email/sender';
+import { generateOfferEmail } from '@/lib/email-templates';
 
 export const dynamic = 'force-dynamic';
 
@@ -192,6 +194,41 @@ export async function POST(request: NextRequest) {
                 },
             },
         });
+
+        // Resolve recipient for notification email
+        let recipientEmail = client_email?.trim() || null;
+        let recipientName = 'Kliencie';
+
+        if (!recipientEmail && parsedClientId) {
+            const dbClient = await prisma.user.findUnique({ where: { id: parsedClientId }, select: { email: true, name: true } });
+            if (dbClient) {
+                recipientEmail = dbClient.email;
+                recipientName = dbClient.name || 'Kliencie';
+            }
+        }
+
+        if (recipientEmail) {
+            try {
+                const portalUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://wlasniewski.pl'}/konto`;
+                await sendEmail({
+                    to: recipientEmail,
+                    subject: 'Witaj, otrzymałeś ofertę od fotografa Przemka Właśniewskiego – zaloguj się do panelu',
+                    html: generateOfferEmail({
+                        clientName: recipientName,
+                        offerNumber: offerNumber,
+                        offerTitle: title,
+                        offerCategory: category,
+                        totalPrice: totalPrice,
+                        offerUrl: portalUrl,
+                        type: type as 'b2b' | 'b2c',
+                        hasPdf: !!offer.pdf_url,
+                    }),
+                });
+                console.log('✅ Offer notification email sent to:', recipientEmail);
+            } catch (emailError) {
+                console.error('⚠️ Failed to send offer email (non-fatal):', emailError);
+            }
+        }
 
         return NextResponse.json({ offer }, { status: 201 });
     } catch (error) {

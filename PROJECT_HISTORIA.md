@@ -175,6 +175,19 @@ Ten plik służy do ścisłego monitorowania wszystkich zmian wprowadzanych w pr
 
 ## Log Zmian
 
+### [2026-02-19] Contract System Fixes & Mandatory Signature
+
+**Zmiany:**
+- **Naprawa błędu zapisu umowy (400)**: Zmieniono model `Contract` w `schema.prisma`, czyniąc `offer_id` polem opcjonalnym (`Int? @unique`). Pozwala to na generowanie umów bez powiązanej oferty (standalone).
+- **Mandatowy Podpis Wykonawcy**: W `ContractBuilder.tsx` wdrożono obowiązkowe pole "Podpis Klawiaturowy". Zapis umowy jest blokowany, dopóki administrator nie wpisze swojego imienia i nazwiska. Podpis jest renderowany na podglądzie PDF w eleganckim stylu kursywnym.
+- **Warunkowa treść email**: Zaktualizowano `email-templates.ts` oraz API ofert/umów. Informacja o "załączniku PDF" w mailach do klientów jest teraz wyświetlana tylko wtedy, gdy plik PDF został faktycznie wygenerowany i jest dostępny (`hasPdf` flag).
+- **Cleanup Email**: Usunięto redundantny blok "Inwestycja (Pakiet Rekomendowany): 0 PLN" z maila ofertowego, który wprowadzał klientów w błąd.
+
+**Decyzje:**
+- `offer_id` jest opcjonalny, aby wspierać "Generator Umów" jako niezależne narzędzie.
+- Podpis klawiaturowy jest przechowywany w stanie komponentu podczas edycji i renderowany do PDF (zastępuje puste kropki).
+- Flaga `hasPdf` w interfejsach maili (`OfferEmailData`, `ContractEmailData`) pozwala uniknąć pustych obietnic załączników.
+
 ### [2026-02-18]  CRM Dashboard Rozbudowa & Offer/Contract Flow
 
 **Zmiany:**

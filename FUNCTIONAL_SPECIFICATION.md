@@ -123,15 +123,18 @@ System został rozbudowany o dedykowany moduł zarządzania relacjami z klientem
     - Konto użytkownika zostaje trwale dezaktywowane.
 - **Separacja Uprawnień**: Wyraźny podział w nawigacji admina na "Klienci (CRM)" (biznes) i "Administratorzy" (zespół).
 
-### 3.4. Generator Ofert i Portal Klienta (v3.0 - Planned)
-System w v3.0 wprowadzi kompleksowy przepływ pracy nad ofertą:
-- **Offer Generator**: Narzędzie dla fotografa do tworzenia spersonalizowanych ofert B2B/B2C (PDF/Link).
+### 3.4. Generator Ofert i Portal Klienta (v3.0) [IMPLEMENTED: 2026-02-19]
+System wprowadzony w v3.0 zapewnia kompleksowy przepływ pracy nad ofertą i umową:
+- **Offer Generator**: Narzędzie dla fotografa do tworzenia spersonalizowanych ofert B2B/B2C.
+- **Independent Contracts**: Możliwość generowania umów niezależnych od ofert (standalone), co pozwala na szybszą obsługę niestandardowych zleceń.
+- **Mandatory Keyboard Signature**: Wbudowany system wymuszający czytelny podpis administratora (wykonawcy) przed zapisaniem dokumentu, co podnosi profesjonalizm i wiarygodność dokumentacji.
 - **Client Portal**: Dedykowana strefa (`/strefa-klienta`), gdzie klient po zalogowaniu może:
     - Przeglądać aktywne oferty.
     - Negocjować warunki (komentarze, prośby o zmianę).
-    - Akceptować ofertę (co generuje Umowę).
-    - Podpisywać umowy (cyfrowo lub pobierać PDF).
-- **Integracja Chmurowa**: Wszystkie dokumenty (Oferty, Umowy) są archiwizowane na S3 oraz (opcjonalnie) synchronizowane z Google Drive.
+    - Akceptować ofertę (co generuje powiązaną Umowę).
+    - Podpisywać umowy cyfrowo (z aktualizacją statusu `signed` i `signed_at`).
+- **Conditional Email Logic**: Automatyczne powiadomienia e-mail dostosowują treść do stanu dokumentu (np. ukrywanie informacji o załączniku PDF, jeśli plik nie został jeszcze wygenerowany).
+- **Integracja Chmurowa**: Wszystkie dokumenty są archiwizowane na S3 i możliwe do pobrania w formacie PDF.
 
 ---
 

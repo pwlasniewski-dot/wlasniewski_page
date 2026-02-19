@@ -84,33 +84,107 @@ Zasada nienaruszalności modułów niezwiązanych z bieżącym zadaniem. Agent/D
 *   **Zakaz Rewritu**: Zabrania się przesyłania całych plików tam, gdzie zmiana dotyczy tylko konkretnej sekcji.
 *   **Zakaz Ingerencji Po Buildzie**: Absolutny zakaz modyfikacji danych produkcyjnych lub konfiguracyjnych wykraczających poza zlecony zakres operacji.
 *   **Verification First**: Każda zmiana w krytycznych plikach (np. `settings/page.tsx`) musi być poprzedzona analizą `view_file`.
+# ARCHITEKTURA SYSTEMU - wlasniewski.pl
+
+Ten dokument stanowi techniczny blueprint platformy fotograficznej wlasniewski.pl. Jest on przeznaczony dla senior deweloperów i architektów systemowych, opisując strukturę, wzorce projektowe oraz krytyczne protokoły bezpieczeństwa.
+
+---
+
+## 1. System Overview & Tech Stack
+
+Platforma jest nowoczesną aplikacją webową zbudowaną w architekturze **Serverless First**, kładącą nacisk na wydajność (Core Web Vitals) oraz stabilność danych.
+
+### 1.1. Core Stack
+*   **Framework**: [Next.js 15 (App Router)](https://nextjs.org/) - wykorzystanie Server Components (RSC) dla optymalizacji LCP.
+*   **Język**: TypeScript (Strict Mode) - gwarancja bezpieczeństwa typów w całym przepływie danych.
+*   **Baza Danych**: PostgreSQL (Neon.tech) - relacyjna baza danych z obsługą Serverless Driver.
+*   **ORM**: Prisma - warstwa abstrakcji danych z silnym typowaniem modeli.
+*   **Storage**: AWS S3 - magazyn binarny dla mediów wysokiej rozdzielczości.
+*   **UI/UX**: Tailwind CSS + Framer Motion - system mikro-animacji i responsywnego stylowania.
+*   **Płatności**: Integracja REST API z Przelewy24 oraz PayU (obsługa webhooków).
+
+---
+
+## 2. Architektura Wysokiego Poziomu (High-Level Design)
+
+```mermaid
+graph TD
+    User((Klient)) -- HTTP/S --> FE[Frontend: Next.js App Router]
+    FE -- Server Components --> DB[(PostgreSQL: Neon.tech)]
+    FE -- API Routes --> DB
+    FE -- Authentication --> JWT[JWT / LocalStorage]
+    FE -- Storage Access --> S3[AWS S3 Cloud Storage]
+    
+    subgraph "External Services"
+        P24[Przelewy24]
+        PayU[PayU Gateway]
+        SMTP[Mail Server: wlasniewski.pl]
+    end
+    
+    FE -- Payments --> P24
+    FE -- Payments --> PayU
+
+    FE -- Notifications --> SMTP
+```
+
+### 2.1. Client Portal Architecture (v3.0 Add-on)
+Architektura serwisu zostanie rozszerzona o bezpieczny portal klienta:
+- **Route**: `/strefa-klienta/*`
+- **Auth**: Niezależny system logowania dla klientów (User Role: `CLIENT`).
+- **Data Access**: Klient ma dostęp wyłącznie do rekordów (`Offer`, `Contract`, `Booking`, `ClientGallery`) powiązanych z jego `UserId`.
+- **Interakcja**: Portal wykorzystuje Server Actions do bezpiecznej komunikacji z API (akceptacja ofert, negocjacje).
+
+---
+
+## 3. Kluczowe Wzorce i Protokoły (The "Holy" Principles)
+
+Projekt opiera się na trzech autorskich protokołach gwarantujących niezawodność systemu.
+
+### 3.1. Protokół "Zero Flower" (Dynamic Fallback Strategy)
+Każda podstrona zarządzana przez CMS (tabela `Page`) musi posiadać mechanizm fallbacku. Jeśli rekord w bazie danych zostanie usunięty lub nie zawiera sekcji, `PageRenderer` wstrzykuje statyczną treść awaryjną („Anti-Flower”), zapobiegając renderowaniu pustych stron. Przykładem dynamicznej kontroli UI jest sekcja **Info Band**, gdzie linki "Szczegóły operacyjne" renderowane są warunkowo (tylko gdy zdefiniowano URL).
+
+### 3.2. "Holy Logic" (Business Integrity)
+Zbiór reguł krytycznych dla operacji biznesowych:
+*   **Płatności**: Żaden status rezerwacji/zamówienia nie może zostać zmieniony na `confirmed` przed otrzymaniem poprawnego podpisu Webhooka z bramki płatniczej.
+*   **Security**: Wszystkie trasy `/admin/*` są chronione przez autorski Middleware sprawdzający `admin_token` z `localStorage` oraz nagłówki `Authorization`.
+
+### 3.3. Protokół "Zero Loss" (Data Persistence & Versioning) [UPDATE: 2025-12-30]
+Wdrożono zaawansowany system kopii zapasowych oparty na dwóch skryptach:
+- **`scripts/backup-full.ts`**: Eksportuje stan wszystkich 40 tabel bazy danych (Modele Prisma) do sformatowanych plików JSON. Backupy są kategoryzowane czasowo (`backups/[TIMESTAMP]/`), co pozwala na atomowe przywracanie konkretnych punktów w czasie.
+- **`scripts/restore-full.ts`**: Skrypt przywracający, realizujący logikę **TRUNCATE CASCADE** (czyszczenie) oraz **UPSERT** (bezpieczne wstrzykiwanie danych).
+- **Zasada "File vs Folder"**: Backupem jest wyłącznie plik JSON. Kopiowanie folderów jest zabronione.
+- **Holy File**: Referencyjny backup "Holy Backup" znajduje się zawsze w `backups/data/[TIMESTAMP]_HOLY_BACKUP`.
+- **Cel**: Ochrona „świętej treści” (Blog, Portfolio, Ustawienia, B2B) przed destrukcyjnymi operacjami schematu lub awariami dostawcy bazy danych. Służy również jako mechanizm bezpiecznego deployu ("Backup-Before-Push").
+
+### 3.5. Protokół "GDPR Safe Harbor" (Soft Anonymization) [NEW: 2026-01-11]
+W odpowiedzi na wymogi RODO (prawo do bycia zapomnianym) przy jednoczesnym zachowaniu wymogów księgowych, wdrożono hybrydowy system usuwania danych.
+- **Problem**: Tradycyjne `DELETE FROM users` narusza integralność relacyjną zamówień (Gift Cards) i historii rezerwacji, uniemożliwiając raportowanie przychodów.
+- **Rozwiązanie**: Funkcja `anonymizeClient` w API wykonuje "Soft Delete":
+    1. Pola PII (`name`, `email`, `phone`, `recipient_name`, `sender_name`, `message`) są nadpisywane pseudonimami (np. `REMOVED-GDPR`).
+    2. Identyfikator `email` (Unique) zmieniany jest na losowy hash (np. `deleted-uuid@deleted.local`) aby zwolnić adres dla nowej rejestracji.
+    3. Konto otrzymuje flagę `is_active: false`.
+    4. Rekordy w tabelach finansowych (`GiftCardOrder`, `Booking`) pozostają, ale bez danych osobowych.
+
+### 3.4. "Scope Isolation" (Atomic Integrity) [NEW: 2025-12-25]
+Zasada nienaruszalności modułów niezwiązanych z bieżącym zadaniem. Agent/Deweloper ma obowiązek wykonywania zmian **wyłącznie** w zakresie wskazanym przez USERA. 
+*   **Zakaz Rewritu**: Zabrania się przesyłania całych plików tam, gdzie zmiana dotyczy tylko konkretnej sekcji.
+*   **Zakaz Ingerencji Po Buildzie**: Absolutny zakaz modyfikacji danych produkcyjnych lub konfiguracyjnych wykraczających poza zlecony zakres operacji.
+*   **Verification First**: Każda zmiana w krytycznych plikach (np. `settings/page.tsx`) musi być poprzedzona analizą `view_file`.
 
 ---
 
 ## 4. Przepływ Danych (Data Flow Diagrams)
 
 
-### 4.2. Offer & Contract Flow (Client Portal) [NEW: 2026-02-18]
-
+### 4.2. Offer & Contract Flow (Client Portal) [IMPLEMENTED: 2026-02-19]
+Logika biznesowa dokumentów została ujednolicona w ramach v3.0:
+- **Standalone Contracts**: Model `Contract` pozwala na tworzenie dokumentów niezależnych od ofert (`offer_id` is Optional).
+- **Mandatory Signature Logic**: System weryfikuje obecność `signature` administratora przed commitowaniem zmian do bazy.
 - **GET /api/client/portal/contracts/[id]**: Pobiera umowę klienta z weryfikacją własności (client_id lub client_email).
 - **POST /api/client/portal/contracts/[id]/sign**: Podpisuje umowę (status=signed, signed_at=now), wysyła email do admina i klienta.
 - **PATCH /api/client/portal/offers/[id]**: Akceptacja/odrzucenie oferty + notyfikacja email do admina.
-- **GET /api/admin/clients**: Rozbudowane o dane ofert, umów, galerii klienta, typów zleceń.
 - **CRM Dashboard**: Tabela z kolumnami: Typ zlecenia, Oferta, Umowa, Galeria (progress bar), Kwota, Sesja. KPI bar, sortowanie, filtrowanie.
 
-### 4.1. Rezerwacja Sesji & Płatność
-```mermaid
-sequenceDiagram
-    participant C as Klient
-    participant S as Next.js Server
-    participant DB as PostgreSQL
-    participant P as Payment Gateway
-    
-    C->>S: Wybór pakietu i terminu
-    S->>DB: Rezerwacja (status: pending)
-    S->>P: Inicjacja transakcji
-    P-->>C: Formularz płatności
-    C->>P: Realizacja płatności
     P->>S: Webhook: PAYMENT_SUCCESS
     S->>DB: Update Booking (status: confirmed)
     S->>S: Send Confirmation Email

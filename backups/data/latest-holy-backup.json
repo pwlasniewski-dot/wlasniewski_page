@@ -3,7 +3,7 @@
     {
       "id": 2,
       "email": "pwlasniewski@gmail.com",
-      "password_hash": "$2b$10$a1O9s7Su6oiPPaiMD8ZsYewbvMWGAhmbD17kEejgWv4ajdkCZ0eKO",
+      "password_hash": "$2b$10$SUZKSP6.kz8KBlxFrFPv3Oz1FGf.5u5jo.qRji8ZElXgepxSgxqQ2",
       "name": "Przemysław Właśniewski",
       "role": "ADMIN",
       "created_at": "2026-01-04T12:23:00.835Z",
@@ -141,6 +141,82 @@
       "address": "Lisewo",
       "city": "",
       "postal_code": "",
+      "reset_token": null,
+      "reset_token_expires": null
+    },
+    {
+      "id": 10,
+      "email": "b@b",
+      "password_hash": "$2b$10$HlMDbrSF9HFtyQEYB6MxxOmvYHQwyV/msy2wRr/o5ExUDMnNzplia",
+      "name": "a",
+      "phone": "c",
+      "created_at": "2026-02-18T17:58:57.469Z",
+      "updated_at": "2026-02-18T17:58:57.469Z",
+      "is_active": true,
+      "photographer_profile_id": null,
+      "role": "CLIENT",
+      "last_failed_login": null,
+      "last_login": null,
+      "address": null,
+      "city": null,
+      "postal_code": null,
+      "reset_token": null,
+      "reset_token_expires": null
+    },
+    {
+      "id": 9,
+      "email": "deleted-9-1771438932603@deleted.local",
+      "password_hash": "DELETED_1771438932603",
+      "name": "Użytkownik Usunięty (RODO)",
+      "phone": null,
+      "created_at": "2026-02-18T17:41:14.259Z",
+      "updated_at": "2026-02-18T18:22:12.607Z",
+      "is_active": false,
+      "photographer_profile_id": null,
+      "role": "CLIENT",
+      "last_failed_login": null,
+      "last_login": null,
+      "address": null,
+      "city": null,
+      "postal_code": null,
+      "reset_token": null,
+      "reset_token_expires": null
+    },
+    {
+      "id": 11,
+      "email": "pwlasniewski@icloud.com",
+      "password_hash": "$2b$10$y5oAa9UUUE4sXyW2AQZgM.VU77E5t9yKRUq9N55rcaw7OsrFulKmm",
+      "name": "Przemek Wlasniewski",
+      "phone": "530788694",
+      "created_at": "2026-02-18T18:22:50.204Z",
+      "updated_at": "2026-02-18T18:22:50.204Z",
+      "is_active": true,
+      "photographer_profile_id": null,
+      "role": "CLIENT",
+      "last_failed_login": null,
+      "last_login": null,
+      "address": null,
+      "city": null,
+      "postal_code": null,
+      "reset_token": null,
+      "reset_token_expires": null
+    },
+    {
+      "id": 12,
+      "email": "yton43434333222@g-mail.com",
+      "password_hash": "$2b$10$HAvIFoKAH5WRrfO6no5IU.saWt1sx6pGmKW4t4FYrrfFYAgXxPKMK",
+      "name": "Paulina",
+      "phone": "608662003",
+      "created_at": "2026-02-18T18:33:53.692Z",
+      "updated_at": "2026-02-18T18:33:53.692Z",
+      "is_active": true,
+      "photographer_profile_id": null,
+      "role": "CLIENT",
+      "last_failed_login": null,
+      "last_login": null,
+      "address": null,
+      "city": null,
+      "postal_code": null,
       "reset_token": null,
       "reset_token_expires": null
     }
@@ -18998,30 +19074,6 @@
       "updated_at": "2025-12-20T12:09:01.999Z"
     },
     {
-      "id": 8,
-      "client_name": "Piotr Lewandowski",
-      "company_name": "Elektrociepłownia Warszawa",
-      "email": "piotr@ec-warszawa.pl",
-      "phone": "+48 345 678 901",
-      "service_type": "ciepłownictwo",
-      "details": "Termowizja sieci ciepłowniczej w okolicy Śródmieścia. Poszukujemy wycieków i rozszerzonych połączeń. Obszar: 2km2",
-      "status": "NEW",
-      "created_at": "2025-12-21T12:09:01.999Z",
-      "updated_at": "2025-12-21T12:09:01.999Z"
-    },
-    {
-      "id": 9,
-      "client_name": "Tomasz Zaremba",
-      "company_name": "Budpol Konstrukencje Sp. z o.o.",
-      "email": "tomasz@budpol.pl",
-      "phone": "+48 456 789 012",
-      "service_type": "nadzor_budowlany",
-      "details": "Nadzór budowy nowego kompleksu handlowego w Łomiankach. Potrzebne tygodniowe zdjęcia lotnicze postępów prac. Budowa trwa 18 miesięcy.",
-      "status": "NEW",
-      "created_at": "2025-12-21T12:09:01.999Z",
-      "updated_at": "2025-12-21T12:09:01.999Z"
-    },
-    {
       "id": 10,
       "client_name": "Agnieszka Zwolska",
       "company_name": "Geopomiary Polska",
@@ -19046,30 +19098,6 @@
       "updated_at": "2025-12-20T12:09:16.066Z"
     },
     {
-      "id": 13,
-      "client_name": "Piotr Lewandowski",
-      "company_name": "Elektrociepłownia Warszawa",
-      "email": "piotr@ec-warszawa.pl",
-      "phone": "+48 345 678 901",
-      "service_type": "ciepłownictwo",
-      "details": "Termowizja sieci ciepłowniczej w okolicy Śródmieścia. Poszukujemy wycieków i rozszerzonych połączeń. Obszar: 2km2",
-      "status": "NEW",
-      "created_at": "2025-12-21T12:09:16.066Z",
-      "updated_at": "2025-12-21T12:09:16.066Z"
-    },
-    {
-      "id": 14,
-      "client_name": "Tomasz Zaremba",
-      "company_name": "Budpol Konstrukencje Sp. z o.o.",
-      "email": "tomasz@budpol.pl",
-      "phone": "+48 456 789 012",
-      "service_type": "nadzor_budowlany",
-      "details": "Nadzór budowy nowego kompleksu handlowego w Łomiankach. Potrzebne tygodniowe zdjęcia lotnicze postępów prac. Budowa trwa 18 miesięcy.",
-      "status": "NEW",
-      "created_at": "2025-12-21T12:09:16.066Z",
-      "updated_at": "2025-12-21T12:09:16.066Z"
-    },
-    {
       "id": 15,
       "client_name": "Agnieszka Zwolska",
       "company_name": "Geopomiary Polska",
@@ -19092,30 +19120,6 @@
       "status": "IN_PROGRESS",
       "created_at": "2025-12-19T12:09:40.206Z",
       "updated_at": "2025-12-20T12:09:40.206Z"
-    },
-    {
-      "id": 18,
-      "client_name": "Piotr Lewandowski",
-      "company_name": "Elektrociepłownia Warszawa",
-      "email": "piotr@ec-warszawa.pl",
-      "phone": "+48 345 678 901",
-      "service_type": "ciepłownictwo",
-      "details": "Termowizja sieci ciepłowniczej w okolicy Śródmieścia. Poszukujemy wycieków i rozszerzonych połączeń. Obszar: 2km2",
-      "status": "NEW",
-      "created_at": "2025-12-21T12:09:40.206Z",
-      "updated_at": "2025-12-21T12:09:40.206Z"
-    },
-    {
-      "id": 19,
-      "client_name": "Tomasz Zaremba",
-      "company_name": "Budpol Konstrukencje Sp. z o.o.",
-      "email": "tomasz@budpol.pl",
-      "phone": "+48 456 789 012",
-      "service_type": "nadzor_budowlany",
-      "details": "Nadzór budowy nowego kompleksu handlowego w Łomiankach. Potrzebne tygodniowe zdjęcia lotnicze postępów prac. Budowa trwa 18 miesięcy.",
-      "status": "NEW",
-      "created_at": "2025-12-21T12:09:40.206Z",
-      "updated_at": "2025-12-21T12:09:40.206Z"
     },
     {
       "id": 20,
@@ -19154,30 +19158,6 @@
       "updated_at": "2025-12-20T12:11:01.604Z"
     },
     {
-      "id": 23,
-      "client_name": "Piotr Lewandowski",
-      "company_name": "Elektrociepłownia Warszawa",
-      "email": "piotr@ec-warszawa.pl",
-      "phone": "+48 345 678 901",
-      "service_type": "ciepłownictwo",
-      "details": "Termowizja sieci ciepłowniczej w Śródmieściu Warszawy.",
-      "status": "NEW",
-      "created_at": "2025-12-21T12:11:01.604Z",
-      "updated_at": "2025-12-21T12:11:01.604Z"
-    },
-    {
-      "id": 24,
-      "client_name": "Tomasz Zaremba",
-      "company_name": "Budpol Konstrukencje Sp. z o.o.",
-      "email": "tomasz@budpol.pl",
-      "phone": "+48 456 789 012",
-      "service_type": "nadzor_budowlany",
-      "details": "Nadzór budowy kompleksu handlowego - tygodniowe zdjęcia lotnicze.",
-      "status": "NEW",
-      "created_at": "2025-12-21T12:11:01.604Z",
-      "updated_at": "2025-12-21T12:11:01.604Z"
-    },
-    {
       "id": 25,
       "client_name": "Agnieszka Zwolska",
       "company_name": "Geopomiary Polska",
@@ -19200,30 +19180,6 @@
       "status": "IN_PROGRESS",
       "created_at": "2025-12-19T12:11:15.437Z",
       "updated_at": "2025-12-20T12:11:15.437Z"
-    },
-    {
-      "id": 28,
-      "client_name": "Piotr Lewandowski",
-      "company_name": "Elektrociepłownia Warszawa",
-      "email": "piotr@ec-warszawa.pl",
-      "phone": "+48 345 678 901",
-      "service_type": "ciepłownictwo",
-      "details": "Termowizja sieci ciepłowniczej w Śródmieściu Warszawy.",
-      "status": "NEW",
-      "created_at": "2025-12-21T12:11:15.437Z",
-      "updated_at": "2025-12-21T12:11:15.437Z"
-    },
-    {
-      "id": 29,
-      "client_name": "Tomasz Zaremba",
-      "company_name": "Budpol Konstrukencje Sp. z o.o.",
-      "email": "tomasz@budpol.pl",
-      "phone": "+48 456 789 012",
-      "service_type": "nadzor_budowlany",
-      "details": "Nadzór budowy kompleksu handlowego - tygodniowe zdjęcia lotnicze.",
-      "status": "NEW",
-      "created_at": "2025-12-21T12:11:15.437Z",
-      "updated_at": "2025-12-21T12:11:15.437Z"
     },
     {
       "id": 1,
@@ -19284,18 +19240,6 @@
       "status": "COMPLETED",
       "created_at": "2025-12-16T12:12:10.073Z",
       "updated_at": "2025-12-17T12:12:10.073Z"
-    },
-    {
-      "id": 3,
-      "client_name": "Piotr Lewandowski",
-      "company_name": "Elektrociepłownia Warszawa",
-      "email": "piotr@ec-warszawa.pl",
-      "phone": "+48 345 678 901",
-      "service_type": "ciepłownictwo",
-      "details": "Termowizja sieci ciepłowniczej w okolicy Śródmieścia. Poszukujemy wycieków i rozszerzonych połączeń. Obszar: 2km2",
-      "status": "NEW",
-      "created_at": "2025-12-21T12:08:20.881Z",
-      "updated_at": "2025-12-21T12:08:20.881Z"
     },
     {
       "id": 4,

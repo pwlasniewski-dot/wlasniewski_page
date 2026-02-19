@@ -35,6 +35,7 @@ export default function AccountPage() {
     const [galleries, setGalleries] = useState<any[]>([]);
     const [offers, setOffers] = useState<any[]>([]);
     const [contracts, setContracts] = useState<any[]>([]);
+    const [userPermissions, setUserPermissions] = useState<Record<string, boolean> | null>(null);
 
     useEffect(() => {
         if (!authLoading && !token) {
@@ -57,6 +58,10 @@ export default function AccountPage() {
                         setBookings(data.user.bookings || []);
                         setOffers(data.user.offers || []);
                         setContracts(data.user.contracts || []);
+                        // Load permissions from API response
+                        if (data.user.permissions && typeof data.user.permissions === 'object') {
+                            setUserPermissions(data.user.permissions);
+                        }
                     }
 
                     if (challengeRes.ok) {
@@ -127,13 +132,21 @@ export default function AccountPage() {
                         </motion.button>
                     </div>
 
-                    {/* Tab Navigation */}
+                    {/* Tab Navigation — filtered by permissions */}
                     <div className="flex items-center gap-4 mt-12 overflow-x-auto pb-4 no-scrollbar">
                         <TabButton id="overview" label="Przegląd" active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} icon={<Star className="w-4 h-4" />} />
-                        <TabButton id="sessions" label="Zdjęcia z sesji" active={activeTab === 'sessions'} onClick={() => setActiveTab('sessions')} icon={<ImageIcon className="w-4 h-4" />} count={challenges.length + galleries.length} />
-                        <TabButton id="bookings" label="Rezerwacje" active={activeTab === 'bookings'} onClick={() => setActiveTab('bookings')} icon={<Calendar className="w-4 h-4" />} count={bookings.length} />
-                        <TabButton id="documents" label="Oferty i Umowy" active={activeTab === 'documents'} onClick={() => setActiveTab('documents')} icon={<FileText className="w-4 h-4" />} count={offers.length + contracts.length} />
-                        <TabButton id="gift_cards" label="Karty Podarunkowe" active={activeTab === 'gift_cards'} onClick={() => setActiveTab('gift_cards')} icon={<Gift className="w-4 h-4" />} count={giftCards.length} />
+                        {userPermissions?.galleries !== false && (
+                            <TabButton id="sessions" label="Zdjęcia z sesji" active={activeTab === 'sessions'} onClick={() => setActiveTab('sessions')} icon={<ImageIcon className="w-4 h-4" />} count={challenges.length + galleries.length} />
+                        )}
+                        {userPermissions?.bookings !== false && (
+                            <TabButton id="bookings" label="Rezerwacje" active={activeTab === 'bookings'} onClick={() => setActiveTab('bookings')} icon={<Calendar className="w-4 h-4" />} count={bookings.length} />
+                        )}
+                        {(userPermissions?.offers !== false || userPermissions?.contracts !== false) && (
+                            <TabButton id="documents" label="Oferty i Umowy" active={activeTab === 'documents'} onClick={() => setActiveTab('documents')} icon={<FileText className="w-4 h-4" />} count={offers.length + contracts.length} />
+                        )}
+                        {userPermissions?.gift_cards !== false && (
+                            <TabButton id="gift_cards" label="Karty Podarunkowe" active={activeTab === 'gift_cards'} onClick={() => setActiveTab('gift_cards')} icon={<Gift className="w-4 h-4" />} count={giftCards.length} />
+                        )}
                         <TabButton id="settings" label="Ustawienia" active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} icon={<UserIcon className="w-4 h-4" />} />
                         {user?.role === 'PHOTOGRAPHER' && (
                             <TabButton id="partner" label="Strefa Partnera" active={activeTab === 'partner'} onClick={() => setActiveTab('partner')} icon={<Star className="w-4 h-4 text-gold-500" />} />
@@ -184,64 +197,134 @@ export default function AccountPage() {
     }
 
     function renderOverview() {
+        const activeOffer = offers.find((o: any) => o.status !== 'rejected') || offers[0];
+        const activeContract = contracts.find((c: any) => c.status !== 'rejected') || contracts[0];
+        const activeGallery = galleries[0];
+
+        const offerStatusLabel: Record<string, { label: string; color: string }> = {
+            draft: { label: 'Szkic', color: 'text-zinc-400 bg-zinc-800 border-zinc-700' },
+            sent: { label: 'Do zatwierdzenia', color: 'text-amber-400 bg-amber-900/20 border-amber-700/30' },
+            negotiating: { label: 'Negocjacja', color: 'text-blue-400 bg-blue-900/20 border-blue-700/30' },
+            accepted: { label: '✓ Zatwierdzona', color: 'text-green-400 bg-green-900/20 border-green-700/30' },
+            rejected: { label: 'Odrzucona', color: 'text-red-400 bg-red-900/20 border-red-700/30' },
+        };
+        const contractStatusLabel: Record<string, { label: string; color: string }> = {
+            pending: { label: 'Oczekuje', color: 'text-amber-400 bg-amber-900/20 border-amber-700/30' },
+            sent: { label: 'Wysłana', color: 'text-blue-400 bg-blue-900/20 border-blue-700/30' },
+            signed: { label: '✓ Podpisana', color: 'text-green-400 bg-green-900/20 border-green-700/30' },
+            rejected: { label: 'Odrzucona', color: 'text-red-400 bg-red-900/20 border-red-700/30' },
+        };
+
         return (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-                <div className="lg:col-span-4 space-y-6">
-                    <div className="bg-zinc-900/50 backdrop-blur-xl border border-zinc-800 rounded-3xl p-8 space-y-6">
-                        <div className="flex items-center gap-4">
-                            <div className="w-16 h-16 bg-gradient-to-br from-gold-600 to-gold-400 rounded-2xl flex items-center justify-center text-black font-bold text-2xl">
-                                {user?.name?.[0]}
+            <div className="space-y-10">
+                {/* Hero Status Block */}
+                {(activeOffer || activeContract || activeGallery) && (
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        {activeOffer ? (
+                            <button onClick={() => setActiveTab('documents')} className="text-left bg-zinc-900/60 border border-zinc-800 hover:border-gold-500/30 rounded-2xl p-5 transition-all group">
+                                <p className="text-xs text-zinc-600 uppercase tracking-widest mb-3">Aktualna Oferta</p>
+                                <p className="font-bold text-white text-sm mb-2 group-hover:text-gold-400 transition-colors line-clamp-1">{activeOffer.title}</p>
+                                <span className={`inline-block text-xs px-2 py-0.5 rounded-full border ${(offerStatusLabel[activeOffer.status] || offerStatusLabel.draft).color}`}>
+                                    {(offerStatusLabel[activeOffer.status] || offerStatusLabel.draft).label}
+                                </span>
+                            </button>
+                        ) : (
+                            <div className="bg-zinc-900/30 border border-dashed border-zinc-800 rounded-2xl p-5">
+                                <p className="text-xs text-zinc-600 uppercase tracking-widest mb-3">Aktualna Oferta</p>
+                                <p className="text-sm text-zinc-600">Brak oferty</p>
                             </div>
-                            <div>
-                                <h3 className="font-bold text-xl">{user?.name}</h3>
-                                <p className="text-zinc-500 text-sm">{user?.email}</p>
+                        )}
+
+                        {activeContract ? (
+                            <button onClick={() => setActiveTab('documents')} className="text-left bg-zinc-900/60 border border-zinc-800 hover:border-gold-500/30 rounded-2xl p-5 transition-all group">
+                                <p className="text-xs text-zinc-600 uppercase tracking-widest mb-3">Umowa</p>
+                                <p className="font-bold text-white text-sm mb-2 line-clamp-1">{activeContract.title || activeContract.contractNumber || `Umowa #${activeContract.id}`}</p>
+                                <span className={`inline-block text-xs px-2 py-0.5 rounded-full border ${(contractStatusLabel[activeContract.status] || contractStatusLabel.pending).color}`}>
+                                    {(contractStatusLabel[activeContract.status] || contractStatusLabel.pending).label}
+                                </span>
+                            </button>
+                        ) : (
+                            <div className="bg-zinc-900/30 border border-dashed border-zinc-800 rounded-2xl p-5">
+                                <p className="text-xs text-zinc-600 uppercase tracking-widest mb-3">Umowa</p>
+                                <p className="text-sm text-zinc-600">Brak umowy</p>
                             </div>
+                        )}
+
+                        {activeGallery ? (
+                            <button onClick={() => setActiveTab('sessions')} className="text-left bg-zinc-900/60 border border-zinc-800 hover:border-gold-500/30 rounded-2xl p-5 transition-all group">
+                                <p className="text-xs text-zinc-600 uppercase tracking-widest mb-3">Galeria Zdjęć</p>
+                                <p className="font-bold text-white text-sm mb-2 group-hover:text-gold-400 transition-colors line-clamp-1">{activeGallery.client_name || 'Twoja sesja'}</p>
+                                <span className="inline-block text-xs px-2 py-0.5 rounded-full border text-green-400 bg-green-900/20 border-green-700/30">
+                                    ✓ Dostępna
+                                </span>
+                            </button>
+                        ) : (
+                            <div className="bg-zinc-900/30 border border-dashed border-zinc-800 rounded-2xl p-5">
+                                <p className="text-xs text-zinc-600 uppercase tracking-widest mb-3">Galeria Zdjęć</p>
+                                <p className="text-sm text-zinc-600">Brak galerii</p>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+                    <div className="lg:col-span-4 space-y-6">
+                        <div className="bg-zinc-900/50 backdrop-blur-xl border border-zinc-800 rounded-3xl p-8 space-y-6">
+                            <div className="flex items-center gap-4">
+                                <div className="w-16 h-16 bg-gradient-to-br from-gold-600 to-gold-400 rounded-2xl flex items-center justify-center text-black font-bold text-2xl">
+                                    {user?.name?.[0]}
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-xl">{user?.name}</h3>
+                                    <p className="text-zinc-500 text-sm">{user?.email}</p>
+                                </div>
+                            </div>
+
+                            <div className="pt-6 border-t border-zinc-800 space-y-4">
+                                <div className="flex items-center justify-between text-sm">
+                                    <span className="text-zinc-500">Rola</span>
+                                    <span className="px-2 py-0.5 bg-gold-500/10 text-gold-500 rounded-md text-[10px] uppercase font-bold tracking-widest">{user?.role || 'CLIENT'}</span>
+                                </div>
+                            </div>
+
+                            <button onClick={() => setActiveTab('settings')} className="flex items-center justify-center gap-2 w-full py-3 bg-zinc-800 hover:bg-zinc-700 rounded-xl text-sm font-bold transition-all">
+                                Zarządzaj Profilem
+                            </button>
                         </div>
 
-                        <div className="pt-6 border-t border-zinc-800 space-y-4">
-                            <div className="flex items-center justify-between text-sm">
-                                <span className="text-zinc-500">Rola</span>
-                                <span className="px-2 py-0.5 bg-gold-500/10 text-gold-500 rounded-md text-[10px] uppercase font-bold tracking-widest">{user?.role || 'CLIENT'}</span>
-                            </div>
+                        <div className="bg-zinc-900/30 border border-zinc-800/50 rounded-3xl p-6">
+                            <h4 className="font-bold mb-3 flex items-center gap-2 text-gold-500">
+                                <Gift className="w-4 h-4 text-gold-500" />
+                                Prezent dla Ciebie
+                            </h4>
+                            <p className="text-xs text-zinc-500 leading-relaxed mb-4">
+                                Pamiętaj o swoich kartach podarunkowych. Możesz je wykorzystać przy następnej rezerwacji.
+                            </p>
+                            <button onClick={() => setActiveTab('settings')} className="text-xs font-bold text-gold-500 hover:underline">
+                                Zobacz portfel kart
+                            </button>
                         </div>
-
-                        <button onClick={() => setActiveTab('settings')} className="flex items-center justify-center gap-2 w-full py-3 bg-zinc-800 hover:bg-zinc-700 rounded-xl text-sm font-bold transition-all">
-                            Zarządzaj Profilem
-                        </button>
                     </div>
 
-                    <div className="bg-zinc-900/30 border border-zinc-800/50 rounded-3xl p-6">
-                        <h4 className="font-bold mb-3 flex items-center gap-2 text-gold-500">
-                            <Gift className="w-4 h-4 text-gold-500" />
-                            Prezent dla Ciebie
-                        </h4>
-                        <p className="text-xs text-zinc-500 leading-relaxed mb-4">
-                            Pamiętaj o swoich kartach podarunkowych. Możesz je wykorzystać przy następnej rezerwacji.
-                        </p>
-                        <button onClick={() => setActiveTab('settings')} className="text-xs font-bold text-gold-500 hover:underline">
-                            Zobacz portfel kart
-                        </button>
+                    <div className="lg:col-span-8 space-y-12">
+                        <div className="grid md:grid-cols-2 gap-6">
+                            <QuickCard
+                                title="Ostatnia sesja"
+                                value={challenges[0]?.invitee_name ? `Wyzwanie dla ${challenges[0].invitee_name}` : (galleries[0]?.client_name || 'Brak sesji')}
+                                icon={<ImageIcon className="w-5 h-5" />}
+                                actionLabel="Zobacz zdjęcia"
+                                onAction={() => setActiveTab('sessions')}
+                            />
+                            <QuickCard
+                                title="Twoje dokumenty"
+                                value={(offers.length + contracts.length) > 0 ? `${offers.length + contracts.length} dokumentów` : 'Brak dokumentów'}
+                                icon={<FileText className="w-5 h-5" />}
+                                actionLabel="Oferty i Umowy"
+                                onAction={() => setActiveTab('documents')}
+                            />
+                        </div>
+                        {renderGiftCards()}
                     </div>
-                </div>
-
-                <div className="lg:col-span-8 space-y-12">
-                    <div className="grid md:grid-cols-2 gap-6">
-                        <QuickCard
-                            title="Ostatnia sesja"
-                            value={challenges[0]?.invitee_name ? `Wyzwanie dla ${challenges[0].invitee_name}` : (galleries[0]?.client_name || 'Brak sesji')}
-                            icon={<ImageIcon className="w-5 h-5" />}
-                            actionLabel="Zobacz zdjęcia"
-                            onAction={() => setActiveTab('sessions')}
-                        />
-                        <QuickCard
-                            title="Twoje dokumenty"
-                            value={(offers.length + contracts.length) > 0 ? `${offers.length + contracts.length} dokumentów` : 'Brak dokumentów'}
-                            icon={<FileText className="w-5 h-5" />}
-                            actionLabel="Oferty i Umowy"
-                            onAction={() => setActiveTab('documents')}
-                        />
-                    </div>
-                    {renderGiftCards()}
                 </div>
             </div>
         );
@@ -411,7 +494,11 @@ export default function AccountPage() {
                                     <div className="text-right w-full md:w-auto flex items-center justify-between md:justify-end gap-6">
                                         <div>
                                             <p className="text-xs text-zinc-500 uppercase tracking-widest mb-1">Wartość</p>
-                                            <p className="text-xl font-bold text-white">{offer.total_price} PLN</p>
+                                            {offer.status === 'accepted' ? (
+                                                <p className="text-xl font-bold text-white">{offer.total_price} PLN</p>
+                                            ) : (
+                                                <p className="text-sm text-zinc-500 italic">Oczekuje na zatwierdzenie</p>
+                                            )}
                                         </div>
                                         <div className="w-10 h-10 bg-zinc-800 rounded-full flex items-center justify-center text-zinc-400 group-hover:bg-gold-600 group-hover:text-black transition-all">
                                             <ChevronRight className="w-5 h-5" />

@@ -128,11 +128,14 @@ export async function PATCH(
 
         // Handle different actions
         if (action === 'accept') {
+            const parsedTotalPrice = parseInt(body.client_selection?.totalPrice) || 0;
+
             await (prisma.offer.update as any)({
                 where: { id: offerId },
                 data: {
                     status: 'accepted',
-                    client_selection: body.client_selection ?? undefined
+                    client_selection: body.client_selection ?? undefined,
+                    total_price: parsedTotalPrice
                 },
             });
 
@@ -203,6 +206,39 @@ export async function PATCH(
                     status: 'open',
                 },
             });
+        } else if (action === 'request_unlock') {
+            await prisma.offer.update({
+                where: { id: offerId },
+                data: { status: 'unlock_requested' },
+            });
+
+            // Notify admin about the unlock request
+            try {
+                const adminEmail = await getAdminEmail();
+                const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://wlasniewski.pl';
+                if (adminEmail) {
+                    await sendEmail({
+                        to: adminEmail,
+                        subject: `🔓 Prośba o odblokowanie oferty — ${offer.title}`,
+                        html: `
+<div style="font-family:Arial,sans-serif;padding:20px;background:#0a0a0a;color:#fff;max-width:600px;margin:0 auto;">
+  <h2 style="color:#fbbf24;">🔓 Klient prosi o odblokowanie oferty</h2>
+  <div style="background:#111;border:1px solid #222;border-radius:8px;padding:20px;margin:16px 0;">
+    <p style="color:#888;margin:0 0 4px;font-size:12px;text-transform:uppercase;letter-spacing:2px;">Oferta</p>
+    <p style="color:#c5a059;font-size:18px;font-weight:bold;margin:0;">${offer.title}</p>
+    <p style="color:#555;font-size:12px;margin:6px 0 0;">Klient: ${decoded.email}</p>
+  </div>
+  <p style="color:#ccc;font-size:14px;">Klient zaznaczył, że pomylił się przy wyborze i prosi o ponowne odblokowanie możliwości edycji/wyboru pakietu.</p>
+  <p style="color:#ccc;font-size:14px;">Aby odblokować ofertę, przejdź do jej edycji w panelu i użyj przycisku <strong>"Wyślij ponownie"</strong>.</p>
+  <div style="text-align:center;margin:24px 0;">
+    <a href="${appUrl}/admin/offers/${offer.id}" style="display:inline-block;background:#c5a059;color:#000;text-decoration:none;padding:14px 32px;border-radius:8px;font-weight:bold;">Edytuj ofertę →</a>
+  </div>
+</div>`
+                    });
+                }
+            } catch (emailError) {
+                console.error('[Offer Unlock Request] Failed to send admin notification:', emailError);
+            }
         }
 
         // Fetch updated offer

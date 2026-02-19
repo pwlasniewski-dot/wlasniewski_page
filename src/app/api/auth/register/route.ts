@@ -28,8 +28,18 @@ export async function POST(req: NextRequest) {
                 email,
                 password_hash: hashedPassword,
                 role: 'CLIENT',
-            },
+                // Self-registered clients start with limited access.
+                // Admin must explicitly grant offers/contracts access.
+            } as any,
         });
+
+        // Set default permissions for self-registered user (no offers/contracts by default)
+        const defaultPerms = JSON.stringify({ galleries: true, bookings: true, gift_cards: true, offers: false, contracts: false });
+        await prisma.$executeRawUnsafe(
+            `UPDATE users SET permissions = $1::jsonb WHERE id = $2`,
+            defaultPerms,
+            user.id
+        );
 
         // Auto-login logic
         const token = await generateToken({ id: user.id, email: user.email });

@@ -233,22 +233,22 @@ export default function ProfileSettingsPage() {
                                 animate={{ opacity: 1, height: 'auto' }}
                                 className="bg-black/50 p-4 rounded-xl border border-zinc-800 text-[10px] text-zinc-500 gap-y-1 grid grid-cols-2"
                             >
-                                <p className={`flex items-center gap-1.5 ${formData.newPassword.length >= 8 ? 'text-green-500' : ''}`}>
-                                    {formData.newPassword.length >= 8 ? <CheckCircle2 className="w-3 h-3" /> : <div className="w-1 h-1 bg-zinc-600 rounded-full" />}
+                                <span className={`flex items-center gap-1.5 ${formData.newPassword.length >= 8 ? 'text-green-500' : ''}`}>
+                                    {formData.newPassword.length >= 8 ? <CheckCircle2 className="w-3 h-3" /> : <span className="w-1 h-1 bg-zinc-600 rounded-full inline-block" />}
                                     Min. 8 znaków
-                                </p>
-                                <p className={`flex items-center gap-1.5 ${/[A-Z]/.test(formData.newPassword) ? 'text-green-500' : ''}`}>
-                                    {/[A-Z]/.test(formData.newPassword) ? <CheckCircle2 className="w-3 h-3" /> : <div className="w-1 h-1 bg-zinc-600 rounded-full" />}
+                                </span>
+                                <span className={`flex items-center gap-1.5 ${/[A-Z]/.test(formData.newPassword) ? 'text-green-500' : ''}`}>
+                                    {/[A-Z]/.test(formData.newPassword) ? <CheckCircle2 className="w-3 h-3" /> : <span className="w-1 h-1 bg-zinc-600 rounded-full inline-block" />}
                                     Wielka litera
-                                </p>
-                                <p className={`flex items-center gap-1.5 ${/[a-z]/.test(formData.newPassword) ? 'text-green-500' : ''}`}>
-                                    {/[a-z]/.test(formData.newPassword) ? <CheckCircle2 className="w-3 h-3" /> : <div className="w-1 h-1 bg-zinc-600 rounded-full" />}
+                                </span>
+                                <span className={`flex items-center gap-1.5 ${/[a-z]/.test(formData.newPassword) ? 'text-green-500' : ''}`}>
+                                    {/[a-z]/.test(formData.newPassword) ? <CheckCircle2 className="w-3 h-3" /> : <span className="w-1 h-1 bg-zinc-600 rounded-full inline-block" />}
                                     Mała litera
-                                </p>
-                                <p className={`flex items-center gap-1.5 ${/[!@#$%^&*(),.?":{}|<>]/.test(formData.newPassword) ? 'text-green-500' : ''}`}>
-                                    {/[!@#$%^&*(),.?":{}|<>]/.test(formData.newPassword) ? <CheckCircle2 className="w-3 h-3" /> : <div className="w-1 h-1 bg-zinc-600 rounded-full" />}
+                                </span>
+                                <span className={`flex items-center gap-1.5 ${/[!@#$%^&*(),.?":{}|<>]/.test(formData.newPassword) ? 'text-green-500' : ''}`}>
+                                    {/[!@#$%^&*(),.?":{}|<>]/.test(formData.newPassword) ? <CheckCircle2 className="w-3 h-3" /> : <span className="w-1 h-1 bg-zinc-600 rounded-full inline-block" />}
                                     Znak specjalny
-                                </p>
+                                </span>
                             </motion.div>
                         )}
                     </section>

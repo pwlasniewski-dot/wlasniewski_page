@@ -104,6 +104,64 @@ export default function DashboardPage() {
                     </Link>
                 </div>
             </div>
+
+            {/* Ostatnia Aktywność */}
+            <div className="mt-8">
+                <h2 className="text-lg font-medium text-white mb-4">Ostatnia Aktywność</h2>
+                <div className="bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden shadow">
+                    <ActivityFeed />
+                </div>
+            </div>
         </div>
+    );
+}
+
+function ActivityFeed() {
+    const [logs, setLogs] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchActivity = async () => {
+            try {
+                const token = localStorage.getItem('admin_token');
+                const res = await fetch('/api/admin/dashboard/activity', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    setLogs(data.logs);
+                }
+            } catch (error) {
+                console.error('Failed to fetch activity', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchActivity();
+    }, []);
+
+    if (loading) return <div className="p-6 text-center text-zinc-500">Ładowanie aktywności...</div>;
+    if (logs.length === 0) return <div className="p-6 text-center text-zinc-500">Brak nowej aktywności</div>;
+
+    return (
+        <ul className="divide-y divide-zinc-800">
+            {logs.map((log: any) => (
+                <li key={log.id} className="p-4 hover:bg-zinc-800/50 transition-colors">
+                    <div className="flex items-start justify-between">
+                        <div>
+                            <p className="text-sm font-medium text-white">{log.message || log.action}</p>
+                            {log.details && (
+                                <pre className="mt-1 text-xs text-zinc-500 max-w-2xl overflow-hidden text-ellipsis">
+                                    {typeof log.details === 'string' ? log.details : JSON.stringify(log.details)}
+                                </pre>
+                            )}
+                        </div>
+                        <div className="text-xs text-zinc-500 ml-4 whitespace-nowrap">
+                            {new Date(log.created_at).toLocaleString()}
+                        </div>
+                    </div>
+                </li>
+            ))}
+        </ul>
     );
 }

@@ -1,0 +1,131 @@
+﻿OFFER DATA:
+{
+  "id": 12,
+  "slug": "offer-1771402444307",
+  "offerNumber": "B2C-2026-001",
+  "title": "Oferta Pierwsza Komunia Święta - Toruń",
+  "type": "b2c",
+  "category": null,
+  "status": "draft",
+  "valid_until": null,
+  "client_id": 7,
+  "client_email": "pwlasniewski_2@gmail.com",
+  "is_template": false,
+  "created_at": "2026-02-18T08:14:05.521Z",
+  "updated_at": "2026-02-18T08:14:05.521Z",
+  "pdf_url": null,
+  "drive_url": null,
+  "template_data": {
+    "title": "Oferta Pierwsza Komunia Święta - Toruń",
+    "labels": {
+      "date": "Data",
+      "team": "Zespół",
+      "count": "Liczba dzieci",
+      "prepDay": "W dniu Komunii",
+      "location": "Lokalizacja",
+      "prepBefore": "Przed uroczystością",
+      "albumAdvantage": "Zaleta Pamiątek Albumowych",
+      "footerDisclaimer": "Ogólne warunki współpracy"
+    },
+    "features": [
+      "Bezpieczeństwo Techniczne: Każdy z dwóch fotografów pracuje na dwóch kartach...",
+      "Uprawnienia Kurialne: Posiadamy oficjalne licencje...",
+      "Prywatna Galeria Online: Rodzice otrzymują dostęp..."
+    ],
+    "subtitle": "Pierwsza Komunia Święta 2026",
+    "eventDate": "30 maja 2026 r.",
+    "eventTeam": "2 zawodowych fotografów",
+    "contactZip": "",
+    "eventCount": "ok. 60 osób",
+    "contactName": "Przemysław Właśniewski",
+    "pricingRows": [
+      {
+        "values": [
+          "Reportaż (2 fotografów)",
+          "TAK",
+          "TAK",
+          "TAK"
+        ]
+      },
+      {
+        "values": [
+          "Galeria online",
+          "TAK",
+          "TAK",
+          "TAK"
+        ]
+      },
+      {
+        "values": [
+          "Odbitki Premium 15x23",
+          "5 sztuk",
+          "—",
+          "—"
+        ]
+      },
+      {
+        "values": [
+          "Luksusowy Fotoalbum",
+          "—",
+          "10 ROZKŁADÓWEK",
+          "20 ROZKŁADÓWEK"
+        ],
+        "isHeader": true
+      },
+      {
+        "values": [
+          "Indywidualna Sesja",
+          "—",
+          "—",
+          "Studio lub Plener"
+        ],
+        "isHeader": true
+      }
+    ],
+    "contactEmail": "pwlasniewski_2@gmail.com",
+    "contactPhone": "530788694",
+    "footerPrices": [
+      "Inwestycja (za dziecko)",
+      "139 zł",
+      "209 zł",
+      "890 zł"
+    ],
+    "preparations": {
+      "dayOf": "Jesteśmy na miejscu 60 minut przed mszą. Dokumentujemy przygotowania...",
+      "before": "Osobista konsultacja z księdzem proboszczem w celu omówienia przebiegu liturgii..."
+    },
+    "deliveryTerms": {
+      "t1": "14 dni roboczych: Czas na udostępnienie galerii...",
+      "t2": "40 dni: Czas na dostarczenie gotowych albumów...",
+      "t3": "Brak ukrytych kosztów: Podane ceny są kwotami brutto..."
+    },
+    "eventLocation": "Parafia w Toruniu",
+    "footerCompany": "FOTO-DRON Przemysław Właśniewski NIP: 8781430365 • Toruń 2026",
+    "sectionTitles": {
+      "delivery": "Dostarczenie Pamiątek",
+      "standards": "Kluczowe Standardy Współpracy",
+      "preparations": "Proces Przygotowań i Realizacji"
+    },
+    "contactAddress": "",
+    "pricingHeaders": [
+      "ELEMENTY OFERTY",
+      "PAKIET KLASYCZNY",
+      "ALBUMOWY STANDARD",
+      "PAKIET EXTRA"
+    ],
+    "contactLocation": "Toruń",
+    "albumDescription": "Nasze albumy to profesjonalne księgi z grubymi, sztywnymi kartami...",
+    "sectionVisibility": {
+      "album": true,
+      "pricing": true,
+      "delivery": true,
+      "features": true,
+      "eventInfo": true,
+      "preparations": true
+    },
+    "recommendationLabel": "Rekomendowany",
+    "recommendationColumnIndex": 2
+  },
+  "total_price": 209,
+  "sections": []
+}

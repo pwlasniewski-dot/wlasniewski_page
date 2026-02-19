@@ -43,10 +43,22 @@ export default function AdminLayout({
         return null; // Or a loading spinner
     }
 
-    // Public pages get simple layout (no sidebar)
-    const publicPages = ['/admin/login', '/admin/forgot-password', '/admin/reset-password', '/admin/emergency-reset'];
-    if (publicPages.some(page => pathname?.startsWith(page))) {
-        return <>{children}</>;
+    // Pages that get simple layout (no sidebar)
+    const noSidebarPages = [
+        '/admin/login',
+        '/admin/forgot-password',
+        '/admin/reset-password',
+        '/admin/emergency-reset',
+        '/admin/offers/create',
+        '/admin/generator-umow'
+    ];
+
+    // Check if current path matches EXACTLY for editing an offer (avoid matching /admin/offers list which is now redirected anyway)
+    const isEditingOffer = pathname?.match(/^\/admin\/offers\/\d+$/);
+    const isEditingContract = pathname?.match(/^\/admin\/offers\/\d+\/contract/);
+
+    if (noSidebarPages.some(page => pathname?.startsWith(page)) || isEditingOffer || isEditingContract) {
+        return <div className="min-h-screen bg-zinc-950">{children}</div>;
     }
 
     return (
