@@ -629,9 +629,13 @@ function ClientDetailsContent({ id }: { id: string }) {
                                         </div>
                                         <div className="flex gap-2">
                                             {/* Add View/Download buttons here later */}
-                                            <button className="px-4 py-2 bg-zinc-800 text-zinc-400 rounded-lg text-sm" disabled>
-                                                Podgląd (Wkrótce)
-                                            </button>
+                                            <a
+                                                href={`/strefa-klienta/umowy/${contract.id}`}
+                                                target="_blank"
+                                                className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white rounded-lg text-sm border border-zinc-700 transition-all"
+                                            >
+                                                Podgląd
+                                            </a>
                                         </div>
                                     </div>
                                 ))

@@ -143,7 +143,7 @@ export async function POST(request: NextRequest) {
       </div>
       
       <div style="text-align:center;margin:32px 0;">
-        <a href="${appUrl}/strefa-klienta/umowy" style="display:inline-block;background:#c5a059;color:#000;text-decoration:none;padding:16px 40px;border-radius:8px;font-weight:bold;font-size:16px;letter-spacing:1px;">
+        <a href="${appUrl}/strefa-klienta/umowy/${contract.id}" style="display:inline-block;background:#c5a059;color:#000;text-decoration:none;padding:16px 40px;border-radius:8px;font-weight:bold;font-size:16px;letter-spacing:1px;">
           📄 Przejdź do umowy
         </a>
       </div>

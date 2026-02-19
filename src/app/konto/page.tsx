@@ -133,20 +133,25 @@ export default function AccountPage() {
                     </div>
 
                     {/* Tab Navigation — filtered by permissions */}
-                    <div className="flex items-center gap-4 mt-12 overflow-x-auto pb-4 no-scrollbar">
+                    <div className="flex bg-zinc-900/50 p-2 rounded-[2.5rem] border border-zinc-800 backdrop-blur-xl overflow-x-auto no-scrollbar">
                         <TabButton id="overview" label="Przegląd" active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} icon={<Star className="w-4 h-4" />} />
+
                         {userPermissions?.galleries !== false && (
-                            <TabButton id="sessions" label="Zdjęcia z sesji" active={activeTab === 'sessions'} onClick={() => setActiveTab('sessions')} icon={<ImageIcon className="w-4 h-4" />} count={challenges.length + galleries.length} />
+                            <TabButton id="sessions" label="Galerie" active={activeTab === 'sessions'} onClick={() => setActiveTab('sessions')} icon={<ImageIcon className="w-4 h-4" />} count={galleries.length + challenges.length} />
                         )}
+
                         {userPermissions?.bookings !== false && (
                             <TabButton id="bookings" label="Rezerwacje" active={activeTab === 'bookings'} onClick={() => setActiveTab('bookings')} icon={<Calendar className="w-4 h-4" />} count={bookings.length} />
                         )}
+
                         {(userPermissions?.offers !== false || userPermissions?.contracts !== false) && (
                             <TabButton id="documents" label="Oferty i Umowy" active={activeTab === 'documents'} onClick={() => setActiveTab('documents')} icon={<FileText className="w-4 h-4" />} count={offers.length + contracts.length} />
                         )}
+
                         {userPermissions?.gift_cards !== false && (
                             <TabButton id="gift_cards" label="Karty Podarunkowe" active={activeTab === 'gift_cards'} onClick={() => setActiveTab('gift_cards')} icon={<Gift className="w-4 h-4" />} count={giftCards.length} />
                         )}
+
                         <TabButton id="settings" label="Ustawienia" active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} icon={<UserIcon className="w-4 h-4" />} />
                         {user?.role === 'PHOTOGRAPHER' && (
                             <TabButton id="partner" label="Strefa Partnera" active={activeTab === 'partner'} onClick={() => setActiveTab('partner')} icon={<Star className="w-4 h-4 text-gold-500" />} />
@@ -218,9 +223,9 @@ export default function AccountPage() {
         return (
             <div className="space-y-10">
                 {/* Hero Status Block */}
-                {(activeOffer || activeContract || activeGallery) && (
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        {activeOffer ? (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    {userPermissions?.offers !== false && (
+                        activeOffer ? (
                             <button onClick={() => setActiveTab('documents')} className="text-left bg-zinc-900/60 border border-zinc-800 hover:border-gold-500/30 rounded-2xl p-5 transition-all group">
                                 <p className="text-xs text-zinc-600 uppercase tracking-widest mb-3">Aktualna Oferta</p>
                                 <p className="font-bold text-white text-sm mb-2 group-hover:text-gold-400 transition-colors line-clamp-1">{activeOffer?.title || 'Bez tytułu'}</p>
@@ -233,9 +238,11 @@ export default function AccountPage() {
                                 <p className="text-xs text-zinc-600 uppercase tracking-widest mb-3">Aktualna Oferta</p>
                                 <p className="text-sm text-zinc-600">Brak oferty</p>
                             </div>
-                        )}
+                        )
+                    )}
 
-                        {activeContract ? (
+                    {userPermissions?.contracts !== false && (
+                        activeContract ? (
                             <button onClick={() => setActiveTab('documents')} className="text-left bg-zinc-900/60 border border-zinc-800 hover:border-gold-500/30 rounded-2xl p-5 transition-all group">
                                 <p className="text-xs text-zinc-600 uppercase tracking-widest mb-3">Umowa</p>
                                 <p className="font-bold text-white text-sm mb-2 line-clamp-1">{activeContract?.offer?.title || activeContract?.contract_number || `Umowa #${activeContract?.id}`}</p>
@@ -248,9 +255,11 @@ export default function AccountPage() {
                                 <p className="text-xs text-zinc-600 uppercase tracking-widest mb-3">Umowa</p>
                                 <p className="text-sm text-zinc-600">Brak umowy</p>
                             </div>
-                        )}
+                        )
+                    )}
 
-                        {activeGallery ? (
+                    {userPermissions?.galleries !== false && (
+                        activeGallery ? (
                             <button onClick={() => setActiveTab('sessions')} className="text-left bg-zinc-900/60 border border-zinc-800 hover:border-gold-500/30 rounded-2xl p-5 transition-all group">
                                 <p className="text-xs text-zinc-600 uppercase tracking-widest mb-3">Galeria Zdjęć</p>
                                 <p className="font-bold text-white text-sm mb-2 group-hover:text-gold-400 transition-colors line-clamp-1">{activeGallery?.client_name || 'Twoja sesja'}</p>
@@ -263,9 +272,9 @@ export default function AccountPage() {
                                 <p className="text-xs text-zinc-600 uppercase tracking-widest mb-3">Galeria Zdjęć</p>
                                 <p className="text-sm text-zinc-600">Brak galerii</p>
                             </div>
-                        )}
-                    </div>
-                )}
+                        )
+                    )}
+                </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
                     <div className="lg:col-span-4 space-y-6">
@@ -292,38 +301,44 @@ export default function AccountPage() {
                             </button>
                         </div>
 
-                        <div className="bg-zinc-900/30 border border-zinc-800/50 rounded-3xl p-6">
-                            <h4 className="font-bold mb-3 flex items-center gap-2 text-gold-500">
-                                <Gift className="w-4 h-4 text-gold-500" />
-                                Prezent dla Ciebie
-                            </h4>
-                            <p className="text-xs text-zinc-500 leading-relaxed mb-4">
-                                Pamiętaj o swoich kartach podarunkowych. Możesz je wykorzystać przy następnej rezerwacji.
-                            </p>
-                            <button onClick={() => setActiveTab('settings')} className="text-xs font-bold text-gold-500 hover:underline">
-                                Zobacz portfel kart
-                            </button>
-                        </div>
+                        {userPermissions?.gift_cards !== false && (
+                            <div className="bg-zinc-900/30 border border-zinc-800/50 rounded-3xl p-6">
+                                <h4 className="font-bold mb-3 flex items-center gap-2 text-gold-500">
+                                    <Gift className="w-4 h-4 text-gold-500" />
+                                    Prezent dla Ciebie
+                                </h4>
+                                <p className="text-xs text-zinc-500 leading-relaxed mb-4">
+                                    Pamiętaj o swoich kartach podarunkowych. Możesz je wykorzystać przy następnej rezerwacji.
+                                </p>
+                                <button onClick={() => setActiveTab('gift_cards')} className="text-xs font-bold text-gold-500 hover:underline">
+                                    Zobacz portfel kart
+                                </button>
+                            </div>
+                        )}
                     </div>
 
                     <div className="lg:col-span-8 space-y-12">
                         <div className="grid md:grid-cols-2 gap-6">
-                            <QuickCard
-                                title="Ostatnia sesja"
-                                value={challenges[0]?.invitee_name ? `Wyzwanie dla ${challenges[0].invitee_name}` : (galleries[0]?.client_name || 'Brak sesji')}
-                                icon={<ImageIcon className="w-5 h-5" />}
-                                actionLabel="Zobacz zdjęcia"
-                                onAction={() => setActiveTab('sessions')}
-                            />
-                            <QuickCard
-                                title="Twoje dokumenty"
-                                value={(offers.length + contracts.length) > 0 ? `${offers.length + contracts.length} dokumentów` : 'Brak dokumentów'}
-                                icon={<FileText className="w-5 h-5" />}
-                                actionLabel="Oferty i Umowy"
-                                onAction={() => setActiveTab('documents')}
-                            />
+                            {userPermissions?.galleries !== false && (
+                                <QuickCard
+                                    title="Ostatnia sesja"
+                                    value={challenges[0]?.invitee_name ? `Wyzwanie dla ${challenges[0].invitee_name}` : (galleries[0]?.client_name || 'Brak sesji')}
+                                    icon={<ImageIcon className="w-5 h-5" />}
+                                    actionLabel="Zobacz zdjęcia"
+                                    onAction={() => setActiveTab('sessions')}
+                                />
+                            )}
+                            {(userPermissions?.offers !== false || userPermissions?.contracts !== false) && (
+                                <QuickCard
+                                    title="Twoje dokumenty"
+                                    value={(offers.length + contracts.length) > 0 ? `${offers.length + contracts.length} dokumentów` : 'Brak dokumentów'}
+                                    icon={<FileText className="w-5 h-5" />}
+                                    actionLabel="Oferty i Umowy"
+                                    onAction={() => setActiveTab('documents')}
+                                />
+                            )}
                         </div>
-                        {renderGiftCards()}
+                        {userPermissions?.gift_cards !== false && renderGiftCards()}
                     </div>
                 </div>
             </div>

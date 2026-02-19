@@ -175,6 +175,18 @@ Ten plik służy do ścisłego monitorowania wszystkich zmian wprowadzanych w pr
 
 ## Log Zmian
 
+### [2026-02-19] Final Production Fixes: 404 Links & Dashboard Permissions
+
+**Zmiany:**
+- **Naprawa błędu 404 na linkach do umów**: Poprawiono szablon maila (`src/app/api/admin/contracts/route.ts`), aby przycisk kierował bezpośrednio do strony umowy z jej ID.
+- **Legacy Redirects**: Dodano strony `strefa-klienta/umowy/page.tsx` oraz `strefa-klienta/oferty/page.tsx`, które automatycznie przekierowują użytkowników na główny dashboard `/konto`.
+- **Admin Contract Preview**: W widoku szczegółów klienta (`src/app/admin/clients/[id]/page.tsx`) zamieniono placeholder "Podgląd (Wkrótce)" na funkcjonalny link do podglądu umowy w nowej karcie.
+- **Rygorystyczne Uprawnienia (Dashboard)**: W `src/app/konto/page.tsx` wdrożono sprawdzanie `userPermissions` dla wszystkich kafelków statusu i kart szybkiego dostępu. Jeśli sekcja (galerie, oferty, umowy, karty podarunkowe) jest wyłączona, jej podgląd na pulpicie zostaje całkowicie ukryty.
+
+**Decyzje:**
+- Przekierowania dla starych URL-i zapewniają ciągłość działania systemu nawet przy użyciu starych linków z historii mailowej.
+- Ujednolicono widoczność sekcji między nawigacją a pulpitem, eliminując "wycieki" informacji, do których klient nie powinien mieć dostępu.
+
 ### [2026-02-19] Critical Production Fixes: Portal Crash & Placeholder System
 
 **Zmiany:**
