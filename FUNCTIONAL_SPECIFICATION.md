@@ -126,15 +126,15 @@ System został rozbudowany o dedykowany moduł zarządzania relacjami z klientem
 ### 3.4. Generator Ofert i Portal Klienta (v3.0) [IMPLEMENTED: 2026-02-19]
 System wprowadzony w v3.0 zapewnia kompleksowy przepływ pracy nad ofertą i umową:
 - **Offer Generator**: Narzędzie dla fotografa do tworzenia spersonalizowanych ofert B2B/B2C.
-- **Independent Contracts**: Możliwość generowania umów niezależnych od ofert (standalone), co pozwala na szybszą obsługę niestandardowych zleceń.
-- **Mandatory Keyboard Signature**: Wbudowany system wymuszający czytelny podpis administratora (wykonawcy) przed zapisaniem dokumentu, co podnosi profesjonalizm i wiarygodność dokumentacji.
-- **Client Portal**: Dedykowana strefa (`/strefa-klienta`), gdzie klient po zalogowaniu może:
-    - Przeglądać aktywne oferty.
-    - Negocjować warunki (komentarze, prośby o zmianę).
-    - Akceptować ofertę (co generuje powiązaną Umowę).
-    - Podpisywać umowy cyfrowo (z aktualizacją statusu `signed` i `signed_at`).
-- **Conditional Email Logic**: Automatyczne powiadomienia e-mail dostosowują treść do stanu dokumentu (np. ukrywanie informacji o załączniku PDF, jeśli plik nie został jeszcze wygenerowany).
-- **Integracja Chmurowa**: Wszystkie dokumenty są archiwizowane na S3 i możliwe do pobrania w formacie PDF.
+- **Standalone Contracts**: Możliwość generowania umów niezależnych od ofert (`offer_id` is Optional). Pozwala to na obsługę klientów, którzy nie przechodzą przez standardowy proces ofertowania.
+- **Server-Side Placeholder System**: Nowatorski system automatycznego wstrzykiwania danych. Tagi takie jak `{{contractNumber}}`, `{{clientName}}`, `{{currentDate}}`, `{{clientEmail}}` są zamieniane na realne dane z bazy przy zapisie (`POST /api/admin/contracts`) oraz przy pobieraniu dokumentu przez klienta.
+- **Mandatory Keyboard Signature**: Wbudowany system wymuszający czytelny podpis administratora (wykonawcy) przed zapisaniem dokumentu. Podpis jest renderowany na PDF w eleganckim stylu kursywnym.
+- **Client Portal**: Dedykowana strefa (`/konto`), gdzie klient po zalogowaniu może:
+    - Przeglądać aktywne oferty i umowy.
+    - Monitorować status sesji i galerii (Hero Status Boxes z zabezpieczeniem przed crashami przy braku dokumentów).
+    - Akceptować oferty i podpisywać umowy cyfrowo.
+- **Conditional Email Logic**: Automatyczne powiadomienia e-mail dostosowują treść do stanu dokumentu (np. brak wzmianki o załączniku PDF, jeśli plik nie został wygenerowany).
+- **Vercel PDF Optimization**: Przekierowywanie żądań PDF bezpośrednio do S3, eliminując problemy z generowaniem plików w środowisku serverless.
 
 ---
 

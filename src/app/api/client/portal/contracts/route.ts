@@ -7,8 +7,8 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
     try {
         // Extract and verify token
-        const token = extractToken(request.headers.get('authorization')) || 
-                     request.cookies.get('client_token')?.value;
+        const token = extractToken(request.headers.get('authorization')) ||
+            request.cookies.get('client_token')?.value;
 
         if (!token) {
             return NextResponse.json(
@@ -29,6 +29,7 @@ export async function GET(request: NextRequest) {
         const contracts = await prisma.contract.findMany({
             where: {
                 OR: [
+                    { client_id: decoded.id },
                     { offer: { client_id: decoded.id } },
                     { offer: { client_email: decoded.email } },
                 ],

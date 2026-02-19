@@ -55,7 +55,35 @@ export async function GET(
             return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
         }
 
-        return NextResponse.json({ contract });
+        // --- PLACEHOLDER REPLACEMENT LOGIC ---
+        const replacePlaceholders = (text: string, context: any) => {
+            if (!text) return text;
+            return text
+                .replace(/\{\{contractNumber\}\}/g, context.contract_number || '')
+                .replace(/\{\{currentDate\}\}/g, new Date().toLocaleDateString('pl-PL'))
+                .replace(/\{\{clientName\}\}/g, context.clientName || '')
+                .replace(/\{\{clientEmail\}\}/g, context.clientEmail || '')
+                .replace(/\{\{offerTitle\}\}/g, context.offerTitle || 'Umowa Samodzielna');
+        };
+
+        // Fetch user name for context if needed
+        const user = await prisma.user.findUnique({
+            where: { id: decoded.id },
+            select: { name: true, email: true }
+        });
+
+        const replacementContext = {
+            contract_number: contract.contract_number,
+            clientName: user?.name || decoded.email || 'Kliencie',
+            clientEmail: user?.email || decoded.email || '',
+            offerTitle: contract.offer?.title || 'Umowa Samodzielna'
+        };
+
+        const finalContent = replacePlaceholders(contract.content || '', replacementContext);
+        const processedContract = { ...contract, content: finalContent };
+        // -------------------------------------
+
+        return NextResponse.json({ contract: processedContract });
     } catch (error) {
         console.error('Error fetching contract:', error);
         return NextResponse.json({ error: 'Failed to fetch contract' }, { status: 500 });

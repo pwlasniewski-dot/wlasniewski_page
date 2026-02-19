@@ -223,9 +223,9 @@ export default function AccountPage() {
                         {activeOffer ? (
                             <button onClick={() => setActiveTab('documents')} className="text-left bg-zinc-900/60 border border-zinc-800 hover:border-gold-500/30 rounded-2xl p-5 transition-all group">
                                 <p className="text-xs text-zinc-600 uppercase tracking-widest mb-3">Aktualna Oferta</p>
-                                <p className="font-bold text-white text-sm mb-2 group-hover:text-gold-400 transition-colors line-clamp-1">{activeOffer.title}</p>
-                                <span className={`inline-block text-xs px-2 py-0.5 rounded-full border ${(offerStatusLabel[activeOffer.status] || offerStatusLabel.draft).color}`}>
-                                    {(offerStatusLabel[activeOffer.status] || offerStatusLabel.draft).label}
+                                <p className="font-bold text-white text-sm mb-2 group-hover:text-gold-400 transition-colors line-clamp-1">{activeOffer?.title || 'Bez tytułu'}</p>
+                                <span className={`inline-block text-xs px-2 py-0.5 rounded-full border ${(offerStatusLabel[activeOffer?.status] || offerStatusLabel.draft).color}`}>
+                                    {(offerStatusLabel[activeOffer?.status] || offerStatusLabel.draft).label}
                                 </span>
                             </button>
                         ) : (
@@ -238,9 +238,9 @@ export default function AccountPage() {
                         {activeContract ? (
                             <button onClick={() => setActiveTab('documents')} className="text-left bg-zinc-900/60 border border-zinc-800 hover:border-gold-500/30 rounded-2xl p-5 transition-all group">
                                 <p className="text-xs text-zinc-600 uppercase tracking-widest mb-3">Umowa</p>
-                                <p className="font-bold text-white text-sm mb-2 line-clamp-1">{activeContract.title || activeContract.contractNumber || `Umowa #${activeContract.id}`}</p>
-                                <span className={`inline-block text-xs px-2 py-0.5 rounded-full border ${(contractStatusLabel[activeContract.status] || contractStatusLabel.pending).color}`}>
-                                    {(contractStatusLabel[activeContract.status] || contractStatusLabel.pending).label}
+                                <p className="font-bold text-white text-sm mb-2 line-clamp-1">{activeContract?.offer?.title || activeContract?.contract_number || `Umowa #${activeContract?.id}`}</p>
+                                <span className={`inline-block text-xs px-2 py-0.5 rounded-full border ${(contractStatusLabel[activeContract?.status] || contractStatusLabel.pending).color}`}>
+                                    {(contractStatusLabel[activeContract?.status] || contractStatusLabel.pending).label}
                                 </span>
                             </button>
                         ) : (
@@ -253,7 +253,7 @@ export default function AccountPage() {
                         {activeGallery ? (
                             <button onClick={() => setActiveTab('sessions')} className="text-left bg-zinc-900/60 border border-zinc-800 hover:border-gold-500/30 rounded-2xl p-5 transition-all group">
                                 <p className="text-xs text-zinc-600 uppercase tracking-widest mb-3">Galeria Zdjęć</p>
-                                <p className="font-bold text-white text-sm mb-2 group-hover:text-gold-400 transition-colors line-clamp-1">{activeGallery.client_name || 'Twoja sesja'}</p>
+                                <p className="font-bold text-white text-sm mb-2 group-hover:text-gold-400 transition-colors line-clamp-1">{activeGallery?.client_name || 'Twoja sesja'}</p>
                                 <span className="inline-block text-xs px-2 py-0.5 rounded-full border text-green-400 bg-green-900/20 border-green-700/30">
                                     ✓ Dostępna
                                 </span>
@@ -533,11 +533,11 @@ export default function AccountPage() {
                                         </div>
                                         <div>
                                             <div className="flex items-center gap-2 mb-1">
-                                                <h4 className="font-bold text-lg group-hover:text-gold-400 transition-colors">{contract.offer.title}</h4>
+                                                <h4 className="font-bold text-lg group-hover:text-gold-400 transition-colors">{contract.offer?.title || contract.contract_number || 'Umowa Samodzielna'}</h4>
                                                 <StatusBadge status={contract.status} />
                                             </div>
                                             <p className="text-zinc-500 text-sm">
-                                                Dotyczy oferty: #{contract.offer.offerNumber || 'N/A'}
+                                                {contract.offer ? `Dotyczy oferty: #${contract.offer.offerNumber || contract.offer.id}` : `Numer umowy: ${contract.contract_number || contract.id}`}
                                             </p>
                                         </div>
                                     </div>

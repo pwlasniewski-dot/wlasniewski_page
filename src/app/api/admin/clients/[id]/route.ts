@@ -32,7 +32,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
                 assignedGalleries,
                 basket,
                 offersById,
-                offersByEmail
+                offersByEmail,
+                contracts
             ] = await Promise.all([
                 prisma.giftCardOrder.findMany({
                     where: { user_id: userId },
@@ -78,6 +79,16 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
                     },
                     orderBy: { created_at: 'desc' },
                     include: { sections: { include: { items: true } } }
+                }).catch(() => []),
+                prisma.contract.findMany({
+                    where: {
+                        OR: [
+                            { client_id: userId },
+                            { user: { email: clientEmail } }
+                        ]
+                    },
+                    orderBy: { created_at: 'desc' },
+                    include: { offer: true }
                 }).catch(() => [])
             ]);
 
@@ -96,7 +107,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
                 client_galleries: allGalleries,
                 assigned_galleries: assignedGalleries,
                 baskets: basket ? [basket] : [],
-                offers: allOffers
+                offers: allOffers,
+                contracts
             };
 
             return NextResponse.json({ success: true, client: fullClient });

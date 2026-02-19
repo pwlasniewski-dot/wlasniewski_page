@@ -79,14 +79,36 @@ export async function GET(req: NextRequest) {
             }
         });
 
-        // Fetch offer details for each contract independently
+        // Fetch offer details for each contract independently + replace placeholders
         const processedContracts = await Promise.all(
             allContracts.map(async (contract) => {
                 const offerData = await prisma.offer.findUnique({
-                    where: { id: contract.offer_id },
+                    where: { id: contract.offer_id || -1 }, // Use -1 or dummy if null
                     select: { title: true, total_price: true, offerNumber: true }
                 }).catch(() => null);
-                return { ...contract, offer: offerData };
+
+                // --- PLACEHOLDER REPLACEMENT LOGIC ---
+                const context = {
+                    contract_number: contract.contract_number,
+                    clientName: userResult.name || userResult.email || 'Kliencie',
+                    clientEmail: userResult.email,
+                    offerTitle: offerData?.title || 'Umowa Samodzielna'
+                };
+
+                const replacePlaceholders = (text: string, ctx: any) => {
+                    if (!text) return text;
+                    return text
+                        .replace(/\{\{contractNumber\}\}/g, ctx.contract_number || '')
+                        .replace(/\{\{currentDate\}\}/g, new Date().toLocaleDateString('pl-PL'))
+                        .replace(/\{\{clientName\}\}/g, ctx.clientName || '')
+                        .replace(/\{\{clientEmail\}\}/g, ctx.clientEmail || '')
+                        .replace(/\{\{offerTitle\}\}/g, ctx.offerTitle || 'Umowa Samodzielna');
+                };
+
+                const finalContent = replacePlaceholders(contract.content || '', context);
+                // -------------------------------------
+
+                return { ...contract, content: finalContent, offer: offerData };
             })
         );
 

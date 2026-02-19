@@ -20,21 +20,49 @@ export async function POST(request: NextRequest) {
         client_id: client_id ? parseInt(client_id) : null,
       };
 
+      let currentOffer = null;
       if (offerIdInt) {
         // Fetch the offer with client details for better defaults
-        const offer = await prisma.offer.findUnique({
+        currentOffer = await prisma.offer.findUnique({
           where: { id: offerIdInt },
           include: { user: true }
         });
 
-        if (offer) {
-          data.client_id = data.client_id || offer.client_id;
+        if (currentOffer) {
+          data.client_id = data.client_id || currentOffer.client_id;
           data.offer_id = offerIdInt;
         }
       }
 
+      // If no offer details from offerIdInt, try to find user by client_id if provided
+      let targetUser = currentOffer?.user || null;
+      if (!targetUser && data.client_id) {
+        targetUser = await prisma.user.findUnique({ where: { id: data.client_id } });
+      }
+
       // Generate final contract number
       const contract_number = await generateContractNumber(content?.includes('B2B') ? 'B2B' : 'B2C');
+
+      // --- PLACEHOLDER REPLACEMENT LOGIC ---
+      const replacePlaceholders = (text: string, context: any) => {
+        if (!text) return text;
+        return text
+          .replace(/\{\{contractNumber\}\}/g, context.contract_number || '')
+          .replace(/\{\{currentDate\}\}/g, new Date().toLocaleDateString('pl-PL'))
+          .replace(/\{\{clientName\}\}/g, context.clientName || '')
+          .replace(/\{\{clientEmail\}\}/g, context.clientEmail || '')
+          .replace(/\{\{offerTitle\}\}/g, context.offerTitle || 'Umowa Samodzielna');
+      };
+
+      const replacementContext = {
+        contract_number,
+        clientName: targetUser?.name || currentOffer?.client_email || 'Kliencie',
+        clientEmail: targetUser?.email || currentOffer?.client_email || '',
+        offerTitle: currentOffer?.title || 'Umowa Samodzielna'
+      };
+
+      const finalContent = replacePlaceholders(content, replacementContext);
+      // -------------------------------------
 
       let contract;
       if (offerIdInt) {
@@ -42,14 +70,14 @@ export async function POST(request: NextRequest) {
         contract = await prisma.contract.upsert({
           where: { offer_id: offerIdInt },
           update: {
-            content: data.content,
+            content: finalContent,
             client_id: data.client_id,
           },
           create: {
             offer_id: offerIdInt,
             client_id: data.client_id,
             contract_number,
-            content: data.content,
+            content: finalContent,
             status: 'pending'
           }
         });
@@ -59,9 +87,8 @@ export async function POST(request: NextRequest) {
           data: {
             client_id: data.client_id,
             contract_number,
-            content,
+            content: finalContent,
             status: 'pending',
-            offer: offerIdInt ? { connect: { id: offerIdInt } } : undefined
           }
         });
       }
