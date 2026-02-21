@@ -7,7 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import {
     User, Calendar, Image as ImageIcon,
     FileText, Shield, Trash2, ExternalLink, RefreshCw, Cloud,
-    ChevronLeft, Save, Mail, MapPin, Phone, Edit, Plus, Lock, CheckCircle2
+    ChevronLeft, Save, Mail, MapPin, Phone, Edit, Plus, Lock, CheckCircle2, AlertTriangle
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import GalleryAdmin from '@/components/admin/GalleryAdmin';
@@ -257,6 +257,30 @@ function ClientDetailsContent({ id }: { id: string }) {
             toast.error('Błąd połączenia');
         } finally {
             setSavingOfferId(null);
+        }
+    };
+
+    const handleAnonymizeClient = async (isHardDelete: boolean = false) => {
+        if (!client) return;
+        const actionName = isHardDelete ? 'USUNĄĆ CAŁKOWICIE (usuwa też rezerwacje)' : 'ZANONIMIZOWAĆ (RODO)';
+        if (!confirm(`Czy na pewno chcesz ${actionName} tego klienta? Tej operacji nie można cofnąć.`)) return;
+
+        try {
+            const token = localStorage.getItem('admin_token');
+            const res = await fetch(`/api/admin/clients?id=${client.id}${isHardDelete ? '&hard=true' : ''}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (res.ok) {
+                toast.success(isHardDelete ? 'Klient usunięty na zawsze' : 'Klient zanonimizowany');
+                router.push('/admin/clients');
+            } else {
+                const data = await res.json();
+                toast.error(data.error || 'Błąd operacji');
+            }
+        } catch (error) {
+            toast.error('Błąd połączenia');
         }
     };
 
@@ -962,6 +986,42 @@ function ClientDetailsContent({ id }: { id: string }) {
                                             className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-3 text-white outline-none focus:border-gold-500 transition-colors"
                                         />
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* DANGER ZONE */}
+                        <div className="bg-red-900/10 p-8 rounded-xl border border-red-900/20 space-y-6">
+                            <h2 className="text-xl font-bold text-red-500 flex items-center gap-2">
+                                <AlertTriangle className="w-6 h-6" /> Strefa Zagrożenia
+                            </h2>
+                            <p className="text-sm text-zinc-500">Te akcje są nieodwracalne i mają wpływ na dostęp klienta do jego danych.</p>
+
+                            <div className="space-y-4 pt-4">
+                                <div className="p-4 bg-zinc-900/50 rounded-lg border border-zinc-800 flex items-center justify-between">
+                                    <div>
+                                        <p className="font-bold text-white text-sm">Anonimizuj Klienta (RODO)</p>
+                                        <p className="text-xs text-zinc-500 mt-1">Zamienia dane na losowe ciągi znaków. Konto pozostaje w bazie, ale staje się nieaktywne.</p>
+                                    </div>
+                                    <button
+                                        onClick={() => handleAnonymizeClient(false)}
+                                        className="px-4 py-2 border border-orange-900/50 text-orange-500 hover:bg-orange-500 hover:text-white rounded-lg text-xs font-bold transition-all"
+                                    >
+                                        Anonimizuj
+                                    </button>
+                                </div>
+
+                                <div className="p-4 bg-zinc-900/50 rounded-lg border border-zinc-800 flex items-center justify-between">
+                                    <div>
+                                        <p className="font-bold text-red-500 text-sm">Usuń Całkowicie (Hard Delete)</p>
+                                        <p className="text-xs text-zinc-500 mt-1">Całkowicie usuwa rekord użytkownika i powiązane rezerwacje z bazy danych.</p>
+                                    </div>
+                                    <button
+                                        onClick={() => handleAnonymizeClient(true)}
+                                        className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg text-xs font-bold transition-all"
+                                    >
+                                        Usuń na zawsze
+                                    </button>
                                 </div>
                             </div>
                         </div>

@@ -245,6 +245,7 @@ export async function DELETE(request: NextRequest) {
         try {
             const { searchParams } = new URL(request.url);
             const id = searchParams.get('id');
+            const isHardDelete = searchParams.get('hard') === 'true';
 
             if (!id) {
                 return NextResponse.json({ success: false, error: 'ID is required' }, { status: 400 });
@@ -268,45 +269,66 @@ export async function DELETE(request: NextRequest) {
             const anonymizedName = `Użytkownik Usunięty (RODO)`;
 
             await prisma.$transaction(async (tx) => {
-                // A. Update User Record
-                await tx.user.update({
-                    where: { id: userId },
-                    data: {
-                        email: anonymizedEmail,
-                        name: anonymizedName,
-                        phone: null,
-                        password_hash: `DELETED_${timestamp}`,
-                        is_active: false,
-                        photographer_profile_id: null
-                    }
-                });
+                if (isHardDelete) {
+                    // HARD DELETE STRATEGY
+                    // Dependency handling: Bookings with this email
+                    await tx.booking.deleteMany({
+                        where: { email: user.email }
+                    });
 
-                // B. Anonymize Orders
-                await tx.giftCardOrder.updateMany({
-                    where: { user_id: userId },
-                    data: {
-                        customer_name: 'RODO Anonymized',
-                        customer_email: anonymizedEmail,
-                        recipient_name: 'RODO Anonymized',
-                        recipient_email: null,
-                        message: null,
-                        sender_name: null
-                    }
-                });
+                    // Delete the user record
+                    await tx.user.delete({
+                        where: { id: userId }
+                    });
+                } else {
+                    // GDPR ANONYMIZATION STRATEGY
+                    const timestamp = new Date().getTime();
+                    const anonymizedEmail = `deleted-${userId}-${timestamp}@deleted.local`;
+                    const anonymizedName = `Użytkownik Usunięty (RODO)`;
 
-                // C. Anonymize Bookings
-                await tx.booking.updateMany({
-                    where: { email: user.email },
-                    data: {
-                        client_name: 'RODO Anonymized',
-                        email: anonymizedEmail,
-                        phone: null,
-                        notes: 'Dane zanonimizowane na wniosek RODO'
-                    }
-                });
+                    // A. Update User Record
+                    await tx.user.update({
+                        where: { id: userId },
+                        data: {
+                            email: anonymizedEmail,
+                            name: anonymizedName,
+                            phone: null,
+                            password_hash: `DELETED_${timestamp}`,
+                            is_active: false,
+                            photographer_profile_id: null
+                        }
+                    });
+
+                    // B. Anonymize Orders
+                    await tx.giftCardOrder.updateMany({
+                        where: { user_id: userId },
+                        data: {
+                            customer_name: 'RODO Anonymized',
+                            customer_email: anonymizedEmail,
+                            recipient_name: 'RODO Anonymized',
+                            recipient_email: null,
+                            message: null,
+                            sender_name: null
+                        }
+                    });
+
+                    // C. Anonymize Bookings
+                    await tx.booking.updateMany({
+                        where: { email: user.email },
+                        data: {
+                            client_name: 'RODO Anonymized',
+                            email: anonymizedEmail,
+                            phone: null,
+                            notes: 'Dane zanonimizowane na wniosek RODO'
+                        }
+                    });
+                }
             });
 
-            return NextResponse.json({ success: true, message: 'Client anonymized successfully' });
+            return NextResponse.json({
+                success: true,
+                message: isHardDelete ? 'Client deleted permanently' : 'Client anonymized successfully'
+            });
 
         } catch (error) {
             console.error('Anonymization error:', error);

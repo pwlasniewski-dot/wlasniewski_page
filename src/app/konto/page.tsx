@@ -42,6 +42,19 @@ export default function AccountPage() {
     const [photoOrders, setPhotoOrders] = useState<any[]>([]);
     const [userPermissions, setUserPermissions] = useState<Record<string, boolean> | null>(null);
     const [savingNote, setSavingNote] = useState<{ type: string; id: number } | null>(null);
+    const [noteStates, setNoteStates] = useState<Record<string, string>>({});
+
+    // Initialize note states when data is loaded
+    useEffect(() => {
+        const initialNotes: Record<string, string> = {};
+        offers.forEach(o => {
+            initialNotes[`offer-${o.id}`] = o.client_note || '';
+        });
+        contracts.forEach(c => {
+            initialNotes[`contract-${c.id}`] = c.client_note || '';
+        });
+        setNoteStates(prev => ({ ...prev, ...initialNotes }));
+    }, [offers, contracts]);
 
     useEffect(() => {
         if (!authLoading && !token) {
@@ -518,7 +531,10 @@ export default function AccountPage() {
                     ) : (
                         <div className="grid grid-cols-1 gap-6">
                             {offers.map((offer) => {
-                                const [noteText, setNoteText] = useState(offer.client_note || '');
+                                const noteKey = `offer-${offer.id}`;
+                                const noteText = noteStates[noteKey] || '';
+                                const setNoteText = (val: string) => setNoteStates(prev => ({ ...prev, [noteKey]: val }));
+
                                 const isSaving = savingNote?.type === 'offer' && savingNote?.id === offer.id;
                                 return (
                                     <div key={offer.id} className="bg-zinc-900/50 border border-zinc-800 rounded-[2rem] overflow-hidden">
@@ -599,7 +615,10 @@ export default function AccountPage() {
 
                         <div className="grid grid-cols-1 gap-6">
                             {contracts.map((contract) => {
-                                const [noteText, setNoteText] = useState(contract.client_note || '');
+                                const noteKey = `contract-${contract.id}`;
+                                const noteText = noteStates[noteKey] || '';
+                                const setNoteText = (val: string) => setNoteStates(prev => ({ ...prev, [noteKey]: val }));
+
                                 const isSaving = savingNote?.type === 'contract' && savingNote?.id === contract.id;
                                 return (
                                     <div key={contract.id} className="bg-zinc-900/50 border border-zinc-800 rounded-[2rem] overflow-hidden">
@@ -699,8 +718,8 @@ export default function AccountPage() {
                                             <p className="text-xl font-bold text-white">{(order.total_amount / 100).toFixed(2)} PLN</p>
                                         </div>
                                         <span className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${order.payment_status === 'paid'
-                                                ? 'bg-green-500/10 text-green-400 border-green-500/20'
-                                                : 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
+                                            ? 'bg-green-500/10 text-green-400 border-green-500/20'
+                                            : 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
                                             }`}>
                                             {order.payment_status === 'paid' ? 'Opłacono' : 'Oczekuje'}
                                         </span>

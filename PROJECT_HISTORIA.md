@@ -10,12 +10,11 @@
 *   **ZAKAZ**: Nigdy nie usuwaj tej flagi TLS, bo wysyłka maili natychmiast przestanie działać.
 *   **EMAIL ADDRESS**: Jedyny dozwolony adres kontaktowy/nadawcy to `pwlasniewski@gmail.com`. ZAKAZ używania `rezerwacje@wlasniewski.pl` lub innych wymyślonych aliasów.
 
-### 1.1 FIXES [NEW: 2026-02-21]
-*   **PDF 500 ERROR (FONT CORRUPTION)**: Wykryto uszkodzenie pliku fontu `PlayfairDisplay-Bold.ttf` (rozmiar ~1.6KB zamiast ~150KB+). Powodowało to błąd 500 w bibliotece `@react-pdf/renderer` podczas generowania ofert. Rozwiązanie: Usunięto rejestrację tego fontu i przełączono nagłówki `h1` na `Montserrat`.
-*   **WELCOME EMAIL LINK**: Poprawiono błąd, w którym nowi klienci (tworzeni przez admina) dostawali link do `/logowanie` zamiast do dedykowanej strony ustawiania hasła `/logowanie/ustaw-haslo?token=...`. Szablon `generateWelcomeClientEmail` został zaktualizowany o obsługę parametru `loginUrl`.
-*   **PAYU 302 REDIRECT**: Naprawiono błąd `response.json()` w `payu.ts` przy odpowiedzi 302 od PayU. Teraz poprawnie parsowane są nagłówki `Location` do przekierowania na bramkę.
-*   **PHOTO ORDER HISTORY**: Dodano obsługę historii zakupów zdjęć w portalu klienta (`/konto`) oraz stronę sukcesu płatności.
-*   **CLIENT NOTES**: Dodano pole `client_note` do ofert i umów (widoczne dla klienta i admina).
+### [2026-02-21] Fixes for PDF, Client Flow & Portal Errors
+- **PDF Generation**: Resolved 500 server error caused by corrupted `PlayfairDisplay` font. Switched headers to `Montserrat` in `OfferDocument.tsx` and added try-catch blocks in `pdf.tsx`.
+- **Client Flow**: Fixed welcome email template (`generateWelcomeClientEmail`) to point to the password setup page for new clients.
+- **Client Portal**: Resolved React Error #310 (hook violation) in `src/app/konto/page.tsx` by lifting state out of map loops.
+- **Client Management**: Implemented "Hard Delete" option in Admin Panel to allow permanent removal of records, solving the email reuse conflict after anonymization.
 > **## INCYDENT 2026-01-04: KATASTROFA BAZY PRODUKCYJNEJ (Post-Mortem: "Co Odjebałem")**
 > **Winowajca:** Agent AI (Antigravity).
 > **Zbrodnia:** Wykonanie `prisma db push` na produkcji PO uprzednim wykonaniu "fałszywego backupu".
