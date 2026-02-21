@@ -5,9 +5,21 @@ import path from 'path';
 // Use local paths for fonts to avoid 500 errors on Vercel/serverless environments
 // (Serverless functions often cannot fetch from their own public URL during execution)
 const getFontPath = (fileName: string) => {
-    // In production (Vercel), process.cwd() is the root of the project.
-    // However, depending on the environment, we might need to be careful.
-    return path.join(process.cwd(), 'public', 'fonts', fileName);
+    // 1. Try standard process.cwd() (often works locally)
+    const localPath = path.join(process.cwd(), 'public', 'fonts', fileName);
+    if (typeof window === 'undefined' && require('fs').existsSync(localPath)) {
+        return localPath;
+    }
+
+    // 2. Try Vercel-specific relative path if it exists
+    const vercelPath = path.join(process.cwd(), 'fonts', fileName);
+    if (typeof window === 'undefined' && require('fs').existsSync(vercelPath)) {
+        return vercelPath;
+    }
+
+    // 3. Fallback to public URL (for development or if local read fails)
+    // Use a hardcoded stable URL to avoid self-fetch issues on Vercel
+    return `https://wlasniewski.pl/fonts/${fileName}`;
 };
 
 Font.register({

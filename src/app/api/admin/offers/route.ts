@@ -175,7 +175,7 @@ export async function POST(request: NextRequest) {
                 client_email,
                 is_template: is_template || false,
                 valid_until: valid_until ? new Date(valid_until) : null,
-                status: 'draft',
+                status: (parsedClientId || client_email) && !is_template ? 'pending' : 'draft',
                 template_data: template_data,
                 total_price: totalPrice,
                 sections: template_data ? undefined : {

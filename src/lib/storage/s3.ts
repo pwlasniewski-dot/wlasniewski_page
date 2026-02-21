@@ -34,8 +34,14 @@ export async function uploadToS3(fileBuffer: Buffer, fileName: string, mimeType:
         };
         console.log("[UPLOAD_START]", { fileName, fileSize: fileBuffer.length, mimeType, debugEnv });
 
-        if (!bucketName) throw new Error("Missing S3_BUCKET environment variable");
-        if (!accessKeyId || !secretAccessKey) throw new Error("Missing AWS Credentials (checked MY_AWS_... and AWS_...)");
+        if (!bucketName) {
+            console.error("[S3_UPLOAD] ERROR: Missing S3_BUCKET env var");
+            throw new Error("Missing S3_BUCKET environment variable");
+        }
+        if (!accessKeyId || !secretAccessKey) {
+            console.error("[S3_UPLOAD] ERROR: Missing AWS Credentials", { hasKey: !!accessKeyId, hasSecret: !!secretAccessKey });
+            throw new Error("Missing AWS Credentials (checked MY_AWS_... and AWS_...)");
+        }
 
         const upload = new Upload({
             client: s3Client,
@@ -44,21 +50,24 @@ export async function uploadToS3(fileBuffer: Buffer, fileName: string, mimeType:
                 Key: fileName,
                 Body: fileBuffer,
                 ContentType: mimeType,
-                // ACL: 'public-read', // Removed because bucket blocks ACLs (Bucket Owner Enforced)
-                // Not needed if bucket policy allows public read, or if using CloudFront. 
-                // However, for simple setups, standard private upload + bucket policy is best. 
-                // Let's assume bucket policy handles public access for now as per "skalibruj politykę IAM" instruction.
             },
         });
 
+        console.log(`[S3_UPLOAD] Execution started for ${fileName}...`);
         await upload.done();
+        console.log(`[S3_UPLOAD] Execution finished SUCCESSFULLY for ${fileName}`);
 
         // Return the public URL
         // Format: https://{bucket}.s3.{region}.amazonaws.com/{key}
         return `https://${bucketName}.s3.${region}.amazonaws.com/${fileName}`;
     } catch (error: any) {
-        console.error('S3 Upload Error:', error);
-        throw new Error(`Failed to upload to S3: ${error.message}`);
+        console.error('[S3_UPLOAD] CRITICAL ERROR:', {
+            message: error.message,
+            code: error.code,
+            requestId: error.$metadata?.requestId,
+            stack: error.stack
+        });
+        throw new Error(`S3 Upload failed: ${error.message}`);
     }
 }
 
