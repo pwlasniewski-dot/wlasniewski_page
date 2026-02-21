@@ -3,21 +3,37 @@ import { Document, Page, Text, View, StyleSheet, Font } from '@react-pdf/rendere
 import path from 'path';
 
 // Use local paths for fonts to avoid 500 errors on Vercel/serverless environments
+// Bulletproof font loader for Netlify / Serverless environments
 const getFontPath = (fileName: string) => {
-    // 1. Try standard process.cwd() (often works locally)
+    if (typeof window !== 'undefined') {
+        return `https://wlasniewski.pl/fonts/${fileName}`;
+    }
+
+    const fs = require('fs');
+    const path = require('path');
+
+    // 1. Try standard public path (works locally)
     const localPath = path.join(process.cwd(), 'public', 'fonts', fileName);
-    if (typeof window === 'undefined' && require('fs').existsSync(localPath)) {
+    if (fs.existsSync(localPath)) {
+        console.log(`[FontLoader][Contract] Found at localPath: ${localPath}`);
         return localPath;
     }
 
-    // 2. Try Vercel-specific relative path if it exists
-    const vercelPath = path.join(process.cwd(), 'fonts', fileName);
-    if (typeof window === 'undefined' && require('fs').existsSync(vercelPath)) {
-        return vercelPath;
+    // 2. Try the bundled location inside the Netlify function
+    const netlifyPath = path.resolve(__dirname, '..', '..', '..', 'public', 'fonts', fileName);
+    if (fs.existsSync(netlifyPath)) {
+        console.log(`[FontLoader][Contract] Found at netlifyPath: ${netlifyPath}`);
+        return netlifyPath;
+    }
+
+    const netlifyPathAlt = path.resolve(__dirname, '..', 'public', 'fonts', fileName);
+    if (fs.existsSync(netlifyPathAlt)) {
+        console.log(`[FontLoader][Contract] Found at netlifyPathAlt: ${netlifyPathAlt}`);
+        return netlifyPathAlt;
     }
 
     // 3. Fallback to public URL (for development or if local read fails)
-    // Use a hardcoded stable URL to avoid self-fetch issues on Vercel
+    console.warn(`[FontLoader][Contract] Falling back to remote URL for ${fileName}`);
     return `https://wlasniewski.pl/fonts/${fileName}`;
 };
 
