@@ -8,7 +8,10 @@ import path from 'path';
 
 export async function generateOfferPDF(offer: any): Promise<Buffer> {
     try {
-        console.log('[PDF] Generating PDF for offer:', offer.id);
+        console.log('[PDF] ==================== GENERATING PDF ====================');
+        console.log('[PDF] Offer ID:', offer.id);
+        console.log('[PDF] Has template_data?', !!offer.template_data);
+        console.log('[PDF] Offer keys:', Object.keys(offer || {}).slice(0, 20));
         console.log('[PDF] Environment:', {
             isNetlify: process.env.NETLIFY === 'true',
             isVercel: process.env.VERCEL === '1',
@@ -44,9 +47,16 @@ export async function generateOfferPDF(offer: any): Promise<Buffer> {
         });
 
         console.log('[PDF] OfferDocument component loaded, starting render...');
-        const buffer = await renderToBuffer(<OfferDocument offer={offer} generationDate={generationDate} />);
-        console.log(`[PDF] Success! Buffer size: ${buffer.length} bytes`);
-        return buffer;
+        try {
+            const buffer = await renderToBuffer(<OfferDocument offer={offer} generationDate={generationDate} />);
+            console.log(`[PDF] ✅ SUCCESS! Buffer size: ${buffer.length} bytes`);
+            console.log('[PDF] ====================  PDF READY  ====================');
+            return buffer;
+        } catch (renderError: any) {
+            console.error('[PDF] 🔴 RENDER FAILED:', renderError?.message);
+            console.error('[PDF] Render error type:', renderError?.constructor?.name);
+            throw renderError;
+        }
     } catch (error: any) {
         console.error('[PDF] Error in generateOfferPDF:', error);
         console.error('[PDF] Error message:', error?.message);
