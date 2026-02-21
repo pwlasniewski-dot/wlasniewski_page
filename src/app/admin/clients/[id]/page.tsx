@@ -162,7 +162,11 @@ function ClientDetailsContent({ id }: { id: string }) {
 
 
     const handleDeleteOffer = async (offerId: number) => {
-        if (!confirm('Czy na pewno chcesz usunąć tę ofertę? Tej operacji nie można cofnąć.')) return;
+        console.log('Rozpoczynam usuwanie oferty:', offerId);
+        if (!window.confirm('Czy na pewno chcesz usunąć tę ofertę? Tej operacji nie można cofnąć.')) {
+            console.log('Anulowano usunięcie oferty');
+            return;
+        }
         try {
             setDeletingOfferId(offerId);
             const token = localStorage.getItem('admin_token');
@@ -170,14 +174,17 @@ function ClientDetailsContent({ id }: { id: string }) {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
+            console.log('Odpowiedź z usunięcia:', res.status);
             if (res.ok) {
                 toast.success('Oferta została usunięta');
                 fetchClientDetails();
             } else {
                 const data = await res.json();
+                console.error('Błąd usuwania API:', data);
                 toast.error(data.error || 'Błąd usuwania oferty');
             }
         } catch (error) {
+            console.error('Błąd połączenia podczas usuwania:', error);
             toast.error('Błąd połączenia');
         } finally {
             setDeletingOfferId(null);
@@ -185,7 +192,11 @@ function ClientDetailsContent({ id }: { id: string }) {
     };
 
     const handleDeleteContract = async (contractId: number) => {
-        if (!confirm('Czy na pewno chcesz usunąć tę umowę? Tej operacji nie można cofnąć.')) return;
+        console.log('Rozpoczynam usuwanie umowy:', contractId);
+        if (!window.confirm('Czy na pewno chcesz usunąć tę umowę? Tej operacji nie można cofnąć.')) {
+            console.log('Anulowano usunięcie umowy');
+            return;
+        }
         try {
             setDeletingContractId(contractId);
             const token = localStorage.getItem('admin_token');
@@ -194,6 +205,7 @@ function ClientDetailsContent({ id }: { id: string }) {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const data = await res.json();
+            console.log('Odpowiedź z usunięcia:', res.status, data);
             if (res.ok) {
                 toast.success('Umowa została usunięta');
                 fetchClientDetails();
@@ -201,6 +213,7 @@ function ClientDetailsContent({ id }: { id: string }) {
                 toast.error(data.error || 'Błąd podczas usuwania umowy');
             }
         } catch (error) {
+            console.error('Błąd połączenia podczas usuwania:', error);
             toast.error('Błąd połączenia');
         } finally {
             setDeletingContractId(null);
@@ -675,14 +688,15 @@ function ClientDetailsContent({ id }: { id: string }) {
                                                             : <Cloud className="w-5 h-5" />}
                                                     </button>
 
-                                                    <a
-                                                        href={`/api/offers/${offer.id}/pdf`}
-                                                        target="_blank"
+                                                    <button
                                                         onClick={(e) => {
+                                                            e.preventDefault();
+                                                            const token = localStorage.getItem('admin_token');
                                                             if (!offer.pdf_url) {
-                                                                e.preventDefault();
                                                                 toast.error('PDF nie został jeszcze wygenerowany. Użyj przycisku "S3" obok.');
+                                                                return;
                                                             }
+                                                            window.open(`/api/offers/${offer.id}/pdf?token=${token}`, '_blank');
                                                         }}
                                                         className={`p-3 rounded-lg border transition-all ${offer.pdf_url
                                                             ? 'bg-zinc-800 hover:bg-zinc-700 text-white border-zinc-700 hover:border-zinc-500'
@@ -691,7 +705,7 @@ function ClientDetailsContent({ id }: { id: string }) {
                                                         title={offer.pdf_url ? "Pobierz PDF" : "PDF niedostępny (wymaga generowania)"}
                                                     >
                                                         <FileText className="w-5 h-5" />
-                                                    </a>
+                                                    </button>
                                                     <button
                                                         onClick={() => handleDeleteOffer(offer.id)}
                                                         disabled={deletingOfferId === offer.id}
