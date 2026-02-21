@@ -391,14 +391,12 @@ export const OfferDocument: React.FC<{ offer: any, generationDate?: string }> = 
                                 const parts = str.split(':');
                                 const label = parts.length > 1 ? parts[0] + ':' : '';
                                 const content = parts.length > 1 ? parts.slice(1).join(':') : str;
+                                const fullText = label ? `${S(label)} ${S(content)}` : S(content);
 
                                 return (
                                     <View key={i} style={styles.listItem}>
                                         <Text style={styles.bullet}>✓</Text>
-                                        <Text>
-                                            {label ? <Text style={styles.bold}>{S(label)}</Text> : null}
-                                            {S(content)}
-                                        </Text>
+                                        <Text>{fullText}</Text>
                                     </View>
                                 );
                             })}
@@ -525,13 +523,12 @@ export const OfferDocument: React.FC<{ offer: any, generationDate?: string }> = 
                                 const parts = str.split(':');
                                 const label = parts.length > 1 ? parts[0] + ':' : '';
                                 const content = parts.length > 1 ? parts.slice(1).join(':') : str;
+                                const fullText = label ? `${S(label)} ${S(content)}` : S(content);
+
                                 return (
                                     <View key={i} style={styles.listItem}>
                                         <Text style={styles.bullet}>✓</Text>
-                                        <Text>
-                                            {label ? <Text style={styles.bold}>{S(label)}</Text> : null}
-                                            {S(content)}
-                                        </Text>
+                                        <Text>{fullText}</Text>
                                     </View>
                                 );
                             })}
