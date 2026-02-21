@@ -83,6 +83,7 @@ interface OfferData {
     };
     negotiation_enabled?: boolean; // New field
     category?: string; // New field
+    children_count?: number; // Added
 }
 
 const INITIAL_DATA: OfferData = {
@@ -725,7 +726,13 @@ export default function OfferBuilder({ offerId, initialData, onSave, saveButtonT
                             <Input label="" value={data.labels.count} onChange={v => updateNested('labels', 'count', v)} />
                             <Input label="" value={data.eventCount} onChange={v => update('eventCount', v)} />
                         </div>
-                        <div className="grid grid-cols-2 gap-2">
+                        {data.category === 'komunia' && (
+                            <div className="grid grid-cols-2 gap-2">
+                                <span className="text-xs font-bold text-zinc-500 uppercase flex items-center">Tracked Count</span>
+                                <Input label="" type="number" value={data.children_count || ''} onChange={v => update('children_count', parseInt(v) || 0)} placeholder="Liczba children (numerycznie)" />
+                            </div>
+                        )}
+                        <div className="grid grid-cols-2 gap-2 mt-2">
                             <Input label="" value={data.labels.team} onChange={v => updateNested('labels', 'team', v)} />
                             <Input label="" value={data.eventTeam} onChange={v => update('eventTeam', v)} />
                         </div>
@@ -1196,12 +1203,12 @@ const Section = ({ title, children, action }: { title: string; children: React.R
     </div>
 );
 
-const Input = ({ label, value, onChange, placeholder = "" }: { label: string; value: string | boolean; onChange: (v: string) => void; placeholder?: string }) => (
+const Input = ({ label, value, onChange, placeholder = "", type = "text" }: { label: string; value: string | boolean | number; onChange: (v: string) => void; placeholder?: string; type?: string }) => (
     <div>
         {label && <label className="text-[10px] uppercase font-bold text-zinc-500 mb-1 block">{label}</label>}
         <input
-            type="text"
-            value={String(value)}
+            type={type}
+            value={value === undefined || value === null ? "" : String(value)}
             onChange={(e) => onChange(e.target.value)}
             placeholder={placeholder}
             className="w-full bg-zinc-950 border border-zinc-700 rounded px-3 py-1.5 text-sm text-white outline-none focus:border-gold-500 transition-colors"

@@ -1,62 +1,54 @@
 import prisma from '../src/lib/db/prisma';
+import { generateContractPDF, generateOfferPDF } from '../src/lib/services/pdf';
 import fs from 'fs';
-import path from 'path';
-import os from 'os';
-import { execSync } from 'child_process';
 
-async function test() {
+async function testPdf() {
     try {
-        // Get first available offer
-        const offer = await prisma.offer.findFirst({
+        console.log('Testing PDF generation for contract 1...');
+        const contract = await prisma.contract.findUnique({
+            where: { id: 1 },
             include: {
-                sections: {
-                    include: { items: true },
+                offer: {
+                    include: { sections: { include: { items: true } } }
                 },
-            },
+                user: true
+            }
         });
 
-        if (!offer) {
-            console.error('No offers found in database');
+        if (!contract) {
+            console.log('Contract 1 not found');
             return;
         }
 
-        console.log(`Testing PDF generation for offer: ${offer.id} - ${offer.title}`);
+        const buffer = await generateContractPDF(contract, 'Test Client', '2026-03-01');
+        fs.writeFileSync('test-contract.pdf', buffer);
+        console.log('SUCCESS: test-contract.pdf generated');
 
-        const tempIn = path.join(os.tmpdir(), `offer-in-test.json`);
-        const tempOut = path.join(os.tmpdir(), `offer-out-test.pdf`);
-
-        fs.writeFileSync(tempIn, JSON.stringify(offer));
-
-        const localTsx = path.join(process.cwd(), 'node_modules', '.bin', 'tsx');
-        const scriptPath = path.join(process.cwd(), 'scripts', 'isolated-pdf-gen.ts');
-        const cmd = `"${localTsx}" "${scriptPath}" "${tempIn}" "${tempOut}" "offer"`;
-
-        console.log('Running command:', cmd);
-        execSync(cmd, {
-            cwd: process.cwd(),
-            timeout: 30000,
-            stdio: 'inherit'
+        console.log('Testing PDF generation for offer 22...');
+        const offer = await prisma.offer.findUnique({
+            where: { id: 22 },
+            include: {
+                sections: {
+                    include: { items: true }
+                }
+            }
         });
 
-        if (fs.existsSync(tempOut)) {
-            const stat = fs.statSync(tempOut);
-            console.log(`✅ PDF generated successfully! Size: ${stat.size} bytes`);
-            // Copy to project dir for inspection
-            fs.copyFileSync(tempOut, `test-offer-${offer.id}.pdf`);
-            console.log(`PDF saved to: test-offer-${offer.id}.pdf`);
-        } else {
-            console.error('❌ PDF file was not created');
+        if (!offer) {
+            console.log('Offer 22 not found');
+            return;
         }
 
-        // Cleanup
-        if (fs.existsSync(tempIn)) fs.unlinkSync(tempIn);
-        if (fs.existsSync(tempOut)) fs.unlinkSync(tempOut);
+        const offerBuffer = await generateOfferPDF(offer);
+        fs.writeFileSync('test-offer.pdf', offerBuffer);
+        console.log('SUCCESS: test-offer.pdf generated');
 
-    } catch (error) {
-        console.error('FAILED:', error);
+    } catch (e: any) {
+        console.error('PDF TEST FAILED:', e.message);
+        if (e.stack) console.error(e.stack);
     } finally {
         await prisma.$disconnect();
     }
 }
 
-test();
+testPdf();

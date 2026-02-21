@@ -134,7 +134,7 @@ export default function ContractSigningPage({ params }: { params: Promise<{ id: 
                             </div>
                             {contract.pdf_url && (
                                 <a
-                                    href={contract.pdf_url}
+                                    href={`/api/contracts/${contract.id}/pdf?token=${localStorage.getItem('client_token') || localStorage.getItem('user_token')}`}
                                     target="_blank"
                                     className="ml-auto text-green-700 underline hover:text-green-900"
                                 >
@@ -149,7 +149,7 @@ export default function ContractSigningPage({ params }: { params: Promise<{ id: 
                             <div className="flex justify-between items-center mb-4">
                                 <h3 className="text-xl font-bold text-gray-800">Podgląd Oferty</h3>
                                 <a
-                                    href={`/api/client/portal/offers/${contract.offer_id}/pdf`}
+                                    href={`/api/offers/${contract.offer_id}/pdf?token=${localStorage.getItem('client_token') || localStorage.getItem('user_token')}`}
                                     target="_blank"
                                     className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1"
                                 >
@@ -158,7 +158,7 @@ export default function ContractSigningPage({ params }: { params: Promise<{ id: 
                             </div>
                             <div className="aspect-[210/297] w-full bg-white shadow-lg overflow-hidden rounded-lg">
                                 <iframe
-                                    src={`/api/client/portal/offers/${contract.offer_id}/pdf#toolbar=0&navpanes=0`}
+                                    src={`/api/offers/${contract.offer_id}/pdf?token=${localStorage.getItem('client_token') || localStorage.getItem('user_token')}#toolbar=0&navpanes=0`}
                                     className="w-full h-full border-0"
                                     title="Podgląd Oferty"
                                 />

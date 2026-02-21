@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { FileText } from 'lucide-react';
 import SignaturePad from '@/components/SignaturePad';
 
 export default function OfferDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -844,6 +845,17 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
                                     >
                                         💬 Negocjuj
                                     </button>
+                                )}
+                                {offer.pdf_url && (
+                                    <a
+                                        href={offer.pdf_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="px-6 py-3 bg-zinc-800 text-white rounded-lg hover:bg-zinc-700 font-semibold border border-zinc-700 flex items-center gap-2"
+                                    >
+                                        <FileText className="w-5 h-5" />
+                                        Pobierz PDF
+                                    </a>
                                 )}
                             </div>
                         </div>

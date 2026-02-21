@@ -175,6 +175,16 @@ Ten plik służy do ścisłego monitorowania wszystkich zmian wprowadzanych w pr
 
 ## Log Zmian
 
+### [2026-02-21] S3 PDF Generation & CRM PDF Download Fixes
+
+**Zmiany:**
+- **Naprawa błędu 500 przy tworzeniu PDF na Windowsie**: Zidentyfikowano brakującą zależność `tsx` w `package.json`, która powodowała błąd na środowisku serwerowym Next.js. Zainstalowano `tsx` i zaktualizowano skrypt `src/lib/services/pdf.tsx` do poprawnego wykrywania pliku binarnego `tsx.cmd` na Windowsie.
+- **Naprawa błędu PermanentRedirect**: Ścieżki w `src/app/api/admin/offers/[id]/save-s3/route.ts` i `contracts` celowały na sztywno w przestarzały kubełek S3 `fotograf`. Usunięto sztywny schemat URL i zintegrowano zapis z modułem `src/lib/storage/s3.ts`, opartym na zmiennych `.env`. Wygenerowany plik poprawnie ląduje w buckecie i do bazy trafia poprawny adres `pdf_url`.
+- **UI dla pobierania PDF w CRM**: Odblokowano i upewniono się, że przyciski `Pobierz PDF` w sekcji umów i ofert (podgląd klienta w CRM admina) prawidłowo obsługują tokenowy dostęp poprzez proxy route `GET /api/contracts/[id]/pdf` i nowo dodany dostęp z S3.
+
+**Decyzje:**
+- Pliki PDF generowane i uploadowane są oddzielnie (manualny klik admina - przycisk "S3"), aby odciążyć API i umożliwić niezależne pobieranie gotowych plików.
+
 ### [2026-02-19] Final Production Fixes: 404 Links & Dashboard Permissions
 
 **Zmiany:**

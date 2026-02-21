@@ -5,10 +5,12 @@ import os from 'os';
 
 // Use local tsx binary directly to avoid npx hanging inside Next.js server
 function getTsxBin(): string {
-    const localTsx = path.join(process.cwd(), 'node_modules', '.bin', 'tsx');
+    const isWindows = os.platform() === 'win32';
+    const binName = isWindows ? 'tsx.cmd' : 'tsx';
+    const localTsx = path.join(process.cwd(), 'node_modules', '.bin', binName);
     if (fs.existsSync(localTsx)) return localTsx;
     // fallback
-    return 'tsx';
+    return binName;
 }
 
 export async function generateOfferPDF(offer: any): Promise<Buffer> {

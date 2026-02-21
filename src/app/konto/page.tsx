@@ -18,7 +18,8 @@ import {
     Image as ImageIcon,
     CheckCircle2,
     ShoppingCart,
-    FileText
+    FileText,
+    Download
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -243,13 +244,26 @@ export default function AccountPage() {
 
                     {userPermissions?.contracts !== false && (
                         activeContract ? (
-                            <button onClick={() => setActiveTab('documents')} className="text-left bg-zinc-900/60 border border-zinc-800 hover:border-gold-500/30 rounded-2xl p-5 transition-all group">
-                                <p className="text-xs text-zinc-600 uppercase tracking-widest mb-3">Umowa</p>
-                                <p className="font-bold text-white text-sm mb-2 line-clamp-1">{activeContract?.offer?.title || activeContract?.contract_number || `Umowa #${activeContract?.id}`}</p>
-                                <span className={`inline-block text-xs px-2 py-0.5 rounded-full border ${(contractStatusLabel[activeContract?.status] || contractStatusLabel.pending).color}`}>
-                                    {(contractStatusLabel[activeContract?.status] || contractStatusLabel.pending).label}
-                                </span>
-                            </button>
+                            <div className="bg-zinc-900/60 border border-zinc-800 hover:border-gold-500/30 rounded-2xl p-5 transition-all group relative">
+                                <button onClick={() => setActiveTab('documents')} className="text-left w-full h-full">
+                                    <p className="text-xs text-zinc-600 uppercase tracking-widest mb-3">Umowa</p>
+                                    <p className="font-bold text-white text-sm mb-2 line-clamp-1">{activeContract?.offer?.title || activeContract?.contract_number || `Umowa #${activeContract?.id}`}</p>
+                                    <span className={`inline-block text-xs px-2 py-0.5 rounded-full border ${(contractStatusLabel[activeContract?.status] || contractStatusLabel.pending).color}`}>
+                                        {(contractStatusLabel[activeContract?.status] || contractStatusLabel.pending).label}
+                                    </span>
+                                </button>
+                                {activeContract.pdf_url && (
+                                    <a
+                                        href={`/api/contracts/${activeContract.id}/pdf?token=${token}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="absolute top-4 right-4 p-2 bg-zinc-800 hover:bg-gold-600 text-zinc-400 hover:text-black rounded-lg transition-all"
+                                        title="Pobierz PDF"
+                                    >
+                                        <Download className="w-4 h-4" />
+                                    </a>
+                                )}
+                            </div>
                         ) : (
                             <div className="bg-zinc-900/30 border border-dashed border-zinc-800 rounded-2xl p-5">
                                 <p className="text-xs text-zinc-600 uppercase tracking-widest mb-3">Umowa</p>
@@ -537,12 +551,11 @@ export default function AccountPage() {
 
                         <div className="grid grid-cols-1 gap-4">
                             {contracts.map((contract) => (
-                                <Link
-                                    key={contract.id}
-                                    href={`/strefa-klienta/umowy/${contract.id}`}
-                                    className="bg-zinc-900/50 border border-zinc-800 p-6 rounded-[2rem] hover:border-gold-500/30 transition-all flex flex-col md:flex-row justify-between items-center gap-6 group"
-                                >
-                                    <div className="flex items-center gap-5 w-full md:w-auto">
+                                <div className="bg-zinc-900/50 border border-zinc-800 p-6 rounded-[2rem] hover:border-gold-500/30 transition-all flex flex-col md:flex-row justify-between items-center gap-6 group relative">
+                                    <Link
+                                        href={`/strefa-klienta/umowy/${contract.id}`}
+                                        className="flex items-center gap-5 w-full md:w-auto text-left"
+                                    >
                                         <div className="w-14 h-14 bg-zinc-800 rounded-2xl flex items-center justify-center text-green-500">
                                             <CheckCircle2 className="w-6 h-6" />
                                         </div>
@@ -555,11 +568,27 @@ export default function AccountPage() {
                                                 {contract.offer ? `Dotyczy oferty: #${contract.offer.offerNumber || contract.offer.id}` : `Numer umowy: ${contract.contract_number || contract.id}`}
                                             </p>
                                         </div>
+                                    </Link>
+                                    <div className="flex items-center gap-3 w-full md:w-auto justify-end">
+                                        {contract.pdf_url && (
+                                            <a
+                                                href={`/api/contracts/${contract.id}/pdf?token=${token}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="p-3 bg-zinc-800 hover:bg-gold-600 text-zinc-400 hover:text-black rounded-2xl transition-all"
+                                                title="Pobierz PDF"
+                                            >
+                                                <Download className="w-5 h-5" />
+                                            </a>
+                                        )}
+                                        <Link
+                                            href={`/strefa-klienta/umowy/${contract.id}`}
+                                            className="w-10 h-10 bg-zinc-800 rounded-full flex items-center justify-center text-zinc-400 group-hover:bg-gold-600 group-hover:text-black transition-all"
+                                        >
+                                            <ChevronRight className="w-5 h-5" />
+                                        </Link>
                                     </div>
-                                    <div className="w-10 h-10 bg-zinc-800 rounded-full flex items-center justify-center text-zinc-400 group-hover:bg-gold-600 group-hover:text-black transition-all">
-                                        <ChevronRight className="w-5 h-5" />
-                                    </div>
-                                </Link>
+                                </div>
                             ))}
                         </div>
                     </section>
