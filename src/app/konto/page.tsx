@@ -19,7 +19,10 @@ import {
     CheckCircle2,
     ShoppingCart,
     FileText,
-    Download
+    Download,
+    ShoppingBag,
+    Send,
+    MessageSquare,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -36,7 +39,9 @@ export default function AccountPage() {
     const [galleries, setGalleries] = useState<any[]>([]);
     const [offers, setOffers] = useState<any[]>([]);
     const [contracts, setContracts] = useState<any[]>([]);
+    const [photoOrders, setPhotoOrders] = useState<any[]>([]);
     const [userPermissions, setUserPermissions] = useState<Record<string, boolean> | null>(null);
+    const [savingNote, setSavingNote] = useState<{ type: string; id: number } | null>(null);
 
     useEffect(() => {
         if (!authLoading && !token) {
@@ -59,6 +64,7 @@ export default function AccountPage() {
                         setBookings(data.user.bookings || []);
                         setOffers(data.user.offers || []);
                         setContracts(data.user.contracts || []);
+                        setPhotoOrders(data.user.photo_orders || []);
                         // Load permissions from API response
                         if (data.user.permissions && typeof data.user.permissions === 'object') {
                             setUserPermissions(data.user.permissions);
@@ -479,6 +485,19 @@ export default function AccountPage() {
     }
 
     function renderDocumentsTab() {
+        const saveNote = async (type: 'offer' | 'contract', id: number, note: string) => {
+            setSavingNote({ type, id });
+            try {
+                await fetch(`/api/user/${type === 'offer' ? 'offers' : 'contracts'}/${id}/note`, {
+                    method: 'PATCH',
+                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ client_note: note })
+                });
+            } finally {
+                setSavingNote(null);
+            }
+        };
+
         return (
             <div className="space-y-12">
                 {/* Offers Section */}
@@ -497,44 +516,73 @@ export default function AccountPage() {
                             <p className="text-zinc-500 text-sm">Nie masz obecnie żadnych otwartych ofert.</p>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 gap-4">
-                            {offers.map((offer) => (
-                                <Link
-                                    key={offer.id}
-                                    href={`/strefa-klienta/oferty/${offer.id}`} // Keep legacy link for now, or update to modal? Keeping link.
-                                    className="bg-zinc-900/50 border border-zinc-800 p-6 rounded-[2rem] hover:border-gold-500/30 transition-all flex flex-col md:flex-row justify-between items-center gap-6 group"
-                                >
-                                    <div className="flex items-center gap-5 w-full md:w-auto">
-                                        <div className="w-14 h-14 bg-zinc-800 rounded-2xl flex items-center justify-center text-gold-500">
-                                            <FileText className="w-6 h-6" />
-                                        </div>
-                                        <div>
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <h4 className="font-bold text-lg group-hover:text-gold-400 transition-colors">{offer.title}</h4>
-                                                <StatusBadge status={offer.status} />
+                        <div className="grid grid-cols-1 gap-6">
+                            {offers.map((offer) => {
+                                const [noteText, setNoteText] = useState(offer.client_note || '');
+                                const isSaving = savingNote?.type === 'offer' && savingNote?.id === offer.id;
+                                return (
+                                    <div key={offer.id} className="bg-zinc-900/50 border border-zinc-800 rounded-[2rem] overflow-hidden">
+                                        <Link
+                                            href={`/strefa-klienta/oferty/${offer.id}`}
+                                            className="p-6 flex flex-col md:flex-row justify-between items-center gap-6 group hover:bg-white/[0.02] transition-all block"
+                                        >
+                                            <div className="flex items-center gap-5 w-full md:w-auto">
+                                                <div className="w-14 h-14 bg-zinc-800 rounded-2xl flex items-center justify-center text-gold-500">
+                                                    <FileText className="w-6 h-6" />
+                                                </div>
+                                                <div>
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <h4 className="font-bold text-lg group-hover:text-gold-400 transition-colors">{offer.title}</h4>
+                                                        <StatusBadge status={offer.status} />
+                                                    </div>
+                                                    <p className="text-zinc-500 text-sm flex gap-3">
+                                                        <span>#{offer.offerNumber || offer.id}</span>
+                                                        <span>•</span>
+                                                        <span>{new Date(offer.created_at).toLocaleDateString()}</span>
+                                                    </p>
+                                                </div>
                                             </div>
-                                            <p className="text-zinc-500 text-sm flex gap-3">
-                                                <span>#{offer.offerNumber || offer.id}</span>
-                                                <span>•</span>
-                                                <span>{new Date(offer.created_at).toLocaleDateString()}</span>
-                                            </p>
+                                            <div className="text-right w-full md:w-auto flex items-center justify-between md:justify-end gap-6">
+                                                <div>
+                                                    <p className="text-xs text-zinc-500 uppercase tracking-widest mb-1">Wartość</p>
+                                                    {offer.status === 'accepted' ? (
+                                                        <p className="text-xl font-bold text-white">{offer.total_price} PLN</p>
+                                                    ) : (
+                                                        <p className="text-sm text-zinc-500 italic">Oczekuje na zatwierdzenie</p>
+                                                    )}
+                                                </div>
+                                                <div className="w-10 h-10 bg-zinc-800 rounded-full flex items-center justify-center text-zinc-400 group-hover:bg-gold-600 group-hover:text-black transition-all">
+                                                    <ChevronRight className="w-5 h-5" />
+                                                </div>
+                                            </div>
+                                        </Link>
+                                        {/* Client Note */}
+                                        <div className="px-6 pb-6 border-t border-zinc-800/50 pt-4">
+                                            <label className="flex items-center gap-2 text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2">
+                                                <MessageSquare className="w-3.5 h-3.5" />
+                                                Twoja notatka dla fotografa
+                                            </label>
+                                            <div className="flex gap-3">
+                                                <textarea
+                                                    value={noteText}
+                                                    onChange={(e) => setNoteText(e.target.value)}
+                                                    placeholder="Napisz coś do fotografa — pytania, życzenia, szczegóły..."
+                                                    rows={2}
+                                                    className="flex-1 bg-black/50 border border-zinc-700 focus:border-gold-500 rounded-xl px-4 py-3 text-sm text-white outline-none transition-all resize-none"
+                                                />
+                                                <button
+                                                    onClick={() => saveNote('offer', offer.id, noteText)}
+                                                    disabled={isSaving}
+                                                    className="px-4 py-2 bg-gold-600 hover:bg-gold-500 disabled:opacity-50 text-black rounded-xl font-bold transition-all flex items-center gap-2 text-sm self-start mt-1"
+                                                >
+                                                    <Send className="w-3.5 h-3.5" />
+                                                    {isSaving ? 'Zapis...' : 'Wyślij'}
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div className="text-right w-full md:w-auto flex items-center justify-between md:justify-end gap-6">
-                                        <div>
-                                            <p className="text-xs text-zinc-500 uppercase tracking-widest mb-1">Wartość</p>
-                                            {offer.status === 'accepted' ? (
-                                                <p className="text-xl font-bold text-white">{offer.total_price} PLN</p>
-                                            ) : (
-                                                <p className="text-sm text-zinc-500 italic">Oczekuje na zatwierdzenie</p>
-                                            )}
-                                        </div>
-                                        <div className="w-10 h-10 bg-zinc-800 rounded-full flex items-center justify-center text-zinc-400 group-hover:bg-gold-600 group-hover:text-black transition-all">
-                                            <ChevronRight className="w-5 h-5" />
-                                        </div>
-                                    </div>
-                                </Link>
-                            ))}
+                                );
+                            })}
                         </div>
                     )}
                 </section>
@@ -549,44 +597,122 @@ export default function AccountPage() {
                             </div>
                         </div>
 
+                        <div className="grid grid-cols-1 gap-6">
+                            {contracts.map((contract) => {
+                                const [noteText, setNoteText] = useState(contract.client_note || '');
+                                const isSaving = savingNote?.type === 'contract' && savingNote?.id === contract.id;
+                                return (
+                                    <div key={contract.id} className="bg-zinc-900/50 border border-zinc-800 rounded-[2rem] overflow-hidden">
+                                        <div className="p-6 flex flex-col md:flex-row justify-between items-center gap-6 group">
+                                            <Link
+                                                href={`/strefa-klienta/umowy/${contract.id}`}
+                                                className="flex items-center gap-5 w-full md:w-auto text-left hover:opacity-80 transition-opacity"
+                                            >
+                                                <div className="w-14 h-14 bg-zinc-800 rounded-2xl flex items-center justify-center text-green-500">
+                                                    <CheckCircle2 className="w-6 h-6" />
+                                                </div>
+                                                <div>
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <h4 className="font-bold text-lg group-hover:text-gold-400 transition-colors">{contract.offer?.title || contract.contract_number || 'Umowa Samodzielna'}</h4>
+                                                        <StatusBadge status={contract.status} />
+                                                    </div>
+                                                    <p className="text-zinc-500 text-sm">
+                                                        {contract.offer ? `Dotyczy oferty: #${contract.offer.offerNumber || contract.offer.id}` : `Numer umowy: ${contract.contract_number || contract.id}`}
+                                                    </p>
+                                                </div>
+                                            </Link>
+                                            <div className="flex items-center gap-3 w-full md:w-auto justify-end">
+                                                {/* PDF always available for signed contracts (dynamic generation) */}
+                                                <a
+                                                    href={`/api/contracts/${contract.id}/pdf?token=${token}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-gold-600 text-zinc-400 hover:text-black rounded-xl transition-all text-sm font-bold"
+                                                    title="Pobierz PDF"
+                                                >
+                                                    <Download className="w-4 h-4" />
+                                                    PDF
+                                                </a>
+                                                <Link
+                                                    href={`/strefa-klienta/umowy/${contract.id}`}
+                                                    className="w-10 h-10 bg-zinc-800 rounded-full flex items-center justify-center text-zinc-400 hover:bg-gold-600 hover:text-black transition-all"
+                                                >
+                                                    <ChevronRight className="w-5 h-5" />
+                                                </Link>
+                                            </div>
+                                        </div>
+                                        {/* Client Note */}
+                                        <div className="px-6 pb-6 border-t border-zinc-800/50 pt-4">
+                                            <label className="flex items-center gap-2 text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2">
+                                                <MessageSquare className="w-3.5 h-3.5" />
+                                                Twoja notatka do umowy
+                                            </label>
+                                            <div className="flex gap-3">
+                                                <textarea
+                                                    value={noteText}
+                                                    onChange={(e) => setNoteText(e.target.value)}
+                                                    placeholder="Kwestie do omówienia, pytania, uwagi przed podpisaniem..."
+                                                    rows={2}
+                                                    className="flex-1 bg-black/50 border border-zinc-700 focus:border-gold-500 rounded-xl px-4 py-3 text-sm text-white outline-none transition-all resize-none"
+                                                />
+                                                <button
+                                                    onClick={() => saveNote('contract', contract.id, noteText)}
+                                                    disabled={isSaving}
+                                                    className="px-4 py-2 bg-gold-600 hover:bg-gold-500 disabled:opacity-50 text-black rounded-xl font-bold transition-all flex items-center gap-2 text-sm self-start mt-1"
+                                                >
+                                                    <Send className="w-3.5 h-3.5" />
+                                                    {isSaving ? 'Zapis...' : 'Wyślij'}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </section>
+                )}
+
+                {/* Photo Order History */}
+                {photoOrders.length > 0 && (
+                    <section>
+                        <div className="mb-8">
+                            <h2 className="text-3xl font-bold mb-2">Historia Zakupów Zdjęć</h2>
+                            <p className="text-zinc-500">Zamówienia złożone w galeriach zdjęciowych.</p>
+                        </div>
                         <div className="grid grid-cols-1 gap-4">
-                            {contracts.map((contract) => (
-                                <div className="bg-zinc-900/50 border border-zinc-800 p-6 rounded-[2rem] hover:border-gold-500/30 transition-all flex flex-col md:flex-row justify-between items-center gap-6 group relative">
-                                    <Link
-                                        href={`/strefa-klienta/umowy/${contract.id}`}
-                                        className="flex items-center gap-5 w-full md:w-auto text-left"
-                                    >
-                                        <div className="w-14 h-14 bg-zinc-800 rounded-2xl flex items-center justify-center text-green-500">
-                                            <CheckCircle2 className="w-6 h-6" />
+                            {photoOrders.map((order: any) => (
+                                <div key={order.id} className="bg-zinc-900/50 border border-zinc-800 p-6 rounded-[2rem] flex flex-col md:flex-row justify-between items-center gap-4">
+                                    <div className="flex items-center gap-5 w-full md:w-auto">
+                                        <div className="w-14 h-14 bg-zinc-800 rounded-2xl flex items-center justify-center text-gold-500">
+                                            <ShoppingBag className="w-6 h-6" />
                                         </div>
                                         <div>
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <h4 className="font-bold text-lg group-hover:text-gold-400 transition-colors">{contract.offer?.title || contract.contract_number || 'Umowa Samodzielna'}</h4>
-                                                <StatusBadge status={contract.status} />
-                                            </div>
+                                            <h4 className="font-bold text-lg text-white">Zamówienie #{order.id}</h4>
                                             <p className="text-zinc-500 text-sm">
-                                                {contract.offer ? `Dotyczy oferty: #${contract.offer.offerNumber || contract.offer.id}` : `Numer umowy: ${contract.contract_number || contract.id}`}
+                                                {order.gallery?.client_name} • {order.photo_count} zdjęć • {new Date(order.created_at).toLocaleDateString('pl-PL')}
                                             </p>
                                         </div>
-                                    </Link>
-                                    <div className="flex items-center gap-3 w-full md:w-auto justify-end">
-                                        {contract.pdf_url && (
-                                            <a
-                                                href={`/api/contracts/${contract.id}/pdf?token=${token}`}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="p-3 bg-zinc-800 hover:bg-gold-600 text-zinc-400 hover:text-black rounded-2xl transition-all"
-                                                title="Pobierz PDF"
+                                    </div>
+                                    <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-end">
+                                        <div className="text-right">
+                                            <p className="text-xs text-zinc-500 uppercase tracking-widest mb-1">Kwota</p>
+                                            <p className="text-xl font-bold text-white">{(order.total_amount / 100).toFixed(2)} PLN</p>
+                                        </div>
+                                        <span className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${order.payment_status === 'paid'
+                                                ? 'bg-green-500/10 text-green-400 border-green-500/20'
+                                                : 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
+                                            }`}>
+                                            {order.payment_status === 'paid' ? 'Opłacono' : 'Oczekuje'}
+                                        </span>
+                                        {order.gallery?.access_code && (
+                                            <Link
+                                                href={`/galeria/${order.gallery.access_code}`}
+                                                className="p-2 bg-zinc-800 hover:bg-gold-500 text-zinc-400 hover:text-black rounded-xl transition-all"
+                                                title="Wróć do galerii"
                                             >
-                                                <Download className="w-5 h-5" />
-                                            </a>
+                                                <ChevronRight className="w-4 h-4" />
+                                            </Link>
                                         )}
-                                        <Link
-                                            href={`/strefa-klienta/umowy/${contract.id}`}
-                                            className="w-10 h-10 bg-zinc-800 rounded-full flex items-center justify-center text-zinc-400 group-hover:bg-gold-600 group-hover:text-black transition-all"
-                                        >
-                                            <ChevronRight className="w-5 h-5" />
-                                        </Link>
                                     </div>
                                 </div>
                             ))}
@@ -596,6 +722,7 @@ export default function AccountPage() {
             </div>
         );
     }
+
 
     function StatusBadge({ status }: { status: string }) {
         const styles: Record<string, string> = {

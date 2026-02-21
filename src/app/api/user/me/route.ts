@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
         }
 
         // Parallel independent queries for core user data
-        const [giftCards, orders, bookings, offers] = await Promise.all([
+        const [giftCards, orders, bookings, offers, photoOrders] = await Promise.all([
             prisma.giftCard.findMany({ where: { owner_id: userResult.id } }).catch(() => []),
             prisma.giftCardOrder.findMany({
                 where: { user_id: userResult.id },
@@ -51,7 +51,24 @@ export async function GET(req: NextRequest) {
                 select: {
                     id: true, title: true, status: true, total_price: true,
                     valid_until: true, created_at: true, offerNumber: true,
-                    type: true, pdf_url: true, slug: true
+                    type: true, pdf_url: true, slug: true, client_note: true
+                } as any
+            }).catch(() => []),
+            // Photo purchase orders from galleries
+            prisma.photoOrder.findMany({
+                where: {
+                    gallery: {
+                        OR: [
+                            { client_email: userResult.email },
+                            { client_id: userResult.id }
+                        ]
+                    }
+                },
+                orderBy: { created_at: 'desc' },
+                include: {
+                    gallery: {
+                        select: { client_name: true, access_code: true }
+                    }
                 }
             }).catch(() => [])
         ]);
@@ -59,7 +76,7 @@ export async function GET(req: NextRequest) {
         // Ultra-resilient contract fetching: 
         // 1. Fetch by direct client_id
         // 2. Fetch by offer_ids linked to user's email
-        const offerIds = offers.map(o => o.id);
+        const offerIds = (offers as any[]).map((o: any) => o.id as number);
         const [contractsById, contractsByOffers] = await Promise.all([
             prisma.contract.findMany({
                 where: { client_id: userResult.id },
@@ -124,7 +141,8 @@ export async function GET(req: NextRequest) {
                 orders: orders,
                 bookings: bookings,
                 offers: offers,
-                contracts: processedContracts
+                contracts: processedContracts,
+                photo_orders: photoOrders,
             }
         });
     } catch (error: any) {

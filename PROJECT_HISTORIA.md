@@ -11,7 +11,8 @@
 *   **EMAIL ADDRESS**: Jedyny dozwolony adres kontaktowy/nadawcy to `pwlasniewski@gmail.com`. ZAKAZ używania `rezerwacje@wlasniewski.pl` lub innych wymyślonych aliasów.
 
 ### 1.1 FIXES [NEW: 2026-02-21]
-*   **PDF 500 ERROR**: Pobrano prawidłowe czcionki `.ttf` do `/public/fonts` (poprzednio były to pliki HTML 404, co wywalało generator react-pdf).
+*   **PDF 500 ERROR (VERCEL HOTFIX)**: Zamieniono użycie `process.cwd()` lokalnego systemu plików (którego Vercel Serverless nie wczytuje w API Routes) na fetchowanie pobranych wcześniej fontów .ttf bezpośrednio po protokole HTTPS (z użyciem zmiennej `NEXT_PUBLIC_APP_URL`). W pełni likwiduje to problem wywalania generatora `.pdf`.
+*   **PAYU GALLERY CHECKOUT**: Naprawiono mylący komunikat "Zamówienie utworzone" pojawiający się, gdy bramka PayU odrzuca próbę utworzenia płatności (najczęściej przez błędną konfigurację kluczy POS/MD5). Wprowadzono opisowy alert z powiadomieniem `(brak konfiguracji po stronie fotografa)`.
 *   **ZIP DOWNLOAD**: Frontend używa natywnego streamera (archiver) przez `/api/galleries/[id]/download-all` paczkującego darmowe pliki w locie.
 *   **GALLERY DESCRIPTION**: Dodano kolumnę `description String?` do tabeli `ClientGallery`. Admin może dodać dobrowolny opis, który klient przeczyta na powitanie.
 *   **CONTRACT TRASH**: Zezwolono ponownie na usuwanie podpisanych (`SIGNED`) Umów z systemu wg. zgłoszenia (mimo oryginalnego ograniczenia, administrator może je teraz skasować).

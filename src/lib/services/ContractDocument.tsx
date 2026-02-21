@@ -1,15 +1,13 @@
 import React from 'react';
 import { Document, Page, Text, View, StyleSheet, Font } from '@react-pdf/renderer';
-import path from 'path';
-
-const fontsDir = path.join(process.cwd(), 'public', 'fonts');
+const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://wlasniewski.pl';
 
 Font.register({
     family: 'Montserrat',
     fonts: [
-        { src: path.join(fontsDir, 'Montserrat-Regular.ttf'), fontWeight: 400 },
-        { src: path.join(fontsDir, 'Montserrat-SemiBold.ttf'), fontWeight: 600 },
-        { src: path.join(fontsDir, 'Montserrat-Bold.ttf'), fontWeight: 700 },
+        { src: `${appUrl}/fonts/Montserrat-Regular.ttf`, fontWeight: 400 },
+        { src: `${appUrl}/fonts/Montserrat-SemiBold.ttf`, fontWeight: 600 },
+        { src: `${appUrl}/fonts/Montserrat-Bold.ttf`, fontWeight: 700 },
     ]
 });
 

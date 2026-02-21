@@ -216,7 +216,7 @@ export default function ClientGalleryPage() {
             if (data.success && data.paymentUrl) {
                 window.location.href = data.paymentUrl;
             } else if (data.success) {
-                alert('Zamówienie utworzone.');
+                alert(data.message || 'Zamówienie zostało utworzone w systemie, jednak wystąpił błąd bramki płatności PayU (brak konfiguracji po stronie fotografa). Skontaktuj się z administratorem, aby opłacić zamówienie.');
             } else {
                 alert('Błąd: ' + data.error);
             }

@@ -518,6 +518,7 @@ model Offer {
   total_price      Int            @default(0)
   client_selection Json?
   negotiation_enabled Boolean @default(true)
+  client_note      String?  // Notatka klienta widoczna dla fotografa
   contract         Contract?
   negotiations     Negotiation[]
   sections         OfferSection[]
@@ -561,6 +562,8 @@ model Contract {
   signed_at       DateTime?
   pdf_url         String?
   drive_url       String?
+  client_note     String?  // Notatka klienta widoczna dla fotografa
+  updated_at      DateTime  @default(now()) @updatedAt
   created_at      DateTime  @default(now())
   user            User?     @relation(fields: [client_id], references: [id])
   offer           Offer?    @relation(fields: [offer_id], references: [id])

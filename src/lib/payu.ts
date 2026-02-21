@@ -103,14 +103,25 @@ export async function createPayUOrder(orderData: OrderRequest, clientIp: string)
     });
 
     // PayU V2.1 API returns 302 (Found) when redirecting to payment page.
-    // We treat 302 as success if it contains the redirect URL.
-    if (!response.ok && response.status !== 302) {
+    // The redirect URL is in the Location header (for manual redirect mode).
+    // OR it returns 201 with a JSON body containing redirectUri.
+    if (response.status === 302) {
+        const location = response.headers.get('location');
+        if (!location) {
+            throw new Error('PayU returned 302 but no Location header');
+        }
+        // Parse orderId from redirectUri params or generate from location
+        return { redirectUri: location, orderId: `payu-${Date.now()}` };
+    }
+
+    if (!response.ok) {
         const errorText = await response.text();
         console.error("PayU Order Create Error:", errorText);
         throw new Error(`PayU Order Failed: ${response.status} ${errorText}`);
     }
 
     return await response.json();
+
 }
 
 import crypto from 'crypto';

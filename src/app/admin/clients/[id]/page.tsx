@@ -768,6 +768,17 @@ function ClientDetailsContent({ id }: { id: string }) {
                                                 </div>
                                             </div>
                                         )}
+
+                                        {/* Client note (notatka klienta) */}
+                                        {offer.client_note && (
+                                            <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-4 ml-14 mt-2">
+                                                <p className="text-[10px] font-bold text-amber-500 uppercase tracking-widest mb-1 flex items-center gap-1.5">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" /></svg>
+                                                    Notatka od klienta
+                                                </p>
+                                                <p className="text-sm text-zinc-200 whitespace-pre-wrap">{offer.client_note}</p>
+                                            </div>
+                                        )}
                                     </div>
                                 ))
                             ) : (
@@ -805,6 +816,12 @@ function ClientDetailsContent({ id }: { id: string }) {
                                             <p className="text-sm text-zinc-500">
                                                 Status: <span className="uppercase text-white font-bold">{contract.status}</span>
                                             </p>
+                                            {contract.client_note && (
+                                                <div className="mt-2 bg-amber-500/5 border border-amber-500/20 rounded-lg px-3 py-2">
+                                                    <p className="text-[9px] text-amber-500 uppercase font-black tracking-widest mb-0.5">💬 Notatka klienta</p>
+                                                    <p className="text-xs text-zinc-300">{contract.client_note}</p>
+                                                </div>
+                                            )}
                                         </div>
                                         <div className="flex gap-2">
                                             {/* Add View/Download buttons here later */}
