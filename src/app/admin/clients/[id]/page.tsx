@@ -57,7 +57,9 @@ function ClientDetailsContent({ id }: { id: string }) {
     const [isSaving, setIsSaving] = useState(false);
     const [deletingGalleryId, setDeletingGalleryId] = useState<number | null>(null);
     const [deletingOfferId, setDeletingOfferId] = useState<number | null>(null);
+    const [confirmingOfferDelete, setConfirmingOfferDelete] = useState<number | null>(null);
     const [deletingContractId, setDeletingContractId] = useState<number | null>(null);
+    const [confirmingContractDelete, setConfirmingContractDelete] = useState<number | null>(null);
     const [savingContractId, setSavingContractId] = useState<number | null>(null);
     const [savingOfferId, setSavingOfferId] = useState<number | null>(null);
 
@@ -163,10 +165,6 @@ function ClientDetailsContent({ id }: { id: string }) {
 
     const handleDeleteOffer = async (offerId: number) => {
         console.log('Rozpoczynam usuwanie oferty:', offerId);
-        if (!window.confirm('Czy na pewno chcesz usunąć tę ofertę? Tej operacji nie można cofnąć.')) {
-            console.log('Anulowano usunięcie oferty');
-            return;
-        }
         try {
             setDeletingOfferId(offerId);
             const token = localStorage.getItem('admin_token');
@@ -188,15 +186,12 @@ function ClientDetailsContent({ id }: { id: string }) {
             toast.error('Błąd połączenia');
         } finally {
             setDeletingOfferId(null);
+            setConfirmingOfferDelete(null);
         }
     };
 
     const handleDeleteContract = async (contractId: number) => {
         console.log('Rozpoczynam usuwanie umowy:', contractId);
-        if (!window.confirm('Czy na pewno chcesz usunąć tę umowę? Tej operacji nie można cofnąć.')) {
-            console.log('Anulowano usunięcie umowy');
-            return;
-        }
         try {
             setDeletingContractId(contractId);
             const token = localStorage.getItem('admin_token');
@@ -217,6 +212,7 @@ function ClientDetailsContent({ id }: { id: string }) {
             toast.error('Błąd połączenia');
         } finally {
             setDeletingContractId(null);
+            setConfirmingContractDelete(null);
         }
     };
 
@@ -707,14 +703,21 @@ function ClientDetailsContent({ id }: { id: string }) {
                                                         <FileText className="w-5 h-5" />
                                                     </button>
                                                     <button
-                                                        onClick={() => handleDeleteOffer(offer.id)}
+                                                        onClick={() => {
+                                                            if (confirmingOfferDelete === offer.id) {
+                                                                handleDeleteOffer(offer.id);
+                                                            } else {
+                                                                setConfirmingOfferDelete(offer.id);
+                                                                setTimeout(() => setConfirmingOfferDelete(null), 3000);
+                                                            }
+                                                        }}
                                                         disabled={deletingOfferId === offer.id}
-                                                        className="p-3 bg-red-900/10 hover:bg-red-900 text-red-500 hover:text-white rounded-lg transition-colors border border-red-900/20 hover:border-red-700 disabled:opacity-50"
-                                                        title="Usuń ofertę"
+                                                        className={`p-3 rounded-lg transition-colors border disabled:opacity-50 flex items-center justify-center min-w-[44px] ${confirmingOfferDelete === offer.id ? 'bg-red-600 text-white border-red-500' : 'bg-red-900/10 hover:bg-red-900 text-red-500 hover:text-white border-red-900/20 hover:border-red-700'}`}
+                                                        title={confirmingOfferDelete === offer.id ? "Potwierdź usunięcie" : "Usuń ofertę"}
                                                     >
                                                         {deletingOfferId === offer.id
                                                             ? <RefreshCw className="w-5 h-5 animate-spin" />
-                                                            : <Trash2 className="w-5 h-5" />}
+                                                            : confirmingOfferDelete === offer.id ? <span className="text-[10px] font-bold">USUŃ</span> : <Trash2 className="w-5 h-5" />}
                                                     </button>
                                                 </div>
                                             </div>
@@ -827,14 +830,15 @@ function ClientDetailsContent({ id }: { id: string }) {
                                                     : <Cloud className="w-5 h-5" />}
                                             </button>
 
-                                            <a
-                                                href={`/api/contracts/${contract.id}/pdf`}
-                                                target="_blank"
+                                            <button
                                                 onClick={(e) => {
+                                                    e.preventDefault();
+                                                    const token = localStorage.getItem('admin_token');
                                                     if (!contract.pdf_url) {
-                                                        e.preventDefault();
                                                         toast.error('PDF nie został jeszcze wygenerowany. Użyj przycisku obok (chmura), aby zapisać umowę w S3.');
+                                                        return;
                                                     }
+                                                    window.open(`/api/contracts/${contract.id}/pdf?token=${token}`, '_blank');
                                                 }}
                                                 className={`p-2 rounded-lg border transition-all ${contract.pdf_url
                                                     ? 'bg-zinc-800 hover:bg-zinc-700 text-white border-zinc-700 hover:border-zinc-500'
@@ -843,18 +847,25 @@ function ClientDetailsContent({ id }: { id: string }) {
                                                 title={contract.pdf_url ? "Pobierz PDF" : "PDF niedostępny (wymaga generowania)"}
                                             >
                                                 <FileText className="w-5 h-5" />
-                                            </a>
+                                            </button>
 
                                             {contract.status !== 'SIGNED' && contract.status !== 'signed' && (
                                                 <button
-                                                    onClick={() => handleDeleteContract(contract.id)}
+                                                    onClick={() => {
+                                                        if (confirmingContractDelete === contract.id) {
+                                                            handleDeleteContract(contract.id);
+                                                        } else {
+                                                            setConfirmingContractDelete(contract.id);
+                                                            setTimeout(() => setConfirmingContractDelete(null), 3000);
+                                                        }
+                                                    }}
                                                     disabled={deletingContractId === contract.id}
-                                                    className="p-2 bg-red-900/10 hover:bg-red-900 text-red-500 hover:text-white rounded-lg transition-colors border border-red-900/20 hover:border-red-700 disabled:opacity-50"
-                                                    title="Usuń umowę"
+                                                    className={`p-2 rounded-lg transition-colors border disabled:opacity-50 flex items-center justify-center min-w-[36px] ${confirmingContractDelete === contract.id ? 'bg-red-600 text-white border-red-500' : 'bg-red-900/10 hover:bg-red-900 text-red-500 hover:text-white border-red-900/20 hover:border-red-700'}`}
+                                                    title={confirmingContractDelete === contract.id ? "Potwierdź usunięcie" : "Usuń umowę"}
                                                 >
                                                     {deletingContractId === contract.id
-                                                        ? <RefreshCw className="w-5 h-5 animate-spin" />
-                                                        : <Trash2 className="w-5 h-5" />}
+                                                        ? <RefreshCw className="w-4 h-4 animate-spin" />
+                                                        : confirmingContractDelete === contract.id ? <span className="text-[10px] font-bold">USUŃ</span> : <Trash2 className="w-5 h-5" />}
                                                 </button>
                                             )}
                                         </div>
