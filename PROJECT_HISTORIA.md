@@ -11,11 +11,11 @@
 *   **EMAIL ADDRESS**: Jedyny dozwolony adres kontaktowy/nadawcy to `pwlasniewski@gmail.com`. ZAKAZ używania `rezerwacje@wlasniewski.pl` lub innych wymyślonych aliasów.
 
 ### 1.1 FIXES [NEW: 2026-02-21]
-*   **PDF 500 ERROR (VERCEL HOTFIX)**: Zamieniono użycie `process.cwd()` lokalnego systemu plików (którego Vercel Serverless nie wczytuje w API Routes) na fetchowanie pobranych wcześniej fontów .ttf bezpośrednio po protokole HTTPS (z użyciem zmiennej `NEXT_PUBLIC_APP_URL`). W pełni likwiduje to problem wywalania generatora `.pdf`.
-*   **PAYU GALLERY CHECKOUT**: Naprawiono mylący komunikat "Zamówienie utworzone" pojawiający się, gdy bramka PayU odrzuca próbę utworzenia płatności (najczęściej przez błędną konfigurację kluczy POS/MD5). Wprowadzono opisowy alert z powiadomieniem `(brak konfiguracji po stronie fotografa)`.
-*   **ZIP DOWNLOAD**: Frontend używa natywnego streamera (archiver) przez `/api/galleries/[id]/download-all` paczkującego darmowe pliki w locie.
-*   **GALLERY DESCRIPTION**: Dodano kolumnę `description String?` do tabeli `ClientGallery`. Admin może dodać dobrowolny opis, który klient przeczyta na powitanie.
-*   **CONTRACT TRASH**: Zezwolono ponownie na usuwanie podpisanych (`SIGNED`) Umów z systemu wg. zgłoszenia (mimo oryginalnego ograniczenia, administrator może je teraz skasować).
+*   **PDF 500 ERROR (FONT CORRUPTION)**: Wykryto uszkodzenie pliku fontu `PlayfairDisplay-Bold.ttf` (rozmiar ~1.6KB zamiast ~150KB+). Powodowało to błąd 500 w bibliotece `@react-pdf/renderer` podczas generowania ofert. Rozwiązanie: Usunięto rejestrację tego fontu i przełączono nagłówki `h1` na `Montserrat`.
+*   **WELCOME EMAIL LINK**: Poprawiono błąd, w którym nowi klienci (tworzeni przez admina) dostawali link do `/logowanie` zamiast do dedykowanej strony ustawiania hasła `/logowanie/ustaw-haslo?token=...`. Szablon `generateWelcomeClientEmail` został zaktualizowany o obsługę parametru `loginUrl`.
+*   **PAYU 302 REDIRECT**: Naprawiono błąd `response.json()` w `payu.ts` przy odpowiedzi 302 od PayU. Teraz poprawnie parsowane są nagłówki `Location` do przekierowania na bramkę.
+*   **PHOTO ORDER HISTORY**: Dodano obsługę historii zakupów zdjęć w portalu klienta (`/konto`) oraz stronę sukcesu płatności.
+*   **CLIENT NOTES**: Dodano pole `client_note` do ofert i umów (widoczne dla klienta i admina).
 > **## INCYDENT 2026-01-04: KATASTROFA BAZY PRODUKCYJNEJ (Post-Mortem: "Co Odjebałem")**
 > **Winowajca:** Agent AI (Antigravity).
 > **Zbrodnia:** Wykonanie `prisma db push` na produkcji PO uprzednim wykonaniu "fałszywego backupu".

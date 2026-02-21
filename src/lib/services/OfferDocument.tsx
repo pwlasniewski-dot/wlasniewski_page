@@ -12,12 +12,8 @@ Font.register({
     ]
 });
 
-Font.register({
-    family: 'Playfair Display',
-    fonts: [
-        { src: `${appUrl}/fonts/PlayfairDisplay-Bold.ttf`, fontWeight: 700 },
-    ]
-});
+// No longer using Playfair Display as the font file was corrupted (1.6KB)
+// Switching all to Montserrat for better reliability.
 
 const styles = StyleSheet.create({
     page: {
@@ -41,13 +37,14 @@ const styles = StyleSheet.create({
         maxWidth: '65%',
     },
     h1: {
-        fontFamily: 'Playfair Display',
+        fontFamily: 'Montserrat',
+        fontWeight: 700,
         fontSize: 24,
         color: '#1a1a1a',
         textTransform: 'uppercase',
         letterSpacing: 1,
         marginBottom: 8,
-        lineHeight: 1.2, // Prevent overlap when title wraps
+        lineHeight: 1.2,
     },
     accent: {
         color: '#c5a059',
@@ -87,7 +84,8 @@ const styles = StyleSheet.create({
     },
     // Sections
     h2: {
-        fontFamily: 'Helvetica',
+        fontFamily: 'Montserrat',
+        fontWeight: 600,
         fontSize: 16, // ~12pt
         color: '#1a1a1a',
         borderBottomWidth: 1,

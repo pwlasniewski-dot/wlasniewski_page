@@ -200,8 +200,8 @@ function subtext(text: string): string {
 
 // ─── 1. WELCOME — NOWY KLIENT ────────────────────────────────
 
-export function generateWelcomeClientEmail(data: { name: string; email: string; password?: string }): string {
-  const loginUrl = `${process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL || 'https://wlasniewski.pl'}/logowanie`;
+export function generateWelcomeClientEmail(data: { name: string; email: string; password?: string; loginUrl?: string }): string {
+  const loginUrl = data.loginUrl || `${process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL || 'https://wlasniewski.pl'}/logowanie`;
 
   const content = `
       ${heading(`Witaj, ${data.name}! 👋`)}

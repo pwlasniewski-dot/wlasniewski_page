@@ -46,9 +46,11 @@ export async function POST(
             return NextResponse.json({ success: true, pdfUrl });
         } catch (error: any) {
             console.error('Error saving to S3:', error);
+            // Enhanced error details for debugging
             return NextResponse.json({
                 error: 'Failed to save to S3',
-                details: error.message
+                details: error.message,
+                stack: error.stack
             }, { status: 500 });
         }
     });
