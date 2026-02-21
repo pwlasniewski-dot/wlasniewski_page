@@ -9,9 +9,7 @@
   # CRITICAL: Include fonts and all necessary assets for PDF generation
   included_files = [
     "prisma/schema.prisma",
-    "public/fonts/**",
-    # Remove redundant .next files from bundling
-    "!.next/**"
+    "public/fonts/**"
   ]
   external_node_modules = [
     "@aws-sdk/client-s3",
