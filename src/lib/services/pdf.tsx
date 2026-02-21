@@ -10,8 +10,19 @@ export async function generateOfferPDF(offer: any): Promise<Buffer> {
     try {
         console.log('[PDF] ==================== GENERATING PDF ====================');
         console.log('[PDF] Offer ID:', offer.id);
+        console.log('[PDF] Offer status:', offer.status);
+        console.log('[PDF] Offer category:', offer.category);
         console.log('[PDF] Has template_data?', !!offer.template_data);
-        console.log('[PDF] Offer keys:', Object.keys(offer || {}).slice(0, 20));
+        
+        if (offer.template_data) {
+            console.log('[PDF] template_data keys:', Object.keys(offer.template_data).slice(0, 15));
+            console.log('[PDF] Features array:', Array.isArray(offer.template_data.features), offer.template_data.features?.length);
+            console.log('[PDF] Pricing headers:', Array.isArray(offer.template_data.pricingHeaders), offer.template_data.pricingHeaders?.length);
+            console.log('[PDF] Pricing rows:', Array.isArray(offer.template_data.pricingRows), offer.template_data.pricingRows?.length);
+            console.log('[PDF] Footer prices:', Array.isArray(offer.template_data.footerPrices), offer.template_data.footerPrices?.length);
+            console.log('[PDF] Delivery terms type:', typeof offer.template_data.deliveryTerms);
+        }
+
         console.log('[PDF] Environment:', {
             isNetlify: process.env.NETLIFY === 'true',
             isVercel: process.env.VERCEL === '1',

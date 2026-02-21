@@ -246,6 +246,13 @@ const S = (val: any) => {
 };
 
 export const OfferDocument: React.FC<{ offer: any, generationDate?: string }> = ({ offer, generationDate }) => {
+    console.log('[OfferDoc] Component rendering for offer:', offer.id);
+    console.log('[OfferDoc] Has template_data:', !!offer.template_data);
+    
+    if (!offer.template_data) {
+        console.error('[OfferDoc] ERROR: No template_data! Using fallback.');
+    }
+    
     // If we have template_data, use it. Otherwise fallback to top-level properties.
     // The previous implementation used OfferData interface.
     const data = offer.template_data || {
