@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
             type: 'admin' // Explicit type to differentiate from users
         });
 
-        return NextResponse.json({
+        const response = NextResponse.json({
             success: true,
             token,
             user: {
@@ -41,6 +41,17 @@ export async function POST(req: NextRequest) {
                 role: admin.role
             }
         });
+
+        // Set HttpOnly cookie for Next.js middleware and direct browser routes (like PDF download)
+        response.cookies.set('admin_token', token, {
+            httpOnly: false, // Allow JS access if needed by frontend, or leave true if only backend needs it. Let's make it available
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            path: '/',
+            maxAge: 60 * 60 * 24 // 24 hours
+        });
+
+        return response;
 
     } catch (error) {
         console.error('Admin Login error:', error);
