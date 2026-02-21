@@ -20,15 +20,8 @@ export async function DELETE(
                 return NextResponse.json({ error: 'Contract not found' }, { status: 404 });
             }
 
-            // Security: Block deletion of SIGNED contracts
-            // Unless the status is 'pending' or 'rejected', we might want to prevent deletion
-            // The user specifically asked for protection: "na prodzie to musi być zabezpieczenie żeby podpisanych klientowi nie usunąć"
-            if (contract.status === 'SIGNED' || contract.status === 'signed') {
-                return NextResponse.json({
-                    error: 'Nie można usunąć podpisanej umowy.',
-                    message: 'Podpisane dokumenty są prawnie wiążące i nie mogą być usuwane z systemu.'
-                }, { status: 400 });
-            }
+            // Allow admin to delete signed contracts if needed
+            // (Removed restriction per user request)
 
             await prisma.contract.delete({
                 where: { id: contractId }

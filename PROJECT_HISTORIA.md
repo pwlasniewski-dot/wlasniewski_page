@@ -10,7 +10,11 @@
 *   **ZAKAZ**: Nigdy nie usuwaj tej flagi TLS, bo wysyłka maili natychmiast przestanie działać.
 *   **EMAIL ADDRESS**: Jedyny dozwolony adres kontaktowy/nadawcy to `pwlasniewski@gmail.com`. ZAKAZ używania `rezerwacje@wlasniewski.pl` lub innych wymyślonych aliasów.
 
-> [!CAUTION]
+### 1.1 FIXES [NEW: 2026-02-21]
+*   **PDF 500 ERROR**: Pobrano prawidłowe czcionki `.ttf` do `/public/fonts` (poprzednio były to pliki HTML 404, co wywalało generator react-pdf).
+*   **ZIP DOWNLOAD**: Frontend używa natywnego streamera (archiver) przez `/api/galleries/[id]/download-all` paczkującego darmowe pliki w locie.
+*   **GALLERY DESCRIPTION**: Dodano kolumnę `description String?` do tabeli `ClientGallery`. Admin może dodać dobrowolny opis, który klient przeczyta na powitanie.
+*   **CONTRACT TRASH**: Zezwolono ponownie na usuwanie podpisanych (`SIGNED`) Umów z systemu wg. zgłoszenia (mimo oryginalnego ograniczenia, administrator może je teraz skasować).
 > **## INCYDENT 2026-01-04: KATASTROFA BAZY PRODUKCYJNEJ (Post-Mortem: "Co Odjebałem")**
 > **Winowajca:** Agent AI (Antigravity).
 > **Zbrodnia:** Wykonanie `prisma db push` na produkcji PO uprzednim wykonaniu "fałszywego backupu".

@@ -834,40 +834,39 @@ function ClientDetailsContent({ id }: { id: string }) {
                                                 onClick={(e) => {
                                                     e.preventDefault();
                                                     const token = localStorage.getItem('admin_token');
-                                                    if (!contract.pdf_url) {
+                                                    const isPdfReady = contract.pdf_url || contract.status === 'signed' || contract.status === 'SIGNED';
+                                                    if (!isPdfReady) {
                                                         toast.error('PDF nie został jeszcze wygenerowany. Użyj przycisku obok (chmura), aby zapisać umowę w S3.');
                                                         return;
                                                     }
                                                     window.open(`/api/contracts/${contract.id}/pdf?token=${token}`, '_blank');
                                                 }}
-                                                className={`p-2 rounded-lg border transition-all ${contract.pdf_url
+                                                className={`p-2 rounded-lg border transition-all ${contract.pdf_url || contract.status === 'signed' || contract.status === 'SIGNED'
                                                     ? 'bg-zinc-800 hover:bg-zinc-700 text-white border-zinc-700 hover:border-zinc-500'
                                                     : 'bg-zinc-900/50 text-zinc-600 border-zinc-800 cursor-not-allowed'
                                                     }`}
-                                                title={contract.pdf_url ? "Pobierz PDF" : "PDF niedostępny (wymaga generowania)"}
+                                                title={contract.pdf_url || contract.status === 'signed' || contract.status === 'SIGNED' ? "Pobierz PDF" : "PDF niedostępny (wymaga generowania)"}
                                             >
                                                 <FileText className="w-5 h-5" />
                                             </button>
 
-                                            {contract.status !== 'SIGNED' && contract.status !== 'signed' && (
-                                                <button
-                                                    onClick={() => {
-                                                        if (confirmingContractDelete === contract.id) {
-                                                            handleDeleteContract(contract.id);
-                                                        } else {
-                                                            setConfirmingContractDelete(contract.id);
-                                                            setTimeout(() => setConfirmingContractDelete(null), 3000);
-                                                        }
-                                                    }}
-                                                    disabled={deletingContractId === contract.id}
-                                                    className={`p-2 rounded-lg transition-colors border disabled:opacity-50 flex items-center justify-center min-w-[36px] ${confirmingContractDelete === contract.id ? 'bg-red-600 text-white border-red-500' : 'bg-red-900/10 hover:bg-red-900 text-red-500 hover:text-white border-red-900/20 hover:border-red-700'}`}
-                                                    title={confirmingContractDelete === contract.id ? "Potwierdź usunięcie" : "Usuń umowę"}
-                                                >
-                                                    {deletingContractId === contract.id
-                                                        ? <RefreshCw className="w-4 h-4 animate-spin" />
-                                                        : confirmingContractDelete === contract.id ? <span className="text-[10px] font-bold">USUŃ</span> : <Trash2 className="w-5 h-5" />}
-                                                </button>
-                                            )}
+                                            <button
+                                                onClick={() => {
+                                                    if (confirmingContractDelete === contract.id) {
+                                                        handleDeleteContract(contract.id);
+                                                    } else {
+                                                        setConfirmingContractDelete(contract.id);
+                                                        setTimeout(() => setConfirmingContractDelete(null), 3000);
+                                                    }
+                                                }}
+                                                disabled={deletingContractId === contract.id}
+                                                className={`p-2 rounded-lg transition-colors border disabled:opacity-50 flex items-center justify-center min-w-[36px] ${confirmingContractDelete === contract.id ? 'bg-red-600 text-white border-red-500' : 'bg-red-900/10 hover:bg-red-900 text-red-500 hover:text-white border-red-900/20 hover:border-red-700'}`}
+                                                title={confirmingContractDelete === contract.id ? "Potwierdź usunięcie" : "Usuń umowę"}
+                                            >
+                                                {deletingContractId === contract.id
+                                                    ? <RefreshCw className="w-4 h-4 animate-spin" />
+                                                    : confirmingContractDelete === contract.id ? <span className="text-[10px] font-bold">USUŃ</span> : <Trash2 className="w-5 h-5" />}
+                                            </button>
                                         </div>
                                     </div>
                                 ))

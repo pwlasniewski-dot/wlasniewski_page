@@ -28,6 +28,7 @@ interface Gallery {
     id: number;
     client_name: string;
     client_email: string;
+    description: string | null;
     access_code: string;
     standard_count: number;
     price_per_premium: number;
@@ -57,7 +58,8 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
         standard_count: 0,
         price_per_premium: 0,
         expires_at: '',
-        is_active: true
+        is_active: true,
+        description: ''
     });
 
     // Create state
@@ -95,7 +97,8 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
                 standard_count: gallery.standard_count,
                 price_per_premium: gallery.price_per_premium,
                 expires_at: gallery.expires_at ? gallery.expires_at.split('T')[0] : '',
-                is_active: gallery.is_active
+                is_active: gallery.is_active,
+                description: gallery.description || ''
             });
         }
     }, [gallery]);
@@ -435,6 +438,15 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
                                 value={editData.standard_count}
                                 onChange={(e) => setEditData({ ...editData, standard_count: parseInt(e.target.value) })}
                                 className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:border-gold-500 outline-none transition-all"
+                            />
+                        </div>
+                        <div className="space-y-2 col-span-1 md:col-span-4">
+                            <label className="block text-xs font-bold text-zinc-500 uppercase ml-1 tracking-widest">Opis dla klienta (opcjonalny)</label>
+                            <textarea
+                                value={editData.description || ''}
+                                onChange={(e) => setEditData({ ...editData, description: e.target.value })}
+                                className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:border-gold-500 outline-none transition-all min-h-[100px]"
+                                placeholder="Dodatkowe informacje, podziękowania za sesję..."
                             />
                         </div>
                         <div className="space-y-2">

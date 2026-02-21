@@ -21,6 +21,7 @@ interface GalleryPhoto {
 interface Gallery {
     id: number;
     client_name: string;
+    description: string | null;
     standard_count: number;
     price_per_premium: number;
     expires_at: string | null;
@@ -172,11 +173,17 @@ export default function ClientGalleryPage() {
         if (!gallery || downloadingAll) return;
         setDownloadingAll(true);
         try {
-            const photosToDownload = gallery.standard_photos;
-            for (const photo of photosToDownload) {
-                downloadPhoto(photo.id);
-                await new Promise(r => setTimeout(r, 600)); // Slightly longer for stability
-            }
+            const link = document.createElement('a');
+            link.href = `/api/galleries/${accessCode}/download-all`;
+            link.download = `${gallery.client_name || 'galeria'}-zdjecia.zip`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            // Wait briefly to allow the download to initiate before reverting the button state
+            await new Promise(r => setTimeout(r, 2000));
+        } catch (error) {
+            alert('Wystąpił błąd podczas pobierania paczki ZIP.');
         } finally {
             setDownloadingAll(false);
         }
@@ -254,6 +261,13 @@ export default function ClientGalleryPage() {
                         <p className="text-xl text-zinc-400 font-medium tracking-wide">
                             Twoje profesjonalne zdjęcia są gotowe do przejrzenia
                         </p>
+                        {gallery.description && (
+                            <div className="mt-8 p-6 bg-zinc-900/50 border border-zinc-800/50 rounded-2xl max-w-3xl mx-auto text-left backdrop-blur-sm">
+                                <p className="text-zinc-300 whitespace-pre-wrap text-sm leading-relaxed font-medium">
+                                    {gallery.description}
+                                </p>
+                            </div>
+                        )}
                         {gallery.expires_at && (
                             <div className="inline-flex items-center gap-2 bg-red-500/10 text-red-400 px-4 py-1.5 rounded-full text-xs font-bold uppercase mt-6 border border-red-500/20">
                                 <Calendar className="w-3.5 h-3.5" />

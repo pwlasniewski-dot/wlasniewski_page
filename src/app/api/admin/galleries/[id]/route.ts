@@ -59,13 +59,14 @@ export async function PUT(
             const galleryId = Number(id);
             const body = await request.json();
 
-            const { standard_count, price_per_premium, expires_at, is_active } = body;
+            const { standard_count, price_per_premium, expires_at, is_active, description } = body;
 
             const updateData: any = {};
             if (standard_count !== undefined) updateData.standard_count = standard_count;
             if (price_per_premium !== undefined) updateData.price_per_premium = price_per_premium;
             if (expires_at !== undefined) updateData.expires_at = expires_at ? new Date(expires_at) : null;
             if (is_active !== undefined) updateData.is_active = is_active;
+            if (description !== undefined) updateData.description = description;
 
             const gallery = await prisma.clientGallery.update({
                 where: { id: galleryId },

@@ -799,6 +799,7 @@ model ClientGallery {
   booking_id        Int?             @unique
   client_email      String
   client_name       String
+  description       String?
   access_code       String           @unique
   expires_at        DateTime?
   standard_count    Int              @default(0)

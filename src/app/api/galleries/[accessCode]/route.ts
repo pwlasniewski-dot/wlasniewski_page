@@ -84,6 +84,7 @@ export async function GET(
             gallery: {
                 id: gallery.id,
                 client_name: gallery.client_name,
+                description: gallery.description,
                 standard_count: gallery.standard_count,
                 price_per_premium: gallery.price_per_premium,
                 expires_at: gallery.expires_at,
