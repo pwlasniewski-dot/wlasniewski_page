@@ -350,16 +350,16 @@ export const OfferDocument: React.FC<{ offer: any, generationDate?: string }> = 
                 {sectionVisibility.eventInfo ? (
                     <View style={styles.eventInfo}>
                         <View style={styles.eventItem}>
-                            <Text><Text style={styles.bold}>{S(labels.location)}:</Text> {S(data.eventLocation)}</Text>
+                            <Text>{S(labels.location)}: {S(data.eventLocation)}</Text>
                         </View>
                         <View style={styles.eventItem}>
-                            <Text><Text style={styles.bold}>{S(labels.date)}:</Text> {S(data.eventDate)}</Text>
+                            <Text>{S(labels.date)}: {S(data.eventDate)}</Text>
                         </View>
                         <View style={styles.eventItem}>
-                            <Text><Text style={styles.bold}>{S(labels.count)}:</Text> {S(data.eventCount)}</Text>
+                            <Text>{S(labels.count)}: {S(data.eventCount)}</Text>
                         </View>
                         <View style={styles.eventItem}>
-                            <Text><Text style={styles.bold}>{S(labels.team)}:</Text> {S(data.eventTeam)}</Text>
+                            <Text>{S(labels.team)}: {S(data.eventTeam)}</Text>
                         </View>
                     </View>
                 ) : null}
@@ -488,7 +488,7 @@ export const OfferDocument: React.FC<{ offer: any, generationDate?: string }> = 
                                     return (
                                         <View key={actualIdx} style={[styles.tableCell, { width: `${100 / (data.pricingHeaders?.length || 1)}%`, borderTopWidth: 2, borderTopColor: '#bae6fd' }]}>
                                             <Text style={[styles.bold, { color: '#0369a1', fontSize: 12 }]}>{count} os.</Text>
-                                            {count > 0 && <Text style={{ fontSize: 8, color: '#0284c7', marginTop: 2 }}>Razem: {subtotal.toLocaleString('pl-PL')} PLN</Text>}
+                                            {count > 0 ? <Text style={{ fontSize: 8, color: '#0284c7', marginTop: 2 }}>Razem: {subtotal.toLocaleString('pl-PL')} PLN</Text> : null}
                                         </View>
                                     );
                                 })}
