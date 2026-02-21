@@ -56,6 +56,26 @@ export async function GET(
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
+        // Custom Logic: If Communion AND Accepted, always dynamically generate the PDF to stamp dates and child counts
+        const isCommunion = offer.category?.toLowerCase() === 'komunia';
+        if (isCommunion && offer.status === 'accepted') {
+            const clientIp = request.headers.get('x-forwarded-for') || 'nieznane';
+            const footerNote = `Dokument pobrany przez klienta w dniu: ${new Date().toLocaleString('pl-PL')} (IP: ${clientIp})`;
+
+            // Note: Since generateOfferPDF takes only (offer), we use a hack to pass it inside offer object for now 
+            // to avoid changing the signature everywhere, or we just pass it as second arg. I will use offer._footerNote
+            const modifiedOffer = { ...offer, _footerNote: footerNote };
+
+            const pdfBuffer = await generateOfferPDF(modifiedOffer as any);
+            return new NextResponse(pdfBuffer as any, {
+                status: 200,
+                headers: {
+                    'Content-Type': 'application/pdf',
+                    'Content-Disposition': `inline; filename="Oferta_Komunia_${offer.id}.pdf"`,
+                },
+            });
+        }
+
         // If a stored PDF URL exists (uploaded via S3), redirect to it
         if (offer.pdf_url) {
             return NextResponse.redirect(offer.pdf_url, { status: 302 });

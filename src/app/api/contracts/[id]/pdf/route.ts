@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { verifyToken, extractToken } from '@/lib/auth/jwt';
+import { generateContractPDF } from '@/lib/services/pdf';
 
 export async function GET(
     request: NextRequest,
@@ -52,6 +53,26 @@ export async function GET(
         if (!isAdmin && !isClientOwner) {
             console.warn(`[CONTRACT PDF API] Forbidden access attempt by ${payload.email} to contract ${contractId}`);
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
+
+        // Custom Logic: If Signed, always dynamically generate the PDF to stamp dates
+        if (contract.status === 'signed' || contract.status === 'SIGNED') {
+            const clientIp = request.headers.get('x-forwarded-for') || 'nieznane';
+            const footerNote = `Oświadczenie pobrane elektronicznie w dniu: ${new Date().toLocaleString('pl-PL')} (IP: ${clientIp})`;
+
+            const modifiedContract = { ...contract, _footerNote: footerNote };
+
+            const clientName = (contract.offer?.template_data as any)?.contactName || contract.user?.name || undefined;
+            const eventDate = (contract.offer?.template_data as any)?.eventDate || undefined;
+
+            const pdfBuffer = await generateContractPDF(modifiedContract as any, clientName, eventDate);
+            return new NextResponse(pdfBuffer as any, {
+                status: 200,
+                headers: {
+                    'Content-Type': 'application/pdf',
+                    'Content-Disposition': `inline; filename="Umowa_${contract.contract_number || contract.id}.pdf"`,
+                },
+            });
         }
 
         // If a stored PDF URL exists (uploaded via S3), redirect to it

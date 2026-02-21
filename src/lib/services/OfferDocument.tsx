@@ -213,7 +213,7 @@ const S = (val: any) => {
     return String(val);
 };
 
-export const OfferDocument: React.FC<{ offer: any }> = ({ offer }) => {
+export const OfferDocument: React.FC<{ offer: any, generationDate?: string }> = ({ offer, generationDate }) => {
     // If we have template_data, use it. Otherwise fallback to top-level properties.
     // The previous implementation used OfferData interface.
     const data = offer.template_data || {
@@ -291,6 +291,10 @@ export const OfferDocument: React.FC<{ offer: any }> = ({ offer }) => {
     };
 
     const contactName = data.contactName === 'undefined undefined' ? '' : data.contactName;
+
+    const isCommunion = offer.category?.toLowerCase() === 'komunia';
+    const isAccepted = offer.status === 'accepted';
+    const clientSelection = offer.client_selection || null;
 
     return (
         <Document>
@@ -437,8 +441,39 @@ export const OfferDocument: React.FC<{ offer: any }> = ({ offer }) => {
                                 );
                             })}
                         </View>
+
+                        {/* Communion Client Selection Row */}
+                        {isCommunion && clientSelection && clientSelection.splitPackageCounts && (
+                            <View style={[styles.tableRow, { backgroundColor: '#e0f2fe' }]}>
+                                <View style={[styles.tableCell, styles.leftAlign, { width: `${100 / (data.pricingHeaders?.length || 1)}%`, borderTopWidth: 2, borderTopColor: '#bae6fd' }]}>
+                                    <Text style={[styles.bold, { color: '#0369a1' }]}>Wybrana liczba dzieci</Text>
+                                </View>
+                                {data.footerPrices?.slice(1).map((_: any, idx: number) => {
+                                    const actualIdx = idx + 1;
+                                    const count = clientSelection.splitPackageCounts[actualIdx] || 0;
+                                    const priceStr = data.footerPrices[actualIdx] || '0';
+                                    const priceNum = parseInt(priceStr.replace(/[^0-9]/g, '')) || 0;
+                                    const subtotal = count * priceNum;
+
+                                    return (
+                                        <View key={actualIdx} style={[styles.tableCell, { width: `${100 / (data.pricingHeaders?.length || 1)}%`, borderTopWidth: 2, borderTopColor: '#bae6fd' }]}>
+                                            <Text style={[styles.bold, { color: '#0369a1', fontSize: 12 }]}>{count} os.</Text>
+                                            {count > 0 && <Text style={{ fontSize: 8, color: '#0284c7', marginTop: 2 }}>Razem: {subtotal.toLocaleString('pl-PL')} PLN</Text>}
+                                        </View>
+                                    );
+                                })}
+                            </View>
+                        )}
                     </View>
                 ) : null}
+
+                {/* Final Price Summary for Accepted Offers */}
+                {isAccepted && clientSelection?.totalPrice && (
+                    <View style={{ backgroundColor: '#f0fdf4', padding: 10, borderColor: '#16a34a', borderWidth: 2, borderRadius: 4, marginTop: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Text style={{ fontFamily: 'Montserrat', fontWeight: 600, color: '#166534', fontSize: 12 }}>ZAAKCEPTOWANA WARTOŚĆ KOŃCOWA OFERTY:</Text>
+                        <Text style={{ fontFamily: 'Montserrat', fontWeight: 700, color: '#166534', fontSize: 16 }}>{clientSelection.totalPrice.toLocaleString('pl-PL')} PLN</Text>
+                    </View>
+                )}
 
                 {/* Album */}
                 {sectionVisibility.album ? (
@@ -476,6 +511,9 @@ export const OfferDocument: React.FC<{ offer: any }> = ({ offer }) => {
                 <View style={styles.footer}>
                     <Text>{S(labels.footerDisclaimer)}</Text>
                     <Text style={styles.bold}>{S(data.footerCompany)}</Text>
+                    {generationDate && (
+                        <Text style={{ marginTop: 6, fontSize: 8, color: '#94a3b8' }}>Dokument wygenerowany z systemu dnia: {generationDate}</Text>
+                    )}
                 </View>
 
             </Page>
