@@ -295,6 +295,29 @@ export const OfferDocument: React.FC<{ offer: any, generationDate?: string }> = 
         }
     };
 
+    // Validate and sanitize all arrays to avoid React #31 errors
+    const safeFeaturesArray = Array.isArray(data.features) 
+        ? data.features.filter((f: any) => f !== null && f !== undefined)
+        : [];
+    
+    const safePricingHeaders = Array.isArray(data.pricingHeaders)
+        ? data.pricingHeaders.filter((h: any) => h !== null && h !== undefined)
+        : [];
+    
+    const safePricingRows = Array.isArray(data.pricingRows)
+        ? data.pricingRows.filter((r: any) => r && Array.isArray(r.values))
+        : [];
+    
+    const safeFooterPrices = Array.isArray(data.footerPrices)
+        ? data.footerPrices.filter((p: any) => p !== null && p !== undefined)
+        : [];
+
+    const safeDeliveryTerms = data.deliveryTerms 
+        ? Object.entries(data.deliveryTerms)
+            .filter(([_, v]: [string, any]) => v !== null && v !== undefined)
+            .reduce((acc: any, [k, v]: [string, any]) => ({ ...acc, [k]: v }), {})
+        : {};
+
     // If data is missing sectionVisibility or labels, provide defaults
     const sectionVisibility = data.sectionVisibility || {
         eventInfo: true,
@@ -382,11 +405,11 @@ export const OfferDocument: React.FC<{ offer: any, generationDate?: string }> = 
                 ) : null}
 
                 {/* Features / Standards */}
-                {sectionVisibility.features ? (
+                {sectionVisibility.features && safeFeaturesArray.length > 0 ? (
                     <View>
                         <Text style={styles.h2}>{S(sectionTitles.standards)}</Text>
                         <View style={styles.list}>
-                            {data.features?.map((f: any, i: number) => {
+                            {safeFeaturesArray.map((f: any, i: number) => {
                                 const str = String(f || '');
                                 const parts = str.split(':');
                                 const label = parts.length > 1 ? parts[0] + ':' : '';
@@ -405,11 +428,11 @@ export const OfferDocument: React.FC<{ offer: any, generationDate?: string }> = 
                 ) : null}
 
                 {/* Pricing Table */}
-                {sectionVisibility.pricing ? (
+                {sectionVisibility.pricing && safePricingHeaders.length > 0 ? (
                     <View style={styles.table}>
                         {/* Headers */}
                         <View style={styles.tableRow}>
-                            {data.pricingHeaders?.map((header: any, idx: number) => {
+                            {safePricingHeaders.map((header: any, idx: number) => {
                                 const isRec = idx === data.recommendationColumnIndex;
                                 return (
                                     <View
@@ -419,7 +442,7 @@ export const OfferDocument: React.FC<{ offer: any, generationDate?: string }> = 
                                             styles.tableHeader,
                                             idx === 0 ? styles.leftAlign : undefined,
                                             isRec ? styles.recHeader : undefined,
-                                            { width: `${100 / (data.pricingHeaders?.length || 1)}%` }
+                                            { width: `${100 / (safePricingHeaders.length || 1)}%` }
                                         ]}
                                     >
                                         {isRec ? <Text style={styles.recLabel}>{S(data.recommendationLabel)}</Text> : null}
@@ -430,7 +453,7 @@ export const OfferDocument: React.FC<{ offer: any, generationDate?: string }> = 
                         </View>
 
                         {/* Rows */}
-                        {data.pricingRows?.map((row: any, i: number) => (
+                        {safePricingRows.map((row: any, i: number) => (
                             <View key={i} style={styles.tableRow}>
                                 {(row.values || []).map((val: any, colIdx: number) => {
                                     const isRec = colIdx === data.recommendationColumnIndex;
@@ -442,7 +465,7 @@ export const OfferDocument: React.FC<{ offer: any, generationDate?: string }> = 
                                                 styles.tableCell,
                                                 colIdx === 0 ? styles.leftAlign : undefined,
                                                 isRec ? styles.recCell : undefined,
-                                                { width: `${100 / (data.pricingHeaders?.length || 1)}%` }
+                                                { width: `${100 / (safePricingHeaders.length || 1)}%` }
                                             ]}
                                         >
                                             <Text style={isHeader ? styles.bold : undefined}>{S(val)}</Text>
@@ -454,7 +477,7 @@ export const OfferDocument: React.FC<{ offer: any, generationDate?: string }> = 
 
                         {/* Footer Prices */}
                         <View style={styles.tableRow}>
-                            {data.footerPrices?.map((price: any, idx: number) => {
+                            {safeFooterPrices.map((price: any, idx: number) => {
                                 const isRec = idx === data.recommendationColumnIndex;
                                 return (
                                     <View
@@ -463,7 +486,7 @@ export const OfferDocument: React.FC<{ offer: any, generationDate?: string }> = 
                                             styles.tableCell,
                                             idx === 0 ? styles.leftAlign : undefined,
                                             isRec ? styles.recCell : undefined,
-                                            { width: `${100 / (data.pricingHeaders?.length || 1)}%` }
+                                            { width: `${100 / (safePricingHeaders.length || 1)}%` }
                                         ]}
                                     >
                                         {idx === 0 ? <Text>{S(price)}</Text> : <Text style={styles.priceTag}>{S(price)}</Text>}
@@ -473,27 +496,27 @@ export const OfferDocument: React.FC<{ offer: any, generationDate?: string }> = 
                         </View>
 
                         {/* Communion Client Selection Row */}
-                        {isCommunion && clientSelection && clientSelection.splitPackageCounts && (
+                        {isCommunion && clientSelection && clientSelection.splitPackageCounts ? (
                             <View style={[styles.tableRow, { backgroundColor: '#e0f2fe' }]}>
-                                <View style={[styles.tableCell, styles.leftAlign, { width: `${100 / (data.pricingHeaders?.length || 1)}%`, borderTopWidth: 2, borderTopColor: '#bae6fd' }]}>
+                                <View style={[styles.tableCell, styles.leftAlign, { width: `${100 / (safePricingHeaders.length || 1)}%`, borderTopWidth: 2, borderTopColor: '#bae6fd' }]}>
                                     <Text style={[styles.bold, { color: '#0369a1' }]}>Wybrana liczba dzieci</Text>
                                 </View>
-                                {data.footerPrices?.slice(1).map((_: any, idx: number) => {
+                                {safeFooterPrices.slice(1).map((_: any, idx: number) => {
                                     const actualIdx = idx + 1;
                                     const count = clientSelection.splitPackageCounts[actualIdx] || 0;
-                                    const priceStr = data.footerPrices[actualIdx] || '0';
-                                    const priceNum = parseInt(priceStr.replace(/[^0-9]/g, '')) || 0;
+                                    const priceStr = safeFooterPrices[actualIdx] || '0';
+                                    const priceNum = parseInt(String(priceStr).replace(/[^0-9]/g, '')) || 0;
                                     const subtotal = count * priceNum;
 
                                     return (
-                                        <View key={actualIdx} style={[styles.tableCell, { width: `${100 / (data.pricingHeaders?.length || 1)}%`, borderTopWidth: 2, borderTopColor: '#bae6fd' }]}>
+                                        <View key={actualIdx} style={[styles.tableCell, { width: `${100 / (safePricingHeaders.length || 1)}%`, borderTopWidth: 2, borderTopColor: '#bae6fd' }]}>
                                             <Text style={[styles.bold, { color: '#0369a1', fontSize: 12 }]}>{count} os.</Text>
                                             {count > 0 ? <Text style={{ fontSize: 8, color: '#0284c7', marginTop: 2 }}>Razem: {subtotal.toLocaleString('pl-PL')} PLN</Text> : null}
                                         </View>
                                     );
                                 })}
                             </View>
-                        )}
+                        ) : null}
                     </View>
                 ) : null}
 
@@ -514,11 +537,11 @@ export const OfferDocument: React.FC<{ offer: any, generationDate?: string }> = 
                 ) : null}
 
                 {/* Delivery */}
-                {sectionVisibility.delivery ? (
+                {sectionVisibility.delivery && Object.keys(safeDeliveryTerms).length > 0 ? (
                     <View>
                         <Text style={styles.h2}>{S(sectionTitles.delivery)}</Text>
                         <View style={styles.list}>
-                            {Object.values(data.deliveryTerms || {}).map((t: any, i: number) => {
+                            {Object.values(safeDeliveryTerms).map((t: any, i: number) => {
                                 const str = String(t || '');
                                 const parts = str.split(':');
                                 const label = parts.length > 1 ? parts[0] + ':' : '';
