@@ -142,6 +142,8 @@ function ClientsContent() {
     const [newClient, setNewClient] = useState({ name: '', email: '', phone: '' });
     const [rodoClient, setRodoClient] = useState<Client | null>(null);
     const [rodoLoading, setRodoLoading] = useState(false);
+    const [selectedIds, setSelectedIds] = useState<number[]>([]);
+    const [isDeletingBulk, setIsDeletingBulk] = useState(false);
 
     useEffect(() => { fetchClients(); }, []);
 
@@ -206,6 +208,44 @@ function ClientsContent() {
         } finally {
             setRodoLoading(false);
         }
+    };
+
+    const handleBulkHardDelete = async () => {
+        if (selectedIds.length === 0) return;
+        if (!confirm(`Czy na pewno chcesz CAŁKOWICIE I NA ZAWSZE usunąć ${selectedIds.length} wybranych klientów? Ta operacja usunie też ich rezerwacje i zwolni adresy e-mail.`)) return;
+
+        setIsDeletingBulk(true);
+        try {
+            const token = localStorage.getItem('admin_token');
+            // We'll call the delete API in a loop for now or modify the API to accept multiple IDs
+            // Given the current API, looping is safer without changing the backend logic too much, 
+            // but let's assume we want efficiency.
+            let successCount = 0;
+            for (const id of selectedIds) {
+                const res = await fetch(`/api/admin/clients?id=${id}&hard=true`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) successCount++;
+            }
+
+            toast.success(`Usunięto ${successCount} klientów.`);
+            setSelectedIds([]);
+            fetchClients();
+        } catch (error) {
+            toast.error('Błąd podczas usuwania zbiorczego');
+        } finally {
+            setIsDeletingBulk(false);
+        }
+    };
+
+    const toggleSelectAll = () => {
+        if (selectedIds.length === filtered.length) setSelectedIds([]);
+        else setSelectedIds(filtered.map(c => c.id));
+    };
+
+    const toggleSelect = (id: number) => {
+        setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
     };
 
     const toggleSort = (field: string) => {
@@ -273,6 +313,15 @@ function ClientsContent() {
                             <option value="rejected">Odrzucona</option>
                             <option value="none">Brak oferty</option>
                         </select>
+                        {selectedIds.length > 0 && (
+                            <button
+                                onClick={handleBulkHardDelete}
+                                disabled={isDeletingBulk}
+                                className="flex items-center justify-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg transition-all text-sm animate-in fade-in zoom-in duration-200"
+                            >
+                                <Trash2 className="w-4 h-4" /> {isDeletingBulk ? 'Usuwanie...' : `Usuń (${selectedIds.length})`}
+                            </button>
+                        )}
                         <button
                             onClick={() => setShowCreateModal(true)}
                             className="flex items-center justify-center gap-2 px-5 py-2 bg-gold-600 hover:bg-gold-500 text-black font-bold rounded-lg transition-all shadow-lg shadow-gold-900/20 text-sm"
@@ -303,6 +352,14 @@ function ClientsContent() {
                         <table className="w-full text-sm">
                             <thead>
                                 <tr className="border-b border-zinc-800 bg-zinc-900/80">
+                                    <th className="px-4 py-3 text-left w-10">
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedIds.length === filtered.length && filtered.length > 0}
+                                            onChange={toggleSelectAll}
+                                            className="w-4 h-4 rounded border-zinc-700 bg-zinc-950 text-gold-500 focus:ring-gold-500/20"
+                                        />
+                                    </th>
                                     <th className="px-4 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider cursor-pointer hover:text-zinc-300" onClick={() => toggleSort('name')}>
                                         Klient <SortIcon field="name" />
                                     </th>
@@ -335,8 +392,15 @@ function ClientsContent() {
                                 ) : filtered.length === 0 ? (
                                     <tr><td colSpan={8} className="px-6 py-12 text-center text-zinc-500">Brak klientów spełniających kryteria.</td></tr>
                                 ) : filtered.map(client => (
-                                    <tr key={client.id} className="hover:bg-zinc-800/20 transition-colors group">
-
+                                    <tr key={client.id} className={`hover:bg-zinc-800/20 transition-colors group ${selectedIds.includes(client.id) ? 'bg-gold-500/5' : ''}`}>
+                                        <td className="px-4 py-3">
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedIds.includes(client.id)}
+                                                onChange={() => toggleSelect(client.id)}
+                                                className="w-4 h-4 rounded border-zinc-700 bg-zinc-950 text-gold-500 focus:ring-gold-500/20"
+                                            />
+                                        </td>
                                         {/* Klient */}
                                         <td className="px-4 py-3">
                                             <div className="flex items-center gap-3">

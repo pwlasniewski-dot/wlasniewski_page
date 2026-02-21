@@ -182,8 +182,8 @@ Ten plik służy do ścisłego monitorowania wszystkich zmian wprowadzanych w pr
 ### [2026-02-21] S3 PDF Generation & CRM PDF Download Fixes
 
 **Zmiany:**
-- **Naprawa błędu 500 przy tworzeniu PDF na Windowsie**: Zidentyfikowano brakującą zależność `tsx` w `package.json`, która powodowała błąd na środowisku serwerowym Next.js. Zainstalowano `tsx` i zaktualizowano skrypt `src/lib/services/pdf.tsx` do poprawnego wykrywania pliku binarnego `tsx.cmd` na Windowsie.
-- **Naprawa błędu PermanentRedirect**: Ścieżki w `src/app/api/admin/offers/[id]/save-s3/route.ts` i `contracts` celowały na sztywno w przestarzały kubełek S3 `fotograf`. Usunięto sztywny schemat URL i zintegrowano zapis z modułem `src/lib/storage/s3.ts`, opartym na zmiennych `.env`. Wygenerowany plik poprawnie ląduje w buckecie i do bazy trafia poprawny adres `pdf_url`.
+- **Stabilizacja PDF na Produkcji**: Przełączono ładowanie czcionek Montserrat z adresów URL na ścieżki lokalne (`process.cwd()`). Rozwiązuje to błąd 500 na Vercelu, gdzie funkcja serverless nie mogła pobrać własnych czcionek przez HTTP.
+- **Naprawa błędu PermanentRedirect (S3)**: Ścieżki w `src/app/api/admin/offers/[id]/save-s3/route.ts` i `contracts` celowały na sztywno w przestarzały kubełek S3 `fotograf`. Usunięto sztywny schemat URL i zintegrowano zapis z modułem `src/lib/storage/s3.ts`, opartym na zmiennych `.env`. Wygenerowany plik poprawnie ląduje w buckecie i do bazy trafia poprawny adres `pdf_url`.
 - **UI dla pobierania PDF w CRM**: Odblokowano i upewniono się, że przyciski `Pobierz PDF` w sekcji umów i ofert (podgląd klienta w CRM admina) prawidłowo obsługują tokenowy dostęp poprzez proxy route `GET /api/contracts/[id]/pdf` i nowo dodany dostęp z S3.
 
 **Decyzje:**

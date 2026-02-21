@@ -1,13 +1,18 @@
 import React from 'react';
 import { Document, Page, Text, View, StyleSheet, Font } from '@react-pdf/renderer';
-const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://wlasniewski.pl';
+import path from 'path';
+
+// Use local paths for fonts to avoid 500 errors on Vercel/serverless environments
+const getFontPath = (fileName: string) => {
+    return path.join(process.cwd(), 'public', 'fonts', fileName);
+};
 
 Font.register({
     family: 'Montserrat',
     fonts: [
-        { src: `${appUrl}/fonts/Montserrat-Regular.ttf`, fontWeight: 400 },
-        { src: `${appUrl}/fonts/Montserrat-SemiBold.ttf`, fontWeight: 600 },
-        { src: `${appUrl}/fonts/Montserrat-Bold.ttf`, fontWeight: 700 },
+        { src: getFontPath('Montserrat-Regular.ttf'), fontWeight: 400 },
+        { src: getFontPath('Montserrat-SemiBold.ttf'), fontWeight: 600 },
+        { src: getFontPath('Montserrat-Bold.ttf'), fontWeight: 700 },
     ]
 });
 

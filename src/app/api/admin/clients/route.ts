@@ -271,12 +271,27 @@ export async function DELETE(request: NextRequest) {
             await prisma.$transaction(async (tx) => {
                 if (isHardDelete) {
                     // HARD DELETE STRATEGY
-                    // Dependency handling: Bookings with this email
+                    // 1. Delete Bookings
                     await tx.booking.deleteMany({
                         where: { email: user.email }
                     });
 
-                    // Delete the user record
+                    // 2. Delete Offers
+                    await tx.offer.deleteMany({
+                        where: { client_id: userId }
+                    });
+
+                    // 3. Delete Galleries
+                    await tx.clientGallery.deleteMany({
+                        where: {
+                            OR: [
+                                { client_id: userId },
+                                { client_email: user.email }
+                            ]
+                        }
+                    });
+
+                    // 4. Delete the user record
                     await tx.user.delete({
                         where: { id: userId }
                     });
