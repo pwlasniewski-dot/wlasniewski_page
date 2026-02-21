@@ -215,6 +215,57 @@ const styles = StyleSheet.create({
         color: '#1a1a1a',
         marginTop: 2,
     },
+    // Communion selection row
+    communionSelectionRow: {
+        backgroundColor: '#e0f2fe',
+        borderTopWidth: 2,
+        borderTopColor: '#bae6fd'
+    },
+    communionSelectionLabel: {
+        color: '#0369a1',
+        fontWeight: 700,
+        fontSize: 12
+    },
+    communionSubtotal: {
+        fontSize: 8,
+        color: '#0284c7',
+        marginTop: 2
+    },
+    // Accepted offer final price
+    acceptedFinalPrice: {
+        backgroundColor: '#f0fdf4',
+        borderColor: '#16a34a',
+        borderWidth: 2,
+        borderRadius: 4,
+        padding: 10,
+        marginTop: 10,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center'
+    },
+    acceptedFinalLabel: {
+        fontFamily: 'Montserrat',
+        fontWeight: 600,
+        color: '#166534',
+        fontSize: 12
+    },
+    acceptedFinalValue: {
+        fontFamily: 'Montserrat',
+        fontWeight: 700,
+        color: '#166534',
+        fontSize: 16
+    },
+    generationDateText: {
+        marginTop: 6,
+        fontSize: 8,
+        color: '#94a3b8'
+    },
+    tableWidthDynamic: {
+        width: '50%' // Will be calculated dynamically
+    },
+    tableWidthQuarter: {
+        width: '25%' // Will be calculated dynamically
+    },
     // Album Box
     descBox: {
         backgroundColor: '#fff',
@@ -238,11 +289,18 @@ const styles = StyleSheet.create({
     },
 });
 
-// Helper to safely render text
+// Helper to safely render text - CRITICAL: Must never return objects or React elements
 const S = (val: any) => {
     if (val === null || val === undefined) return '';
-    if (typeof val === 'object') return JSON.stringify(val);
-    return String(val);
+    if (typeof val === 'string') return val;
+    if (typeof val === 'number') return String(val);
+    if (typeof val === 'boolean') return val ? 'true' : 'false';
+    // For objects, convert to string safely
+    try {
+        return String(val);
+    } catch (e) {
+        return '';
+    }
 };
 
 export const OfferDocument: React.FC<{ offer: any, generationDate?: string }> = ({ offer, generationDate }) => {
@@ -454,19 +512,20 @@ export const OfferDocument: React.FC<{ offer: any, generationDate?: string }> = 
                         <View style={styles.tableRow}>
                             {safePricingHeaders.map((header: any, idx: number) => {
                                 const isRec = idx === safeData.recommendationColumnIndex;
+                                const headerStyles = [
+                                    styles.tableCell,
+                                    styles.tableHeader,
+                                ];
+                                if (idx === 0) headerStyles.push(styles.leftAlign);
+                                if (isRec) headerStyles.push(styles.recHeader);
+                                
                                 return (
                                     <View
                                         key={idx}
-                                        style={[
-                                            styles.tableCell,
-                                            styles.tableHeader,
-                                            idx === 0 ? styles.leftAlign : undefined,
-                                            isRec ? styles.recHeader : undefined,
-                                            { width: `${100 / (safePricingHeaders.length || 1)}%` }
-                                        ]}
+                                        style={[...headerStyles, { width: `${100 / (safePricingHeaders.length || 1)}%` }]}
                                     >
                                         {isRec ? <Text style={styles.recLabel}>{S(safeData.recommendationLabel)}</Text> : null}
-                                        <Text style={{ fontWeight: 700 }}>{S(header)}</Text>
+                                        <Text style={styles.bold}>{S(header)}</Text>
                                     </View>
                                 );
                             })}
@@ -478,15 +537,14 @@ export const OfferDocument: React.FC<{ offer: any, generationDate?: string }> = 
                                 {(row.values || []).map((val: any, colIdx: number) => {
                                     const isRec = colIdx === safeData.recommendationColumnIndex;
                                     const isHeader = row.isHeader;
+                                    const cellStyles = [styles.tableCell];
+                                    if (colIdx === 0) cellStyles.push(styles.leftAlign);
+                                    if (isRec) cellStyles.push(styles.recCell);
+                                    
                                     return (
                                         <View
                                             key={colIdx}
-                                            style={[
-                                                styles.tableCell,
-                                                colIdx === 0 ? styles.leftAlign : undefined,
-                                                isRec ? styles.recCell : undefined,
-                                                { width: `${100 / (safePricingHeaders.length || 1)}%` }
-                                            ]}
+                                            style={[...cellStyles, { width: `${100 / (safePricingHeaders.length || 1)}%` }]}
                                         >
                                             <Text style={isHeader ? styles.bold : undefined}>{S(val)}</Text>
                                         </View>
@@ -499,15 +557,14 @@ export const OfferDocument: React.FC<{ offer: any, generationDate?: string }> = 
                         <View style={styles.tableRow}>
                             {safeFooterPrices.map((price: any, idx: number) => {
                                 const isRec = idx === safeData.recommendationColumnIndex;
+                                const cellStyles = [styles.tableCell];
+                                if (idx === 0) cellStyles.push(styles.leftAlign);
+                                if (isRec) cellStyles.push(styles.recCell);
+                                
                                 return (
                                     <View
                                         key={idx}
-                                        style={[
-                                            styles.tableCell,
-                                            idx === 0 ? styles.leftAlign : undefined,
-                                            isRec ? styles.recCell : undefined,
-                                            { width: `${100 / (safePricingHeaders.length || 1)}%` }
-                                        ]}
+                                        style={[...cellStyles, { width: `${100 / (safePricingHeaders.length || 1)}%` }]}
                                     >
                                         {idx === 0 ? <Text>{S(price)}</Text> : <Text style={styles.priceTag}>{S(price)}</Text>}
                                     </View>
@@ -517,9 +574,9 @@ export const OfferDocument: React.FC<{ offer: any, generationDate?: string }> = 
 
                         {/* Communion Client Selection Row */}
                         {isCommunion && clientSelection && clientSelection.splitPackageCounts ? (
-                            <View style={[styles.tableRow, { backgroundColor: '#e0f2fe' }]}>
-                                <View style={[styles.tableCell, styles.leftAlign, { width: `${100 / (safePricingHeaders.length || 1)}%`, borderTopWidth: 2, borderTopColor: '#bae6fd' }]}>
-                                    <Text style={[styles.bold, { color: '#0369a1' }]}>Wybrana liczba dzieci</Text>
+                            <View style={[styles.tableRow, styles.communionSelectionRow]}>
+                                <View style={[styles.tableCell, styles.leftAlign, { width: `${100 / (safePricingHeaders.length || 1)}%` }]}>
+                                    <Text style={[styles.bold, styles.communionSelectionLabel]}>Wybrana liczba dzieci</Text>
                                 </View>
                                 {safeFooterPrices.slice(1).map((_: any, idx: number) => {
                                     const actualIdx = idx + 1;
@@ -529,9 +586,9 @@ export const OfferDocument: React.FC<{ offer: any, generationDate?: string }> = 
                                     const subtotal = count * priceNum;
 
                                     return (
-                                        <View key={actualIdx} style={[styles.tableCell, { width: `${100 / (safePricingHeaders.length || 1)}%`, borderTopWidth: 2, borderTopColor: '#bae6fd' }]}>
-                                            <Text style={[styles.bold, { color: '#0369a1', fontSize: 12 }]}>{count} os.</Text>
-                                            {count > 0 ? <Text style={{ fontSize: 8, color: '#0284c7', marginTop: 2 }}>Razem: {subtotal.toLocaleString('pl-PL')} PLN</Text> : null}
+                                        <View key={actualIdx} style={[styles.tableCell, { width: `${100 / (safePricingHeaders.length || 1)}%` }]}>
+                                            <Text style={[styles.bold, styles.communionSelectionLabel]}>{count} os.</Text>
+                                            {count > 0 ? <Text style={styles.communionSubtotal}>Razem: {subtotal.toLocaleString('pl-PL')} PLN</Text> : null}
                                         </View>
                                     );
                                 })}
@@ -542,9 +599,9 @@ export const OfferDocument: React.FC<{ offer: any, generationDate?: string }> = 
 
                 {/* Final Price Summary for Accepted Offers */}
                 {isAccepted && clientSelection?.totalPrice && (
-                    <View style={{ backgroundColor: '#f0fdf4', padding: 10, borderColor: '#16a34a', borderWidth: 2, borderRadius: 4, marginTop: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <Text style={{ fontFamily: 'Montserrat', fontWeight: 600, color: '#166534', fontSize: 12 }}>ZAAKCEPTOWANA WARTOŚĆ KOŃCOWA OFERTY:</Text>
-                        <Text style={{ fontFamily: 'Montserrat', fontWeight: 700, color: '#166534', fontSize: 16 }}>{clientSelection.totalPrice.toLocaleString('pl-PL')} PLN</Text>
+                    <View style={styles.acceptedFinalPrice}>
+                        <Text style={styles.acceptedFinalLabel}>ZAAKCEPTOWANA WARTOŚĆ KOŃCOWA OFERTY:</Text>
+                        <Text style={styles.acceptedFinalValue}>{clientSelection.totalPrice.toLocaleString('pl-PL')} PLN</Text>
                     </View>
                 )}
 
@@ -583,9 +640,9 @@ export const OfferDocument: React.FC<{ offer: any, generationDate?: string }> = 
                 <View style={styles.footer}>
                     <Text>{S(labels.footerDisclaimer)}</Text>
                     <Text style={styles.bold}>{S(safeData.footerCompany)}</Text>
-                    {generationDate && (
-                        <Text style={{ marginTop: 6, fontSize: 8, color: '#94a3b8' }}>Dokument wygenerowany z systemu dnia: {generationDate}</Text>
-                    )}
+                    {generationDate ? (
+                        <Text style={styles.generationDateText}>Dokument wygenerowany z systemu dnia: {generationDate}</Text>
+                    ) : null}
                 </View>
 
             </Page>
