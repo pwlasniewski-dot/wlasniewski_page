@@ -10,8 +10,8 @@
   included_files = [
     "prisma/schema.prisma",
     "public/fonts/**",
-    ".next/standalone/**",
-    ".next/static/**"
+    # Remove redundant .next files from bundling
+    "!.next/**"
   ]
   external_node_modules = [
     "@aws-sdk/client-s3",
