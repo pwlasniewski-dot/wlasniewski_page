@@ -18,8 +18,6 @@
     "@aws-sdk/lib-storage",
     "@prisma/client"
   ]
-  # Increase function timeout for PDF generation
-  timeout = 60
 
 # Cache headers for static assets
 [[headers]]
