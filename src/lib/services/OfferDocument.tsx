@@ -255,29 +255,33 @@ export const OfferDocument: React.FC<{ offer: any, generationDate?: string }> = 
     
     // If we have template_data, use it. Otherwise fallback to top-level properties.
     // The previous implementation used OfferData interface.
-    const data = offer.template_data || {
-        // Fallback or "migration" if template_data is missing but old fields exist
-        title: offer.title || 'Oferta',
-        subtitle: '',
-        contactName: '',
-        contactLocation: '',
-        contactPhone: '',
-        contactEmail: '',
-        contactZip: '',
-        contactAddress: '',
-        eventLocation: '',
-        eventDate: '',
-        eventCount: '',
-        eventTeam: '',
-        preparations: { before: '', dayOf: '' },
-        features: [],
-        pricingHeaders: [],
-        pricingRows: [],
-        footerPrices: [],
-        albumDescription: '',
-        deliveryTerms: { t1: '', t2: '', t3: '' },
-        footerCompany: '',
-        labels: {
+    const data = offer.template_data || {};
+    
+    // ULTRA-DEFENSIVE: Ensure EVERY field has a safe default
+    const safeData = {
+        title: data.title || offer.title || 'Oferta',
+        subtitle: data.subtitle || '',
+        contactName: data.contactName || '',
+        contactLocation: data.contactLocation || '',
+        contactPhone: data.contactPhone || '',
+        contactEmail: data.contactEmail || '',
+        contactZip: data.contactZip || '',
+        contactAddress: data.contactAddress || '',
+        eventLocation: data.eventLocation || '',
+        eventDate: data.eventDate || '',
+        eventCount: data.eventCount || '',
+        eventTeam: data.eventTeam || '',
+        preparations: data.preparations || { before: '', dayOf: '' },
+        features: Array.isArray(data.features) ? data.features : [],
+        pricingHeaders: Array.isArray(data.pricingHeaders) ? data.pricingHeaders : [],
+        pricingRows: Array.isArray(data.pricingRows) ? data.pricingRows : [],
+        footerPrices: Array.isArray(data.footerPrices) ? data.footerPrices : [],
+        recommendationColumnIndex: data.recommendationColumnIndex ?? undefined,
+        recommendationLabel: data.recommendationLabel || 'REKOMENDACJA',
+        albumDescription: data.albumDescription || '',
+        deliveryTerms: (data.deliveryTerms && typeof data.deliveryTerms === 'object') ? data.deliveryTerms : { t1: '', t2: '', t3: '' },
+        footerCompany: data.footerCompany || '',
+        labels: data.labels || {
             location: 'Lokalizacja',
             date: 'Data',
             count: 'Liczba gości',
@@ -287,12 +291,12 @@ export const OfferDocument: React.FC<{ offer: any, generationDate?: string }> = 
             albumAdvantage: 'Albumy',
             footerDisclaimer: '',
         },
-        sectionTitles: {
+        sectionTitles: data.sectionTitles || {
             preparations: 'Przygotowania',
             standards: 'Standardy',
             delivery: 'Dostarczenie',
         },
-        sectionVisibility: {
+        sectionVisibility: data.sectionVisibility || {
             eventInfo: true,
             preparations: true,
             features: true,
@@ -301,32 +305,41 @@ export const OfferDocument: React.FC<{ offer: any, generationDate?: string }> = 
             delivery: true
         }
     };
-
+    
+    console.log('[OfferDoc] Safe data prepared:', {
+        title: safeData.title.substring(0, 20),
+        featuresLen: safeData.features.length,
+        headersLen: safeData.pricingHeaders.length,
+        rowsLen: safeData.pricingRows.length,
+        pricesLen: safeData.footerPrices.length,
+        hasDelivery: !!safeData.deliveryTerms
+    });
+    
     // Validate and sanitize all arrays to avoid React #31 errors
-    const safeFeaturesArray = Array.isArray(data.features) 
-        ? data.features.filter((f: any) => f !== null && f !== undefined)
+    const safeFeaturesArray = Array.isArray(safeData.features) 
+        ? safeData.features.filter((f: any) => f !== null && f !== undefined)
         : [];
     
-    const safePricingHeaders = Array.isArray(data.pricingHeaders)
-        ? data.pricingHeaders.filter((h: any) => h !== null && h !== undefined)
+    const safePricingHeaders = Array.isArray(safeData.pricingHeaders)
+        ? safeData.pricingHeaders.filter((h: any) => h !== null && h !== undefined)
         : [];
     
-    const safePricingRows = Array.isArray(data.pricingRows)
-        ? data.pricingRows.filter((r: any) => r && Array.isArray(r.values))
+    const safePricingRows = Array.isArray(safeData.pricingRows)
+        ? safeData.pricingRows.filter((r: any) => r && Array.isArray(r.values))
         : [];
     
-    const safeFooterPrices = Array.isArray(data.footerPrices)
-        ? data.footerPrices.filter((p: any) => p !== null && p !== undefined)
+    const safeFooterPrices = Array.isArray(safeData.footerPrices)
+        ? safeData.footerPrices.filter((p: any) => p !== null && p !== undefined)
         : [];
 
-    const safeDeliveryTerms = data.deliveryTerms 
-        ? Object.entries(data.deliveryTerms)
+    const safeDeliveryTerms = safeData.deliveryTerms && typeof safeData.deliveryTerms === 'object'
+        ? Object.entries(safeData.deliveryTerms)
             .filter(([_, v]: [string, any]) => v !== null && v !== undefined)
             .reduce((acc: any, [k, v]: [string, any]) => ({ ...acc, [k]: v }), {})
         : {};
 
     // If data is missing sectionVisibility or labels, provide defaults
-    const sectionVisibility = data.sectionVisibility || {
+    const sectionVisibility = safeData.sectionVisibility || {
         eventInfo: true,
         preparations: true,
         features: true,
@@ -335,7 +348,7 @@ export const OfferDocument: React.FC<{ offer: any, generationDate?: string }> = 
         delivery: true
     };
 
-    const labels = data.labels || {
+    const labels = safeData.labels || {
         location: 'Lokalizacja',
         date: 'Data',
         count: 'Liczba gości',
@@ -346,13 +359,13 @@ export const OfferDocument: React.FC<{ offer: any, generationDate?: string }> = 
         footerDisclaimer: '',
     };
 
-    const sectionTitles = data.sectionTitles || {
+    const sectionTitles = safeData.sectionTitles || {
         preparations: 'Przygotowania',
         standards: 'Standardy',
         delivery: 'Dostarczenie',
     };
 
-    const contactName = data.contactName === 'undefined undefined' ? '' : data.contactName;
+    const contactName = safeData.contactName === 'undefined undefined' ? '' : safeData.contactName;
 
     const isCommunion = offer.category?.toLowerCase() === 'komunia';
     const isAccepted = offer.status === 'accepted';
@@ -365,14 +378,14 @@ export const OfferDocument: React.FC<{ offer: any, generationDate?: string }> = 
                 {/* Header */}
                 <View style={styles.header}>
                     <View style={styles.headerLeft}>
-                        <Text style={styles.h1}>{S(data.title)}</Text>
-                        <Text style={styles.accent}>{S(data.subtitle)}</Text>
+                        <Text style={styles.h1}>{S(safeData.title)}</Text>
+                        <Text style={styles.accent}>{S(safeData.subtitle)}</Text>
                     </View>
                     <View style={styles.headerRight}>
                         <Text style={styles.headerName}>{S(contactName)}</Text>
-                        <Text>{S(data.contactLocation)}</Text>
-                        <Text>Tel: {S(data.contactPhone)}</Text>
-                        <Text>{S(data.contactEmail)}</Text>
+                        <Text>{S(safeData.contactLocation)}</Text>
+                        <Text>Tel: {S(safeData.contactPhone)}</Text>
+                        <Text>{S(safeData.contactEmail)}</Text>
                     </View>
                 </View>
 
@@ -380,16 +393,16 @@ export const OfferDocument: React.FC<{ offer: any, generationDate?: string }> = 
                 {sectionVisibility.eventInfo ? (
                     <View style={styles.eventInfo}>
                         <View style={styles.eventItem}>
-                            <Text>{S(labels.location)}: {S(data.eventLocation)}</Text>
+                            <Text>{S(labels.location)}: {S(safeData.eventLocation)}</Text>
                         </View>
                         <View style={styles.eventItem}>
-                            <Text>{S(labels.date)}: {S(data.eventDate)}</Text>
+                            <Text>{S(labels.date)}: {S(safeData.eventDate)}</Text>
                         </View>
                         <View style={styles.eventItem}>
-                            <Text>{S(labels.count)}: {S(data.eventCount)}</Text>
+                            <Text>{S(labels.count)}: {S(safeData.eventCount)}</Text>
                         </View>
                         <View style={styles.eventItem}>
-                            <Text>{S(labels.team)}: {S(data.eventTeam)}</Text>
+                            <Text>{S(labels.team)}: {S(safeData.eventTeam)}</Text>
                         </View>
                     </View>
                 ) : null}
@@ -401,11 +414,11 @@ export const OfferDocument: React.FC<{ offer: any, generationDate?: string }> = 
                         <View style={styles.grid}>
                             <View style={styles.gridCol}>
                                 <Text style={styles.bold}>{S(labels.prepBefore)}:</Text>
-                                <Text>{S(data.preparations?.before)}</Text>
+                                <Text>{S(safeData.preparations?.before)}</Text>
                             </View>
                             <View style={styles.gridCol}>
                                 <Text style={styles.bold}>{S(labels.prepDay)}:</Text>
-                                <Text>{S(data.preparations?.dayOf)}</Text>
+                                <Text>{S(safeData.preparations?.dayOf)}</Text>
                             </View>
                         </View>
                     </View>
@@ -440,7 +453,7 @@ export const OfferDocument: React.FC<{ offer: any, generationDate?: string }> = 
                         {/* Headers */}
                         <View style={styles.tableRow}>
                             {safePricingHeaders.map((header: any, idx: number) => {
-                                const isRec = idx === data.recommendationColumnIndex;
+                                const isRec = idx === safeData.recommendationColumnIndex;
                                 return (
                                     <View
                                         key={idx}
@@ -452,7 +465,7 @@ export const OfferDocument: React.FC<{ offer: any, generationDate?: string }> = 
                                             { width: `${100 / (safePricingHeaders.length || 1)}%` }
                                         ]}
                                     >
-                                        {isRec ? <Text style={styles.recLabel}>{S(data.recommendationLabel)}</Text> : null}
+                                        {isRec ? <Text style={styles.recLabel}>{S(safeData.recommendationLabel)}</Text> : null}
                                         <Text style={{ fontWeight: 700 }}>{S(header)}</Text>
                                     </View>
                                 );
@@ -463,7 +476,7 @@ export const OfferDocument: React.FC<{ offer: any, generationDate?: string }> = 
                         {safePricingRows.map((row: any, i: number) => (
                             <View key={i} style={styles.tableRow}>
                                 {(row.values || []).map((val: any, colIdx: number) => {
-                                    const isRec = colIdx === data.recommendationColumnIndex;
+                                    const isRec = colIdx === safeData.recommendationColumnIndex;
                                     const isHeader = row.isHeader;
                                     return (
                                         <View
@@ -485,7 +498,7 @@ export const OfferDocument: React.FC<{ offer: any, generationDate?: string }> = 
                         {/* Footer Prices */}
                         <View style={styles.tableRow}>
                             {safeFooterPrices.map((price: any, idx: number) => {
-                                const isRec = idx === data.recommendationColumnIndex;
+                                const isRec = idx === safeData.recommendationColumnIndex;
                                 return (
                                     <View
                                         key={idx}
@@ -539,7 +552,7 @@ export const OfferDocument: React.FC<{ offer: any, generationDate?: string }> = 
                 {sectionVisibility.album ? (
                     <View style={styles.descBox}>
                         <Text style={styles.bold}>{S(labels.albumAdvantage)}:</Text>
-                        <Text>{S(data.albumDescription)}</Text>
+                        <Text>{S(safeData.albumDescription)}</Text>
                     </View>
                 ) : null}
 
@@ -569,7 +582,7 @@ export const OfferDocument: React.FC<{ offer: any, generationDate?: string }> = 
                 {/* Footer */}
                 <View style={styles.footer}>
                     <Text>{S(labels.footerDisclaimer)}</Text>
-                    <Text style={styles.bold}>{S(data.footerCompany)}</Text>
+                    <Text style={styles.bold}>{S(safeData.footerCompany)}</Text>
                     {generationDate && (
                         <Text style={{ marginTop: 6, fontSize: 8, color: '#94a3b8' }}>Dokument wygenerowany z systemu dnia: {generationDate}</Text>
                     )}
