@@ -135,6 +135,17 @@ export async function GET(
         );
     } catch (error) {
         console.error('Error serving PDF:', error);
-        return NextResponse.json({ error: 'Failed to generate PDF' }, { status: 500 });
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        console.error('Error details:', {
+            message: errorMessage,
+            stack: error instanceof Error ? error.stack : 'No stack trace',
+        });
+        return NextResponse.json(
+            { 
+                error: 'Failed to generate PDF',
+                details: process.env.NODE_ENV === 'development' ? errorMessage : undefined,
+            }, 
+            { status: 500 }
+        );
     }
 }

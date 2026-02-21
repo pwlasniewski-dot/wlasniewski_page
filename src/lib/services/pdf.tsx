@@ -9,11 +9,16 @@ import path from 'path';
 export async function generateOfferPDF(offer: any): Promise<Buffer> {
     try {
         console.log('[PDF] Generating PDF for offer:', offer.id);
+        console.log('[PDF] Environment:', {
+            isNetlify: process.env.NETLIFY === 'true',
+            isVercel: process.env.VERCEL === '1',
+            nodeEnv: process.env.NODE_ENV,
+            cwd: process.cwd(),
+        });
 
         // Debugging font paths
         const fontDir = path.join(process.cwd(), 'public', 'fonts');
         console.log('[PDF] Font directory:', fontDir);
-        console.log('[PDF] Is Vercel?', process.env.VERCEL === '1');
 
         const fontsToWeights = {
             'Montserrat-Regular.ttf': 400,
@@ -38,12 +43,14 @@ export async function generateOfferPDF(offer: any): Promise<Buffer> {
             minute: '2-digit'
         });
 
-        console.log('[PDF] Rendering to buffer...');
+        console.log('[PDF] OfferDocument component loaded, starting render...');
         const buffer = await renderToBuffer(<OfferDocument offer={offer} generationDate={generationDate} />);
         console.log(`[PDF] Success! Buffer size: ${buffer.length} bytes`);
         return buffer;
     } catch (error: any) {
         console.error('[PDF] Error in generateOfferPDF:', error);
+        console.error('[PDF] Error message:', error?.message);
+        console.error('[PDF] Error name:', error?.name);
         console.error('[PDF] Stack trace:', error.stack);
         throw error;
     }

@@ -6,12 +6,20 @@
   package = "@netlify/plugin-nextjs"
 
 [functions]
-  included_files = ["prisma/schema.prisma", "public/fonts/**"]
+  # CRITICAL: Include fonts and all necessary assets for PDF generation
+  included_files = [
+    "prisma/schema.prisma",
+    "public/fonts/**",
+    ".next/standalone/**",
+    ".next/static/**"
+  ]
   external_node_modules = [
     "@aws-sdk/client-s3",
     "@aws-sdk/lib-storage",
     "@prisma/client"
   ]
+  # Increase function timeout for PDF generation
+  timeout = 60
 
 # Cache headers for static assets
 [[headers]]
