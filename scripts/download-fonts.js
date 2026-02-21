@@ -1,51 +1,34 @@
-const https = require('https');
 const fs = require('fs');
+const https = require('https');
 const path = require('path');
 
-async function download(url, dest) {
-    return new Promise((resolve, reject) => {
-        const file = fs.createWriteStream(dest);
-        https.get(url, (response) => {
-            if (response.statusCode === 301 || response.statusCode === 302) {
-                download(response.headers.location, dest).then(resolve).catch(reject);
-                return;
-            }
-            if (response.statusCode !== 200) {
-                reject(new Error(`Failed to get '${url}' (${response.statusCode})`));
-                return;
-            }
-            response.pipe(file);
-            file.on('finish', () => {
-                file.close();
-                console.log(`Downloaded ${path.basename(dest)} (${fs.statSync(dest).size} bytes)`);
-                resolve();
-            });
-        }).on('error', (err) => {
-            fs.unlink(dest, () => { });
-            reject(err);
-        });
-    });
-}
-
-// Verified paths for Montserrat
-const fonts = [
-    { name: 'Montserrat-Regular.ttf', url: 'https://github.com/google/fonts/raw/main/ofl/montserrat/static/Montserrat-Regular.ttf' },
-    { name: 'Montserrat-SemiBold.ttf', url: 'https://github.com/google/fonts/raw/main/ofl/montserrat/static/Montserrat-SemiBold.ttf' },
-    { name: 'Montserrat-Bold.ttf', url: 'https://github.com/google/fonts/raw/main/ofl/montserrat/static/Montserrat-Bold.ttf' },
-    { name: 'PlayfairDisplay-Bold.ttf', url: 'https://github.com/google/fonts/raw/main/ofl/playfairdisplay/static/PlayfairDisplay-Bold.ttf' }
+const fontsToDownload = [
+    { url: 'https://fonts.gstatic.com/s/montserrat/v26/JTUSjIg1_i6t8kCHKm459Wlhyw.ttf', name: 'Montserrat-Regular.ttf' },
+    { url: 'https://fonts.gstatic.com/s/montserrat/v26/JTURjIg1_i6t8kCHKm45_bZF3gnD_g.ttf', name: 'Montserrat-SemiBold.ttf' },
+    { url: 'https://fonts.gstatic.com/s/montserrat/v26/JTURjIg1_i6t8kCHKm45_dJE3gnD_g.ttf', name: 'Montserrat-Bold.ttf' },
+    { url: 'https://fonts.gstatic.com/s/playfairdisplay/v30/nuFvD_W73OPE_E_QzO-K6I3X2gE-wG4wFvI.ttf', name: 'PlayfairDisplay-Bold.ttf' }
 ];
 
-async function main() {
-    const fontsDir = path.join(__dirname, '..', 'public', 'fonts');
-    if (!fs.existsSync(fontsDir)) fs.mkdirSync(fontsDir, { recursive: true });
+const fontDir = path.join(process.cwd(), 'public', 'fonts');
+if (!fs.existsSync(fontDir)) fs.mkdirSync(fontDir, { recursive: true });
 
-    for (const font of fonts) {
-        try {
-            await download(font.url, path.join(fontsDir, font.name));
-        } catch (err) {
-            console.error(`Error downloading ${font.name}:`, err.message);
-        }
+async function download() {
+    for (const font of fontsToDownload) {
+        const dest = path.join(fontDir, font.name);
+        console.log(`Downloading ${font.name}...`);
+        await new Promise((resolve, reject) => {
+            const file = fs.createWriteStream(dest);
+            https.get(font.url, (response) => {
+                response.pipe(file);
+                file.on('finish', () => {
+                    file.close(resolve);
+                });
+            }).on('error', (err) => {
+                fs.unlink(dest, () => reject(err));
+            });
+        });
     }
+    console.log('All fonts downloaded.');
 }
 
-main();
+download();

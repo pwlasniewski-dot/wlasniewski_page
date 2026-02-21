@@ -3,22 +3,21 @@ import { Document, Page, Text, View, StyleSheet, Font, Image } from '@react-pdf/
 
 import path from 'path';
 
-// Use standard Windows system font for definitive Polish support in isolated process
-const systemFont = 'C:/Windows/Fonts/arial.ttf';
+const fontsDir = path.join(process.cwd(), 'public', 'fonts');
 
 Font.register({
     family: 'Montserrat',
     fonts: [
-        { src: systemFont, fontWeight: 400 },
-        { src: systemFont, fontWeight: 600 },
-        { src: systemFont, fontWeight: 700 },
+        { src: path.join(fontsDir, 'Montserrat-Regular.ttf'), fontWeight: 400 },
+        { src: path.join(fontsDir, 'Montserrat-SemiBold.ttf'), fontWeight: 600 },
+        { src: path.join(fontsDir, 'Montserrat-Bold.ttf'), fontWeight: 700 },
     ]
 });
 
 Font.register({
     family: 'Playfair Display',
     fonts: [
-        { src: 'C:/Windows/Fonts/timesbd.ttf', fontWeight: 700 },
+        { src: path.join(fontsDir, 'PlayfairDisplay-Bold.ttf'), fontWeight: 700 },
     ]
 });
 
