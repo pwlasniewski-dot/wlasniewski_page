@@ -417,8 +417,8 @@ export const OfferDocument: React.FC<{ offer: any, generationDate?: string }> = 
                                         style={[
                                             styles.tableCell,
                                             styles.tableHeader,
-                                            idx === 0 ? styles.leftAlign : {},
-                                            isRec ? styles.recHeader : {},
+                                            idx === 0 ? styles.leftAlign : undefined,
+                                            isRec ? styles.recHeader : undefined,
                                             { width: `${100 / (data.pricingHeaders?.length || 1)}%` }
                                         ]}
                                     >
@@ -440,12 +440,12 @@ export const OfferDocument: React.FC<{ offer: any, generationDate?: string }> = 
                                             key={colIdx}
                                             style={[
                                                 styles.tableCell,
-                                                colIdx === 0 ? styles.leftAlign : {},
-                                                isRec ? styles.recCell : {},
+                                                colIdx === 0 ? styles.leftAlign : undefined,
+                                                isRec ? styles.recCell : undefined,
                                                 { width: `${100 / (data.pricingHeaders?.length || 1)}%` }
                                             ]}
                                         >
-                                            <Text style={isHeader ? styles.bold : {}}>{S(val)}</Text>
+                                            <Text style={isHeader ? styles.bold : undefined}>{S(val)}</Text>
                                         </View>
                                     );
                                 })}
@@ -461,8 +461,8 @@ export const OfferDocument: React.FC<{ offer: any, generationDate?: string }> = 
                                         key={idx}
                                         style={[
                                             styles.tableCell,
-                                            idx === 0 ? styles.leftAlign : {},
-                                            isRec ? styles.recCell : {},
+                                            idx === 0 ? styles.leftAlign : undefined,
+                                            isRec ? styles.recCell : undefined,
                                             { width: `${100 / (data.pricingHeaders?.length || 1)}%` }
                                         ]}
                                     >
