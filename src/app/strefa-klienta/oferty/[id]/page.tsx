@@ -369,7 +369,7 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
                         </p>
                     </div>
 
-                    <div className="flex gap-4 mt-8">
+                    <div className="flex flex-wrap gap-4 mt-8">
                         <a
                             href={pdfUrl}
                             target="_blank"
@@ -377,6 +377,16 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
                         >
                             📄 Pobierz PDF
                         </a>
+                        {offer.status === 'accepted' && offer.pdf_url && (
+                            <a
+                                href={offer.pdf_url.replace(/\.pdf$/, '_zatwierdzona.pdf')}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-6 py-3 bg-green-500 text-white rounded-xl hover:bg-green-600 font-bold transition-all flex items-center gap-2 border border-green-400 shadow-lg"
+                            >
+                                📥 Pobierz zatwierdzoną ofertę
+                            </a>
+                        )}
                         {offer.contract && (
                             <Link href={`/strefa-klienta/umowy/${offer.contract.id}`}>
                                 <button className="px-6 py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 font-bold transition-all shadow-lg">
