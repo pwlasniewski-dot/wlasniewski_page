@@ -385,9 +385,11 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
                         </a>
                         {offer.status === 'accepted' && (
                             <a
-                                href={offer.pdf_url
-                                    ? offer.pdf_url.replace(/\.pdf$/, '_zatwierdzona.pdf')
-                                    : `/api/offers/${offerId}/pdf?token=${typeof window !== 'undefined' ? (localStorage.getItem('client_token') || localStorage.getItem('user_token') || '') : ''}&accepted=true`
+                                href={offer.pdf_url && offer.pdf_url.includes('_zatwierdzona')
+                                    ? offer.pdf_url
+                                    : offer.pdf_url
+                                        ? offer.pdf_url.replace(/\.pdf$/, '_zatwierdzona.pdf')
+                                        : `/api/offers/${offerId}/pdf?token=${typeof window !== 'undefined' ? (localStorage.getItem('client_token') || localStorage.getItem('user_token') || '') : ''}&accepted=true`
                                 }
                                 target="_blank"
                                 rel="noopener noreferrer"
@@ -445,6 +447,111 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
                         </div>
                     </div>
                 </div>
+
+                {/* ACCEPTED OFFER SUMMARY CARD */}
+                {offer.status === 'accepted' && offer.client_selection && offer.template_data && (
+                    <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl shadow-lg border-2 border-green-400 p-8 mb-12 max-w-4xl mx-auto mt-8">
+                        <div className="flex items-start justify-between mb-6">
+                            <h2 className="text-3xl font-bold text-green-900 flex items-center gap-3">
+                                ✅ Podsumowanie zatwierdzonej oferty
+                            </h2>
+                        </div>
+
+                        <div className="grid md:grid-cols-2 gap-8 mb-6">
+                            {/* Event Info */}
+                            <div>
+                                <p className="text-sm text-slate-600 mb-1">📅 Data wydarzenia:</p>
+                                <p className="text-2xl font-bold text-green-900">
+                                    {offer.template_data.eventDate || 'Nie podano'}
+                                </p>
+                            </div>
+
+                            {/* Total Price */}
+                            <div>
+                                <p className="text-sm text-slate-600 mb-1">💰 Kwota oferty:</p>
+                                <p className="text-2xl font-bold text-green-600">
+                                    {calculatedTotal.toLocaleString('pl-PL')} PLN
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Package Details */}
+                        {!isCommunion && offer.client_selection.selectedPackage ? (
+                            <div className="bg-white rounded-xl p-6 mb-6 border border-green-200">
+                                <p className="text-xs text-slate-500 mb-2 font-bold uppercase">Wybrany pakiet</p>
+                                <h3 className="text-2xl font-bold text-slate-900 mb-3 flex items-center gap-2">
+                                    📦 {offer.client_selection.selectedPackage.name}
+                                </h3>
+                                <p className="text-lg text-slate-700 mb-4">
+                                    Cena: <span className="font-bold text-green-600">{offer.client_selection.selectedPackage.price}</span>
+                                </p>
+                                
+                                {/* Package Features from Template */}
+                                {offer.template_data.pricingRows && offer.template_data.pricingRows.length > 0 && (
+                                    <div className="bg-slate-50 rounded-lg p-4 mt-4">
+                                        <p className="text-xs font-bold text-slate-600 mb-3">Co zawiera ten pakiet:</p>
+                                        <ul className="space-y-2 text-sm text-slate-700">
+                                            {offer.template_data.pricingRows.map((row: any, rowIdx: number) => {
+                                                const packageIdx = offer.client_selection.selectedPackage.index;
+                                                const cellValue = row.values[packageIdx];
+                                                // Only show rows with meaningful values (not dashes/empty)
+                                                if (cellValue && cellValue !== '–' && cellValue !== '-' && !row.isHeader) {
+                                                    const labelCell = row.values[0];
+                                                    return (
+                                                        <li key={rowIdx} className="flex items-start gap-2">
+                                                            <span className="text-green-600 font-bold mt-0.5">✓</span>
+                                                            <span><strong>{labelCell}:</strong> {cellValue}</span>
+                                                        </li>
+                                                    );
+                                                }
+                                                return null;
+                                            })}
+                                        </ul>
+                                    </div>
+                                )}
+                            </div>
+                        ) : isCommunion && offer.client_selection.splitPackageCounts ? (
+                            <div className="bg-white rounded-xl p-6 mb-6 border border-blue-200">
+                                <p className="text-xs text-slate-500 mb-2 font-bold uppercase">Wybrane pakiety</p>
+                                <p className="text-sm text-slate-700 mb-4">Liczba dzieci w poszczególnych pakietach:</p>
+                                
+                                <div className="grid md:grid-cols-2 gap-4">
+                                    {Object.entries(offer.client_selection.splitPackageCounts).map(([idx, count]: [string, any]) => {
+                                        const idxNum = parseInt(idx);
+                                        if (idxNum === 0) return null; // Skip labels column
+                                        const packageName = offer.template_data.pricingHeaders[idxNum];
+                                        const packagePrice = offer.template_data.footerPrices[idxNum];
+                                        const itemTotal = count > 0 ? count * (parseInt(packagePrice.replace(/[^0-9]/g, '')) || 0) : 0;
+                                        
+                                        return count > 0 ? (
+                                            <div key={idx} className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                                                <p className="font-bold text-slate-900">{packageName}</p>
+                                                <p className="text-sm text-slate-700 mt-1">
+                                                    Dzieci: <strong>{count}</strong> × {packagePrice}
+                                                </p>
+                                                {itemTotal > 0 && (
+                                                    <p className="text-sm font-bold text-blue-700 mt-2">
+                                                        Razem: {itemTotal.toLocaleString('pl-PL')} PLN
+                                                    </p>
+                                                )}
+                                            </div>
+                                        ) : null;
+                                    })}
+                                </div>
+                            </div>
+                        ) : null}
+
+                        {/* Legend */}
+                        <div className="bg-white rounded-lg p-4 border border-green-200 text-sm text-slate-600">
+                            <p className="font-semibold text-slate-900 mb-2">ℹ️ Zarządzanie ofertą</p>
+                            <ul className="space-y-1 text-xs">
+                                <li>✓ Ta oferta została przyjęta i jest konfirmacją twoich wyborów</li>
+                                <li>📥 Możesz pobrać zatwierdzoną ofertę w formacie PDF powyżej</li>
+                                {offer.contract && <li>📋 Umowa do podpisu znajduje się w sekcji "Umowy"</li>}
+                            </ul>
+                        </div>
+                    </div>
+                )}
 
                 {/* TEMPLATE DATA RENDERER (A4 Style) */}
                 {offer.template_data ? (
@@ -927,9 +1034,11 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
                         )}
                         {offer.status === 'accepted' && (
                             <a
-                                href={offer.pdf_url
-                                    ? offer.pdf_url.replace(/\.pdf$/, '_zatwierdzona.pdf')
-                                    : `/api/offers/${offerId}/pdf?token=${typeof window !== 'undefined' ? (localStorage.getItem('client_token') || localStorage.getItem('user_token') || '') : ''}&accepted=true`
+                                href={offer.pdf_url && offer.pdf_url.includes('_zatwierdzona')
+                                    ? offer.pdf_url
+                                    : offer.pdf_url
+                                        ? offer.pdf_url.replace(/\.pdf$/, '_zatwierdzona.pdf')
+                                        : `/api/offers/${offerId}/pdf?token=${typeof window !== 'undefined' ? (localStorage.getItem('client_token') || localStorage.getItem('user_token') || '') : ''}&accepted=true`
                                 }
                                 target="_blank"
                                 rel="noopener noreferrer"

@@ -163,8 +163,17 @@ export async function PATCH(
                     const s3KeyAccepted = `offers/${fileNameAccepted}`;
 
                     console.log(`[CLIENT_ACCEPT] Uploading to S3: ${s3KeyAccepted}...`);
-                    await uploadToS3(pdfBuffer, s3KeyAccepted, 'application/pdf');
-                    console.log(`[CLIENT_ACCEPT] Successfully uploaded acceptance PDF to S3`);
+                    const s3Url = await uploadToS3(pdfBuffer, s3KeyAccepted, 'application/pdf');
+                    console.log(`[CLIENT_ACCEPT] Successfully uploaded acceptance PDF to S3: ${s3Url}`);
+
+                    // Update offer with the S3 URL
+                    await prisma.offer.update({
+                        where: { id: offerId },
+                        data: { 
+                            pdf_url: s3Url
+                        }
+                    });
+                    console.log(`[CLIENT_ACCEPT] Updated offer with S3 URL`);
                 }
             } catch (pdfError) {
                 console.error(`[CLIENT_ACCEPT] Failed to generate/upload acceptance PDF:`, pdfError);

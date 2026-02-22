@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
             const allClientIds = clients.map(c => c.id);
 
             // 1. Fetch Related Data Independently (Avoids failing includes)
-            const [giftCardOrders, assignedBookings, offers, clientGalleries] = await Promise.all([
+            const [giftCardOrders, assignedBookings, offers, clientGalleries, negotiations] = await Promise.all([
                 prisma.giftCardOrder.findMany({
                     where: { user_id: { in: allClientIds } },
                     select: { user_id: true, amount_paid: true, created_at: true }
@@ -63,6 +63,18 @@ export async function GET(request: NextRequest) {
                         // nested selects/includes might still fail if tables are truly weird, 
                         // but let's try to keep them simplified
                     }
+                }).catch(() => []),
+                prisma.negotiation.findMany({
+                    where: {
+                        offer: {
+                            client_id: { in: allClientIds }
+                        }
+                    },
+                    select: {
+                        id: true,
+                        offer_id: true,
+                        offer: { select: { client_id: true } }
+                    }
                 }).catch(() => [])
             ]);
 
@@ -97,11 +109,21 @@ export async function GET(request: NextRequest) {
                 if (g.client_email) galleriesMap.set(g.client_email, g);
             });
 
+            const negotiationsMap = new Map<number, typeof negotiations>();
+            negotiations.forEach(n => {
+                if (n.offer?.client_id) {
+                    const list = negotiationsMap.get(n.offer.client_id) || [];
+                    list.push(n);
+                    negotiationsMap.set(n.offer.client_id, list);
+                }
+            });
+
             const formattedClients = clients.map(client => {
                 const clientOrders = ordersMap.get(client.id) || [];
                 const clientBookings = bookingsMap.get(client.email) || [];
                 const clientOffers = offersMap.get(client.id) || [];
                 const clientGallery = galleriesMap.get(client.email) || null;
+                const clientNegotiations = negotiationsMap.get(client.id) || [];
 
                 const giftCardRevenue = clientOrders.reduce((sum, o) => sum + o.amount_paid, 0);
                 const bookingRevenue = clientBookings
@@ -151,7 +173,8 @@ export async function GET(request: NextRequest) {
                         isKomunia,
                         nextBookingDate: latestBooking?.date || null,
                         bookingStatus: latestBooking?.status || null,
-                        hasBookings: clientBookings.length > 0
+                        hasBookings: clientBookings.length > 0,
+                        negotiationsCount: clientNegotiations.length
                     }
                 };
             });

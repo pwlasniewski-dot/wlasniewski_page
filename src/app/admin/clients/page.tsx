@@ -6,7 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import {
     Search, User, Image as ImageIcon,
     Plus, X, FileText, Camera, CheckCircle,
-    Clock, AlertCircle, XCircle, ChevronDown, ChevronUp, Trash2, ShieldAlert
+    Clock, AlertCircle, XCircle, ChevronDown, ChevronUp, Trash2, ShieldAlert, MessageCircle
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -34,6 +34,8 @@ interface ClientStats {
     // Booking
     nextBookingDate: string | null;
     bookingStatus: string | null;
+    // Negotiations
+    negotiationsCount: number;
 }
 
 interface Client {
@@ -64,6 +66,16 @@ function OfferBadge({ status }: { status: string | null }) {
             {status === 'rejected' && <XCircle className="w-3 h-3" />}
             {status === 'negotiating' && <AlertCircle className="w-3 h-3" />}
             {s.label}
+        </span>
+    );
+}
+
+function NegotiationsBadge({ count }: { count: number }) {
+    if (count === 0) return null;
+    return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs border bg-purple-500/10 text-purple-400 border-purple-500/20">
+            <MessageCircle className="w-3 h-3" />
+            💬 {count} {count === 1 ? 'negocjacja' : count < 5 ? 'negocjacje' : 'negocjacji'}
         </span>
     );
 }
@@ -426,6 +438,7 @@ function ClientsContent() {
                                         <td className="px-4 py-3">
                                             <div className="space-y-1">
                                                 <OfferBadge status={client.stats.offerStatus} />
+                                                <NegotiationsBadge count={client.stats.negotiationsCount} />
                                                 {client.stats.approvedAmount != null && (
                                                     <div className="text-gold-400 text-xs font-bold">
                                                         {client.stats.approvedAmount.toLocaleString('pl-PL')} PLN
