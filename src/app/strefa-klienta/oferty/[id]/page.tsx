@@ -880,32 +880,36 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
                                         💬 Negocjuj
                                     </button>
                                 )}
-                                {offer.pdf_url && (
-                                    <a
-                                        href={offer.pdf_url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="px-6 py-3 bg-zinc-800 text-white rounded-lg hover:bg-zinc-700 font-semibold border border-zinc-700 flex items-center gap-2"
-                                    >
-                                        <FileText className="w-5 h-5" />
-                                        Pobierz ofertę
-                                    </a>
-                                )}
-                                {offer.status === 'accepted' && offer.pdf_url && (
-                                    <a
-                                        href={offer.pdf_url.replace(/\.pdf$/, '_zatwierdzona.pdf')}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold border border-green-700 flex items-center gap-2"
-                                    >
-                                        <FileText className="w-5 h-5" />
-                                        Pobierz ofertę po zatwierdzeniu
-                                    </a>
-                                )}
                             </div>
                         </div>
                     )
                 }
+
+                {/* Download Buttons - Always Visible */}
+                {offer.pdf_url && (
+                    <div className="bg-white rounded-lg shadow p-6 flex flex-wrap gap-3">
+                        <a
+                            href={offer.pdf_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-6 py-3 bg-zinc-800 text-white rounded-lg hover:bg-zinc-700 font-semibold border border-zinc-700 flex items-center gap-2"
+                        >
+                            <FileText className="w-5 h-5" />
+                            Pobierz ofertę
+                        </a>
+                        {offer.status === 'accepted' && (
+                            <a
+                                href={offer.pdf_url.replace(/\.pdf$/, '_zatwierdzona.pdf')}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold border border-green-700 flex items-center gap-2"
+                            >
+                                <FileText className="w-5 h-5" />
+                                📥 Pobierz zatwierdzoną ofertę
+                            </a>
+                        )}
+                    </div>
+                )}
 
                 {/* Request Unlock (If accepted/rejected) */}
                 {
