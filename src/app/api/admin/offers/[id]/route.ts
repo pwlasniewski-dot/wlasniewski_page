@@ -81,6 +81,7 @@ export async function PATCH(
             pdf_url,
             drive_url,
             category,
+            template_data,
             negotiation_enabled, // Added negotiation_enabled
         } = body;
 
@@ -122,6 +123,7 @@ export async function PATCH(
                 ...(category && { category }),
                 ...(status && { status }),
                 ...(negotiation_enabled !== undefined && { negotiation_enabled }),
+                ...(template_data && { template_data }),
                 ...(valid_until && { valid_until: new Date(valid_until) }),
                 ...(parsedClientId !== undefined && { client_id: parsedClientId }),
                 ...(client_email && { client_email }),

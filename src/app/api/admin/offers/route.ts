@@ -116,6 +116,7 @@ export async function POST(request: NextRequest) {
             is_template,
             sections = [],
             template_data = null, // New field
+            negotiation_enabled,
         } = body;
 
         // ... validation ...
@@ -178,6 +179,7 @@ export async function POST(request: NextRequest) {
                 status: (parsedClientId || client_email) && !is_template ? 'pending' : 'draft',
                 template_data: template_data,
                 total_price: totalPrice,
+                negotiation_enabled: negotiation_enabled !== false, // Default to true if not specified
                 sections: template_data ? undefined : {
                     create: sections.map((section: any, idx: number) => ({
                         title: String(section.title || ''),
