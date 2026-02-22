@@ -417,7 +417,7 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
                                     {isCommunion ? 'Przewidywany koszt całkowity' : 'Łączna wartość oferty'}
                                 </p>
                                 <p className="text-4xl font-bold bg-gradient-to-r from-gold-600 to-amber-600 bg-clip-text text-transparent">
-                                    {(calculatedTotal || offer.total_price || 0).toLocaleString('pl-PL')} PLN
+                                    {calculatedTotal.toLocaleString('pl-PL')} PLN
                                 </p>
                                 {isCommunion && (
                                     <p className="text-xs text-slate-500 mt-1 font-bold">
