@@ -45,7 +45,6 @@ export async function POST(
             console.log(`[S3_SAVE] Pre-acceptance S3 upload successful, URL: ${pdfUrlPre}`);
 
             // If offer is accepted, also generate POST-acceptance version with client selection
-            let pdfUrlAccepted = null;
             if (offer.status === 'accepted' && offer.client_selection) {
                 console.log(`[S3_SAVE] Offer is accepted, generating post-acceptance version...`);
                 const pdfBufferPost = await generateOfferPDF(offer, true);
@@ -55,24 +54,22 @@ export async function POST(
                 const s3KeyPost = `offers/${fileNamePost}`;
 
                 console.log(`[S3_SAVE] Uploading post-acceptance PDF to S3: ${s3KeyPost}...`);
-                pdfUrlAccepted = await uploadToS3(pdfBufferPost, s3KeyPost, 'application/pdf');
-                console.log(`[S3_SAVE] Post-acceptance S3 upload successful, URL: ${pdfUrlAccepted}`);
+                const pdfUrlPost = await uploadToS3(pdfBufferPost, s3KeyPost, 'application/pdf');
+                console.log(`[S3_SAVE] Post-acceptance S3 upload successful, URL: ${pdfUrlPost}`);
             }
 
-            console.log(`[S3_SAVE] Updating DB with PDF URLs`);
+            console.log(`[S3_SAVE] Updating DB with PDF URL`);
             await prisma.offer.update({
                 where: { id: offerId },
                 data: { 
-                    pdf_url: pdfUrlPre,
-                    pdf_url_accepted: pdfUrlAccepted
+                    pdf_url: pdfUrlPre
                 }
             });
 
             console.log(`[S3_SAVE] Success! Offer ${offerId} saved to S3`);
             return NextResponse.json({ 
                 success: true, 
-                pdfUrl: pdfUrlPre,
-                pdfUrlAccepted
+                pdfUrl: pdfUrlPre
             });
         } catch (error: any) {
             console.error('[S3_SAVE] Error in save-s3:', error);
