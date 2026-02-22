@@ -62,7 +62,8 @@ export async function generateOfferPDFBuffer(offer: any, generationDate?: string
             const doc = new PDFDocument({ 
                 size: 'A4',
                 margin: 40,
-                bufferPages: true
+                bufferPages: true,
+                font: undefined // Don't use default fonts
             });
 
             const chunks: Buffer[] = [];
@@ -79,24 +80,40 @@ export async function generateOfferPDFBuffer(offer: any, generationDate?: string
                 reject(err);
             });
 
-            // Register fonts
+            // Register fonts - MUST do this before using doc.font()
+            let regularFont = 'Montserrat';
+            let boldFont = 'Montserrat-Bold';
+            let semiboldFont = 'Montserrat-SemiBold';
+
             try {
                 const regularPath = getFontPath('Montserrat-Regular.ttf');
                 const boldPath = getFontPath('Montserrat-Bold.ttf');
                 const semiboldPath = getFontPath('Montserrat-SemiBold.ttf');
 
+                console.log('[PDF] Registering fonts...');
+                console.log('[PDF] Regular path:', regularPath, 'exists:', fs.existsSync(regularPath));
+                console.log('[PDF] Bold path:', boldPath, 'exists:', fs.existsSync(boldPath));
+                console.log('[PDF] Semibold path:', semiboldPath, 'exists:', fs.existsSync(semiboldPath));
+
                 if (fs.existsSync(regularPath)) {
                     doc.registerFont('Montserrat', regularPath);
+                    console.log('[PDF] ✓ Registered Montserrat');
                 }
                 if (fs.existsSync(boldPath)) {
                     doc.registerFont('Montserrat-Bold', boldPath);
+                    console.log('[PDF] ✓ Registered Montserrat-Bold');
                 }
                 if (fs.existsSync(semiboldPath)) {
                     doc.registerFont('Montserrat-SemiBold', semiboldPath);
+                    console.log('[PDF] ✓ Registered Montserrat-SemiBold');
                 }
             } catch (e) {
-                console.warn('[PDF] Font registration failed, continuing with system fonts:', e);
+                console.error('[PDF] Font registration error:', e);
+                // Don't reject - continue with what we have
             }
+
+            // Set default font - MUST be a registered font
+            doc.font('Montserrat');
 
             // Extract and validate data
             const template = offer.template_data || {};
@@ -152,27 +169,27 @@ export async function generateOfferPDFBuffer(offer: any, generationDate?: string
             let yPos = margins;
 
             // ===== HEADER =====
-            doc.font('Montserrat-Bold', 24).fillColor(COLOR_DARK);
+            doc.font(boldFont, 24).fillColor(COLOR_DARK);
             doc.text(S(data.title), margins, yPos, {
                 width: contentWidth * 0.65,
                 height: 40,
                 align: 'left'
             });
 
-            doc.font('Montserrat-SemiBold', 12).fillColor(COLOR_ACCENT);
+            doc.font(semiboldFont, 12).fillColor(COLOR_ACCENT);
             doc.text(S(data.subtitle), margins, yPos + 30, {
                 width: contentWidth * 0.65,
                 align: 'left'
             });
 
             // Header right side
-            doc.font('Montserrat-Bold', 11).fillColor(COLOR_DARK);
+            doc.font(boldFont, 11).fillColor(COLOR_DARK);
             doc.text(S(data.contactName), pageWidth - margins - 150, yPos, {
                 width: 150,
                 align: 'right'
             });
 
-            doc.font('Montserrat', 9).fillColor(COLOR_TEXT);
+            doc.font(regularFont, 9).fillColor(COLOR_TEXT);
             doc.text(S(data.contactLocation), pageWidth - margins - 150, yPos + 20, { width: 150, align: 'right' });
             doc.text(`Tel: ${S(data.contactPhone)}`, pageWidth - margins - 150, yPos + 32, { width: 150, align: 'right' });
             doc.text(S(data.contactEmail), pageWidth - margins - 150, yPos + 44, { width: 150, align: 'right' });
@@ -188,7 +205,7 @@ export async function generateOfferPDFBuffer(offer: any, generationDate?: string
             if (data.sectionVisibility.eventInfo) {
                 doc.rect(margins, yPos, contentWidth, 50).fillAndStroke(COLOR_LIGHT, COLOR_BORDER);
                 
-                doc.font('Montserrat', 9).fillColor(COLOR_DARK);
+                doc.font(regularFont, 9).fillColor(COLOR_DARK);
                 const infoY = yPos + 5;
                 doc.text(`${S(data.labels.location || 'Lokalizacja')}: ${S(data.eventLocation)}`, margins + 8, infoY);
                 doc.text(`${S(data.labels.date || 'Data')}: ${S(data.eventDate)}`, pageWidth / 2, infoY);
@@ -201,19 +218,19 @@ export async function generateOfferPDFBuffer(offer: any, generationDate?: string
             // ===== PREPARATIONS =====
             if (data.sectionVisibility.preparations) {
                 yPos += 10;
-                doc.font('Montserrat-SemiBold', 14).fillColor(COLOR_DARK);
+                doc.font(semiboldFont, 14).fillColor(COLOR_DARK);
                 doc.text(S(data.sectionTitles.preparations || 'Przygotowania'), margins, yPos);
                 yPos += 25;
 
                 const colWidth = contentWidth / 2 - 5;
-                doc.font('Montserrat-SemiBold', 10).text(S(data.labels.prepBefore || 'Przed ślubem'), margins, yPos);
-                doc.font('Montserrat', 9).text(S(data.preparations.before || ''), margins, yPos + 15, {
+                doc.font(semiboldFont, 10).text(S(data.labels.prepBefore || 'Przed ślubem'), margins, yPos);
+                doc.font(regularFont, 9).text(S(data.preparations.before || ''), margins, yPos + 15, {
                     width: colWidth,
                     align: 'left'
                 });
 
-                doc.font('Montserrat-SemiBold', 10).text(S(data.labels.prepDay || 'W dniu ślubu'), margins + colWidth + 10, yPos);
-                doc.font('Montserrat', 9).text(S(data.preparations.dayOf || ''), margins + colWidth + 10, yPos + 15, {
+                doc.font(semiboldFont, 10).text(S(data.labels.prepDay || 'W dniu ślubu'), margins + colWidth + 10, yPos);
+                doc.font(regularFont, 9).text(S(data.preparations.dayOf || ''), margins + colWidth + 10, yPos + 15, {
                     width: colWidth,
                     align: 'left'
                 });
@@ -224,11 +241,11 @@ export async function generateOfferPDFBuffer(offer: any, generationDate?: string
             // ===== FEATURES / STANDARDS =====
             if (data.sectionVisibility.features && data.features.length > 0) {
                 yPos += 10;
-                doc.font('Montserrat-SemiBold', 14).fillColor(COLOR_DARK);
+                doc.font(semiboldFont, 14).fillColor(COLOR_DARK);
                 doc.text(S(data.sectionTitles.standards || 'Standardy'), margins, yPos);
                 yPos += 20;
 
-                doc.font('Montserrat', 9).fillColor(COLOR_TEXT);
+                doc.font(regularFont, 9).fillColor(COLOR_TEXT);
                 data.features.forEach((feature) => {
                     doc.text(`✓ ${S(feature)}`, margins + 15, yPos);
                     yPos += 12;
@@ -257,7 +274,7 @@ export async function generateOfferPDFBuffer(offer: any, generationDate?: string
                         });
                     }
 
-                    doc.font('Montserrat-Bold', 10).fillColor(COLOR_DARK);
+                    doc.font(boldFont, 10).fillColor(COLOR_DARK);
                     doc.text(S(header), xPos + 2, yPos + (isRec ? 12 : 5), {
                         width: colWidth - 4,
                         align: 'center'
@@ -278,7 +295,7 @@ export async function generateOfferPDFBuffer(offer: any, generationDate?: string
                             doc.rect(xPos, yPos, colWidth, 20).stroke(COLOR_BORDER);
                         }
 
-                        const fontName = row.isHeader ? 'Montserrat-Bold' : 'Montserrat';
+                        const fontName = row.isHeader ? boldFont : regularFont;
                         doc.font(fontName, 9).fillColor(COLOR_DARK);
                         doc.text(S(val), xPos + 2, yPos + 3, {
                             width: colWidth - 4,
@@ -299,7 +316,7 @@ export async function generateOfferPDFBuffer(offer: any, generationDate?: string
                         doc.rect(xPos, yPos, colWidth, 20).stroke(COLOR_BORDER);
                     }
 
-                    doc.font('Montserrat-SemiBold', 11).fillColor(COLOR_DARK);
+                    doc.font(semiboldFont, 11).fillColor(COLOR_DARK);
                     doc.text(S(price), xPos + 2, yPos + 3, {
                         width: colWidth - 4,
                         align: 'center'
@@ -314,10 +331,10 @@ export async function generateOfferPDFBuffer(offer: any, generationDate?: string
                 yPos += 10;
                 doc.rect(margins, yPos, contentWidth, 40).stroke(COLOR_BORDER);
                 
-                doc.font('Montserrat-SemiBold', 10).fillColor(COLOR_DARK);
+                doc.font(semiboldFont, 10).fillColor(COLOR_DARK);
                 doc.text(S(data.labels.albumAdvantage || 'Albumy') + ':', margins + 8, yPos + 5);
                 
-                doc.font('Montserrat', 9).fillColor(COLOR_TEXT);
+                doc.font(regularFont, 9).fillColor(COLOR_TEXT);
                 doc.text(S(data.albumDescription), margins + 8, yPos + 18, {
                     width: contentWidth - 16,
                     align: 'left'
@@ -329,11 +346,11 @@ export async function generateOfferPDFBuffer(offer: any, generationDate?: string
             // ===== DELIVERY =====
             if (data.sectionVisibility.delivery && Object.keys(data.deliveryTerms).length > 0) {
                 yPos += 10;
-                doc.font('Montserrat-SemiBold', 14).fillColor(COLOR_DARK);
+                doc.font(semiboldFont, 14).fillColor(COLOR_DARK);
                 doc.text(S(data.sectionTitles.delivery || 'Dostarczenie'), margins, yPos);
                 yPos += 20;
 
-                doc.font('Montserrat', 9).fillColor(COLOR_TEXT);
+                doc.font(regularFont, 9).fillColor(COLOR_TEXT);
                 Object.values(data.deliveryTerms).forEach((term: any) => {
                     if (term) {
                         doc.text(`✓ ${S(term)}`, margins + 15, yPos);
@@ -348,14 +365,14 @@ export async function generateOfferPDFBuffer(offer: any, generationDate?: string
             doc.moveTo(margins, yPos).lineTo(pageWidth - margins, yPos).stroke(COLOR_BORDER);
             yPos += 8;
 
-            doc.font('Montserrat', 8).fillColor(COLOR_TEXT);
+            doc.font(regularFont, 8).fillColor(COLOR_TEXT);
             doc.text(S(data.labels.footerDisclaimer || ''), margins, yPos);
             
-            doc.font('Montserrat-SemiBold', 9).fillColor(COLOR_DARK);
+            doc.font(semiboldFont, 9).fillColor(COLOR_DARK);
             doc.text(S(data.footerCompany), margins, yPos + 10);
 
             if (generationDate) {
-                doc.font('Montserrat', 7).fillColor(COLOR_TEXT);
+                doc.font(regularFont, 7).fillColor(COLOR_TEXT);
                 doc.text(`Dokument wygenerowany z systemu dnia: ${generationDate}`, margins, yPos + 20);
             }
 
