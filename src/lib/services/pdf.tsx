@@ -1,53 +1,16 @@
-import React from 'react';
 import { renderToBuffer } from '@react-pdf/renderer';
-import { OfferDocument } from './OfferDocument';
 import { ContractDocument } from './ContractDocument';
+import { generateOfferPDFBuffer } from './generateOfferPDF';
 
 import fs from 'fs';
 import path from 'path';
 
 export async function generateOfferPDF(offer: any): Promise<Buffer> {
     try {
-        console.log('[PDF] ==================== GENERATING PDF ====================');
+        console.log('[PDF] ==================== GENERATING PDF (PDFKIT) ====================');
         console.log('[PDF] Offer ID:', offer.id);
         console.log('[PDF] Offer status:', offer.status);
         console.log('[PDF] Offer category:', offer.category);
-        console.log('[PDF] Has template_data?', !!offer.template_data);
-        
-        if (offer.template_data) {
-            console.log('[PDF] template_data keys:', Object.keys(offer.template_data).slice(0, 15));
-            console.log('[PDF] Features array:', Array.isArray(offer.template_data.features), offer.template_data.features?.length);
-            console.log('[PDF] Pricing headers:', Array.isArray(offer.template_data.pricingHeaders), offer.template_data.pricingHeaders?.length);
-            console.log('[PDF] Pricing rows:', Array.isArray(offer.template_data.pricingRows), offer.template_data.pricingRows?.length);
-            console.log('[PDF] Footer prices:', Array.isArray(offer.template_data.footerPrices), offer.template_data.footerPrices?.length);
-            console.log('[PDF] Delivery terms type:', typeof offer.template_data.deliveryTerms);
-        }
-
-        console.log('[PDF] Environment:', {
-            isNetlify: process.env.NETLIFY === 'true',
-            isVercel: process.env.VERCEL === '1',
-            nodeEnv: process.env.NODE_ENV,
-            cwd: process.cwd(),
-        });
-
-        // Debugging font paths
-        const fontDir = path.join(process.cwd(), 'public', 'fonts');
-        console.log('[PDF] Font directory:', fontDir);
-
-        const fontsToWeights = {
-            'Montserrat-Regular.ttf': 400,
-            'Montserrat-SemiBold.ttf': 600,
-            'Montserrat-Bold.ttf': 700
-        };
-
-        for (const fontFile of Object.keys(fontsToWeights)) {
-            const fullPath = path.join(fontDir, fontFile);
-            const exists = fs.existsSync(fullPath);
-            console.log(`[PDF] Font ${fontFile} exists? ${exists} (Path: ${fullPath})`);
-            if (!exists) {
-                console.warn(`[PDF] CRITICAL: Font ${fontFile} NOT FOUND at ${fullPath}`);
-            }
-        }
 
         const generationDate = offer._footerNote || new Date().toLocaleString('pl-PL', {
             year: 'numeric',
@@ -57,22 +20,15 @@ export async function generateOfferPDF(offer: any): Promise<Buffer> {
             minute: '2-digit'
         });
 
-        console.log('[PDF] OfferDocument component loaded, starting render...');
-        try {
-            const buffer = await renderToBuffer(<OfferDocument offer={offer} generationDate={generationDate} />);
-            console.log(`[PDF] ✅ SUCCESS! Buffer size: ${buffer.length} bytes`);
-            console.log('[PDF] ====================  PDF READY  ====================');
-            return buffer;
-        } catch (renderError: any) {
-            console.error('[PDF] 🔴 RENDER FAILED:', renderError?.message);
-            console.error('[PDF] Render error type:', renderError?.constructor?.name);
-            throw renderError;
-        }
+        console.log('[PDF] Starting pdfkit generation...');
+        const buffer = await generateOfferPDFBuffer(offer, generationDate);
+        console.log(`[PDF] ✅ SUCCESS! Buffer size: ${buffer.length} bytes`);
+        console.log('[PDF] ====================  PDF READY  ====================');
+        return buffer;
     } catch (error: any) {
         console.error('[PDF] Error in generateOfferPDF:', error);
         console.error('[PDF] Error message:', error?.message);
         console.error('[PDF] Error name:', error?.name);
-        console.error('[PDF] Stack trace:', error.stack);
         throw error;
     }
 }
