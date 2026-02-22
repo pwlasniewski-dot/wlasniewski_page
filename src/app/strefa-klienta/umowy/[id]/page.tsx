@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { Download, CheckCircle2, FileText } from 'lucide-react';
 
 export default function ContractSigningPage({ params }: { params: Promise<{ id: string }> }) {
     const router = useRouter();
@@ -10,6 +11,7 @@ export default function ContractSigningPage({ params }: { params: Promise<{ id: 
     const [loading, setLoading] = useState(true);
     const [signing, setSigning] = useState(false);
     const [signError, setSignError] = useState<string | null>(null);
+    const [clientNote, setClientNote] = useState<string>('');
 
     const [contractId, setContractId] = useState<string | null>(null);
 
@@ -42,6 +44,10 @@ export default function ContractSigningPage({ params }: { params: Promise<{ id: 
             if (res.ok) {
                 const data = await res.json();
                 setContract(data.contract);
+                // Load existing note if any
+                if (data.contract?.client_note) {
+                    setClientNote(data.contract.client_note);
+                }
             } else if (res.status === 401) {
                 router.push('/logowanie');
             }
@@ -59,7 +65,13 @@ export default function ContractSigningPage({ params }: { params: Promise<{ id: 
         try {
             const res = await fetch(`/api/client/portal/contracts/${contractId}/sign`, {
                 method: 'POST',
-                headers: { Authorization: `Bearer ${token}` }
+                headers: { 
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    client_note: clientNote.trim()
+                })
             });
 
             if (res.ok) {
@@ -80,6 +92,10 @@ export default function ContractSigningPage({ params }: { params: Promise<{ id: 
     if (loading) return <div className="min-h-screen flex items-center justify-center">Ładowanie...</div>;
     if (!contract) return <div className="min-h-screen flex items-center justify-center">Nie znaleziono umowy.</div>;
 
+    const token = localStorage.getItem('client_token') || localStorage.getItem('user_token');
+    const unsignedPdfUrl = contract.pdf_url || `/api/contracts/${contract.id}/pdf?token=${token}`;
+    const signedPdfUrl = contract.pdf_url?.replace(/\.pdf$/, '_podpisana.pdf') || `${unsignedPdfUrl.replace(/\.pdf/, '_podpisana.pdf')}`;
+
     return (
         <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
             <div className="max-w-4xl mx-auto mb-6">
@@ -98,6 +114,25 @@ export default function ContractSigningPage({ params }: { params: Promise<{ id: 
                     </span>
                 </div>
 
+                {/* Download unsigned contract button */}
+                {contract.pdf_url && (
+                    <div className="bg-blue-50 border-b border-blue-200 px-6 py-3 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <FileText className="w-5 h-5 text-blue-600" />
+                            <p className="text-sm text-blue-800 font-medium">Pobierz umowę do przeczytania</p>
+                        </div>
+                        <a
+                            href={unsignedPdfUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-colors"
+                        >
+                            <Download className="w-4 h-4" />
+                            Pobierz PDF
+                        </a>
+                    </div>
+                )}
+
                 <div className="p-8">
                     <div className="prose max-w-none mb-8 font-serif whitespace-pre-wrap text-black">
                         {contract.content}
@@ -105,6 +140,16 @@ export default function ContractSigningPage({ params }: { params: Promise<{ id: 
 
                     {contract.status !== 'signed' && (
                         <div className="border-t pt-8">
+                            <h3 className="text-lg font-bold mb-4 text-black">Notatka dla fotografa (opcjonalnie)</h3>
+                            <textarea
+                                value={clientNote}
+                                onChange={(e) => setClientNote(e.target.value)}
+                                placeholder="Np. uwagi dotyczące sesji, preferencje, ograniczenia..."
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-black placeholder-gray-500 mb-6 font-sans text-sm"
+                                rows={4}
+                            />
+                            <p className="text-xs text-gray-500 mb-6">Twoja notatka będzie widoczna dla fotografa po podpisaniu umowy.</p>
+
                             <h3 className="text-lg font-bold mb-4 text-black">Podpis</h3>
                             <p className="text-sm text-gray-600 mb-4">
                                 Klikając &quot;Podpisz umowę&quot;, potwierdzasz przeczytanie i akceptację powyższych warunków.
@@ -126,20 +171,44 @@ export default function ContractSigningPage({ params }: { params: Promise<{ id: 
                     )}
 
                     {contract.status === 'signed' && (
-                        <div className="bg-green-50 border border-green-200 p-4 rounded-lg flex items-center gap-3">
-                            <span className="text-green-600 text-xl">✓</span>
-                            <div>
-                                <p className="font-bold text-green-800">Umowa została podpisana.</p>
-                                <p className="text-sm text-green-700">Dziękujemy za zaufanie!</p>
+                        <div>
+                            <div className="bg-green-50 border border-green-200 p-4 rounded-lg flex items-center gap-3 mb-6">
+                                <CheckCircle2 className="w-6 h-6 text-green-600" />
+                                <div>
+                                    <p className="font-bold text-green-800">Umowa została podpisana.</p>
+                                    <p className="text-sm text-green-700">Dziękujemy za zaufanie!</p>
+                                </div>
                             </div>
-                            {contract.pdf_url && (
-                                <a
-                                    href={`/api/contracts/${contract.id}/pdf?token=${localStorage.getItem('client_token') || localStorage.getItem('user_token')}`}
-                                    target="_blank"
-                                    className="ml-auto text-green-700 underline hover:text-green-900"
-                                >
-                                    Pobierz PDF (Umowa)
-                                </a>
+
+                            {/* Download signed contract button */}
+                            <div className="bg-green-50 border border-green-200 rounded-lg p-6 mb-6">
+                                <h3 className="font-bold text-green-900 mb-3 flex items-center gap-2">
+                                    <CheckCircle2 className="w-5 h-5" />
+                                    Pobierz podpisaną umowę
+                                </h3>
+                                <p className="text-sm text-green-800 mb-4">
+                                    Twoja umowa z potwierdzeniem podpisu i notatką:
+                                </p>
+                                <div className="space-y-2">
+                                    {signedPdfUrl && (
+                                        <a
+                                            href={signedPdfUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex items-center gap-2 px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-colors"
+                                        >
+                                            <Download className="w-4 h-4" />
+                                            Pobierz PDF (Podpisane)
+                                        </a>
+                                    )}
+                                </div>
+                            </div>
+
+                            {contract.client_note && (
+                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                                    <p className="text-xs text-blue-600 font-semibold uppercase tracking-wider mb-2">Twoja notatka:</p>
+                                    <p className="text-blue-900 whitespace-pre-wrap text-sm">{contract.client_note}</p>
+                                </div>
                             )}
                         </div>
                     )}

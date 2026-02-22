@@ -28,27 +28,40 @@ export async function POST(
                 return NextResponse.json({ error: 'Contract not found' }, { status: 404 });
             }
 
-            // Actual S3 upload implementation
-            console.log(`[CONTRACT_S3_SAVE] Generating PDF for contract ${contractId}...`);
+            // Generate PRE-signature version (unsigned contract)
+            console.log(`[CONTRACT_S3_SAVE] Generating unsigned PDF for contract ${contractId}...`);
+            const pdfBufferUnsigned = await generateContractPDF(contract, false);
+            console.log(`[CONTRACT_S3_SAVE] Unsigned PDF generated, size: ${pdfBufferUnsigned.length} bytes`);
 
-            const clientName = contract.user?.name || contract.offer?.user?.name || contract.offer?.client_email || 'Kliencie';
-            const eventDate = ""; // Could be extracted if needed
+            const fileNameUnsigned = `umowa_${contract.contract_number || contractId}.pdf`;
+            const s3KeyUnsigned = `contracts/${fileNameUnsigned}`;
 
-            const pdfBuffer = await generateContractPDF(contract, clientName, eventDate);
+            console.log(`[CONTRACT_S3_SAVE] Uploading unsigned PDF to S3: ${s3KeyUnsigned}...`);
+            const pdfUrlUnsigned = await uploadToS3(pdfBufferUnsigned, s3KeyUnsigned, 'application/pdf');
+            console.log(`[CONTRACT_S3_SAVE] Unsigned S3 upload successful, URL: ${pdfUrlUnsigned}`);
 
-            const fileName = `umowa_${contract.contract_number || contractId}.pdf`;
-            const s3Key = `contracts/${fileName}`;
+            // If contract is signed, also generate POST-signature version with signature section
+            if (contract.status === 'signed' && contract.signed_at) {
+                console.log(`[CONTRACT_S3_SAVE] Contract is signed, generating signed PDF version...`);
+                const pdfBufferSigned = await generateContractPDF(contract, true);
+                console.log(`[CONTRACT_S3_SAVE] Signed PDF generated, size: ${pdfBufferSigned.length} bytes`);
 
-            console.log(`[CONTRACT_S3_SAVE] Uploading to S3: ${s3Key}...`);
-            const pdfUrl = await uploadToS3(pdfBuffer, s3Key, 'application/pdf');
+                const fileNameSigned = `umowa_${contract.contract_number || contractId}_podpisana.pdf`;
+                const s3KeySigned = `contracts/${fileNameSigned}`;
 
-            console.log(`[CONTRACT_S3_SAVE] Updating DB with PDF URL: ${pdfUrl}`);
+                console.log(`[CONTRACT_S3_SAVE] Uploading signed PDF to S3: ${s3KeySigned}...`);
+                const pdfUrlSigned = await uploadToS3(pdfBufferSigned, s3KeySigned, 'application/pdf');
+                console.log(`[CONTRACT_S3_SAVE] Signed S3 upload successful, URL: ${pdfUrlSigned}`);
+            }
+
+            console.log(`[CONTRACT_S3_SAVE] Updating DB with PDF URL`);
             await prisma.contract.update({
                 where: { id: contractId },
-                data: { pdf_url: pdfUrl }
+                data: { pdf_url: pdfUrlUnsigned }
             });
 
-            return NextResponse.json({ success: true, pdfUrl });
+            console.log(`[CONTRACT_S3_SAVE] Success! Contract ${contractId} saved to S3`);
+            return NextResponse.json({ success: true, pdfUrl: pdfUrlUnsigned });
         } catch (error: any) {
             console.error('Error saving contract to S3:', error);
             return NextResponse.json({

@@ -863,7 +863,7 @@ function ClientDetailsContent({ id }: { id: string }) {
                                             )}
                                         </div>
                                         <div className="flex gap-2">
-                                            {/* Add View/Download buttons here later */}
+                                            {/* View contract link */}
                                             <a
                                                 href={`/strefa-klienta/umowy/${contract.id}`}
                                                 target="_blank"
@@ -872,6 +872,7 @@ function ClientDetailsContent({ id }: { id: string }) {
                                                 Podgląd
                                             </a>
 
+                                            {/* Save unsigned PDF to S3 */}
                                             <button
                                                 onClick={() => handleSaveContractS3(contract.id)}
                                                 disabled={savingContractId === contract.id}
@@ -886,6 +887,7 @@ function ClientDetailsContent({ id }: { id: string }) {
                                                     : <Cloud className="w-5 h-5" />}
                                             </button>
 
+                                            {/* Download unsigned contract PDF */}
                                             <button
                                                 onClick={(e) => {
                                                     e.preventDefault();
@@ -901,11 +903,28 @@ function ClientDetailsContent({ id }: { id: string }) {
                                                     ? 'bg-zinc-800 hover:bg-zinc-700 text-white border-zinc-700 hover:border-zinc-500'
                                                     : 'bg-zinc-900/50 text-zinc-600 border-zinc-800 cursor-not-allowed'
                                                     }`}
-                                                title={contract.pdf_url || contract.status === 'signed' || contract.status === 'SIGNED' ? "Pobierz PDF" : "PDF niedostępny (wymaga generowania)"}
+                                                title={contract.pdf_url || contract.status === 'signed' || contract.status === 'SIGNED' ? "Pobierz umowę (bez podpisu)" : "PDF niedostępny (wymaga generowania)"}
                                             >
                                                 <FileText className="w-5 h-5" />
                                             </button>
 
+                                            {/* Download signed contract PDF (if signed) */}
+                                            {(contract.status === 'signed' || contract.status === 'SIGNED') && contract.pdf_url && (
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        const token = localStorage.getItem('admin_token');
+                                                        const signedPdfUrl = contract.pdf_url.replace(/\.pdf$/, '_podpisana.pdf');
+                                                        window.open(signedPdfUrl, '_blank');
+                                                    }}
+                                                    className="p-2 rounded-lg border bg-green-900/20 hover:bg-green-900/40 text-green-500 hover:text-green-400 border-green-900/30 hover:border-green-700 transition-all"
+                                                    title="Pobierz umowę z potwierdzeniem podpisu"
+                                                >
+                                                    <FileText className="w-5 h-5" />
+                                                </button>
+                                            )}
+
+                                            {/* Delete contract */}
                                             <button
                                                 onClick={() => {
                                                     if (confirmingContractDelete === contract.id) {
@@ -926,6 +945,7 @@ function ClientDetailsContent({ id }: { id: string }) {
                                         </div>
                                     </div>
                                 ))
+
                             ) : (
                                 <div className="py-20 text-center text-zinc-500 bg-zinc-900 rounded-xl border border-zinc-800 border-dashed">
                                     <FileText className="w-12 h-12 mx-auto mb-4 opacity-20" />

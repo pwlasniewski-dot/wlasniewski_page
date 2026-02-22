@@ -1,6 +1,5 @@
-import { renderToBuffer } from '@react-pdf/renderer';
-import { ContractDocument } from './ContractDocument';
 import { generateOfferPDFBuffer } from './generateOfferPDF';
+import { generateContractPDFBuffer } from './generateContractPDF';
 
 import fs from 'fs';
 import path from 'path';
@@ -35,28 +34,22 @@ export async function generateOfferPDF(offer: any, includeClientSelection: boole
 
 export async function generateContractPDF(
     contract: any,
-    clientName?: string,
-    eventDate?: string
+    includeSignatureSection: boolean = false
 ): Promise<Buffer> {
     try {
-        console.log('[PDF] Generating PDF for contract:', contract?.id);
-        const generationDate = contract._footerNote || new Date().toLocaleString('pl-PL', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-        return await renderToBuffer(
-            <ContractDocument
-                contract={contract}
-                clientName={clientName}
-                eventDate={eventDate}
-                generationDate={generationDate}
-            />
-        );
+        console.log('[PDF] ==================== GENERATING CONTRACT PDF (PDFKIT) ====================');
+        console.log('[PDF] Contract ID:', contract?.id);
+        console.log('[PDF] Contract status:', contract?.status);
+        console.log('[PDF] Include signature section:', includeSignatureSection);
+
+        const buffer = await generateContractPDFBuffer(contract, includeSignatureSection);
+        console.log(`[PDF] ✅ CONTRACT PDF SUCCESS! Buffer size: ${buffer.length} bytes`);
+        console.log('[PDF] ====================  PDF READY  ====================');
+        return buffer;
     } catch (error: any) {
         console.error('[PDF] Error in generateContractPDF:', error);
+        console.error('[PDF] Error message:', error?.message);
+        console.error('[PDF] Error name:', error?.name);
         throw error;
     }
 }
