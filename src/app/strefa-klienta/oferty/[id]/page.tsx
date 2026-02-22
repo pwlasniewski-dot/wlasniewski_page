@@ -59,13 +59,19 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
             if (response.ok) {
                 const data = await response.json();
                 setOffer(data.offer);
-                // Initialize child count if already set (future proofing)
-                // Initialize split counts if present
-                if (data.offer.client_selection?.splitPackageCounts) {
-                    setSplitPackageCounts(data.offer.client_selection.splitPackageCounts);
-                } else if (data.offer.client_selection?.childCount) {
-                    // Fallback for legacy
-                    setChildCount(data.offer.client_selection.childCount);
+                // Restore client selection state when offer was already accepted
+                if (data.offer.client_selection) {
+                    const cs = data.offer.client_selection;
+                    // Restore split counts for communion
+                    if (cs.splitPackageCounts) {
+                        setSplitPackageCounts(cs.splitPackageCounts);
+                    } else if (cs.childCount) {
+                        setChildCount(cs.childCount);
+                    }
+                    // Restore selected package for standard offers
+                    if (cs.selectedPackage?.index !== undefined) {
+                        setSelectedPackageIndex(cs.selectedPackage.index);
+                    }
                 }
 
                 // Prepare PDF URL with token
@@ -377,9 +383,12 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
                         >
                             📄 Pobierz PDF
                         </a>
-                        {offer.status === 'accepted' && offer.pdf_url && (
+                        {offer.status === 'accepted' && (
                             <a
-                                href={offer.pdf_url.replace(/\.pdf$/, '_zatwierdzona.pdf')}
+                                href={offer.pdf_url
+                                    ? offer.pdf_url.replace(/\.pdf$/, '_zatwierdzona.pdf')
+                                    : `/api/offers/${offerId}/pdf?token=${typeof window !== 'undefined' ? (localStorage.getItem('client_token') || localStorage.getItem('user_token') || '') : ''}&accepted=true`
+                                }
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="px-6 py-3 bg-green-500 text-white rounded-xl hover:bg-green-600 font-bold transition-all flex items-center gap-2 border border-green-400 shadow-lg"
@@ -408,7 +417,7 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
                                     {isCommunion ? 'Przewidywany koszt całkowity' : 'Łączna wartość oferty'}
                                 </p>
                                 <p className="text-4xl font-bold bg-gradient-to-r from-gold-600 to-amber-600 bg-clip-text text-transparent">
-                                    {calculatedTotal.toLocaleString('pl-PL')} PLN
+                                    {(calculatedTotal || offer.total_price || 0).toLocaleString('pl-PL')} PLN
                                 </p>
                                 {isCommunion && (
                                     <p className="text-xs text-slate-500 mt-1 font-bold">
@@ -896,20 +905,25 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
                 }
 
                 {/* Download Buttons - Always Visible */}
-                {offer.pdf_url && (
+                {(offer.pdf_url || offer.status === 'accepted') && (
                     <div className="bg-white rounded-lg shadow p-6 flex flex-wrap gap-3">
-                        <a
-                            href={offer.pdf_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="px-6 py-3 bg-zinc-800 text-white rounded-lg hover:bg-zinc-700 font-semibold border border-zinc-700 flex items-center gap-2"
-                        >
-                            <FileText className="w-5 h-5" />
-                            Pobierz ofertę
-                        </a>
+                        {offer.pdf_url && (
+                            <a
+                                href={offer.pdf_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-6 py-3 bg-zinc-800 text-white rounded-lg hover:bg-zinc-700 font-semibold border border-zinc-700 flex items-center gap-2"
+                            >
+                                <FileText className="w-5 h-5" />
+                                Pobierz ofertę
+                            </a>
+                        )}
                         {offer.status === 'accepted' && (
                             <a
-                                href={offer.pdf_url.replace(/\.pdf$/, '_zatwierdzona.pdf')}
+                                href={offer.pdf_url
+                                    ? offer.pdf_url.replace(/\.pdf$/, '_zatwierdzona.pdf')
+                                    : `/api/offers/${offerId}/pdf?token=${typeof window !== 'undefined' ? (localStorage.getItem('client_token') || localStorage.getItem('user_token') || '') : ''}&accepted=true`
+                                }
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold border border-green-700 flex items-center gap-2"
