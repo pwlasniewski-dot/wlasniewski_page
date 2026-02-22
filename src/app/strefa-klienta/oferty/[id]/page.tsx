@@ -789,21 +789,26 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
 
                 {/* Negotiations History */}
                 {
-                    offer.negotiations && offer.negotiations.length > 0 && (
+                    offer.negotiations && offer.negotiations.length > 0 && (() => {
+                        const sorted = [...offer.negotiations].sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+                        return (
                         <div className="bg-white rounded-2xl shadow-lg p-8 mb-8 border border-slate-200">
                             <h3 className="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
-                                💬 Historia negocjacji ({offer.negotiations.length})
+                                💬 Historia negocjacji ({sorted.length})
                             </h3>
                             <div className="space-y-3 max-h-96 overflow-y-auto bg-slate-50 rounded-xl p-4">
-                                {offer.negotiations.map((negotiation: any, index: number) => (
-                                    <div key={index} className="bg-white rounded-lg p-4 border-l-4 border-blue-400 shadow-sm hover:shadow-md transition-shadow">
+                                {sorted.map((negotiation: any, index: number) => {
+                                    const isAdmin = negotiation.sender === 'admin';
+                                    return (
+                                    <div key={index} className={`rounded-lg p-4 max-w-[85%] shadow-sm hover:shadow-md transition-shadow ${isAdmin ? 'ml-auto bg-blue-50 border border-blue-200' : 'mr-auto bg-white border-l-4 border-blue-400'}`}>
                                         <div className="flex items-baseline justify-between mb-2">
-                                            <span className="text-xs font-bold text-slate-600 uppercase tracking-wide">Twoja wiadomość</span>
+                                            <span className={`text-xs font-bold uppercase tracking-wide ${isAdmin ? 'text-blue-700' : 'text-slate-600'}`}>
+                                                {isAdmin ? '📸 Fotograf' : '👤 Twoja wiadomość'}
+                                            </span>
                                             <span className="text-xs text-slate-500">
                                                 {new Date(negotiation.created_at).toLocaleDateString('pl-PL', {
-                                                    year: 'numeric',
-                                                    month: 'short',
                                                     day: 'numeric',
+                                                    month: 'short',
                                                 })} 
                                                 <span className="ml-1">{new Date(negotiation.created_at).toLocaleTimeString('pl-PL', {
                                                     hour: '2-digit',
@@ -811,14 +816,16 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
                                                 })}</span>
                                             </span>
                                         </div>
-                                        <p className="text-slate-700 whitespace-pre-wrap leading-relaxed text-sm">
+                                        <p className={`whitespace-pre-wrap leading-relaxed text-sm ${isAdmin ? 'text-blue-900' : 'text-slate-700'}`}>
                                             {negotiation.message}
                                         </p>
                                     </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         </div>
-                    )
+                        );
+                    })()
                 }
 
                 {/* Negotiation Form */}

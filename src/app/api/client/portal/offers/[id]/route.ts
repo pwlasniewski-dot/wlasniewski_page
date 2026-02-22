@@ -236,6 +236,7 @@ export async function PATCH(
                     offer_id: offerId,
                     message,
                     status: 'open',
+                    sender: 'client',
                 },
             });
 

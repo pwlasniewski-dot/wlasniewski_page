@@ -578,6 +578,7 @@ model Negotiation {
   proposed_price Int?
   proposed_items String?
   status         String   @default("open")
+  sender         String   @default("client") // "client" or "admin"
   created_at     DateTime @default(now())
   offer          Offer    @relation(fields: [offer_id], references: [id])
 
