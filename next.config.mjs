@@ -1,6 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
     // transpilePackages: ['swiper', 'ssr-window', 'dom7'], // CDN Fallback used
+    
+    // CRITICAL: Mark pdfkit as external so Webpack doesn't bundle it and break font file paths
+    serverExternalPackages: ['pdfkit', '@aws-sdk/client-s3', '@aws-sdk/lib-storage'],
+    
     images: {
         unoptimized: true,
         qualities: [60, 75, 85, 100],
@@ -13,8 +17,13 @@ const nextConfig = {
             },
         ],
     },
-    // DO NOT mark @react-pdf/renderer as external - it MUST be bundled for Netlify serverless functions
-    // serverExternalPackages: ['@react-pdf/renderer'],
+    
+    // Ensure pdfkit data files (Helvetica.afm, etc.) are available in Netlify functions
+    outputFileTracingIncludes: {
+        '/api/admin/offers/[id]/save-s3': ['./node_modules/pdfkit/js/data/**/*'],
+        '/api/offers/[id]/pdf': ['./node_modules/pdfkit/js/data/**/*'],
+    },
+    
     // Skip database dependency during build
     experimental: {
         serverActions: {
@@ -32,14 +41,8 @@ const nextConfig = {
     typescript: {
         ignoreBuildErrors: true,
     },
-    // Optimize webpack bundle for Netlify serverless deployment
-    webpack: (config, { isServer }) => {
-        if (isServer) {
-            // On server side, do NOT mark @react-pdf/renderer as external
-            // It must be bundled with the function for Netlify serverless
-            // Keep only Prisma as external if needed
-            // config.externals = [...(config.externals || []), '@react-pdf/renderer'];
-        }
+
+    webpack: (config) => {
         return config;
     },
 };
