@@ -854,7 +854,7 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
                                         className="px-6 py-3 bg-zinc-800 text-white rounded-lg hover:bg-zinc-700 font-semibold border border-zinc-700 flex items-center gap-2"
                                     >
                                         <FileText className="w-5 h-5" />
-                                        Pobierz PDF
+                                        Pobierz ofertę
                                     </a>
                                 )}
                                 {offer.status === 'accepted' && offer.pdf_url && (
