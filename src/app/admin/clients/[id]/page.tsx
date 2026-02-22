@@ -726,6 +726,21 @@ function ClientDetailsContent({ id }: { id: string }) {
                                                     >
                                                         <FileText className="w-5 h-5" />
                                                     </button>
+
+                                                    {offer.status === 'accepted' && offer.pdf_url && (
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.preventDefault();
+                                                                const token = localStorage.getItem('admin_token');
+                                                                const acceptedPdfUrl = offer.pdf_url.replace(/\.pdf$/, '_zatwierdzona.pdf');
+                                                                window.open(acceptedPdfUrl, '_blank');
+                                                            }}
+                                                            className="p-3 rounded-lg border transition-all bg-green-600 hover:bg-green-700 text-white border-green-700 hover:border-green-500"
+                                                            title="Pobierz ofertę po zatwierdzeniu"
+                                                        >
+                                                            <FileText className="w-5 h-5" />
+                                                        </button>
+                                                    )}
                                                     <button
                                                         onClick={() => {
                                                             if (confirmingOfferDelete === offer.id) {

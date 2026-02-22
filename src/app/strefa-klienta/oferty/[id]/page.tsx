@@ -857,6 +857,17 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
                                         Pobierz PDF
                                     </a>
                                 )}
+                                {offer.status === 'accepted' && offer.pdf_url && (
+                                    <a
+                                        href={offer.pdf_url.replace(/\.pdf$/, '_zatwierdzona.pdf')}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold border border-green-700 flex items-center gap-2"
+                                    >
+                                        <FileText className="w-5 h-5" />
+                                        Pobierz ofertę po zatwierdzeniu
+                                    </a>
+                                )}
                             </div>
                         </div>
                     )

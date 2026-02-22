@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { verifyToken, extractToken } from '@/lib/auth/jwt';
 import { sendEmail, getAdminEmail } from '@/lib/email/sender';
+import { generateOfferPDF } from '@/lib/services/pdf';
+import { uploadToS3 } from '@/lib/storage/s3';
 
 export const dynamic = 'force-dynamic';
 
@@ -138,6 +140,36 @@ export async function PATCH(
                     total_price: parsedTotalPrice
                 },
             });
+
+            // Generate and upload accepted offer PDF to S3
+            try {
+                const updatedOffer = await prisma.offer.findUnique({
+                    where: { id: offerId },
+                    include: {
+                        sections: {
+                            include: { items: true }
+                        }
+                    }
+                });
+
+                if (updatedOffer) {
+                    console.log(`[CLIENT_ACCEPT] Generating acceptance PDF for offer ${offerId}...`);
+                    
+                    // Generate post-acceptance PDF with client selection
+                    const pdfBuffer = await generateOfferPDF(updatedOffer, true);
+                    console.log(`[CLIENT_ACCEPT] PDF generated, size: ${pdfBuffer.length} bytes`);
+
+                    const fileNameAccepted = `oferta_${updatedOffer.offerNumber || offerId}_zatwierdzona.pdf`;
+                    const s3KeyAccepted = `offers/${fileNameAccepted}`;
+
+                    console.log(`[CLIENT_ACCEPT] Uploading to S3: ${s3KeyAccepted}...`);
+                    await uploadToS3(pdfBuffer, s3KeyAccepted, 'application/pdf');
+                    console.log(`[CLIENT_ACCEPT] Successfully uploaded acceptance PDF to S3`);
+                }
+            } catch (pdfError) {
+                console.error(`[CLIENT_ACCEPT] Failed to generate/upload acceptance PDF:`, pdfError);
+                // Don't fail the whole request if PDF generation fails
+            }
 
             // Notify admin
             try {
