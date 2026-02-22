@@ -225,6 +225,14 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
                 }
             }
 
+            // Validate negotiation message
+            if (action === 'negotiate') {
+                if (!negotiationMessage.trim()) {
+                    alert('Proszę napisać wiadomość przed wysłaniem negocjacji.');
+                    return;
+                }
+            }
+
             setSubmitting(true);
 
             const response = await fetch(`/api/client/portal/offers/${offerId}`, {
@@ -243,11 +251,22 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
             if (response.ok) {
                 const data = await response.json();
                 setOffer(data.offer);
-                setNegotiationMessage('');
-                setShowNegotiationForm(false);
+                
+                if (action === 'negotiate') {
+                    // Show success feedback for negotiation
+                    alert('✓ Twoja propozycja negocjacji została wysłana do fotografa.');
+                    setNegotiationMessage('');
+                    setShowNegotiationForm(false);
+                } else {
+                    setNegotiationMessage('');
+                    setShowNegotiationForm(false);
+                }
+            } else {
+                alert('Błąd podczas wysyłania. Spróbuj ponownie.');
             }
         } catch (error) {
             console.error('Error updating offer:', error);
+            alert('Błąd połączenia. Spróbuj ponownie.');
         } finally {
             setSubmitting(false);
         }
