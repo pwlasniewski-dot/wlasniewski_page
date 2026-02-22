@@ -513,6 +513,7 @@ model Offer {
   created_at       DateTime       @default(now())
   updated_at       DateTime       @updatedAt
   pdf_url          String?
+  pdf_url_accepted String?
   drive_url        String?
   template_data    Json?
   total_price      Int            @default(0)

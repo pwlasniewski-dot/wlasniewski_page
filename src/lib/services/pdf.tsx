@@ -5,12 +5,12 @@ import { generateOfferPDFBuffer } from './generateOfferPDF';
 import fs from 'fs';
 import path from 'path';
 
-export async function generateOfferPDF(offer: any): Promise<Buffer> {
+export async function generateOfferPDF(offer: any, includeClientSelection: boolean = false): Promise<Buffer> {
     try {
         console.log('[PDF] ==================== GENERATING PDF (PDFKIT) ====================');
         console.log('[PDF] Offer ID:', offer.id);
         console.log('[PDF] Offer status:', offer.status);
-        console.log('[PDF] Offer category:', offer.category);
+        console.log('[PDF] Include client selection:', includeClientSelection);
 
         const generationDate = offer._footerNote || new Date().toLocaleString('pl-PL', {
             year: 'numeric',
@@ -21,7 +21,7 @@ export async function generateOfferPDF(offer: any): Promise<Buffer> {
         });
 
         console.log('[PDF] Starting pdfkit generation...');
-        const buffer = await generateOfferPDFBuffer(offer, generationDate);
+        const buffer = await generateOfferPDFBuffer(offer, generationDate, includeClientSelection);
         console.log(`[PDF] ✅ SUCCESS! Buffer size: ${buffer.length} bytes`);
         console.log('[PDF] ====================  PDF READY  ====================');
         return buffer;

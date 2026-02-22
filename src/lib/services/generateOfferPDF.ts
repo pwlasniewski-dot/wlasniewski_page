@@ -56,7 +56,7 @@ interface OfferData {
     footerCompany: string;
 }
 
-export async function generateOfferPDFBuffer(offer: any, generationDate?: string): Promise<Buffer> {
+export async function generateOfferPDFBuffer(offer: any, generationDate?: string, includeClientSelection: boolean = false): Promise<Buffer> {
     return new Promise((resolve, reject) => {
         try {
             const doc = new PDFDocument({ 
@@ -358,6 +358,56 @@ export async function generateOfferPDFBuffer(offer: any, generationDate?: string
                     }
                 });
                 yPos += 5;
+            }
+
+            // ===== CLIENT SELECTION (Post-Acceptance) =====
+            if (includeClientSelection && offer.client_selection && offer.status === 'accepted') {
+                const clientSel = offer.client_selection;
+                yPos += 10;
+
+                doc.rect(margins, yPos, contentWidth, 8).fillAndStroke(COLOR_LIGHT, COLOR_BORDER);
+                doc.font(semiboldFont, 14).fillColor(COLOR_DARK);
+                doc.text('ZATWIERDZENIE OFERTY', margins + 8, yPos + 2);
+                yPos += 25;
+
+                // Show selected packages/children count
+                if (clientSel.splitPackageCounts) {
+                    doc.font(semiboldFont, 11).fillColor(COLOR_DARK);
+                    doc.text('Zaznaczone pakiety:', margins, yPos);
+                    yPos += 15;
+
+                    doc.font(regularFont, 10).fillColor(COLOR_TEXT);
+                    const headers = data.pricingHeaders || [];
+                    headers.forEach((header, idx) => {
+                        if (idx > 0) { // Skip first column (description column)
+                            const count = clientSel.splitPackageCounts[idx] || 0;
+                            const price = data.footerPrices[idx] || '0 zł';
+                            if (count > 0) {
+                                doc.text(`${S(header)}: ${count} osób (${S(price)})`, margins + 15, yPos);
+                                yPos += 12;
+                            }
+                        }
+                    });
+                    yPos += 5;
+                }
+
+                // Show total price and confirmation date
+                yPos += 10;
+                doc.rect(margins, yPos, contentWidth, 35).fillAndStroke(COLOR_LIGHT, COLOR_BORDER);
+                
+                doc.font(semiboldFont, 12).fillColor(COLOR_DARK);
+                doc.text('Suma do zapłaty:', margins + 8, yPos + 5);
+                
+                doc.font(semiboldFont, 16).fillColor(COLOR_ACCENT);
+                doc.text(`${clientSel.totalPrice?.toLocaleString('pl-PL')} PLN`, margins + 8, yPos + 17);
+                
+                doc.font(regularFont, 9).fillColor(COLOR_TEXT);
+                doc.text(`Data zatwierdzenia: ${generationDate}`, pageWidth - margins - 150, yPos + 5, {
+                    width: 150,
+                    align: 'right'
+                });
+
+                yPos += 45;
             }
 
             // ===== FOOTER =====
