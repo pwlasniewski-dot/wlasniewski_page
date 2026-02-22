@@ -337,7 +337,7 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
     const isPending = offer.status === 'sent' || offer.status === 'pending';
     const canAccept = isPending;
     const canReject = isPending;
-    const canNegotiate = isPending;
+    const canNegotiate = isPending && (offer.negotiation_enabled !== false);
     const isB2B = offer.type === 'b2b';
 
     return (
