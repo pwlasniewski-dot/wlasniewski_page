@@ -4,7 +4,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useReactToPrint } from 'react-to-print';
 import {
     Printer, Eye, Save, Plus, Trash2, ArrowRight, ChevronLeft, ChevronRight,
-    Share2, Cloud, Mail, FileCheck, X, Check, ExternalLink, Settings, Image as ImageIcon, FileText
+    Share2, Cloud, Mail, FileCheck, X, Check, ExternalLink, Settings, Image as ImageIcon, FileText,
+    BookCopy, Download
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -203,6 +204,12 @@ export default function OfferBuilder({ offerId, initialData, onSave, saveButtonT
     const [isSaving, setIsSaving] = useState(false);
     const [lastSavedId, setLastSavedId] = useState<number | null>(offerId || null);
 
+    // Template system state
+    const [showTemplateModal, setShowTemplateModal] = useState(false);
+    const [templates, setTemplates] = useState<any[]>([]);
+    const [loadingTemplates, setLoadingTemplates] = useState(false);
+    const [savingTemplate, setSavingTemplate] = useState(false);
+
     // Auto-fill client data if clientId is present
     useEffect(() => {
         if (clientId) {
@@ -332,6 +339,122 @@ export default function OfferBuilder({ offerId, initialData, onSave, saveButtonT
             }
         } catch (error) {
             alert('Błąd połączenia');
+        }
+    };
+
+    // --- Template System ---
+
+    const fetchTemplates = async () => {
+        setLoadingTemplates(true);
+        try {
+            const token = localStorage.getItem('admin_token');
+            const res = await fetch('/api/admin/templates', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const json = await res.json();
+                setTemplates(json.templates || []);
+            } else {
+                toast.error('Błąd pobierania szablonów');
+            }
+        } catch (error) {
+            toast.error('Błąd połączenia');
+        } finally {
+            setLoadingTemplates(false);
+        }
+    };
+
+    const handleSaveAsTemplate = async () => {
+        const templateName = prompt('Podaj nazwę szablonu:', data.title || 'Nowy szablon');
+        if (!templateName) return;
+
+        setSavingTemplate(true);
+        try {
+            const token = localStorage.getItem('admin_token');
+            // Strip client-specific data, keep offer structure
+            const templateData: OfferData = {
+                ...data,
+                contactName: '',
+                contactEmail: '',
+                contactPhone: '',
+                contactZip: '',
+                contactAddress: '',
+                contactLocation: '',
+            };
+
+            const res = await fetch('/api/admin/templates', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    title: templateName,
+                    type: type,
+                    category: data.category,
+                    template_data: templateData
+                })
+            });
+
+            if (res.ok) {
+                toast.success(`Szablon "${templateName}" zapisany!`);
+            } else {
+                const err = await res.json();
+                toast.error(`Błąd: ${err.error || 'Nie udało się zapisać szablonu'}`);
+            }
+        } catch (error) {
+            toast.error('Błąd połączenia');
+        } finally {
+            setSavingTemplate(false);
+        }
+    };
+
+    const handleLoadTemplate = (template: any) => {
+        const tplData = template.template_data as Partial<OfferData>;
+        if (!tplData) {
+            toast.error('Szablon nie zawiera danych');
+            return;
+        }
+
+        // Preserve current client-specific fields
+        const currentClientData = {
+            contactName: data.contactName,
+            contactEmail: data.contactEmail,
+            contactPhone: data.contactPhone,
+            contactZip: data.contactZip,
+            contactAddress: data.contactAddress,
+            contactLocation: data.contactLocation,
+        };
+
+        setData(prev => ({
+            ...INITIAL_DATA,
+            ...tplData,
+            // Always keep current client data (don't overwrite with template's empty values)
+            ...currentClientData,
+        }));
+
+        setShowTemplateModal(false);
+        toast.success(`Wczytano szablon: ${template.title}`);
+    };
+
+    const handleDeleteTemplate = async (templateId: number, e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!confirm('Czy na pewno chcesz usunąć ten szablon?')) return;
+
+        try {
+            const token = localStorage.getItem('admin_token');
+            const res = await fetch(`/api/admin/templates/${templateId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                toast.success('Szablon usunięty');
+                setTemplates(prev => prev.filter(t => t.id !== templateId));
+            } else {
+                toast.error('Błąd usuwania szablonu');
+            }
+        } catch (error) {
+            toast.error('Błąd połączenia');
         }
     };
 
@@ -622,6 +745,23 @@ export default function OfferBuilder({ offerId, initialData, onSave, saveButtonT
                             className="flex items-center gap-2 bg-zinc-700 text-white px-4 py-2 rounded shadow hover:bg-zinc-600 transition font-bold"
                         >
                             <Printer size={18} /> Drukuj
+                        </button>
+
+                        {/* Template buttons */}
+                        <button
+                            onClick={handleSaveAsTemplate}
+                            disabled={savingTemplate}
+                            className="flex items-center gap-2 bg-amber-600 text-white px-4 py-2 rounded shadow hover:bg-amber-700 transition disabled:opacity-50 font-bold"
+                            title="Zapisz aktualną ofertę jako szablon do ponownego użycia"
+                        >
+                            <BookCopy size={18} /> {savingTemplate ? 'Zapisywanie...' : 'Zapisz szablon'}
+                        </button>
+                        <button
+                            onClick={() => { fetchTemplates(); setShowTemplateModal(true); }}
+                            className="flex items-center gap-2 bg-cyan-600 text-white px-4 py-2 rounded shadow hover:bg-cyan-700 transition font-bold"
+                            title="Wczytaj dane z zapisanego szablonu"
+                        >
+                            <Download size={18} /> Wczytaj z szablonu
                         </button>
                     </div>
                 </div>
@@ -1188,6 +1328,76 @@ export default function OfferBuilder({ offerId, initialData, onSave, saveButtonT
                     </div>
                 </div>
             </div>
+
+            {/* Template Selection Modal */}
+            {showTemplateModal && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowTemplateModal(false)}>
+                    <div className="bg-zinc-900 border border-zinc-700 rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-between p-5 border-b border-zinc-700">
+                            <div>
+                                <h3 className="text-lg font-bold text-white">Wczytaj z szablonu</h3>
+                                <p className="text-xs text-zinc-400 mt-1">Dane klienta (imię, email, telefon) zostaną zachowane</p>
+                            </div>
+                            <button onClick={() => setShowTemplateModal(false)} className="text-zinc-400 hover:text-white transition">
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className="overflow-y-auto flex-1 p-4">
+                            {loadingTemplates ? (
+                                <div className="text-center py-12 text-zinc-400">
+                                    <div className="animate-spin w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full mx-auto mb-3" />
+                                    Ładowanie szablonów...
+                                </div>
+                            ) : templates.length === 0 ? (
+                                <div className="text-center py-12">
+                                    <BookCopy size={48} className="mx-auto text-zinc-600 mb-3" />
+                                    <p className="text-zinc-400 font-bold">Brak zapisanych szablonów</p>
+                                    <p className="text-zinc-500 text-sm mt-1">Użyj &quot;Zapisz szablon&quot; aby utworzyć pierwszy szablon</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-2">
+                                    {templates.map(tpl => (
+                                        <button
+                                            key={tpl.id}
+                                            onClick={() => handleLoadTemplate(tpl)}
+                                            className="w-full text-left p-4 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 hover:border-cyan-500/50 rounded-xl transition group"
+                                        >
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="font-bold text-white truncate group-hover:text-cyan-400 transition">{tpl.title}</p>
+                                                    <div className="flex items-center gap-3 mt-1">
+                                                        <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-zinc-700 text-zinc-300">
+                                                            {tpl.type || 'b2c'}
+                                                        </span>
+                                                        {(tpl.template_data as any)?.category && (
+                                                            <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-zinc-700 text-zinc-300">
+                                                                {(tpl.template_data as any).category}
+                                                            </span>
+                                                        )}
+                                                        <span className="text-[10px] text-zinc-500">
+                                                            {new Date(tpl.created_at).toLocaleDateString('pl-PL')}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-2 ml-3">
+                                                    <span className="text-cyan-500 opacity-0 group-hover:opacity-100 transition text-sm font-bold">Wczytaj</span>
+                                                    <button
+                                                        onClick={(e) => handleDeleteTemplate(tpl.id, e)}
+                                                        className="text-zinc-500 hover:text-red-400 transition p-1"
+                                                        title="Usuń szablon"
+                                                    >
+                                                        <Trash2 size={14} />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
