@@ -165,36 +165,56 @@ export async function generateOfferPDFBuffer(offer: any, generationDate?: string
             const pageHeight = doc.page.height;
             const margins = 40;
             const contentWidth = pageWidth - margins * 2;
+            const footerReserve = 55; // Space reserved for footer on each page
+            const bottomLimit = pageHeight - margins - footerReserve;
 
             let yPos = margins;
 
+            // Helper: check if we need a new page, add one if so
+            const checkPageBreak = (neededHeight: number): void => {
+                if (yPos + neededHeight > bottomLimit) {
+                    doc.addPage();
+                    yPos = margins;
+                }
+            };
+
+            // Helper: measure text height
+            const measureText = (text: string, opts: { font?: string; size?: number; width?: number } = {}): number => {
+                const f = opts.font || regularFont;
+                const s = opts.size || 9;
+                const w = opts.width || contentWidth;
+                doc.font(f, s);
+                return doc.heightOfString(text, { width: w });
+            };
+
             // ===== HEADER =====
+            checkPageBreak(80);
             doc.font(boldFont, 24).fillColor(COLOR_DARK);
+            const titleHeight = doc.heightOfString(S(data.title), { width: contentWidth * 0.65 });
             doc.text(S(data.title), margins, yPos, {
                 width: contentWidth * 0.65,
-                height: 40,
                 align: 'left'
             });
 
             doc.font(semiboldFont, 12).fillColor(COLOR_ACCENT);
-            doc.text(S(data.subtitle), margins, yPos + 30, {
+            doc.text(S(data.subtitle), margins, yPos + titleHeight + 4, {
                 width: contentWidth * 0.65,
                 align: 'left'
             });
 
             // Header right side
             doc.font(boldFont, 11).fillColor(COLOR_DARK);
-            doc.text(S(data.contactName), pageWidth - margins - 150, yPos, {
-                width: 150,
+            doc.text(S(data.contactName), pageWidth - margins - 180, yPos, {
+                width: 180,
                 align: 'right'
             });
 
             doc.font(regularFont, 9).fillColor(COLOR_TEXT);
-            doc.text(S(data.contactLocation), pageWidth - margins - 150, yPos + 20, { width: 150, align: 'right' });
-            doc.text(`Tel: ${S(data.contactPhone)}`, pageWidth - margins - 150, yPos + 32, { width: 150, align: 'right' });
-            doc.text(S(data.contactEmail), pageWidth - margins - 150, yPos + 44, { width: 150, align: 'right' });
+            doc.text(S(data.contactLocation), pageWidth - margins - 180, yPos + 20, { width: 180, align: 'right' });
+            doc.text(`Tel: ${S(data.contactPhone)}`, pageWidth - margins - 180, yPos + 32, { width: 180, align: 'right' });
+            doc.text(S(data.contactEmail), pageWidth - margins - 180, yPos + 44, { width: 180, align: 'right' });
 
-            yPos += 70;
+            yPos += Math.max(titleHeight + 30, 70);
 
             // Separator line
             doc.strokeColor(COLOR_ACCENT).lineWidth(2);
@@ -203,6 +223,7 @@ export async function generateOfferPDFBuffer(offer: any, generationDate?: string
 
             // ===== EVENT INFO =====
             if (data.sectionVisibility.eventInfo) {
+                checkPageBreak(60);
                 doc.rect(margins, yPos, contentWidth, 50).fillAndStroke(COLOR_LIGHT, COLOR_BORDER);
                 
                 doc.font(regularFont, 9).fillColor(COLOR_DARK);
@@ -217,29 +238,40 @@ export async function generateOfferPDFBuffer(offer: any, generationDate?: string
 
             // ===== PREPARATIONS =====
             if (data.sectionVisibility.preparations) {
+                const colWidth = contentWidth / 2 - 5;
+                const beforeText = S(data.preparations.before || '');
+                const dayOfText = S(data.preparations.dayOf || '');
+                const beforeHeight = beforeText ? measureText(beforeText, { width: colWidth }) : 0;
+                const dayOfHeight = dayOfText ? measureText(dayOfText, { width: colWidth }) : 0;
+                const prepContentHeight = Math.max(beforeHeight, dayOfHeight) + 25; // +25 for label
+                const totalPrepHeight = 35 + prepContentHeight; // section title + content
+
+                checkPageBreak(Math.min(totalPrepHeight, 120)); // Check for at least beginning
+
                 yPos += 10;
                 doc.font(semiboldFont, 14).fillColor(COLOR_DARK);
                 doc.text(S(data.sectionTitles.preparations || 'Przygotowania'), margins, yPos);
                 yPos += 25;
 
-                const colWidth = contentWidth / 2 - 5;
+                const prepStartY = yPos;
                 doc.font(semiboldFont, 10).text(S(data.labels.prepBefore || 'Przed ślubem'), margins, yPos);
-                doc.font(regularFont, 9).text(S(data.preparations.before || ''), margins, yPos + 15, {
+                doc.font(regularFont, 9).text(beforeText, margins, yPos + 15, {
                     width: colWidth,
                     align: 'left'
                 });
 
-                doc.font(semiboldFont, 10).text(S(data.labels.prepDay || 'W dniu ślubu'), margins + colWidth + 10, yPos);
-                doc.font(regularFont, 9).text(S(data.preparations.dayOf || ''), margins + colWidth + 10, yPos + 15, {
+                doc.font(semiboldFont, 10).text(S(data.labels.prepDay || 'W dniu ślubu'), margins + colWidth + 10, prepStartY);
+                doc.font(regularFont, 9).text(dayOfText, margins + colWidth + 10, prepStartY + 15, {
                     width: colWidth,
                     align: 'left'
                 });
 
-                yPos += 50;
+                yPos += prepContentHeight + 10;
             }
 
             // ===== FEATURES / STANDARDS =====
             if (data.sectionVisibility.features && data.features.length > 0) {
+                checkPageBreak(40);
                 yPos += 10;
                 doc.font(semiboldFont, 14).fillColor(COLOR_DARK);
                 doc.text(S(data.sectionTitles.standards || 'Standardy'), margins, yPos);
@@ -247,8 +279,12 @@ export async function generateOfferPDFBuffer(offer: any, generationDate?: string
 
                 doc.font(regularFont, 9).fillColor(COLOR_TEXT);
                 data.features.forEach((feature) => {
-                    doc.text(`✓ ${S(feature)}`, margins + 15, yPos);
-                    yPos += 12;
+                    const featureText = `✓ ${S(feature)}`;
+                    const featureHeight = measureText(featureText, { width: contentWidth - 15 });
+                    checkPageBreak(featureHeight + 4);
+                    doc.font(regularFont, 9).fillColor(COLOR_TEXT);
+                    doc.text(featureText, margins + 15, yPos, { width: contentWidth - 15 });
+                    yPos += featureHeight + 4;
                 });
                 yPos += 5;
             }
@@ -256,14 +292,18 @@ export async function generateOfferPDFBuffer(offer: any, generationDate?: string
             // ===== PRICING TABLE =====
             if (data.sectionVisibility.pricing && data.pricingHeaders.length > 0) {
                 yPos += 10;
+                const colCount = data.pricingHeaders.length;
+                const colWidth = contentWidth / colCount;
+                const headerRowH = 25;
+                const dataRowH = 20;
 
-                const colWidth = contentWidth / data.pricingHeaders.length;
-                const tableStartY = yPos;
+                // Check if header fits
+                checkPageBreak(headerRowH + dataRowH);
 
                 // Headers
                 data.pricingHeaders.forEach((header, idx) => {
                     const xPos = margins + idx * colWidth;
-                    doc.rect(xPos, yPos, colWidth, 25).stroke(COLOR_BORDER);
+                    doc.rect(xPos, yPos, colWidth, headerRowH).stroke(COLOR_BORDER);
                     
                     const isRec = idx === data.recommendationColumnIndex;
                     if (isRec) {
@@ -281,18 +321,19 @@ export async function generateOfferPDFBuffer(offer: any, generationDate?: string
                     });
                 });
 
-                yPos += 25;
+                yPos += headerRowH;
 
-                // Rows
+                // Rows - check page break for each row
                 data.pricingRows.forEach((row) => {
+                    checkPageBreak(dataRowH);
                     (row.values || []).forEach((val, idx) => {
                         const xPos = margins + idx * colWidth;
                         const isRec = idx === data.recommendationColumnIndex;
                         
                         if (isRec) {
-                            doc.rect(xPos, yPos, colWidth, 20).fillAndStroke(COLOR_LIGHT, COLOR_BORDER);
+                            doc.rect(xPos, yPos, colWidth, dataRowH).fillAndStroke(COLOR_LIGHT, COLOR_BORDER);
                         } else {
-                            doc.rect(xPos, yPos, colWidth, 20).stroke(COLOR_BORDER);
+                            doc.rect(xPos, yPos, colWidth, dataRowH).stroke(COLOR_BORDER);
                         }
 
                         const fontName = row.isHeader ? boldFont : regularFont;
@@ -302,18 +343,19 @@ export async function generateOfferPDFBuffer(offer: any, generationDate?: string
                             align: 'center'
                         });
                     });
-                    yPos += 20;
+                    yPos += dataRowH;
                 });
 
-                // Footer prices
+                // Footer prices row
+                checkPageBreak(dataRowH);
                 data.footerPrices.forEach((price, idx) => {
                     const xPos = margins + idx * colWidth;
                     const isRec = idx === data.recommendationColumnIndex;
                     
                     if (isRec) {
-                        doc.rect(xPos, yPos, colWidth, 20).fillAndStroke(COLOR_LIGHT, COLOR_BORDER);
+                        doc.rect(xPos, yPos, colWidth, dataRowH).fillAndStroke(COLOR_LIGHT, COLOR_BORDER);
                     } else {
-                        doc.rect(xPos, yPos, colWidth, 20).stroke(COLOR_BORDER);
+                        doc.rect(xPos, yPos, colWidth, dataRowH).stroke(COLOR_BORDER);
                     }
 
                     doc.font(semiboldFont, 11).fillColor(COLOR_DARK);
@@ -323,28 +365,34 @@ export async function generateOfferPDFBuffer(offer: any, generationDate?: string
                     });
                 });
 
-                yPos += 20 + 10;
+                yPos += dataRowH + 10;
             }
 
             // ===== ALBUM =====
             if (data.sectionVisibility.album && data.albumDescription) {
+                const albumText = S(data.albumDescription);
+                const albumTextHeight = measureText(albumText, { width: contentWidth - 16 });
+                const albumBoxHeight = albumTextHeight + 22; // padding + label
+                
+                checkPageBreak(albumBoxHeight + 10);
                 yPos += 10;
-                doc.rect(margins, yPos, contentWidth, 40).stroke(COLOR_BORDER);
+                doc.rect(margins, yPos, contentWidth, albumBoxHeight).stroke(COLOR_BORDER);
                 
                 doc.font(semiboldFont, 10).fillColor(COLOR_DARK);
                 doc.text(S(data.labels.albumAdvantage || 'Albumy') + ':', margins + 8, yPos + 5);
                 
                 doc.font(regularFont, 9).fillColor(COLOR_TEXT);
-                doc.text(S(data.albumDescription), margins + 8, yPos + 18, {
+                doc.text(albumText, margins + 8, yPos + 18, {
                     width: contentWidth - 16,
                     align: 'left'
                 });
                 
-                yPos += 50;
+                yPos += albumBoxHeight + 10;
             }
 
             // ===== DELIVERY =====
             if (data.sectionVisibility.delivery && Object.keys(data.deliveryTerms).length > 0) {
+                checkPageBreak(40);
                 yPos += 10;
                 doc.font(semiboldFont, 14).fillColor(COLOR_DARK);
                 doc.text(S(data.sectionTitles.delivery || 'Dostarczenie'), margins, yPos);
@@ -353,8 +401,12 @@ export async function generateOfferPDFBuffer(offer: any, generationDate?: string
                 doc.font(regularFont, 9).fillColor(COLOR_TEXT);
                 Object.values(data.deliveryTerms).forEach((term: any) => {
                     if (term) {
-                        doc.text(`✓ ${S(term)}`, margins + 15, yPos);
-                        yPos += 12;
+                        const termText = `✓ ${S(term)}`;
+                        const termHeight = measureText(termText, { width: contentWidth - 15 });
+                        checkPageBreak(termHeight + 4);
+                        doc.font(regularFont, 9).fillColor(COLOR_TEXT);
+                        doc.text(termText, margins + 15, yPos, { width: contentWidth - 15 });
+                        yPos += termHeight + 4;
                     }
                 });
                 yPos += 5;
@@ -363,6 +415,8 @@ export async function generateOfferPDFBuffer(offer: any, generationDate?: string
             // ===== CLIENT SELECTION (Post-Acceptance) =====
             if (includeClientSelection && offer.client_selection && offer.status === 'accepted') {
                 const clientSel = offer.client_selection;
+                
+                checkPageBreak(80);
                 yPos += 10;
 
                 doc.rect(margins, yPos, contentWidth, 8).fillAndStroke(COLOR_LIGHT, COLOR_BORDER);
@@ -372,6 +426,7 @@ export async function generateOfferPDFBuffer(offer: any, generationDate?: string
 
                 // Show selected packages/children count
                 if (clientSel.splitPackageCounts) {
+                    checkPageBreak(30);
                     doc.font(semiboldFont, 11).fillColor(COLOR_DARK);
                     doc.text('Zaznaczone pakiety:', margins, yPos);
                     yPos += 15;
@@ -383,6 +438,8 @@ export async function generateOfferPDFBuffer(offer: any, generationDate?: string
                             const count = clientSel.splitPackageCounts[idx] || 0;
                             const price = data.footerPrices[idx] || '0 zł';
                             if (count > 0) {
+                                checkPageBreak(14);
+                                doc.font(regularFont, 10).fillColor(COLOR_TEXT);
                                 doc.text(`${S(header)}: ${count} osób (${S(price)})`, margins + 15, yPos);
                                 yPos += 12;
                             }
@@ -392,6 +449,7 @@ export async function generateOfferPDFBuffer(offer: any, generationDate?: string
                 }
 
                 // Show total price and confirmation date
+                checkPageBreak(50);
                 yPos += 10;
                 doc.rect(margins, yPos, contentWidth, 35).fillAndStroke(COLOR_LIGHT, COLOR_BORDER);
                 
@@ -410,20 +468,24 @@ export async function generateOfferPDFBuffer(offer: any, generationDate?: string
                 yPos += 45;
             }
 
-            // ===== FOOTER =====
-            yPos = pageHeight - margins - 30;
-            doc.moveTo(margins, yPos).lineTo(pageWidth - margins, yPos).stroke(COLOR_BORDER);
-            yPos += 8;
+            // ===== FOOTER (drawn on final page) =====
+            // If footer won't fit below current content, add a page
+            checkPageBreak(40);
+            
+            // Draw footer at bottom of current (last) page
+            const footerY = Math.max(yPos + 15, pageHeight - margins - 35);
+            doc.strokeColor(COLOR_BORDER).lineWidth(0.5);
+            doc.moveTo(margins, footerY).lineTo(pageWidth - margins, footerY).stroke();
 
             doc.font(regularFont, 8).fillColor(COLOR_TEXT);
-            doc.text(S(data.labels.footerDisclaimer || ''), margins, yPos);
+            doc.text(S(data.labels.footerDisclaimer || ''), margins, footerY + 5, { width: contentWidth });
             
             doc.font(semiboldFont, 9).fillColor(COLOR_DARK);
-            doc.text(S(data.footerCompany), margins, yPos + 10);
+            doc.text(S(data.footerCompany), margins, footerY + 15, { width: contentWidth });
 
             if (generationDate) {
                 doc.font(regularFont, 7).fillColor(COLOR_TEXT);
-                doc.text(`Dokument wygenerowany z systemu dnia: ${generationDate}`, margins, yPos + 20);
+                doc.text(`Dokument wygenerowany z systemu dnia: ${generationDate}`, margins, footerY + 25, { width: contentWidth });
             }
 
             doc.end();
