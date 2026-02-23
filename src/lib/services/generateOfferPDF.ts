@@ -244,14 +244,19 @@ export async function generateOfferPDFBuffer(offer: any, generationDate?: string
                 const beforeHeight = beforeText ? measureText(beforeText, { width: colWidth }) : 0;
                 const dayOfHeight = dayOfText ? measureText(dayOfText, { width: colWidth }) : 0;
                 const prepContentHeight = Math.max(beforeHeight, dayOfHeight) + 25; // +25 for label
-                const totalPrepHeight = 35 + prepContentHeight; // section title + content
 
-                checkPageBreak(Math.min(totalPrepHeight, 120)); // Check for at least beginning
+                // Measure section title height dynamically
+                const prepTitle = S(data.sectionTitles.preparations || 'Przygotowania');
+                doc.font(semiboldFont, 13);
+                const prepTitleH = doc.heightOfString(prepTitle, { width: contentWidth });
+                const totalPrepHeight = prepTitleH + 10 + prepContentHeight;
+
+                checkPageBreak(totalPrepHeight + 10);
 
                 yPos += 10;
-                doc.font(semiboldFont, 14).fillColor(COLOR_DARK);
-                doc.text(S(data.sectionTitles.preparations || 'Przygotowania'), margins, yPos);
-                yPos += 25;
+                doc.font(semiboldFont, 13).fillColor(COLOR_DARK);
+                doc.text(prepTitle, margins, yPos, { width: contentWidth });
+                yPos += prepTitleH + 10;
 
                 const prepStartY = yPos;
                 doc.font(semiboldFont, 10).text(S(data.labels.prepBefore || 'Przed ślubem'), margins, yPos);
@@ -271,11 +276,16 @@ export async function generateOfferPDFBuffer(offer: any, generationDate?: string
 
             // ===== FEATURES / STANDARDS =====
             if (data.sectionVisibility.features && data.features.length > 0) {
-                checkPageBreak(40);
                 yPos += 10;
-                doc.font(semiboldFont, 14).fillColor(COLOR_DARK);
-                doc.text(S(data.sectionTitles.standards || 'Standardy'), margins, yPos);
-                yPos += 20;
+                // Measure section title height (may wrap if long)
+                const standardsTitle = S(data.sectionTitles.standards || 'Standardy');
+                doc.font(semiboldFont, 13);
+                const standardsTitleH = doc.heightOfString(standardsTitle, { width: contentWidth });
+                checkPageBreak(standardsTitleH + 30);
+                
+                doc.font(semiboldFont, 13).fillColor(COLOR_DARK);
+                doc.text(standardsTitle, margins, yPos, { width: contentWidth });
+                yPos += standardsTitleH + 10;
 
                 doc.font(regularFont, 9).fillColor(COLOR_TEXT);
                 data.features.forEach((feature) => {
@@ -294,11 +304,12 @@ export async function generateOfferPDFBuffer(offer: any, generationDate?: string
                 yPos += 10;
                 const colCount = data.pricingHeaders.length;
                 const colWidth = contentWidth / colCount;
-                const headerRowH = 25;
-                const dataRowH = 20;
+                const headerRowH = 28;
+                const minRowH = 22;  // minimum row height
+                const cellPadding = 6; // vertical padding in cells
 
                 // Check if header fits
-                checkPageBreak(headerRowH + dataRowH);
+                checkPageBreak(headerRowH + minRowH);
 
                 // Headers
                 data.pricingHeaders.forEach((header, idx) => {
@@ -314,8 +325,8 @@ export async function generateOfferPDFBuffer(offer: any, generationDate?: string
                         });
                     }
 
-                    doc.font(boldFont, 10).fillColor(COLOR_DARK);
-                    doc.text(S(header), xPos + 2, yPos + (isRec ? 12 : 5), {
+                    doc.font(boldFont, 9).fillColor(COLOR_DARK);
+                    doc.text(S(header), xPos + 2, yPos + (isRec ? 12 : 8), {
                         width: colWidth - 4,
                         align: 'center'
                     });
@@ -323,49 +334,65 @@ export async function generateOfferPDFBuffer(offer: any, generationDate?: string
 
                 yPos += headerRowH;
 
-                // Rows - check page break for each row
+                // Rows - DYNAMIC height based on tallest cell content
                 data.pricingRows.forEach((row) => {
-                    checkPageBreak(dataRowH);
+                    // First pass: measure height of all cells in this row
+                    const fontName = row.isHeader ? boldFont : regularFont;
+                    let maxCellH = 0;
+                    (row.values || []).forEach((val) => {
+                        doc.font(fontName, 8);
+                        const h = doc.heightOfString(S(val), { width: colWidth - 8 });
+                        if (h > maxCellH) maxCellH = h;
+                    });
+                    const rowH = Math.max(minRowH, maxCellH + cellPadding);
+
+                    checkPageBreak(rowH);
+
+                    // Second pass: render cells with computed rowH
                     (row.values || []).forEach((val, idx) => {
                         const xPos = margins + idx * colWidth;
                         const isRec = idx === data.recommendationColumnIndex;
                         
                         if (isRec) {
-                            doc.rect(xPos, yPos, colWidth, dataRowH).fillAndStroke(COLOR_LIGHT, COLOR_BORDER);
+                            doc.rect(xPos, yPos, colWidth, rowH).fillAndStroke(COLOR_LIGHT, COLOR_BORDER);
                         } else {
-                            doc.rect(xPos, yPos, colWidth, dataRowH).stroke(COLOR_BORDER);
+                            doc.rect(xPos, yPos, colWidth, rowH).stroke(COLOR_BORDER);
                         }
 
-                        const fontName = row.isHeader ? boldFont : regularFont;
-                        doc.font(fontName, 9).fillColor(COLOR_DARK);
-                        doc.text(S(val), xPos + 2, yPos + 3, {
-                            width: colWidth - 4,
-                            align: 'center'
+                        doc.font(fontName, 8).fillColor(COLOR_DARK);
+                        // Center text vertically in cell
+                        doc.font(fontName, 8);
+                        const textH = doc.heightOfString(S(val), { width: colWidth - 8 });
+                        const textY = yPos + (rowH - textH) / 2;
+                        doc.text(S(val), xPos + 4, textY, {
+                            width: colWidth - 8,
+                            align: idx === 0 ? 'left' : 'center'
                         });
                     });
-                    yPos += dataRowH;
+                    yPos += rowH;
                 });
 
                 // Footer prices row
-                checkPageBreak(dataRowH);
+                const priceRowH = 24;
+                checkPageBreak(priceRowH);
                 data.footerPrices.forEach((price, idx) => {
                     const xPos = margins + idx * colWidth;
                     const isRec = idx === data.recommendationColumnIndex;
                     
                     if (isRec) {
-                        doc.rect(xPos, yPos, colWidth, dataRowH).fillAndStroke(COLOR_LIGHT, COLOR_BORDER);
+                        doc.rect(xPos, yPos, colWidth, priceRowH).fillAndStroke(COLOR_LIGHT, COLOR_BORDER);
                     } else {
-                        doc.rect(xPos, yPos, colWidth, dataRowH).stroke(COLOR_BORDER);
+                        doc.rect(xPos, yPos, colWidth, priceRowH).stroke(COLOR_BORDER);
                     }
 
                     doc.font(semiboldFont, 11).fillColor(COLOR_DARK);
-                    doc.text(S(price), xPos + 2, yPos + 3, {
+                    doc.text(S(price), xPos + 2, yPos + 4, {
                         width: colWidth - 4,
                         align: 'center'
                     });
                 });
 
-                yPos += dataRowH + 10;
+                yPos += priceRowH + 10;
             }
 
             // ===== ALBUM =====
@@ -374,7 +401,7 @@ export async function generateOfferPDFBuffer(offer: any, generationDate?: string
                 const albumTextHeight = measureText(albumText, { width: contentWidth - 16 });
                 const albumBoxHeight = albumTextHeight + 22; // padding + label
                 
-                checkPageBreak(albumBoxHeight + 10);
+                checkPageBreak(albumBoxHeight + 20);
                 yPos += 10;
                 doc.rect(margins, yPos, contentWidth, albumBoxHeight).stroke(COLOR_BORDER);
                 
@@ -392,7 +419,14 @@ export async function generateOfferPDFBuffer(offer: any, generationDate?: string
 
             // ===== DELIVERY =====
             if (data.sectionVisibility.delivery && Object.keys(data.deliveryTerms).length > 0) {
-                checkPageBreak(40);
+                const deliveryItems = Object.values(data.deliveryTerms).filter(t => !!t) as string[];
+                let deliveryHeight = 35; // section title
+                deliveryItems.forEach((term: any) => {
+                    const termHeight = measureText(`✓ ${S(term)}`, { width: contentWidth - 15 });
+                    deliveryHeight += termHeight + 4;
+                });
+                checkPageBreak(deliveryHeight);
+                
                 yPos += 10;
                 doc.font(semiboldFont, 14).fillColor(COLOR_DARK);
                 doc.text(S(data.sectionTitles.delivery || 'Dostarczenie'), margins, yPos);
