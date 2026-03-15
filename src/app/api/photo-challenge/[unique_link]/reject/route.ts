@@ -55,7 +55,7 @@ export async function POST(
                     data: {
                         inviterName: c.inviter_name,
                         inviteeName: c.invitee_name,
-                        contactLink: `${process.env.NEXT_PUBLIC_BASE_URL}/kontakt`
+                        contactLink: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://wlasniewski.pl'}/kontakt`
                     }
                 });
             }

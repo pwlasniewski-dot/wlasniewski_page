@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
             }
         });
 
-        const resetLink = `${process.env.NEXT_PUBLIC_BASE_URL}/logowanie/ustaw-nowe-haslo?token=${resetToken}`;
+        const resetLink = `${process.env.NEXT_PUBLIC_BASE_URL || 'https://wlasniewski.pl'}/logowanie/ustaw-nowe-haslo?token=${resetToken}`;
 
         await sendEmail({
             to: user.email,
