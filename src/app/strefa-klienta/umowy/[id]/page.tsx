@@ -33,7 +33,7 @@ export default function ContractSigningPage({ params }: { params: Promise<{ id: 
 
     const fetchContract = async () => {
         try {
-            const token = localStorage.getItem('client_token') || localStorage.getItem('user_token');
+            const token = localStorage.getItem('client_token') || localStorage.getItem('user_token') || localStorage.getItem('admin_token');
             if (!token) {
                 router.push('/logowanie');
                 return;

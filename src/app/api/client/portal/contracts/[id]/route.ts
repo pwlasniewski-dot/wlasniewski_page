@@ -21,6 +21,13 @@ export async function GET(
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
+        // Check if this is an admin user
+        let isAdmin = false;
+        if (decoded.id) {
+            const adminUser = await prisma.adminUser.findUnique({ where: { id: decoded.id }, select: { id: true } });
+            isAdmin = !!adminUser;
+        }
+
         const { id } = await params;
         const contractId = parseInt(id);
 
@@ -45,14 +52,16 @@ export async function GET(
             return NextResponse.json({ error: 'Contract not found' }, { status: 404 });
         }
 
-        // Verify client owns this contract
-        const isOwner =
-            contract.client_id === decoded.id ||
-            contract.offer?.client_id === decoded.id ||
-            contract.offer?.client_email === decoded.email;
+        // Verify client owns this contract (skip for admin)
+        if (!isAdmin) {
+            const isOwner =
+                contract.client_id === decoded.id ||
+                contract.offer?.client_id === decoded.id ||
+                contract.offer?.client_email === decoded.email;
 
-        if (!isOwner) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+            if (!isOwner) {
+                return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+            }
         }
 
         // --- PLACEHOLDER REPLACEMENT LOGIC ---
@@ -67,15 +76,28 @@ export async function GET(
         };
 
         // Fetch user name for context if needed
-        const user = await prisma.user.findUnique({
-            where: { id: decoded.id },
-            select: { name: true, email: true }
-        });
+        let userName = 'Kliencie';
+        let userEmail = decoded.email || '';
+        if (!isAdmin) {
+            const user = await prisma.user.findUnique({
+                where: { id: decoded.id },
+                select: { name: true, email: true }
+            });
+            userName = user?.name || decoded.email || 'Kliencie';
+            userEmail = user?.email || decoded.email || '';
+        } else if (contract.client_id) {
+            const clientUser = await prisma.user.findUnique({
+                where: { id: contract.client_id },
+                select: { name: true, email: true }
+            });
+            userName = clientUser?.name || 'Kliencie';
+            userEmail = clientUser?.email || '';
+        }
 
         const replacementContext = {
             contract_number: contract.contract_number,
-            clientName: user?.name || decoded.email || 'Kliencie',
-            clientEmail: user?.email || decoded.email || '',
+            clientName: userName,
+            clientEmail: userEmail,
             offerTitle: contract.offer?.title || 'Umowa Samodzielna'
         };
 
