@@ -36,7 +36,10 @@ export default function AnalyticsPage() {
 
     const loadSummary = () => {
         setLoading(true);
-        fetch('/api/analytics/summary')
+        const token = localStorage.getItem('admin_token');
+        fetch('/api/analytics/summary', {
+            headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        })
             .then(res => res.json())
             .then(d => {
                 setData(d);
@@ -56,7 +59,10 @@ export default function AnalyticsPage() {
 
     const loadDashboard = () => {
         setDashboardLoading(true);
-        fetch('/api/analytics/dashboard')
+        const token = localStorage.getItem('admin_token');
+        fetch('/api/analytics/dashboard', {
+            headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        })
             .then(res => res.json())
             .then(d => {
                 if (d.success) {
@@ -75,7 +81,11 @@ export default function AnalyticsPage() {
 
         setIsResetting(true);
         try {
-            const res = await fetch('/api/admin/analytics/reset', { method: 'POST' });
+            const token = localStorage.getItem('admin_token');
+            const res = await fetch('/api/admin/analytics/reset', {
+                method: 'POST',
+                headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+            });
             if (res.ok) {
                 alert('Dane zostały zresetowane.');
                 setData(null);

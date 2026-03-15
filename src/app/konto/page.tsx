@@ -501,11 +501,19 @@ export default function AccountPage() {
         const saveNote = async (type: 'offer' | 'contract', id: number, note: string) => {
             setSavingNote({ type, id });
             try {
-                await fetch(`/api/user/${type === 'offer' ? 'offers' : 'contracts'}/${id}/note`, {
+                const res = await fetch(`/api/user/${type === 'offer' ? 'offers' : 'contracts'}/${id}/note`, {
                     method: 'PATCH',
                     headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
                     body: JSON.stringify({ client_note: note })
                 });
+                if (res.ok) {
+                    alert('Notatka zosta\u0142a zapisana!');
+                } else {
+                    const data = await res.json().catch(() => ({}));
+                    alert(data.error || 'B\u0142\u0105d zapisu notatki');
+                }
+            } catch {
+                alert('B\u0142\u0105d po\u0142\u0105czenia');
             } finally {
                 setSavingNote(null);
             }
