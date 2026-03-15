@@ -561,6 +561,7 @@ model Contract {
   content         String?
   signed_at       DateTime?
   pdf_url         String?
+  signed_pdf_url  String?   // URL do podpisanego skanu wgranego przez klienta
   drive_url       String?
   client_note     String?  // Notatka klienta widoczna dla fotografa
   updated_at      DateTime  @default(now()) @updatedAt

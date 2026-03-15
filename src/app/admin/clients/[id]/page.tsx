@@ -6,7 +6,7 @@ import NextLink from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
     User, Calendar, Image as ImageIcon,
-    FileText, Shield, Trash2, ExternalLink, RefreshCw, Cloud,
+    FileText, Shield, Trash2, ExternalLink, RefreshCw, Cloud, Download,
     ChevronLeft, Save, Mail, MapPin, Phone, Edit, Plus, Lock, CheckCircle2, AlertTriangle, Upload
 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -67,6 +67,45 @@ function ClientDetailsContent({ id }: { id: string }) {
     const offerPdfInputRef = React.useRef<HTMLInputElement>(null);
     const contractPdfInputRef = React.useRef<HTMLInputElement>(null);
     const [pendingUploadId, setPendingUploadId] = useState<{ type: 'offer' | 'contract'; id: number } | null>(null);
+    const standaloneOfferPdfRef = React.useRef<HTMLInputElement>(null);
+    const standaloneContractPdfRef = React.useRef<HTMLInputElement>(null);
+    const [uploadingStandaloneOffer, setUploadingStandaloneOffer] = useState(false);
+    const [uploadingStandaloneContract, setUploadingStandaloneContract] = useState(false);
+
+    const handleStandaloneUpload = async (type: 'offer' | 'contract', file: File) => {
+        const setUploading = type === 'offer' ? setUploadingStandaloneOffer : setUploadingStandaloneContract;
+        setUploading(true);
+        try {
+            const token = localStorage.getItem('admin_token');
+            const formData = new FormData();
+            formData.append('pdf', file);
+            if (type === 'offer') {
+                formData.append('client_id', String(client.id));
+                formData.append('client_email', client.email);
+            } else {
+                formData.append('client_id', String(client.id));
+            }
+            const endpoint = type === 'offer'
+                ? '/api/admin/offers/upload-standalone'
+                : '/api/admin/contracts/upload-standalone';
+            const res = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: formData,
+            });
+            const data = await res.json();
+            if (data.success) {
+                toast.success(`PDF ${type === 'offer' ? 'oferty' : 'umowy'} wgrany i utworzony pomyślnie`);
+                fetchClientDetails();
+            } else {
+                toast.error(data.error || 'Błąd uploadu PDF');
+            }
+        } catch (error) {
+            toast.error('Błąd połączenia');
+        } finally {
+            setUploading(false);
+        }
+    };
 
     const handleUploadPdf = async (type: 'offer' | 'contract', entityId: number, file: File) => {
         const setUploading = type === 'offer' ? setUploadingOfferPdf : setUploadingContractPdf;
@@ -385,6 +424,28 @@ function ClientDetailsContent({ id }: { id: string }) {
                     e.target.value = '';
                 }}
             />
+            <input
+                type="file"
+                ref={standaloneOfferPdfRef}
+                accept=".pdf,application/pdf"
+                className="hidden"
+                onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleStandaloneUpload('offer', file);
+                    e.target.value = '';
+                }}
+            />
+            <input
+                type="file"
+                ref={standaloneContractPdfRef}
+                accept=".pdf,application/pdf"
+                className="hidden"
+                onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleStandaloneUpload('contract', file);
+                    e.target.value = '';
+                }}
+            />
             {/* Header / Hero */}
             <div className="bg-zinc-900 border-b border-zinc-800 sticky top-0 z-30">
                 <div className="max-w-7xl mx-auto px-6 py-6">
@@ -698,11 +759,22 @@ function ClientDetailsContent({ id }: { id: string }) {
                                 <h2 className="text-xl font-bold text-white">Oferty Handlowe</h2>
                                 <p className="text-zinc-500">Historia propozycji i wycen.</p>
                             </div>
-                            <NextLink href={`/admin/offers/create?client_id=${client.id}&clientEmail=${client.email}`}>
-                                <button className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg flex items-center gap-2 transition-all">
-                                    <Plus className="w-5 h-5" /> Nowa Oferta
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => standaloneOfferPdfRef.current?.click()}
+                                    disabled={uploadingStandaloneOffer}
+                                    className="px-5 py-3 bg-amber-600 hover:bg-amber-500 disabled:bg-zinc-700 text-white font-bold rounded-lg flex items-center gap-2 transition-all"
+                                >
+                                    {uploadingStandaloneOffer
+                                        ? <><RefreshCw className="w-5 h-5 animate-spin" /> Wgrywam...</>
+                                        : <><Upload className="w-5 h-5" /> Wgraj PDF</>}
                                 </button>
-                            </NextLink>
+                                <NextLink href={`/admin/offers/create?client_id=${client.id}&clientEmail=${client.email}`}>
+                                    <button className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg flex items-center gap-2 transition-all">
+                                        <Plus className="w-5 h-5" /> Nowa Oferta
+                                    </button>
+                                </NextLink>
+                            </div>
                         </div>
 
                         <div className="space-y-4">
@@ -914,11 +986,22 @@ function ClientDetailsContent({ id }: { id: string }) {
                                 <h2 className="text-xl font-bold text-white">Umowy</h2>
                                 <p className="text-zinc-500">Podpisane dokumenty i szablony.</p>
                             </div>
-                            <NextLink href={`/admin/generator-umow/create?client_id=${client.id}`}>
-                                <button className="px-6 py-3 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-lg flex items-center gap-2 transition-all">
-                                    <Plus className="w-5 h-5" /> Nowa Umowa
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => standaloneContractPdfRef.current?.click()}
+                                    disabled={uploadingStandaloneContract}
+                                    className="px-5 py-3 bg-amber-600 hover:bg-amber-500 disabled:bg-zinc-700 text-white font-bold rounded-lg flex items-center gap-2 transition-all"
+                                >
+                                    {uploadingStandaloneContract
+                                        ? <><RefreshCw className="w-5 h-5 animate-spin" /> Wgrywam...</>
+                                        : <><Upload className="w-5 h-5" /> Wgraj PDF</>}
                                 </button>
-                            </NextLink>
+                                <NextLink href={`/admin/generator-umow/create?client_id=${client.id}`}>
+                                    <button className="px-6 py-3 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-lg flex items-center gap-2 transition-all">
+                                        <Plus className="w-5 h-5" /> Nowa Umowa
+                                    </button>
+                                </NextLink>
+                            </div>
                         </div>
                         <div className="space-y-4">
                             {client.contracts?.length > 0 ? (
@@ -930,6 +1013,11 @@ function ClientDetailsContent({ id }: { id: string }) {
                                             </h3>
                                             <p className="text-sm text-zinc-500">
                                                 Status: <span className="uppercase text-white font-bold">{contract.status}</span>
+                                                {contract.signed_pdf_url && (
+                                                    <span className="ml-2 inline-flex items-center gap-1 text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full font-bold uppercase">
+                                                        <CheckCircle2 className="w-3 h-3" /> Skan podpisany
+                                                    </span>
+                                                )}
                                             </p>
                                             {contract.client_note && (
                                                 <div className="mt-2 bg-amber-500/5 border border-amber-500/20 rounded-lg px-3 py-2">
@@ -999,19 +1087,32 @@ function ClientDetailsContent({ id }: { id: string }) {
                                                 <FileText className="w-5 h-5" />
                                             </button>
 
-                                            {/* Download signed contract PDF (if signed) */}
+                                            {/* Download signed contract PDF (electronic signature confirmation) */}
                                             {(contract.status === 'signed' || contract.status === 'SIGNED') && contract.pdf_url && (
                                                 <button
                                                     onClick={(e) => {
                                                         e.preventDefault();
-                                                        const token = localStorage.getItem('admin_token');
                                                         const signedPdfUrl = contract.pdf_url.replace(/\.pdf$/, '_podpisana.pdf');
                                                         window.open(signedPdfUrl, '_blank');
                                                     }}
                                                     className="p-2 rounded-lg border bg-green-900/20 hover:bg-green-900/40 text-green-500 hover:text-green-400 border-green-900/30 hover:border-green-700 transition-all"
-                                                    title="Pobierz umowę z potwierdzeniem podpisu"
+                                                    title="Pobierz umowę z potwierdzeniem podpisu elektronicznego"
                                                 >
                                                     <FileText className="w-5 h-5" />
+                                                </button>
+                                            )}
+
+                                            {/* Download client-uploaded signed scan */}
+                                            {contract.signed_pdf_url && (
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        window.open(contract.signed_pdf_url, '_blank');
+                                                    }}
+                                                    className="p-2 rounded-lg border bg-emerald-900/20 hover:bg-emerald-900/40 text-emerald-400 hover:text-emerald-300 border-emerald-900/30 hover:border-emerald-700 transition-all"
+                                                    title="Pobierz skan podpisanej umowy (wgrane przez klienta)"
+                                                >
+                                                    <Download className="w-5 h-5" />
                                                 </button>
                                             )}
 

@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Download, CheckCircle2, FileText } from 'lucide-react';
+import { Download, CheckCircle2, FileText, Upload, RefreshCw } from 'lucide-react';
 
 export default function ContractSigningPage({ params }: { params: Promise<{ id: string }> }) {
     const router = useRouter();
@@ -12,7 +12,9 @@ export default function ContractSigningPage({ params }: { params: Promise<{ id: 
     const [signing, setSigning] = useState(false);
     const [signError, setSignError] = useState<string | null>(null);
     const [clientNote, setClientNote] = useState<string>('');
-
+    const [uploadingScan, setUploadingScan] = useState(false);
+    const [uploadSuccess, setUploadSuccess] = useState(false);
+    const scanInputRef = useRef<HTMLInputElement>(null);
     const [contractId, setContractId] = useState<string | null>(null);
 
     useEffect(() => {
@@ -85,6 +87,32 @@ export default function ContractSigningPage({ params }: { params: Promise<{ id: 
             setSignError('Błąd połączenia. Spróbuj ponownie.');
         } finally {
             setSigning(false);
+        }
+    };
+
+    const handleUploadSigned = async (file: File) => {
+        const token = localStorage.getItem('client_token') || localStorage.getItem('user_token');
+        setUploadingScan(true);
+        setSignError(null);
+        try {
+            const formData = new FormData();
+            formData.append('pdf', file);
+            const res = await fetch(`/api/client/portal/contracts/${contractId}/upload-signed`, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${token}` },
+                body: formData,
+            });
+            if (res.ok) {
+                setUploadSuccess(true);
+                await fetchContract();
+            } else {
+                const data = await res.json();
+                setSignError(data.error || 'Błąd wgrywania pliku');
+            }
+        } catch (error) {
+            setSignError('Błąd połączenia. Spróbuj ponownie.');
+        } finally {
+            setUploadingScan(false);
         }
     };
 
@@ -161,6 +189,39 @@ export default function ContractSigningPage({ params }: { params: Promise<{ id: 
                             >
                                 {signing ? 'Przetwarzanie...' : '✍️ PODPISZ UMOWĘ'}
                             </button>
+
+                            <div className="mt-6 pt-6 border-t border-gray-200">
+                                <h3 className="text-lg font-bold mb-3 text-black">Lub wgraj podpisany dokument</h3>
+                                <p className="text-sm text-gray-600 mb-4">
+                                    Wydrukuj umowę, podpisz odręcznie, zeskanuj lub zrób zdjęcie i wgraj poniżej (PDF, JPEG lub PNG, max 20MB).
+                                </p>
+                                <input
+                                    type="file"
+                                    ref={scanInputRef}
+                                    accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+                                    className="hidden"
+                                    onChange={(e) => {
+                                        const file = e.target.files?.[0];
+                                        if (file) handleUploadSigned(file);
+                                        e.target.value = '';
+                                    }}
+                                />
+                                <button
+                                    onClick={() => scanInputRef.current?.click()}
+                                    disabled={uploadingScan}
+                                    className="w-full sm:w-auto px-8 py-4 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition-colors flex items-center gap-2"
+                                >
+                                    {uploadingScan
+                                        ? <><RefreshCw className="w-5 h-5 animate-spin" /> Wgrywam...</>
+                                        : <><Upload className="w-5 h-5" /> WGRAJ PODPISANY SKAN</>}
+                                </button>
+                                {uploadSuccess && (
+                                    <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
+                                        <CheckCircle2 className="w-5 h-5 text-green-600" />
+                                        <p className="text-green-800 text-sm font-medium">Dokument wgrany pomyślnie! Fotograf został powiadomiony.</p>
+                                    </div>
+                                )}
+                            </div>
                             {signError && (
                                 <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2">
                                     <span className="text-red-500">⚠️</span>
@@ -184,13 +245,32 @@ export default function ContractSigningPage({ params }: { params: Promise<{ id: 
                             <div className="bg-green-50 border border-green-200 rounded-lg p-6 mb-6">
                                 <h3 className="font-bold text-green-900 mb-3 flex items-center gap-2">
                                     <CheckCircle2 className="w-5 h-5" />
-                                    Pobierz podpisaną umowę
+                                    Pobierz umowę
                                 </h3>
-                                <p className="text-sm text-green-800 mb-4">
-                                    Twoja umowa z potwierdzeniem podpisu i notatką:
-                                </p>
                                 <div className="space-y-2">
-                                    {signedPdfUrl && (
+                                    {contract.pdf_url && (
+                                        <a
+                                            href={contract.pdf_url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex items-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors"
+                                        >
+                                            <Download className="w-4 h-4" />
+                                            Pobierz umowę (oryginał)
+                                        </a>
+                                    )}
+                                    {contract.signed_pdf_url && (
+                                        <a
+                                            href={contract.signed_pdf_url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex items-center gap-2 px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-colors"
+                                        >
+                                            <Download className="w-4 h-4" />
+                                            Pobierz podpisaną umowę (skan)
+                                        </a>
+                                    )}
+                                    {!contract.pdf_url && !contract.signed_pdf_url && signedPdfUrl && (
                                         <a
                                             href={signedPdfUrl}
                                             target="_blank"
