@@ -163,6 +163,7 @@ export async function PATCH(
             });
 
             // Generate and upload accepted offer PDF to S3
+            // SKIP for standalone/uploaded PDFs — they have no sections, regeneration would produce empty PDF
             try {
                 const updatedOffer = await prisma.offer.findUnique({
                     where: { id: offerId },
@@ -173,7 +174,9 @@ export async function PATCH(
                     }
                 });
 
-                if (updatedOffer) {
+                const hasSections = updatedOffer?.sections && updatedOffer.sections.length > 0;
+
+                if (updatedOffer && hasSections) {
                     console.log(`[CLIENT_ACCEPT] Generating acceptance PDF for offer ${offerId}...`);
                     
                     // Generate post-acceptance PDF with client selection
@@ -195,6 +198,8 @@ export async function PATCH(
                         }
                     });
                     console.log(`[CLIENT_ACCEPT] Updated offer with S3 URL`);
+                } else if (updatedOffer) {
+                    console.log(`[CLIENT_ACCEPT] Offer ${offerId} is standalone PDF — preserving original file, skipping regeneration`);
                 }
             } catch (pdfError) {
                 console.error(`[CLIENT_ACCEPT] Failed to generate/upload acceptance PDF:`, pdfError);

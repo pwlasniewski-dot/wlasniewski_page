@@ -55,6 +55,15 @@ export async function GET(
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
+        // PROTECT standalone/uploaded PDFs — if content is just a marker, always serve original
+        const isStandalonePdf = contract.pdf_url && 
+            (contract.content?.startsWith('Umowa wgrana jako PDF') || !contract.content?.trim());
+
+        if (isStandalonePdf) {
+            console.log(`[CONTRACT PDF API] Contract ${contractId} is standalone PDF — redirecting to original file`);
+            return NextResponse.redirect(contract.pdf_url, { status: 302 });
+        }
+
         // Custom Logic: If Signed, always dynamically generate the PDF to stamp dates
         if (contract.status === 'signed' || contract.status === 'SIGNED') {
             const clientIp = request.headers.get('x-forwarded-for') || 'nieznane';

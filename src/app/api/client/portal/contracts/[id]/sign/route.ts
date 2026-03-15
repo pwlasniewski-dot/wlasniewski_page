@@ -101,21 +101,30 @@ export async function POST(
         const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL || 'https://wlasniewski.pl';
 
         // Generate signed PDF and upload to S3
+        // SKIP for standalone/uploaded PDFs — regeneration would produce garbage from marker content
         let signedPdfUrl = null;
-        try {
-            console.log(`[CONTRACT_SIGN] Generating signed PDF for contract ${contractId}...`);
-            const pdfBuffer = await generateContractPDF(updated, true); // includeSignatureSection = true
-            console.log(`[CONTRACT_SIGN] PDF generated, size: ${pdfBuffer.length} bytes`);
+        const isStandalonePdf = contract.pdf_url && 
+            (contract.content?.startsWith('Umowa wgrana jako PDF') || !contract.content?.trim());
 
-            const fileName = `umowa_${updated.contract_number || contractId}_podpisana.pdf`;
-            const s3Key = `contracts/${fileName}`;
+        if (!isStandalonePdf) {
+            try {
+                console.log(`[CONTRACT_SIGN] Generating signed PDF for contract ${contractId}...`);
+                const pdfBuffer = await generateContractPDF(updated, true); // includeSignatureSection = true
+                console.log(`[CONTRACT_SIGN] PDF generated, size: ${pdfBuffer.length} bytes`);
 
-            console.log(`[CONTRACT_SIGN] Uploading to S3: ${s3Key}...`);
-            signedPdfUrl = await uploadToS3(pdfBuffer, s3Key, 'application/pdf');
-            console.log(`[CONTRACT_SIGN] Successfully uploaded signed PDF to S3: ${signedPdfUrl}`);
-        } catch (pdfError) {
-            console.error('[CONTRACT_SIGN] Failed to generate/upload signed PDF:', pdfError);
-            // Non-blocking error - continue with email notifications even if PDF fails
+                const fileName = `umowa_${updated.contract_number || contractId}_podpisana.pdf`;
+                const s3Key = `contracts/${fileName}`;
+
+                console.log(`[CONTRACT_SIGN] Uploading to S3: ${s3Key}...`);
+                signedPdfUrl = await uploadToS3(pdfBuffer, s3Key, 'application/pdf');
+                console.log(`[CONTRACT_SIGN] Successfully uploaded signed PDF to S3: ${signedPdfUrl}`);
+            } catch (pdfError) {
+                console.error('[CONTRACT_SIGN] Failed to generate/upload signed PDF:', pdfError);
+                // Non-blocking error - continue with email notifications even if PDF fails
+            }
+        } else {
+            console.log(`[CONTRACT_SIGN] Contract ${contractId} is standalone PDF — preserving original file, skipping regeneration`);
+            signedPdfUrl = contract.pdf_url;
         }
 
         // Notify admin about signing

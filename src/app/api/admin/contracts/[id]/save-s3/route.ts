@@ -28,6 +28,19 @@ export async function POST(
                 return NextResponse.json({ error: 'Contract not found' }, { status: 404 });
             }
 
+            // PROTECT standalone/uploaded PDFs — never regenerate if content is just a marker string
+            const isStandalonePdf = contract.pdf_url && 
+                (contract.content?.startsWith('Umowa wgrana jako PDF') || !contract.content?.trim());
+
+            if (isStandalonePdf) {
+                console.log(`[CONTRACT_S3_SAVE] Contract ${contractId} is a standalone PDF upload. Skipping regeneration to preserve original content.`);
+                return NextResponse.json({ 
+                    success: true, 
+                    pdfUrl: contract.pdf_url,
+                    note: 'Standalone PDF — original file preserved'
+                });
+            }
+
             // Generate PRE-signature version (unsigned contract)
             console.log(`[CONTRACT_S3_SAVE] Generating unsigned PDF for contract ${contractId}...`);
             const pdfBufferUnsigned = await generateContractPDF(contract, false);

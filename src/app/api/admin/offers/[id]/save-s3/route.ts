@@ -30,7 +30,19 @@ export async function POST(
                 return NextResponse.json({ error: 'Offer not found' }, { status: 404 });
             }
 
-            // Actual S3 upload implementation
+            // PROTECT standalone/uploaded PDFs — never regenerate if no sections exist
+            const hasSections = offer.sections && offer.sections.length > 0;
+
+            if (!hasSections && offer.pdf_url) {
+                console.log(`[S3_SAVE] Offer ${offerId} is a standalone PDF upload (no sections). Skipping regeneration to preserve original content.`);
+                return NextResponse.json({ 
+                    success: true, 
+                    pdfUrl: offer.pdf_url,
+                    note: 'Standalone PDF — original file preserved'
+                });
+            }
+
+            // Actual S3 upload implementation — only for offers with sections
             console.log(`[S3_SAVE] Generating PDF for offer ${offerId}...`);
             
             // Generate PRE-acceptance version (standard offer)

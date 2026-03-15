@@ -56,14 +56,21 @@ export async function GET(
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
-        // Custom Logic: If Communion AND Accepted, always dynamically generate the PDF to stamp dates and child counts
+        // PROTECT standalone/uploaded PDFs — if no sections, always serve original file
+        const hasSections = offer.sections && offer.sections.length > 0;
+
+        // If a stored PDF URL exists and offer has no sections (standalone upload), always redirect to original
+        if (offer.pdf_url && !hasSections) {
+            console.log(`[PDF API] Offer ${offerId} is standalone PDF — redirecting to original file`);
+            return NextResponse.redirect(offer.pdf_url, { status: 302 });
+        }
+
+        // Custom Logic: If Communion AND Accepted AND has sections, dynamically generate the PDF
         const isCommunion = offer.category?.toLowerCase() === 'komunia';
-        if (isCommunion && offer.status === 'accepted') {
+        if (isCommunion && offer.status === 'accepted' && hasSections) {
             const clientIp = request.headers.get('x-forwarded-for') || 'nieznane';
             const footerNote = `Dokument pobrany przez klienta w dniu: ${new Date().toLocaleString('pl-PL')} (IP: ${clientIp})`;
 
-            // Note: Since generateOfferPDF takes only (offer), we use a hack to pass it inside offer object for now 
-            // to avoid changing the signature everywhere, or we just pass it as second arg. I will use offer._footerNote
             const modifiedOffer = { ...offer, _footerNote: footerNote };
 
             const pdfBuffer = await generateOfferPDF(modifiedOffer as any);
