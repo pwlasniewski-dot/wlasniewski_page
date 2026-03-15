@@ -71,6 +71,8 @@ function ClientDetailsContent({ id }: { id: string }) {
     const standaloneContractPdfRef = React.useRef<HTMLInputElement>(null);
     const [uploadingStandaloneOffer, setUploadingStandaloneOffer] = useState(false);
     const [uploadingStandaloneContract, setUploadingStandaloneContract] = useState(false);
+    const [notifyingOffer, setNotifyingOffer] = useState<number | null>(null);
+    const [notifyingContract, setNotifyingContract] = useState<number | null>(null);
 
     const handleStandaloneUpload = async (type: 'offer' | 'contract', file: File) => {
         const setUploading = type === 'offer' ? setUploadingStandaloneOffer : setUploadingStandaloneContract;
@@ -104,6 +106,34 @@ function ClientDetailsContent({ id }: { id: string }) {
             toast.error('Błąd połączenia');
         } finally {
             setUploading(false);
+        }
+    };
+
+    const handleNotifyClient = async (type: 'offer' | 'contract', entityId: number) => {
+        const setNotifying = type === 'offer' ? setNotifyingOffer : setNotifyingContract;
+        setNotifying(entityId);
+        try {
+            const token = localStorage.getItem('admin_token');
+            const endpoint = type === 'offer'
+                ? `/api/admin/offers/${entityId}/send-email`
+                : `/api/admin/contracts/${entityId}/send-email`;
+            const res = await fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+            });
+            const data = await res.json();
+            if (data.success || res.ok) {
+                toast.success(data.message || `E-mail wysłany do klienta`);
+            } else {
+                toast.error(data.error || 'Błąd wysyłki e-mail');
+            }
+        } catch (error) {
+            toast.error('Błąd połączenia');
+        } finally {
+            setNotifying(null);
         }
     };
 
@@ -856,6 +886,18 @@ function ClientDetailsContent({ id }: { id: string }) {
                                                             : <Upload className="w-5 h-5" />}
                                                     </button>
 
+                                                    {/* Notify client about offer */}
+                                                    <button
+                                                        onClick={() => handleNotifyClient('offer', offer.id)}
+                                                        disabled={notifyingOffer === offer.id}
+                                                        className="p-3 rounded-lg border transition-all bg-blue-900/20 hover:bg-blue-900/40 text-blue-400 hover:text-blue-300 border-blue-900/30 hover:border-blue-700"
+                                                        title="Wyślij e-mail do klienta o ofercie"
+                                                    >
+                                                        {notifyingOffer === offer.id
+                                                            ? <RefreshCw className="w-5 h-5 animate-spin" />
+                                                            : <Mail className="w-5 h-5" />}
+                                                    </button>
+
                                                     <button
                                                         onClick={(e) => {
                                                             e.preventDefault();
@@ -1064,6 +1106,18 @@ function ClientDetailsContent({ id }: { id: string }) {
                                                 {uploadingContractPdf === contract.id
                                                     ? <RefreshCw className="w-4 h-4 animate-spin" />
                                                     : <Upload className="w-5 h-5" />}
+                                            </button>
+
+                                            {/* Notify client about contract */}
+                                            <button
+                                                onClick={() => handleNotifyClient('contract', contract.id)}
+                                                disabled={notifyingContract === contract.id}
+                                                className="p-2 rounded-lg border transition-all bg-blue-900/20 hover:bg-blue-900/40 text-blue-400 hover:text-blue-300 border-blue-900/30 hover:border-blue-700"
+                                                title="Wyślij e-mail do klienta o umowie"
+                                            >
+                                                {notifyingContract === contract.id
+                                                    ? <RefreshCw className="w-4 h-4 animate-spin" />
+                                                    : <Mail className="w-5 h-5" />}
                                             </button>
 
                                             {/* Download unsigned contract PDF */}
