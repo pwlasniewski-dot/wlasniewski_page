@@ -2,20 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { requireAuth } from '@/lib/auth/middleware';
 import { uploadToS3 } from '@/lib/storage/s3';
+import { generateContractNumber } from '@/lib/services/numbering';
 
 export const dynamic = 'force-dynamic';
-
-// Generate contract number
-async function generateContractNumber(type: string = 'B2C'): Promise<string> {
-    const year = new Date().getFullYear();
-    const prefix = type === 'B2B' ? 'B2B' : 'U';
-    const count = await prisma.contract.count({
-        where: {
-            contract_number: { startsWith: `${prefix}/${year}` }
-        }
-    });
-    return `${prefix}/${year}/${String(count + 1).padStart(3, '0')}`;
-}
 
 export async function POST(request: NextRequest) {
     try {
@@ -42,7 +31,8 @@ export async function POST(request: NextRequest) {
         const contractNumber = await generateContractNumber('B2C');
 
         const buffer = Buffer.from(await file.arrayBuffer());
-        const fileName = `contracts/umowa_${contractNumber.replace(/\//g, '_')}_custom.pdf`;
+        const safeNumber = contractNumber.replace(/[\/\\]/g, '_');
+        const fileName = `contracts/umowa_${safeNumber}_custom.pdf`;
 
         console.log(`[STANDALONE_CONTRACT] Uploading PDF for client ${clientId}, size: ${buffer.length}`);
         const s3Url = await uploadToS3(buffer, fileName, 'application/pdf');
