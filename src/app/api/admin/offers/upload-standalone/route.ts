@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { requireAuth } from '@/lib/auth/middleware';
 import { uploadToS3 } from '@/lib/storage/s3';
+import crypto from 'crypto';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,6 +43,7 @@ export async function POST(request: NextRequest) {
         const offer = await prisma.offer.create({
             data: {
                 title: `Oferta (PDF) - ${file.name.replace('.pdf', '')}`,
+                slug: `oferta-pdf-${offerNumber.replace(/\//g, '-').toLowerCase()}-${crypto.randomBytes(4).toString('hex')}`,
                 client_email: clientEmail,
                 client_id: clientId ? parseInt(clientId) : undefined,
                 type: 'b2c',
