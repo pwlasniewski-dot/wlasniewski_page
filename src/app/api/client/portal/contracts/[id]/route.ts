@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { verifyToken, extractToken } from '@/lib/auth/jwt';
+import { logClientActivity } from '@/lib/crm-activity';
 
 export const dynamic = 'force-dynamic';
 
@@ -104,6 +105,16 @@ export async function GET(
         const finalContent = replacePlaceholders(contract.content || '', replacementContext);
         const processedContract = { ...contract, content: finalContent };
         // -------------------------------------
+
+        // CRM Activity: contract viewed (skip for admin)
+        if (!isAdmin) {
+            logClientActivity(decoded, 'contract_viewed', {
+                entityType: 'contract',
+                entityId: contractId,
+                details: { contract_number: contract.contract_number, status: contract.status },
+                request,
+            });
+        }
 
         return NextResponse.json({ contract: processedContract });
     } catch (error) {

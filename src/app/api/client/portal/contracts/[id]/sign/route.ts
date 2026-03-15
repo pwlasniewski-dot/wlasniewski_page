@@ -4,6 +4,7 @@ import { verifyToken, extractToken } from '@/lib/auth/jwt';
 import { sendEmail, getAdminEmail } from '@/lib/email/sender';
 import { generateContractPDF } from '@/lib/services/pdf';
 import { uploadToS3 } from '@/lib/storage/s3';
+import { logClientActivity } from '@/lib/crm-activity';
 
 export const dynamic = 'force-dynamic';
 
@@ -60,6 +61,14 @@ export async function POST(
         }
 
         console.log(`[CONTRACT_SIGN] Signing contract ${contractId} with note: ${clientNote ? 'Yes' : 'No'}`);
+
+        // CRM Activity: contract signed
+        logClientActivity(decoded, 'contract_signed', {
+            entityType: 'contract',
+            entityId: contractId,
+            details: { contract_number: contract.contract_number, has_note: !!clientNote },
+            request,
+        });
 
         // Sign the contract and add client note
         const updated = await prisma.contract.update({

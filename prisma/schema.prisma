@@ -494,6 +494,7 @@ model User {
   payouts                 payouts[]
   provider_availability   provider_availability[]
   photographer_profile    PhotographerProfile?    @relation(fields: [photographer_profile_id], references: [id])
+  crm_activities          CrmActivity[]
 
   @@map("users")
 }
@@ -1110,4 +1111,27 @@ model ClientContract {
   @@index([clientId])
   @@index([status])
   @@map("client_contracts")
+}
+
+// ─── CRM ACTIVITY TRACKING ───
+model CrmActivity {
+  id            Int      @id @default(autoincrement())
+  client_id     Int?
+  client_email  String?
+  action        String   // offer_viewed, contract_viewed, contract_signed, pdf_downloaded, note_added, scan_uploaded, offer_selection, offer_accepted, offer_rejected, login, error
+  entity_type   String?  // offer, contract
+  entity_id     Int?
+  details       String?  // JSON z dodatkowymi danymi
+  ip_address    String?
+  user_agent    String?
+  created_at    DateTime @default(now())
+
+  user          User?    @relation(fields: [client_id], references: [id])
+
+  @@index([client_id])
+  @@index([client_email])
+  @@index([action])
+  @@index([entity_type, entity_id])
+  @@index([created_at])
+  @@map("crm_activities")
 }

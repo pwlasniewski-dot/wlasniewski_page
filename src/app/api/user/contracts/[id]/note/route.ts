@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { verifyToken, extractToken } from '@/lib/auth/jwt';
+import { logClientActivity } from '@/lib/crm-activity';
 
 // PATCH /api/user/contracts/[id]/note — klient dodaje notatkę do umowy
 export async function PATCH(
@@ -32,6 +33,14 @@ export async function PATCH(
         });
 
         if (!contract) return NextResponse.json({ error: 'Contract not found' }, { status: 404 });
+
+        // CRM Activity: note added to contract
+        logClientActivity(decoded, 'contract_note_added', {
+            entityType: 'contract',
+            entityId: contractId,
+            details: { note_length: client_note?.length || 0 },
+            request,
+        });
 
         await prisma.contract.update({
             where: { id: contractId },

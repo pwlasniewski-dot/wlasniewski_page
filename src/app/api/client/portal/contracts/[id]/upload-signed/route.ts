@@ -3,6 +3,7 @@ import prisma from '@/lib/db/prisma';
 import { verifyToken, extractToken } from '@/lib/auth/jwt';
 import { uploadToS3 } from '@/lib/storage/s3';
 import { sendEmail, getAdminEmail } from '@/lib/email/sender';
+import { logClientActivity } from '@/lib/crm-activity';
 
 export const dynamic = 'force-dynamic';
 
@@ -69,6 +70,15 @@ export async function POST(
         const fileName = `contracts/umowa_${contract.contract_number || contractId}_podpisana_klient.${ext}`;
 
         console.log(`[CLIENT_SIGNED_UPLOAD] Client ${decoded.email} uploading signed contract ${contractId}, size: ${buffer.length}`);
+
+        // CRM Activity: scan uploaded
+        logClientActivity(decoded, 'contract_scan_uploaded', {
+            entityType: 'contract',
+            entityId: contractId,
+            details: { contract_number: contract.contract_number, file_type: file.type, file_size: file.size },
+            request,
+        });
+
         const s3Url = await uploadToS3(buffer, fileName, file.type);
 
         // Update contract with signed PDF URL and mark as signed

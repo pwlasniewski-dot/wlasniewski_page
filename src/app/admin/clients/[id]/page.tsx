@@ -7,7 +7,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import {
     User, Calendar, Image as ImageIcon,
     FileText, Shield, Trash2, ExternalLink, RefreshCw, Cloud, Download,
-    ChevronLeft, Save, Mail, MapPin, Phone, Edit, Plus, Lock, CheckCircle2, AlertTriangle, Upload
+    ChevronLeft, Save, Mail, MapPin, Phone, Edit, Plus, Lock, CheckCircle2, AlertTriangle, Upload,
+    Activity, Eye, PenTool, MessageSquare, FileUp, Package, Clock
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import GalleryAdmin from '@/components/admin/GalleryAdmin';
@@ -47,7 +48,7 @@ function ClientDetailsContent({ id }: { id: string }) {
     const [client, setClient] = useState<ClientDetails | null>(null);
     const [loading, setLoading] = useState(true);
     const tabFromUrl = searchParams.get('tab') as 'overview' | 'galleries' | 'offers' | 'contracts' | 'settings' | 'permissions' | null;
-    const [activeTab, setActiveTab] = useState<'overview' | 'galleries' | 'offers' | 'contracts' | 'settings' | 'permissions'>(tabFromUrl || 'overview');
+    const [activeTab, setActiveTab] = useState<'overview' | 'galleries' | 'offers' | 'contracts' | 'activity' | 'settings' | 'permissions'>(tabFromUrl || 'overview');
     const [permissions, setPermissions] = useState<Record<string, boolean>>({
         galleries: true, offers: true, contracts: true, bookings: true, gift_cards: true
     });
@@ -73,6 +74,36 @@ function ClientDetailsContent({ id }: { id: string }) {
     const [uploadingStandaloneContract, setUploadingStandaloneContract] = useState(false);
     const [notifyingOffer, setNotifyingOffer] = useState<number | null>(null);
     const [notifyingContract, setNotifyingContract] = useState<number | null>(null);
+
+    // CRM Activity state
+    const [activities, setActivities] = useState<any[]>([]);
+    const [activitiesLoading, setActivitiesLoading] = useState(false);
+    const [activitiesTotal, setActivitiesTotal] = useState(0);
+
+    const loadActivities = async () => {
+        setActivitiesLoading(true);
+        try {
+            const token = localStorage.getItem('admin_token');
+            const res = await fetch(`/api/admin/crm-activity?client_id=${id}&limit=200`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setActivities(data.activities || []);
+                setActivitiesTotal(data.total || 0);
+            }
+        } catch (e) {
+            console.error('Failed to load activities:', e);
+        } finally {
+            setActivitiesLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (activeTab === 'activity' && activities.length === 0) {
+            loadActivities();
+        }
+    }, [activeTab]);
 
     const handleStandaloneUpload = async (type: 'offer' | 'contract', file: File) => {
         const setUploading = type === 'offer' ? setUploadingStandaloneOffer : setUploadingStandaloneContract;
@@ -512,6 +543,7 @@ function ClientDetailsContent({ id }: { id: string }) {
                             { id: 'galleries', label: `Galerie (${allGalleries.length})`, icon: ImageIcon },
                             { id: 'offers', label: `Oferty (${client.offers?.length || 0})`, icon: Calendar },
                             { id: 'contracts', label: `Umowy (${client.contracts?.length || 0})`, icon: FileText },
+                            { id: 'activity', label: 'Aktywność', icon: Activity },
                             { id: 'settings', label: 'Edycja Danych', icon: Edit },
                             { id: 'permissions', label: 'Dostęp Klienta', icon: Lock },
                         ].map((tab) => (
@@ -1306,6 +1338,105 @@ function ClientDetailsContent({ id }: { id: string }) {
                                 </div>
                             </div>
                         </div>
+                    </div>
+                )}
+
+                {/* ACTIVITY TAB */}
+                {activeTab === 'activity' && (
+                    <div>
+                        <div className="flex items-center justify-between mb-6">
+                            <div>
+                                <h2 className="text-2xl font-bold flex items-center gap-2">
+                                    <Activity className="w-6 h-6 text-gold-500" /> Aktywność Klienta w CRM
+                                </h2>
+                                <p className="text-zinc-500 text-sm mt-1">
+                                    Co klient robił: przeglądanie ofert, podpisywanie umów, pobieranie PDF, notatki, błędy.
+                                    {activitiesTotal > 0 && <span className="ml-2 text-zinc-400">({activitiesTotal} zdarzeń)</span>}
+                                </p>
+                            </div>
+                            <button
+                                onClick={loadActivities}
+                                disabled={activitiesLoading}
+                                className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-sm flex items-center gap-2"
+                            >
+                                <RefreshCw className={`w-4 h-4 ${activitiesLoading ? 'animate-spin' : ''}`} /> Odśwież
+                            </button>
+                        </div>
+
+                        {activitiesLoading && activities.length === 0 ? (
+                            <div className="flex items-center justify-center py-20 text-zinc-500">
+                                <RefreshCw className="w-6 h-6 animate-spin mr-3" /> Ładowanie aktywności...
+                            </div>
+                        ) : activities.length === 0 ? (
+                            <div className="text-center py-20 text-zinc-600">
+                                <Activity className="w-12 h-12 mx-auto mb-4 opacity-30" />
+                                <p className="text-lg font-medium">Brak zarejestrowanej aktywności</p>
+                                <p className="text-sm mt-1">Aktywność klienta pojawi się tutaj po jego pierwszej interakcji z portalem.</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-1">
+                                {activities.map((act: any, idx: number) => {
+                                    const actionConfig: Record<string, { icon: any; color: string; label: string }> = {
+                                        offer_viewed: { icon: Eye, color: 'text-blue-400', label: 'Przeglądał ofertę' },
+                                        offer_accepted: { icon: CheckCircle2, color: 'text-green-400', label: 'Zaakceptował ofertę' },
+                                        offer_rejected: { icon: AlertTriangle, color: 'text-red-400', label: 'Odrzucił ofertę' },
+                                        offer_negotiate: { icon: MessageSquare, color: 'text-amber-400', label: 'Negocjacja oferty' },
+                                        offer_selection_changed: { icon: Package, color: 'text-purple-400', label: 'Zmienił wybór w ofercie' },
+                                        offer_pdf_downloaded: { icon: Download, color: 'text-cyan-400', label: 'Pobrał PDF oferty' },
+                                        contract_viewed: { icon: Eye, color: 'text-blue-400', label: 'Przeglądał umowę' },
+                                        contract_signed: { icon: PenTool, color: 'text-green-400', label: 'Podpisał umowę' },
+                                        contract_scan_uploaded: { icon: FileUp, color: 'text-emerald-400', label: 'Wgrał skan umowy' },
+                                        contract_note_added: { icon: MessageSquare, color: 'text-yellow-400', label: 'Dodał notatkę' },
+                                        contract_pdf_downloaded: { icon: Download, color: 'text-cyan-400', label: 'Pobrał PDF umowy' },
+                                        login: { icon: User, color: 'text-zinc-400', label: 'Zalogował się' },
+                                        error: { icon: AlertTriangle, color: 'text-red-500', label: 'Wystąpił błąd' },
+                                    };
+
+                                    const cfg = actionConfig[act.action] || { icon: Activity, color: 'text-zinc-500', label: act.action };
+                                    const IconComponent = cfg.icon;
+                                    const time = new Date(act.created_at);
+                                    const timeStr = time.toLocaleString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                                    const details = act.details;
+
+                                    return (
+                                        <div key={act.id} className="flex items-start gap-4 p-4 bg-zinc-900/50 border border-zinc-800/50 rounded-xl hover:bg-zinc-800/50 transition-colors">
+                                            <div className={`mt-0.5 flex-shrink-0 w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center ${cfg.color}`}>
+                                                <IconComponent className="w-4 h-4" />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <span className={`font-medium text-sm ${cfg.color}`}>{cfg.label}</span>
+                                                    {act.entity_type && act.entity_id && (
+                                                        <span className="text-xs text-zinc-600 bg-zinc-800 px-2 py-0.5 rounded">
+                                                            {act.entity_type === 'offer' ? 'Oferta' : act.entity_type === 'contract' ? 'Umowa' : act.entity_type} #{act.entity_id}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                {details && (
+                                                    <div className="mt-1 text-xs text-zinc-500 space-x-3">
+                                                        {details.title && <span>„{details.title}"</span>}
+                                                        {details.contract_number && <span>Nr: {details.contract_number}</span>}
+                                                        {details.status && <span>Status: {details.status}</span>}
+                                                        {details.message && <span className="italic">„{details.message}"</span>}
+                                                        {details.note_length > 0 && <span>{details.note_length} znaków</span>}
+                                                        {details.file_type && <span>{details.file_type}</span>}
+                                                        {details.file_size && <span>{(details.file_size / 1024).toFixed(0)} KB</span>}
+                                                    </div>
+                                                )}
+                                                {act.ip_address && (
+                                                    <p className="mt-1 text-[10px] text-zinc-700 font-mono">{act.ip_address}</p>
+                                                )}
+                                            </div>
+                                            <div className="flex-shrink-0 text-right">
+                                                <p className="text-xs text-zinc-500 flex items-center gap-1">
+                                                    <Clock className="w-3 h-3" /> {timeStr}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
                     </div>
                 )}
 

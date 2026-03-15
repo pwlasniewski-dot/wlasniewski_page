@@ -4,6 +4,7 @@ import { verifyToken, extractToken } from '@/lib/auth/jwt';
 import { sendEmail, getAdminEmail } from '@/lib/email/sender';
 import { generateOfferPDF } from '@/lib/services/pdf';
 import { uploadToS3 } from '@/lib/storage/s3';
+import { logClientActivity } from '@/lib/crm-activity';
 
 export const dynamic = 'force-dynamic';
 
@@ -66,6 +67,14 @@ export async function GET(
             );
         }
 
+        // CRM Activity: offer viewed
+        logClientActivity(decoded, 'offer_viewed', {
+            entityType: 'offer',
+            entityId: offerId,
+            details: { title: offer.title, status: offer.status },
+            request,
+        });
+
         return NextResponse.json({ offer });
     } catch (error) {
         console.error('Error fetching offer:', error);
@@ -127,6 +136,18 @@ export async function PATCH(
                 { status: 403 }
             );
         }
+
+        // CRM Activity: track action
+        logClientActivity(decoded, 
+            action === 'accept' ? 'offer_accepted' : 
+            action === 'reject' ? 'offer_rejected' : 
+            action === 'negotiate' ? 'offer_negotiate' : 
+            'offer_selection_changed', {
+            entityType: 'offer',
+            entityId: offerId,
+            details: { action, status: offer.status, message: message?.substring(0, 200) },
+            request,
+        });
 
         // Handle different actions
         if (action === 'accept') {

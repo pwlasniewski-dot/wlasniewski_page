@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { verifyToken, extractToken } from '@/lib/auth/jwt';
+import { logClientActivity } from '@/lib/crm-activity';
 
 // PATCH /api/user/offers/[id]/note — klient dodaje notatkę do oferty
 export async function PATCH(
@@ -32,6 +33,14 @@ export async function PATCH(
         });
 
         if (!offer) return NextResponse.json({ error: 'Offer not found' }, { status: 404 });
+
+        // CRM Activity: note added to offer
+        logClientActivity(decoded, 'contract_note_added', {
+            entityType: 'offer',
+            entityId: offerId,
+            details: { note_length: client_note?.length || 0 },
+            request,
+        });
 
         await prisma.offer.update({
             where: { id: offerId },
