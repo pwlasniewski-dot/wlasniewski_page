@@ -7,7 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import {
     User, Calendar, Image as ImageIcon,
     FileText, Shield, Trash2, ExternalLink, RefreshCw, Cloud,
-    ChevronLeft, Save, Mail, MapPin, Phone, Edit, Plus, Lock, CheckCircle2, AlertTriangle
+    ChevronLeft, Save, Mail, MapPin, Phone, Edit, Plus, Lock, CheckCircle2, AlertTriangle, Upload
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import GalleryAdmin from '@/components/admin/GalleryAdmin';
@@ -62,6 +62,41 @@ function ClientDetailsContent({ id }: { id: string }) {
     const [confirmingContractDelete, setConfirmingContractDelete] = useState<number | null>(null);
     const [savingContractId, setSavingContractId] = useState<number | null>(null);
     const [savingOfferId, setSavingOfferId] = useState<number | null>(null);
+    const [uploadingOfferPdf, setUploadingOfferPdf] = useState<number | null>(null);
+    const [uploadingContractPdf, setUploadingContractPdf] = useState<number | null>(null);
+    const offerPdfInputRef = React.useRef<HTMLInputElement>(null);
+    const contractPdfInputRef = React.useRef<HTMLInputElement>(null);
+    const [pendingUploadId, setPendingUploadId] = useState<{ type: 'offer' | 'contract'; id: number } | null>(null);
+
+    const handleUploadPdf = async (type: 'offer' | 'contract', entityId: number, file: File) => {
+        const setUploading = type === 'offer' ? setUploadingOfferPdf : setUploadingContractPdf;
+        setUploading(entityId);
+        try {
+            const token = localStorage.getItem('admin_token');
+            const formData = new FormData();
+            formData.append('pdf', file);
+            const endpoint = type === 'offer'
+                ? `/api/admin/offers/${entityId}/upload-pdf`
+                : `/api/admin/contracts/${entityId}/upload-pdf`;
+            const res = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: formData,
+            });
+            const data = await res.json();
+            if (data.success) {
+                toast.success(`PDF ${type === 'offer' ? 'oferty' : 'umowy'} wgrany pomyślnie`);
+                fetchClientDetails();
+            } else {
+                toast.error(data.error || 'Błąd uploadu PDF');
+            }
+        } catch (error) {
+            toast.error('Błąd połączenia');
+        } finally {
+            setUploading(null);
+            setPendingUploadId(null);
+        }
+    };
 
     // Edit Form State
     const [editForm, setEditForm] = useState({
@@ -323,6 +358,33 @@ function ClientDetailsContent({ id }: { id: string }) {
 
     return (
         <div className="min-h-screen bg-zinc-950 text-white pb-20">
+            {/* Hidden file inputs for PDF upload */}
+            <input
+                type="file"
+                ref={offerPdfInputRef}
+                accept=".pdf,application/pdf"
+                className="hidden"
+                onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file && pendingUploadId?.type === 'offer') {
+                        handleUploadPdf('offer', pendingUploadId.id, file);
+                    }
+                    e.target.value = '';
+                }}
+            />
+            <input
+                type="file"
+                ref={contractPdfInputRef}
+                accept=".pdf,application/pdf"
+                className="hidden"
+                onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file && pendingUploadId?.type === 'contract') {
+                        handleUploadPdf('contract', pendingUploadId.id, file);
+                    }
+                    e.target.value = '';
+                }}
+            />
             {/* Header / Hero */}
             <div className="bg-zinc-900 border-b border-zinc-800 sticky top-0 z-30">
                 <div className="max-w-7xl mx-auto px-6 py-6">
@@ -709,6 +771,20 @@ function ClientDetailsContent({ id }: { id: string }) {
                                                     </button>
 
                                                     <button
+                                                        onClick={() => {
+                                                            setPendingUploadId({ type: 'offer', id: offer.id });
+                                                            offerPdfInputRef.current?.click();
+                                                        }}
+                                                        disabled={uploadingOfferPdf === offer.id}
+                                                        className="p-3 rounded-lg border transition-all bg-amber-900/20 hover:bg-amber-900/40 text-amber-500 hover:text-amber-400 border-amber-900/30 hover:border-amber-700"
+                                                        title="Wgraj własny PDF oferty"
+                                                    >
+                                                        {uploadingOfferPdf === offer.id
+                                                            ? <RefreshCw className="w-5 h-5 animate-spin" />
+                                                            : <Upload className="w-5 h-5" />}
+                                                    </button>
+
+                                                    <button
                                                         onClick={(e) => {
                                                             e.preventDefault();
                                                             const token = localStorage.getItem('admin_token');
@@ -885,6 +961,21 @@ function ClientDetailsContent({ id }: { id: string }) {
                                                 {savingContractId === contract.id
                                                     ? <RefreshCw className="w-5 h-5 animate-spin" />
                                                     : <Cloud className="w-5 h-5" />}
+                                            </button>
+
+                                            {/* Upload custom PDF */}
+                                            <button
+                                                onClick={() => {
+                                                    setPendingUploadId({ type: 'contract', id: contract.id });
+                                                    contractPdfInputRef.current?.click();
+                                                }}
+                                                disabled={uploadingContractPdf === contract.id}
+                                                className="p-2 rounded-lg border transition-all bg-amber-900/20 hover:bg-amber-900/40 text-amber-500 hover:text-amber-400 border-amber-900/30 hover:border-amber-700"
+                                                title="Wgraj własny PDF umowy"
+                                            >
+                                                {uploadingContractPdf === contract.id
+                                                    ? <RefreshCw className="w-4 h-4 animate-spin" />
+                                                    : <Upload className="w-5 h-5" />}
                                             </button>
 
                                             {/* Download unsigned contract PDF */}

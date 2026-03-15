@@ -82,7 +82,8 @@ export async function PATCH(
             drive_url,
             category,
             template_data,
-            negotiation_enabled, // Added negotiation_enabled
+            negotiation_enabled,
+            client_selection,
         } = body;
 
         // Check if offer exists
@@ -124,6 +125,8 @@ export async function PATCH(
                 ...(status && { status }),
                 ...(negotiation_enabled !== undefined && { negotiation_enabled }),
                 ...(template_data && { template_data }),
+                ...(client_selection !== undefined && { client_selection }),
+                ...(client_selection?.totalPrice && { total_price: parseInt(client_selection.totalPrice) || 0 }),
                 ...(valid_until && { valid_until: new Date(valid_until) }),
                 ...(parsedClientId !== undefined && { client_id: parsedClientId }),
                 ...(client_email && { client_email }),

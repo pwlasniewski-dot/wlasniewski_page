@@ -13,7 +13,7 @@ import {
 import RichTextEditor from './RichTextEditor';
 import MediaPicker from './MediaPicker';
 
-export type SectionType = 'hero_parallax' | 'hero' | 'rich_text' | 'image_text' | 'gallery' | 'contact' | 'thermal_slider' | 'contact_form' | 'hero_slider' | 'about' | 'features' | 'parallax' | 'info_band' | 'testimonials' | 'challenge_banner' | 'creative_slider' | 'certificates' | 'b2b_hero' | 'b2b_stats' | 'b2b_logos' | 'b2b_process' | 'b2b_cases' | 'b2b_contact' | 'b2b_video' | 'thermal_hero' | 'hero_video' | 'parallax_video' | 'thermal_report' | 'mini_gallery' | 'story_hero' | 'magazine_layout' | 'masonry_gallery' | 'client_story' | 'process_timeline' | 'investment_teaser' | 'narrative_text' | 'featured_carousel' | 'stories_grid' | 'chronological_gallery' | 'floating_button';
+export type SectionType = 'hero_parallax' | 'hero' | 'rich_text' | 'image_text' | 'gallery' | 'contact' | 'thermal_slider' | 'contact_form' | 'hero_slider' | 'about' | 'features' | 'parallax' | 'info_band' | 'testimonials' | 'challenge_banner' | 'creative_slider' | 'certificates' | 'b2b_hero' | 'b2b_stats' | 'b2b_logos' | 'b2b_process' | 'b2b_cases' | 'b2b_contact' | 'b2b_video' | 'thermal_hero' | 'hero_video' | 'parallax_video' | 'thermal_report' | 'mini_gallery' | 'story_hero' | 'magazine_layout' | 'masonry_gallery' | 'client_story' | 'process_timeline' | 'investment_teaser' | 'narrative_text' | 'featured_carousel' | 'stories_grid' | 'chronological_gallery' | 'floating_button' | 'pointcloud_hero' | 'pointcloud_viewer' | 'pointcloud_services' | 'pointcloud_showcase' | 'pointcloud_tech';
 
 export interface SliderSlide {
     id: string;
@@ -217,6 +217,49 @@ export interface PageSection {
     overlayOpacity?: number; // For video modules
     imageObjectFit?: 'cover' | 'contain'; // For image_text
     backgroundColor?: 'black' | 'zinc-900' | 'zinc-950'; // For image_text
+    // Point Cloud / Surveying Properties
+    pointcloud_projects?: PointCloudProject[];
+    pointcloud_services?: PointCloudServiceItem[];
+    pointcloud_tech_steps?: PointCloudTechStep[];
+    pointcloud_stats?: Array<{ label: string; value: string }>;
+    modelUrl?: string; // For 3D GLB file
+}
+
+export interface PointCloudProject {
+    id: string;
+    title: string;
+    subtitle?: string;
+    description?: string;
+    category?: string;
+    location?: string;
+    date?: string;
+    area?: string;
+    pointCount?: string;
+    accuracy?: string;
+    modelUrl?: string;
+    coverImage?: string;
+    images?: string[];
+    tags?: string[];
+}
+
+export interface PointCloudServiceItem {
+    id: string;
+    icon: string;
+    title: string;
+    description: string;
+    features?: string[];
+    image?: string;
+    modelUrl?: string;
+}
+
+export interface PointCloudTechStep {
+    id: string;
+    stepNumber: string;
+    title: string;
+    description: string;
+    details?: string;
+    image?: string;
+    icon?: string;
 }
 
 interface PageBuilderProps {
@@ -2976,6 +3019,349 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove, openMedia
                         </div>
                     )
                 }
+
+                {/* POINTCLOUD HERO */}
+                {section.type === 'pointcloud_hero' && (
+                    <div className="space-y-4">
+                        <div className="bg-cyan-950/30 p-3 rounded border border-cyan-800 mb-2">
+                            <p className="text-xs text-zinc-400">🌐 <strong className="text-cyan-400">Chmura Punktów Hero:</strong> Główna sekcja powitalna dla strony pomiarowej B2B. Obsługuje model 3D (.glb) lub zdjęcie tła.</p>
+                        </div>
+                        <div>
+                            <label className="block text-xs text-zinc-400 mb-1">Tag (nad tytułem)</label>
+                            <input type="text" value={section.tag || ''} onChange={e => onUpdate(section.id, { tag: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white" placeholder="POMIARY & GEODEZJA 3D" />
+                        </div>
+                        <div>
+                            <label className="block text-xs text-zinc-400 mb-1">Tytuł (HTML)</label>
+                            <textarea value={section.title || ''} onChange={e => onUpdate(section.id, { title: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white h-20" />
+                        </div>
+                        <div>
+                            <label className="block text-xs text-zinc-400 mb-1">Podtytuł</label>
+                            <textarea value={section.subtitle || ''} onChange={e => onUpdate(section.id, { subtitle: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white h-16" />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs text-zinc-400 mb-1">Tekst przycisku</label>
+                                <input type="text" value={section.buttonText || ''} onChange={e => onUpdate(section.id, { buttonText: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white" />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-zinc-400 mb-1">Link przycisku</label>
+                                <input type="text" value={section.buttonLink || ''} onChange={e => onUpdate(section.id, { buttonLink: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white" />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs text-zinc-400 mb-1">Zdjęcie tła (opcjonalne)</label>
+                                <div className="flex gap-2 items-center">
+                                    {section.image && <img src={section.image} alt="" className="h-16 w-24 object-cover rounded border border-zinc-700" />}
+                                    <button onClick={() => openMediaPicker(section.id, { target: 'single' })} className="px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-sm text-zinc-300 hover:text-white">Wybierz</button>
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-xs text-zinc-400 mb-1">Model 3D (.glb)</label>
+                                <div className="flex gap-2 items-center">
+                                    {section.modelUrl && <span className="text-[10px] text-cyan-400 truncate max-w-[150px]">✓ {section.modelUrl.split('/').pop()}</span>}
+                                    <button onClick={() => openMediaPicker(section.id, { target: 'single', context: 'pc_model' as any })} className="px-3 py-2 bg-cyan-900/40 border border-cyan-700/50 rounded text-sm text-cyan-300 hover:text-white hover:bg-cyan-800/60">📦 Wgraj model</button>
+                                    {section.modelUrl && <button onClick={() => onUpdate(section.id, { modelUrl: '' })} className="text-red-500 hover:text-red-400"><Trash2 size={14} /></button>}
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <label className="block text-xs text-zinc-400 mb-2">Quick Stats (Hero)</label>
+                            {(section.pointcloud_stats || []).map((stat, idx) => (
+                                <div key={idx} className="flex gap-2 mb-2">
+                                    <input type="text" value={stat.value} onChange={e => { const s = [...(section.pointcloud_stats || [])]; s[idx] = { ...stat, value: e.target.value }; onUpdate(section.id, { pointcloud_stats: s }); }} placeholder="Wartość" className="w-24 bg-zinc-900 border border-zinc-800 rounded px-2 py-1 text-xs text-white" />
+                                    <input type="text" value={stat.label} onChange={e => { const s = [...(section.pointcloud_stats || [])]; s[idx] = { ...stat, label: e.target.value }; onUpdate(section.id, { pointcloud_stats: s }); }} placeholder="Etykieta" className="flex-1 bg-zinc-900 border border-zinc-800 rounded px-2 py-1 text-xs text-zinc-400" />
+                                    <button onClick={() => onUpdate(section.id, { pointcloud_stats: section.pointcloud_stats?.filter((_, i) => i !== idx) })} className="text-red-500 hover:text-red-400 px-1"><Trash2 size={14} /></button>
+                                </div>
+                            ))}
+                            <button onClick={() => onUpdate(section.id, { pointcloud_stats: [...(section.pointcloud_stats || []), { value: '', label: '' }] })} className="text-xs text-cyan-400 hover:text-cyan-300">+ Dodaj stat</button>
+                        </div>
+                    </div>
+                )}
+
+                {/* POINTCLOUD VIEWER */}
+                {section.type === 'pointcloud_viewer' && (
+                    <div className="space-y-4">
+                        <div className="bg-cyan-950/30 p-3 rounded border border-cyan-800 mb-2">
+                            <p className="text-xs text-zinc-400">📦 <strong className="text-cyan-400">Viewer 3D:</strong> Samodzielna sekcja z modelem 3D (.glb) w przeglądarce. Wklej URL do pliku modelu.</p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs text-zinc-400 mb-1">Tytuł (HTML)</label>
+                                <input type="text" value={section.title || ''} onChange={e => onUpdate(section.id, { title: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white" />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-zinc-400 mb-1">Podtytuł (Tag)</label>
+                                <input type="text" value={section.subtitle || ''} onChange={e => onUpdate(section.id, { subtitle: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white" />
+                            </div>
+                        </div>
+                        <div>
+                            <label className="block text-xs text-zinc-400 mb-1">Model 3D (.glb)</label>
+                            <div className="flex gap-2 items-center">
+                                {section.modelUrl && <span className="text-[10px] text-cyan-400 truncate max-w-[200px]">✓ {section.modelUrl.split('/').pop()}</span>}
+                                <button onClick={() => openMediaPicker(section.id, { target: 'single', context: 'pc_model' as any })} className="px-3 py-2 bg-cyan-900/40 border border-cyan-700/50 rounded text-sm text-cyan-300 hover:text-white hover:bg-cyan-800/60">📦 Wgraj model</button>
+                                {section.modelUrl && <button onClick={() => onUpdate(section.id, { modelUrl: '' })} className="text-red-500 hover:text-red-400"><Trash2 size={14} /></button>}
+                            </div>
+                        </div>
+                        <div>
+                            <label className="block text-xs text-zinc-400 mb-1">Poster (Zdjęcie ładowania)</label>
+                            <div className="flex gap-2 items-center">
+                                {section.image && <img src={section.image} alt="" className="h-16 w-24 object-cover rounded border border-zinc-700" />}
+                                <button onClick={() => openMediaPicker(section.id, { target: 'single' })} className="px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-sm text-zinc-300 hover:text-white">Wybierz</button>
+                            </div>
+                        </div>
+                        <div>
+                            <label className="block text-xs text-zinc-400 mb-1">Opis (pod viewerem)</label>
+                            <textarea value={section.description || ''} onChange={e => onUpdate(section.id, { description: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white h-16" />
+                        </div>
+                        <div>
+                            <label className="block text-xs text-zinc-400 mb-2">Statystyki modelu</label>
+                            {(section.pointcloud_stats || []).map((stat, idx) => (
+                                <div key={idx} className="flex gap-2 mb-2">
+                                    <input type="text" value={stat.value} onChange={e => { const s = [...(section.pointcloud_stats || [])]; s[idx] = { ...stat, value: e.target.value }; onUpdate(section.id, { pointcloud_stats: s }); }} placeholder="Wartość" className="w-24 bg-zinc-900 border border-zinc-800 rounded px-2 py-1 text-xs text-white" />
+                                    <input type="text" value={stat.label} onChange={e => { const s = [...(section.pointcloud_stats || [])]; s[idx] = { ...stat, label: e.target.value }; onUpdate(section.id, { pointcloud_stats: s }); }} placeholder="Etykieta" className="flex-1 bg-zinc-900 border border-zinc-800 rounded px-2 py-1 text-xs text-zinc-400" />
+                                    <button onClick={() => onUpdate(section.id, { pointcloud_stats: section.pointcloud_stats?.filter((_, i) => i !== idx) })} className="text-red-500 hover:text-red-400 px-1"><Trash2 size={14} /></button>
+                                </div>
+                            ))}
+                            <button onClick={() => onUpdate(section.id, { pointcloud_stats: [...(section.pointcloud_stats || []), { value: '', label: '' }] })} className="text-xs text-cyan-400 hover:text-cyan-300">+ Dodaj stat</button>
+                        </div>
+                    </div>
+                )}
+
+                {/* POINTCLOUD SERVICES */}
+                {section.type === 'pointcloud_services' && (
+                    <div className="space-y-4">
+                        <div className="bg-cyan-950/30 p-3 rounded border border-cyan-800 mb-2">
+                            <p className="text-xs text-zinc-400">🛠️ <strong className="text-cyan-400">Usługi Pomiarowe:</strong> Karty usług z ikonami i listą feature. Idealne do prezentacji oferty.</p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs text-zinc-400 mb-1">Tytuł (HTML)</label>
+                                <input type="text" value={section.title || ''} onChange={e => onUpdate(section.id, { title: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white" />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-zinc-400 mb-1">Podtytuł</label>
+                                <input type="text" value={section.subtitle || ''} onChange={e => onUpdate(section.id, { subtitle: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white" />
+                            </div>
+                        </div>
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                                <h4 className="text-xs font-bold text-zinc-500 uppercase">Usługi ({section.pointcloud_services?.length || 0})</h4>
+                                <button onClick={() => {
+                                    const newSvc = { id: Math.random().toString(36).substr(2, 9), icon: 'Layers', title: 'Nowa Usługa', description: 'Opis usługi...', features: ['Feature 1'] };
+                                    onUpdate(section.id, { pointcloud_services: [...(section.pointcloud_services || []), newSvc] });
+                                }} className="text-xs bg-cyan-500/20 text-cyan-400 px-2 py-1 rounded border border-cyan-500/30 font-bold">+ DODAJ USŁUGĘ</button>
+                            </div>
+                            {(section.pointcloud_services || []).map((svc, idx) => (
+                                <div key={svc.id} className="bg-zinc-800 p-4 rounded-lg border border-zinc-700 space-y-3">
+                                    <div className="flex justify-between items-start">
+                                        <div className="flex-1 grid grid-cols-3 gap-3">
+                                            <div>
+                                                <label className="block text-[10px] text-zinc-500 mb-1">Ikona</label>
+                                                <select value={svc.icon} onChange={e => { const s = [...(section.pointcloud_services || [])]; s[idx] = { ...svc, icon: e.target.value }; onUpdate(section.id, { pointcloud_services: s }); }} className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs text-white">
+                                                    <option value="Mountain">🏔️ Mountain</option>
+                                                    <option value="Building2">🏢 Building</option>
+                                                    <option value="Truck">🚛 Truck</option>
+                                                    <option value="Zap">⚡ Zap</option>
+                                                    <option value="Layers">📐 Layers</option>
+                                                    <option value="MapPin">📍 MapPin</option>
+                                                    <option value="Ruler">📏 Ruler</option>
+                                                    <option value="Box">📦 Box</option>
+                                                </select>
+                                            </div>
+                                            <div className="col-span-2">
+                                                <label className="block text-[10px] text-zinc-500 mb-1">Tytuł</label>
+                                                <input type="text" value={svc.title} onChange={e => { const s = [...(section.pointcloud_services || [])]; s[idx] = { ...svc, title: e.target.value }; onUpdate(section.id, { pointcloud_services: s }); }} className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs text-white" />
+                                            </div>
+                                        </div>
+                                        <button onClick={() => onUpdate(section.id, { pointcloud_services: section.pointcloud_services?.filter((_, i) => i !== idx) })} className="text-zinc-500 hover:text-red-500 ml-2"><Trash2 size={14} /></button>
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] text-zinc-500 mb-1">Opis</label>
+                                        <textarea value={svc.description} onChange={e => { const s = [...(section.pointcloud_services || [])]; s[idx] = { ...svc, description: e.target.value }; onUpdate(section.id, { pointcloud_services: s }); }} className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs text-zinc-300 h-16" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] text-zinc-500 mb-1">Features (po jednym na linię)</label>
+                                        <textarea value={(svc.features || []).join('\n')} onChange={e => { const s = [...(section.pointcloud_services || [])]; s[idx] = { ...svc, features: e.target.value.split('\n').filter(Boolean) }; onUpdate(section.id, { pointcloud_services: s }); }} className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs text-zinc-400 h-16" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] text-zinc-500 mb-1">Model 3D (.glb) — interaktywny podgląd</label>
+                                        <div className="flex gap-2 items-center">
+                                            {svc.modelUrl && <span className="text-[9px] text-cyan-400 truncate max-w-[150px]">✓ {svc.modelUrl.split('/').pop()}</span>}
+                                            <button onClick={() => openMediaPicker(section.id, { target: 'single', context: 'pc_svc_model' as any, index: idx })} className="px-2 py-1 bg-cyan-900/40 border border-cyan-700/50 rounded text-[10px] text-cyan-300 hover:text-white hover:bg-cyan-800/60">📦 Wgraj model</button>
+                                            {svc.modelUrl && <button onClick={() => { const s = [...(section.pointcloud_services || [])]; s[idx] = { ...svc, modelUrl: '' }; onUpdate(section.id, { pointcloud_services: s }); }} className="text-red-500 hover:text-red-400"><Trash2 size={12} /></button>}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] text-zinc-500 mb-1">Zdjęcie (fallback jeśli brak modelu)</label>
+                                        <input type="text" value={svc.image || ''} onChange={e => { const s = [...(section.pointcloud_services || [])]; s[idx] = { ...svc, image: e.target.value }; onUpdate(section.id, { pointcloud_services: s }); }} className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs text-zinc-400" placeholder="URL zdjęcia" />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* POINTCLOUD SHOWCASE */}
+                {section.type === 'pointcloud_showcase' && (
+                    <div className="space-y-4">
+                        <div className="bg-cyan-950/30 p-3 rounded border border-cyan-800 mb-2">
+                            <p className="text-xs text-zinc-400">🗂️ <strong className="text-cyan-400">Showcase Projektów:</strong> Galeria realizacji z możliwością podglądu modelu 3D. Kliknięcie otwiera lightbox z viewerem.</p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs text-zinc-400 mb-1">Tytuł (HTML)</label>
+                                <input type="text" value={section.title || ''} onChange={e => onUpdate(section.id, { title: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white" />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-zinc-400 mb-1">Podtytuł</label>
+                                <input type="text" value={section.subtitle || ''} onChange={e => onUpdate(section.id, { subtitle: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white" />
+                            </div>
+                        </div>
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                                <h4 className="text-xs font-bold text-zinc-500 uppercase">Projekty ({section.pointcloud_projects?.length || 0})</h4>
+                                <button onClick={() => {
+                                    const newProj = { id: Math.random().toString(36).substr(2, 9), title: 'Nowy Projekt', category: 'Pomiar', location: '', modelUrl: '', coverImage: '', tags: [] as string[] };
+                                    onUpdate(section.id, { pointcloud_projects: [...(section.pointcloud_projects || []), newProj] });
+                                }} className="text-xs bg-cyan-500/20 text-cyan-400 px-2 py-1 rounded border border-cyan-500/30 font-bold">+ DODAJ PROJEKT</button>
+                            </div>
+                            {(section.pointcloud_projects || []).map((proj, idx) => (
+                                <div key={proj.id} className="bg-zinc-800 p-4 rounded-lg border border-zinc-700 space-y-3">
+                                    <div className="flex justify-between items-start">
+                                        <h5 className="text-sm font-bold text-white">#{idx + 1} {proj.title}</h5>
+                                        <button onClick={() => onUpdate(section.id, { pointcloud_projects: section.pointcloud_projects?.filter((_, i) => i !== idx) })} className="text-zinc-500 hover:text-red-500"><Trash2 size={14} /></button>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="block text-[10px] text-zinc-500 mb-1">Tytuł</label>
+                                            <input type="text" value={proj.title} onChange={e => { const p = [...(section.pointcloud_projects || [])]; p[idx] = { ...proj, title: e.target.value }; onUpdate(section.id, { pointcloud_projects: p }); }} className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs text-white" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-[10px] text-zinc-500 mb-1">Kategoria</label>
+                                            <input type="text" value={proj.category || ''} onChange={e => { const p = [...(section.pointcloud_projects || [])]; p[idx] = { ...proj, category: e.target.value }; onUpdate(section.id, { pointcloud_projects: p }); }} className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs text-white" />
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-3">
+                                        <div>
+                                            <label className="block text-[10px] text-zinc-500 mb-1">📍 Lokalizacja</label>
+                                            <input type="text" value={proj.location || ''} onChange={e => { const p = [...(section.pointcloud_projects || [])]; p[idx] = { ...proj, location: e.target.value }; onUpdate(section.id, { pointcloud_projects: p }); }} className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs text-zinc-400" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-[10px] text-zinc-500 mb-1">📐 Obszar</label>
+                                            <input type="text" value={proj.area || ''} onChange={e => { const p = [...(section.pointcloud_projects || [])]; p[idx] = { ...proj, area: e.target.value }; onUpdate(section.id, { pointcloud_projects: p }); }} className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs text-zinc-400" placeholder="np. 15 ha" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-[10px] text-zinc-500 mb-1">📅 Data</label>
+                                            <input type="text" value={proj.date || ''} onChange={e => { const p = [...(section.pointcloud_projects || [])]; p[idx] = { ...proj, date: e.target.value }; onUpdate(section.id, { pointcloud_projects: p }); }} className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs text-zinc-400" />
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="block text-[10px] text-zinc-500 mb-1">Punktów</label>
+                                            <input type="text" value={proj.pointCount || ''} onChange={e => { const p = [...(section.pointcloud_projects || [])]; p[idx] = { ...proj, pointCount: e.target.value }; onUpdate(section.id, { pointcloud_projects: p }); }} className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs text-zinc-400" placeholder="np. 12M" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-[10px] text-zinc-500 mb-1">Dokładność</label>
+                                            <input type="text" value={proj.accuracy || ''} onChange={e => { const p = [...(section.pointcloud_projects || [])]; p[idx] = { ...proj, accuracy: e.target.value }; onUpdate(section.id, { pointcloud_projects: p }); }} className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs text-zinc-400" placeholder="np. ±2cm" />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] text-zinc-500 mb-1">Opis (HTML)</label>
+                                        <textarea value={proj.description || ''} onChange={e => { const p = [...(section.pointcloud_projects || [])]; p[idx] = { ...proj, description: e.target.value }; onUpdate(section.id, { pointcloud_projects: p }); }} className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs text-zinc-300 h-16" />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="block text-[10px] text-zinc-500 mb-1">Cover Image</label>
+                                            <div className="flex gap-2 items-center">
+                                                {proj.coverImage && <img src={proj.coverImage} alt="" className="h-10 w-14 object-cover rounded border border-zinc-700" />}
+                                                <button onClick={() => openMediaPicker(section.id, { target: 'single', context: 'pc_cover' as any, index: idx })} className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-[10px] text-zinc-300 hover:text-white">Wybierz</button>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-[10px] text-zinc-500 mb-1">Model 3D (.glb)</label>
+                                            <div className="flex gap-2 items-center">
+                                                {proj.modelUrl && <span className="text-[9px] text-cyan-400 truncate max-w-[120px]">✓ {proj.modelUrl.split('/').pop()}</span>}
+                                                <button onClick={() => openMediaPicker(section.id, { target: 'single', context: 'pc_model' as any, index: idx })} className="px-2 py-1 bg-cyan-900/40 border border-cyan-700/50 rounded text-[10px] text-cyan-300 hover:text-white hover:bg-cyan-800/60">📦 Wgraj</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] text-zinc-500 mb-1">Tagi (po przecinku)</label>
+                                        <input type="text" value={(proj.tags || []).join(', ')} onChange={e => { const p = [...(section.pointcloud_projects || [])]; p[idx] = { ...proj, tags: e.target.value.split(',').map(t => t.trim()).filter(Boolean) }; onUpdate(section.id, { pointcloud_projects: p }); }} className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs text-zinc-400" placeholder="LiDAR, fotogrametria, DSM" />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* POINTCLOUD TECHNOLOGY */}
+                {section.type === 'pointcloud_tech' && (
+                    <div className="space-y-4">
+                        <div className="bg-purple-950/30 p-3 rounded border border-purple-800 mb-2">
+                            <p className="text-xs text-zinc-400">⚙️ <strong className="text-purple-400">Technologia & Proces:</strong> Przedstawienie pipeline'u pomiarowego krok po kroku. Sticky layout jak w B2B Process.</p>
+                        </div>
+                        <div>
+                            <label className="block text-xs text-zinc-400 mb-1">Tytuł (HTML)</label>
+                            <input type="text" value={section.title || ''} onChange={e => onUpdate(section.id, { title: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white" />
+                        </div>
+                        <div>
+                            <label className="block text-xs text-zinc-400 mb-1">Podtytuł (Tag)</label>
+                            <input type="text" value={section.subtitle || ''} onChange={e => onUpdate(section.id, { subtitle: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white" />
+                        </div>
+                        <div>
+                            <label className="block text-xs text-zinc-400 mb-1">Opis kontekstowy</label>
+                            <textarea value={section.description || ''} onChange={e => onUpdate(section.id, { description: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white h-16" />
+                        </div>
+                        <div>
+                            <label className="block text-xs text-zinc-400 mb-1">Zdjęcie technologii (opcjonalne)</label>
+                            <div className="flex gap-2 items-center">
+                                {section.image && <img src={section.image} alt="" className="h-16 w-24 object-cover rounded border border-zinc-700" />}
+                                <button onClick={() => openMediaPicker(section.id, { target: 'single' })} className="px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-sm text-zinc-300 hover:text-white">Wybierz</button>
+                            </div>
+                        </div>
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                                <h4 className="text-xs font-bold text-zinc-500 uppercase">Etapy ({section.pointcloud_tech_steps?.length || 0})</h4>
+                                <button onClick={() => {
+                                    const newStep = { id: Math.random().toString(36).substr(2, 9), stepNumber: String(((section.pointcloud_tech_steps?.length || 0) + 1)).padStart(2, '0'), title: 'Nowy Etap', description: 'Opis etapu...' };
+                                    onUpdate(section.id, { pointcloud_tech_steps: [...(section.pointcloud_tech_steps || []), newStep] });
+                                }} className="text-xs bg-purple-500/20 text-purple-400 px-2 py-1 rounded border border-purple-500/30 font-bold">+ DODAJ ETAP</button>
+                            </div>
+                            {(section.pointcloud_tech_steps || []).map((step, idx) => (
+                                <div key={step.id} className="bg-zinc-800 p-4 rounded-lg border border-zinc-700 space-y-3">
+                                    <div className="flex justify-between items-start">
+                                        <div className="flex items-center gap-2">
+                                            <span className="w-8 h-8 rounded-full bg-cyan-500/20 flex items-center justify-center text-cyan-400 text-xs font-black">{step.stepNumber || idx + 1}</span>
+                                            <span className="text-sm font-bold text-white">{step.title}</span>
+                                        </div>
+                                        <button onClick={() => onUpdate(section.id, { pointcloud_tech_steps: section.pointcloud_tech_steps?.filter((_, i) => i !== idx) })} className="text-zinc-500 hover:text-red-500"><Trash2 size={14} /></button>
+                                    </div>
+                                    <div className="grid grid-cols-4 gap-3">
+                                        <div>
+                                            <label className="block text-[10px] text-zinc-500 mb-1">Nr</label>
+                                            <input type="text" value={step.stepNumber} onChange={e => { const s = [...(section.pointcloud_tech_steps || [])]; s[idx] = { ...step, stepNumber: e.target.value }; onUpdate(section.id, { pointcloud_tech_steps: s }); }} className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs text-white" />
+                                        </div>
+                                        <div className="col-span-3">
+                                            <label className="block text-[10px] text-zinc-500 mb-1">Tytuł</label>
+                                            <input type="text" value={step.title} onChange={e => { const s = [...(section.pointcloud_tech_steps || [])]; s[idx] = { ...step, title: e.target.value }; onUpdate(section.id, { pointcloud_tech_steps: s }); }} className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs text-white" />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] text-zinc-500 mb-1">Opis (główny)</label>
+                                        <textarea value={step.description} onChange={e => { const s = [...(section.pointcloud_tech_steps || [])]; s[idx] = { ...step, description: e.target.value }; onUpdate(section.id, { pointcloud_tech_steps: s }); }} className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs text-zinc-300 h-12" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] text-zinc-500 mb-1">Szczegóły techniczne (opcjonalne)</label>
+                                        <textarea value={step.details || ''} onChange={e => { const s = [...(section.pointcloud_tech_steps || [])]; s[idx] = { ...step, details: e.target.value }; onUpdate(section.id, { pointcloud_tech_steps: s }); }} className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs text-zinc-500 h-12" />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
             </div >
         </div >
     );
@@ -2992,11 +3378,11 @@ export default function PageBuilder({ sections, onChange, pageType }: PageBuilde
     // Global MediaPicker State
     const [showMediaPicker, setShowMediaPicker] = useState(false);
     const [mediaPickerTarget, setMediaPickerTarget] = useState<'single' | 'gallery'>('single');
-    const [mediaPickerContext, setMediaPickerContext] = useState<'visual' | 'thermal' | 'before' | 'case_logo' | 'case_video' | 'video' | 'mini_gallery_item' | 'story_cover' | 'chronological' | null>(null);
+    const [mediaPickerContext, setMediaPickerContext] = useState<'visual' | 'thermal' | 'before' | 'case_logo' | 'case_video' | 'video' | 'mini_gallery_item' | 'story_cover' | 'chronological' | 'pc_model' | 'pc_cover' | 'pc_svc_model' | null>(null);
     const [sectionEditIndex, setSectionEditIndex] = useState(-1);
     const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
 
-    const openMediaPicker = (sectionId: string, options: { target: 'single' | 'gallery', context?: 'visual' | 'thermal' | 'before' | 'case_logo' | 'case_video' | 'video' | 'mini_gallery_item' | 'story_cover' | 'chronological', index?: number }) => {
+    const openMediaPicker = (sectionId: string, options: { target: 'single' | 'gallery', context?: 'visual' | 'thermal' | 'before' | 'case_logo' | 'case_video' | 'video' | 'mini_gallery_item' | 'story_cover' | 'chronological' | 'pc_model' | 'pc_cover' | 'pc_svc_model', index?: number }) => {
         setActiveSectionId(sectionId);
         setMediaPickerTarget(options.target);
         setMediaPickerContext(options.context || null);
@@ -3138,6 +3524,28 @@ export default function PageBuilder({ sections, onChange, pageType }: PageBuilde
                 const updated = [...(section.chronological_items || [])];
                 updated[sectionEditIndex] = { ...updated[sectionEditIndex], image: imageUrl };
                 updateSection(activeSectionId, { chronological_items: updated });
+            }
+        } else if (section.type === 'pointcloud_hero' || section.type === 'pointcloud_viewer') {
+            if (mediaPickerContext === ('pc_model' as any)) {
+                updateSection(activeSectionId, { modelUrl: imageUrl });
+            } else {
+                updateSection(activeSectionId, { image: imageUrl });
+            }
+        } else if (section.type === 'pointcloud_services' && mediaPickerContext === ('pc_svc_model' as any)) {
+            const updated = [...(section.pointcloud_services || [])];
+            if (sectionEditIndex >= 0) {
+                updated[sectionEditIndex] = { ...updated[sectionEditIndex], modelUrl: imageUrl };
+                updateSection(activeSectionId, { pointcloud_services: updated });
+            }
+        } else if (section.type === 'pointcloud_showcase') {
+            const updated = [...(section.pointcloud_projects || [])];
+            if (sectionEditIndex >= 0) {
+                if (mediaPickerContext === ('pc_model' as any)) {
+                    updated[sectionEditIndex] = { ...updated[sectionEditIndex], modelUrl: imageUrl };
+                } else if (mediaPickerContext === ('pc_cover' as any)) {
+                    updated[sectionEditIndex] = { ...updated[sectionEditIndex], coverImage: imageUrl };
+                }
+                updateSection(activeSectionId, { pointcloud_projects: updated });
             }
         } else if (mediaPickerTarget === 'single') {
             updateSection(activeSectionId, { image: imageUrl });
@@ -3291,6 +3699,52 @@ export default function PageBuilder({ sections, onChange, pageType }: PageBuilde
             newSection.buttonLink = '/';
             newSection.layout = 'bottom-right';
             newSection.imagePosition = 'arrow-left'; // abusing this field for icon
+        } else if (type === 'pointcloud_hero') {
+            newSection.title = 'Precyzyjne pomiary & <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-yellow-500">Chmura Punktów 3D</span>';
+            newSection.subtitle = 'Skaning laserowy, fotogrametria z drona i modele 3D terenu dla inwestorów, geodetów i firm budowlanych.';
+            newSection.tag = 'POMIARY & GEODEZJA 3D';
+            newSection.buttonText = 'ZAMÓW POMIAR';
+            newSection.buttonLink = '#rfq';
+            newSection.pointcloud_stats = [
+                { value: '2cm', label: 'Dokładność GSD' },
+                { value: '500+', label: 'Ha Zmapowanych' },
+                { value: '48h', label: 'Czas Realizacji' }
+            ];
+        } else if (type === 'pointcloud_viewer') {
+            newSection.title = 'Model 3D <span class="text-cyan-400">w przeglądarce</span>';
+            newSection.subtitle = 'INTERAKTYWNY PODGLĄD';
+            newSection.modelUrl = '';
+            newSection.pointcloud_stats = [
+                { value: '12M+', label: 'Punktów' },
+                { value: '2cm', label: 'GSD' },
+                { value: 'GLB', label: 'Format' },
+                { value: '360°', label: 'Widok' }
+            ];
+        } else if (type === 'pointcloud_services') {
+            newSection.title = 'Co możemy dla Ciebie <span class="text-cyan-400">zrobić</span>?';
+            newSection.subtitle = 'Profesjonalne usługi pomiarowe z wykorzystaniem najnowszej technologii dronowej';
+            newSection.pointcloud_services = [
+                { id: Math.random().toString(36).substr(2, 9), icon: 'Mountain', title: 'Pomiary Hałd i Składowisk', description: 'Precyzyjne obliczanie objętości mas ziemnych, hałd węgla, kruszywa i innych materiałów sypkich. Dokładność do 2% objętości.', features: ['Obliczanie objętości V=∑ΔV', 'Porównanie z poprzednimi pomiarami', 'Mapy różnicowe', 'Raport z certyfikatem'] },
+                { id: Math.random().toString(36).substr(2, 9), icon: 'Truck', title: 'Monitoring Autostrad i Dróg', description: 'Dokumentacja postępu prac drogowych, profile podłużne i poprzeczne, kontrola geometrii nawierzchni.', features: ['Profile podłużne i poprzeczne', 'Ortofotomapy w skali', 'Monitoring postępu prac', 'Porównanie z projektem'] },
+                { id: Math.random().toString(36).substr(2, 9), icon: 'Building2', title: 'Inwentaryzacja Budynków', description: 'Skanowanie 3D elewacji, dachów i wnętrz. Tworzenie modeli BIM-ready do projektowania i remontów.', features: ['Model 3D elewacji', 'Przekroje i rzuty', 'Wykrywanie deformacji', 'Dane do BIM'] },
+                { id: Math.random().toString(36).substr(2, 9), icon: 'Layers', title: 'Ortofotomapy i Mapy 2D', description: 'Ultra-dokładne ortofotomapy terenu z naniesionymi pomiarami. Gotowe do wczytania w GIS i CAD.', features: ['Rozdzielczość 1-3cm/px', 'Georeferencja EPSG', 'Export GeoTIFF', 'Warstwice i profile'] },
+                { id: Math.random().toString(36).substr(2, 9), icon: 'Zap', title: 'Modele 3D Terenu (DSM/DTM)', description: 'Numeryczne Modele Terenu i Pokrycia Terenu z chmury punktów do analiz inżynierskich i planowania przestrzennego.', features: ['DSM — z pokryciem', 'DTM — oczyszczony teren', 'Analiza spadków', 'Eksport do CAD/GIS'] },
+                { id: Math.random().toString(36).substr(2, 9), icon: 'MapPin', title: 'Kontrola Deformacji', description: 'Cykliczne pomiary porównawcze obiektów inżynierskich, wałów, nasypów i konstrukcji. Wykrywanie przemieszczeń.', features: ['Mapy różnicowe 3D', 'Raporty przemieszczeń', 'Monitoring cykliczny', 'Alerty przekroczeń'] }
+            ];
+        } else if (type === 'pointcloud_showcase') {
+            newSection.title = 'Nasze <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">realizacje</span>';
+            newSection.subtitle = 'Zobacz przykłady pomiarów i modeli 3D z naszych projektów';
+            newSection.pointcloud_projects = [];
+        } else if (type === 'pointcloud_tech') {
+            newSection.title = 'Pipeline <span class="text-cyan-400">pomiarowy</span> od A do Z.';
+            newSection.subtitle = 'TECHNOLOGIA';
+            newSection.description = 'Od nalotu dronem, przez przetwarzanie chmury punktów, po gotowy model 3D — cały proces realizujemy bez zewnętrznych podwykonawców.';
+            newSection.pointcloud_tech_steps = [
+                { id: Math.random().toString(36).substr(2, 9), stepNumber: '01', title: 'Planowanie Misji', description: 'Analiza terenu, wyznaczenie GCP (punktów kontrolnych), planowanie trasy przelotu z uwzględnieniem pokrycia podłużnego i poprzecznego.', details: 'Używamy oprogramowania DJI Pilot 2 / Litchi z automatycznym planowaniem siatki nalotu. Minimum 80% pokrycia podłużnego, 70% poprzecznego.' },
+                { id: Math.random().toString(36).substr(2, 9), stepNumber: '02', title: 'Nalot Fotogrametryczny', description: 'Wykonanie serii zdjęć z drona w trybie automatycznym. Zbieranie danych GPS/RTK. Rozdzielczość naziemna (GSD) od 1cm/px.', details: 'Dron DJI Mavic 3 Enterprise z kamerą 20MP lub Matrice 350 RTK z LiDAR L2. Precyzja pozycjonowania RTK ±2cm.' },
+                { id: Math.random().toString(36).substr(2, 9), stepNumber: '03', title: 'Tworzenie Chmury Punktów', description: 'Przetwarzanie zdjęć w oprogramowaniu fotogrametrycznym. Generowanie gęstej chmury punktów z milionami pomiarów 3D.', details: 'Agisoft Metashape Professional / DJI Terra — SfM (Structure from Motion) + MVS (Multi-View Stereo). Klasyfikacja punktów: grunt, budynki, roślinność.' },
+                { id: Math.random().toString(36).substr(2, 9), stepNumber: '04', title: 'Model 3D i Produkty Końcowe', description: 'Generowanie modelu 3D mesh, ortofotomapy, DSM/DTM, przekrojów i raportów objętościowych. Export do formatów CAD, GIS i BIM.', details: 'Formaty: LAS/LAZ, TIF (ortofoto), DXF/DWG (CAD), GLB/OBJ (3D), PDF (raport). Każdy produkt wsparty georeferencją.' }
+            ];
         }
 
 
@@ -3465,6 +3919,127 @@ export default function PageBuilder({ sections, onChange, pageType }: PageBuilde
                 },
                 { id: baseId(), type: 'b2b_contact', title: 'Zapytanie ofertowe', subtitle: 'Opisz krótko projekt. Na tej podstawie przygotuję konkretną wycenę i harmonogram.' }
             ];
+        } else if (templateName === 'pointcloud_surveying') {
+            templateSections = [
+                {
+                    id: baseId(), type: 'pointcloud_hero',
+                    tag: 'POMIARY & GEODEZJA 3D',
+                    title: 'Precyzyjne pomiary & <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-yellow-500">Chmura Punktów 3D</span>',
+                    subtitle: 'Skaning laserowy, fotogrametria z drona i modele 3D terenu dla inwestorów, geodetów i firm budowlanych. Dokładność do 2cm GSD.',
+                    buttonText: 'ZAMÓW POMIAR',
+                    buttonLink: '#rfq',
+                    pointcloud_stats: [
+                        { value: '2cm', label: 'Dokładność GSD' },
+                        { value: '500+', label: 'Ha Zmapowanych' },
+                        { value: '48h', label: 'Czas Realizacji' }
+                    ]
+                } as any,
+                {
+                    id: baseId(), type: 'b2b_stats',
+                    title: 'Liczby mówią za siebie',
+                    b2b_stats: [
+                        { id: baseId(), value: '500+', label: 'Hektarów zmapowanych', prefix: '', suffix: 'ha' },
+                        { id: baseId(), value: '50M+', label: 'Punktów przetworzonych', prefix: '', suffix: '' },
+                        { id: baseId(), value: '2cm', label: 'Dokładność GSD', prefix: '±', suffix: '' },
+                        { id: baseId(), value: '48h', label: 'Średni czas realizacji', prefix: '', suffix: '' }
+                    ]
+                },
+                {
+                    id: baseId(), type: 'pointcloud_services',
+                    title: 'Co możemy dla Ciebie <span class="text-cyan-400">zrobić</span>?',
+                    subtitle: 'Profesjonalne usługi pomiarowe z wykorzystaniem najnowszej technologii dronowej i fotogrametrii',
+                    pointcloud_services: [
+                        {
+                            id: baseId(), icon: 'Mountain', title: 'Pomiary Hałd i Składowisk',
+                            description: 'Precyzyjne obliczanie objętości mas ziemnych, hałd węgla, kruszywa i innych materiałów sypkich. Dokładność do 2% objętości.',
+                            features: ['Obliczanie objętości V=∑ΔV', 'Porównanie z poprzednimi pomiarami', 'Mapy różnicowe', 'Raport z certyfikatem']
+                        },
+                        {
+                            id: baseId(), icon: 'Truck', title: 'Monitoring Autostrad i Dróg',
+                            description: 'Dokumentacja postępu prac drogowych, profile podłużne i poprzeczne, kontrola geometrii nawierzchni.',
+                            features: ['Profile podłużne i poprzeczne', 'Ortofotomapy w skali', 'Monitoring postępu prac', 'Porównanie z projektem']
+                        },
+                        {
+                            id: baseId(), icon: 'Building2', title: 'Inwentaryzacja Budynków',
+                            description: 'Skanowanie 3D elewacji, dachów i wnętrz. Tworzenie modeli BIM-ready do projektowania i remontów.',
+                            features: ['Model 3D elewacji', 'Przekroje i rzuty', 'Wykrywanie deformacji', 'Dane do BIM']
+                        },
+                        {
+                            id: baseId(), icon: 'Layers', title: 'Ortofotomapy i Mapy 2D',
+                            description: 'Ultra-dokładne ortofotomapy terenu z naniesionymi pomiarami. Gotowe do wczytania w GIS i CAD.',
+                            features: ['Rozdzielczość 1-3cm/px', 'Georeferencja EPSG', 'Export GeoTIFF', 'Warstwice i profile']
+                        },
+                        {
+                            id: baseId(), icon: 'Zap', title: 'Modele 3D Terenu (DSM/DTM)',
+                            description: 'Numeryczne Modele Terenu i Pokrycia Terenu z chmury punktów do analiz inżynierskich i planowania przestrzennego.',
+                            features: ['DSM — z pokryciem', 'DTM — oczyszczony teren', 'Analiza spadków', 'Eksport do CAD/GIS']
+                        },
+                        {
+                            id: baseId(), icon: 'MapPin', title: 'Kontrola Deformacji',
+                            description: 'Cykliczne pomiary porównawcze obiektów inżynierskich, wałów, nasypów i konstrukcji. Wykrywanie przemieszczeń.',
+                            features: ['Mapy różnicowe 3D', 'Raporty przemieszczeń', 'Monitoring cykliczny', 'Alerty przekroczeń']
+                        }
+                    ]
+                } as any,
+                {
+                    id: baseId(), type: 'pointcloud_tech',
+                    title: 'Pipeline <span class="text-cyan-400">pomiarowy</span> od A do Z.',
+                    subtitle: 'TECHNOLOGIA',
+                    description: 'Od nalotu dronem, przez przetwarzanie chmury punktów, po gotowy model 3D — cały proces realizujemy bez zewnętrznych podwykonawców.',
+                    pointcloud_tech_steps: [
+                        { id: baseId(), stepNumber: '01', title: 'Planowanie Misji', description: 'Analiza terenu, wyznaczenie GCP (punktów kontrolnych), planowanie trasy przelotu z uwzględnieniem pokrycia podłużnego i poprzecznego.', details: 'Używamy DJI Pilot 2 / Litchi z automatycznym planowaniem siatki nalotu. Min. 80% pokrycia podłużnego, 70% poprzecznego.' },
+                        { id: baseId(), stepNumber: '02', title: 'Nalot Fotogrametryczny', description: 'Wykonanie serii zdjęć z drona w trybie automatycznym. Zbieranie danych GPS/RTK. Rozdzielczość naziemna (GSD) od 1cm/px.', details: 'DJI Mavic 3 Enterprise z kamerą 20MP lub Matrice 350 RTK z LiDAR L2. Precyzja pozycjonowania RTK ±2cm.' },
+                        { id: baseId(), stepNumber: '03', title: 'Tworzenie Chmury Punktów', description: 'Przetwarzanie w oprogramowaniu fotogrametrycznym. Generowanie gęstej chmury punktów z milionami pomiarów 3D.', details: 'Agisoft Metashape Professional / DJI Terra — SfM + MVS. Klasyfikacja punktów: grunt, budynki, roślinność.' },
+                        { id: baseId(), stepNumber: '04', title: 'Model 3D i Produkty Końcowe', description: 'Generowanie modelu 3D mesh, ortofotomapy, DSM/DTM, przekrojów i raportów objętościowych.', details: 'Formaty: LAS/LAZ, TIF, DXF/DWG, GLB/OBJ, PDF. Georeferencja w wymaganym układzie współrzędnych.' }
+                    ]
+                } as any,
+                {
+                    id: baseId(), type: 'pointcloud_showcase',
+                    title: 'Nasze <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">realizacje</span>',
+                    subtitle: 'Zobacz przykłady pomiarów i modeli 3D z naszych projektów',
+                    pointcloud_projects: [
+                        {
+                            id: baseId(), title: 'Pomiar Objętości Hałdy Kruszywa', category: 'Hałda / Składowisko',
+                            location: 'Wałycz', date: '02/2026', area: '8.5 ha', pointCount: '12M', accuracy: '±2cm',
+                            description: 'Kompleksowy pomiar objętości hałdy kruszywa naturalnego z wykorzystaniem drona RTK. Model 3D textured z możliwością podglądu w przeglądarce.',
+                            coverImage: '', modelUrl: '', tags: ['fotogrametria', 'RTK', 'objętość', 'mesh 3D']
+                        },
+                        {
+                            id: baseId(), title: 'Monitoring Budowy Drogi S10', category: 'Infrastruktura Drogowa',
+                            location: 'Bydgoszcz - Toruń', date: '01/2026', area: '25 ha', pointCount: '45M', accuracy: '±3cm',
+                            description: 'Cykliczny monitoring postępu prac na odcinku drogi ekspresowej S10. Ortofotomapy i modele porównawcze co 2 tygodnie.',
+                            coverImage: '', modelUrl: '', tags: ['droga', 'monitoring', 'ortofotomapa']
+                        },
+                        {
+                            id: baseId(), title: 'Inwentaryzacja Zabytkowej Kamienicy', category: 'Budynki',
+                            location: 'Toruń', date: '12/2025', area: '0.3 ha', pointCount: '8M', accuracy: '±1cm',
+                            description: 'Skanowanie 3D elewacji i dachu zabytkowej kamienicy na potrzeby renowacji. Model BIM-ready z pełną dokumentacją.',
+                            coverImage: '', modelUrl: '', tags: ['inwentaryzacja', 'elewacja', 'BIM', 'zabytek']
+                        }
+                    ]
+                } as any,
+                {
+                    id: baseId(), type: 'info_band',
+                    title: 'Dlaczego <span class="text-yellow-500">warto</span> z nami współpracować?',
+                    subtitle: 'KORZYŚCI DLA INWESTORA',
+                    infoband_items: [
+                        { id: baseId(), icon: 'Crosshair', title: 'Precyzja sub-centymetrowa', description: 'Pomiary RTK z dokładnością do ±2cm. Referencja do sieci ASG-EUPOS lub własnych GCP.' },
+                        { id: baseId(), icon: 'Zap', title: 'Realizacja od 48h', description: 'Od nalotu do gotowego produktu w 2-5 dni roboczych. Ekspresowo dla pilnych projektów.' },
+                        { id: baseId(), icon: 'ShieldCheck', title: 'Certyfikowani piloci UAV', description: 'Licencja A1/A2/A3/STS. OC komercyjne. Pełna zgodność z przepisami EASA i ULC.' },
+                        { id: baseId(), icon: 'Building2', title: 'Formaty CAD/GIS/BIM', description: 'Eksportujemy dane w formatach LAS, DXF, DWG, GeoTIFF, GLB. Gotowe do wczytania w dowolny system.' }
+                    ]
+                },
+                {
+                    id: baseId(), type: 'certificates', certificateSize: 'readable', title: 'Kwalifikacje & Sprzęt',
+                    certificates: [
+                        { id: baseId(), title: 'UAV Pilot', subtitle: 'A1/A2/A3/STS', description: 'Licencjonowane operacje w całej UE.' },
+                        { id: baseId(), title: 'Fotogrametria', subtitle: 'Agisoft Certified', description: 'Profesjonalne przetwarzanie chmur punktów.' },
+                        { id: baseId(), icon: 'ShieldCheck', title: 'Ubezpieczenie OC', subtitle: 'Polisa Komercyjna', description: 'Pełna ochrona każdej misji pomiarowej.' },
+                        { id: baseId(), title: 'DJI Enterprise', subtitle: 'Mavic 3E / M350 RTK', description: 'Profesjonalny sprzęt z modułem RTK.' }
+                    ]
+                },
+                { id: baseId(), type: 'b2b_contact', title: 'Zamów <span class="text-cyan-400">wycenę pomiaru</span>', subtitle: 'Opisz projekt — lokalizację, obszar i oczekiwane produkty. Wycenę otrzymasz w ciągu 4 godzin roboczych.' }
+            ];
         }
 
         if (confirm('Czy chcesz zastąpić obecne sekcje wybranym szablonem? Operacja jest nieodwracalna.')) {
@@ -3525,6 +4100,12 @@ export default function PageBuilder({ sections, onChange, pageType }: PageBuilde
                                 className="px-5 py-3 bg-white/5 hover:bg-yellow-500 hover:text-black text-white text-xs font-bold rounded-xl transition-all border border-white/5 flex items-center gap-2"
                             >
                                 <ShieldCheck size={14} /> Analiza Budynków
+                            </button>
+                            <button
+                                onClick={() => applyTemplate('pointcloud_surveying')}
+                                className="px-5 py-3 bg-cyan-500/10 hover:bg-cyan-500 hover:text-white text-cyan-400 text-xs font-bold rounded-xl transition-all border border-cyan-500/20 flex items-center gap-2"
+                            >
+                                <Crosshair size={14} /> Chmura Punktów & Pomiary
                             </button>
                             <button
                                 onClick={() => applyTemplate('master_business')}
@@ -3664,6 +4245,23 @@ export default function PageBuilder({ sections, onChange, pageType }: PageBuilde
                     </button>
                     <button onClick={() => addSection('mini_gallery')} className="flex items-center gap-2 px-4 py-2 bg-pink-600/10 hover:bg-pink-600/20 border border-pink-500/20 rounded text-sm text-pink-400 transition-colors">
                         <Layout className="w-4 h-4" /> Mini Gallery (Pro)
+                    </button>
+                    <div className="w-full h-px bg-cyan-900/30 my-1" />
+                    <span className="w-full text-[10px] font-bold text-cyan-700 uppercase tracking-widest mb-1 ml-1">Moduły Chmura Punktów / Pomiary</span>
+                    <button onClick={() => addSection('pointcloud_hero')} className="flex items-center gap-2 px-4 py-2 bg-cyan-900/20 hover:bg-cyan-800/40 border border-cyan-700/30 rounded text-sm text-cyan-400 transition-colors">
+                        <Crosshair className="w-4 h-4" /> PC Hero
+                    </button>
+                    <button onClick={() => addSection('pointcloud_viewer')} className="flex items-center gap-2 px-4 py-2 bg-cyan-900/20 hover:bg-cyan-800/40 border border-cyan-700/30 rounded text-sm text-cyan-400 transition-colors">
+                        <Map className="w-4 h-4" /> 3D Viewer
+                    </button>
+                    <button onClick={() => addSection('pointcloud_services')} className="flex items-center gap-2 px-4 py-2 bg-cyan-900/20 hover:bg-cyan-800/40 border border-cyan-700/30 rounded text-sm text-cyan-400 transition-colors">
+                        <HardHat className="w-4 h-4" /> Usługi PC
+                    </button>
+                    <button onClick={() => addSection('pointcloud_showcase')} className="flex items-center gap-2 px-4 py-2 bg-cyan-900/20 hover:bg-cyan-800/40 border border-cyan-700/30 rounded text-sm text-cyan-400 transition-colors">
+                        <Camera className="w-4 h-4" /> Showcase PC
+                    </button>
+                    <button onClick={() => addSection('pointcloud_tech')} className="flex items-center gap-2 px-4 py-2 bg-cyan-900/20 hover:bg-cyan-800/40 border border-cyan-700/30 rounded text-sm text-cyan-400 transition-colors">
+                        <Cpu className="w-4 h-4" /> Technologia PC
                     </button>
                 </div>
             )}

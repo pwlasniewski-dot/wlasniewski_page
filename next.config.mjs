@@ -27,7 +27,7 @@ const nextConfig = {
     // Skip database dependency during build
     experimental: {
         serverActions: {
-            bodySizeLimit: '10mb',
+            bodySizeLimit: '50mb',
         },
     },
     // Dla statycznego eksportu (jeśli chcesz wrzucić na zwykły hosting)

@@ -31,11 +31,11 @@ export async function POST(request: NextRequest) {
                 );
             }
 
-            // Check file size early (Max 10MB as per next.config)
-            if (file.size > 10 * 1024 * 1024) {
+            // Check file size early (Max 50MB for 3D models)
+            if (file.size > 50 * 1024 * 1024) {
                 await logSystem('WARN', 'MEDIA_UPLOAD', 'File too large', { name: file.name, size: file.size });
                 return NextResponse.json(
-                    { error: 'File too large (max 10MB)' },
+                    { error: 'File too large (max 50MB)' },
                     { status: 413 }
                 );
             }

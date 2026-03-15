@@ -44,6 +44,7 @@ import FeaturedCarousel from '@/components/sections/FeaturedCarousel';
 import StoriesGrid from '@/components/sections/StoriesGrid';
 import ChronologicalGallery from '@/components/sections/ChronologicalGallery';
 import FloatingButton from '@/components/sections/FloatingButton';
+import { PointCloudHero, PointCloudShowcase, PointCloudServices, PointCloudTechnology, PointCloudViewerSection } from '@/components/sections/PointCloudSections';
 
 export default function PageRenderer({ sections }: { sections: PageSection[] }) {
     const [selectedCert, setSelectedCert] = React.useState<any>(null);
@@ -1415,6 +1416,67 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                 link={data.buttonLink}
                                 position={data.layout as any}
                                 iconType={data.imagePosition as any}
+                            />
+                        );
+
+                    // === Point Cloud / Surveying Sections ===
+                    case 'pointcloud_hero':
+                        return (
+                            <PointCloudHero
+                                key={section.id}
+                                title={data.title}
+                                subtitle={data.subtitle}
+                                tag={data.tag}
+                                buttonText={data.buttonText}
+                                buttonLink={data.buttonLink}
+                                image={data.image}
+                                modelUrl={data.modelUrl}
+                                stats={data.pointcloud_stats}
+                            />
+                        );
+
+                    case 'pointcloud_viewer':
+                        return (
+                            <PointCloudViewerSection
+                                key={section.id}
+                                title={data.title}
+                                subtitle={data.subtitle}
+                                modelUrl={data.modelUrl}
+                                poster={data.image}
+                                description={data.description}
+                                stats={data.pointcloud_stats}
+                            />
+                        );
+
+                    case 'pointcloud_services':
+                        return (
+                            <PointCloudServices
+                                key={section.id}
+                                title={data.title}
+                                subtitle={data.subtitle}
+                                services={data.pointcloud_services || []}
+                            />
+                        );
+
+                    case 'pointcloud_showcase':
+                        return (
+                            <PointCloudShowcase
+                                key={section.id}
+                                title={data.title}
+                                subtitle={data.subtitle}
+                                projects={data.pointcloud_projects || []}
+                            />
+                        );
+
+                    case 'pointcloud_tech':
+                        return (
+                            <PointCloudTechnology
+                                key={section.id}
+                                title={data.title}
+                                subtitle={data.subtitle}
+                                description={data.description}
+                                steps={data.pointcloud_tech_steps || []}
+                                image={data.image}
                             />
                         );
 

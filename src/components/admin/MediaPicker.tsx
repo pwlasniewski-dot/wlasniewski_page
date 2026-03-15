@@ -198,6 +198,21 @@ export default function MediaPicker({ isOpen, onClose, onSelect, multiple = fals
                     }
                 }
 
+                // Resolve MIME type for 3D models (browsers don't know .glb/.gltf)
+                let resolvedType = fileToUpload.type;
+                if (!resolvedType) {
+                    const ext = fileName.split('.').pop()?.toLowerCase();
+                    const mimeMap: Record<string, string> = {
+                        'glb': 'model/gltf-binary',
+                        'gltf': 'model/gltf+json',
+                        'obj': 'model/obj',
+                        'stl': 'model/stl',
+                        'fbx': 'application/octet-stream',
+                    };
+                    resolvedType = mimeMap[ext || ''] || 'application/octet-stream';
+                    console.log(`[MIME] Resolved ${fileName} → ${resolvedType}`);
+                }
+
                 // 2. Get Presigned URL
                 const presignedRes = await fetch(`${getApiUrl('media')}/upload/presigned`, {
                     method: 'POST',
@@ -207,7 +222,7 @@ export default function MediaPicker({ isOpen, onClose, onSelect, multiple = fals
                     },
                     body: JSON.stringify({
                         fileName: fileName,
-                        fileType: fileToUpload.type,
+                        fileType: resolvedType,
                         folder: targetFolder
                     }),
                 });
@@ -219,7 +234,7 @@ export default function MediaPicker({ isOpen, onClose, onSelect, multiple = fals
                 try {
                     const s3Res = await fetch(uploadUrl, {
                         method: 'PUT',
-                        headers: { 'Content-Type': fileToUpload.type },
+                        headers: { 'Content-Type': resolvedType },
                         body: fileToUpload,
                     });
 
@@ -236,7 +251,7 @@ export default function MediaPicker({ isOpen, onClose, onSelect, multiple = fals
                             fileName: key,
                             publicUrl: publicUrl,
                             fileSize: fileToUpload.size,
-                            mimeType: fileToUpload.type,
+                            mimeType: resolvedType,
                             folder: targetFolder
                         }),
                     });
@@ -592,7 +607,7 @@ export default function MediaPicker({ isOpen, onClose, onSelect, multiple = fals
                         <label className="flex items-center gap-2 px-4 py-2 bg-gold-500 text-black text-xs font-bold rounded-md cursor-pointer hover:bg-gold-400 transition-colors shadow-lg shadow-gold-500/10">
                             <Upload className="w-4 h-4" />
                             <span>Wgraj Pliki</span>
-                            <input type="file" ref={fileInputRef} className="hidden" multiple accept="image/*,video/*,application/pdf" onChange={(e) => e.target.files && handleUpload(Array.from(e.target.files))} />
+                            <input type="file" ref={fileInputRef} className="hidden" multiple accept="image/*,video/*,application/pdf,.glb,.gltf" onChange={(e) => e.target.files && handleUpload(Array.from(e.target.files))} />
                         </label>
                     </div>
 
