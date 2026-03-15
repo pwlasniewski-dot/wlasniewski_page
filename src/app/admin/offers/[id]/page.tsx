@@ -80,25 +80,13 @@ export default function EditOfferPage({ params }: { params: Promise<{ id: string
         return `${count} wiadomości`;
     };
 
-    if (loading) {
-        return <div className="text-center py-8">Ładowanie...</div>;
-    }
-
-    if (!offer) {
-        return <div className="text-center py-8 text-red-500">Oferta nie znaleziona</div>;
-    }
-
     const [splitCounts, setSplitCounts] = useState<{ [key: number]: number }>({});
     const [acceptingForClient, setAcceptingForClient] = useState(false);
+    const [manualPrice, setManualPrice] = useState<number>(0);
 
-    // Convert saved data to OfferBuilder data format
-    const initialBuilderData = offer.template_data || {
-        title: offer.title,
-    };
-
-    const templateData = offer.template_data;
-    const isCommunion = offer.category?.toLowerCase() === 'komunia';
-    const isPending = offer.status === 'sent' || offer.status === 'pending';
+    const templateData = offer?.template_data;
+    const isCommunion = offer?.category?.toLowerCase() === 'komunia';
+    const isPending = offer?.status === 'sent' || offer?.status === 'pending';
 
     const totalChildren = useMemo(() => {
         return Object.values(splitCounts).reduce((a: number, b: number) => a + (b as number), 0);
@@ -120,19 +108,40 @@ export default function EditOfferPage({ params }: { params: Promise<{ id: string
         return total;
     }, [templateData, splitCounts, isCommunion]);
 
+    if (loading) {
+        return <div className="text-center py-8">Ładowanie...</div>;
+    }
+
+    if (!offer) {
+        return <div className="text-center py-8 text-red-500">Oferta nie znaleziona</div>;
+    }
+
+    // Convert saved data to OfferBuilder data format
+    const initialBuilderData = offer.template_data || {
+        title: offer.title,
+    };
+
     const handleAcceptForClient = async () => {
+        const finalPrice = isCommunion ? calculatedTotal : manualPrice;
         if (isCommunion && totalChildren === 0) {
             alert('Wprowadź liczbę dzieci dla przynajmniej jednego pakietu.');
             return;
         }
-        if (!confirm(`Czy na pewno chcesz zaakceptować ofertę za klienta?\n\nLiczba dzieci: ${totalChildren}\nKwota: ${calculatedTotal.toLocaleString('pl-PL')} PLN`)) {
+        if (!isCommunion && finalPrice <= 0) {
+            alert('Wprowadź kwotę oferty.');
+            return;
+        }
+        const confirmMsg = isCommunion 
+            ? `Czy na pewno chcesz zaakceptować ofertę za klienta?\n\nLiczba dzieci: ${totalChildren}\nKwota: ${finalPrice.toLocaleString('pl-PL')} PLN`
+            : `Czy na pewno chcesz zaakceptować ofertę za klienta?\n\nKwota: ${finalPrice.toLocaleString('pl-PL')} PLN`;
+        if (!confirm(confirmMsg)) {
             return;
         }
         setAcceptingForClient(true);
         try {
             const token = localStorage.getItem('admin_token');
             const clientSelection: any = {
-                totalPrice: calculatedTotal,
+                totalPrice: finalPrice,
                 acceptedByAdmin: true,
             };
             if (isCommunion) {
@@ -265,7 +274,7 @@ export default function EditOfferPage({ params }: { params: Promise<{ id: string
             )}
 
             {/* Accept for Client Section */}
-            {isPending && isCommunion && templateData && (
+            {isPending && (
                 <div className="bg-white rounded-lg shadow-lg border-l-4 border-green-500 p-6">
                     <div className="flex items-center gap-3 mb-4">
                         <UserCheck className="w-6 h-6 text-green-600" />
@@ -274,59 +283,79 @@ export default function EditOfferPage({ params }: { params: Promise<{ id: string
                             Status: {offer.status}
                         </span>
                     </div>
-                    <p className="text-sm text-gray-600 mb-4">Wprowadź liczbę dzieci dla każdego pakietu i zaakceptuj ofertę w imieniu klienta.</p>
+                    <p className="text-sm text-gray-600 mb-4">
+                        {isCommunion 
+                            ? 'Wprowadź liczbę dzieci dla każdego pakietu i zaakceptuj ofertę w imieniu klienta.'
+                            : 'Wprowadź kwotę i zaakceptuj ofertę w imieniu klienta.'}
+                    </p>
 
-                    <div className="grid gap-3 mb-6">
-                        {templateData.pricingHeaders?.map((header: string, idx: number) => {
-                            if (idx === 0) return null; // Skip label column
-                            const price = templateData.footerPrices?.[idx] || '—';
-                            const count = splitCounts[idx] || 0;
-                            return (
-                                <div key={idx} className="flex items-center gap-4 bg-gray-50 rounded-lg p-4 border border-gray-200">
-                                    <div className="flex-1">
-                                        <div className="flex items-center gap-2">
-                                            <Package className="w-4 h-4 text-blue-600" />
-                                            <span className="font-semibold text-gray-900">{header}</span>
+                    {isCommunion && templateData ? (
+                        <>
+                            <div className="grid gap-3 mb-6">
+                                {templateData.pricingHeaders?.map((header: string, idx: number) => {
+                                    if (idx === 0) return null;
+                                    const price = templateData.footerPrices?.[idx] || '—';
+                                    const count = splitCounts[idx] || 0;
+                                    return (
+                                        <div key={idx} className="flex items-center gap-4 bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                            <div className="flex-1">
+                                                <div className="flex items-center gap-2">
+                                                    <Package className="w-4 h-4 text-blue-600" />
+                                                    <span className="font-semibold text-gray-900">{header}</span>
+                                                </div>
+                                                <span className="text-sm text-gray-500">Cena: {price}</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <button
+                                                    onClick={() => setSplitCounts(p => ({ ...p, [idx]: Math.max(0, (p[idx] || 0) - 1) }))}
+                                                    className="w-8 h-8 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold text-lg flex items-center justify-center"
+                                                >−</button>
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    value={count}
+                                                    onChange={(e) => setSplitCounts(p => ({ ...p, [idx]: Math.max(0, parseInt(e.target.value) || 0) }))}
+                                                    className="w-16 text-center border border-gray-300 rounded-lg py-1 text-gray-900 font-bold"
+                                                />
+                                                <button
+                                                    onClick={() => setSplitCounts(p => ({ ...p, [idx]: (p[idx] || 0) + 1 }))}
+                                                    className="w-8 h-8 rounded-lg bg-blue-500 hover:bg-blue-600 text-white font-bold text-lg flex items-center justify-center"
+                                                >+</button>
+                                            </div>
                                         </div>
-                                        <span className="text-sm text-gray-500">Cena: {price}</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <button
-                                            onClick={() => setSplitCounts(p => ({ ...p, [idx]: Math.max(0, (p[idx] || 0) - 1) }))}
-                                            className="w-8 h-8 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold text-lg flex items-center justify-center"
-                                        >−</button>
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            value={count}
-                                            onChange={(e) => setSplitCounts(p => ({ ...p, [idx]: Math.max(0, parseInt(e.target.value) || 0) }))}
-                                            className="w-16 text-center border border-gray-300 rounded-lg py-1 text-gray-900 font-bold"
-                                        />
-                                        <button
-                                            onClick={() => setSplitCounts(p => ({ ...p, [idx]: (p[idx] || 0) + 1 }))}
-                                            className="w-8 h-8 rounded-lg bg-blue-500 hover:bg-blue-600 text-white font-bold text-lg flex items-center justify-center"
-                                        >+</button>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-
-                    {totalChildren > 0 && (
-                        <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <Users className="w-5 h-5 text-green-600" />
-                                    <span className="font-bold text-green-900">Łącznie dzieci: {totalChildren}</span>
-                                </div>
-                                <span className="text-lg font-bold text-green-700">{calculatedTotal.toLocaleString('pl-PL')} PLN</span>
+                                    );
+                                })}
                             </div>
+
+                            {totalChildren > 0 && (
+                                <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <Users className="w-5 h-5 text-green-600" />
+                                            <span className="font-bold text-green-900">Łącznie dzieci: {totalChildren}</span>
+                                        </div>
+                                        <span className="text-lg font-bold text-green-700">{calculatedTotal.toLocaleString('pl-PL')} PLN</span>
+                                    </div>
+                                </div>
+                            )}
+                        </>
+                    ) : (
+                        <div className="mb-6">
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">Kwota oferty (PLN)</label>
+                            <input
+                                type="number"
+                                min="0"
+                                value={manualPrice || ''}
+                                onChange={(e) => setManualPrice(Math.max(0, parseInt(e.target.value) || 0))}
+                                placeholder="np. 2500"
+                                className="w-full max-w-xs px-4 py-3 border border-gray-300 rounded-lg text-gray-900 font-bold text-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                            />
                         </div>
                     )}
 
                     <button
                         onClick={handleAcceptForClient}
-                        disabled={acceptingForClient || totalChildren === 0}
+                        disabled={acceptingForClient || (isCommunion ? totalChildren === 0 : manualPrice <= 0)}
                         className="w-full py-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white rounded-lg font-bold text-lg transition-colors flex items-center justify-center gap-2"
                     >
                         <CheckCircle2 className="w-5 h-5" />
