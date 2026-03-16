@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
             const allClientIds = clients.map(c => c.id);
 
             // 1. Fetch Related Data Independently (Avoids failing includes)
-            const [giftCardOrders, assignedBookings, offers, clientGalleries, negotiations] = await Promise.all([
+            const [giftCardOrders, assignedBookings, offers, clientGalleries, negotiations, contracts] = await Promise.all([
                 prisma.giftCardOrder.findMany({
                     where: { user_id: { in: allClientIds } },
                     select: { user_id: true, amount_paid: true, created_at: true }
@@ -75,6 +75,17 @@ export async function GET(request: NextRequest) {
                         offer_id: true,
                         offer: { select: { client_id: true } }
                     }
+                }).catch(() => []),
+                prisma.contract.findMany({
+                    where: { client_id: { in: allClientIds } },
+                    select: {
+                        id: true,
+                        client_id: true,
+                        status: true,
+                        signed_at: true,
+                        created_at: true
+                    },
+                    orderBy: { created_at: 'desc' }
                 }).catch(() => [])
             ]);
 
@@ -118,12 +129,22 @@ export async function GET(request: NextRequest) {
                 }
             });
 
+            const contractsMap = new Map<number, typeof contracts>();
+            contracts.forEach(c => {
+                if (c.client_id) {
+                    const list = contractsMap.get(c.client_id) || [];
+                    list.push(c);
+                    contractsMap.set(c.client_id, list);
+                }
+            });
+
             const formattedClients = clients.map(client => {
                 const clientOrders = ordersMap.get(client.id) || [];
                 const clientBookings = bookingsMap.get(client.email) || [];
                 const clientOffers = offersMap.get(client.id) || [];
                 const clientGallery = galleriesMap.get(client.email) || null;
                 const clientNegotiations = negotiationsMap.get(client.id) || [];
+                const clientContracts = contractsMap.get(client.id) || [];
 
                 const giftCardRevenue = clientOrders.reduce((sum, o) => sum + o.amount_paid, 0);
                 const bookingRevenue = clientBookings
@@ -139,6 +160,11 @@ export async function GET(request: NextRequest) {
                 const approvedAmount = latestOffer?.status === 'accepted'
                     ? (latestOffer.total_price || 0)
                     : null;
+
+                // Contract analysis
+                const latestContract = clientContracts[0] || null;
+                const contractStatus = latestContract?.status || null;
+                const contractSignedAt = latestContract?.signed_at || null;
 
                 // Job type
                 const offerCategory = latestOffer?.category ||
@@ -163,8 +189,8 @@ export async function GET(request: NextRequest) {
                         offerStatus,
                         offersCount: clientOffers.length,
                         approvedAmount,
-                        contractStatus: 'Wczytywanie...', // Partial recovery
-                        contractSignedAt: null,
+                        contractStatus,
+                        contractSignedAt,
                         photosExpected,
                         photosAdded: 0,
                         hasGallery: !!clientGallery,

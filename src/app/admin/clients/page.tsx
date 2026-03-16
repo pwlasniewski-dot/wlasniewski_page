@@ -288,7 +288,7 @@ function ClientsContent() {
         });
 
     // Summary stats
-    const totalLTV = clients.reduce((s, c) => s + c.stats.totalSpent, 0);
+    const totalLTV = clients.reduce((s, c) => s + (c.stats.approvedAmount || c.stats.totalSpent || 0), 0);
     const pendingOffers = clients.filter(c => c.stats.offerStatus === 'sent').length;
     const signedContracts = clients.filter(c => c.stats.contractStatus === 'signed').length;
 
@@ -470,8 +470,8 @@ function ClientsContent() {
                                         {/* Kwota */}
                                         <td className="px-4 py-3">
                                             <div>
-                                                <div className={`font-bold ${client.stats.totalSpent > 0 ? 'text-gold-400' : 'text-zinc-600'}`}>
-                                                    {client.stats.totalSpent.toLocaleString('pl-PL')} PLN
+                                                <div className={`font-bold ${(client.stats.approvedAmount || client.stats.totalSpent) > 0 ? 'text-gold-400' : 'text-zinc-600'}`}>
+                                                    {(client.stats.approvedAmount || client.stats.totalSpent || 0).toLocaleString('pl-PL')} PLN
                                                 </div>
                                                 {client.stats.isPaid && (
                                                     <div className="text-green-400 text-xs flex items-center gap-0.5 mt-0.5">
