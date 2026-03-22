@@ -25,7 +25,8 @@ import {
     Zap,
     Briefcase,
     Shield,
-    FileEdit
+    FileEdit,
+    Search
 } from 'lucide-react';
 
 const navigation = [
@@ -68,6 +69,7 @@ const navigation = [
     { name: 'Administratorzy', href: '/admin/users', icon: Shield },
 
     { name: 'Analityka', href: '/admin/analytics', icon: BarChart3 },
+    { name: 'SEO Ops', href: '/admin/seo', icon: Search },
     { name: 'Logi', href: '/admin/logs', icon: List },
     { name: 'Stopka', href: '/admin/footer', icon: FileText },
     { name: 'Ustawienia', href: '/admin/settings', icon: Settings },

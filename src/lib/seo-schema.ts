@@ -184,3 +184,78 @@ export function generateServiceSchema(service: {
 
     return JSON.stringify(schema);
 }
+
+// ─── B2B Drone Services Schema (aeroanaliza.pl) ───
+
+export function generateB2BDroneBusinessSchema(): string {
+    const schema = {
+        "@context": "https://schema.org",
+        "@type": "ProfessionalService",
+        "@id": "https://aeroanaliza.pl/#business",
+        "name": "FOTO-DRON — Usługi Dronowe dla Biznesu",
+        "description": "Profesjonalne usługi dronowe: inspekcje termowizyjne, ortofotomapy, monitoring inwestycji budowlanych, audyty dachów i paneli fotowoltaicznych. Licencjonowany operator UAVO.",
+        "image": "https://aeroanaliza.pl/assets/b2b/hero-drone.jpg",
+        "telephone": "+48 530 788 694",
+        "email": process.env.NEXT_PUBLIC_CONTACT_EMAIL || "kontakt@aeroanaliza.pl",
+        "url": "https://aeroanaliza.pl",
+        "priceRange": "$$-$$$",
+        "address": {
+            "@type": "PostalAddress",
+            "addressLocality": "Toruń",
+            "addressRegion": "kujawsko-pomorskie",
+            "addressCountry": "PL"
+        },
+        "geo": {
+            "@type": "GeoCoordinates",
+            "latitude": "53.0138",
+            "longitude": "18.5984"
+        },
+        "areaServed": [
+            { "@type": "State", "name": "kujawsko-pomorskie" },
+            { "@type": "Country", "name": "Polska" }
+        ],
+        "sameAs": [
+            "https://wlasniewski.pl"
+        ],
+        "hasOfferCatalog": {
+            "@type": "OfferCatalog",
+            "name": "Usługi dronowe B2B",
+            "itemListElement": [
+                {
+                    "@type": "Offer",
+                    "itemOffered": {
+                        "@type": "Service",
+                        "name": "Inspekcje termowizyjne dronem",
+                        "description": "Inspekcje dachów, paneli fotowoltaicznych i instalacji termowizją z drona Mavic 3 Thermal"
+                    }
+                },
+                {
+                    "@type": "Offer",
+                    "itemOffered": {
+                        "@type": "Service",
+                        "name": "Ortofotomapy i fotogrametria",
+                        "description": "Precyzyjne ortofotomapy terenu, pomiary objętości, modele 3D z dronów"
+                    }
+                },
+                {
+                    "@type": "Offer",
+                    "itemOffered": {
+                        "@type": "Service",
+                        "name": "Monitoring inwestycji budowlanych",
+                        "description": "Cykliczne naloty dokumentujące postęp budowy z perspektywy drona"
+                    }
+                },
+                {
+                    "@type": "Offer",
+                    "itemOffered": {
+                        "@type": "Service",
+                        "name": "Filmowanie i fotografia z powietrza",
+                        "description": "Profesjonalne zdjęcia i filmy z drona dla nieruchomości, eventów i przemysłu"
+                    }
+                }
+            ]
+        }
+    };
+
+    return JSON.stringify(schema);
+}

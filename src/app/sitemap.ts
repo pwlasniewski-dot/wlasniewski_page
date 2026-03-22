@@ -2,9 +2,10 @@ import { MetadataRoute } from 'next';
 import prisma from '@/lib/db/prisma';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-    const baseUrl = 'https://wlasniewski.pl';
+    const b2cBase = 'https://wlasniewski.pl';
+    const b2bBase = 'https://aeroanaliza.pl';
 
-    // Static pages
+    // B2C Static pages
     const staticPages = [
         '',
         '/o-mnie',
@@ -16,6 +17,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         '/regulamin',
         '/polityka-prywatnosci',
         '/reklamacje',
+    ];
+
+    // B2B Static pages
+    const b2bStaticPages = [
+        '',
+        '/b2b/dron',
     ];
 
     let dbPages: Array<{ slug: string; updated_at: Date }> = [];
@@ -40,39 +47,59 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         console.error('[sitemap] Failed to load dynamic entries:', error);
     }
 
+    // Separate B2B pages from B2C
+    const b2cDbPages = dbPages.filter(p => !p.slug.startsWith('b2b'));
+    const b2bDbPages = dbPages.filter(p => p.slug.startsWith('b2b'));
+
     const sitemap: MetadataRoute.Sitemap = [
-        // Static pages - highest priority
+        // ─── B2C: Static pages ───
         ...staticPages.map(route => ({
-            url: `${baseUrl}${route}`,
+            url: `${b2cBase}${route}`,
             lastModified: new Date(),
             changeFrequency: 'monthly' as const,
             priority: route === '' ? 1.0 : 0.8,
         })),
 
-        // Dynamic pages from database (includes city landing pages)
-        ...dbPages.map(page => {
+        // ─── B2C: Dynamic pages from database ───
+        ...b2cDbPages.map(page => {
             const isCityPage = page.slug.startsWith('fotograf-');
             return {
-                url: `${baseUrl}/${page.slug}`,
+                url: `${b2cBase}/${page.slug}`,
                 lastModified: page.updated_at,
                 changeFrequency: 'monthly' as const,
                 priority: isCityPage ? 0.9 : 0.7,
             };
         }),
 
-        // Portfolio sessions
+        // ─── B2C: Portfolio sessions ───
         ...portfolioSessions.map(session => ({
-            url: `${baseUrl}/portfolio/${session.category}/${session.slug}`,
+            url: `${b2cBase}/portfolio/${session.category}/${session.slug}`,
             lastModified: session.updated_at,
             changeFrequency: 'monthly' as const,
             priority: 0.6,
         })),
 
-        // Blog posts
+        // ─── B2C: Blog posts ───
         ...blogPosts.map(post => ({
-            url: `${baseUrl}/blog/${post.slug}`,
+            url: `${b2cBase}/blog/${post.slug}`,
             lastModified: post.updated_at,
             changeFrequency: 'weekly' as const,
+            priority: 0.7,
+        })),
+
+        // ─── B2B: Static pages (aeroanaliza.pl) ───
+        ...b2bStaticPages.map(route => ({
+            url: `${b2bBase}${route}`,
+            lastModified: new Date(),
+            changeFrequency: 'monthly' as const,
+            priority: route === '' ? 1.0 : 0.8,
+        })),
+
+        // ─── B2B: Dynamic pages from database ───
+        ...b2bDbPages.map(page => ({
+            url: `${b2bBase}/${page.slug}`,
+            lastModified: page.updated_at,
+            changeFrequency: 'monthly' as const,
             priority: 0.7,
         })),
     ];
