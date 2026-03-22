@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
-import { requireAuth } from '@/lib/auth/middleware';
+import { withAuth, type AuthenticatedRequest } from '@/lib/auth/middleware';
 
 export const dynamic = 'force-dynamic';
 
@@ -251,10 +251,8 @@ function buildB2BDiagnostics(
 
 /* ─── GET: Full Audit Report ─── */
 export async function GET(request: NextRequest) {
-    const authError = await requireAuth(request);
-    if (authError) return authError;
-
-    try {
+    return withAuth(request, async () => {
+        try {
         const [settingRows, pages, sessions, blogPosts, events] = await Promise.all([
             prisma.setting.findMany({
                 where: {
@@ -512,14 +510,13 @@ export async function GET(request: NextRequest) {
         console.error('[SEO OPS] Failed to build report:', error);
         return NextResponse.json({ success: false, error: 'Failed to build SEO Ops report' }, { status: 500 });
     }
+    });
 }
 
 /* ─── POST: Multi-action Handler ─── */
 export async function POST(request: NextRequest) {
-    const authError = await requireAuth(request);
-    if (authError) return authError;
-
-    try {
+    return withAuth(request, async () => {
+        try {
         const body = (await request.json()) as PostBody;
         const action = body.action || 'save-checklist';
 
@@ -655,4 +652,5 @@ export async function POST(request: NextRequest) {
         console.error('[SEO OPS] POST error:', error);
         return NextResponse.json({ success: false, error: 'Failed to process SEO Ops action' }, { status: 500 });
     }
+    });
 }

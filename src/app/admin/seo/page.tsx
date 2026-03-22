@@ -131,9 +131,16 @@ export default function SeoOpsPage() {
         setLoading(true);
         try {
             const token = localStorage.getItem('admin_token');
+            if (!token) { window.location.href = '/admin/login'; return; }
             const res = await fetch('/api/admin/seo-ops', {
-                headers: token ? { Authorization: `Bearer ${token}` } : {},
+                headers: { Authorization: `Bearer ${token}` },
             });
+            if (res.status === 401) {
+                localStorage.removeItem('admin_token');
+                localStorage.removeItem('admin_user');
+                window.location.href = '/admin/login';
+                return;
+            }
             const payload = (await res.json()) as SeoOpsPayload;
             if (!res.ok || !payload.success) throw new Error('Nie udało się pobrać raportu SEO Ops.');
             setData(payload);
