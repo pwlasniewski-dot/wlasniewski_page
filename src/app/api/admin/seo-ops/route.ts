@@ -253,7 +253,7 @@ function buildB2BDiagnostics(
 export async function GET(request: NextRequest) {
     return withAuth(request, async () => {
         try {
-        const [settingRows, pages, sessions, blogPosts, events] = await Promise.all([
+        const [settingRows, pages, sessions, blogPosts] = await Promise.all([
             prisma.setting.findMany({
                 where: {
                     OR: [
@@ -289,15 +289,22 @@ export async function GET(request: NextRequest) {
                     meta_title: true, meta_description: true, updated_at: true,
                 },
             }),
-            prisma.analyticsEvent.findMany({
+        ]);
+
+        // Analytics query separately — non-fatal if it fails
+        let events: { created_at: Date; referrer: string | null; page_url: string | null; session_id: string }[] = [];
+        try {
+            events = await prisma.analyticsEvent.findMany({
                 where: {
                     event_type: 'page_view',
                     created_at: { gte: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000) },
                 },
                 select: { created_at: true, referrer: true, page_url: true, session_id: true },
                 orderBy: { created_at: 'asc' },
-            }),
-        ]);
+            });
+        } catch (e) {
+            console.warn('[SEO OPS] Analytics query failed (non-fatal):', e);
+        }
 
         /* Settings resolution */
         const firstRow = settingRows[0];

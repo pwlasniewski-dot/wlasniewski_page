@@ -74,10 +74,16 @@ export async function withAuth(
 ) {
     const authError = await requireAuth(request);
     if (authError) {
-        console.error('[withAuth] Auth failed:', authError);
         return authError;
     }
 
-    console.log('[withAuth] Auth success, executing handler');
-    return handler(request as AuthenticatedRequest);
+    try {
+        return await handler(request as AuthenticatedRequest);
+    } catch (error) {
+        console.error('[withAuth] Handler error:', error);
+        return NextResponse.json(
+            { error: 'Internal Server Error' },
+            { status: 500 }
+        );
+    }
 }
