@@ -83,10 +83,24 @@ function generateMetaDescription(content: string, title: string, domain: 'b2c' |
         .replace(/\s+/g, ' ')
         .trim();
 
-    const prefix = plain.slice(0, 120).trim();
     const cta = domain === 'b2b' ? config.cta_b2b : config.cta_b2c;
-    const full = prefix ? `${prefix}. ${cta}` : `${title}. ${cta}`;
-    return full.slice(0, 155);
+    const location = domain === 'b2b' ? 'Toruń i okolice' : 'Toruń';
+    // Build rich description even when CMS content is empty
+    let desc: string;
+    if (plain.length > 30) {
+        const prefix = plain.slice(0, 120).trim();
+        desc = `${prefix}. ${cta}`;
+    } else {
+        // No CMS content — generate from title + location + CTA
+        desc = `${title} — ${location}. ${cta}`;
+        if (desc.length < 80) {
+            const extra = domain === 'b2b'
+                ? ' Profesjonalne usługi dronem, termowizja, ortofotomapy.'
+                : ' Profesjonalna fotografia: śluby, sesje rodzinne, eventy.';
+            desc += extra;
+        }
+    }
+    return desc.slice(0, 155);
 }
 
 // ─── AI Text Generator (rule-based with tone awareness) ───
@@ -185,8 +199,8 @@ export async function GET(request: NextRequest) {
             const b2cPages = pages.filter(p => !p.slug.startsWith('b2b'));
             const b2bPages = pages.filter(p => p.slug.startsWith('b2b'));
 
-            const missingMetaB2C = b2cPages.filter(p => !p.meta_title || p.meta_title.length < 20 || !p.meta_description || p.meta_description.length < 90);
-            const missingMetaB2B = b2bPages.filter(p => !p.meta_title || p.meta_title.length < 20 || !p.meta_description || p.meta_description.length < 90);
+            const missingMetaB2C = b2cPages.filter(p => !p.meta_title || p.meta_title.length < 20 || !p.meta_description || p.meta_description.length < 50);
+            const missingMetaB2B = b2bPages.filter(p => !p.meta_title || p.meta_title.length < 20 || !p.meta_description || p.meta_description.length < 50);
 
             let log: AutopilotLogEntry[] = [];
             try { log = JSON.parse(seoStateRow?.setting_value || '[]'); } catch { log = []; }
@@ -260,7 +274,7 @@ export async function POST(request: NextRequest) {
                         const isB2B = p.slug.startsWith('b2b');
                         if (domain === 'b2c' && isB2B) return false;
                         if (domain === 'b2b' && !isB2B) return false;
-                        return !p.meta_title || p.meta_title.length < 20 || !p.meta_description || p.meta_description.length < 90;
+                        return !p.meta_title || p.meta_title.length < 20 || !p.meta_description || p.meta_description.length < 50;
                     });
 
                     const previews = toFix.map(page => {
@@ -272,7 +286,7 @@ export async function POST(request: NextRequest) {
                             current_meta_title: page.meta_title || '(brak)',
                             current_meta_description: page.meta_description || '(brak)',
                             new_meta_title: (!page.meta_title || page.meta_title.length < 20) ? generateMetaTitle(page.title, domType, tone) : page.meta_title,
-                            new_meta_description: (!page.meta_description || page.meta_description.length < 90) ? generateMetaDescription(page.content || '', page.title, domType, tone) : page.meta_description,
+                            new_meta_description: (!page.meta_description || page.meta_description.length < 50) ? generateMetaDescription(page.content || '', page.title, domType, tone) : page.meta_description,
                         };
                     });
 
@@ -350,7 +364,7 @@ export async function POST(request: NextRequest) {
                     const isB2B = p.slug.startsWith('b2b');
                     if (domain === 'b2c' && isB2B) return false;
                     if (domain === 'b2b' && !isB2B) return false;
-                    return !p.meta_title || p.meta_title.length < 20 || !p.meta_description || p.meta_description.length < 90;
+                    return !p.meta_title || p.meta_title.length < 20 || !p.meta_description || p.meta_description.length < 50;
                 });
 
                 const results = toFix.map(page => {
@@ -380,7 +394,7 @@ export async function POST(request: NextRequest) {
                     const isB2B = p.slug.startsWith('b2b');
                     if (domain === 'b2c' && isB2B) return false;
                     if (domain === 'b2b' && !isB2B) return false;
-                    return !p.meta_title || p.meta_title.length < 20 || !p.meta_description || p.meta_description.length < 90;
+                    return !p.meta_title || p.meta_title.length < 20 || !p.meta_description || p.meta_description.length < 50;
                 });
 
                 const updates = await Promise.all(
@@ -392,7 +406,7 @@ export async function POST(request: NextRequest) {
                             ? generateMetaTitle(page.title, domainType, tone)
                             : page.meta_title;
 
-                        const newDesc = (!page.meta_description || page.meta_description.length < 90)
+                        const newDesc = (!page.meta_description || page.meta_description.length < 50)
                             ? generateMetaDescription(page.content || '', page.title, domainType, tone)
                             : page.meta_description;
 
