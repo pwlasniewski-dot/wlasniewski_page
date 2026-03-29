@@ -477,7 +477,7 @@ export default function HomepageManager() {
 
     // --- Media Picker ---
 
-    const openMediaPicker = (type: 'hero' | 'section' | 'advanced' | 'advanced_challenge' | 'rte' | 'mini_gallery_item' | 'story_cover' | 'chronological_gallery' | 'masonry_gallery' | 'featured_carousel_slide', index: number, field?: string, subIndex?: number) => {
+    const openMediaPicker = (type: 'hero' | 'section' | 'advanced' | 'advanced_challenge' | 'rte' | 'mini_gallery_item' | 'story_cover' | 'chronological_gallery' | 'masonry_gallery' | 'featured_carousel_slide' | 'cube_face', index: number, field?: string, subIndex?: number) => {
         setCurrentPickerTarget({ type, index, field, subIndex });
         setMediaPickerOpen(true);
     };
@@ -591,6 +591,17 @@ export default function HomepageManager() {
                 section.data.items[currentPickerTarget.subIndex].image = filePath;
                 setSections(updated);
             }
+        } else if (currentPickerTarget.type === 'cube_face') {
+            const sectionIdx = currentPickerTarget.index;
+            const faceIdx = currentPickerTarget.subIndex ?? 0;
+            setSections(prevSections => prevSections.map((sec, idx) => {
+                if (idx !== sectionIdx) return sec;
+                const images = [...(sec.data?.images || [])];
+                // Ensure array is long enough
+                while (images.length <= faceIdx) images.push('');
+                images[faceIdx] = filePath;
+                return { ...sec, data: { ...sec.data, images } };
+            }));
         } else {
             const updated = [...sections];
             const section = updated[currentPickerTarget.index];
@@ -2746,36 +2757,146 @@ export default function HomepageManager() {
 
                             {/* PHOTO CUBE 3D EDITOR */}
                             {section.type === 'photo_cube_3d' && (
-                                <div className="space-y-4">
+                                <div className="space-y-5">
                                     <div className="bg-yellow-950/30 p-3 rounded border border-yellow-800 mb-2">
-                                        <p className="text-xs text-zinc-400">🎲 <strong className="text-yellow-400">Kostka 3D:</strong> Interaktywna kostka ze zdjęciami. Wklej URL-e zdjęć (do 6 sztuk).</p>
+                                        <p className="text-xs text-zinc-400">🎲 <strong className="text-yellow-400">Kostka 3D:</strong> Interaktywna, obracana kostka ze zdjęciami na 6 ściankach. Przeciągaj myszką aby obracać. Pełna konfiguracja fizyki, animacji i wyglądu.</p>
                                     </div>
+
+                                    {/* === TYTUŁ & PODTYTUŁ === */}
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-xs text-zinc-400 mb-1">Tytuł sekcji (opcjonalnie)</label>
+                                            <input type="text" value={section.data?.title || ''} onChange={e => updateSectionData(index, 'title', e.target.value)} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white text-sm" placeholder="np. Moje Portfolio 3D" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs text-zinc-400 mb-1">Podtytuł (opcjonalnie)</label>
+                                            <input type="text" value={section.data?.subtitle || ''} onChange={e => updateSectionData(index, 'subtitle', e.target.value)} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white text-sm" placeholder="np. Najlepsze kadry z sesji" />
+                                        </div>
+                                    </div>
+
+                                    {/* === ZDJĘCIA NA ŚCIANKACH === */}
                                     <div>
-                                        <label className="block text-xs text-zinc-400 mb-1">Zdjęcia (URL-e, po jednym na linię)</label>
-                                        <textarea
-                                            value={(section.data?.images || []).join('\n')}
-                                            onChange={e => updateSectionData(index, 'images', e.target.value.split('\n').filter((u: string) => u.trim()))}
-                                            className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white h-28 font-mono text-xs"
-                                            placeholder={"/uploads/photo1.jpg\n/uploads/photo2.jpg"}
-                                        />
+                                        <div className="flex items-center justify-between mb-2">
+                                            <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider">Zdjęcia na ściankach ({(section.data?.images || []).filter(Boolean).length}/6)</label>
+                                        </div>
+                                        <div className="grid grid-cols-3 gap-3">
+                                            {['Przód', 'Tył', 'Prawo', 'Lewo', 'Góra', 'Dół'].map((face, fIdx) => {
+                                                const img = (section.data?.images || [])[fIdx];
+                                                return (
+                                                    <div key={fIdx} className="relative group">
+                                                        <div className="text-[10px] text-zinc-500 mb-1 font-bold uppercase tracking-wider">{face}</div>
+                                                        <div
+                                                            className="aspect-square rounded-lg border-2 border-dashed border-zinc-700 hover:border-yellow-500/50 cursor-pointer flex items-center justify-center overflow-hidden bg-zinc-800/50 transition-colors"
+                                                            onClick={() => openMediaPicker('cube_face', index, undefined, fIdx)}
+                                                        >
+                                                            {img ? (
+                                                                <img src={img} alt={face} className="w-full h-full object-cover" />
+                                                            ) : (
+                                                                <span className="text-zinc-600 text-xs">+ Dodaj</span>
+                                                            )}
+                                                        </div>
+                                                        {img && (
+                                                            <button
+                                                                onClick={(e) => { e.stopPropagation(); const images = [...(section.data?.images || [])]; images[fIdx] = ''; updateSectionData(index, 'images', images); }}
+                                                                className="absolute top-5 right-1 w-5 h-5 bg-red-600 rounded-full text-white text-[10px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                                            >✕</button>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                        <details className="mt-2">
+                                            <summary className="text-[10px] text-zinc-500 cursor-pointer hover:text-zinc-400">Lub wklej URL-e ręcznie...</summary>
+                                            <textarea
+                                                value={(section.data?.images || []).join('\n')}
+                                                onChange={e => updateSectionData(index, 'images', e.target.value.split('\n').filter((u: string) => u.trim()))}
+                                                className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white h-24 font-mono text-xs mt-1"
+                                                placeholder={"/uploads/photo1.jpg\n/uploads/photo2.jpg\n(do 6 URL-i)"}
+                                            />
+                                        </details>
                                     </div>
-                                    <div className="grid grid-cols-3 gap-4">
-                                        <div>
-                                            <label className="block text-xs text-zinc-400 mb-1">Rozmiar (px)</label>
-                                            <input type="number" value={section.data?.cube_size || 320} onChange={e => updateSectionData(index, 'cube_size', parseInt(e.target.value))} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white" />
+
+                                    {/* === ROZMIAR & STYL === */}
+                                    <div>
+                                        <div className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">Rozmiar & Styl</div>
+                                        <div className="grid grid-cols-3 gap-4">
+                                            <div>
+                                                <label className="block text-[10px] text-zinc-500 mb-1">Rozmiar kostki (px)</label>
+                                                <input type="number" min="150" max="600" step="10" value={section.data?.cube_size || 320} onChange={e => updateSectionData(index, 'cube_size', parseInt(e.target.value))} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white text-sm" />
+                                            </div>
+                                            <div>
+                                                <label className="block text-[10px] text-zinc-500 mb-1">Kolor krawędzi</label>
+                                                <div className="flex gap-2 items-center">
+                                                    <input type="color" value={section.data?.edge_color || '#c8a960'} onChange={e => updateSectionData(index, 'edge_color', e.target.value)} className="w-10 h-10 bg-zinc-800 border border-zinc-700 rounded cursor-pointer shrink-0" />
+                                                    <input type="text" value={section.data?.edge_color || '#c8a960'} onChange={e => updateSectionData(index, 'edge_color', e.target.value)} className="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-2 text-xs text-zinc-400 font-mono" />
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className="block text-[10px] text-zinc-500 mb-1">Grubość krawędzi (px)</label>
+                                                <input type="number" step="0.5" min="0" max="5" value={section.data?.edge_width ?? 1.5} onChange={e => updateSectionData(index, 'edge_width', parseFloat(e.target.value))} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white text-sm" />
+                                            </div>
                                         </div>
-                                        <div>
-                                            <label className="block text-xs text-zinc-400 mb-1">Kolor krawędzi</label>
-                                            <input type="color" value={section.data?.edge_color || '#c8a960'} onChange={e => updateSectionData(index, 'edge_color', e.target.value)} className="w-full h-10 bg-zinc-800 border border-zinc-700 rounded cursor-pointer" />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs text-zinc-400 mb-1">Kolor tła</label>
-                                            <input type="color" value={section.data?.background_color || '#000000'} onChange={e => updateSectionData(index, 'background_color', e.target.value)} className="w-full h-10 bg-zinc-800 border border-zinc-700 rounded cursor-pointer" />
+                                        <div className="grid grid-cols-3 gap-4 mt-3">
+                                            <div>
+                                                <label className="block text-[10px] text-zinc-500 mb-1">Kolor tła sekcji</label>
+                                                <div className="flex gap-2 items-center">
+                                                    <input type="color" value={section.data?.background_color || '#000000'} onChange={e => updateSectionData(index, 'background_color', e.target.value)} className="w-10 h-10 bg-zinc-800 border border-zinc-700 rounded cursor-pointer shrink-0" />
+                                                    <input type="text" value={section.data?.background_color || '#000000'} onChange={e => updateSectionData(index, 'background_color', e.target.value)} className="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-2 text-xs text-zinc-400 font-mono" />
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className="block text-[10px] text-zinc-500 mb-1">Dopasowanie zdjęć</label>
+                                                <select value={section.data?.image_fit || 'cover'} onChange={e => updateSectionData(index, 'image_fit', e.target.value)} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white text-sm">
+                                                    <option value="cover">Cover (wypełnia)</option>
+                                                    <option value="contain">Contain (mieści całe)</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-[10px] text-zinc-500 mb-1">Kierunek wjazdu</label>
+                                                <select value={section.data?.entry_direction || 'left'} onChange={e => updateSectionData(index, 'entry_direction', e.target.value)} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white text-sm">
+                                                    <option value="left">Z lewej </option>
+                                                    <option value="right">Z prawej </option>
+                                                    <option value="top">Z góry</option>
+                                                    <option value="bottom">Z dołu</option>
+                                                </select>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-3">
-                                        <input type="checkbox" checked={section.data?.auto_rotate ?? true} onChange={e => updateSectionData(index, 'auto_rotate', e.target.checked)} className="w-4 h-4 accent-gold-500" />
-                                        <label className="text-xs text-zinc-400">Auto-rotacja</label>
+
+                                    {/* === FIZYKA & ANIMACJA === */}
+                                    <div>
+                                        <div className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">Fizyka & Animacja</div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-[10px] text-zinc-500 mb-1">Czułość obracania <span className="text-zinc-600">(0.1 = wolno, 2.0 = szybko)</span></label>
+                                                <input type="range" min="0.1" max="2" step="0.1" value={section.data?.rotation_speed ?? 0.5} onChange={e => updateSectionData(index, 'rotation_speed', parseFloat(e.target.value))} className="w-full accent-yellow-500" />
+                                                <div className="flex justify-between text-[10px] text-zinc-600"><span>Precyzja</span><span className="text-yellow-500 font-bold">{section.data?.rotation_speed ?? 0.5}</span><span>Szybkość</span></div>
+                                            </div>
+                                            <div>
+                                                <label className="block text-[10px] text-zinc-500 mb-1">Bezwładność <span className="text-zinc-600">(0.85 = mało, 0.99 = dużo)</span></label>
+                                                <input type="range" min="0.85" max="0.99" step="0.01" value={section.data?.smoothness ?? 0.96} onChange={e => updateSectionData(index, 'smoothness', parseFloat(e.target.value))} className="w-full accent-yellow-500" />
+                                                <div className="flex justify-between text-[10px] text-zinc-600"><span>Zatrzymuje szybko</span><span className="text-yellow-500 font-bold">{section.data?.smoothness ?? 0.96}</span><span>Ślizga się</span></div>
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4 mt-3">
+                                            <div>
+                                                <label className="block text-[10px] text-zinc-500 mb-1">Czas animacji wjazdu (ms)</label>
+                                                <input type="number" step="100" min="500" max="5000" value={section.data?.entry_speed ?? 1800} onChange={e => updateSectionData(index, 'entry_speed', parseInt(e.target.value))} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white text-sm" />
+                                            </div>
+                                            <div className="flex flex-col justify-end">
+                                                <div className="flex items-center gap-3 bg-zinc-800/50 rounded-lg px-3 py-2 border border-zinc-700">
+                                                    <input type="checkbox" checked={section.data?.auto_rotate ?? true} onChange={e => updateSectionData(index, 'auto_rotate', e.target.checked)} className="w-4 h-4 accent-yellow-500" />
+                                                    <label className="text-xs text-zinc-400">Auto-rotacja <span className="text-zinc-600">(gdy nie dotykasz)</span></label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {(section.data?.auto_rotate ?? true) && (
+                                            <div className="mt-3">
+                                                <label className="block text-[10px] text-zinc-500 mb-1">Prędkość auto-rotacji <span className="text-zinc-600">(°/klatka)</span></label>
+                                                <input type="range" min="0.02" max="0.5" step="0.01" value={section.data?.auto_rotate_speed ?? 0.15} onChange={e => updateSectionData(index, 'auto_rotate_speed', parseFloat(e.target.value))} className="w-full accent-yellow-500" />
+                                                <div className="flex justify-between text-[10px] text-zinc-600"><span>Subtelnie</span><span className="text-yellow-500 font-bold">{section.data?.auto_rotate_speed ?? 0.15}°</span><span>Dynamicznie</span></div>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             )}
