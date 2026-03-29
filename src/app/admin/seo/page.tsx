@@ -86,6 +86,7 @@ type SeoOpsPayload = {
         missingMetaTitle: Array<{ slug: string; title: string; currentLength: number }>;
         missingMetaDescription: Array<{ slug: string; title: string; currentLength: number }>;
         thinContent: Array<{ slug: string; title: string; wordCount: number }>;
+        noCmsContent: Array<{ slug: string; title: string }>;
         sessionsWithoutMeta: Array<{ slug: string; title: string; hasTitle: boolean; hasDescription: boolean }>;
         blogWithoutMeta: Array<{ slug: string; title: string; hasTitle: boolean; hasDescription: boolean }>;
     };
@@ -794,117 +795,162 @@ export default function SeoOpsPage() {
             {/* ─── Critical Details Expansion ─── */}
             {showCriticalDetails && data.criticalDetails && (
                 <section className="rounded-2xl border border-amber-500/40 bg-gradient-to-br from-amber-950/20 via-zinc-900/80 to-zinc-900/80 p-5">
-                    <div className="flex items-center gap-3 mb-4">
-                        <CircleAlert className="h-5 w-5 text-amber-400" />
-                        <h2 className="text-lg font-semibold">Krytyczne luki — szczegółowa lista</h2>
-                        <span className="text-xs text-zinc-500">({data.summary.unresolvedCritical} problemów na stronach CMS)</span>
+                    <div className="flex items-center justify-between mb-5">
+                        <div className="flex items-center gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/20">
+                                <CircleAlert className="h-5 w-5 text-amber-400" />
+                            </div>
+                            <div>
+                                <h2 className="text-lg font-bold">Audyt krytycznych problemów SEO</h2>
+                                <p className="text-xs text-zinc-500">Poniżej lista stron wymagających poprawek — posortowana wg priorytetu</p>
+                            </div>
+                        </div>
+                        <button onClick={() => setShowCriticalDetails(false)} className="text-xs text-zinc-500 hover:text-zinc-300 transition">✕ Zamknij</button>
                     </div>
 
-                    {/* Missing Meta Titles */}
+                    {/* ── PRIORYTET 1: Meta Title ── */}
                     {data.criticalDetails.missingMetaTitle.length > 0 && (
-                        <div className="mb-4">
-                            <h3 className="text-sm font-semibold text-rose-400 mb-2 flex items-center gap-2">
-                                <span className="flex h-5 w-5 items-center justify-center rounded bg-rose-500/20 text-[10px] font-bold text-rose-400">{data.criticalDetails.missingMetaTitle.length}</span>
-                                Brakujący / za krótki meta title (&lt;20 znaków)
-                            </h3>
-                            <div className="space-y-1.5">
-                                {data.criticalDetails.missingMetaTitle.map((p, i) => (
-                                    <div key={i} className="flex items-center gap-3 rounded-lg border border-rose-500/20 bg-rose-950/10 px-3 py-2">
-                                        <span className="text-xs font-mono text-rose-300 shrink-0">/{p.slug || '(index)'}</span>
-                                        <span className="text-xs text-zinc-400 truncate flex-1">{p.title}</span>
-                                        <span className="text-[10px] text-rose-400 shrink-0">{p.currentLength} zn.</span>
-                                    </div>
-                                ))}
+                        <div className="mb-5">
+                            <div className="flex items-center gap-3 mb-1.5">
+                                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-rose-500/20 text-xs font-bold text-rose-400">1</span>
+                                <h3 className="text-sm font-bold text-rose-300">Brakujący meta title</h3>
+                                <span className="rounded-md bg-rose-500/15 px-2 py-0.5 text-[10px] font-bold text-rose-400">KRYTYCZNE • {data.criticalDetails.missingMetaTitle.length} stron</span>
                             </div>
+                            <p className="text-[11px] text-zinc-500 mb-2.5 ml-9">
+                                Meta title to najważniejszy element SEO — to on wyświetla się w wynikach Google jako tytuł strony.
+                                Brak lub za krótki title (&lt;20 zn.) oznacza, że Google sam dobierze tytuł, często nietrafionie.
+                            </p>
+                            <div className="ml-9 rounded-xl border border-rose-500/20 bg-black/30 overflow-hidden">
+                                <table className="w-full text-xs">
+                                    <thead><tr className="border-b border-rose-500/15 text-[10px] text-zinc-500 uppercase"><th className="text-left px-3 py-2">Strona</th><th className="text-left px-3 py-2">Nazwa</th><th className="text-right px-3 py-2">Obecna dł.</th><th className="text-right px-3 py-2">Wymagane</th></tr></thead>
+                                    <tbody>{data.criticalDetails.missingMetaTitle.map((p, i) => (
+                                        <tr key={i} className="border-b border-zinc-800/50 hover:bg-rose-500/5"><td className="px-3 py-2 font-mono text-rose-300">/{p.slug || 'strona-glowna'}</td><td className="px-3 py-2 text-zinc-400">{p.title}</td><td className="px-3 py-2 text-right text-rose-400 font-bold">{p.currentLength} zn.</td><td className="px-3 py-2 text-right text-zinc-500">50-60 zn.</td></tr>
+                                    ))}</tbody>
+                                </table>
+                            </div>
+                            <p className="text-[10px] text-emerald-400/80 mt-1.5 ml-9">💡 Rozwiązanie: użyj Autopilota SEO → „Auto-uzupełnij meta" aby wygenerować automatycznie.</p>
                         </div>
                     )}
 
-                    {/* Missing Meta Descriptions */}
+                    {/* ── PRIORYTET 2: Meta Description ── */}
                     {data.criticalDetails.missingMetaDescription.length > 0 && (
-                        <div className="mb-4">
-                            <h3 className="text-sm font-semibold text-amber-400 mb-2 flex items-center gap-2">
-                                <span className="flex h-5 w-5 items-center justify-center rounded bg-amber-500/20 text-[10px] font-bold text-amber-400">{data.criticalDetails.missingMetaDescription.length}</span>
-                                Brakujący / za krótki meta description (&lt;90 znaków)
-                            </h3>
-                            <div className="space-y-1.5">
-                                {data.criticalDetails.missingMetaDescription.map((p, i) => (
-                                    <div key={i} className="flex items-center gap-3 rounded-lg border border-amber-500/20 bg-amber-950/10 px-3 py-2">
-                                        <span className="text-xs font-mono text-amber-300 shrink-0">/{p.slug || '(index)'}</span>
-                                        <span className="text-xs text-zinc-400 truncate flex-1">{p.title}</span>
-                                        <span className="text-[10px] text-amber-400 shrink-0">{p.currentLength} zn.</span>
-                                    </div>
-                                ))}
+                        <div className="mb-5">
+                            <div className="flex items-center gap-3 mb-1.5">
+                                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-500/20 text-xs font-bold text-amber-400">2</span>
+                                <h3 className="text-sm font-bold text-amber-300">Brakujący meta description</h3>
+                                <span className="rounded-md bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold text-amber-400">WAŻNE • {data.criticalDetails.missingMetaDescription.length} stron</span>
                             </div>
+                            <p className="text-[11px] text-zinc-500 mb-2.5 ml-9">
+                                Meta description to tekst pod tytułem w Google. Dobry opis (120-155 zn.) zachęca do kliknięcia i podnosi CTR.
+                                Brak opisu lub za krótki (&lt;50 zn.) zmusza Google do wycięcia losowego fragmentu treści.
+                            </p>
+                            <div className="ml-9 rounded-xl border border-amber-500/20 bg-black/30 overflow-hidden">
+                                <table className="w-full text-xs">
+                                    <thead><tr className="border-b border-amber-500/15 text-[10px] text-zinc-500 uppercase"><th className="text-left px-3 py-2">Strona</th><th className="text-left px-3 py-2">Nazwa</th><th className="text-right px-3 py-2">Obecna dł.</th><th className="text-right px-3 py-2">Wymagane</th></tr></thead>
+                                    <tbody>{data.criticalDetails.missingMetaDescription.map((p, i) => (
+                                        <tr key={i} className="border-b border-zinc-800/50 hover:bg-amber-500/5"><td className="px-3 py-2 font-mono text-amber-300">/{p.slug || 'strona-glowna'}</td><td className="px-3 py-2 text-zinc-400">{p.title}</td><td className="px-3 py-2 text-right text-amber-400 font-bold">{p.currentLength} zn.</td><td className="px-3 py-2 text-right text-zinc-500">120-155 zn.</td></tr>
+                                    ))}</tbody>
+                                </table>
+                            </div>
+                            <p className="text-[10px] text-emerald-400/80 mt-1.5 ml-9">💡 Rozwiązanie: użyj Autopilota SEO → „Auto-uzupełnij meta" aby wygenerować automatycznie.</p>
                         </div>
                     )}
 
-                    {/* Thin Content */}
+                    {/* ── PRIORYTET 3: Thin CMS Content ── */}
                     {data.criticalDetails.thinContent.length > 0 && (
-                        <div className="mb-4">
-                            <h3 className="text-sm font-semibold text-orange-400 mb-2 flex items-center gap-2">
-                                <span className="flex h-5 w-5 items-center justify-center rounded bg-orange-500/20 text-[10px] font-bold text-orange-400">{data.criticalDetails.thinContent.length}</span>
-                                Zbyt mało treści (&lt;450 znaków po usunięciu HTML)
-                            </h3>
-                            <div className="space-y-1.5">
-                                {data.criticalDetails.thinContent.map((p, i) => (
-                                    <div key={i} className="flex items-center gap-3 rounded-lg border border-orange-500/20 bg-orange-950/10 px-3 py-2">
-                                        <span className="text-xs font-mono text-orange-300 shrink-0">/{p.slug || '(index)'}</span>
-                                        <span className="text-xs text-zinc-400 truncate flex-1">{p.title}</span>
-                                        <span className="text-[10px] text-orange-400 shrink-0">{p.wordCount} słów</span>
-                                    </div>
-                                ))}
+                        <div className="mb-5">
+                            <div className="flex items-center gap-3 mb-1.5">
+                                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-orange-500/20 text-xs font-bold text-orange-400">3</span>
+                                <h3 className="text-sm font-bold text-orange-300">Za mało treści na stronie</h3>
+                                <span className="rounded-md bg-orange-500/15 px-2 py-0.5 text-[10px] font-bold text-orange-400">DO POPRAWY • {data.criticalDetails.thinContent.length} stron</span>
+                            </div>
+                            <p className="text-[11px] text-zinc-500 mb-2.5 ml-9">
+                                Te strony mają treść w CMS, ale jest za krótka (&lt;100 słów). Google preferuje strony z min. 300 słów.
+                                Rozważ dodanie opisu usługi, FAQ lub informacji lokalnych.
+                            </p>
+                            <div className="ml-9 rounded-xl border border-orange-500/20 bg-black/30 overflow-hidden">
+                                <table className="w-full text-xs">
+                                    <thead><tr className="border-b border-orange-500/15 text-[10px] text-zinc-500 uppercase"><th className="text-left px-3 py-2">Strona</th><th className="text-left px-3 py-2">Nazwa</th><th className="text-right px-3 py-2">Obecna dł.</th><th className="text-right px-3 py-2">Minimum</th></tr></thead>
+                                    <tbody>{data.criticalDetails.thinContent.map((p, i) => (
+                                        <tr key={i} className="border-b border-zinc-800/50 hover:bg-orange-500/5"><td className="px-3 py-2 font-mono text-orange-300">/{p.slug || 'strona-glowna'}</td><td className="px-3 py-2 text-zinc-400">{p.title}</td><td className="px-3 py-2 text-right text-orange-400 font-bold">{p.wordCount} słów</td><td className="px-3 py-2 text-right text-zinc-500">300+ słów</td></tr>
+                                    ))}</tbody>
+                                </table>
                             </div>
                         </div>
                     )}
 
-                    {/* Sessions without meta */}
+                    {/* ── PRIORYTET 4: Sessions ── */}
                     {data.criticalDetails.sessionsWithoutMeta.length > 0 && (
-                        <div className="mb-4">
-                            <h3 className="text-sm font-semibold text-violet-400 mb-2 flex items-center gap-2">
-                                <span className="flex h-5 w-5 items-center justify-center rounded bg-violet-500/20 text-[10px] font-bold text-violet-400">{data.criticalDetails.sessionsWithoutMeta.length}</span>
-                                Sesje portfolio bez meta tagów
-                            </h3>
-                            <div className="space-y-1.5">
-                                {data.criticalDetails.sessionsWithoutMeta.map((s, i) => (
-                                    <div key={i} className="flex items-center gap-3 rounded-lg border border-violet-500/20 bg-violet-950/10 px-3 py-2">
-                                        <span className="text-xs font-mono text-violet-300 shrink-0">/portfolio/{s.slug}</span>
-                                        <span className="text-xs text-zinc-400 truncate flex-1">{s.title}</span>
-                                        <div className="flex gap-2 shrink-0">
-                                            <span className={`text-[10px] ${s.hasTitle ? 'text-emerald-400' : 'text-rose-400'}`}>{s.hasTitle ? '✓ title' : '✗ title'}</span>
-                                            <span className={`text-[10px] ${s.hasDescription ? 'text-emerald-400' : 'text-rose-400'}`}>{s.hasDescription ? '✓ desc' : '✗ desc'}</span>
-                                        </div>
-                                    </div>
-                                ))}
+                        <div className="mb-5">
+                            <div className="flex items-center gap-3 mb-1.5">
+                                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-violet-500/20 text-xs font-bold text-violet-400">4</span>
+                                <h3 className="text-sm font-bold text-violet-300">Sesje portfolio bez meta tagów</h3>
+                                <span className="rounded-md bg-violet-500/15 px-2 py-0.5 text-[10px] font-bold text-violet-400">REKOMENDACJA • {data.criticalDetails.sessionsWithoutMeta.length}</span>
+                            </div>
+                            <p className="text-[11px] text-zinc-500 mb-2.5 ml-9">
+                                Sesje zdjęciowe w portfolio mogą generować ruch z Google Images i fraz typu „sesja ślubna Toruń".
+                                Dodanie meta tagów zwiększy ich widoczność w wyszukiwarce.
+                            </p>
+                            <div className="ml-9 rounded-xl border border-violet-500/20 bg-black/30 overflow-hidden">
+                                <table className="w-full text-xs">
+                                    <thead><tr className="border-b border-violet-500/15 text-[10px] text-zinc-500 uppercase"><th className="text-left px-3 py-2">Sesja</th><th className="text-left px-3 py-2">Nazwa</th><th className="text-center px-3 py-2">Title</th><th className="text-center px-3 py-2">Description</th></tr></thead>
+                                    <tbody>{data.criticalDetails.sessionsWithoutMeta.map((s, i) => (
+                                        <tr key={i} className="border-b border-zinc-800/50 hover:bg-violet-500/5"><td className="px-3 py-2 font-mono text-violet-300">/portfolio/{s.slug}</td><td className="px-3 py-2 text-zinc-400">{s.title}</td><td className="px-3 py-2 text-center">{s.hasTitle ? <span className="text-emerald-400">✓</span> : <span className="text-rose-400">✗</span>}</td><td className="px-3 py-2 text-center">{s.hasDescription ? <span className="text-emerald-400">✓</span> : <span className="text-rose-400">✗</span>}</td></tr>
+                                    ))}</tbody>
+                                </table>
                             </div>
                         </div>
                     )}
 
-                    {/* Blog without meta */}
+                    {/* ── PRIORYTET 5: Blog ── */}
                     {data.criticalDetails.blogWithoutMeta.length > 0 && (
-                        <div>
-                            <h3 className="text-sm font-semibold text-sky-400 mb-2 flex items-center gap-2">
-                                <span className="flex h-5 w-5 items-center justify-center rounded bg-sky-500/20 text-[10px] font-bold text-sky-400">{data.criticalDetails.blogWithoutMeta.length}</span>
-                                Wpisy blog bez meta tagów
-                            </h3>
-                            <div className="space-y-1.5">
-                                {data.criticalDetails.blogWithoutMeta.map((b, i) => (
-                                    <div key={i} className="flex items-center gap-3 rounded-lg border border-sky-500/20 bg-sky-950/10 px-3 py-2">
-                                        <span className="text-xs font-mono text-sky-300 shrink-0">/blog/{b.slug}</span>
-                                        <span className="text-xs text-zinc-400 truncate flex-1">{b.title}</span>
-                                        <div className="flex gap-2 shrink-0">
-                                            <span className={`text-[10px] ${b.hasTitle ? 'text-emerald-400' : 'text-rose-400'}`}>{b.hasTitle ? '✓ title' : '✗ title'}</span>
-                                            <span className={`text-[10px] ${b.hasDescription ? 'text-emerald-400' : 'text-rose-400'}`}>{b.hasDescription ? '✓ desc' : '✗ desc'}</span>
-                                        </div>
-                                    </div>
+                        <div className="mb-5">
+                            <div className="flex items-center gap-3 mb-1.5">
+                                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-sky-500/20 text-xs font-bold text-sky-400">5</span>
+                                <h3 className="text-sm font-bold text-sky-300">Wpisy blogowe bez meta tagów</h3>
+                                <span className="rounded-md bg-sky-500/15 px-2 py-0.5 text-[10px] font-bold text-sky-400">REKOMENDACJA • {data.criticalDetails.blogWithoutMeta.length}</span>
+                            </div>
+                            <p className="text-[11px] text-zinc-500 mb-2.5 ml-9">
+                                Wpisy blogowe to szansa na ruch z fraz long-tail. Meta tagi pomagają Google zrozumieć temat wpisu.
+                            </p>
+                            <div className="ml-9 rounded-xl border border-sky-500/20 bg-black/30 overflow-hidden">
+                                <table className="w-full text-xs">
+                                    <thead><tr className="border-b border-sky-500/15 text-[10px] text-zinc-500 uppercase"><th className="text-left px-3 py-2">Wpis</th><th className="text-left px-3 py-2">Tytuł</th><th className="text-center px-3 py-2">Title</th><th className="text-center px-3 py-2">Description</th></tr></thead>
+                                    <tbody>{data.criticalDetails.blogWithoutMeta.map((b, i) => (
+                                        <tr key={i} className="border-b border-zinc-800/50 hover:bg-sky-500/5"><td className="px-3 py-2 font-mono text-sky-300">/blog/{b.slug}</td><td className="px-3 py-2 text-zinc-400">{b.title}</td><td className="px-3 py-2 text-center">{b.hasTitle ? <span className="text-emerald-400">✓</span> : <span className="text-rose-400">✗</span>}</td><td className="px-3 py-2 text-center">{b.hasDescription ? <span className="text-emerald-400">✓</span> : <span className="text-rose-400">✗</span>}</td></tr>
+                                    ))}</tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ── INFO: Pages without CMS content ── */}
+                    {data.criticalDetails.noCmsContent && data.criticalDetails.noCmsContent.length > 0 && (
+                        <div className="mb-3">
+                            <div className="flex items-center gap-3 mb-1.5">
+                                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-zinc-700 text-xs font-bold text-zinc-400">i</span>
+                                <h3 className="text-sm font-bold text-zinc-400">Strony renderowane z komponentów</h3>
+                                <span className="rounded-md bg-zinc-800 px-2 py-0.5 text-[10px] font-bold text-zinc-500">INFO • {data.criticalDetails.noCmsContent.length}</span>
+                            </div>
+                            <p className="text-[11px] text-zinc-600 mb-2 ml-9">
+                                Te strony nie mają treści w polu CMS — ich zawartość pochodzi z komponentów React (np. formularze, galerie).
+                                To normalne i nie jest błąd SEO. Upewnij się tylko, że mają poprawne meta title i description.
+                            </p>
+                            <div className="ml-9 flex flex-wrap gap-1.5">
+                                {data.criticalDetails.noCmsContent.map((p, i) => (
+                                    <span key={i} className="rounded-md border border-zinc-800 bg-zinc-900/80 px-2 py-1 text-[10px] font-mono text-zinc-500">/{p.slug || 'strona-glowna'}</span>
                                 ))}
                             </div>
                         </div>
                     )}
 
                     {data.summary.unresolvedCritical === 0 && (
-                        <div className="flex items-center gap-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 p-4">
-                            <CheckCircle2 className="h-5 w-5 text-emerald-400" />
-                            <span className="text-sm text-emerald-300 font-medium">Wszystkie strony CMS mają poprawne meta tagi i wystarczającą treść!</span>
+                        <div className="flex items-center gap-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 p-4">
+                            <CheckCircle2 className="h-6 w-6 text-emerald-400" />
+                            <div>
+                                <p className="text-sm text-emerald-300 font-bold">Wszystko OK!</p>
+                                <p className="text-xs text-zinc-400">Wszystkie strony CMS mają poprawne meta tagi. Brawo!</p>
+                            </div>
                         </div>
                     )}
                 </section>

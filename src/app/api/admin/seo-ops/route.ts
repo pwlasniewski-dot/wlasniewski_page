@@ -189,12 +189,12 @@ function runAiAnalysis(
             recs.push({ page: `/${p.slug}`, severity: 'critical', category: 'Meta', finding: `Meta title za krótki (${titleLen} znaków)`, recommendation: `Ustaw meta title 50-60 znaków z główną frazą kluczową na początku. Przykład: "Fotograf Ślubny Toruń — ${p.title} | Właśniewski"` });
         if (titleLen > 60)
             recs.push({ page: `/${p.slug}`, severity: 'warning', category: 'Meta', finding: `Meta title za długi (${titleLen} znaków)`, recommendation: 'Skróć do 50-60 znaków — Google obcina dłuższe tytuły.' });
-        if (!p.meta_description || descLen < 90)
-            recs.push({ page: `/${p.slug}`, severity: 'critical', category: 'Meta', finding: `Meta description za krótki (${descLen} znaków)`, recommendation: 'Ustaw opis 140-155 znaków z CTA i frazą kluczową.' });
+        if (!p.meta_description || descLen < 50)
+            recs.push({ page: `/${p.slug}`, severity: 'critical', category: 'Meta', finding: `Meta description za krótki lub brakujący (${descLen} znaków)`, recommendation: 'Ustaw opis 120-155 znaków z CTA i frazą kluczową.' });
         if (descLen > 160)
             recs.push({ page: `/${p.slug}`, severity: 'warning', category: 'Meta', finding: `Meta description za długi (${descLen} znaków)`, recommendation: 'Skróć do 140-155 znaków.' });
-        if (wordCount < 300)
-            recs.push({ page: `/${p.slug}`, severity: 'warning', category: 'Content', finding: `Rzadka treść (${wordCount} słów)`, recommendation: 'Google preferuje strony z minimum 300-500 słów. Dodaj opis usługi, FAQ lub lokalne informacje.' });
+        if (wordCount > 5 && wordCount < 300)
+            recs.push({ page: `/${p.slug}`, severity: 'info', category: 'Content', finding: `Mało treści CMS (${wordCount} słów)`, recommendation: 'Rozważ dodanie tekstu: opis usługi, FAQ, lokalne informacje. Strony renderowane z komponentów React mogą mieć treść niedostępną w polu CMS.' });
         if (wordCount > 100 && !plainContent.toLowerCase().includes('toruń') && !plainContent.toLowerCase().includes('torun'))
             recs.push({ page: `/${p.slug}`, severity: 'info', category: 'Local SEO', finding: 'Brak wzmianki o lokalizacji', recommendation: 'Dodaj "Toruń", "kujawsko-pomorskie" itp. dla sygnałów lokalnych.' });
         if (p.content && !p.content.includes('<h2') && !p.content.includes('<h3'))
@@ -331,14 +331,18 @@ export async function GET(request: NextRequest) {
 
         /* Diagnostics */
         const pagesWithMissingTitle = pages.filter(p => !p.meta_title || p.meta_title.trim().length < 20);
-        const pagesWithMissingDesc = pages.filter(p => !p.meta_description || p.meta_description.trim().length < 90);
-        const pagesWithThinContent = pages.filter(p => !p.content || stripHtml(p.content).trim().length < 450);
+        const pagesWithMissingDesc = pages.filter(p => !p.meta_description || p.meta_description.trim().length < 50);
+        // Only count as "thin" pages that have SOME cms content but it's too short.
+        // Pages with empty content field render from React components — not a SEO issue.
+        const pagesWithCmsContent = pages.filter(p => p.content && stripHtml(p.content).trim().length > 0);
+        const pagesWithThinContent = pagesWithCmsContent.filter(p => stripHtml(p.content).trim().split(/\s+/).filter(Boolean).length < 100);
+        const pagesWithNoCmsContent = pages.filter(p => !p.content || stripHtml(p.content).trim().length === 0);
         const missingMetaTitlePages = pagesWithMissingTitle.length;
         const missingMetaDescriptionPages = pagesWithMissingDesc.length;
         const thinPages = pagesWithThinContent.length;
         const missingSessionMeta = sessions.filter(s => !s.meta_title || !s.meta_description).length;
         const missingBlogMeta = blogPosts.filter(b => !b.meta_title || !b.meta_description).length;
-        const weakBlogExcerpts = blogPosts.filter(b => !b.excerpt || b.excerpt.trim().length < 90).length;
+        const weakBlogExcerpts = blogPosts.filter(b => !b.excerpt || b.excerpt.trim().length < 50).length;
 
         /* Critical details — per-page breakdown */
         const criticalDetails = {
@@ -353,6 +357,9 @@ export async function GET(request: NextRequest) {
             thinContent: pagesWithThinContent.map(p => ({
                 slug: p.slug, title: p.title,
                 wordCount: stripHtml(p.content || '').split(/\s+/).filter(Boolean).length,
+            })),
+            noCmsContent: pagesWithNoCmsContent.map(p => ({
+                slug: p.slug, title: p.title,
             })),
             sessionsWithoutMeta: sessions.filter(s => !s.meta_title || !s.meta_description).map(s => ({
                 slug: s.slug, title: s.title,
