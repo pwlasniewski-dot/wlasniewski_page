@@ -77,24 +77,27 @@ const baseMetadata: Metadata = {
         default: 'Przemysław Właśniewski — Fotograf Toruń',
         template: '%s | Przemysław Właśniewski Fotograf'
     },
-    description: 'Profesjonalna fotografia rodzinna, ślubna, portretowa i komunijna. Naturalne zdjęcia w Toruniu, Wąbrzeźnie, Płużnicy i okolicach. Galeria online, odbitki premium.',
+    description: 'Profesjonalna fotografia rodzinna, ślubna, portretowa i komunijna w Toruniu, Grudziądzu, Chełmnie, Wąbrzeźnie i okolicach. Naturalne sesje plenerowe, galeria online, odbitki premium.',
     keywords: [
         'fotograf toruń',
-        'fotografia rodzina toruń',
         'fotograf ślubny toruń',
+        'sesja rodzinna toruń',
+        'fotografia portretowa toruń',
         'sesja zdjęciowa toruń',
-        'fotograf bydgoszcz',
         'fotograf grudziądz',
         'fotograf chełmno',
+        'fotograf wąbrzeźno',
+        'fotograf bydgoszcz',
+        'fotograf świecie',
+        'fotograf lisewo',
         'fotograf kujawsko-pomorskie',
+        'sesja narzeczeńska toruń',
+        'fotografia komunijna toruń',
+        'fotografia wizerunkowa toruń',
+        'zdjęcia plenerowe toruń',
+        'fotograf toruń starówka',
         'FOTO-DRON Przemysław Właśniewski',
-        'inspekcje dronem toruń',
-        'termowizja dronem',
-        'Mavic 3 Thermal',
-        'zdjęcia z drona bydgoszcz',
-        'analiza dachów dronem',
-        'timeline budowy',
-        'koła łowieckie dron',
+        'zdjęcia z drona toruń',
         'Sony A7'
     ],
     authors: [{ name: 'Przemysław Właśniewski' }],
@@ -186,18 +189,19 @@ export default function RootLayout({
                     dangerouslySetInnerHTML={{
                         __html: JSON.stringify({
                             "@context": "https://schema.org",
-                            "@type": "LocalBusiness",
-                            "name": "FOTO-DRON Przemysław Właśniewski",
-                            "alternateName": "Przemysław Właśniewski Fotografia",
+                            "@type": ["LocalBusiness", "PhotographyBusiness"],
+                            "@id": "https://wlasniewski.pl/#business",
+                            "name": "Przemysław Właśniewski — Fotograf",
+                            "alternateName": "FOTO-DRON Przemysław Właśniewski",
                             "image": "https://wlasniewski.pl/og-image.jpg",
-                            "description": "Profesjonalne usługi dronem (termowizja Mavic 3 Thermal, inspekcje dachów, timeline budowy) oraz fotografia artystyczna Sony A7.",
+                            "description": "Profesjonalna fotografia rodzinna, ślubna, portretowa i komunijna w Toruniu, Grudziądzu, Chełmnie, Wąbrzeźnie i okolicach. Usługi dronem i termowizja.",
                             "url": "https://wlasniewski.pl",
                             "telephone": "+48530788694",
                             "taxID": "8781430365",
                             "address": {
                                 "@type": "PostalAddress",
                                 "addressRegion": "Kujawsko-Pomorskie",
-                                "addressLocality": "Toruń / Płużnica",
+                                "addressLocality": "Toruń",
                                 "addressCountry": "PL"
                             },
                             "geo": {
@@ -205,7 +209,23 @@ export default function RootLayout({
                                 "latitude": 53.01379,
                                 "longitude": 18.59844
                             },
-                            "areaServed": ["Toruń", "Bydgoszcz", "Grudziądz", "Chełmno", "Wąbrzeźno"],
+                            "areaServed": [
+                                { "@type": "City", "name": "Toruń" },
+                                { "@type": "City", "name": "Grudziądz" },
+                                { "@type": "City", "name": "Chełmno" },
+                                { "@type": "City", "name": "Wąbrzeźno" },
+                                { "@type": "City", "name": "Bydgoszcz" },
+                                { "@type": "City", "name": "Świecie" },
+                                { "@type": "City", "name": "Lisewo" },
+                                { "@type": "City", "name": "Płużnica" }
+                            ],
+                            "priceRange": "$$",
+                            "openingHoursSpecification": {
+                                "@type": "OpeningHoursSpecification",
+                                "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+                                "opens": "08:00",
+                                "closes": "20:00"
+                            },
                             "sameAs": [
                                 "https://www.facebook.com/przemyslaw.wlasniewski.fotografia",
                                 "https://www.instagram.com/wlasniewski.pl/"

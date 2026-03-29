@@ -19,6 +19,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         '/reklamacje',
     ];
 
+    // City SEO landing pages — priority 1.0 for local SEO
+    const cityPages = [
+        '/fotograf-torun',
+        '/fotograf-grudziadz',
+        '/fotograf-chelmno',
+        '/fotograf-wabrzezno',
+        '/fotograf-bydgoszcz',
+        '/fotograf-swiecie',
+        '/fotograf-lisewo',
+        '/fotograf-pluznica',
+    ];
+
     // B2B Static pages — URL-e z perspektywy aeroanaliza.pl (bez prefiksu /b2b/)
     // Middleware Next.js automatycznie przepisuje aeroanaliza.pl/* -> /b2b/* wewnętrznie
     const b2bStaticPages = [
@@ -61,16 +73,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             priority: route === '' ? 1.0 : 0.8,
         })),
 
+        // ─── B2C: City SEO Landing Pages (highest priority for local SEO) ───
+        ...cityPages.map(route => ({
+            url: `${b2cBase}${route}`,
+            lastModified: new Date(),
+            changeFrequency: 'weekly' as const,
+            priority: 0.95,
+        })),
+
         // ─── B2C: Dynamic pages from database ───
-        ...b2cDbPages.map(page => {
-            const isCityPage = page.slug.startsWith('fotograf-');
-            return {
-                url: `${b2cBase}/${page.slug}`,
-                lastModified: page.updated_at,
-                changeFrequency: 'monthly' as const,
-                priority: isCityPage ? 0.9 : 0.7,
-            };
-        }),
+        ...b2cDbPages.filter(page => !page.slug.startsWith('fotograf-')).map(page => ({
+            url: `${b2cBase}/${page.slug}`,
+            lastModified: page.updated_at,
+            changeFrequency: 'monthly' as const,
+            priority: 0.7,
+        })),
 
         // ─── B2C: Portfolio sessions ───
         ...portfolioSessions.map(session => ({

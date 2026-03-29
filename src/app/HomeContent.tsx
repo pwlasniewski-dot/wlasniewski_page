@@ -1002,10 +1002,13 @@ export default function HomeContent({ heroSlides, sections, homeData, orderedSec
                                 },
                                 "areaServed": [
                                     { "@type": "City", "name": "Toruń" },
+                                    { "@type": "City", "name": "Grudziądz" },
+                                    { "@type": "City", "name": "Chełmno" },
                                     { "@type": "City", "name": "Wąbrzeźno" },
-                                    { "@type": "City", "name": "Płużnica" },
+                                    { "@type": "City", "name": "Bydgoszcz" },
+                                    { "@type": "City", "name": "Świecie" },
                                     { "@type": "City", "name": "Lisewo" },
-                                    { "@type": "City", "name": "Grudziądz" }
+                                    { "@type": "City", "name": "Płużnica" }
                                 ],
                                 "sameAs": [
                                     "https://www.facebook.com/przemyslaw.wlasniewski.fotografia",

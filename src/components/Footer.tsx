@@ -54,8 +54,13 @@ const defaultSettings: FooterSettings = {
             enabled: true,
             links: [
                 { id: '1', label: 'Fotograf Toruń', url: '/fotograf-torun' },
-                { id: '2', label: 'Fotograf Lisewo', url: '/fotograf-lisewo' },
-                { id: '3', label: 'Fotograf Wąbrzeźno', url: '/fotograf-wabrzezno' },
+                { id: '2', label: 'Fotograf Grudziądz', url: '/fotograf-grudziadz' },
+                { id: '3', label: 'Fotograf Chełmno', url: '/fotograf-chelmno' },
+                { id: '4', label: 'Fotograf Wąbrzeźno', url: '/fotograf-wabrzezno' },
+                { id: '5', label: 'Fotograf Bydgoszcz', url: '/fotograf-bydgoszcz' },
+                { id: '6', label: 'Fotograf Świecie', url: '/fotograf-swiecie' },
+                { id: '7', label: 'Fotograf Lisewo', url: '/fotograf-lisewo' },
+                { id: '8', label: 'Fotograf Płużnica', url: '/fotograf-pluznica' },
             ]
         },
         inne: {
