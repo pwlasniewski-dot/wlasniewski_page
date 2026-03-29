@@ -138,7 +138,24 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
                     // Load Page Builder Sections
                     if (page.sections) {
                         try {
-                            setSections(JSON.parse(page.sections));
+                            const raw = JSON.parse(page.sections);
+                            // Normalize: flatten nested "data" wrapper into section root
+                            // Some sections (e.g. B2B) were stored as { id, type, data: { title, ... } }
+                            // but PageBuilder expects flat { id, type, title, ... }
+                            const normalized = raw.map((s: any) => {
+                                if (s.data && typeof s.data === 'object') {
+                                    const { data, ...rest } = s;
+                                    const flat = { ...rest, ...data };
+                                    // Normalize known field name differences
+                                    if (flat.image_url && !flat.image) {
+                                        flat.image = flat.image_url;
+                                        delete flat.image_url;
+                                    }
+                                    return flat;
+                                }
+                                return s;
+                            });
+                            setSections(normalized);
                         } catch (e) {
                             console.error('Failed to parse sections', e);
                         }

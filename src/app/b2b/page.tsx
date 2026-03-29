@@ -79,90 +79,71 @@ export default async function B2BPage() {
             {
                 id: 'b2b-hero',
                 type: 'hero',
-                data: {
-                    title: 'Wnieś Swój Biznes <span class="text-gold-500">Na Wyższy Poziom</span>',
-                    subtitle: 'Precyzyjne inspekcje techniczne, termowizja i monitoring inwestycji z lotu ptaka. Technologia, która oszczędza Twój czas i pieniądze.',
-                    image_url: 'https://images.unsplash.com/photo-1506947411487-a5673826e6e0?q=80&w=2000&auto=format&fit=crop',
-                    overlay_opacity: 70,
-                    full_height: true,
-                    buttons: [
-                        { id: 'b1', label: 'ZAPYTAJ O OFERTĘ', url: '/b2b/kontakt', style: 'primary' },
-                        { id: 'b2', label: 'ZOBACZ REALIZACJE', url: '#realizacje', style: 'outline-white' }
-                    ]
-                }
-            },
+                title: 'Wnieś Swój Biznes <span class="text-gold-500">Na Wyższy Poziom</span>',
+                subtitle: 'Precyzyjne inspekcje techniczne, termowizja i monitoring inwestycji z lotu ptaka. Technologia, która oszczędza Twój czas i pieniądze.',
+                image: 'https://images.unsplash.com/photo-1506947411487-a5673826e6e0?q=80&w=2000&auto=format&fit=crop',
+                buttonText: 'ZAPYTAJ O OFERTĘ',
+                buttonLink: '/b2b/kontakt',
+            } as PageSection,
             // 2. STATS - Credibility
             {
                 id: 'b2b-stats',
                 type: 'b2b_stats',
-                data: {
-                    b2b_stats: [
-                        { id: 's1', value: '4K', label: 'Rozdzielczość Video', prefix: '', suffix: '' },
-                        { id: 's2', value: '50+', label: 'Zbadanych Dachów', prefix: '', suffix: '' },
-                        { id: 's3', value: '100%', label: 'Zgodności z ULC', prefix: '', suffix: '' }
-                    ]
-                }
-            },
+                b2b_stats: [
+                    { id: 's1', value: '4K', label: 'Rozdzielczość Video', prefix: '', suffix: '' },
+                    { id: 's2', value: '50+', label: 'Zbadanych Dachów', prefix: '', suffix: '' },
+                    { id: 's3', value: '100%', label: 'Zgodności z ULC', prefix: '', suffix: '' }
+                ]
+            } as PageSection,
             // 3. OFFER GRID - "Co robimy"
             {
                 id: 'b2b-offer',
                 type: 'features',
-                data: {
-                    title: 'Specjalistyczne Usługi Dronem',
-                    subtitle: 'Dostarczamy dane krytyczne dla Twojej branży.',
-                    items: [
-                        {
-                            id: 'f1',
-                            title: 'Inspekcje Termowizyjne',
-                            text: 'Wykrywanie mostków cieplnych, awarii paneli PV i wycieków ciepła za pomocą kamery Mavic 3 Thermal.',
-                            icon: 'thermometer'
-                        },
-                        {
-                            id: 'f2',
-                            title: 'Monitoring Inwestycji',
-                            text: 'Regularna dokumentacja postępów budowy z tej samej perspektywy (Timelapse). Raporty dla inwestorów.',
-                            icon: 'building'
-                        },
-                        {
-                            id: 'f3',
-                            title: 'Inspekcje Dachów i Infrastruktury',
-                            text: 'Bezpieczna ocena stanu technicznego bez konieczności wchodzenia na wysokość. Zdjęcia wysokiej rozdzielczości.',
-                            icon: 'shield'
-                        },
-                        {
-                            id: 'f4',
-                            title: 'Rolnictwo Precyzyjne',
-                            text: 'Szacowanie szkód łowieckich, analiza stanu upraw i mapowanie terenu.',
-                            icon: 'leaf'
-                        }
-                    ]
-                }
-            },
+                title: 'Specjalistyczne Usługi Dronem',
+                subtitle: 'Dostarczamy dane krytyczne dla Twojej branży.',
+                items: [
+                    {
+                        id: 'f1',
+                        title: 'Inspekcje Termowizyjne',
+                        text: 'Wykrywanie mostków cieplnych, awarii paneli PV i wycieków ciepła za pomocą kamery Mavic 3 Thermal.',
+                        icon: 'thermometer'
+                    },
+                    {
+                        id: 'f2',
+                        title: 'Monitoring Inwestycji',
+                        text: 'Regularna dokumentacja postępów budowy z tej samej perspektywy (Timelapse). Raporty dla inwestorów.',
+                        icon: 'building'
+                    },
+                    {
+                        id: 'f3',
+                        title: 'Inspekcje Dachów i Infrastruktury',
+                        text: 'Bezpieczna ocena stanu technicznego bez konieczności wchodzenia na wysokość. Zdjęcia wysokiej rozdzielczości.',
+                        icon: 'shield'
+                    },
+                    {
+                        id: 'f4',
+                        title: 'Rolnictwo Precyzyjne',
+                        text: 'Szacowanie szkód łowieckich, analiza stanu upraw i mapowanie terenu.',
+                        icon: 'leaf'
+                    }
+                ]
+            } as PageSection,
             // 4. PARALLAX BREAK - "Technologia"
             {
                 id: 'b2b-tech',
                 type: 'parallax',
-                data: {
-                    image_url: 'https://images.unsplash.com/photo-1579829366248-204fe8413f31?q=80&w=2000&auto=format&fit=crop',
-                    title: 'Flota: DJI Mavic 3 Thermal',
-                    content: 'Korzystamy z najnowocześniejszego sprzętu wyposażonego w kamery termowizyjne 640x512px oraz szerokokątne kamery 48MP. Gwarancja precyzji co do centymetra.',
-                    height: '500px',
-                    overlay_color: '#000000',
-                    overlay_opacity: 80
-                }
-            },
+                image: 'https://images.unsplash.com/photo-1579829366248-204fe8413f31?q=80&w=2000&auto=format&fit=crop',
+                title: 'Flota: DJI Mavic 3 Thermal',
+                content: 'Korzystamy z najnowocześniejszego sprzętu wyposażonego w kamery termowizyjne 640x512px oraz szerokokątne kamery 48MP. Gwarancja precyzji co do centymetra.',
+            } as PageSection,
             // 5. CALL TO ACTION - Bottom
             {
                 id: 'b2b-cta',
                 type: 'info_band',
-                data: {
-                    title: 'Gotowy na współpracę?',
-                    text: 'Skontaktuj się z nami, aby omówić szczegóły Twojego projektu. Wycena jest zawsze darmowa.',
-                    background_color: '#1a1a1a',
-                    text_color: '#ffffff',
-                    link: '/b2b/kontakt'
-                }
-            }
+                title: 'Gotowy na współpracę?',
+                subtitle: 'Skontaktuj się z nami, aby omówić szczegóły Twojego projektu. Wycena jest zawsze darmowa.',
+                link: '/b2b/kontakt'
+            } as PageSection
         ];
     }
 

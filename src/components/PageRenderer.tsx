@@ -583,7 +583,7 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                             <h2 className="text-4xl md:text-6xl font-bold text-zinc-950 tracking-tight leading-none">{data.title}</h2>
                                             <div className="h-1.5 w-20 bg-yellow-500 mt-8 rounded-full" />
                                         </div>
-                                        {data.text && <p className="text-xl text-zinc-600 max-w-2xl mb-10">{data.text}</p>}
+                                        {(data.text || data.subtitle || data.content) && <p className="text-xl text-zinc-600 max-w-2xl mb-10">{data.text || data.subtitle || data.content}</p>}
                                         <Link
                                             href={data.link}
                                             className="inline-flex items-center gap-3 px-8 py-4 bg-zinc-950 text-white font-semibold rounded-xl hover:bg-zinc-800 transition-colors group"
