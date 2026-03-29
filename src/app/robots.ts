@@ -1,6 +1,24 @@
 import { MetadataRoute } from 'next';
+import { headers } from 'next/headers';
 
-export default function robots(): MetadataRoute.Robots {
+export default async function robots(): Promise<MetadataRoute.Robots> {
+    const headersList = await headers();
+    const host = headersList.get('host') || 'wlasniewski.pl';
+    const isB2B = host.includes('aeroanaliza');
+
+    if (isB2B) {
+        return {
+            rules: [
+                {
+                    userAgent: '*',
+                    allow: '/',
+                    disallow: ['/admin/', '/api/'],
+                },
+            ],
+            sitemap: ['https://aeroanaliza.pl/sitemap.xml'],
+        };
+    }
+
     return {
         rules: [
             {
@@ -9,9 +27,6 @@ export default function robots(): MetadataRoute.Robots {
                 disallow: ['/admin/', '/api/', '/galeria/*/'],
             },
         ],
-        sitemap: [
-            'https://wlasniewski.pl/sitemap.xml',
-            'https://aeroanaliza.pl/sitemap.xml',
-        ],
+        sitemap: ['https://wlasniewski.pl/sitemap.xml'],
     };
 }

@@ -9,9 +9,9 @@ export const config = {
          * 1. /api routes
          * 2. /_next (Next.js internals)
          * 3. /_static (inside /public)
-         * 4. all root files inside /public (e.g. /favicon.ico)
+         * 4. all root files inside /public EXCEPT sitemap.xml and robots.txt
          */
-        "/((?!api/|_next/|_static/|[\\w-]+\\.\\w+).*)",
+        "/((?!api/|_next/|_static/|[\\w-]+\\.(?!xml|txt)\\w+).*)",
     ],
 };
 
@@ -26,10 +26,13 @@ export default async function middleware(req: NextRequest) {
     });
 
     if (isB2B) {
-        // Rewrite traffic to /b2b folder
-        // e.g. b2b.wlasniewski.pl/contact -> wlasniewski.pl/b2b/contact
-        // e.g. b2b.wlasniewski.pl/ -> wlasniewski.pl/b2b
+        // For sitemap.xml, rewrite to /b2b/sitemap.xml
+        if (url.pathname === '/sitemap.xml') {
+            url.pathname = '/b2b/sitemap.xml';
+            return NextResponse.rewrite(url);
+        }
 
+        // Rewrite traffic to /b2b folder
         // Prevent double stacking if the path already starts with /b2b 
         // Also skip admin/api routes (they are global/internal)
         if (url.pathname.startsWith('/b2b') ||
