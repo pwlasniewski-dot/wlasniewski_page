@@ -19,10 +19,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         '/reklamacje',
     ];
 
-    // B2B Static pages
+    // B2B Static pages — URL-e z perspektywy aeroanaliza.pl (bez prefiksu /b2b/)
+    // Middleware Next.js automatycznie przepisuje aeroanaliza.pl/* -> /b2b/* wewnętrznie
     const b2bStaticPages = [
-        '',
-        '/b2b/dron',
+        '',          // aeroanaliza.pl/
+        '/dron',     // aeroanaliza.pl/dron
     ];
 
     let dbPages: Array<{ slug: string; updated_at: Date }> = [];
@@ -96,8 +97,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         })),
 
         // ─── B2B: Dynamic pages from database ───
+        // Usuwamy prefiks 'b2b/' bo aeroanaliza.pl widzi strony bez tego prefiksu
         ...b2bDbPages.map(page => ({
-            url: `${b2bBase}/${page.slug}`,
+            url: `${b2bBase}/${page.slug.replace(/^b2b\/?/, '')}`,
             lastModified: page.updated_at,
             changeFrequency: 'monthly' as const,
             priority: 0.7,

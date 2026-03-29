@@ -37,9 +37,13 @@ export async function generateMetadata(): Promise<Metadata> {
         return {
             title: 'FOTO-DRON | Inspekcje Dronem, Termowizja, Monitoring w Toruniu',
             description: 'Profesjonalne usługi dronowe dla przemysłu, rolnictwa i deweloperów. Mavic 3 Thermal. Licencjonowany operator UAVO.',
+            alternates: {
+                canonical: 'https://aeroanaliza.pl',
+            },
             openGraph: {
                 title: 'FOTO-DRON | Usługi Dronem dla Biznesu',
                 description: 'Inspekcje termowizyjne, ortofotomapy, monitoring inwestycji. Sprawdź ofertę B2B.',
+                url: 'https://aeroanaliza.pl',
                 images: ['/assets/b2b/hero-drone.jpg']
             }
         };
@@ -48,6 +52,9 @@ export async function generateMetadata(): Promise<Metadata> {
     return {
         title: page.meta_title || page.title,
         description: page.meta_description,
+        alternates: {
+            canonical: 'https://aeroanaliza.pl',
+        },
     };
 }
 

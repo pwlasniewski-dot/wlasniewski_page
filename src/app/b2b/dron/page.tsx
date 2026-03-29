@@ -21,14 +21,27 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export async function generateMetadata(): Promise<Metadata> {
-    const page = await prisma.page.findUnique({
-        where: { slug: 'dron' }
+    const page = await prisma.page.findFirst({
+        where: { slug: { in: ['b2b-dron', 'dron', 'b2b/dron'] } }
     });
 
     return {
         title: page?.meta_title || 'FOTO-DRON Przemysław Właśniewski | Termowizja Mavic 3 Thermal | Toruń, Bydgoszcz',
         description: page?.meta_description || 'Specjalistyczne usługi dronem: termowizja Mavic 3 Thermal, inspekcje dachów, timeline budowy, koła łowieckie. Profesjonalne raporty B2B w kujawsko-pomorskim. NIP: 8781430365.',
-        keywords: page?.meta_keywords ? page.meta_keywords.split(',').map(k => k.trim()) : ['Mavic 3 Thermal', 'Air 2 S', 'termowizja dronem toruń', 'inspekcja dachu bydgoszcz', 'analiza paneli fotowoltaicznych', 'zdjęcia okolicznościowe z drona', 'koła łowieckie termowizja'],
+        keywords: page?.meta_keywords ? page.meta_keywords.split(',').map(k => k.trim()) : [
+            'Mavic 3 Thermal', 'termowizja dronem toruń', 'inspekcja dachu bydgoszcz',
+            'analiza paneli fotowoltaicznych', 'ortofotomapy dron', 'monitoring budowy dron',
+            'koła łowieckie termowizja', 'operator UAVO kujawsko-pomorskie'
+        ],
+        alternates: {
+            canonical: 'https://aeroanaliza.pl/dron',
+        },
+        openGraph: {
+            title: 'Inspekcje Termowizyjne Dronem | FOTO-DRON',
+            description: 'Termowizja Mavic 3 Thermal — wykrywanie mostków cieplnych, awarii PV, inspekcje dachów. Toruń i kujawsko-pomorskie.',
+            url: 'https://aeroanaliza.pl/dron',
+            images: [{ url: '/og-b2b.jpg', width: 1200, height: 630 }],
+        },
     };
 }
 

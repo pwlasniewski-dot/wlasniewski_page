@@ -9,14 +9,20 @@ import {
     Bot,
     CheckCircle2,
     CircleAlert,
+    Clock,
     ExternalLink,
+    FileCode2,
     Gauge,
     Globe,
+    Layers,
     LineChart,
+    Loader2,
+    MessageSquareCode,
     Rocket,
     Save,
     Search,
     Send,
+    Settings2,
     Sparkles,
     Tag,
     Wrench,
@@ -107,6 +113,24 @@ type SeoOpsPayload = {
 
 type PageSpeedResult = { performance: number; seo: number; accessibility: number; bestPractices: number } | null;
 
+/* ─── Autopilot Types ─── */
+type AutopilotLogEntry = { action: string; domain: string; affectedCount: number; detail: string; executedAt: string; };
+type AutopilotStatus = { success: boolean; status: { b2c: { totalPages: number; missingMeta: number }; b2b: { totalPages: number; missingMeta: number } }; log: AutopilotLogEntry[]; } | null;
+type AutopilotActionId = 'auto-fix-meta-b2c' | 'auto-fix-meta-b2b' | 'inject-faq-b2c' | 'inject-faq-b2b' | 'inject-service-b2c' | 'inject-service-b2b' | 'indexnow-b2c' | 'indexnow-b2b' | 'indexnow-all';
+type AutopilotActionDef = { id: AutopilotActionId; label: string; desc: string; icon: React.ComponentType<{ className?: string }>; domain: 'b2c' | 'b2b' | 'all'; impact: number; };
+
+const AUTOPILOT_ACTIONS: AutopilotActionDef[] = [
+    { id: 'auto-fix-meta-b2c', label: 'Auto-uzupełnij meta B2C', desc: 'Generuje brakujące meta title (50-60 zn.) i description (140-155 zn.) dla stron wlasniewski.pl.', icon: FileCode2, domain: 'b2c', impact: 10 },
+    { id: 'auto-fix-meta-b2b', label: 'Auto-uzupełnij meta B2B', desc: 'Generuje brakujące meta title i opis dla stron aeroanaliza.pl. Tytuły zoptymalizowane pod frazy dronowe.', icon: FileCode2, domain: 'b2b', impact: 10 },
+    { id: 'inject-faq-b2c', label: 'FAQ Schema B2C', desc: 'Wstrzykuje FAQ Schema.org (5 pytań o sesje fotograficzne). Google może wyświetlić rich snippets w wynikach.', icon: MessageSquareCode, domain: 'b2c', impact: 6 },
+    { id: 'inject-faq-b2b', label: 'FAQ Schema B2B', desc: 'Wstrzykuje FAQ Schema.org (5 pytań o inspekcje dronem) na aeroanaliza.pl. Rich snippets SERP.', icon: MessageSquareCode, domain: 'b2b', impact: 6 },
+    { id: 'inject-service-b2c', label: 'Service Schema B2C', desc: 'Dodaje Schema.org Service dla sesji ślubnych, rodzinnych i komunijnych. Wzmacnia Local Search.', icon: Layers, domain: 'b2c', impact: 5 },
+    { id: 'inject-service-b2b', label: 'Service Schema B2B', desc: 'Dodaje ProfessionalService dla inspekcji termowizyjnych, monitoringu budów i ortofotomap.', icon: Layers, domain: 'b2b', impact: 5 },
+    { id: 'indexnow-b2c', label: 'IndexNow — wlasniewski.pl', desc: 'Wysyła 7 URL B2C do IndexNow. Bing/Yandex zaindeksuje w minuty zamiast dni.', icon: Rocket, domain: 'b2c', impact: 4 },
+    { id: 'indexnow-b2b', label: 'IndexNow — aeroanaliza.pl', desc: 'Wysyła URL aeroanaliza.pl i /dron do IndexNow. Szybka indeksacja B2B.', icon: Rocket, domain: 'b2b', impact: 4 },
+    { id: 'indexnow-all', label: 'IndexNow — WSZYSTKIE', desc: 'Wysyła naraz wszystkie B2C + B2B. Użyj po każdej dużej zmianie treści lub metadanych.', icon: Zap, domain: 'all', impact: 8 },
+];
+
 /* ─── Helpers ─── */
 function clamp(v: number, min: number, max: number) { return Math.min(max, Math.max(min, v)); }
 function estimateRankBand(s: number) { if (s >= 85) return 'TOP 10'; if (s >= 72) return '11-20'; if (s >= 58) return '21-40'; if (s >= 45) return '41-70'; return '70+'; }
@@ -126,6 +150,10 @@ export default function SeoOpsPage() {
     const [indexNowLoading, setIndexNowLoading] = useState(false);
     const [activeTab, setActiveTab] = useState<'b2c' | 'b2b'>('b2c');
     const [aiFilterSeverity, setAiFilterSeverity] = useState<'all' | 'critical' | 'warning' | 'info'>('all');
+    // ── Autopilot ──
+    const [autopilotStatus, setAutopilotStatus] = useState<AutopilotStatus>(null);
+    const [autopilotLoading, setAutopilotLoading] = useState(false);
+    const [runningAction, setRunningAction] = useState<AutopilotActionId | null>(null);
 
     const fetchReport = useCallback(async () => {
         setLoading(true);
@@ -152,7 +180,43 @@ export default function SeoOpsPage() {
         } finally { setLoading(false); }
     }, []);
 
-    useEffect(() => { void fetchReport(); }, [fetchReport]);
+    const fetchAutopilotStatus = useCallback(async () => {
+        setAutopilotLoading(true);
+        try {
+            const token = localStorage.getItem('admin_token');
+            const res = await fetch('/api/admin/seo-autopilot', { headers: { Authorization: `Bearer ${token}` } });
+            const payload = await res.json() as AutopilotStatus;
+            setAutopilotStatus(payload);
+        } catch (e) { console.error('[Autopilot]', e); }
+        finally { setAutopilotLoading(false); }
+    }, []);
+
+    const runAutopilot = async (actionId: AutopilotActionId) => {
+        setRunningAction(actionId);
+        try {
+            const token = localStorage.getItem('admin_token');
+            const [action, domain] = actionId.startsWith('auto-fix-meta-')
+                ? ['auto-fix-meta', actionId.replace('auto-fix-meta-', '')]
+                : actionId.startsWith('inject-faq-')
+                    ? ['inject-faq-schema', actionId.replace('inject-faq-', '')]
+                    : actionId.startsWith('inject-service-')
+                        ? ['inject-service-schema', actionId.replace('inject-service-', '')]
+                        : [actionId, undefined];
+            const body: Record<string, string> = { action };
+            if (domain) body.domain = domain;
+            const res = await fetch('/api/admin/seo-autopilot', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify(body),
+            });
+            const result = await res.json() as { success: boolean; message?: string };
+            if (result.success) { toast.success(result.message || 'Akcja wykonana!'); void fetchAutopilotStatus(); void fetchReport(); }
+            else toast.error('Błąd akcji autopilota.');
+        } catch (e) { console.error(e); toast.error('Błąd połączenia.'); }
+        finally { setRunningAction(null); }
+    };
+
+    useEffect(() => { void fetchReport(); void fetchAutopilotStatus(); }, [fetchReport, fetchAutopilotStatus]);
 
     const updateChecklistItem = (id: string, patch: Partial<ChecklistItem>) => {
         setChecklist(prev => prev.map(item => (item.id === id ? { ...item, ...patch } : item)));
@@ -248,26 +312,119 @@ export default function SeoOpsPage() {
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                     <div>
                         <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">SEO Ops Command Center</p>
-                        <h1 className="mt-2 text-3xl font-bold tracking-tight">Pełny audyt + plan wzrostu SEO</h1>
+                        <h1 className="mt-2 text-3xl font-bold tracking-tight">Pełny audyt + Autopilot SEO</h1>
                         <p className="mt-3 text-sm text-zinc-400 max-w-3xl">
-                            Panel łączy audyt techniczny, analizę konkurencji, Agent AI SEO, analitykę słów kluczowych B2C/B2B,
-                            diagnostykę domeny aeroanaliza.pl, PageSpeed Insights, IndexNow i symulator &quot;co się zmieni gdy...&quot;.
+                            Jedno kliknięcie = wdrożona optymalizacja. Audyt techniczny, AI rekomendacje, analityka słów kluczowych B2C/B2B,
+                            diagnostyka aeroanaliza.pl, PageSpeed, IndexNow, symulator wzrostu i Autopilot.
                         </p>
                     </div>
-                    <div className="flex gap-3 flex-wrap">
-                        <button onClick={runIndexNow} disabled={indexNowLoading}
-                            className="inline-flex items-center justify-center rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-violet-500 disabled:opacity-50">
-                            <Zap className="mr-2 h-4 w-4" />
-                            {indexNowLoading ? 'Wysyłanie...' : 'IndexNow'}
-                        </button>
-                        <button onClick={saveChecklist} disabled={saving}
-                            className="inline-flex items-center justify-center rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-black transition hover:bg-emerald-400 disabled:opacity-50">
-                            <Save className="mr-2 h-4 w-4" />
-                            {saving ? 'Zapisywanie...' : 'Zapisz checklistę'}
-                        </button>
-                    </div>
+                    <button onClick={saveChecklist} disabled={saving}
+                        className="inline-flex items-center justify-center rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-black transition hover:bg-emerald-400 disabled:opacity-50">
+                        <Save className="mr-2 h-4 w-4" />
+                        {saving ? 'Zapisywanie...' : 'Zapisz checklistę'}
+                    </button>
                 </div>
             </div>
+
+            {/* ─── SEO AUTOPILOT ─── */}
+            <section className="rounded-2xl border border-fuchsia-500/40 bg-gradient-to-br from-fuchsia-950/20 via-zinc-900/80 to-slate-900/80 p-5">
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-5">
+                    <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-fuchsia-500/20">
+                            <Settings2 className="h-5 w-5 text-fuchsia-400" />
+                        </div>
+                        <div>
+                            <h2 className="text-xl font-bold tracking-tight">SEO Autopilot</h2>
+                            <p className="text-xs text-zinc-400">Jedno kliknięcie = wdrożona optymalizacja. Każdy przycisk implementuje konkretny element SEO w silniku strony.</p>
+                        </div>
+                    </div>
+                    <button onClick={() => { void fetchAutopilotStatus(); void fetchReport(); }} disabled={autopilotLoading}
+                        className="inline-flex items-center gap-2 rounded-lg border border-fuchsia-500/40 bg-fuchsia-500/10 px-3 py-2 text-xs text-fuchsia-300 transition hover:bg-fuchsia-500/20 disabled:opacity-50">
+                        {autopilotLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Zap className="h-3.5 w-3.5" />}
+                        Odśwież status
+                    </button>
+                </div>
+
+                {autopilotStatus && (
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 mb-5">
+                        <div className="rounded-xl border border-zinc-700 bg-black/30 p-3 text-center">
+                            <p className="text-2xl font-bold text-sky-400">{autopilotStatus.status.b2c.totalPages}</p>
+                            <p className="text-[11px] text-zinc-500 mt-0.5">Stron B2C</p>
+                        </div>
+                        <div className="rounded-xl border border-rose-500/30 bg-rose-950/20 p-3 text-center">
+                            <p className="text-2xl font-bold text-rose-400">{autopilotStatus.status.b2c.missingMeta}</p>
+                            <p className="text-[11px] text-zinc-500 mt-0.5">B2C bez meta</p>
+                        </div>
+                        <div className="rounded-xl border border-zinc-700 bg-black/30 p-3 text-center">
+                            <p className="text-2xl font-bold text-violet-400">{autopilotStatus.status.b2b.totalPages}</p>
+                            <p className="text-[11px] text-zinc-500 mt-0.5">Stron B2B</p>
+                        </div>
+                        <div className="rounded-xl border border-amber-500/30 bg-amber-950/20 p-3 text-center">
+                            <p className="text-2xl font-bold text-amber-400">{autopilotStatus.status.b2b.missingMeta}</p>
+                            <p className="text-[11px] text-zinc-500 mt-0.5">B2B bez meta</p>
+                        </div>
+                    </div>
+                )}
+
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                    {AUTOPILOT_ACTIONS.map(({ id, label, desc, icon: Icon, domain, impact }) => {
+                        const isRunning = runningAction === id;
+                        const domCls = domain === 'b2b'
+                            ? { card: 'border-violet-500/30 bg-violet-950/10', icon: 'bg-violet-500/20 text-violet-400', badge: 'bg-violet-500/20 text-violet-300', btn: 'bg-violet-600 hover:bg-violet-500' }
+                            : domain === 'b2c'
+                                ? { card: 'border-sky-500/30 bg-sky-950/10', icon: 'bg-sky-500/20 text-sky-400', badge: 'bg-sky-500/20 text-sky-300', btn: 'bg-sky-600 hover:bg-sky-500' }
+                                : { card: 'border-fuchsia-500/30 bg-fuchsia-950/10', icon: 'bg-fuchsia-500/20 text-fuchsia-400', badge: 'bg-fuchsia-500/20 text-fuchsia-300', btn: 'bg-fuchsia-600 hover:bg-fuchsia-500' };
+                        return (
+                            <div key={id} className={`flex flex-col justify-between rounded-xl border ${domCls.card} p-4 transition hover:brightness-110`}>
+                                <div className="flex items-start gap-3 mb-4">
+                                    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${domCls.icon}`}>
+                                        <Icon className="h-4 w-4" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-start justify-between gap-2">
+                                            <p className="text-sm font-semibold leading-tight">{label}</p>
+                                            <span className={`shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-bold ${domCls.badge}`}>{domain === 'all' ? 'ALL' : domain.toUpperCase()}</span>
+                                        </div>
+                                        <p className="mt-1 text-xs text-zinc-500 leading-snug">{desc}</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <span className="text-[10px] text-emerald-400 font-bold uppercase tracking-wide">+{impact} impact pkt</span>
+                                    <button onClick={() => { void runAutopilot(id); }} disabled={!!runningAction}
+                                        className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-white transition disabled:opacity-40 ${domCls.btn}`}>
+                                        {isRunning ? <><Loader2 className="h-3 w-3 animate-spin" /> Wykonuję...</> : <><Zap className="h-3 w-3" /> Uruchom</>}
+                                    </button>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+
+                {autopilotStatus && autopilotStatus.log.length > 0 && (
+                    <div className="mt-5">
+                        <div className="flex items-center gap-2 mb-3">
+                            <Clock className="h-4 w-4 text-zinc-500" />
+                            <h3 className="text-sm font-semibold text-zinc-300">Historia akcji Autopilota</h3>
+                        </div>
+                        <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
+                            {autopilotStatus.log.map((entry, i) => (
+                                <div key={i} className="flex items-start gap-3 rounded-lg border border-zinc-800 bg-black/25 px-3 py-2.5">
+                                    <CheckCircle2 className="h-4 w-4 mt-0.5 text-emerald-400 shrink-0" />
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            <span className="text-xs font-mono text-fuchsia-300">{entry.action}</span>
+                                            <span className={`text-[10px] font-bold ${entry.domain === 'b2b' ? 'text-violet-400' : entry.domain === 'b2c' ? 'text-sky-400' : 'text-fuchsia-400'}`}>{entry.domain.toUpperCase()}</span>
+                                            <span className="text-[10px] text-emerald-400">{entry.affectedCount} stron</span>
+                                        </div>
+                                        <p className="text-xs text-zinc-500 mt-0.5 truncate">{entry.detail}</p>
+                                    </div>
+                                    <span className="text-[10px] text-zinc-600 shrink-0">{new Date(entry.executedAt).toLocaleString('pl-PL')}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </section>
 
             {/* ─── Metric Cards ─── */}
             <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
