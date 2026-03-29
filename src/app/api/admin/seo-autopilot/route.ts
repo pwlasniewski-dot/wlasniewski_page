@@ -12,26 +12,71 @@ type AutopilotAction =
     | 'indexnow-b2c'
     | 'indexnow-b2b'
     | 'indexnow-all'
+    | 'preview'
+    | 'ai-generate'
     | 'status';
+
+type Tone = 'professional' | 'friendly' | 'luxury' | 'dynamic' | 'emotional';
 
 type PostBody = {
     action: AutopilotAction;
     domain?: 'b2c' | 'b2b' | 'all';
+    previewAction?: string;
+    tone?: Tone;
+    targetSlug?: string;
+    field?: 'meta_title' | 'meta_description';
+};
+
+// ─── Tone definitions for text generation ───
+const TONE_CONFIG: Record<Tone, { suffix_b2c: string; suffix_b2b: string; cta_b2c: string; cta_b2b: string; style: string }> = {
+    professional: {
+        suffix_b2c: ' | Właśniewski Fotograf',
+        suffix_b2b: ' | FOTO-DRON aeroanaliza.pl',
+        cta_b2c: 'Sprawdź ofertę i zarezerwuj sesję.',
+        cta_b2b: 'Zamów bezpłatną wycenę.',
+        style: 'Rzeczowy, konkretny, ekspercki ton',
+    },
+    friendly: {
+        suffix_b2c: ' | Właśniewski Fotografia ❤️',
+        suffix_b2b: ' | FOTO-DRON — Twój partner dronowy',
+        cta_b2c: 'Napisz do mnie — razem stworzymy piękne zdjęcia!',
+        cta_b2b: 'Porozmawiajmy o Twoim projekcie — bez zobowiązań!',
+        style: 'Ciepły, przyjazny, bezpośredni ton',
+    },
+    luxury: {
+        suffix_b2c: ' | Fotografia Artystyczna Właśniewski',
+        suffix_b2b: ' | FOTO-DRON — Precyzja z powietrza',
+        cta_b2c: 'Zarezerwuj ekskluzywną sesję — ograniczona liczba terminów.',
+        cta_b2b: 'Skorzystaj z precyzyjnej analizy dronowej najwyższej klasy.',
+        style: 'Elegancki, prestiżowy, ekskluzywny ton',
+    },
+    dynamic: {
+        suffix_b2c: ' | Właśniewski — Fotograf z pasją',
+        suffix_b2b: ' | FOTO-DRON — Technologia w akcji',
+        cta_b2c: 'Nie czekaj — zarezerwuj termin już teraz!',
+        cta_b2b: 'Działaj szybciej — zamów analizę dronem!',
+        style: 'Energiczny, motywujący, dynamiczny ton',
+    },
+    emotional: {
+        suffix_b2c: ' | Chwile, które zostaną na zawsze',
+        suffix_b2b: ' | FOTO-DRON — Widzimy więcej',
+        cta_b2c: 'Pozwól mi opowiedzieć Twoją historię w zdjęciach.',
+        cta_b2b: 'Odkryj to, co niewidoczne gołym okiem.',
+        style: 'Emocjonalny, narracyjny, poetycki ton',
+    },
 };
 
 // ─── SEO Rule Engine ───
-// Generates optimised meta_title from page title (50-60 chars)
-function generateMetaTitle(title: string, domain: 'b2c' | 'b2b' = 'b2c'): string {
-    const suffix = domain === 'b2b'
-        ? ' | FOTO-DRON aeroanaliza.pl'
-        : ' | Właśniewski Fotograf';
+function generateMetaTitle(title: string, domain: 'b2c' | 'b2b' = 'b2c', tone: Tone = 'professional'): string {
+    const config = TONE_CONFIG[tone];
+    const suffix = domain === 'b2b' ? config.suffix_b2b : config.suffix_b2c;
     const maxBase = 60 - suffix.length;
     const base = title.length > maxBase ? title.slice(0, maxBase - 3) + '...' : title;
     return `${base}${suffix}`;
 }
 
-// Generates optimised meta_description from content (140-155 chars)
-function generateMetaDescription(content: string, title: string, domain: 'b2c' | 'b2b' = 'b2c'): string {
+function generateMetaDescription(content: string, title: string, domain: 'b2c' | 'b2b' = 'b2c', tone: Tone = 'professional'): string {
+    const config = TONE_CONFIG[tone];
     const plain = content
         .replace(/<[^>]*>/g, ' ')
         .replace(/&[a-z]+;/gi, ' ')
@@ -39,13 +84,92 @@ function generateMetaDescription(content: string, title: string, domain: 'b2c' |
         .trim();
 
     const prefix = plain.slice(0, 120).trim();
-    const cta = domain === 'b2b'
-        ? 'Zamów bezpłatną wycenę.'
-        : 'Sprawdź ofertę i zarezerwuj sesję.';
-
+    const cta = domain === 'b2b' ? config.cta_b2b : config.cta_b2c;
     const full = prefix ? `${prefix}. ${cta}` : `${title}. ${cta}`;
     return full.slice(0, 155);
 }
+
+// ─── AI Text Generator (rule-based with tone awareness) ───
+function aiGenerateText(
+    title: string,
+    content: string,
+    field: 'meta_title' | 'meta_description',
+    domain: 'b2c' | 'b2b',
+    tone: Tone
+): { text: string; charCount: number; toneLabel: string } {
+    const config = TONE_CONFIG[tone];
+    let text: string;
+
+    if (field === 'meta_title') {
+        text = generateMetaTitle(title, domain, tone);
+    } else {
+        text = generateMetaDescription(content, title, domain, tone);
+    }
+
+    return { text, charCount: text.length, toneLabel: config.style };
+}
+
+// ─── FAQ Data with tones ───
+function getFaqData(domain: 'b2c' | 'b2b', tone: Tone) {
+    const config = TONE_CONFIG[tone];
+
+    const b2bFaqs = [
+        { q: 'Ile kosztuje inspekcja dachu dronem?', a: tone === 'luxury' ? 'Cena inspekcji zależy od zakresu — standardowa analiza dachu to ok. 500-800 zł. Każde zlecenie traktujemy indywidualnie. Wycena jest bezpłatna i niezobowiązująca.' : tone === 'friendly' ? 'Standardowa inspekcja dachu to ok. 500-800 zł, a wycena jest zawsze bezpłatna! Napisz do nas — chętnie pomożemy dobrać najlepszą opcję.' : 'Cena zależy od powierzchni i zakresu inspekcji. Standardowa inspekcja dachu jednorodzinnego to ok. 500-800 zł. Wycena jest zawsze bezpłatna — zadzwoń lub napisz.' },
+        { q: 'Czy potrzebujecie zezwolenia na loty w okolicy lotniska?', a: 'Tak, posiadamy licencję UAVO i uzyskujemy wymagane zezwolenia ULC dla każdej lokalizacji. Loty w strefach kontrolowanych wymagają dodatkowej notyfikacji.' },
+        { q: 'Jak szybko otrzymam raport po inspekcji?', a: tone === 'dynamic' ? 'Raport PDF gotowy w 48h od lotu! Zawiera zdjęcia, mapę anomalii i konkretne rekomendacje — działaj szybko z naszymi danymi.' : 'Raport PDF z wynikami termowizji dostarczamy w ciągu 48 godzin od wykonania lotu. Raport zawiera zdjęcia, mapę anomalii i rekomendacje.' },
+        { q: 'Jaki obszar obejmujecie usługami?', a: 'Działamy w Toruniu, Bydgoszczy, Grudziądzu, Chełmnie, Wąbrzeźnie i całym województwie kujawsko-pomorskim. Na zlecenie realizujemy usługi w całej Polsce.' },
+        { q: 'Czy kamera termowizyjna wykryje uszkodzone panele PV?', a: 'Tak, Mavic 3 Thermal z kamerą radiometryczną 640×512px dokładnie wykrywa hotspoty, uszkodzone ogniwa i zacienione moduły fotowoltaiczne.' },
+    ];
+
+    const b2cFaqs = [
+        { q: 'Ile kosztuje sesja fotograficzna w Toruniu?', a: tone === 'luxury' ? 'Sesje portretowe rozpoczynają się od 350 zł, rodzinne od 450 zł, a ekskluzywne reportaże ślubne od 1800 zł. Każda sesja to starannie zaplanowane doświadczenie.' : tone === 'emotional' ? 'Sesje od 350 zł za portret, od 450 zł za rodzinną, od 1800 zł za ślubną. Bo piękne wspomnienia nie mają ceny — ale mogą mieć przystępną cenę.' : 'Ceny sesji zaczynają się od 350 zł za sesję portretową. Sesje rodzinne od 450 zł, ślubne od 1800 zł. Szczegółowy cennik znajdziesz na stronie rezerwacji.' },
+        { q: 'Jak długo czekam na zdjęcia po sesji?', a: tone === 'dynamic' ? 'Podgląd miniatur w 7 dni, pełna galeria w 2-3 tygodnie. Szybko i na czas — zawsze!' : 'Standardowy czas dostawy to 2-3 tygodnie. Galerię online z podglądem miniatur dostarczam w ciągu 7 dni od sesji.' },
+        { q: 'Czy robicie sesje w Bydgoszczy lub Grudziądzu?', a: 'Tak, wykonuję sesje w całym regionie kujawsko-pomorskim: Toruń, Bydgoszcz, Grudziądz, Chełmno, Wąbrzeźno i okolice.' },
+        { q: 'Jak zarezerwować termin sesji?', a: tone === 'friendly' ? 'Najprościej? Przez formularz na stronie Rezerwacja! Możesz też napisać na kontakt@wlasniewski.pl lub zadzwonić: +48 530 788 694. Odezwę się szybko! 😊' : 'Możesz zarezerwować sesję online przez formularz na stronie Rezerwacja lub napisać bezpośrednio: kontakt@wlasniewski.pl. Telefon: +48 530 788 694.' },
+        { q: 'Co to jest sesja naturalistyczna?', a: tone === 'emotional' ? 'To sesja, gdzie nie ma póz — jest prawda. Fotografuję śmiech, czułość, zabawę tak, jak się naprawdę dzieją. Bo najpiękniejsze chwile to te autentyczne.' : 'Sesja naturalistyczna to sesja w plenerze bez ustawionych póz. Fotografuję autentyczne chwile i emocje — śmiech, zabawę, czułość. Idealna dla rodzin z dziećmi.' },
+    ];
+
+    return domain === 'b2b' ? b2bFaqs : b2cFaqs;
+}
+
+// ─── Service Schema Data ───
+function getServiceSchemaData(domain: 'b2c' | 'b2b') {
+    if (domain === 'b2b') {
+        return {
+            '@context': 'https://schema.org',
+            '@graph': [
+                { '@type': 'Service', name: 'Inspekcje Termowizyjne Dronem', provider: { '@type': 'LocalBusiness', name: 'FOTO-DRON Przemysław Właśniewski' }, serviceType: 'Inspekcja termowizyjna', areaServed: { '@type': 'State', name: 'Kujawsko-Pomorskie' }, description: 'Wykrywanie mostków cieplnych, awarii paneli PV, inspekcje dachów kamerą Mavic 3 Thermal 640×512px.', url: 'https://aeroanaliza.pl/dron' },
+                { '@type': 'Service', name: 'Monitoring Inwestycji Budowlanych', provider: { '@type': 'LocalBusiness', name: 'FOTO-DRON Przemysław Właśniewski' }, serviceType: 'Dokumentacja budowy', areaServed: { '@type': 'State', name: 'Kujawsko-Pomorskie' }, description: 'Timeline budowy z lotu ptaka. Regularne zdjęcia z tej samej perspektywy i raporty PDF dla inwestorów.', url: 'https://aeroanaliza.pl' },
+                { '@type': 'Service', name: 'Ortofotomapy i Rolnictwo Precyzyjne', provider: { '@type': 'LocalBusiness', name: 'FOTO-DRON Przemysław Właśniewski' }, serviceType: 'Fotogrametria', areaServed: { '@type': 'State', name: 'Kujawsko-Pomorskie' }, description: 'Szacowanie szkód łowieckich, analiza stanu upraw, mapy GeoTIFF dla GIS.', url: 'https://aeroanaliza.pl' },
+            ],
+        };
+    }
+    return {
+        '@context': 'https://schema.org',
+        '@graph': [
+            { '@type': 'Service', name: 'Sesja Ślubna', provider: { '@type': 'LocalBusiness', name: 'Przemysław Właśniewski Fotografia' }, serviceType: 'Fotografia ślubna', areaServed: [{ '@type': 'City', name: 'Toruń' }, { '@type': 'City', name: 'Bydgoszcz' }], description: 'Naturalna dokumentacja ślubna — bez ustawianych, sztucznych póz. Reportaż ślubny i sesja plenerowa.', url: 'https://wlasniewski.pl/rezerwacja' },
+            { '@type': 'Service', name: 'Sesja Rodzinna', provider: { '@type': 'LocalBusiness', name: 'Przemysław Właśniewski Fotografia' }, serviceType: 'Fotografia rodzinna', areaServed: [{ '@type': 'City', name: 'Toruń' }, { '@type': 'City', name: 'Bydgoszcz' }], description: 'Sesje rodzinne w plenerze. Naturalne ujęcia, prawdziwe emocje. Toruń, okolice, kujawsko-pomorskie.', url: 'https://wlasniewski.pl/rezerwacja' },
+            { '@type': 'Service', name: 'Sesja Komunijna', provider: { '@type': 'LocalBusiness', name: 'Przemysław Właśniewski Fotografia' }, serviceType: 'Fotografia komunijna', areaServed: { '@type': 'City', name: 'Toruń' }, description: 'Sesje komunijne w plenerze i kościele. Pakiety ze zdjęciami cyfrowymi i albumem.', url: 'https://wlasniewski.pl/rezerwacja' },
+        ],
+    };
+}
+
+// ─── IndexNow URL lists ───
+const INDEXNOW_URLS = {
+    b2c: [
+        'https://wlasniewski.pl/',
+        'https://wlasniewski.pl/rezerwacja',
+        'https://wlasniewski.pl/portfolio',
+        'https://wlasniewski.pl/blog',
+        'https://wlasniewski.pl/o-mnie',
+        'https://wlasniewski.pl/jak-sie-ubrac',
+        'https://wlasniewski.pl/foto-wyzwanie',
+    ],
+    b2b: [
+        'https://aeroanaliza.pl/',
+        'https://aeroanaliza.pl/dron',
+    ],
+};
 
 // ─── GET: Status / History ───
 export async function GET(request: NextRequest) {
@@ -120,10 +244,132 @@ export async function POST(request: NextRequest) {
         try {
             const body = (await request.json()) as PostBody;
             const action = body.action;
+            const tone: Tone = body.tone || 'professional';
             const executedAt = new Date().toISOString();
 
+            // ── PREVIEW: dry-run, show what will happen ──
+            if (action === 'preview') {
+                const previewAction = body.previewAction || '';
+                const domain = body.domain || 'b2c';
+
+                if (previewAction === 'auto-fix-meta') {
+                    const pages = await prisma.page.findMany({
+                        select: { id: true, slug: true, title: true, content: true, meta_title: true, meta_description: true },
+                    });
+                    const toFix = pages.filter(p => {
+                        const isB2B = p.slug.startsWith('b2b');
+                        if (domain === 'b2c' && isB2B) return false;
+                        if (domain === 'b2b' && !isB2B) return false;
+                        return !p.meta_title || p.meta_title.length < 20 || !p.meta_description || p.meta_description.length < 90;
+                    });
+
+                    const previews = toFix.map(page => {
+                        const isB2B = page.slug.startsWith('b2b');
+                        const domType: 'b2c' | 'b2b' = isB2B ? 'b2b' : 'b2c';
+                        return {
+                            slug: page.slug,
+                            title: page.title,
+                            current_meta_title: page.meta_title || '(brak)',
+                            current_meta_description: page.meta_description || '(brak)',
+                            new_meta_title: (!page.meta_title || page.meta_title.length < 20) ? generateMetaTitle(page.title, domType, tone) : page.meta_title,
+                            new_meta_description: (!page.meta_description || page.meta_description.length < 90) ? generateMetaDescription(page.content || '', page.title, domType, tone) : page.meta_description,
+                        };
+                    });
+
+                    return NextResponse.json({ success: true, preview: true, action: 'auto-fix-meta', domain, tone, affectedCount: previews.length, pages: previews });
+                }
+
+                if (previewAction === 'inject-faq-schema') {
+                    const faqs = getFaqData(domain as 'b2c' | 'b2b', tone);
+                    const targetSlugs = domain === 'b2b' ? ['b2b'] : ['', 'strona-glowna', 'o-mnie', 'rezerwacja'];
+                    const pages = await prisma.page.findMany({
+                        select: { slug: true, title: true, content: true },
+                        where: domain === 'b2b' ? { slug: { startsWith: 'b2b' } } : { NOT: { slug: { startsWith: 'b2b' } } },
+                    });
+                    const target = pages.find(p => targetSlugs.includes(p.slug)) || pages[0];
+                    const alreadyInjected = target?.content?.includes('SEO_FAQ_SCHEMA') || false;
+
+                    return NextResponse.json({
+                        success: true, preview: true, action: 'inject-faq-schema', domain, tone,
+                        targetPage: target?.slug || '(brak)',
+                        alreadyInjected,
+                        faqCount: faqs.length,
+                        faqs: faqs.map(f => ({ question: f.q, answer: f.a })),
+                    });
+                }
+
+                if (previewAction === 'inject-service-schema') {
+                    const schema = getServiceSchemaData(domain as 'b2c' | 'b2b');
+                    const targetSlug = domain === 'b2b' ? 'b2b' : 'o-mnie';
+                    const page = await prisma.page.findFirst({ where: { slug: targetSlug } });
+                    const alreadyInjected = page?.content?.includes('SEO_SERVICE_SCHEMA') || false;
+
+                    return NextResponse.json({
+                        success: true, preview: true, action: 'inject-service-schema', domain,
+                        targetPage: targetSlug,
+                        alreadyInjected,
+                        serviceCount: (schema as any)['@graph']?.length || 1,
+                        services: (schema as any)['@graph']?.map((s: any) => ({ name: s.name, type: s.serviceType, description: s.description })) || [],
+                    });
+                }
+
+                if (previewAction.startsWith('indexnow')) {
+                    const key = previewAction === 'indexnow-all' ? 'all' : previewAction === 'indexnow-b2b' ? 'b2b' : 'b2c';
+                    const urls = key === 'all' ? [...INDEXNOW_URLS.b2c, ...INDEXNOW_URLS.b2b] : INDEXNOW_URLS[key as 'b2c' | 'b2b'];
+                    return NextResponse.json({ success: true, preview: true, action: previewAction, urls, urlCount: urls.length });
+                }
+
+                return NextResponse.json({ success: false, error: `Unknown preview action: ${previewAction}` }, { status: 400 });
+            }
+
+            // ── AI-GENERATE: generate text variations with different tones ──
+            if (action === 'ai-generate') {
+                const targetSlug = body.targetSlug;
+                const field = body.field || 'meta_title';
+                const domain = body.domain || 'b2c';
+
+                const allTones: Tone[] = ['professional', 'friendly', 'luxury', 'dynamic', 'emotional'];
+
+                if (targetSlug) {
+                    const page = await prisma.page.findFirst({ where: { slug: targetSlug } });
+                    if (!page) return NextResponse.json({ success: false, error: 'Page not found' }, { status: 404 });
+
+                    const variants = allTones.map(t => {
+                        const result = aiGenerateText(page.title, page.content || '', field, domain as 'b2c' | 'b2b', t);
+                        return { tone: t, ...result };
+                    });
+
+                    return NextResponse.json({ success: true, action: 'ai-generate', targetSlug, field, variants });
+                }
+
+                // Generate for all pages with missing meta
+                const pages = await prisma.page.findMany({
+                    select: { slug: true, title: true, content: true, meta_title: true, meta_description: true },
+                });
+                const toFix = pages.filter(p => {
+                    const isB2B = p.slug.startsWith('b2b');
+                    if (domain === 'b2c' && isB2B) return false;
+                    if (domain === 'b2b' && !isB2B) return false;
+                    return !p.meta_title || p.meta_title.length < 20 || !p.meta_description || p.meta_description.length < 90;
+                });
+
+                const results = toFix.map(page => {
+                    const domType: 'b2c' | 'b2b' = page.slug.startsWith('b2b') ? 'b2b' : 'b2c';
+                    const titleVariants = allTones.map(t => ({
+                        tone: t,
+                        ...aiGenerateText(page.title, page.content || '', 'meta_title', domType, t),
+                    }));
+                    const descVariants = allTones.map(t => ({
+                        tone: t,
+                        ...aiGenerateText(page.title, page.content || '', 'meta_description', domType, t),
+                    }));
+                    return { slug: page.slug, title: page.title, titleVariants, descVariants };
+                });
+
+                return NextResponse.json({ success: true, action: 'ai-generate', domain, pages: results });
+            }
+
             // ── Action: auto-fix-meta ──
-            // Auto-generates missing meta_title and meta_description for ALL pages
             if (action === 'auto-fix-meta') {
                 const domain = body.domain || 'all';
                 const pages = await prisma.page.findMany({
@@ -143,11 +389,11 @@ export async function POST(request: NextRequest) {
                         const domainType: 'b2c' | 'b2b' = isB2B ? 'b2b' : 'b2c';
 
                         const newTitle = (!page.meta_title || page.meta_title.length < 20)
-                            ? generateMetaTitle(page.title, domainType)
+                            ? generateMetaTitle(page.title, domainType, tone)
                             : page.meta_title;
 
                         const newDesc = (!page.meta_description || page.meta_description.length < 90)
-                            ? generateMetaDescription(page.content || '', page.title, domainType)
+                            ? generateMetaDescription(page.content || '', page.title, domainType, tone)
                             : page.meta_description;
 
                         await prisma.page.update({
@@ -160,53 +406,28 @@ export async function POST(request: NextRequest) {
                 );
 
                 await appendLog({
-                    action: 'auto-fix-meta',
+                    action: `auto-fix-meta [${tone}]`,
                     domain,
                     affectedCount: updates.length,
-                    detail: `Naprawiono meta dla: ${updates.map(u => u.slug).join(', ') || 'brak'}`,
+                    detail: `Naprawiono meta dla: ${updates.map(u => u.slug).join(', ') || 'brak'} (ton: ${tone})`,
                     executedAt,
                 });
 
                 return NextResponse.json({
-                    success: true,
-                    action: 'auto-fix-meta',
-                    affectedPages: updates.length,
-                    pages: updates,
-                    message: `Uzupełniono meta title i meta description dla ${updates.length} stron.`,
+                    success: true, action: 'auto-fix-meta', affectedPages: updates.length, pages: updates, tone,
+                    message: `Uzupełniono meta title i meta description dla ${updates.length} stron (ton: ${TONE_CONFIG[tone].style}).`,
                 });
             }
 
             // ── Action: inject-faq-schema ──
-            // Injects FAQ Schema.org JSON block into pages that have recognizable FAQ content
             if (action === 'inject-faq-schema') {
                 const domain = body.domain || 'b2c';
-                // Get service pages
                 const pages = await prisma.page.findMany({
                     select: { id: true, slug: true, title: true, content: true },
-                    where: domain === 'b2b'
-                        ? { slug: { startsWith: 'b2b' } }
-                        : { NOT: { slug: { startsWith: 'b2b' } } },
+                    where: domain === 'b2b' ? { slug: { startsWith: 'b2b' } } : { NOT: { slug: { startsWith: 'b2b' } } },
                 });
 
-                // B2B FAQ content
-                const b2bFaqs = [
-                    { q: 'Ile kosztuje inspekcja dachu dronem?', a: 'Cena zależy od powierzchni i zakresu inspekcji. Standardowa inspekcja dachu jednorodzinnego to ok. 500-800 zł. Wycena jest zawsze bezpłatna — zadzwoń lub napisz.' },
-                    { q: 'Czy potrzebujecie zezwolenia na loty w okolicy lotniska?', a: 'Tak, posiadamy licencję UAVO i uzyskujemy wymagane zezwolenia ULC dla każdej lokalizacji. Loty w strefach kontrolowanych wymagają dodatkowej notyfikacji.' },
-                    { q: 'Jak szybko otrzymam raport po inspekcji?', a: 'Raport PDF z wynikami termowizji dostarczamy w ciągu 48 godzin od wykonania lotu. Raport zawiera zdjęcia, mapę anomalii i rekomendacje.' },
-                    { q: 'Jaki obszar obejmujecie usługami?', a: 'Działamy w Toruniu, Bydgoszczy, Grudziądzu, Chełmnie, Wąbrzeźnie i całym województwie kujawsko-pomorskim. Na zlecenie realizujemy usługi w całej Polsce.' },
-                    { q: 'Czy kamera termowizyjna wykryje uszkodzone panele PV?', a: 'Tak, Mavic 3 Thermal z kamerą radiometryczną 640×512px dokładnie wykrywa hotspoty, uszkodzone ogniwa i zacienione moduły fotowoltaiczne.' },
-                ];
-
-                // B2C FAQ content
-                const b2cFaqs = [
-                    { q: 'Ile kosztuje sesja fotograficzna w Toruniu?', a: 'Ceny sesji zaczynają się od 350 zł za sesję portretową. Sesje rodzinne od 450 zł, ślubne od 1800 zł. Szczegółowy cennik znajdziesz na stronie rezerwacji.' },
-                    { q: 'Jak długo czekam na zdjęcia po sesji?', a: 'Standardowy czas dostawy to 2-3 tygodnie. Galerię online z podglądem miniatur dostarczam w ciągu 7 dni od sesji.' },
-                    { q: 'Czy robicie sesje w Bydgoszczy lub Grudziądzu?', a: 'Tak, wykonuję sesje w całym regionie kujawsko-pomorskim: Toruń, Bydgoszcz, Grudziądz, Chełmno, Wąbrzeźno i okolice.' },
-                    { q: 'Jak zarezerwować termin sesji?', a: 'Możesz zarezerwować sesję online przez formularz na stronie Rezerwacja lub napisać bezpośrednio: kontakt@wlasniewski.pl. Telefon: +48 530 788 694.' },
-                    { q: 'Co to jest sesja naturalistyczna?', a: 'Sesja naturalistyczna to sesja w plenerze bez ustawionych póz. Fotografuję autentyczne chwile i emocje — śmiech, zabawę, czułość. Idealna dla rodzin z dziećmi.' },
-                ];
-
-                const faqs = domain === 'b2b' ? b2bFaqs : b2cFaqs;
+                const faqs = getFaqData(domain as 'b2c' | 'b2b', tone);
 
                 const faqSchema = {
                     '@context': 'https://schema.org',
@@ -220,14 +441,13 @@ export async function POST(request: NextRequest) {
 
                 const faqBlock = `\n\n<!-- SEO_FAQ_SCHEMA -->\n<script type="application/ld+json">${JSON.stringify(faqSchema)}</script>\n<!-- /SEO_FAQ_SCHEMA -->`;
 
-                // Target the main B2B/B2C landing page
                 const targetSlugs = domain === 'b2b' ? ['b2b'] : ['', 'strona-glowna', 'o-mnie', 'rezerwacja'];
                 const target = pages.find(p => targetSlugs.includes(p.slug)) || pages[0];
 
                 let injected = 0;
                 if (target) {
                     const newContent = target.content?.includes('SEO_FAQ_SCHEMA')
-                        ? target.content // already injected, don't duplicate
+                        ? target.content
                         : (target.content || '') + faqBlock;
 
                     await prisma.page.update({
@@ -238,7 +458,7 @@ export async function POST(request: NextRequest) {
                 }
 
                 await appendLog({
-                    action: 'inject-faq-schema',
+                    action: `inject-faq-schema [${tone}]`,
                     domain,
                     affectedCount: injected,
                     detail: `Wstrzyknięto FAQ Schema (${faqs.length} pytań) na stronę: ${target?.slug || 'brak'}`,
@@ -246,87 +466,16 @@ export async function POST(request: NextRequest) {
                 });
 
                 return NextResponse.json({
-                    success: true,
-                    action: 'inject-faq-schema',
-                    affectedPages: injected,
-                    faqCount: faqs.length,
-                    targetPage: target?.slug,
-                    message: `FAQ Schema (${faqs.length} pytań i odpowiedzi) wstrzyknięte na stronę ${target?.slug}. Google może wyświetlić je jako rich snippet.`,
+                    success: true, action: 'inject-faq-schema', affectedPages: injected,
+                    faqCount: faqs.length, targetPage: target?.slug, tone,
+                    message: `FAQ Schema (${faqs.length} pytań i odpowiedzi) wstrzyknięte na stronę ${target?.slug}. Ton: ${TONE_CONFIG[tone].style}.`,
                 });
             }
 
             // ── Action: inject-service-schema ──
-            // Injects Service Schema for drone/photography services
             if (action === 'inject-service-schema') {
                 const domain = body.domain || 'b2c';
-
-                const b2bServiceSchema = {
-                    '@context': 'https://schema.org',
-                    '@graph': [
-                        {
-                            '@type': 'Service',
-                            name: 'Inspekcje Termowizyjne Dronem',
-                            provider: { '@type': 'LocalBusiness', name: 'FOTO-DRON Przemysław Właśniewski' },
-                            serviceType: 'Inspekcja termowizyjna',
-                            areaServed: { '@type': 'State', name: 'Kujawsko-Pomorskie' },
-                            description: 'Wykrywanie mostków cieplnych, awarii paneli PV, inspekcje dachów kamerą Mavic 3 Thermal 640×512px.',
-                            url: 'https://aeroanaliza.pl/dron',
-                        },
-                        {
-                            '@type': 'Service',
-                            name: 'Monitoring Inwestycji Budowlanych',
-                            provider: { '@type': 'LocalBusiness', name: 'FOTO-DRON Przemysław Właśniewski' },
-                            serviceType: 'Dokumentacja budowy',
-                            areaServed: { '@type': 'State', name: 'Kujawsko-Pomorskie' },
-                            description: 'Timeline budowy z lotu ptaka. Regularne zdjęcia z tej samej perspektywy i raporty PDF dla inwestorów.',
-                            url: 'https://aeroanaliza.pl',
-                        },
-                        {
-                            '@type': 'Service',
-                            name: 'Ortofotomapy i Rolnictwo Precyzyjne',
-                            provider: { '@type': 'LocalBusiness', name: 'FOTO-DRON Przemysław Właśniewski' },
-                            serviceType: 'Fotogrametria',
-                            areaServed: { '@type': 'State', name: 'Kujawsko-Pomorskie' },
-                            description: 'Szacowanie szkód łowieckich, analiza stanu upraw, mapy GeoTIFF dla GIS.',
-                            url: 'https://aeroanaliza.pl',
-                        },
-                    ],
-                };
-
-                const b2cServiceSchema = {
-                    '@context': 'https://schema.org',
-                    '@graph': [
-                        {
-                            '@type': 'Service',
-                            name: 'Sesja Ślubna',
-                            provider: { '@type': 'LocalBusiness', name: 'Przemysław Właśniewski Fotografia' },
-                            serviceType: 'Fotografia ślubna',
-                            areaServed: [{ '@type': 'City', name: 'Toruń' }, { '@type': 'City', name: 'Bydgoszcz' }],
-                            description: 'Naturalna dokumentacja ślubna — bez ustawianych, sztucznych póz. Reportaż ślubny i sesja plenerowa.',
-                            url: 'https://wlasniewski.pl/rezerwacja',
-                        },
-                        {
-                            '@type': 'Service',
-                            name: 'Sesja Rodzinna',
-                            provider: { '@type': 'LocalBusiness', name: 'Przemysław Właśniewski Fotografia' },
-                            serviceType: 'Fotografia rodzinna',
-                            areaServed: [{ '@type': 'City', name: 'Toruń' }, { '@type': 'City', name: 'Bydgoszcz' }],
-                            description: 'Sesje rodzinne w plenerze. Naturalne ujęcia, prawdziwe emocje. Toruń, okolice, kujawsko-pomorskie.',
-                            url: 'https://wlasniewski.pl/rezerwacja',
-                        },
-                        {
-                            '@type': 'Service',
-                            name: 'Sesja Komunijna',
-                            provider: { '@type': 'LocalBusiness', name: 'Przemysław Właśniewski Fotografia' },
-                            serviceType: 'Fotografia komunijna',
-                            areaServed: { '@type': 'City', name: 'Toruń' },
-                            description: 'Sesje komunijne w plenerze i kościele. Pakiety ze zdjęciami cyfrowymi i albumem.',
-                            url: 'https://wlasniewski.pl/rezerwacja',
-                        },
-                    ],
-                };
-
-                const schema = domain === 'b2b' ? b2bServiceSchema : b2cServiceSchema;
+                const schema = getServiceSchemaData(domain as 'b2c' | 'b2b');
                 const schemaBlock = `\n\n<!-- SEO_SERVICE_SCHEMA -->\n<script type="application/ld+json">${JSON.stringify(schema)}</script>\n<!-- /SEO_SERVICE_SCHEMA -->`;
 
                 const targetSlug = domain === 'b2b' ? 'b2b' : 'o-mnie';
@@ -345,55 +494,35 @@ export async function POST(request: NextRequest) {
                     action: 'inject-service-schema',
                     domain,
                     affectedCount: injected,
-                    detail: `Wstrzyknięto Service Schema (${schema['@graph']?.length || 1} usług) na stronę: ${targetSlug}`,
+                    detail: `Wstrzyknięto Service Schema (${(schema as any)['@graph']?.length || 1} usług) na stronę: ${targetSlug}`,
                     executedAt,
                 });
 
                 return NextResponse.json({
-                    success: true,
-                    action: 'inject-service-schema',
-                    affectedPages: injected,
-                    serviceCount: (schema as { '@graph'?: unknown[] })['@graph']?.length || 1,
+                    success: true, action: 'inject-service-schema', affectedPages: injected,
+                    serviceCount: (schema as any)['@graph']?.length || 1,
                     targetPage: targetSlug,
                     message: `Service Schema dla ${domain.toUpperCase()} wstrzyknięta. Usługi widoczne dla Google jako dane strukturalne.`,
                 });
             }
 
-            // ── Action: indexnow-b2c ──
+            // ── Action: indexnow-* ──
             if (action === 'indexnow-b2c') {
-                const urls = [
-                    'https://wlasniewski.pl/',
-                    'https://wlasniewski.pl/rezerwacja',
-                    'https://wlasniewski.pl/portfolio',
-                    'https://wlasniewski.pl/blog',
-                    'https://wlasniewski.pl/o-mnie',
-                    'https://wlasniewski.pl/jak-sie-ubrac',
-                    'https://wlasniewski.pl/foto-wyzwanie',
-                ];
+                const urls = INDEXNOW_URLS.b2c;
                 const res = await submitIndexNow(urls);
                 await appendLog({ action: 'indexnow-b2c', domain: 'b2c', affectedCount: urls.length, detail: urls.join(', '), executedAt });
-                return NextResponse.json({ success: true, action: 'indexnow-b2c', submitted: urls.length, indexNowStatus: res, message: `${urls.length} B2C URL-i wysłano do IndexNow. Bing/Yandex zaindeksuje w ciągu minut.` });
+                return NextResponse.json({ success: true, action: 'indexnow-b2c', submitted: urls.length, indexNowStatus: res, message: `${urls.length} B2C URL-i wysłano do IndexNow.` });
             }
 
-            // ── Action: indexnow-b2b ──
             if (action === 'indexnow-b2b') {
-                const urls = [
-                    'https://aeroanaliza.pl/',
-                    'https://aeroanaliza.pl/dron',
-                ];
+                const urls = INDEXNOW_URLS.b2b;
                 const res = await submitIndexNow(urls);
                 await appendLog({ action: 'indexnow-b2b', domain: 'b2b', affectedCount: urls.length, detail: urls.join(', '), executedAt });
-                return NextResponse.json({ success: true, action: 'indexnow-b2b', submitted: urls.length, indexNowStatus: res, message: `${urls.length} B2B URL-i (aeroanaliza.pl) wysłano do IndexNow.` });
+                return NextResponse.json({ success: true, action: 'indexnow-b2b', submitted: urls.length, indexNowStatus: res, message: `${urls.length} B2B URL-i wysłano do IndexNow.` });
             }
 
-            // ── Action: indexnow-all ──
             if (action === 'indexnow-all') {
-                const allUrls = [
-                    'https://wlasniewski.pl/', 'https://wlasniewski.pl/rezerwacja',
-                    'https://wlasniewski.pl/portfolio', 'https://wlasniewski.pl/blog',
-                    'https://wlasniewski.pl/o-mnie', 'https://wlasniewski.pl/jak-sie-ubrac',
-                    'https://aeroanaliza.pl/', 'https://aeroanaliza.pl/dron',
-                ];
+                const allUrls = [...INDEXNOW_URLS.b2c, ...INDEXNOW_URLS.b2b];
                 const res = await submitIndexNow(allUrls);
                 await appendLog({ action: 'indexnow-all', domain: 'all', affectedCount: allUrls.length, detail: allUrls.join(', '), executedAt });
                 return NextResponse.json({ success: true, action: 'indexnow-all', submitted: allUrls.length, indexNowStatus: res, message: `${allUrls.length} URL-i (B2C + B2B) wysłano do IndexNow.` });

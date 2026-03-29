@@ -42,6 +42,10 @@ export default function PhotoCubeIntro() {
       backgroundColor={settings.background_color}
       title={settings.title}
       subtitle={settings.subtitle}
+      edgeColor={settings.edge_color || '#c8a960'}
+      edgeWidth={settings.edge_width ?? 1.5}
+      autoRotate={settings.auto_rotate ?? true}
+      autoRotateSpeed={settings.auto_rotate_speed ?? 0.15}
       onIntroEnd={() => setDismissed(true)}
     />
   );

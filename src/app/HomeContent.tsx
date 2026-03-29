@@ -933,16 +933,20 @@ export default function HomeContent({ heroSlides, sections, homeData, orderedSec
                     <PhotoCube3D
                         key={section.id}
                         images={section.data?.images || []}
-                        cubeSize={section.data?.cube_size || 280}
+                        cubeSize={section.data?.cube_size || 320}
                         imageFit={section.data?.image_fit || 'cover'}
-                        rotationSpeed={section.data?.rotation_speed || 0.4}
-                        smoothness={section.data?.smoothness || 0.95}
-                        entrySpeed={section.data?.entry_speed || 2200}
+                        rotationSpeed={section.data?.rotation_speed || 0.5}
+                        smoothness={section.data?.smoothness || 0.96}
+                        entrySpeed={section.data?.entry_speed || 1800}
                         entryDirection={section.data?.entry_direction || 'left'}
                         mode="section"
-                        backgroundColor={section.data?.background_color || '#ffffff'}
+                        backgroundColor={section.data?.background_color || '#000000'}
                         title={section.data?.title}
                         subtitle={section.data?.subtitle}
+                        edgeColor={section.data?.edge_color || '#c8a960'}
+                        edgeWidth={section.data?.edge_width ?? 1.5}
+                        autoRotate={section.data?.auto_rotate ?? true}
+                        autoRotateSpeed={section.data?.auto_rotate_speed ?? 0.15}
                     />
                 );
 

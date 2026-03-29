@@ -117,18 +117,27 @@ type PageSpeedResult = { performance: number; seo: number; accessibility: number
 type AutopilotLogEntry = { action: string; domain: string; affectedCount: number; detail: string; executedAt: string; };
 type AutopilotStatus = { success: boolean; status: { b2c: { totalPages: number; missingMeta: number }; b2b: { totalPages: number; missingMeta: number } }; log: AutopilotLogEntry[]; } | null;
 type AutopilotActionId = 'auto-fix-meta-b2c' | 'auto-fix-meta-b2b' | 'inject-faq-b2c' | 'inject-faq-b2b' | 'inject-service-b2c' | 'inject-service-b2b' | 'indexnow-b2c' | 'indexnow-b2b' | 'indexnow-all';
-type AutopilotActionDef = { id: AutopilotActionId; label: string; desc: string; icon: React.ComponentType<{ className?: string }>; domain: 'b2c' | 'b2b' | 'all'; impact: number; };
+type AutopilotActionDef = { id: AutopilotActionId; label: string; desc: string; icon: React.ComponentType<{ className?: string }>; domain: 'b2c' | 'b2b' | 'all'; impact: number; apiAction: string; };
+type Tone = 'professional' | 'friendly' | 'luxury' | 'dynamic' | 'emotional';
+
+const TONE_OPTIONS: { value: Tone; label: string; emoji: string; desc: string }[] = [
+    { value: 'professional', label: 'Profesjonalny', emoji: '🎯', desc: 'Rzeczowy, konkretny, ekspercki' },
+    { value: 'friendly', label: 'Przyjazny', emoji: '😊', desc: 'Ciepły, bezpośredni, blisko klienta' },
+    { value: 'luxury', label: 'Luksusowy', emoji: '✨', desc: 'Elegancki, prestiżowy, ekskluzywny' },
+    { value: 'dynamic', label: 'Dynamiczny', emoji: '🚀', desc: 'Energiczny, motywujący, CTA' },
+    { value: 'emotional', label: 'Emocjonalny', emoji: '💫', desc: 'Narracyjny, poetycki, storytelling' },
+];
 
 const AUTOPILOT_ACTIONS: AutopilotActionDef[] = [
-    { id: 'auto-fix-meta-b2c', label: 'Auto-uzupełnij meta B2C', desc: 'Generuje brakujące meta title (50-60 zn.) i description (140-155 zn.) dla stron wlasniewski.pl.', icon: FileCode2, domain: 'b2c', impact: 10 },
-    { id: 'auto-fix-meta-b2b', label: 'Auto-uzupełnij meta B2B', desc: 'Generuje brakujące meta title i opis dla stron aeroanaliza.pl. Tytuły zoptymalizowane pod frazy dronowe.', icon: FileCode2, domain: 'b2b', impact: 10 },
-    { id: 'inject-faq-b2c', label: 'FAQ Schema B2C', desc: 'Wstrzykuje FAQ Schema.org (5 pytań o sesje fotograficzne). Google może wyświetlić rich snippets w wynikach.', icon: MessageSquareCode, domain: 'b2c', impact: 6 },
-    { id: 'inject-faq-b2b', label: 'FAQ Schema B2B', desc: 'Wstrzykuje FAQ Schema.org (5 pytań o inspekcje dronem) na aeroanaliza.pl. Rich snippets SERP.', icon: MessageSquareCode, domain: 'b2b', impact: 6 },
-    { id: 'inject-service-b2c', label: 'Service Schema B2C', desc: 'Dodaje Schema.org Service dla sesji ślubnych, rodzinnych i komunijnych. Wzmacnia Local Search.', icon: Layers, domain: 'b2c', impact: 5 },
-    { id: 'inject-service-b2b', label: 'Service Schema B2B', desc: 'Dodaje ProfessionalService dla inspekcji termowizyjnych, monitoringu budów i ortofotomap.', icon: Layers, domain: 'b2b', impact: 5 },
-    { id: 'indexnow-b2c', label: 'IndexNow — wlasniewski.pl', desc: 'Wysyła 7 URL B2C do IndexNow. Bing/Yandex zaindeksuje w minuty zamiast dni.', icon: Rocket, domain: 'b2c', impact: 4 },
-    { id: 'indexnow-b2b', label: 'IndexNow — aeroanaliza.pl', desc: 'Wysyła URL aeroanaliza.pl i /dron do IndexNow. Szybka indeksacja B2B.', icon: Rocket, domain: 'b2b', impact: 4 },
-    { id: 'indexnow-all', label: 'IndexNow — WSZYSTKIE', desc: 'Wysyła naraz wszystkie B2C + B2B. Użyj po każdej dużej zmianie treści lub metadanych.', icon: Zap, domain: 'all', impact: 8 },
+    { id: 'auto-fix-meta-b2c', label: 'Auto-uzupełnij meta B2C', desc: 'Generuje brakujące meta title (50-60 zn.) i description (140-155 zn.) dla stron wlasniewski.pl.', icon: FileCode2, domain: 'b2c', impact: 10, apiAction: 'auto-fix-meta' },
+    { id: 'auto-fix-meta-b2b', label: 'Auto-uzupełnij meta B2B', desc: 'Generuje brakujące meta title i opis dla stron aeroanaliza.pl. Tytuły zoptymalizowane pod frazy dronowe.', icon: FileCode2, domain: 'b2b', impact: 10, apiAction: 'auto-fix-meta' },
+    { id: 'inject-faq-b2c', label: 'FAQ Schema B2C', desc: 'Wstrzykuje FAQ Schema.org (5 pytań o sesje fotograficzne). Google może wyświetlić rich snippets w wynikach.', icon: MessageSquareCode, domain: 'b2c', impact: 6, apiAction: 'inject-faq-schema' },
+    { id: 'inject-faq-b2b', label: 'FAQ Schema B2B', desc: 'Wstrzykuje FAQ Schema.org (5 pytań o inspekcje dronem) na aeroanaliza.pl. Rich snippets SERP.', icon: MessageSquareCode, domain: 'b2b', impact: 6, apiAction: 'inject-faq-schema' },
+    { id: 'inject-service-b2c', label: 'Service Schema B2C', desc: 'Dodaje Schema.org Service dla sesji ślubnych, rodzinnych i komunijnych. Wzmacnia Local Search.', icon: Layers, domain: 'b2c', impact: 5, apiAction: 'inject-service-schema' },
+    { id: 'inject-service-b2b', label: 'Service Schema B2B', desc: 'Dodaje ProfessionalService dla inspekcji termowizyjnych, monitoringu budów i ortofotomap.', icon: Layers, domain: 'b2b', impact: 5, apiAction: 'inject-service-schema' },
+    { id: 'indexnow-b2c', label: 'IndexNow — wlasniewski.pl', desc: 'Wysyła 7 URL B2C do IndexNow. Bing/Yandex zaindeksuje w minuty zamiast dni.', icon: Rocket, domain: 'b2c', impact: 4, apiAction: 'indexnow-b2c' },
+    { id: 'indexnow-b2b', label: 'IndexNow — aeroanaliza.pl', desc: 'Wysyła URL aeroanaliza.pl i /dron do IndexNow. Szybka indeksacja B2B.', icon: Rocket, domain: 'b2b', impact: 4, apiAction: 'indexnow-b2b' },
+    { id: 'indexnow-all', label: 'IndexNow — WSZYSTKIE', desc: 'Wysyła naraz wszystkie B2C + B2B. Użyj po każdej dużej zmianie treści lub metadanych.', icon: Zap, domain: 'all', impact: 8, apiAction: 'indexnow-all' },
 ];
 
 /* ─── Helpers ─── */
@@ -154,6 +163,13 @@ export default function SeoOpsPage() {
     const [autopilotStatus, setAutopilotStatus] = useState<AutopilotStatus>(null);
     const [autopilotLoading, setAutopilotLoading] = useState(false);
     const [runningAction, setRunningAction] = useState<AutopilotActionId | null>(null);
+    const [selectedTone, setSelectedTone] = useState<Tone>('professional');
+    const [expandedAction, setExpandedAction] = useState<AutopilotActionId | null>(null);
+    const [previewData, setPreviewData] = useState<Record<string, any>>({});
+    const [previewLoading, setPreviewLoading] = useState<AutopilotActionId | null>(null);
+    const [aiVariants, setAiVariants] = useState<Record<string, any>>({});
+    const [aiLoading, setAiLoading] = useState<AutopilotActionId | null>(null);
+    const [confirmExecute, setConfirmExecute] = useState<AutopilotActionId | null>(null);
 
     const fetchReport = useCallback(async () => {
         setLoading(true);
@@ -191,18 +207,62 @@ export default function SeoOpsPage() {
         finally { setAutopilotLoading(false); }
     }, []);
 
-    const runAutopilot = async (actionId: AutopilotActionId) => {
-        setRunningAction(actionId);
+    const resolveActionParts = (actionId: AutopilotActionId): { apiAction: string; domain?: string } => {
+        const def = AUTOPILOT_ACTIONS.find(a => a.id === actionId)!;
+        return { apiAction: def.apiAction, domain: def.domain === 'all' ? undefined : def.domain };
+    };
+
+    const fetchPreview = async (actionId: AutopilotActionId) => {
+        setPreviewLoading(actionId);
         try {
             const token = localStorage.getItem('admin_token');
-            const [action, domain] = actionId.startsWith('auto-fix-meta-')
-                ? ['auto-fix-meta', actionId.replace('auto-fix-meta-', '')]
-                : actionId.startsWith('inject-faq-')
-                    ? ['inject-faq-schema', actionId.replace('inject-faq-', '')]
-                    : actionId.startsWith('inject-service-')
-                        ? ['inject-service-schema', actionId.replace('inject-service-', '')]
-                        : [actionId, undefined];
-            const body: Record<string, string> = { action };
+            const { apiAction, domain } = resolveActionParts(actionId);
+            const body: Record<string, string> = { action: 'preview', previewAction: apiAction, tone: selectedTone };
+            if (domain) body.domain = domain;
+            const res = await fetch('/api/admin/seo-autopilot', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify(body),
+            });
+            const result = await res.json();
+            if (result.success) {
+                setPreviewData(prev => ({ ...prev, [actionId]: result }));
+                setExpandedAction(actionId);
+                toast.success('Podgląd załadowany');
+            } else toast.error('Błąd podglądu');
+        } catch { toast.error('Błąd połączenia'); }
+        finally { setPreviewLoading(null); }
+    };
+
+    const fetchAiVariants = async (actionId: AutopilotActionId) => {
+        setAiLoading(actionId);
+        try {
+            const token = localStorage.getItem('admin_token');
+            const { domain } = resolveActionParts(actionId);
+            const body: Record<string, string> = { action: 'ai-generate', field: 'meta_title' };
+            if (domain) body.domain = domain;
+            const res = await fetch('/api/admin/seo-autopilot', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify(body),
+            });
+            const result = await res.json();
+            if (result.success) {
+                setAiVariants(prev => ({ ...prev, [actionId]: result }));
+                setExpandedAction(actionId);
+                toast.success('Warianty AI wygenerowane');
+            } else toast.error('Błąd generowania');
+        } catch { toast.error('Błąd połączenia'); }
+        finally { setAiLoading(null); }
+    };
+
+    const runAutopilot = async (actionId: AutopilotActionId) => {
+        setRunningAction(actionId);
+        setConfirmExecute(null);
+        try {
+            const token = localStorage.getItem('admin_token');
+            const { apiAction, domain } = resolveActionParts(actionId);
+            const body: Record<string, string> = { action: apiAction, tone: selectedTone };
             if (domain) body.domain = domain;
             const res = await fetch('/api/admin/seo-autopilot', {
                 method: 'POST',
@@ -210,8 +270,14 @@ export default function SeoOpsPage() {
                 body: JSON.stringify(body),
             });
             const result = await res.json() as { success: boolean; message?: string };
-            if (result.success) { toast.success(result.message || 'Akcja wykonana!'); void fetchAutopilotStatus(); void fetchReport(); }
-            else toast.error('Błąd akcji autopilota.');
+            if (result.success) {
+                toast.success(result.message || 'Akcja wykonana!');
+                void fetchAutopilotStatus();
+                void fetchReport();
+                // Clear preview after execution
+                setPreviewData(prev => { const n = { ...prev }; delete n[actionId]; return n; });
+                setExpandedAction(null);
+            } else toast.error('Błąd akcji autopilota.');
         } catch (e) { console.error(e); toast.error('Błąd połączenia.'); }
         finally { setRunningAction(null); }
     };
@@ -334,8 +400,8 @@ export default function SeoOpsPage() {
                             <Settings2 className="h-5 w-5 text-fuchsia-400" />
                         </div>
                         <div>
-                            <h2 className="text-xl font-bold tracking-tight">SEO Autopilot</h2>
-                            <p className="text-xs text-zinc-400">Jedno kliknięcie = wdrożona optymalizacja. Każdy przycisk implementuje konkretny element SEO w silniku strony.</p>
+                            <h2 className="text-xl font-bold tracking-tight">SEO Autopilot <span className="text-fuchsia-400">PRO</span></h2>
+                            <p className="text-xs text-zinc-400">Podgląd przed wykonaniem • Wybór tonu tekstów • Warianty AI • Jedno kliknięcie = wdrożona optymalizacja</p>
                         </div>
                     </div>
                     <button onClick={() => { void fetchAutopilotStatus(); void fetchReport(); }} disabled={autopilotLoading}
@@ -343,6 +409,33 @@ export default function SeoOpsPage() {
                         {autopilotLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Zap className="h-3.5 w-3.5" />}
                         Odśwież status
                     </button>
+                </div>
+
+                {/* ── Tone Selector ── */}
+                <div className="mb-5 rounded-xl border border-zinc-700/60 bg-black/20 p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                        <Sparkles className="h-4 w-4 text-amber-400" />
+                        <h3 className="text-sm font-semibold text-zinc-200">Ton generowanych tekstów</h3>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                        {TONE_OPTIONS.map(t => (
+                            <button key={t.value} onClick={() => setSelectedTone(t.value)}
+                                className={`group relative flex items-center gap-2 rounded-xl border px-3.5 py-2 text-xs font-medium transition-all ${
+                                    selectedTone === t.value
+                                        ? 'border-fuchsia-500 bg-fuchsia-500/15 text-fuchsia-200 ring-1 ring-fuchsia-500/40'
+                                        : 'border-zinc-700 bg-zinc-800/50 text-zinc-400 hover:border-zinc-600 hover:text-zinc-300'
+                                }`}>
+                                <span className="text-base">{t.emoji}</span>
+                                <span>{t.label}</span>
+                                {selectedTone === t.value && (
+                                    <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-fuchsia-500 text-[8px] font-bold text-black">✓</span>
+                                )}
+                            </button>
+                        ))}
+                    </div>
+                    <p className="mt-2 text-[11px] text-zinc-500">
+                        {TONE_OPTIONS.find(t => t.value === selectedTone)?.desc} — dotyczy meta tagów, FAQ i schematów generowanych przez Autopilot.
+                    </p>
                 </div>
 
                 {autopilotStatus && (
@@ -366,17 +459,27 @@ export default function SeoOpsPage() {
                     </div>
                 )}
 
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                    {AUTOPILOT_ACTIONS.map(({ id, label, desc, icon: Icon, domain, impact }) => {
+                {/* ── Action Cards Grid ── */}
+                <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
+                    {AUTOPILOT_ACTIONS.map(({ id, label, desc, icon: Icon, domain, impact, apiAction }) => {
                         const isRunning = runningAction === id;
+                        const isExpanded = expandedAction === id;
+                        const preview = previewData[id];
+                        const variants = aiVariants[id];
+                        const isMetaAction = apiAction === 'auto-fix-meta';
+                        const isFaqAction = apiAction === 'inject-faq-schema';
+                        const isServiceAction = apiAction === 'inject-service-schema';
+                        const isIndexAction = apiAction.startsWith('indexnow');
                         const domCls = domain === 'b2b'
-                            ? { card: 'border-violet-500/30 bg-violet-950/10', icon: 'bg-violet-500/20 text-violet-400', badge: 'bg-violet-500/20 text-violet-300', btn: 'bg-violet-600 hover:bg-violet-500' }
+                            ? { card: 'border-violet-500/30 bg-violet-950/10', cardExpanded: 'border-violet-500/50 bg-violet-950/15', icon: 'bg-violet-500/20 text-violet-400', badge: 'bg-violet-500/20 text-violet-300', btn: 'bg-violet-600 hover:bg-violet-500', preview: 'border-violet-500/20 bg-violet-950/10' }
                             : domain === 'b2c'
-                                ? { card: 'border-sky-500/30 bg-sky-950/10', icon: 'bg-sky-500/20 text-sky-400', badge: 'bg-sky-500/20 text-sky-300', btn: 'bg-sky-600 hover:bg-sky-500' }
-                                : { card: 'border-fuchsia-500/30 bg-fuchsia-950/10', icon: 'bg-fuchsia-500/20 text-fuchsia-400', badge: 'bg-fuchsia-500/20 text-fuchsia-300', btn: 'bg-fuchsia-600 hover:bg-fuchsia-500' };
+                                ? { card: 'border-sky-500/30 bg-sky-950/10', cardExpanded: 'border-sky-500/50 bg-sky-950/15', icon: 'bg-sky-500/20 text-sky-400', badge: 'bg-sky-500/20 text-sky-300', btn: 'bg-sky-600 hover:bg-sky-500', preview: 'border-sky-500/20 bg-sky-950/10' }
+                                : { card: 'border-fuchsia-500/30 bg-fuchsia-950/10', cardExpanded: 'border-fuchsia-500/50 bg-fuchsia-950/15', icon: 'bg-fuchsia-500/20 text-fuchsia-400', badge: 'bg-fuchsia-500/20 text-fuchsia-300', btn: 'bg-fuchsia-600 hover:bg-fuchsia-500', preview: 'border-fuchsia-500/20 bg-fuchsia-950/10' };
+
                         return (
-                            <div key={id} className={`flex flex-col justify-between rounded-xl border ${domCls.card} p-4 transition hover:brightness-110`}>
-                                <div className="flex items-start gap-3 mb-4">
+                            <div key={id} className={`rounded-xl border transition-all duration-200 ${isExpanded ? domCls.cardExpanded : domCls.card}`}>
+                                {/* Card Header */}
+                                <div className="flex items-start gap-3 p-4">
                                     <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${domCls.icon}`}>
                                         <Icon className="h-4 w-4" />
                                     </div>
@@ -388,13 +491,184 @@ export default function SeoOpsPage() {
                                         <p className="mt-1 text-xs text-zinc-500 leading-snug">{desc}</p>
                                     </div>
                                 </div>
-                                <div className="flex items-center justify-between">
-                                    <span className="text-[10px] text-emerald-400 font-bold uppercase tracking-wide">+{impact} impact pkt</span>
-                                    <button onClick={() => { void runAutopilot(id); }} disabled={!!runningAction}
-                                        className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-white transition disabled:opacity-40 ${domCls.btn}`}>
-                                        {isRunning ? <><Loader2 className="h-3 w-3 animate-spin" /> Wykonuję...</> : <><Zap className="h-3 w-3" /> Uruchom</>}
-                                    </button>
+
+                                {/* Action Buttons */}
+                                <div className="flex items-center justify-between gap-2 px-4 pb-3 flex-wrap">
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                        <span className="text-[10px] text-emerald-400 font-bold uppercase tracking-wide mr-2">+{impact} impact pkt</span>
+                                        {/* Preview button */}
+                                        <button onClick={() => isExpanded && !preview ? setExpandedAction(null) : void fetchPreview(id)} disabled={!!previewLoading}
+                                            className="inline-flex items-center gap-1 rounded-lg border border-zinc-600 bg-zinc-800 px-2.5 py-1.5 text-[11px] font-medium text-zinc-300 transition hover:bg-zinc-700 hover:border-zinc-500 disabled:opacity-40">
+                                            {previewLoading === id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Search className="h-3 w-3" />}
+                                            Podgląd
+                                        </button>
+                                        {/* AI Variants button (only for meta actions) */}
+                                        {isMetaAction && (
+                                            <button onClick={() => void fetchAiVariants(id)} disabled={!!aiLoading}
+                                                className="inline-flex items-center gap-1 rounded-lg border border-amber-500/40 bg-amber-500/10 px-2.5 py-1.5 text-[11px] font-medium text-amber-300 transition hover:bg-amber-500/20 disabled:opacity-40">
+                                                {aiLoading === id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                                                AI Warianty
+                                            </button>
+                                        )}
+                                    </div>
+                                    {/* Execute button */}
+                                    {confirmExecute === id ? (
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="text-[10px] text-amber-300 animate-pulse">Na pewno?</span>
+                                            <button onClick={() => { void runAutopilot(id); }} disabled={!!runningAction}
+                                                className={`inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-semibold text-white transition disabled:opacity-40 ${domCls.btn}`}>
+                                                {isRunning ? <><Loader2 className="h-3 w-3 animate-spin" /> Wykonuję...</> : <><CheckCircle2 className="h-3 w-3" /> Tak, uruchom!</>}
+                                            </button>
+                                            <button onClick={() => setConfirmExecute(null)} className="rounded-lg border border-zinc-700 px-2 py-1.5 text-[11px] text-zinc-400 hover:bg-zinc-800">
+                                                Anuluj
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <button onClick={() => setConfirmExecute(id)} disabled={!!runningAction}
+                                            className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-white transition disabled:opacity-40 ${domCls.btn}`}>
+                                            <Zap className="h-3 w-3" /> Uruchom
+                                        </button>
+                                    )}
                                 </div>
+
+                                {/* ── Expanded Preview Panel ── */}
+                                {isExpanded && (
+                                    <div className={`border-t ${domCls.preview} p-4 rounded-b-xl`}>
+                                        <div className="flex items-center justify-between mb-3">
+                                            <div className="flex items-center gap-2">
+                                                <Activity className="h-3.5 w-3.5 text-fuchsia-400" />
+                                                <span className="text-xs font-semibold text-zinc-200">Podgląd zmian</span>
+                                                {preview?.tone && <span className="text-[10px] text-fuchsia-300 bg-fuchsia-500/15 px-1.5 py-0.5 rounded">{TONE_OPTIONS.find(t => t.value === preview.tone)?.emoji} {preview.tone}</span>}
+                                            </div>
+                                            <button onClick={() => setExpandedAction(null)} className="text-[10px] text-zinc-500 hover:text-zinc-300">✕ Zamknij</button>
+                                        </div>
+
+                                        {/* Meta preview */}
+                                        {isMetaAction && preview?.pages && (
+                                            <div className="space-y-2.5">
+                                                <p className="text-[11px] text-zinc-400">Strony do naprawienia: <span className="text-white font-bold">{preview.affectedCount}</span></p>
+                                                {preview.affectedCount === 0 && (
+                                                    <div className="flex items-center gap-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 p-3">
+                                                        <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                                                        <span className="text-xs text-emerald-300">Wszystkie strony mają poprawne meta tagi! Nic do naprawienia.</span>
+                                                    </div>
+                                                )}
+                                                {(preview.pages as any[]).slice(0, 10).map((page: any, i: number) => (
+                                                    <div key={i} className="rounded-lg border border-zinc-700/60 bg-black/30 p-3 space-y-1.5">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-xs font-mono text-fuchsia-300">/{page.slug || '(index)'}</span>
+                                                            <span className="text-[10px] text-zinc-600">{page.title}</span>
+                                                        </div>
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                                            <div>
+                                                                <p className="text-[10px] text-zinc-500 mb-0.5">Obecny meta title:</p>
+                                                                <p className="text-xs text-rose-400/80 line-through">{page.current_meta_title}</p>
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-[10px] text-zinc-500 mb-0.5">Nowy meta title:</p>
+                                                                <p className="text-xs text-emerald-300 font-medium">{page.new_meta_title}</p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                                            <div>
+                                                                <p className="text-[10px] text-zinc-500 mb-0.5">Obecny meta opis:</p>
+                                                                <p className="text-xs text-rose-400/80 line-through">{page.current_meta_description}</p>
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-[10px] text-zinc-500 mb-0.5">Nowy meta opis:</p>
+                                                                <p className="text-xs text-emerald-300 font-medium">{page.new_meta_description}</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        {/* FAQ preview */}
+                                        {isFaqAction && preview?.faqs && (
+                                            <div className="space-y-2.5">
+                                                <div className="flex items-center gap-3 flex-wrap">
+                                                    <p className="text-[11px] text-zinc-400">Strona docelowa: <span className="text-white font-mono">/{preview.targetPage}</span></p>
+                                                    <p className="text-[11px] text-zinc-400">Liczba pytań: <span className="text-white font-bold">{preview.faqCount}</span></p>
+                                                    {preview.alreadyInjected && (
+                                                        <span className="text-[10px] text-amber-300 bg-amber-500/15 px-1.5 py-0.5 rounded">⚠ Już wstrzyknięte</span>
+                                                    )}
+                                                </div>
+                                                {(preview.faqs as any[]).map((faq: any, i: number) => (
+                                                    <div key={i} className="rounded-lg border border-zinc-700/60 bg-black/30 p-3">
+                                                        <p className="text-xs font-semibold text-sky-300 mb-1">Q: {faq.question}</p>
+                                                        <p className="text-xs text-zinc-400">A: {faq.answer}</p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        {/* Service schema preview */}
+                                        {isServiceAction && preview?.services && (
+                                            <div className="space-y-2.5">
+                                                <div className="flex items-center gap-3 flex-wrap">
+                                                    <p className="text-[11px] text-zinc-400">Strona docelowa: <span className="text-white font-mono">/{preview.targetPage}</span></p>
+                                                    <p className="text-[11px] text-zinc-400">Usług: <span className="text-white font-bold">{preview.serviceCount}</span></p>
+                                                    {preview.alreadyInjected && (
+                                                        <span className="text-[10px] text-amber-300 bg-amber-500/15 px-1.5 py-0.5 rounded">⚠ Już wstrzyknięte</span>
+                                                    )}
+                                                </div>
+                                                {(preview.services as any[]).map((svc: any, i: number) => (
+                                                    <div key={i} className="rounded-lg border border-zinc-700/60 bg-black/30 p-3">
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            <Layers className="h-3 w-3 text-violet-400" />
+                                                            <p className="text-xs font-semibold text-violet-300">{svc.name}</p>
+                                                            <span className="text-[10px] text-zinc-500">{svc.type}</span>
+                                                        </div>
+                                                        <p className="text-xs text-zinc-400">{svc.description}</p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        {/* IndexNow preview */}
+                                        {isIndexAction && preview?.urls && (
+                                            <div className="space-y-2">
+                                                <p className="text-[11px] text-zinc-400">URL-e do wysłania: <span className="text-white font-bold">{preview.urlCount}</span></p>
+                                                <div className="rounded-lg border border-zinc-700/60 bg-black/30 p-3 space-y-1">
+                                                    {(preview.urls as string[]).map((url: string, i: number) => (
+                                                        <div key={i} className="flex items-center gap-2">
+                                                            <Send className="h-2.5 w-2.5 text-emerald-400 shrink-0" />
+                                                            <span className="text-xs text-zinc-300 font-mono truncate">{url}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* AI Variants panel */}
+                                        {isMetaAction && variants?.pages && (
+                                            <div className="mt-4 pt-3 border-t border-zinc-700/40">
+                                                <div className="flex items-center gap-2 mb-3">
+                                                    <Sparkles className="h-3.5 w-3.5 text-amber-400" />
+                                                    <span className="text-xs font-semibold text-amber-200">AI Warianty meta title — wszystkie tony</span>
+                                                </div>
+                                                {(variants.pages as any[]).slice(0, 5).map((page: any, i: number) => (
+                                                    <div key={i} className="mb-3 rounded-lg border border-amber-500/20 bg-amber-950/10 p-3">
+                                                        <p className="text-xs font-mono text-amber-300 mb-2">/{page.slug || '(index)'} — {page.title}</p>
+                                                        <div className="space-y-1.5">
+                                                            {(page.titleVariants as any[]).map((v: any, vi: number) => (
+                                                                <div key={vi} className="flex items-start gap-2">
+                                                                    <span className="text-base shrink-0">{TONE_OPTIONS.find(t => t.value === v.tone)?.emoji}</span>
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <p className={`text-xs ${v.tone === selectedTone ? 'text-emerald-300 font-semibold' : 'text-zinc-400'}`}>{v.text}</p>
+                                                                        <p className="text-[10px] text-zinc-600">{v.charCount} zn. • {v.toneLabel}</p>
+                                                                    </div>
+                                                                    {v.tone === selectedTone && <span className="text-[9px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded">wybrany</span>}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         );
                     })}

@@ -29,21 +29,29 @@ interface CubeSettings {
   title: string;
   subtitle: string;
   images: string[];
+  edge_color: string;
+  edge_width: number;
+  auto_rotate: boolean;
+  auto_rotate_speed: number;
 }
 
 const DEFAULT_SETTINGS: CubeSettings = {
   enabled: false,
   mode: 'section',
-  cube_size: 280,
+  cube_size: 320,
   image_fit: 'cover',
-  rotation_speed: 0.4,
-  smoothness: 0.95,
-  entry_speed: 2200,
+  rotation_speed: 0.5,
+  smoothness: 0.96,
+  entry_speed: 1800,
   entry_direction: 'left',
-  background_color: '#ffffff',
+  background_color: '#000000',
   title: '',
   subtitle: '',
   images: [],
+  edge_color: '#c8a960',
+  edge_width: 1.5,
+  auto_rotate: true,
+  auto_rotate_speed: 0.15,
 };
 
 export default function PhotoCubeAdminPage() {
@@ -257,6 +265,31 @@ export default function PhotoCubeAdminPage() {
             </div>
           </div>
 
+          {/* Edge color */}
+          <div>
+            <label className="text-sm text-zinc-400 block mb-1">
+              Kolor krawędzi kostki
+            </label>
+            <div className="flex items-center gap-3">
+              <input
+                type="color"
+                value={settings.edge_color}
+                onChange={(e) =>
+                  updateField('edge_color', e.target.value)
+                }
+                className="w-10 h-10 rounded cursor-pointer border-0"
+              />
+              <input
+                type="text"
+                value={settings.edge_color}
+                onChange={(e) =>
+                  updateField('edge_color', e.target.value)
+                }
+                className="bg-zinc-700 text-white px-3 py-2 rounded-lg text-sm flex-1"
+              />
+            </div>
+          </div>
+
           {/* Title / Subtitle */}
           <div>
             <label className="text-sm text-zinc-400 block mb-1">Tytuł</label>
@@ -459,6 +492,59 @@ export default function PhotoCubeAdminPage() {
             </div>
           </div>
         </div>
+
+        {/* Edge width + Auto-rotate row */}
+        <div className="grid md:grid-cols-3 gap-6 pt-4 border-t border-zinc-700">
+          <div>
+            <label className="text-sm text-zinc-400 flex justify-between">
+              <span>Grubość krawędzi</span>
+              <span className="text-white font-mono">{settings.edge_width.toFixed(1)}px</span>
+            </label>
+            <input
+              type="range" min={0} max={4} step={0.5}
+              value={settings.edge_width}
+              onChange={(e) => updateField('edge_width', parseFloat(e.target.value))}
+              className="w-full accent-yellow-500 mt-1"
+            />
+            <div className="flex justify-between text-xs text-zinc-600">
+              <span>Brak</span>
+              <span>Gruba</span>
+            </div>
+          </div>
+
+          <div>
+            <label className="text-sm text-zinc-400 flex justify-between">
+              <span>Auto-rotacja (idle)</span>
+              <span className="text-white font-mono">{settings.auto_rotate_speed.toFixed(2)}</span>
+            </label>
+            <input
+              type="range" min={0} max={0.5} step={0.01}
+              value={settings.auto_rotate_speed}
+              onChange={(e) => updateField('auto_rotate_speed', parseFloat(e.target.value))}
+              className="w-full accent-yellow-500 mt-1"
+            />
+            <div className="flex justify-between text-xs text-zinc-600">
+              <span>Brak</span>
+              <span>Szybka</span>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="text-sm text-zinc-300 font-medium">Auto-obracanie</h4>
+              <p className="text-xs text-zinc-500">Lekki obrót gdy bez interakcji</p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={settings.auto_rotate}
+                onChange={(e) => updateField('auto_rotate', e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-zinc-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-600"></div>
+            </label>
+          </div>
+        </div>
       </div>
 
       {/* ─── Images (6 faces) ───────────────────────────────── */}
@@ -563,6 +649,10 @@ export default function PhotoCubeAdminPage() {
               backgroundColor="transparent"
               title={settings.title}
               subtitle={settings.subtitle}
+              edgeColor={settings.edge_color}
+              edgeWidth={settings.edge_width}
+              autoRotate={settings.auto_rotate}
+              autoRotateSpeed={settings.auto_rotate_speed}
             />
           </div>
         </div>
