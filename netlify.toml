@@ -17,6 +17,25 @@
     "@prisma/client"
   ]
 
+# ─── CRITICAL: Prevent Netlify from redirecting aeroanaliza.pl → wlasniewski.pl ───
+# Netlify automatically 301-redirects domain aliases to the primary domain.
+# These rules override that behavior so aeroanaliza.pl serves B2B content directly.
+# The force=true + conditions.Host ensures this runs BEFORE Netlify's auto-redirect.
+
+[[redirects]]
+  from = "/*"
+  to = "/:splat"
+  status = 200
+  force = true
+  conditions = {Host = ["aeroanaliza.pl"]}
+
+[[redirects]]
+  from = "/*"
+  to = "/:splat"
+  status = 200
+  force = true
+  conditions = {Host = ["www.aeroanaliza.pl"]}
+
 # Cache headers for static assets
 [[headers]]
   for = "/_next/static/*"

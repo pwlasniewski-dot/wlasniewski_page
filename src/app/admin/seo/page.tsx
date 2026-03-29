@@ -420,19 +420,16 @@ export default function SeoOpsPage() {
                     </button>
                 </div>
 
-                {/* ── aeroanaliza.pl Redirect Warning ── */}
-                <div className="mb-5 rounded-xl border border-rose-500/40 bg-rose-950/20 p-4">
+                {/* ── aeroanaliza.pl B2B Info ── */}
+                <div className="mb-5 rounded-xl border border-violet-500/40 bg-violet-950/20 p-4">
                     <div className="flex items-start gap-3">
-                        <CircleAlert className="h-5 w-5 text-rose-400 shrink-0 mt-0.5" />
+                        <Globe className="h-5 w-5 text-violet-400 shrink-0 mt-0.5" />
                         <div>
-                            <h3 className="text-sm font-bold text-rose-300">aeroanaliza.pl przekierowuje 301 → wlasniewski.pl</h3>
+                            <h3 className="text-sm font-bold text-violet-300">aeroanaliza.pl — domena B2B (osobny engine)</h3>
                             <p className="mt-1 text-xs text-zinc-400 leading-relaxed">
-                                Domena B2B (aeroanaliza.pl) ma ustawione przekierowanie 301 na wlasniewski.pl.
-                                Oznacza to, że Google traktuje obie domeny jako jedną — aeroanaliza.pl <strong className="text-rose-300">nie ma osobnej tożsamości SEO</strong>.
-                                Akcje B2B (IndexNow, FAQ Schema, Service Schema) <strong className="text-rose-300">nie będą skuteczne</strong> dopóki przekierowanie jest aktywne.
-                            </p>
-                            <p className="mt-1.5 text-xs text-emerald-400">
-                                Aby naprawić: wyłącz przekierowanie 301 w DNS/hostingu i skonfiguruj osobną stronę dla aeroanaliza.pl.
+                                Domena B2B (aeroanaliza.pl) jest obsługiwana przez ten sam serwer co wlasniewski.pl.
+                                Middleware Next.js automatycznie przepisuje ruch z aeroanaliza.pl na ścieżki <code className="text-violet-300">/b2b/*</code>.
+                                Akcje B2B poniżej generują meta tagi, schematy i indeksację specyficznie dla stron dronowych.
                             </p>
                         </div>
                     </div>
