@@ -330,12 +330,41 @@ export async function GET(request: NextRequest) {
         const completionPercent = Math.round((completedCount / Math.max(mergedChecklist.length, 1)) * 100);
 
         /* Diagnostics */
-        const missingMetaTitlePages = pages.filter(p => !p.meta_title || p.meta_title.trim().length < 20).length;
-        const missingMetaDescriptionPages = pages.filter(p => !p.meta_description || p.meta_description.trim().length < 90).length;
-        const thinPages = pages.filter(p => !p.content || stripHtml(p.content).trim().length < 450).length;
+        const pagesWithMissingTitle = pages.filter(p => !p.meta_title || p.meta_title.trim().length < 20);
+        const pagesWithMissingDesc = pages.filter(p => !p.meta_description || p.meta_description.trim().length < 90);
+        const pagesWithThinContent = pages.filter(p => !p.content || stripHtml(p.content).trim().length < 450);
+        const missingMetaTitlePages = pagesWithMissingTitle.length;
+        const missingMetaDescriptionPages = pagesWithMissingDesc.length;
+        const thinPages = pagesWithThinContent.length;
         const missingSessionMeta = sessions.filter(s => !s.meta_title || !s.meta_description).length;
         const missingBlogMeta = blogPosts.filter(b => !b.meta_title || !b.meta_description).length;
         const weakBlogExcerpts = blogPosts.filter(b => !b.excerpt || b.excerpt.trim().length < 90).length;
+
+        /* Critical details — per-page breakdown */
+        const criticalDetails = {
+            missingMetaTitle: pagesWithMissingTitle.map(p => ({
+                slug: p.slug, title: p.title,
+                currentLength: (p.meta_title || '').length,
+            })),
+            missingMetaDescription: pagesWithMissingDesc.map(p => ({
+                slug: p.slug, title: p.title,
+                currentLength: (p.meta_description || '').length,
+            })),
+            thinContent: pagesWithThinContent.map(p => ({
+                slug: p.slug, title: p.title,
+                wordCount: stripHtml(p.content || '').split(/\s+/).filter(Boolean).length,
+            })),
+            sessionsWithoutMeta: sessions.filter(s => !s.meta_title || !s.meta_description).map(s => ({
+                slug: s.slug, title: s.title,
+                hasTitle: Boolean(s.meta_title),
+                hasDescription: Boolean(s.meta_description),
+            })),
+            blogWithoutMeta: blogPosts.filter(b => !b.meta_title || !b.meta_description).map(b => ({
+                slug: b.slug, title: b.title,
+                hasTitle: Boolean(b.meta_title),
+                hasDescription: Boolean(b.meta_description),
+            })),
+        };
 
         /* Traffic analysis */
         const now = Date.now();
@@ -443,6 +472,7 @@ export async function GET(request: NextRequest) {
                 missingSessionMeta, missingBlogMeta, weakBlogExcerpts,
                 analyticsConfigured, gscConfigured,
             },
+            criticalDetails,
             trend: {
                 currentWindowDays: 30,
                 currentPageViews: currentEvents.length,

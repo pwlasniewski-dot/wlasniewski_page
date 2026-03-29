@@ -82,6 +82,13 @@ type SeoOpsPayload = {
         analyticsConfigured: boolean;
         gscConfigured: boolean;
     };
+    criticalDetails: {
+        missingMetaTitle: Array<{ slug: string; title: string; currentLength: number }>;
+        missingMetaDescription: Array<{ slug: string; title: string; currentLength: number }>;
+        thinContent: Array<{ slug: string; title: string; wordCount: number }>;
+        sessionsWithoutMeta: Array<{ slug: string; title: string; hasTitle: boolean; hasDescription: boolean }>;
+        blogWithoutMeta: Array<{ slug: string; title: string; hasTitle: boolean; hasDescription: boolean }>;
+    };
     trend: {
         currentWindowDays: number;
         currentPageViews: number;
@@ -170,6 +177,8 @@ export default function SeoOpsPage() {
     const [aiVariants, setAiVariants] = useState<Record<string, any>>({});
     const [aiLoading, setAiLoading] = useState<AutopilotActionId | null>(null);
     const [confirmExecute, setConfirmExecute] = useState<AutopilotActionId | null>(null);
+    const [actionResults, setActionResults] = useState<Record<string, any>>({});
+    const [showCriticalDetails, setShowCriticalDetails] = useState(false);
 
     const fetchReport = useCallback(async () => {
         setLoading(true);
@@ -269,14 +278,14 @@ export default function SeoOpsPage() {
                 headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                 body: JSON.stringify(body),
             });
-            const result = await res.json() as { success: boolean; message?: string };
+            const result = await res.json();
             if (result.success) {
                 toast.success(result.message || 'Akcja wykonana!');
+                setActionResults(prev => ({ ...prev, [actionId]: { ...result, executedAt: new Date().toISOString() } }));
+                setExpandedAction(actionId);
                 void fetchAutopilotStatus();
                 void fetchReport();
-                // Clear preview after execution
                 setPreviewData(prev => { const n = { ...prev }; delete n[actionId]; return n; });
-                setExpandedAction(null);
             } else toast.error('Błąd akcji autopilota.');
         } catch (e) { console.error(e); toast.error('Błąd połączenia.'); }
         finally { setRunningAction(null); }
@@ -409,6 +418,24 @@ export default function SeoOpsPage() {
                         {autopilotLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Zap className="h-3.5 w-3.5" />}
                         Odśwież status
                     </button>
+                </div>
+
+                {/* ── aeroanaliza.pl Redirect Warning ── */}
+                <div className="mb-5 rounded-xl border border-rose-500/40 bg-rose-950/20 p-4">
+                    <div className="flex items-start gap-3">
+                        <CircleAlert className="h-5 w-5 text-rose-400 shrink-0 mt-0.5" />
+                        <div>
+                            <h3 className="text-sm font-bold text-rose-300">aeroanaliza.pl przekierowuje 301 → wlasniewski.pl</h3>
+                            <p className="mt-1 text-xs text-zinc-400 leading-relaxed">
+                                Domena B2B (aeroanaliza.pl) ma ustawione przekierowanie 301 na wlasniewski.pl.
+                                Oznacza to, że Google traktuje obie domeny jako jedną — aeroanaliza.pl <strong className="text-rose-300">nie ma osobnej tożsamości SEO</strong>.
+                                Akcje B2B (IndexNow, FAQ Schema, Service Schema) <strong className="text-rose-300">nie będą skuteczne</strong> dopóki przekierowanie jest aktywne.
+                            </p>
+                            <p className="mt-1.5 text-xs text-emerald-400">
+                                Aby naprawić: wyłącz przekierowanie 301 w DNS/hostingu i skonfiguruj osobną stronę dla aeroanaliza.pl.
+                            </p>
+                        </div>
+                    </div>
                 </div>
 
                 {/* ── Tone Selector ── */}
@@ -667,6 +694,60 @@ export default function SeoOpsPage() {
                                                 ))}
                                             </div>
                                         )}
+
+                                        {/* ── Execution Result Panel ── */}
+                                        {actionResults[id] && (
+                                            <div className="mt-4 pt-3 border-t border-emerald-500/30">
+                                                <div className="flex items-center gap-2 mb-3">
+                                                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
+                                                    <span className="text-xs font-bold text-emerald-300 uppercase tracking-wide">Wynik wykonania</span>
+                                                    <span className="text-[10px] text-zinc-500">
+                                                        {new Date(actionResults[id].executedAt).toLocaleString('pl-PL')}
+                                                    </span>
+                                                </div>
+                                                <div className="rounded-lg border border-emerald-500/30 bg-emerald-950/20 p-3">
+                                                    <p className="text-sm text-emerald-200 font-medium mb-2">{actionResults[id].message}</p>
+                                                    {/* Meta fix details */}
+                                                    {actionResults[id].action === 'auto-fix-meta' && actionResults[id].pages && (
+                                                        <div className="space-y-2 mt-2">
+                                                            <p className="text-[11px] text-zinc-400">Naprawione strony: <span className="text-white font-bold">{actionResults[id].affectedPages}</span></p>
+                                                            {(actionResults[id].pages as any[]).map((p: any, pi: number) => (
+                                                                <div key={pi} className="flex items-center gap-2 rounded border border-emerald-500/20 bg-black/30 px-2.5 py-1.5">
+                                                                    <CheckCircle2 className="h-3 w-3 text-emerald-400 shrink-0" />
+                                                                    <span className="text-xs font-mono text-emerald-300">/{p.slug || '(index)'}</span>
+                                                                    <span className="text-[10px] text-zinc-500 truncate">{p.title}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                    {/* FAQ schema result */}
+                                                    {actionResults[id].action === 'inject-faq-schema' && (
+                                                        <div className="text-xs text-zinc-400 mt-1 space-y-0.5">
+                                                            <p>Strona: <span className="text-white font-mono">/{actionResults[id].targetPage}</span></p>
+                                                            <p>Pytań FAQ: <span className="text-white font-bold">{actionResults[id].faqCount}</span></p>
+                                                            <p>Ton: <span className="text-fuchsia-300">{actionResults[id].tone}</span></p>
+                                                        </div>
+                                                    )}
+                                                    {/* Service schema result */}
+                                                    {actionResults[id].action === 'inject-service-schema' && (
+                                                        <div className="text-xs text-zinc-400 mt-1 space-y-0.5">
+                                                            <p>Strona: <span className="text-white font-mono">/{actionResults[id].targetPage}</span></p>
+                                                            <p>Usług: <span className="text-white font-bold">{actionResults[id].serviceCount}</span></p>
+                                                        </div>
+                                                    )}
+                                                    {/* IndexNow result */}
+                                                    {actionResults[id].action?.startsWith('indexnow') && (
+                                                        <div className="text-xs text-zinc-400 mt-1">
+                                                            <p>Wysłano URL-i: <span className="text-white font-bold">{actionResults[id].submitted}</span></p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <button onClick={() => setActionResults(prev => { const n = { ...prev }; delete n[id]; return n; })}
+                                                    className="mt-2 text-[10px] text-zinc-500 hover:text-zinc-300 transition">
+                                                    Ukryj wynik
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                             </div>
@@ -705,9 +786,132 @@ export default function SeoOpsPage() {
                 <MetricCard icon={<Gauge className="h-5 w-5 text-emerald-400" />} label="SEO Score" value={`${data.summary.score}/100`} hint={`Pokrycie checklisty: ${data.summary.completionPercent}%`} />
                 <MetricCard icon={<Search className="h-5 w-5 text-sky-400" />} label="Aktualny ranking" value={data.summary.rankBand} hint="Estymacja pozycji dla fraz lokalnych" />
                 <MetricCard icon={<LineChart className="h-5 w-5 text-violet-400" />} label="Organic 30d" value={String(data.summary.currentOrganicVisits30d)} hint={`Zmiana m/m: ${data.summary.organicDeltaPercent}%`} hintClass={trendClass(data.summary.organicDeltaPercent)} />
-                <MetricCard icon={<CircleAlert className="h-5 w-5 text-amber-400" />} label="Krytyczne luki" value={String(data.summary.unresolvedCritical)} hint={`Przeanalizowane URL: ${data.summary.pageCount}`} />
+                <button onClick={() => setShowCriticalDetails(v => !v)} className="text-left">
+                    <MetricCard icon={<CircleAlert className="h-5 w-5 text-amber-400" />} label="Krytyczne luki" value={String(data.summary.unresolvedCritical)}
+                        hint={showCriticalDetails ? '▲ Kliknij, aby zamknąć' : '▼ Kliknij, aby rozwinąć szczegóły'}
+                        hintClass="text-amber-400" />
+                </button>
                 <MetricCard icon={<Bot className="h-5 w-5 text-fuchsia-400" />} label="AI rekomendacje" value={String(data.aiRecommendations.length)} hint={`Krytyczne: ${data.aiRecommendations.filter(r => r.severity === 'critical').length}`} hintClass="text-rose-400" />
             </section>
+
+            {/* ─── Critical Details Expansion ─── */}
+            {showCriticalDetails && data.criticalDetails && (
+                <section className="rounded-2xl border border-amber-500/40 bg-gradient-to-br from-amber-950/20 via-zinc-900/80 to-zinc-900/80 p-5">
+                    <div className="flex items-center gap-3 mb-4">
+                        <CircleAlert className="h-5 w-5 text-amber-400" />
+                        <h2 className="text-lg font-semibold">Krytyczne luki — szczegółowa lista</h2>
+                        <span className="text-xs text-zinc-500">({data.summary.unresolvedCritical} problemów na stronach CMS)</span>
+                    </div>
+
+                    {/* Missing Meta Titles */}
+                    {data.criticalDetails.missingMetaTitle.length > 0 && (
+                        <div className="mb-4">
+                            <h3 className="text-sm font-semibold text-rose-400 mb-2 flex items-center gap-2">
+                                <span className="flex h-5 w-5 items-center justify-center rounded bg-rose-500/20 text-[10px] font-bold text-rose-400">{data.criticalDetails.missingMetaTitle.length}</span>
+                                Brakujący / za krótki meta title (&lt;20 znaków)
+                            </h3>
+                            <div className="space-y-1.5">
+                                {data.criticalDetails.missingMetaTitle.map((p, i) => (
+                                    <div key={i} className="flex items-center gap-3 rounded-lg border border-rose-500/20 bg-rose-950/10 px-3 py-2">
+                                        <span className="text-xs font-mono text-rose-300 shrink-0">/{p.slug || '(index)'}</span>
+                                        <span className="text-xs text-zinc-400 truncate flex-1">{p.title}</span>
+                                        <span className="text-[10px] text-rose-400 shrink-0">{p.currentLength} zn.</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Missing Meta Descriptions */}
+                    {data.criticalDetails.missingMetaDescription.length > 0 && (
+                        <div className="mb-4">
+                            <h3 className="text-sm font-semibold text-amber-400 mb-2 flex items-center gap-2">
+                                <span className="flex h-5 w-5 items-center justify-center rounded bg-amber-500/20 text-[10px] font-bold text-amber-400">{data.criticalDetails.missingMetaDescription.length}</span>
+                                Brakujący / za krótki meta description (&lt;90 znaków)
+                            </h3>
+                            <div className="space-y-1.5">
+                                {data.criticalDetails.missingMetaDescription.map((p, i) => (
+                                    <div key={i} className="flex items-center gap-3 rounded-lg border border-amber-500/20 bg-amber-950/10 px-3 py-2">
+                                        <span className="text-xs font-mono text-amber-300 shrink-0">/{p.slug || '(index)'}</span>
+                                        <span className="text-xs text-zinc-400 truncate flex-1">{p.title}</span>
+                                        <span className="text-[10px] text-amber-400 shrink-0">{p.currentLength} zn.</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Thin Content */}
+                    {data.criticalDetails.thinContent.length > 0 && (
+                        <div className="mb-4">
+                            <h3 className="text-sm font-semibold text-orange-400 mb-2 flex items-center gap-2">
+                                <span className="flex h-5 w-5 items-center justify-center rounded bg-orange-500/20 text-[10px] font-bold text-orange-400">{data.criticalDetails.thinContent.length}</span>
+                                Zbyt mało treści (&lt;450 znaków po usunięciu HTML)
+                            </h3>
+                            <div className="space-y-1.5">
+                                {data.criticalDetails.thinContent.map((p, i) => (
+                                    <div key={i} className="flex items-center gap-3 rounded-lg border border-orange-500/20 bg-orange-950/10 px-3 py-2">
+                                        <span className="text-xs font-mono text-orange-300 shrink-0">/{p.slug || '(index)'}</span>
+                                        <span className="text-xs text-zinc-400 truncate flex-1">{p.title}</span>
+                                        <span className="text-[10px] text-orange-400 shrink-0">{p.wordCount} słów</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Sessions without meta */}
+                    {data.criticalDetails.sessionsWithoutMeta.length > 0 && (
+                        <div className="mb-4">
+                            <h3 className="text-sm font-semibold text-violet-400 mb-2 flex items-center gap-2">
+                                <span className="flex h-5 w-5 items-center justify-center rounded bg-violet-500/20 text-[10px] font-bold text-violet-400">{data.criticalDetails.sessionsWithoutMeta.length}</span>
+                                Sesje portfolio bez meta tagów
+                            </h3>
+                            <div className="space-y-1.5">
+                                {data.criticalDetails.sessionsWithoutMeta.map((s, i) => (
+                                    <div key={i} className="flex items-center gap-3 rounded-lg border border-violet-500/20 bg-violet-950/10 px-3 py-2">
+                                        <span className="text-xs font-mono text-violet-300 shrink-0">/portfolio/{s.slug}</span>
+                                        <span className="text-xs text-zinc-400 truncate flex-1">{s.title}</span>
+                                        <div className="flex gap-2 shrink-0">
+                                            <span className={`text-[10px] ${s.hasTitle ? 'text-emerald-400' : 'text-rose-400'}`}>{s.hasTitle ? '✓ title' : '✗ title'}</span>
+                                            <span className={`text-[10px] ${s.hasDescription ? 'text-emerald-400' : 'text-rose-400'}`}>{s.hasDescription ? '✓ desc' : '✗ desc'}</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Blog without meta */}
+                    {data.criticalDetails.blogWithoutMeta.length > 0 && (
+                        <div>
+                            <h3 className="text-sm font-semibold text-sky-400 mb-2 flex items-center gap-2">
+                                <span className="flex h-5 w-5 items-center justify-center rounded bg-sky-500/20 text-[10px] font-bold text-sky-400">{data.criticalDetails.blogWithoutMeta.length}</span>
+                                Wpisy blog bez meta tagów
+                            </h3>
+                            <div className="space-y-1.5">
+                                {data.criticalDetails.blogWithoutMeta.map((b, i) => (
+                                    <div key={i} className="flex items-center gap-3 rounded-lg border border-sky-500/20 bg-sky-950/10 px-3 py-2">
+                                        <span className="text-xs font-mono text-sky-300 shrink-0">/blog/{b.slug}</span>
+                                        <span className="text-xs text-zinc-400 truncate flex-1">{b.title}</span>
+                                        <div className="flex gap-2 shrink-0">
+                                            <span className={`text-[10px] ${b.hasTitle ? 'text-emerald-400' : 'text-rose-400'}`}>{b.hasTitle ? '✓ title' : '✗ title'}</span>
+                                            <span className={`text-[10px] ${b.hasDescription ? 'text-emerald-400' : 'text-rose-400'}`}>{b.hasDescription ? '✓ desc' : '✗ desc'}</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {data.summary.unresolvedCritical === 0 && (
+                        <div className="flex items-center gap-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 p-4">
+                            <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+                            <span className="text-sm text-emerald-300 font-medium">Wszystkie strony CMS mają poprawne meta tagi i wystarczającą treść!</span>
+                        </div>
+                    )}
+                </section>
+            )}
 
             {/* ─── PageSpeed Insights ─── */}
             <section className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5">
