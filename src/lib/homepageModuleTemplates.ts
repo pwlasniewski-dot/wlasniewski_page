@@ -298,6 +298,30 @@ export function createFeaturedCarouselTemplate() {
     };
 }
 
+export function createPhotoCube3DTemplate() {
+    return {
+        id: `cube3d-${uuidv4()}`,
+        type: 'photo_cube_3d',
+        label: 'Kostka 3D',
+        enabled: true,
+        backgroundColor: 'black',
+        data: {
+            images: [],
+            cube_size: 320,
+            image_fit: 'cover',
+            rotation_speed: 0.5,
+            smoothness: 0.96,
+            entry_speed: 1800,
+            entry_direction: 'left',
+            background_color: '#000000',
+            edge_color: '#c8a960',
+            edge_width: 1.5,
+            auto_rotate: true,
+            auto_rotate_speed: 0.15
+        }
+    };
+}
+
 export default {
     createHeroSlideTemplate,
     createAboutSectionTemplate,
@@ -314,5 +338,6 @@ export default {
     createProcessTimelineTemplate,
     createInvestmentTeaserTemplate,
     createNarrativeTextTemplate,
-    createFeaturedCarouselTemplate
+    createFeaturedCarouselTemplate,
+    createPhotoCube3DTemplate
 };

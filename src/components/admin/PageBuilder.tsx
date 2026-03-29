@@ -13,7 +13,7 @@ import {
 import RichTextEditor from './RichTextEditor';
 import MediaPicker from './MediaPicker';
 
-export type SectionType = 'hero_parallax' | 'hero' | 'rich_text' | 'image_text' | 'gallery' | 'contact' | 'thermal_slider' | 'contact_form' | 'hero_slider' | 'about' | 'features' | 'parallax' | 'info_band' | 'testimonials' | 'challenge_banner' | 'creative_slider' | 'certificates' | 'b2b_hero' | 'b2b_stats' | 'b2b_logos' | 'b2b_process' | 'b2b_cases' | 'b2b_contact' | 'b2b_video' | 'thermal_hero' | 'hero_video' | 'parallax_video' | 'thermal_report' | 'mini_gallery' | 'story_hero' | 'magazine_layout' | 'masonry_gallery' | 'client_story' | 'process_timeline' | 'investment_teaser' | 'narrative_text' | 'featured_carousel' | 'stories_grid' | 'chronological_gallery' | 'floating_button' | 'pointcloud_hero' | 'pointcloud_viewer' | 'pointcloud_services' | 'pointcloud_showcase' | 'pointcloud_tech';
+export type SectionType = 'hero_parallax' | 'hero' | 'rich_text' | 'image_text' | 'gallery' | 'contact' | 'thermal_slider' | 'contact_form' | 'hero_slider' | 'about' | 'features' | 'parallax' | 'info_band' | 'testimonials' | 'challenge_banner' | 'creative_slider' | 'certificates' | 'b2b_hero' | 'b2b_stats' | 'b2b_logos' | 'b2b_process' | 'b2b_cases' | 'b2b_contact' | 'b2b_video' | 'thermal_hero' | 'hero_video' | 'parallax_video' | 'thermal_report' | 'mini_gallery' | 'story_hero' | 'magazine_layout' | 'masonry_gallery' | 'client_story' | 'process_timeline' | 'investment_teaser' | 'narrative_text' | 'featured_carousel' | 'stories_grid' | 'chronological_gallery' | 'floating_button' | 'pointcloud_hero' | 'pointcloud_viewer' | 'pointcloud_services' | 'pointcloud_showcase' | 'pointcloud_tech' | 'photo_cube_3d';
 
 export interface SliderSlide {
     id: string;
@@ -3296,6 +3296,82 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove, openMedia
                     </div>
                 )}
 
+                {/* PHOTO CUBE 3D */}
+                {section.type === 'photo_cube_3d' && (
+                    <div className="space-y-4">
+                        <div className="bg-yellow-950/30 p-3 rounded border border-yellow-800 mb-2">
+                            <p className="text-xs text-zinc-400">🎲 <strong className="text-yellow-400">Kostka 3D:</strong> Interaktywna, obracana kostka ze zdjęciami na 6 ściankach. Podaj URL-e zdjęć i skonfiguruj wygląd.</p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs text-zinc-400 mb-1">Tytuł (opcjonalnie)</label>
+                                <input type="text" value={section.title || ''} onChange={e => onUpdate(section.id, { title: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white" placeholder="np. Portfolio 3D" />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-zinc-400 mb-1">Podtytuł (opcjonalnie)</label>
+                                <input type="text" value={section.subtitle || ''} onChange={e => onUpdate(section.id, { subtitle: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white" />
+                            </div>
+                        </div>
+                        <div>
+                            <label className="block text-xs text-zinc-400 mb-1">Zdjęcia na ścianki kostki (6 URL-i, po jednym na linię)</label>
+                            <textarea
+                                value={(section.data?.images || []).join('\n')}
+                                onChange={e => onUpdate(section.id, { data: { ...section.data, images: e.target.value.split('\n').filter((u: string) => u.trim()) } })}
+                                className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white h-28 font-mono text-xs"
+                                placeholder={"/uploads/photo1.jpg\n/uploads/photo2.jpg\n..."}
+                            />
+                            <p className="text-[10px] text-zinc-500 mt-1">Podaj do 6 URL-i zdjęć. Każde zdjęcie = jedna ścianka kostki.</p>
+                        </div>
+                        <div className="grid grid-cols-3 gap-4">
+                            <div>
+                                <label className="block text-xs text-zinc-400 mb-1">Rozmiar kostki (px)</label>
+                                <input type="number" value={section.data?.cube_size || 320} onChange={e => onUpdate(section.id, { data: { ...section.data, cube_size: parseInt(e.target.value) } })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white" />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-zinc-400 mb-1">Kolor krawędzi</label>
+                                <input type="color" value={section.data?.edge_color || '#c8a960'} onChange={e => onUpdate(section.id, { data: { ...section.data, edge_color: e.target.value } })} className="w-full h-10 bg-zinc-800 border border-zinc-700 rounded cursor-pointer" />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-zinc-400 mb-1">Grubość krawędzi</label>
+                                <input type="number" step="0.5" min="0" max="5" value={section.data?.edge_width ?? 1.5} onChange={e => onUpdate(section.id, { data: { ...section.data, edge_width: parseFloat(e.target.value) } })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white" />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-3 gap-4">
+                            <div>
+                                <label className="block text-xs text-zinc-400 mb-1">Kolor tła</label>
+                                <input type="color" value={section.data?.background_color || '#000000'} onChange={e => onUpdate(section.id, { data: { ...section.data, background_color: e.target.value } })} className="w-full h-10 bg-zinc-800 border border-zinc-700 rounded cursor-pointer" />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-zinc-400 mb-1">Dopasowanie zdjęć</label>
+                                <select value={section.data?.image_fit || 'cover'} onChange={e => onUpdate(section.id, { data: { ...section.data, image_fit: e.target.value } })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white">
+                                    <option value="cover">Cover (wypełnia)</option>
+                                    <option value="contain">Contain (mieści)</option>
+                                    <option value="fill">Fill (rozciąga)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-xs text-zinc-400 mb-1">Kierunek wjazdu</label>
+                                <select value={section.data?.entry_direction || 'left'} onChange={e => onUpdate(section.id, { data: { ...section.data, entry_direction: e.target.value } })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white">
+                                    <option value="left">Z lewej</option>
+                                    <option value="right">Z prawej</option>
+                                    <option value="top">Z góry</option>
+                                    <option value="bottom">Z dołu</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="flex items-center gap-3">
+                                <input type="checkbox" checked={section.data?.auto_rotate ?? true} onChange={e => onUpdate(section.id, { data: { ...section.data, auto_rotate: e.target.checked } })} className="w-4 h-4 accent-gold-500" />
+                                <label className="text-xs text-zinc-400">Auto-rotacja (gdy nie dotykasz)</label>
+                            </div>
+                            <div>
+                                <label className="block text-xs text-zinc-400 mb-1">Prędkość auto-rotacji</label>
+                                <input type="number" step="0.05" min="0.01" max="1" value={section.data?.auto_rotate_speed ?? 0.15} onChange={e => onUpdate(section.id, { data: { ...section.data, auto_rotate_speed: parseFloat(e.target.value) } })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white" />
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* POINTCLOUD TECHNOLOGY */}
                 {section.type === 'pointcloud_tech' && (
                     <div className="space-y-4">
@@ -3735,6 +3811,23 @@ export default function PageBuilder({ sections, onChange, pageType }: PageBuilde
             newSection.title = 'Nasze <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">realizacje</span>';
             newSection.subtitle = 'Zobacz przykłady pomiarów i modeli 3D z naszych projektów';
             newSection.pointcloud_projects = [];
+        } else if (type === 'photo_cube_3d') {
+            newSection.title = 'Kostka 3D';
+            newSection.subtitle = '';
+            newSection.data = {
+                images: [],
+                cube_size: 320,
+                image_fit: 'cover',
+                rotation_speed: 0.5,
+                smoothness: 0.96,
+                entry_speed: 1800,
+                entry_direction: 'left',
+                background_color: '#000000',
+                edge_color: '#c8a960',
+                edge_width: 1.5,
+                auto_rotate: true,
+                auto_rotate_speed: 0.15
+            };
         } else if (type === 'pointcloud_tech') {
             newSection.title = 'Pipeline <span class="text-cyan-400">pomiarowy</span> od A do Z.';
             newSection.subtitle = 'TECHNOLOGIA';
@@ -4196,6 +4289,9 @@ export default function PageBuilder({ sections, onChange, pageType }: PageBuilde
                 </button>
                 <button onClick={() => addSection('floating_button')} className="flex items-center gap-2 px-4 py-2 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 rounded text-sm text-blue-400 transition-colors">
                     <Layout className="w-4 h-4" /> Floating Button 🧭
+                </button>
+                <button onClick={() => addSection('photo_cube_3d')} className="flex items-center gap-2 px-4 py-2 bg-yellow-600/20 hover:bg-yellow-600/30 border border-yellow-500/30 rounded text-sm text-yellow-400 transition-colors">
+                    <Layout className="w-4 h-4" /> Kostka 3D 🎲
                 </button>
 
             </div>

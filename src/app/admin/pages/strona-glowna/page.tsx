@@ -56,7 +56,7 @@ interface Feature {
 }
 
 type SectionType = 'about' | 'features' | 'parallax' | 'info_band' | 'challenge_banner' | 'testimonials' | 'mini_gallery' | 'stories_grid' | 'chronological_gallery' |
-    'magazine_layout' | 'masonry_gallery' | 'client_story' | 'process_timeline' | 'investment_teaser' | 'narrative_text' | 'featured_carousel' | 'b2b_hero' | 'b2b_stats' | 'b2b_logos' | 'b2b_process' | 'b2b_cases' | 'b2b_contact' | 'b2b_video' | 'thermal_hero' | 'hero_video' | 'parallax_video' | 'thermal_report' | 'thermal_slider';
+    'magazine_layout' | 'masonry_gallery' | 'client_story' | 'process_timeline' | 'investment_teaser' | 'narrative_text' | 'featured_carousel' | 'photo_cube_3d' | 'b2b_hero' | 'b2b_stats' | 'b2b_logos' | 'b2b_process' | 'b2b_cases' | 'b2b_contact' | 'b2b_video' | 'thermal_hero' | 'hero_video' | 'parallax_video' | 'thermal_report' | 'thermal_slider';
 
 interface ChronologicalItem {
     id: string;
@@ -88,6 +88,7 @@ type ProcessTimelineSection = EditorSection;
 type InvestmentTeaserSection = EditorSection;
 type NarrativeTextSection = EditorSection;
 type FeaturedCarouselSection = EditorSection;
+type PhotoCube3DSection = EditorSection;
 
 interface BannerItem {
     id: string;
@@ -429,6 +430,12 @@ export default function HomepageManager() {
         const tpl = templates.createFeaturedCarouselTemplate() as FeaturedCarouselSection;
         setSections(prev => [tpl, ...prev]);
         toast.success('Dodano Featured Carousel na górę (pamiętaj zapisać)');
+    };
+
+    const addPhotoCube3DTemplate = () => {
+        const tpl = templates.createPhotoCube3DTemplate() as PhotoCube3DSection;
+        setSections(prev => [tpl, ...prev]);
+        toast.success('Dodano Kostkę 3D na górę (pamiętaj zapisać)');
     };
 
     const addHeroSlideTemplate = () => {
@@ -928,6 +935,7 @@ export default function HomepageManager() {
                 <button onClick={addInvestmentTeaserTemplate} className="px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-white rounded text-sm border border-yellow-500/30 text-yellow-400">Dodaj Investment</button>
                 <button onClick={addNarrativeTextTemplate} className="px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-white rounded text-sm border border-gray-500/30 text-gray-400">Dodaj Tekst Narracyjny</button>
                 <button onClick={addFeaturedCarouselTemplate} className="px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-white rounded text-sm border border-blue-500/30 text-blue-400">Dodaj Karuzelę</button>
+                <button onClick={addPhotoCube3DTemplate} className="px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-white rounded text-sm border border-yellow-500/30 text-yellow-400">Dodaj Kostkę 3D 🎲</button>
             </div>
 
             <div className="space-y-8">
@@ -2732,6 +2740,42 @@ export default function HomepageManager() {
                                                 </div>
                                             </div>
                                         ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* PHOTO CUBE 3D EDITOR */}
+                            {section.type === 'photo_cube_3d' && (
+                                <div className="space-y-4">
+                                    <div className="bg-yellow-950/30 p-3 rounded border border-yellow-800 mb-2">
+                                        <p className="text-xs text-zinc-400">🎲 <strong className="text-yellow-400">Kostka 3D:</strong> Interaktywna kostka ze zdjęciami. Wklej URL-e zdjęć (do 6 sztuk).</p>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs text-zinc-400 mb-1">Zdjęcia (URL-e, po jednym na linię)</label>
+                                        <textarea
+                                            value={(section.data?.images || []).join('\n')}
+                                            onChange={e => updateSectionData(index, 'images', e.target.value.split('\n').filter((u: string) => u.trim()))}
+                                            className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white h-28 font-mono text-xs"
+                                            placeholder={"/uploads/photo1.jpg\n/uploads/photo2.jpg"}
+                                        />
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-4">
+                                        <div>
+                                            <label className="block text-xs text-zinc-400 mb-1">Rozmiar (px)</label>
+                                            <input type="number" value={section.data?.cube_size || 320} onChange={e => updateSectionData(index, 'cube_size', parseInt(e.target.value))} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs text-zinc-400 mb-1">Kolor krawędzi</label>
+                                            <input type="color" value={section.data?.edge_color || '#c8a960'} onChange={e => updateSectionData(index, 'edge_color', e.target.value)} className="w-full h-10 bg-zinc-800 border border-zinc-700 rounded cursor-pointer" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs text-zinc-400 mb-1">Kolor tła</label>
+                                            <input type="color" value={section.data?.background_color || '#000000'} onChange={e => updateSectionData(index, 'background_color', e.target.value)} className="w-full h-10 bg-zinc-800 border border-zinc-700 rounded cursor-pointer" />
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <input type="checkbox" checked={section.data?.auto_rotate ?? true} onChange={e => updateSectionData(index, 'auto_rotate', e.target.checked)} className="w-4 h-4 accent-gold-500" />
+                                        <label className="text-xs text-zinc-400">Auto-rotacja</label>
                                     </div>
                                 </div>
                             )}
