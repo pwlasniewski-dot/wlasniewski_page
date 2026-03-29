@@ -26,7 +26,8 @@ import {
     Briefcase,
     Shield,
     FileEdit,
-    Search
+    Search,
+    Box
 } from 'lucide-react';
 
 const navigation = [
@@ -47,6 +48,7 @@ const navigation = [
     },
     { name: 'Galerie', href: '/admin/galleries', icon: Image },
     { name: 'Multimedia', href: '/admin/multimedia', icon: Sparkles },
+    { name: 'Kostka 3D', href: '/admin/photo-cube', icon: Box },
     { name: 'Menu', href: '/admin/menu', icon: Menu },
     { name: 'Foto Wyzwania', href: '/admin/challenges', icon: Trophy },
     { name: 'Blog', href: '/admin/blog', icon: FileText },

@@ -26,6 +26,7 @@ import ProcessTimeline from '@/components/sections/ProcessTimeline';
 import InvestmentTeaser from '@/components/sections/InvestmentTeaser';
 import NarrativeText from '@/components/sections/NarrativeText';
 import FeaturedCarousel from '@/components/sections/FeaturedCarousel';
+import PhotoCube3D from '@/components/sections/PhotoCube3D';
 // Banners are rendered in AppShell
 interface Testimonial {
     id: number;
@@ -41,7 +42,7 @@ interface Testimonial {
 interface Section {
     id: string;
     type: 'about' | 'features' | 'parallax' | 'info_band' | 'challenge_banner' | 'testimonials' | 'creative_slider' | 'hero' | 'rich_text' | 'image_text' | 'gallery' | 'contact' | 'thermal_slider' | 'hero_parallax' | 'mini_gallery' |
-    'stories_grid' | 'chronological_gallery' | 'magazine_layout' | 'masonry_gallery' | 'client_story' | 'process_timeline' | 'investment_teaser' | 'narrative_text' | 'featured_carousel';
+    'stories_grid' | 'chronological_gallery' | 'magazine_layout' | 'masonry_gallery' | 'client_story' | 'process_timeline' | 'investment_teaser' | 'narrative_text' | 'featured_carousel' | 'photo_cube_3d';
     enabled?: boolean;
     backgroundColor?: 'black' | 'zinc-900' | 'zinc-800' | 'gold-900' | 'white';
     textVariant?: 'light' | 'dark';
@@ -924,6 +925,24 @@ export default function HomeContent({ heroSlides, sections, homeData, orderedSec
                             title: slide.title,
                             subtitle: slide.subtitle
                         }))}
+                    />
+                );
+
+            case 'photo_cube_3d':
+                return (
+                    <PhotoCube3D
+                        key={section.id}
+                        images={section.data?.images || []}
+                        cubeSize={section.data?.cube_size || 280}
+                        imageFit={section.data?.image_fit || 'cover'}
+                        rotationSpeed={section.data?.rotation_speed || 0.4}
+                        smoothness={section.data?.smoothness || 0.95}
+                        entrySpeed={section.data?.entry_speed || 2200}
+                        entryDirection={section.data?.entry_direction || 'left'}
+                        mode="section"
+                        backgroundColor={section.data?.background_color || '#ffffff'}
+                        title={section.data?.title}
+                        subtitle={section.data?.subtitle}
                     />
                 );
 
