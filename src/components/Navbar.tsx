@@ -18,6 +18,13 @@ interface MenuItem {
 
 const MENU_ITEMS: MenuItem[] = [];
 
+const B2B_MENU_ITEMS: MenuItem[] = [
+    { id: 1, label: 'Start', href: '/' },
+    { id: 2, label: 'Usługi Dronem', href: '/dron' },
+    { id: 3, label: 'Termowizja', href: '/dron#termowizja' },
+    { id: 4, label: 'Kontakt', href: '/b2b/kontakt' },
+];
+
 const CTA_ITEMS: MenuItem[] = [];
 
 interface NavbarSettings {
@@ -31,13 +38,13 @@ interface NavbarSettings {
     navbar_transparent?: boolean;
 }
 
-export default function Navbar() {
+export default function Navbar({ isB2B: serverIsB2B }: { isB2B?: boolean }) {
     const pathname = usePathname();
     const router = useRouter();
     const isHome = pathname === '/';
     const [isOpen, setIsOpen] = useState(false);
     const [settings, setSettings] = useState<NavbarSettings>({});
-    const [menuItems, setMenuItems] = useState<MenuItem[]>(MENU_ITEMS);
+    const [menuItems, setMenuItems] = useState<MenuItem[]>(serverIsB2B ? B2B_MENU_ITEMS : MENU_ITEMS);
     const [ctaItems, setCtaItems] = useState<MenuItem[]>(CTA_ITEMS);
     const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
     const [isScrolled, setIsScrolled] = useState(false);
@@ -108,7 +115,7 @@ export default function Navbar() {
 
                 const data = await res.json();
 
-                if (Array.isArray(data)) {
+                if (Array.isArray(data) && data.length > 0) {
                     const dynamicMenuItems = data.map((item: any) => ({
                         id: item.id,
                         label: item.title,
@@ -120,13 +127,15 @@ export default function Navbar() {
                         })) : undefined
                     }));
                     setMenuItems(dynamicMenuItems);
+                } else if (Array.isArray(data) && data.length === 0 && isB2BContextActive) {
+                    setMenuItems(B2B_MENU_ITEMS);
                 } else {
                     console.error('Menu data is not an array:', data);
-                    setMenuItems([]); // Clear menu on error/empty
+                    setMenuItems(isB2BContextActive ? B2B_MENU_ITEMS : []);
                 }
             } catch (error) {
                 console.error('Failed to fetch menu:', error);
-                setMenuItems([]);
+                setMenuItems(isB2BContextActive ? B2B_MENU_ITEMS : []);
             }
         };
 

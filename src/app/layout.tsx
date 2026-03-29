@@ -51,11 +51,13 @@ const outfit = Outfit({
 import AppShell from "@/components/AppShell";
 import "./globals.css";
 import { Suspense } from "react";
+import { headers } from "next/headers";
 import { AnalyticsTracker } from "@/hooks/useAnalytics";
 import AnalyticsLoader from "@/components/AnalyticsLoader";
 import FloatingContact from "@/components/FloatingContact";
 import SeasonalEffectsWrapper from "@/components/effects/SeasonalEffectsWrapper";
 import PhotoCubeIntro from "@/components/PhotoCubeIntro";
+import { isB2BContext } from "@/lib/context";
 
 const cormorant = Cormorant_Garamond({
     subsets: ["latin"],
@@ -175,64 +177,70 @@ export async function generateMetadata(): Promise<Metadata> {
     }
 }
 
-export default function RootLayout({
+export default async function RootLayout({
     children,
 }: Readonly<{
     children: React.ReactNode;
 }>) {
+    const headersList = await headers();
+    const host = headersList.get('host') || '';
+    const isB2B = isB2BContext({ hostname: host.split(':')[0] });
+
     return (
         <html lang="pl" className={`${cormorant.variable} ${montserrat.variable} ${playfair.variable} ${lato.variable} ${greatVibes.variable} ${cinzel.variable} ${inter.variable} ${outfit.variable}`} suppressHydrationWarning>
             <head>
                 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@12/swiper-bundle.min.css" />
-                <script
-                    type="application/ld+json"
-                    dangerouslySetInnerHTML={{
-                        __html: JSON.stringify({
-                            "@context": "https://schema.org",
-                            "@type": ["LocalBusiness", "PhotographyBusiness"],
-                            "@id": "https://wlasniewski.pl/#business",
-                            "name": "Przemysław Właśniewski — Fotograf",
-                            "alternateName": "FOTO-DRON Przemysław Właśniewski",
-                            "image": "https://wlasniewski.pl/og-image.jpg",
-                            "description": "Profesjonalna fotografia rodzinna, ślubna, portretowa i komunijna w Toruniu, Grudziądzu, Chełmnie, Wąbrzeźnie i okolicach. Usługi dronem i termowizja.",
-                            "url": "https://wlasniewski.pl",
-                            "telephone": "+48530788694",
-                            "taxID": "8781430365",
-                            "address": {
-                                "@type": "PostalAddress",
-                                "addressRegion": "Kujawsko-Pomorskie",
-                                "addressLocality": "Toruń",
-                                "addressCountry": "PL"
-                            },
-                            "geo": {
-                                "@type": "GeoCoordinates",
-                                "latitude": 53.01379,
-                                "longitude": 18.59844
-                            },
-                            "areaServed": [
-                                { "@type": "City", "name": "Toruń" },
-                                { "@type": "City", "name": "Grudziądz" },
-                                { "@type": "City", "name": "Chełmno" },
-                                { "@type": "City", "name": "Wąbrzeźno" },
-                                { "@type": "City", "name": "Bydgoszcz" },
-                                { "@type": "City", "name": "Świecie" },
-                                { "@type": "City", "name": "Lisewo" },
-                                { "@type": "City", "name": "Płużnica" }
-                            ],
-                            "priceRange": "$$",
-                            "openingHoursSpecification": {
-                                "@type": "OpeningHoursSpecification",
-                                "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
-                                "opens": "08:00",
-                                "closes": "20:00"
-                            },
-                            "sameAs": [
-                                "https://www.facebook.com/przemyslaw.wlasniewski.fotografia",
-                                "https://www.instagram.com/wlasniewski.pl/"
-                            ]
-                        })
-                    }}
-                />
+                {!isB2B && (
+                    <script
+                        type="application/ld+json"
+                        dangerouslySetInnerHTML={{
+                            __html: JSON.stringify({
+                                "@context": "https://schema.org",
+                                "@type": ["LocalBusiness", "PhotographyBusiness"],
+                                "@id": "https://wlasniewski.pl/#business",
+                                "name": "Przemysław Właśniewski — Fotograf",
+                                "alternateName": "FOTO-DRON Przemysław Właśniewski",
+                                "image": "https://wlasniewski.pl/og-image.jpg",
+                                "description": "Profesjonalna fotografia rodzinna, ślubna, portretowa i komunijna w Toruniu, Grudziądzu, Chełmnie, Wąbrzeźnie i okolicach. Usługi dronem i termowizja.",
+                                "url": "https://wlasniewski.pl",
+                                "telephone": "+48530788694",
+                                "taxID": "8781430365",
+                                "address": {
+                                    "@type": "PostalAddress",
+                                    "addressRegion": "Kujawsko-Pomorskie",
+                                    "addressLocality": "Toruń",
+                                    "addressCountry": "PL"
+                                },
+                                "geo": {
+                                    "@type": "GeoCoordinates",
+                                    "latitude": 53.01379,
+                                    "longitude": 18.59844
+                                },
+                                "areaServed": [
+                                    { "@type": "City", "name": "Toruń" },
+                                    { "@type": "City", "name": "Grudziądz" },
+                                    { "@type": "City", "name": "Chełmno" },
+                                    { "@type": "City", "name": "Wąbrzeźno" },
+                                    { "@type": "City", "name": "Bydgoszcz" },
+                                    { "@type": "City", "name": "Świecie" },
+                                    { "@type": "City", "name": "Lisewo" },
+                                    { "@type": "City", "name": "Płużnica" }
+                                ],
+                                "priceRange": "$$",
+                                "openingHoursSpecification": {
+                                    "@type": "OpeningHoursSpecification",
+                                    "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+                                    "opens": "08:00",
+                                    "closes": "20:00"
+                                },
+                                "sameAs": [
+                                    "https://www.facebook.com/przemyslaw.wlasniewski.fotografia",
+                                    "https://www.instagram.com/wlasniewski.pl/"
+                                ]
+                            })
+                        }}
+                    />
+                )}
             </head>
             <body className="antialiased bg-zinc-950 text-zinc-100 min-h-screen flex flex-col" suppressHydrationWarning>
                 <Suspense fallback={null}>
@@ -241,7 +249,7 @@ export default function RootLayout({
                 </Suspense>
                 <SeasonalEffectsWrapper />
                 <PhotoCubeIntro />
-                <AppShell>
+                <AppShell isB2B={isB2B}>
                     {children}
                 </AppShell>
                 <FloatingContact />

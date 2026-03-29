@@ -113,10 +113,10 @@ const defaultB2BSettings: FooterSettings = {
     }
 };
 
-export default function Footer() {
+export default function Footer({ isB2B: serverIsB2B }: { isB2B?: boolean }) {
     const year = new Date().getFullYear();
-    const [settings, setSettings] = useState<FooterSettings>(defaultSettings);
-    const [isB2B, setIsB2B] = useState(false);
+    const [settings, setSettings] = useState<FooterSettings>(serverIsB2B ? defaultB2BSettings : defaultSettings);
+    const [isB2B, setIsB2B] = useState(serverIsB2B || false);
 
     useEffect(() => {
         // Check B2B Context

@@ -14,14 +14,15 @@ import { AuthProvider } from '@/context/AuthContext';
 import BasketDrawer from '@/components/BasketDrawer';
 import { isB2BContext } from '@/lib/context';
 
-export default function AppShell({ children }: { children: React.ReactNode }) {
+export default function AppShell({ children, isB2B: serverIsB2B }: { children: React.ReactNode; isB2B?: boolean }) {
     const pathname = usePathname();
     const isAdmin = pathname?.startsWith('/admin');
-    const isB2B = isB2BContext({
+    const clientIsB2B = isB2BContext({
         pathname,
         hostname: typeof window !== 'undefined' ? window.location.hostname : undefined,
         port: typeof window !== 'undefined' ? window.location.port : undefined
     });
+    const isB2B = serverIsB2B || clientIsB2B;
     const isHome = pathname === '/';
 
     return (
@@ -29,11 +30,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             <CartProvider>
                 {!isAdmin && !isB2B && <GiftCardPromoBar />}
                 {!isAdmin && !isB2B && <PromocodeBar />}
-                {!isAdmin && <Navbar />}
+                {!isAdmin && <Navbar isB2B={isB2B} />}
                 <div className={`flex-1 ${isAdmin ? '' : (isHome ? 'pt-0' : 'pt-32')} ${isAdmin ? '' : 'pb-20 md:pb-24'}`}>
                     {!isAdmin && !isHome && !isB2B && <UrgencyBanner />}
                     {children}
-                    {!isAdmin && <Footer />}
+                    {!isAdmin && <Footer isB2B={isB2B} />}
                 </div>
                 {!isAdmin && <CookieBanner />}
 

@@ -30,7 +30,7 @@ import ThermalHeroSlider from '@/components/ThermalHeroSlider';
 import HeroVideoSlider from '@/components/HeroVideoSlider';
 import ParallaxVideo from '@/components/ParallaxVideo';
 import ThermalReportShowcase from '@/components/ThermalReportShowcase';
-import { ShieldCheck, Zap, ArrowRight, Workflow, FileText, Briefcase, CheckCircle2, Maximize2, X, Camera, ImageIcon, Layout, Stars, Award, Type, LayoutTemplate } from 'lucide-react';
+import { ShieldCheck, Zap, ArrowRight, Workflow, FileText, Briefcase, CheckCircle2, Maximize2, X, Camera, ImageIcon, Layout, Stars, Award, Type, LayoutTemplate, Thermometer, Building, Shield, Leaf } from 'lucide-react';
 
 // Editorial Components (Storytelling)
 import StoryHero from '@/components/sections/StoryHero';
@@ -473,6 +473,37 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                         const isCentered = data.sectionLayout === 'centered';
                         const isLarge = data.featureSize === 'large';
 
+                        // B2B simple cards format: items with {title, text, icon}
+                        const simpleItems = !data.features && data.items;
+                        const iconMap: Record<string, any> = { thermometer: Thermometer, building: Building, shield: Shield, leaf: Leaf, zap: Zap, briefcase: Briefcase, camera: Camera };
+
+                        if (simpleItems) {
+                            return (
+                                <section key={section.id} className="py-20 px-6 bg-black">
+                                    <div className="max-w-6xl mx-auto">
+                                        {(data.title || data.subtitle) && (
+                                            <div className="text-center mb-12">
+                                                {data.title && <h2 className="text-3xl md:text-5xl font-display font-bold text-white mb-4">{data.title}</h2>}
+                                                {data.subtitle && <p className="text-zinc-400 max-w-2xl mx-auto">{data.subtitle}</p>}
+                                            </div>
+                                        )}
+                                        <div className="grid md:grid-cols-2 gap-8">
+                                            {data.items.map((item: any) => {
+                                                const IconComp = iconMap[item.icon] || Zap;
+                                                return (
+                                                    <div key={item.id} className="bg-zinc-900/50 rounded-2xl border border-zinc-800 hover:border-gold-500/30 transition-colors p-8">
+                                                        <IconComp className="w-8 h-8 text-gold-500 mb-4" />
+                                                        <h3 className="text-xl font-bold text-white mb-3">{item.title}</h3>
+                                                        <p className="text-zinc-400 leading-relaxed">{item.text}</p>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                </section>
+                            );
+                        }
+
                         return (
                             <section key={section.id} className="py-20 px-6 bg-black">
                                 <div className={`max-w-6xl mx-auto ${isCentered
@@ -543,6 +574,27 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                         );
 
                     case 'info_band':
+                        // B2B CTA format: title, text, link, background_color
+                        if (data.link && !data.image) {
+                            return (
+                                <section key={section.id} className="bg-white py-24 px-6 relative overflow-hidden">
+                                    <div className="max-w-7xl mx-auto">
+                                        <div className="mb-12">
+                                            <h2 className="text-4xl md:text-6xl font-bold text-zinc-950 tracking-tight leading-none">{data.title}</h2>
+                                            <div className="h-1.5 w-20 bg-yellow-500 mt-8 rounded-full" />
+                                        </div>
+                                        {data.text && <p className="text-xl text-zinc-600 max-w-2xl mb-10">{data.text}</p>}
+                                        <Link
+                                            href={data.link}
+                                            className="inline-flex items-center gap-3 px-8 py-4 bg-zinc-950 text-white font-semibold rounded-xl hover:bg-zinc-800 transition-colors group"
+                                        >
+                                            Skontaktuj się
+                                            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                                        </Link>
+                                    </div>
+                                </section>
+                            );
+                        }
                         return (
                             <WhiteInfoBand
                                 key={section.id}
