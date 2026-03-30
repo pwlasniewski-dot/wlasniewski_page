@@ -48,8 +48,8 @@ export default function NarrativeText({
 
                 {/* Narrative Content */}
                 <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
+                    initial={{ y: 20 }}
+                    whileInView={{ y: 0 }}
                     viewport={{ once: true }}
                     transition={{ duration: 0.8 }}
                     className={`prose prose-lg max-w-none prose-p:leading-[1.8] prose-p:text-gray-700/90 ${columns === 2 ? 'md:columns-2 md:gap-12' : ''

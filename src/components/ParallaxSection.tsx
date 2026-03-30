@@ -135,14 +135,16 @@ export default function ParallaxSection({
                         viewport={{ once: true, margin: "-20%" }}
                         transition={{ duration: 1.2, ease: "easeOut" }} // Slower duration for artistic feel
                     >
-                        <h2
-                            className={`text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight drop-shadow-2xl ${activeFont}`}
-                            style={{
-                                color: textColor,
-                                textShadow: '0 4px 30px rgba(0,0,0,0.8)' // Stronger shadow for readability
-                            }}
-                            dangerouslySetInnerHTML={{ __html: title || '' }}
-                        />
+                        {title && (
+                            <h2
+                                className={`text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight drop-shadow-2xl ${activeFont}`}
+                                style={{
+                                    color: textColor,
+                                    textShadow: '0 4px 30px rgba(0,0,0,0.8)'
+                                }}
+                                dangerouslySetInnerHTML={{ __html: title }}
+                            />
+                        )}
                         {subtitle && (
                             <p
                                 className="text-lg md:text-2xl font-light tracking-wide mt-6 max-w-3xl mx-auto leading-relaxed"

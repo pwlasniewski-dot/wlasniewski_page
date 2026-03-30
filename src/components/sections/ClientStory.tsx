@@ -30,8 +30,8 @@ export default function ClientStory({
 
                     {/* Portrait Image */}
                     <motion.div
-                        initial={{ opacity: 0, scale: 1.05 }}
-                        whileInView={{ opacity: 1, scale: 1 }}
+                        initial={{ scale: 1.05 }}
+                        whileInView={{ scale: 1 }}
                         viewport={{ once: true }}
                         transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
                         className="md:col-span-5 relative aspect-[3/4] overflow-hidden rounded-sm shadow-xl bg-zinc-100"
@@ -54,8 +54,8 @@ export default function ClientStory({
                     {/* Story Content */}
                     <div className="md:col-span-7 space-y-10 md:pl-8">
                         <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            whileInView={{ opacity: 1, y: 0 }}
+                            initial={{ y: 20 }}
+                            whileInView={{ y: 0 }}
                             viewport={{ once: true }}
                             transition={{ duration: 0.8 }}
                             className="space-y-4"
@@ -80,8 +80,8 @@ export default function ClientStory({
                         </motion.div>
 
                         <motion.div
-                            initial={{ opacity: 0, y: 30 }}
-                            whileInView={{ opacity: 1, y: 0 }}
+                            initial={{ y: 30 }}
+                            whileInView={{ y: 0 }}
                             viewport={{ once: true }}
                             transition={{ duration: 0.8, delay: 0.2 }}
                             className="relative"

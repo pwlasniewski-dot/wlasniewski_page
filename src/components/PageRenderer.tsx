@@ -58,7 +58,12 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
             {sections.map((section) => {
                 // Determine source of data (flat or nested in .data)
                 // This allows PageRenderer to handle both old and new data structures
-                const data = section.data || section;
+                const rawData = section.data || section;
+                // Sanitize CMS content: fix broken file:// protocol links from WYSIWYG editor
+                const data: any = {};
+                for (const [key, val] of Object.entries(rawData)) {
+                    data[key] = typeof val === 'string' ? (val as string).replace(/file:\/\/\/[A-Za-z]:\//gi, '/') : val;
+                }
 
                 switch (section.type) {
                     case 'hero_parallax':

@@ -36,8 +36,8 @@ export default function MagazineLayout({
                     {/* Visual Composition */}
                     <div className="md:w-3/5 relative w-full mb-12 md:mb-0">
                         <motion.div
-                            initial={{ opacity: 0, y: 40 }}
-                            whileInView={{ opacity: 1, y: 0 }}
+                            initial={{ y: 40 }}
+                            whileInView={{ y: 0 }}
                             viewport={{ once: true }}
                             transition={{ duration: 0.8 }}
                             className="relative z-10 aspect-[3/4] md:aspect-[4/5] overflow-hidden rounded-sm border-[12px] border-white shadow-[0_35px_60px_-15px_rgba(0,0,0,0.3)] w-[90%] md:w-full ml-auto md:ml-0"
@@ -57,8 +57,8 @@ export default function MagazineLayout({
 
                         {secondaryImage && (
                             <motion.div
-                                initial={{ opacity: 0, scale: 0.9, x: isMainLeft ? -50 : 50 }}
-                                whileInView={{ opacity: 1, scale: 1, x: 0 }}
+                                initial={{ scale: 0.9, x: isMainLeft ? -50 : 50 }}
+                                whileInView={{ scale: 1, x: 0 }}
                                 viewport={{ once: true }}
                                 transition={{ duration: 0.8, delay: 0.2 }}
                                 className={`absolute bottom-[-10%] ${isMainLeft ? 'right-auto left-[-5%] md:right-[-10%] md:left-auto' : 'left-auto right-[-5%] md:left-[-10%] md:right-auto'} z-20 w-1/2 md:w-1/2 aspect-[4/5] overflow-hidden rounded-sm border-4 md:border-8 border-[var(--wedding-cream)] shadow-2xl`}
@@ -77,8 +77,8 @@ export default function MagazineLayout({
                     {/* Text Composition */}
                     <div className="md:w-2/5 space-y-8 relative z-30">
                         <motion.div
-                            initial={{ opacity: 0, x: isMainLeft ? 30 : -30 }}
-                            whileInView={{ opacity: 1, x: 0 }}
+                            initial={{ x: isMainLeft ? 30 : -30 }}
+                            whileInView={{ x: 0 }}
                             viewport={{ once: true }}
                             transition={{ duration: 0.6 }}
                         >

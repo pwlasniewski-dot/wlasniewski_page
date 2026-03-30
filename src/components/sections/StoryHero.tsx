@@ -56,7 +56,7 @@ export default function StoryHero({
                             </p>
                         )}
 
-                        <h1
+                        <h2
                             className="text-5xl md:text-6xl leading-tight"
                             style={{
                                 fontFamily: 'var(--font-editorial-heading)',
@@ -64,7 +64,7 @@ export default function StoryHero({
                             }}
                         >
                             {title}
-                        </h1>
+                        </h2>
 
                         {/* Gold accent line */}
                         <div

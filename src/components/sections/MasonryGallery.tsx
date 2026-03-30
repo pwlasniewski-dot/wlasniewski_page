@@ -11,6 +11,15 @@ interface MasonryGalleryProps {
     columns?: 2 | 3 | 4;
 }
 
+function getImageAlt(url: string, galleryTitle?: string, index?: number): string {
+    try {
+        const filename = decodeURIComponent(url.split('/').pop() || '').split('.')[0];
+        const descriptive = filename.replace(/^\d+-/, '').replace(/-/g, ' ').trim();
+        if (descriptive.length > 5) return descriptive;
+    } catch {}
+    return `${galleryTitle || 'Fotografia'} — zdjęcie ${(index || 0) + 1}`;
+}
+
 export default function MasonryGallery({
     images,
     title,
@@ -63,8 +72,8 @@ export default function MasonryGallery({
                             {column.map((img, imgIdx) => (
                                 <motion.div
                                     key={`${colIdx}-${imgIdx}`}
-                                    initial={{ opacity: 0, scale: 0.95 }}
-                                    whileInView={{ opacity: 1, scale: 1 }}
+                                    initial={{ scale: 0.95 }}
+                                    whileInView={{ scale: 1 }}
                                     viewport={{ once: true, margin: "-50px" }}
                                     transition={{
                                         duration: 0.6,
@@ -74,7 +83,7 @@ export default function MasonryGallery({
                                 >
                                     <Image
                                         src={img}
-                                        alt={`Gallery image ${imgIdx + 1}`}
+                                        alt={getImageAlt(img, title, imgIdx)}
                                         width={800}
                                         height={1200}
                                         className="w-full h-auto object-cover transition-transform duration-700 group-hover:scale-110"

@@ -32,10 +32,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         title: page.meta_title || page.title,
         description: page.meta_description,
         keywords: page.meta_keywords,
+        alternates: {
+            canonical: `https://wlasniewski.pl/${slug}`,
+        },
         openGraph: {
             title: page.meta_title || page.title,
             description: page.meta_description || '',
             type: 'website',
+            url: `https://wlasniewski.pl/${slug}`,
             images: page.hero_image ? [page.hero_image] : [],
         },
     };
