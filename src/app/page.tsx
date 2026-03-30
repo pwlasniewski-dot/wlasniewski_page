@@ -11,10 +11,20 @@ export async function generateMetadata(): Promise<Metadata> {
         where: { slug: 'strona-glowna' }
     });
 
+    const defaultTitle = "Przemysław Właśniewski — Fotograf Toruń | Sesje rodzinne, ślubne, portretowe i komunijne";
+    const defaultDescription = "Profesjonalny fotograf z Torunia. Naturalne sesje rodzinne, ślubne, portretowe i komunijne w Toruniu, Grudziądzu, Chełmnie, Wąbrzeźnie i okolicach. Reportaże pełne emocji i ujęcia z drona.";
+    const defaultKeywords = "fotograf toruń, fotograf grudziądz, fotograf płużnica, zdjęcia ślubne, sesja rodzinna, fotograf komunijny toruń, fotograf biznesowy, dron kujawsko pomorskie";
+
+    // Use DB values only if they're meaningful (not generic placeholder text)
+    const dbTitle = page?.meta_title;
+    const dbDesc = page?.meta_description;
+    const isGenericTitle = !dbTitle || dbTitle.length < 35 || dbTitle.toLowerCase().includes('strona główna');
+    const isGenericDesc = !dbDesc || dbDesc.length < 60 || dbDesc.toLowerCase().includes('strona główna');
+
     return {
-        title: page?.meta_title || "Przemysław Właśniewski - Fotograf Kujawsko-Pomorskie | Śluby, Rodzina, Biznes",
-        description: page?.meta_description || "Profesjonalny fotograf z Płużnicy. Sesje ślubne, rodzinne i wizerunkowe w Toruniu, Grudziądzu i całym województwie. Naturalne zdjęcia i ujęcia z drona.",
-        keywords: page?.meta_keywords || "fotograf toruń, fotograf grudziądz, fotograf płużnica, zdjęcia ślubne, sesja rodzinna, fotograf biznesowy, dron kujawsko pomorskie"
+        title: isGenericTitle ? defaultTitle : dbTitle,
+        description: isGenericDesc ? defaultDescription : dbDesc,
+        keywords: page?.meta_keywords || defaultKeywords
     };
 }
 

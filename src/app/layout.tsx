@@ -196,46 +196,83 @@ export default async function RootLayout({
                         dangerouslySetInnerHTML={{
                             __html: JSON.stringify({
                                 "@context": "https://schema.org",
-                                "@type": ["LocalBusiness", "PhotographyBusiness"],
-                                "@id": "https://wlasniewski.pl/#business",
-                                "name": "Przemysław Właśniewski — Fotograf",
-                                "alternateName": "FOTO-DRON Przemysław Właśniewski",
-                                "image": "https://wlasniewski.pl/og-image.jpg",
-                                "description": "Profesjonalna fotografia rodzinna, ślubna, portretowa i komunijna w Toruniu, Grudziądzu, Chełmnie, Wąbrzeźnie i okolicach. Usługi dronem i termowizja.",
-                                "url": "https://wlasniewski.pl",
-                                "telephone": "+48530788694",
-                                "taxID": "8781430365",
-                                "address": {
-                                    "@type": "PostalAddress",
-                                    "addressRegion": "Kujawsko-Pomorskie",
-                                    "addressLocality": "Toruń",
-                                    "addressCountry": "PL"
-                                },
-                                "geo": {
-                                    "@type": "GeoCoordinates",
-                                    "latitude": 53.01379,
-                                    "longitude": 18.59844
-                                },
-                                "areaServed": [
-                                    { "@type": "City", "name": "Toruń" },
-                                    { "@type": "City", "name": "Grudziądz" },
-                                    { "@type": "City", "name": "Chełmno" },
-                                    { "@type": "City", "name": "Wąbrzeźno" },
-                                    { "@type": "City", "name": "Bydgoszcz" },
-                                    { "@type": "City", "name": "Świecie" },
-                                    { "@type": "City", "name": "Lisewo" },
-                                    { "@type": "City", "name": "Płużnica" }
-                                ],
-                                "priceRange": "$$",
-                                "openingHoursSpecification": {
-                                    "@type": "OpeningHoursSpecification",
-                                    "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
-                                    "opens": "08:00",
-                                    "closes": "20:00"
-                                },
-                                "sameAs": [
-                                    "https://www.facebook.com/przemyslaw.wlasniewski.fotografia",
-                                    "https://www.instagram.com/wlasniewski.pl/"
+                                "@graph": [
+                                    {
+                                        "@type": ["LocalBusiness", "PhotographyBusiness"],
+                                        "@id": "https://wlasniewski.pl/#business",
+                                        "name": "Przemysław Właśniewski — Fotograf",
+                                        "alternateName": "FOTO-DRON Przemysław Właśniewski",
+                                        "image": "https://wlasniewski.pl/og-image.jpg",
+                                        "description": "Profesjonalna fotografia rodzinna, ślubna, portretowa i komunijna w Toruniu, Grudziądzu, Chełmnie, Wąbrzeźnie i okolicach. Usługi dronem i termowizja.",
+                                        "url": "https://wlasniewski.pl",
+                                        "telephone": "+48530788694",
+                                        "email": "kontakt@wlasniewski.pl",
+                                        "taxID": "8781430365",
+                                        "priceRange": "$$",
+                                        "address": {
+                                            "@type": "PostalAddress",
+                                            "addressRegion": "Kujawsko-Pomorskie",
+                                            "addressLocality": "Toruń",
+                                            "addressCountry": "PL"
+                                        },
+                                        "geo": {
+                                            "@type": "GeoCoordinates",
+                                            "latitude": 53.01379,
+                                            "longitude": 18.59844
+                                        },
+                                        "areaServed": [
+                                            { "@type": "City", "name": "Toruń" },
+                                            { "@type": "City", "name": "Grudziądz" },
+                                            { "@type": "City", "name": "Chełmno" },
+                                            { "@type": "City", "name": "Wąbrzeźno" },
+                                            { "@type": "City", "name": "Bydgoszcz" },
+                                            { "@type": "City", "name": "Świecie" },
+                                            { "@type": "City", "name": "Lisewo" },
+                                            { "@type": "City", "name": "Płużnica" }
+                                        ],
+                                        "openingHoursSpecification": {
+                                            "@type": "OpeningHoursSpecification",
+                                            "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+                                            "opens": "08:00",
+                                            "closes": "20:00"
+                                        },
+                                        "hasOfferCatalog": {
+                                            "@type": "OfferCatalog",
+                                            "name": "Usługi fotograficzne",
+                                            "itemListElement": [
+                                                { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Fotografia rodzinna", "description": "Naturalne sesje rodzinne w plenerze lub studio" } },
+                                                { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Fotografia ślubna", "description": "Kompleksowa obsługa fotograficzna ślubu i wesela" } },
+                                                { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Fotografia komunijna", "description": "Pamiątkowe zdjęcia z Pierwszej Komunii Świętej" } },
+                                                { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Fotografia portretowa", "description": "Sesje wizerunkowe i artystyczne portrety" } }
+                                            ]
+                                        },
+                                        "sameAs": [
+                                            "https://www.facebook.com/przemyslaw.wlasniewski.fotografia",
+                                            "https://www.instagram.com/wlasniewski.pl/"
+                                        ]
+                                    },
+                                    {
+                                        "@type": "Person",
+                                        "@id": "https://wlasniewski.pl/#person",
+                                        "name": "Przemysław Właśniewski",
+                                        "jobTitle": "Fotograf",
+                                        "image": "https://wlasniewski.pl/og-image.jpg",
+                                        "url": "https://wlasniewski.pl",
+                                        "telephone": "+48 530 788 694",
+                                        "email": "kontakt@wlasniewski.pl",
+                                        "sameAs": [
+                                            "https://www.facebook.com/przemyslaw.wlasniewski.fotografia",
+                                            "https://www.instagram.com/wlasniewski.pl/"
+                                        ]
+                                    },
+                                    {
+                                        "@type": "WebSite",
+                                        "@id": "https://wlasniewski.pl/#website",
+                                        "name": "Przemysław Właśniewski — Fotograf",
+                                        "url": "https://wlasniewski.pl",
+                                        "description": "Profesjonalna fotografia rodzinna, ślubna, portretowa i komunijna w Toruniu i okolicach",
+                                        "publisher": { "@id": "https://wlasniewski.pl/#person" }
+                                    }
                                 ]
                             })
                         }}
