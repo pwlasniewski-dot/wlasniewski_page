@@ -356,6 +356,22 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                             </Link>
                                         </div>
                                     )}
+                                    {Array.isArray(data.buttons) && data.buttons.length > 0 && (
+                                        <div className="flex flex-wrap gap-4 justify-center pt-4">
+                                            {data.buttons.map((btn: any) => (
+                                                <Link
+                                                    key={btn.id}
+                                                    href={btn.url || '#'}
+                                                    className={btn.style === 'primary'
+                                                        ? 'px-8 py-4 bg-gold-500 hover:bg-gold-400 text-black font-bold rounded-xl transition-all transform hover:scale-105'
+                                                        : 'px-8 py-4 border-2 border-white/30 hover:border-white/60 text-white font-bold rounded-xl transition-all'
+                                                    }
+                                                >
+                                                    {btn.label}
+                                                </Link>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             </section>
                         );
@@ -831,7 +847,7 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                     </div>
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                                         {data.b2b_stats?.map((stat: any, i: number) => (
-                                            <motion.div key={stat.id} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} className="relative p-10 bg-zinc-900/30 rounded-3xl hover:bg-zinc-900/50 transition-colors group text-center">
+                                            <motion.div key={stat.id} initial={{ y: 20 }} whileInView={{ y: 0 }} transition={{ delay: i * 0.1 }} className="relative p-10 bg-zinc-900/30 rounded-3xl hover:bg-zinc-900/50 transition-colors group text-center">
                                                 <div className="text-5xl md:text-6xl font-black text-white mb-4 tracking-tighter flex items-center justify-center gap-1 group-hover:scale-110 transition-transform duration-500">
                                                     {stat.prefix && <span className="text-yellow-500 text-3xl font-bold">{stat.prefix}</span>}
                                                     {stat.value}
