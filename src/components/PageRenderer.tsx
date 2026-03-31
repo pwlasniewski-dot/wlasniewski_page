@@ -152,8 +152,7 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
 
                                             {/* Title */}
                                             {data.title && (
-                                                <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-8 leading-[1.1] tracking-tight">
-                                                    {data.title}
+                                                <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-8 leading-[1.1] tracking-tight" dangerouslySetInnerHTML={{ __html: data.title }}>
                                                 </h2>
                                             )}
 
