@@ -13,7 +13,7 @@ async function checkButtons() {
         ? JSON.parse(page.sections) 
         : page.sections;
 
-      const hero = sections.find((s: any) => s.type === 'hero');
+      const hero = sections.find((s: any) => s.type === 'b2b_hero' || s.type === 'hero');
       
       console.log('\n=== HERO SECTION DATA ===\n');
       console.log(JSON.stringify(hero, null, 2));
