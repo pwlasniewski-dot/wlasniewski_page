@@ -94,12 +94,18 @@ const defaultB2BSettings: FooterSettings = {
             ]
         },
         lokalnie: {
-            title: 'Współpraca',
+            title: 'Obszary Działania',
             enabled: true,
             links: [
-                { id: '1', label: 'Szybka Wycena (RFQ)', url: '/b2b#rfq' },
-                { id: '2', label: 'Obszary Działania', url: '/b2b#lokalizacja' },
-                { id: '3', label: 'Kontakt Bezpośredni', url: '/b2b/kontakt' },
+                { id: '1', label: 'Toruń i okolice', url: '/' },
+                { id: '2', label: 'Bydgoszcz', url: '/' },
+                { id: '3', label: 'Włocławek', url: '/' },
+                { id: '4', label: 'Grudziądz', url: '/grudziadz' },
+                { id: '5', label: 'Inowrocław', url: '/inowroclaw' },
+                { id: '6', label: 'Brodnica', url: '/brodnica' },
+                { id: '7', label: 'Świecie', url: '/swiecie' },
+                { id: '8', label: 'Chełmno', url: '/chelmno' },
+                { id: '9', label: 'Mogilno', url: '/mogilno' },
             ]
         },
         inne: {

@@ -8,7 +8,7 @@ export async function POST(request: Request) {
     let body: any = {};
     try {
         body = await request.json();
-        const { name, email, message, company, phone, serviceType } = body;
+        const { name, email, message, company, phone, serviceType, lead_source, lead_campaign } = body;
 
         // Validation
         if (!name || !email || !message) {
@@ -38,6 +38,7 @@ Email: ${email}
 ${company ? `Firma: ${company}` : ''}
 ${phone ? `Telefon: ${phone}` : ''}
 ${serviceType ? `Usługa: ${serviceType}` : ''}
+${lead_source && lead_source !== 'direct' ? `🎯 Źródło leadu: ${lead_source.toUpperCase()}${lead_campaign !== 'none' ? ` (kampania: ${lead_campaign})` : ''}` : ''}
 
 Wiadomość:
 ${message}
@@ -49,6 +50,7 @@ ${message}
 ${company ? `<p><strong>Firma:</strong> ${company}</p>` : ''}
 ${phone ? `<p><strong>Telefon:</strong> ${phone}</p>` : ''}
 ${serviceType ? `<p><strong>Typ usługi:</strong> ${serviceType}</p>` : ''}
+${lead_source && lead_source !== 'direct' ? `<p><strong>🎯 Źródło leadu:</strong> <span style="background: #fbbf24; padding: 2px 8px; border-radius: 4px; font-weight: bold;">${lead_source.toUpperCase()}</span> ${lead_campaign !== 'none' ? `(kampania: ${lead_campaign})` : ''}</p>` : ''}
 <hr />
 <p><strong>Wiadomość:</strong></p>
 <blockquote style="border-left: 2px solid #ccc; padding-left: 10px; margin-left: 0; white-space: pre-wrap;">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Send, CheckCircle, AlertCircle, Building2, Phone, User, Mail, Briefcase, FileText } from "lucide-react";
 
@@ -12,8 +12,25 @@ export default function B2BContactForm() {
         phone: '',
         company: '',
         serviceType: 'Inne',
-        message: ''
+        message: '',
+        lead_source: 'direct',
+        lead_campaign: 'none'
     });
+
+    // Detect lead source from URL (UTM tracking)
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const urlParams = new URLSearchParams(window.location.search);
+            const source = urlParams.get('utm_source') || 'direct';
+            const campaign = urlParams.get('utm_campaign') || 'none';
+            
+            setFormData(prev => ({
+                ...prev,
+                lead_source: source,
+                lead_campaign: campaign
+            }));
+        }
+    }, []);
 
     const services = [
         "Termowizja i Diagnostyka",
@@ -41,7 +58,16 @@ export default function B2BContactForm() {
             }
 
             setStatus('success');
-            setFormData({ name: '', email: '', phone: '', company: '', serviceType: 'Inne', message: '' });
+            setFormData(prev => ({ 
+                name: '', 
+                email: '', 
+                phone: '', 
+                company: '', 
+                serviceType: 'Inne', 
+                message: '',
+                lead_source: prev.lead_source, // Keep tracking
+                lead_campaign: prev.lead_campaign   // Keep tracking
+            }));
         } catch (error) {
             console.error('Contact form error:', error);
             setStatus('error');
