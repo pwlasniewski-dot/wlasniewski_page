@@ -50,7 +50,7 @@ export async function generateMetadata(): Promise<Metadata> {
     }
 
     return {
-        title: page.meta_title || page.title,
+        title: page.meta_title ? `${page.meta_title} | FOTO-DRON aeroanaliza.pl` : page.title,
         description: page.meta_description,
         alternates: {
             canonical: 'https://aeroanaliza.pl',
