@@ -75,10 +75,7 @@ const montserrat = Montserrat({
 // Full PRO SEO Configuration
 const baseMetadata: Metadata = {
     metadataBase: new URL('https://wlasniewski.pl'),
-    title: {
-        default: 'Przemysław Właśniewski — Fotograf Toruń',
-        template: '%s | Przemysław Właśniewski Fotograf'
-    },
+    title: 'Przemysław Właśniewski — Fotograf Toruń',
     description: 'Profesjonalna fotografia rodzinna, ślubna, portretowa i komunijna w Toruniu, Grudziądzu, Chełmnie, Wąbrzeźnie i okolicach. Naturalne sesje plenerowe, galeria online, odbitki premium.',
     keywords: [
         'fotograf toruń',
