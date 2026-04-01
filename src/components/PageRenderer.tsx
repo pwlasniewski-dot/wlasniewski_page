@@ -18,6 +18,15 @@ import Image from 'next/image';
 import { Check, Star } from 'lucide-react';
 import PhotoChallengeBanner from '@/components/PhotoChallengeBanner';
 import WhiteInfoBand from '@/components/WhiteInfoBand';
+
+/**
+ * Helper: Strip HTML tags from text for SEO-compliant ALT attributes
+ * SEO Audit Fix: ALT attributes must contain only plain text, no HTML tags
+ */
+function stripHtml(html: string | undefined): string {
+    if (!html) return '';
+    return html.replace(/<[^>]*>/g, '');
+}
 import CarouselGallery from '@/components/VisualEffects/CarouselGallery';
 import MasonryGallery from '@/components/VisualEffects/MasonryGallery';
 import PuzzleGallery from '@/components/VisualEffects/PuzzleGallery';
@@ -116,7 +125,7 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                                 {data.image ? (
                                                     <img
                                                         src={data.image}
-                                                        alt={data.title || "Zdjęcie sekcji"}
+                                                        alt={stripHtml(data.title) || "Zdjęcie sekcji"}
                                                         className={`w-full h-full transition-transform duration-[2s] group-hover:scale-105 ${data.imageObjectFit === 'contain' ? 'object-contain p-8' : 'object-cover'}`}
                                                     />
                                                 ) : (
