@@ -97,6 +97,9 @@ model Setting {
   gift_card_hero_opacity            Float?   @default(0.6)
   social_proof_enabled              Boolean  @default(true)
   theme_mode                        String   @default("dark")
+  b2b_google_analytics_id           String?
+  b2b_google_tag_manager_id         String?
+  b2b_facebook_pixel_id             String?
 
   @@map("settings")
 }

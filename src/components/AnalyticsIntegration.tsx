@@ -7,21 +7,33 @@ interface AnalyticsIntegrationProps {
     googleAnalyticsId?: string;
     googleTagManagerId?: string;
     facebookPixelId?: string;
+    b2bGoogleAnalyticsId?: string;
+    b2bGoogleTagManagerId?: string;
+    b2bFacebookPixelId?: string;
+    isB2B?: boolean;
 }
 
 export default function AnalyticsIntegration({
     googleAnalyticsId,
     googleTagManagerId,
-    facebookPixelId
+    facebookPixelId,
+    b2bGoogleAnalyticsId,
+    b2bGoogleTagManagerId,
+    b2bFacebookPixelId,
+    isB2B,
 }: AnalyticsIntegrationProps) {
+    // Use B2B-specific IDs when on B2B domain, fallback to main
+    const activeGAId = isB2B ? (b2bGoogleAnalyticsId || googleAnalyticsId) : googleAnalyticsId;
+    const activeGTMId = isB2B ? (b2bGoogleTagManagerId || googleTagManagerId) : googleTagManagerId;
+    const activePixelId = isB2B ? (b2bFacebookPixelId || facebookPixelId) : facebookPixelId;
 
     return (
         <>
             {/* Google Analytics 4 */}
-            {googleAnalyticsId && (
+            {activeGAId && (
                 <>
                     <Script
-                        src={`https://www.googletagmanager.com/gtag/js?id=${googleAnalyticsId}`}
+                        src={`https://www.googletagmanager.com/gtag/js?id=${activeGAId}`}
                         strategy="afterInteractive"
                     />
                     <Script id="google-analytics" strategy="afterInteractive">
@@ -29,7 +41,7 @@ export default function AnalyticsIntegration({
                             window.dataLayer = window.dataLayer || [];
                             function gtag(){dataLayer.push(arguments);}
                             gtag('js', new Date());
-                            gtag('config', '${googleAnalyticsId}');
+                            gtag('config', '${activeGAId}');
                         `}
                     </Script>
                 </>
@@ -50,7 +62,7 @@ export default function AnalyticsIntegration({
             </Script>
 
             {/* Google Tag Manager */}
-            {googleTagManagerId && (
+            {activeGTMId && (
                 <>
                     <Script id="google-tag-manager" strategy="afterInteractive">
                         {`
@@ -58,13 +70,13 @@ export default function AnalyticsIntegration({
                             new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
                             j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
                             'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-                            })(window,document,'script','dataLayer','${googleTagManagerId}');
+                            })(window,document,'script','dataLayer','${activeGTMId}');
                         `}
                     </Script>
                     {/* GTM noscript fallback */}
                     <noscript>
                         <iframe
-                            src={`https://www.googletagmanager.com/ns.html?id=${googleTagManagerId}`}
+                            src={`https://www.googletagmanager.com/ns.html?id=${activeGTMId}`}
                             height="0"
                             width="0"
                             style={{ display: 'none', visibility: 'hidden' }}
@@ -74,7 +86,7 @@ export default function AnalyticsIntegration({
             )}
 
             {/* Facebook Pixel */}
-            {facebookPixelId && (
+            {activePixelId && (
                 <Script id="facebook-pixel" strategy="afterInteractive">
                     {`
                         !function(f,b,e,v,n,t,s)
@@ -85,7 +97,7 @@ export default function AnalyticsIntegration({
                         t.src=v;s=b.getElementsByTagName(e)[0];
                         s.parentNode.insertBefore(t,s)}(window, document,'script',
                         'https://connect.facebook.net/en_US/fbevents.js');
-                        fbq('init', '${facebookPixelId}');
+                        fbq('init', '${activePixelId}');
                         fbq('track', 'PageView');
                     `}
                 </Script>

@@ -120,7 +120,11 @@ export async function POST(request: NextRequest) {
                 'portfolio_categories',
                 // Seasonal
                 'seasonal_effect',
-                'portfolio_layout'
+                'portfolio_layout',
+                // B2B Analytics (aeroanaliza.pl)
+                'b2b_google_analytics_id',
+                'b2b_google_tag_manager_id',
+                'b2b_facebook_pixel_id'
             ];
 
             const columnUpdates: Record<string, any> = {};

@@ -74,7 +74,15 @@ const navigation = [
     { name: 'SEO Ops', href: '/admin/seo', icon: Search },
     { name: 'Logi', href: '/admin/logs', icon: List },
     { name: 'Stopka', href: '/admin/footer', icon: FileText },
-    { name: 'Ustawienia', href: '/admin/settings', icon: Settings },
+    {
+        name: 'Ustawienia',
+        href: '/admin/settings',
+        icon: Settings,
+        children: [
+            { name: 'Ogólne', href: '/admin/settings' },
+            { name: 'aeroanaliza.pl', href: '/admin/settings/aeroanaliza' },
+        ]
+    },
 ];
 
 interface SidebarProps {
