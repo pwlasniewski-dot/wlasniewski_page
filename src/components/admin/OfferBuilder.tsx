@@ -209,6 +209,8 @@ export default function OfferBuilder({ offerId, initialData, onSave, saveButtonT
     const [templates, setTemplates] = useState<any[]>([]);
     const [loadingTemplates, setLoadingTemplates] = useState(false);
     const [savingTemplate, setSavingTemplate] = useState(false);
+    const [loadedTemplateId, setLoadedTemplateId] = useState<number | null>(null);
+    const [loadedTemplateName, setLoadedTemplateName] = useState<string | null>(null);
 
     // Auto-fill client data if clientId is present
     useEffect(() => {
@@ -365,8 +367,22 @@ export default function OfferBuilder({ offerId, initialData, onSave, saveButtonT
     };
 
     const handleSaveAsTemplate = async () => {
-        const templateName = prompt('Podaj nazwę szablonu:', data.title || 'Nowy szablon');
-        if (!templateName) return;
+        let updateExisting = false;
+        let templateName: string | null = null;
+
+        if (loadedTemplateId && loadedTemplateName) {
+            const choice = confirm(`Czy chcesz zaktualizować istniejący szablon "${loadedTemplateName}"?\n\nOK = Zaktualizuj istniejący\nAnuluj = Zapisz jako nowy`);
+            if (choice) {
+                updateExisting = true;
+                templateName = loadedTemplateName;
+            } else {
+                templateName = prompt('Podaj nazwę nowego szablonu:', data.title || 'Nowy szablon');
+                if (!templateName) return;
+            }
+        } else {
+            templateName = prompt('Podaj nazwę szablonu:', data.title || 'Nowy szablon');
+            if (!templateName) return;
+        }
 
         setSavingTemplate(true);
         try {
@@ -382,8 +398,12 @@ export default function OfferBuilder({ offerId, initialData, onSave, saveButtonT
                 contactLocation: '',
             };
 
-            const res = await fetch('/api/admin/templates', {
-                method: 'POST',
+            const url = updateExisting
+                ? `/api/admin/templates/${loadedTemplateId}`
+                : '/api/admin/templates';
+
+            const res = await fetch(url, {
+                method: updateExisting ? 'PUT' : 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
@@ -397,7 +417,15 @@ export default function OfferBuilder({ offerId, initialData, onSave, saveButtonT
             });
 
             if (res.ok) {
-                toast.success(`Szablon "${templateName}" zapisany!`);
+                const result = await res.json();
+                if (!updateExisting && result.template?.id) {
+                    setLoadedTemplateId(result.template.id);
+                    setLoadedTemplateName(templateName);
+                }
+                toast.success(updateExisting
+                    ? `Szablon "${templateName}" zaktualizowany!`
+                    : `Szablon "${templateName}" zapisany!`
+                );
             } else {
                 const err = await res.json();
                 toast.error(`Błąd: ${err.error || 'Nie udało się zapisać szablonu'}`);
@@ -433,6 +461,8 @@ export default function OfferBuilder({ offerId, initialData, onSave, saveButtonT
             ...currentClientData,
         }));
 
+        setLoadedTemplateId(template.id);
+        setLoadedTemplateName(template.title);
         setShowTemplateModal(false);
         toast.success(`Wczytano szablon: ${template.title}`);
     };

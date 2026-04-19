@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { verifyPassword, generateToken } from '@/lib/auth/jwt';
+import { logCrmActivity } from '@/lib/crm-activity';
 
 export async function POST(req: NextRequest) {
     try {
@@ -32,6 +33,15 @@ export async function POST(req: NextRequest) {
         });
 
         const token = await generateToken({ id: user.id, email: user.email });
+
+        // Log CRM activity
+        logCrmActivity({
+            clientId: user.id,
+            clientEmail: user.email,
+            action: 'login',
+            details: { name: user.name },
+            request: req,
+        });
 
         return NextResponse.json({
             success: true,

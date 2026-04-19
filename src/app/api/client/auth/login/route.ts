@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { verifyPassword, generateToken } from '@/lib/auth/jwt';
+import { logCrmActivity } from '@/lib/crm-activity';
 
 export const dynamic = 'force-dynamic';
 
@@ -67,6 +68,15 @@ export async function POST(request: NextRequest) {
             },
             { status: 200 }
         );
+
+        // Log CRM activity
+        logCrmActivity({
+            clientId: user.id,
+            clientEmail: user.email,
+            action: 'login',
+            details: { name: user.name },
+            request,
+        });
 
         // Set secure cookie
         response.cookies.set('client_token', token, {

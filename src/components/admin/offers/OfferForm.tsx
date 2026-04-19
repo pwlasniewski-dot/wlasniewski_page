@@ -72,15 +72,31 @@ export default function OfferForm({ onSubmit, initialData, isLoading = false }: 
     };
 
     const loadTemplate = (template: any) => {
+        // template_data contains the full offer structure from OfferBuilder
+        // sections may be in template.sections (relational) or in template.template_data
+        const sections = template.sections || (template.template_data as any)?.sections || [];
+
+        if (!sections || sections.length === 0) {
+            // Fallback: template was saved from OfferBuilder (A4 format) - no structured sections
+            setFormData(prev => ({
+                ...prev,
+                title: prev.title || template.title,
+                type: template.type || prev.type,
+                category: template.category || prev.category,
+            }));
+            setShowTemplateModal(false);
+            return;
+        }
+
         setFormData(prev => ({
             ...prev,
             title: prev.title || template.title, // Keep title if already set, or use template's
             type: template.type,
             category: template.category,
-            sections: template.sections.map((s: any) => ({
+            sections: sections.map((s: any) => ({
                 title: s.title,
                 description: s.description,
-                items: s.items.map((i: any) => ({
+                items: (s.items || []).map((i: any) => ({
                     title: i.title,
                     description: i.description,
                     price: i.price,
@@ -347,7 +363,7 @@ export default function OfferForm({ onSubmit, initialData, isLoading = false }: 
                                         >
                                             <h4 className="font-bold text-gray-900 group-hover:text-blue-700">{template.title}</h4>
                                             <p className="text-sm text-gray-500 mt-1">{template.category} • {template.type.toUpperCase()}</p>
-                                            <p className="text-xs text-gray-400 mt-2">{template.sections.length} sekcji</p>
+                                            <p className="text-xs text-gray-400 mt-2">{(template.sections || (template.template_data as any)?.sections || []).length} sekcji</p>
                                         </button>
                                     ))}
                                 </div>
