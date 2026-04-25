@@ -174,7 +174,100 @@ const INITIAL_DATA: OfferData = {
         delivery: true
     },
     negotiation_enabled: true,
-    category: 'standard'
+    category: 'communion'
+};
+
+const BIRTHDAY_DATA: OfferData = {
+    title: "Oferta Urodzinowa - Toruń",
+    subtitle: "Urodziny 2026",
+    contactName: "Przemysław Właśniewski",
+    contactLocation: "Toruń",
+    contactPhone: "530788694",
+    contactEmail: "pwlasniewski@gmail.com / www.wlasniewski.pl",
+    contactZip: "87-100",
+    contactAddress: "ul. Szeroka 1",
+
+    eventLocation: "Do uzupełnienia",
+    eventDate: new Date().toISOString().split('T')[0],
+    eventCount: "Dzieci + dorośli",
+    eventTeam: "1 fotograf",
+
+    preparations: {
+        before: "Przygotowanie listy kluczowych momentów do uwiecznienia (dmuchanie świeczek, tort, prezenty, zabawy)...",
+        dayOf: "Przyjeżdżamy 15 minut przed rozpoczęciem imprezy. Uwieczniamy dekoracje, przygotowania..."
+    },
+
+    features: [
+        "Profesjonalny Sprzęt: Aparat full-frame z szybkimi obiektywami, idealny do zdjęć w ruchu",
+        "Naturalne Ujęcia: Fotografujemy spontaniczne reakcje dzieci, autentyczne emocje",
+        "Galeria Online: Rodzice otrzymują dostęp do prywatnej galerii ze wszystkimi zdjęciami"
+    ],
+
+    pricingHeaders: [
+        "ELEMENTY OFERTY",
+        "EKONOMICZNY",
+        "FOTO",
+        "STANDARD",
+        "PREMIUM"
+    ],
+
+    recommendationLabel: "Polecany",
+    recommendationColumnIndex: 3, // "STANDARD" is recommended
+
+    pricingRows: [
+        { values: ["Czas trwania", "4h", "6h", "4h", "6h"] },
+        { values: ["Fotograf", "TAK", "TAK", "TAK", "TAK"] },
+        { values: ["Galeria online 150-200 zdjęć", "TAK", "TAK", "TAK", "TAK"] },
+        { values: ["Filmik video HD", "—", "—", "do 10 min", "do 15 min"], isHeader: true },
+        { values: ["Sesja zdjęciowa (dziecko)", "—", "TAK", "—", "TAK"], isHeader: true },
+        { values: ["Odbitki 15x23", "50 szt", "50 szt", "50 szt", "50 szt"] },
+    ],
+
+    footerPrices: [
+        "Cena",
+        "870 zł",
+        "1190 zł",
+        "1350 zł",
+        "1700 zł"
+    ],
+
+    albumDescription: "Możliwość zamówienia fotoalbuму premium z imprezowego reportażu (dostępne po sesji, cena do uzgodnienia).",
+
+    deliveryTerms: {
+        t1: "7 dni roboczych: Udostępnienie galerii online z wszystkimi zdjęciami",
+        t2: "14 dni: Dostarczenie wydruków premium (jeśli wybrane w pakiecie)",
+        t3: "Dojazd: Pierwszy 10km gratis, każdy dalszy 1.5zł/km. Podane ceny są kwotami brutto."
+    },
+
+    footerCompany: "FOTO-DRON Przemysław Właśniewski NIP: 8781430365 • Toruń 2026",
+
+    sectionTitles: {
+        preparations: "Proces Realizacji Imprezy",
+        standards: "Standardy Pracy",
+        delivery: "Dostarczenie Materiałów"
+    },
+
+    labels: {
+        location: "Miejsce imprezy",
+        date: "Data urodzin",
+        count: "Liczba gości",
+        team: "Skład ekipy",
+        prepBefore: "Przygotowania",
+        prepDay: "W trakcie imprezy",
+        albumAdvantage: "Dodatkowe opcje",
+        footerDisclaimer: "Warunki współpracy",
+    },
+
+    sectionVisibility: {
+        eventInfo: true,
+        preparations: true,
+        features: true,
+        pricing: true,
+        album: true,
+        delivery: true
+    },
+    negotiation_enabled: true,
+    category: 'birthday'
 };
 
 interface OfferBuilderProps {
@@ -191,9 +284,16 @@ export default function OfferBuilder({ offerId, initialData, onSave, saveButtonT
     const clientId = searchParams.get('client_id');
     const clientEmailParam = searchParams.get('clientEmail');
     const type = searchParams.get('type')?.toLowerCase() || 'b2c';
+    const templateParam = searchParams.get('template')?.toLowerCase();
+
+    // Choose initial preset based on URL parameter
+    const getInitialPreset = () => {
+        if (templateParam === 'birthday') return BIRTHDAY_DATA;
+        return INITIAL_DATA; // Default: communion
+    };
 
     const [data, setData] = useState<OfferData>({
-        ...INITIAL_DATA,
+        ...getInitialPreset(),
         contactZip: '',
         contactAddress: '',
         contactEmail: clientEmailParam || '', // Pre-fill email from URL immediately

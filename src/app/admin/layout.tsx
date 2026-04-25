@@ -50,8 +50,7 @@ export default function AdminLayout({
         '/admin/reset-password',
         '/admin/emergency-reset',
         '/admin/offers/create',
-        '/admin/generator-umow',
-        '/admin/generator-ofert/oferta-urodzinowa'
+        '/admin/generator-umow'
     ];
 
     // Check if current path matches EXACTLY for editing an offer (avoid matching /admin/offers list which is now redirected anyway)

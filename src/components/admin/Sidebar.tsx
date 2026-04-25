@@ -74,7 +74,7 @@ const navigation = [
         icon: Users,
         children: [
             { name: 'Lista klientów', href: '/admin/clients' },
-            { name: 'Generator Ofert Urodzinowych', href: '/admin/generator-ofert/oferta-urodzinowa' },
+            { name: 'Oferta Urodzinowa', href: '/admin/offers/create?template=birthday' },
         ]
     },
     { name: 'Administratorzy', href: '/admin/users', icon: Shield },
