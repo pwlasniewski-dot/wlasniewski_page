@@ -27,7 +27,8 @@ import {
     Shield,
     FileEdit,
     Search,
-    Box
+    Box,
+    Cake
 } from 'lucide-react';
 
 const navigation = [
@@ -67,7 +68,15 @@ const navigation = [
     },
     { name: 'Zlecenia Dronowe', href: '/admin/drone-orders', icon: Zap },
     { name: 'Zapytania', href: '/admin/inquiries', icon: MessageSquare },
-    { name: 'Klienci (CRM)', href: '/admin/clients', icon: Users },
+    {
+        name: 'Klienci (CRM)',
+        href: '/admin/clients',
+        icon: Users,
+        children: [
+            { name: 'Lista klientów', href: '/admin/clients' },
+            { name: 'Generator Ofert Urodzinowych', href: '/admin/generator-ofert/oferta-urodzinowa' },
+        ]
+    },
     { name: 'Administratorzy', href: '/admin/users', icon: Shield },
 
     { name: 'Analityka', href: '/admin/analytics', icon: BarChart3 },
