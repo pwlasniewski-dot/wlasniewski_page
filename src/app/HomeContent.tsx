@@ -90,6 +90,24 @@ export default function HomeContent({ heroSlides, sections, homeData, orderedSec
     const [currentTestimonial, setCurrentTestimonial] = useState(0);
     const [selectedGalleryImage, setSelectedGalleryImage] = useState<string | null>(null);
 
+    // Preload first hero image for faster LCP
+    useEffect(() => {
+        const firstSlide = heroSlides?.find((s: any) => s.enabled !== false);
+        if (firstSlide) {
+            const imageUrl = typeof firstSlide.image === 'string' 
+                ? firstSlide.image 
+                : firstSlide.image?.file_path;
+            
+            if (imageUrl && typeof window !== 'undefined') {
+                const link = document.createElement('link');
+                link.rel = 'preload';
+                link.as = 'image';
+                link.href = imageUrl;
+                link.fetchPriority = 'high';
+                document.head.appendChild(link);
+            }
+        }
+    }, [heroSlides]);
 
     // Auto-rotate testimonials
     useEffect(() => {

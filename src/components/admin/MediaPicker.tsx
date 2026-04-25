@@ -182,7 +182,7 @@ export default function MediaPicker({ isOpen, onClose, onSelect, multiple = fals
                 if (file.type.startsWith('image/')) {
                     const options = {
                         maxSizeMB: 2,
-                        maxWidthOrHeight: 2560,
+                        maxWidthOrHeight: 1920,
                         useWebWorker: true,
                         fileType: 'image/webp'
                     };
