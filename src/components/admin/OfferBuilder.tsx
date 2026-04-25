@@ -667,6 +667,35 @@ export default function OfferBuilder({ offerId, initialData, onSave, saveButtonT
         }));
     };
 
+    // Load preset based on category
+    const handleCategoryChange = (category: string) => {
+        const currentContact = {
+            contactName: data.contactName,
+            contactEmail: data.contactEmail,
+            contactPhone: data.contactPhone,
+            contactLocation: data.contactLocation,
+            contactZip: data.contactZip,
+            contactAddress: data.contactAddress,
+        };
+
+        if (category === 'urodziny') {
+            setData(prev => ({
+                ...BIRTHDAY_DATA,
+                ...currentContact, // Preserve contact info
+                category: 'urodziny'
+            }));
+        } else if (category === 'komunia') {
+            setData(prev => ({
+                ...INITIAL_DATA,
+                ...currentContact, // Preserve contact info
+                category: 'komunia'
+            }));
+        } else {
+            // Standard/Ślub/B2B - just update category, keep current data
+            update('category', category);
+        }
+    };
+
     // --- Dynamic Table Actions ---
 
     const addColumn = () => {
@@ -941,15 +970,16 @@ export default function OfferBuilder({ offerId, initialData, onSave, saveButtonT
                             <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Kategoria Oferty</label>
                             <select
                                 value={data.category || 'standard'}
-                                onChange={e => update('category', e.target.value)}
+                                onChange={e => handleCategoryChange(e.target.value)}
                                 className="w-full p-2 border border-gray-300 rounded text-black"
                             >
                                 <option value="standard">Standardowa</option>
                                 <option value="komunia">Komunia Święta</option>
+                                <option value="urodziny">Urodziny</option>
                                 <option value="slub">Ślub</option>
                                 <option value="b2b">B2B</option>
                             </select>
-                            <p className="text-[10px] text-gray-400 mt-1">Wybierz "Komunia Święta", aby włączyć licznik dzieci.</p>
+                            <p className="text-[10px] text-gray-400 mt-1">Zmiana kategorii załaduje odpowiedni szablon (zachowując dane kontaktowe).</p>
                         </div>
                         <Input label="Tytuł Główny" value={data.title} onChange={v => update('title', v)} />
                         <Input label="Podtytuł (Accent)" value={data.subtitle} onChange={v => update('subtitle', v)} />
