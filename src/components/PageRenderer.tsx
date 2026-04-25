@@ -27,33 +27,39 @@ function stripHtml(html: string | undefined): string {
     if (!html) return '';
     return html.replace(/<[^>]*>/g, '');
 }
-import CarouselGallery from '@/components/VisualEffects/CarouselGallery';
-import MasonryGallery from '@/components/VisualEffects/MasonryGallery';
-import PuzzleGallery from '@/components/VisualEffects/PuzzleGallery';
+import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
-import CreativeSlider from '@/components/CreativeSlider';
-import TestimonialsSection from '@/components/TestimonialsSection';
-import ContactForm from '@/components/ContactForm';
-import B2BContactForm from '@/components/B2BContactForm';
-import ThermalHeroSlider from '@/components/ThermalHeroSlider';
-import HeroVideoSlider from '@/components/HeroVideoSlider';
-import ParallaxVideo from '@/components/ParallaxVideo';
-import ThermalReportShowcase from '@/components/ThermalReportShowcase';
 import { ShieldCheck, Zap, ArrowRight, Workflow, FileText, Briefcase, CheckCircle2, Maximize2, X, Camera, ImageIcon, Layout, Stars, Award, Type, LayoutTemplate, Thermometer, Building, Shield, Leaf } from 'lucide-react';
 
+// Lazy-loaded components
+const CarouselGallery = dynamic(() => import('@/components/VisualEffects/CarouselGallery'), { ssr: false });
+const MasonryGallery = dynamic(() => import('@/components/VisualEffects/MasonryGallery'), { ssr: false });
+const PuzzleGallery = dynamic(() => import('@/components/VisualEffects/PuzzleGallery'), { ssr: false });
+const CreativeSlider = dynamic(() => import('@/components/CreativeSlider'), { ssr: false });
+const TestimonialsSection = dynamic(() => import('@/components/TestimonialsSection'), { ssr: false });
+const ContactForm = dynamic(() => import('@/components/ContactForm'), { ssr: false });
+const B2BContactForm = dynamic(() => import('@/components/B2BContactForm'), { ssr: false });
+const ThermalHeroSlider = dynamic(() => import('@/components/ThermalHeroSlider'), { ssr: false });
+const HeroVideoSlider = dynamic(() => import('@/components/HeroVideoSlider'), { ssr: false });
+const ParallaxVideo = dynamic(() => import('@/components/ParallaxVideo'), { ssr: false });
+const ThermalReportShowcase = dynamic(() => import('@/components/ThermalReportShowcase'), { ssr: false });
 // Editorial Components (Storytelling)
-import StoryHero from '@/components/sections/StoryHero';
-import MagazineLayout from '@/components/sections/MagazineLayout';
-import EditorialMasonry from '@/components/sections/MasonryGallery';
-import ClientStory from '@/components/sections/ClientStory';
-import ProcessTimeline from '@/components/sections/ProcessTimeline';
-import InvestmentTeaser from '@/components/sections/InvestmentTeaser';
-import NarrativeText from '@/components/sections/NarrativeText';
-import FeaturedCarousel from '@/components/sections/FeaturedCarousel';
-import StoriesGrid from '@/components/sections/StoriesGrid';
-import ChronologicalGallery from '@/components/sections/ChronologicalGallery';
-import FloatingButton from '@/components/sections/FloatingButton';
-import { PointCloudHero, PointCloudShowcase, PointCloudServices, PointCloudTechnology, PointCloudViewerSection } from '@/components/sections/PointCloudSections';
+const StoryHero = dynamic(() => import('@/components/sections/StoryHero'), { ssr: false });
+const MagazineLayout = dynamic(() => import('@/components/sections/MagazineLayout'), { ssr: false });
+const EditorialMasonry = dynamic(() => import('@/components/sections/MasonryGallery'), { ssr: false });
+const ClientStory = dynamic(() => import('@/components/sections/ClientStory'), { ssr: false });
+const ProcessTimeline = dynamic(() => import('@/components/sections/ProcessTimeline'), { ssr: false });
+const InvestmentTeaser = dynamic(() => import('@/components/sections/InvestmentTeaser'), { ssr: false });
+const NarrativeText = dynamic(() => import('@/components/sections/NarrativeText'), { ssr: false });
+const FeaturedCarousel = dynamic(() => import('@/components/sections/FeaturedCarousel'), { ssr: false });
+const StoriesGrid = dynamic(() => import('@/components/sections/StoriesGrid'), { ssr: false });
+const ChronologicalGallery = dynamic(() => import('@/components/sections/ChronologicalGallery'), { ssr: false });
+const FloatingButton = dynamic(() => import('@/components/sections/FloatingButton'), { ssr: false });
+const PointCloudHero = dynamic(() => import('@/components/sections/PointCloudSections').then(m => ({ default: m.PointCloudHero })), { ssr: false });
+const PointCloudShowcase = dynamic(() => import('@/components/sections/PointCloudSections').then(m => ({ default: m.PointCloudShowcase })), { ssr: false });
+const PointCloudServices = dynamic(() => import('@/components/sections/PointCloudSections').then(m => ({ default: m.PointCloudServices })), { ssr: false });
+const PointCloudTechnology = dynamic(() => import('@/components/sections/PointCloudSections').then(m => ({ default: m.PointCloudTechnology })), { ssr: false });
+const PointCloudViewerSection = dynamic(() => import('@/components/sections/PointCloudSections').then(m => ({ default: m.PointCloudViewerSection })), { ssr: false });
 
 export default function PageRenderer({ sections }: { sections: PageSection[] }) {
     const [selectedCert, setSelectedCert] = React.useState<any>(null);

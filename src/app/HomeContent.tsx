@@ -1,32 +1,34 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Camera, ChevronDown, Facebook, Instagram, Mail, MapPin, Phone, Send, User, X, Maximize2, Image as ImageIcon, ArrowLeft, ArrowRight, Star, Check } from 'lucide-react';
 import HeroSlider from '@/components/HeroSlider';
-
 import ContactForm from '@/components/ContactForm';
-import ParallaxSection from '@/components/ParallaxSection';
-import CarouselGallery from '@/components/VisualEffects/CarouselGallery';
-import MasonryGallery from '@/components/VisualEffects/MasonryGallery';
-import PuzzleGallery from '@/components/VisualEffects/PuzzleGallery';
-import AdvancedBanner from '@/components/AdvancedBanner';
-import CreativeSlider from '@/components/CreativeSlider';
-import WhiteInfoBand from '@/components/WhiteInfoBand';
-import PhotoChallengeBanner from '@/components/PhotoChallengeBanner';
-// Premium Modules
-import StoriesGrid from '@/components/sections/StoriesGrid';
-import ChronologicalGallery from '@/components/sections/ChronologicalGallery';
-import MagazineLayout from '@/components/sections/MagazineLayout';
-import EditorialMasonry from '@/components/sections/MasonryGallery';
-import ClientStory from '@/components/sections/ClientStory';
-import ProcessTimeline from '@/components/sections/ProcessTimeline';
-import InvestmentTeaser from '@/components/sections/InvestmentTeaser';
-import NarrativeText from '@/components/sections/NarrativeText';
-import FeaturedCarousel from '@/components/sections/FeaturedCarousel';
-import PhotoCube3D from '@/components/sections/PhotoCube3D';
+
+// Lazy-loaded below-the-fold components
+const ParallaxSection = dynamic(() => import('@/components/ParallaxSection'), { ssr: false });
+const CarouselGallery = dynamic(() => import('@/components/VisualEffects/CarouselGallery'), { ssr: false });
+const MasonryGallery = dynamic(() => import('@/components/VisualEffects/MasonryGallery'), { ssr: false });
+const PuzzleGallery = dynamic(() => import('@/components/VisualEffects/PuzzleGallery'), { ssr: false });
+const AdvancedBanner = dynamic(() => import('@/components/AdvancedBanner'), { ssr: false });
+const CreativeSlider = dynamic(() => import('@/components/CreativeSlider'), { ssr: false });
+const WhiteInfoBand = dynamic(() => import('@/components/WhiteInfoBand'), { ssr: false });
+const PhotoChallengeBanner = dynamic(() => import('@/components/PhotoChallengeBanner'), { ssr: false });
+// Premium Modules — lazy loaded
+const StoriesGrid = dynamic(() => import('@/components/sections/StoriesGrid'), { ssr: false });
+const ChronologicalGallery = dynamic(() => import('@/components/sections/ChronologicalGallery'), { ssr: false });
+const MagazineLayout = dynamic(() => import('@/components/sections/MagazineLayout'), { ssr: false });
+const EditorialMasonry = dynamic(() => import('@/components/sections/MasonryGallery'), { ssr: false });
+const ClientStory = dynamic(() => import('@/components/sections/ClientStory'), { ssr: false });
+const ProcessTimeline = dynamic(() => import('@/components/sections/ProcessTimeline'), { ssr: false });
+const InvestmentTeaser = dynamic(() => import('@/components/sections/InvestmentTeaser'), { ssr: false });
+const NarrativeText = dynamic(() => import('@/components/sections/NarrativeText'), { ssr: false });
+const FeaturedCarousel = dynamic(() => import('@/components/sections/FeaturedCarousel'), { ssr: false });
+const PhotoCube3D = dynamic(() => import('@/components/sections/PhotoCube3D'), { ssr: false });
 // Banners are rendered in AppShell
 interface Testimonial {
     id: number;
