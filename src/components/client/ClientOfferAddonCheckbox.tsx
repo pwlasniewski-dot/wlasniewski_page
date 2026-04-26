@@ -24,6 +24,7 @@ interface Album {
     description?: string;
     price: number;
     price_per_spread?: number;
+    format_options?: { label: string; discount_pct: number }[];
     currency: string;
     format?: string;
     pages_count?: number;
@@ -51,12 +52,6 @@ export type OfferAddon = {
 };
 
 const MIN_SPREADS = 10;
-const SMALLER_FORMAT = '25×25 cm';
-const SMALLER_FORMAT_DISCOUNT = 0.10;
-
-function isSmallerFormat(s: string | null | undefined): boolean {
-    return !!s && s.toLowerCase().replace(/\s+/g, '').replace(/×/g, 'x').replace(/cm/g, '') === '25x25';
-}
 
 export default function ClientOfferAddonCheckbox({
     offerId,
@@ -160,23 +155,27 @@ function AlbumRow({
     const baseSpreads = Math.max(MIN_SPREADS, Math.round(basePages / 2));
     const pricePerSpread = album.price_per_spread || 40;
     const basePrice = album.price || 0;
+    const formatOptions = Array.isArray(album.format_options) ? album.format_options : [];
 
     const initialSpreads = addon?.custom_pages ? Math.round(addon.custom_pages / 2) : baseSpreads;
     const [spreads, setSpreads] = useState<number>(initialSpreads);
-    const [smallerFormat, setSmallerFormat] = useState<boolean>(isSmallerFormat(addon?.custom_format_request));
+    const [selectedFormat, setSelectedFormat] = useState<string>(addon?.custom_format_request || '');
     const [busy, setBusy] = useState(false);
+
+    const activeFormatOption = formatOptions.find(o => o.label === selectedFormat) || null;
+    const formatDiscountPct = activeFormatOption?.discount_pct || 0;
 
     const finalPrice = useMemo(() => {
         const diff = spreads - baseSpreads;
         let p = basePrice + diff * pricePerSpread;
-        if (smallerFormat) p = p * (1 - SMALLER_FORMAT_DISCOUNT);
+        if (formatDiscountPct > 0) p = p * (1 - formatDiscountPct / 100);
         return Math.max(0, Math.round(p));
-    }, [spreads, baseSpreads, basePrice, pricePerSpread, smallerFormat]);
+    }, [spreads, baseSpreads, basePrice, pricePerSpread, formatDiscountPct]);
 
     const isAdded = !!addon;
     const pages = spreads * 2;
 
-    async function postAddon(spreadsToSend: number, smallerFmt: boolean) {
+    async function postAddon(spreadsToSend: number, formatLabel: string) {
         const pagesToSend = spreadsToSend * 2;
         const res = await fetch('/api/client/offer-addons', {
             method: 'POST',
@@ -185,7 +184,7 @@ function AlbumRow({
                 offer_id: offerId,
                 album_id: album.id,
                 custom_pages: pagesToSend !== basePages ? pagesToSend : null,
-                custom_format_request: smallerFmt ? SMALLER_FORMAT : null,
+                custom_format_request: formatLabel || null,
             }),
         });
         const j = await res.json();
@@ -205,7 +204,7 @@ function AlbumRow({
                 const j = await res.json();
                 if (j.success) onChange(j.addons || []);
             } else {
-                await postAddon(spreads, smallerFormat);
+                await postAddon(spreads, selectedFormat);
             }
         } finally {
             setBusy(false);
@@ -217,17 +216,16 @@ function AlbumRow({
         setSpreads(clamped);
         if (!isAdded || isLocked) return;
         setBusy(true);
-        try { await postAddon(clamped, smallerFormat); }
+        try { await postAddon(clamped, selectedFormat); }
         finally { setBusy(false); }
     }
 
-    async function toggleSmallerFormat() {
+    async function changeFormat(label: string) {
         if (isLocked) return;
-        const next = !smallerFormat;
-        setSmallerFormat(next);
+        setSelectedFormat(label);
         if (!isAdded) return;
         setBusy(true);
-        try { await postAddon(spreads, next); }
+        try { await postAddon(spreads, label); }
         finally { setBusy(false); }
     }
 
@@ -297,19 +295,26 @@ function AlbumRow({
 
                             <div className="mt-2 flex items-center gap-2 flex-wrap">
                                 <span className="text-xs text-zinc-400">Format:</span>
-                                <button
-                                    type="button"
-                                    onClick={toggleSmallerFormat}
-                                    disabled={busy}
-                                    className={`text-xs px-3 py-1.5 rounded-lg border-2 font-semibold transition disabled:opacity-50 ${
-                                        smallerFormat
-                                            ? 'bg-emerald-500/20 border-emerald-500 text-emerald-200'
-                                            : 'bg-zinc-900 border-zinc-700 text-zinc-300 hover:border-emerald-500/60'
-                                    }`}
-                                >
-                                    {smallerFormat ? '✓ ' : ''}25×25 cm <span className="text-emerald-400 ml-1">(−10%)</span>
-                                </button>
-                                <span className="text-[11px] text-zinc-500">bazowo: {album.format || '—'}</span>
+                                {formatOptions.length > 0 ? (
+                                    <select
+                                        value={selectedFormat}
+                                        onChange={e => changeFormat(e.target.value)}
+                                        disabled={busy}
+                                        className="text-xs bg-zinc-950 border-2 border-zinc-700 hover:border-emerald-500/60 focus:border-emerald-500 text-white rounded-lg px-3 py-1.5 font-semibold focus:outline-none disabled:opacity-50 cursor-pointer"
+                                    >
+                                        <option value="">{album.format || 'Bazowy'} (bez rabatu)</option>
+                                        {formatOptions.map(o => (
+                                            <option key={o.label} value={o.label}>
+                                                {o.label}{o.discount_pct > 0 ? ` (−${o.discount_pct}%)` : ''}
+                                            </option>
+                                        ))}
+                                    </select>
+                                ) : (
+                                    <span className="text-[11px] text-zinc-500">{album.format || '—'}</span>
+                                )}
+                                {selectedFormat && formatDiscountPct > 0 && (
+                                    <span className="text-[11px] text-emerald-400 font-semibold">rabat −{formatDiscountPct}%</span>
+                                )}
                             </div>
                         </div>
                     )}

@@ -14,6 +14,7 @@ interface Album {
     description?: string;
     price: number;
     price_per_spread?: number;
+    format_options?: { label: string; discount_pct: number }[];
     currency: string;
     format?: string;
     pages_count?: number;
@@ -514,8 +515,9 @@ function InterestForm({ albumId, offerId, albumTitle, albumPrice, onClose }: { a
 
 
 function AddonConfigurator({ album, offerId, onClose, onAdded }: { album: Album; offerId: number; onClose: () => void; onAdded: (addon: OfferAddon) => void }) {
-    const basePages = album.pages_count || 0;
+    const basePages = Math.max(20, album.pages_count || 30); // min 10 rozkł = 20 stron
     const pricePerSpread = album.price_per_spread || 40;
+    const formatOptions = Array.isArray(album.format_options) ? album.format_options : [];
     const [pages, setPages] = useState<number>(basePages);
     const [customFormat, setCustomFormat] = useState<string>('');
     const [message, setMessage] = useState('');
@@ -523,9 +525,12 @@ function AddonConfigurator({ album, offerId, onClose, onAdded }: { album: Album;
     const [error, setError] = useState('');
 
     const finalPrice = useMemo(() => {
-        if (!basePages || pages === basePages) return album.price;
-        return Math.max(0, album.price + (pages - basePages) * pricePerSpread);
-    }, [pages, basePages, album.price, pricePerSpread]);
+        const extraSpreads = Math.max(0, Math.floor((pages - basePages) / 2));
+        let p = album.price + extraSpreads * pricePerSpread;
+        const fmt = formatOptions.find(o => o.label === customFormat);
+        if (fmt && fmt.discount_pct > 0) p = p * (1 - fmt.discount_pct / 100);
+        return Math.max(0, Math.round(p));
+    }, [pages, basePages, album.price, pricePerSpread, customFormat, formatOptions]);
 
     async function submit() {
         setSubmitting(true);
@@ -567,20 +572,21 @@ function AddonConfigurator({ album, offerId, onClose, onAdded }: { album: Album;
             {basePages > 0 && (
                 <div>
                     <label className="text-xs text-zinc-400 mb-1 block">
-                        Liczba rozkładówek <span className="text-zinc-500">(bazowo {basePages}, cena za rozkł.: {pricePerSpread} PLN)</span>
+                        Liczba stron <span className="text-zinc-500">(bazowo {basePages}, +{pricePerSpread} zł / rozkładówka = 2 strony)</span>
                     </label>
                     <div className="flex items-center gap-2">
-                        <button type="button" onClick={() => setPages(p => Math.max(8, p - 2))}
+                        <button type="button" onClick={() => setPages(p => Math.max(basePages, p - 2))}
                             className="w-9 h-9 rounded-lg bg-zinc-800 hover:bg-emerald-500 hover:text-zinc-950 text-white font-bold">−</button>
-                        <input type="number" value={pages} min={8} max={120} step={2}
-                            onChange={e => setPages(Math.max(8, parseInt(e.target.value || '0')))}
+                        <input type="number" value={pages} min={basePages} max={200} step={2}
+                            onChange={e => setPages(Math.max(basePages, parseInt(e.target.value || '0')))}
                             className="flex-1 bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-center text-white font-bold focus:border-emerald-500 focus:outline-none" />
                         <button type="button" onClick={() => setPages(p => p + 2)}
                             className="w-9 h-9 rounded-lg bg-zinc-800 hover:bg-emerald-500 hover:text-zinc-950 text-white font-bold">+</button>
+                        <span className="text-[11px] text-zinc-500">= {Math.floor(pages / 2)} rozkł.</span>
                     </div>
-                    {pages !== basePages && (
+                    {pages > basePages && (
                         <p className="text-[11px] text-emerald-400 mt-1">
-                            {pages > basePages ? `+${pages - basePages}` : `${pages - basePages}`} rozkł. = {pages > basePages ? '+' : ''}{((pages - basePages) * pricePerSpread).toLocaleString('pl-PL')} PLN
+                            +{Math.floor((pages - basePages) / 2)} rozkł. = +{(Math.floor((pages - basePages) / 2) * pricePerSpread).toLocaleString('pl-PL')} PLN
                         </p>
                     )}
                 </div>
@@ -588,11 +594,21 @@ function AddonConfigurator({ album, offerId, onClose, onAdded }: { album: Album;
 
             <div>
                 <label className="text-xs text-zinc-400 mb-1 block">
-                    Inny format? <span className="text-zinc-500">(np. 25×25 cm — fotograf wyceni i potwierdzi)</span>
+                    Format <span className="text-zinc-500">(bazowo: {album.format || '—'})</span>
                 </label>
-                <input type="text" value={customFormat} onChange={e => setCustomFormat(e.target.value)}
-                    placeholder={`Bazowo: ${album.format || '—'} — wpisz tylko jeśli chcesz zmienić`}
-                    className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none" />
+                {formatOptions.length > 0 ? (
+                    <select value={customFormat} onChange={e => setCustomFormat(e.target.value)}
+                        className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none">
+                        <option value="">{album.format || 'Bazowy'} (bez rabatu)</option>
+                        {formatOptions.map(o => (
+                            <option key={o.label} value={o.label}>{o.label} {o.discount_pct > 0 ? `(−${o.discount_pct}%)` : ''}</option>
+                        ))}
+                    </select>
+                ) : (
+                    <input type="text" value={customFormat} onChange={e => setCustomFormat(e.target.value)}
+                        placeholder={`Bazowo: ${album.format || '—'} — wpisz tylko jeśli chcesz zmienić`}
+                        className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none" />
+                )}
             </div>
 
             <div>
@@ -632,7 +648,7 @@ function AddonRow({ addon, onRemove, readOnly }: { addon: OfferAddon; onRemove: 
                 <p className="text-xs text-zinc-400 mt-0.5">
                     {format && <span>{format}</span>}
                     {format && pages && <span className="mx-1">•</span>}
-                    {pages && <span>{pages} rozkładówek</span>}
+                    {pages && <span>{pages} stron ({Math.floor(pages / 2)} rozkł.)</span>}
                     {addon.custom_format_request && <span className="ml-2 text-amber-400 font-semibold">(prośba o zmianę formatu)</span>}
                 </p>
             </div>
