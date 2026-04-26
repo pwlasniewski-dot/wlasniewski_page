@@ -394,11 +394,45 @@ function ImageDualAdder(props: {
     const { placeholder, mode, onAdd, currentValue, onChange } = props;
     const [url, setUrl] = useState(mode === 'single' ? (currentValue || '') : '');
     const [pickerOpen, setPickerOpen] = useState(false);
+    const [uploading, setUploading] = useState(false);
+    const [dragOver, setDragOver] = useState(false);
 
     function commit(value: string) {
         if (!value.trim()) return;
         if (mode === 'multi') { onAdd?.(value.trim()); setUrl(''); }
         else { onChange?.(value.trim()); setUrl(value.trim()); }
+    }
+
+    async function uploadFiles(files: FileList | File[]) {
+        const arr = Array.from(files).filter(f => f.type.startsWith('image/'));
+        if (arr.length === 0) return;
+        setUploading(true);
+        try {
+            const token = localStorage.getItem('admin_token') || localStorage.getItem('provider_token');
+            for (const file of arr) {
+                const fd = new FormData();
+                fd.append('file', file);
+                fd.append('folder', 'albums');
+                const res = await fetch('/api/media/upload', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: fd,
+                });
+                const data = await res.json();
+                if (data.success && data.media?.file_path) {
+                    if (mode === 'multi') onAdd?.(data.media.file_path);
+                    else { onChange?.(data.media.file_path); setUrl(data.media.file_path); }
+                    toast.success(`✓ ${file.name}`);
+                } else {
+                    toast.error(`Błąd: ${file.name} – ${data.error || 'unknown'}`);
+                }
+                if (mode === 'single') break;
+            }
+        } catch (e: any) {
+            toast.error('Błąd uploadu: ' + (e?.message || ''));
+        } finally {
+            setUploading(false);
+        }
     }
 
     return (
@@ -413,11 +447,25 @@ function ImageDualAdder(props: {
                     <Plus className="w-4 h-4" />
                 </button>
             </div>
+
+            <label
+                onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+                onDragLeave={() => setDragOver(false)}
+                onDrop={e => { e.preventDefault(); setDragOver(false); uploadFiles(e.dataTransfer.files); }}
+                className={`flex items-center justify-center gap-2 border-2 border-dashed rounded-lg py-4 cursor-pointer text-sm transition ${dragOver ? 'border-gold-500 bg-gold-500/10 text-gold-300' : 'border-zinc-700 hover:border-gold-500 hover:bg-zinc-900/40 text-zinc-300'} ${uploading ? 'opacity-50 pointer-events-none' : ''}`}>
+                {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImageIcon className="w-4 h-4" />}
+                {uploading
+                    ? 'Wysyłanie...'
+                    : (mode === 'multi' ? 'Przeciągnij pliki tutaj lub kliknij (możesz wybrać kilka)' : 'Przeciągnij plik tutaj lub kliknij')}
+                <input type="file" accept="image/*" multiple={mode === 'multi'} className="hidden"
+                    onChange={e => { if (e.target.files) uploadFiles(e.target.files); e.target.value = ''; }} />
+            </label>
+
             <button type="button" onClick={() => setPickerOpen(true)}
-                className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-zinc-700 hover:border-gold-500 hover:bg-zinc-900/40 rounded-lg py-3 cursor-pointer text-sm text-zinc-300 transition">
-                <ImageIcon className="w-4 h-4" />
-                {mode === 'multi' ? 'Wybierz z biblioteki / wgraj zdjęcia' : 'Wybierz z biblioteki / wgraj zdjęcie'}
+                className="w-full text-xs text-zinc-500 hover:text-gold-400 underline transition">
+                lub wybierz z istniejącej biblioteki mediów
             </button>
+
             <MediaPicker
                 isOpen={pickerOpen}
                 onClose={() => setPickerOpen(false)}
