@@ -268,16 +268,18 @@ function AlbumShowcase({ album, offerId }: { album: Album; offerId: number }) {
                             <InterestForm
                                 albumId={album.id}
                                 offerId={offerId}
+                                albumTitle={album.title}
+                                albumPrice={album.price}
                                 onClose={() => setShowInterestForm(false)}
                             />
                         ) : (
                             <div className="space-y-2">
                                 <button
                                     onClick={() => setShowInterestForm(true)}
-                                    className="w-full bg-gradient-to-r from-gold-500 to-gold-400 hover:from-gold-400 hover:to-gold-300 text-zinc-950 font-bold py-3 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-gold-500/30 transition">
-                                    <Sparkles className="w-4 h-4" /> Chcę ten album do mojej sesji
+                                    className="w-full bg-gradient-to-r from-emerald-500 to-emerald-400 hover:from-emerald-400 hover:to-emerald-300 text-zinc-950 font-bold py-3 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/30 transition">
+                                    <Check className="w-5 h-5" /> Dodaj do mojej oferty {album.price > 0 && `(+${album.price} ${album.currency})`}
                                 </button>
-                                <p className="text-[11px] text-zinc-500 text-center">Bez zobowiązań - fotograf skontaktuje się z Tobą i ustalcie szczegóły</p>
+                                <p className="text-[11px] text-zinc-500 text-center">Album zostanie doliczony do Twojej oferty - fotograf potwierdzi zamówienie</p>
                             </div>
                         )}
                     </div>
@@ -340,7 +342,7 @@ function SpecBadge({ icon, label, value }: { icon: React.ReactNode; label: strin
     );
 }
 
-function InterestForm({ albumId, offerId, onClose }: { albumId: number; offerId: number; onClose: () => void }) {
+function InterestForm({ albumId, offerId, albumTitle, albumPrice, onClose }: { albumId: number; offerId: number; albumTitle: string; albumPrice: number; onClose: () => void }) {
     const [message, setMessage] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [done, setDone] = useState(false);
@@ -353,7 +355,14 @@ function InterestForm({ albumId, offerId, onClose }: { albumId: number; offerId:
             const res = await fetch('/api/client/album-interest', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ offer_id: offerId, album_id: albumId, message }),
+                body: JSON.stringify({
+                    offer_id: offerId,
+                    album_id: albumId,
+                    message,
+                    intent: 'add_to_offer',
+                    album_title: albumTitle,
+                    album_price: albumPrice,
+                }),
             });
             const data = await res.json();
             if (data.success) setDone(true);
@@ -371,20 +380,24 @@ function InterestForm({ albumId, offerId, onClose }: { albumId: number; offerId:
                 <div className="w-12 h-12 bg-emerald-500 rounded-full flex items-center justify-center mx-auto mb-2">
                     <Check className="w-6 h-6 text-white" />
                 </div>
-                <h5 className="text-emerald-300 font-bold mb-1">Wiadomość wysłana!</h5>
-                <p className="text-xs text-emerald-200">Fotograf odezwie się w ciągu 24h. Możesz dalej przeglądać ofertę.</p>
+                <h5 className="text-emerald-300 font-bold mb-1">Album dodany do oferty!</h5>
+                <p className="text-xs text-emerald-200">Fotograf zaktualizuje Twoją ofertę i potwierdzi w ciągu 24h.</p>
             </div>
         );
     }
 
     return (
-        <div className="space-y-2">
+        <div className="space-y-2 bg-emerald-500/5 border border-emerald-500/30 rounded-xl p-3">
+            <p className="text-xs text-emerald-300 font-semibold flex items-center gap-1">
+                <Check className="w-3.5 h-3.5" /> Dodajesz: <strong className="text-white">{albumTitle}</strong>
+                {albumPrice > 0 && <span className="text-emerald-400">(+{albumPrice} PLN)</span>}
+            </p>
             <textarea
                 value={message}
                 onChange={e => setMessage(e.target.value)}
-                placeholder="Opcjonalnie: pytania, uwagi, preferencje co do okładki..."
+                placeholder="Opcjonalnie: preferencje co do okładki, dedykacja, ilość stron..."
                 rows={3}
-                className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:border-gold-500 focus:outline-none resize-none"
+                className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none resize-none"
             />
             {error && <p className="text-xs text-red-400">{error}</p>}
             <div className="flex gap-2">
@@ -393,9 +406,9 @@ function InterestForm({ albumId, offerId, onClose }: { albumId: number; offerId:
                     Anuluj
                 </button>
                 <button onClick={submit} disabled={submitting}
-                    className="flex-1 bg-gold-500 hover:bg-gold-400 text-zinc-950 font-bold py-2 rounded-lg flex items-center justify-center gap-2 disabled:opacity-60">
-                    {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                    Wyślij zapytanie
+                    className="flex-1 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold py-2 rounded-lg flex items-center justify-center gap-2 disabled:opacity-60">
+                    {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                    Potwierdź dodanie do oferty
                 </button>
             </div>
         </div>

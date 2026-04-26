@@ -12,7 +12,8 @@ export const dynamic = 'force-dynamic';
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
-        const { offer_id, album_id, client_name, client_email, message } = body;
+        const { offer_id, album_id, client_name, client_email, message, intent } = body;
+        const isAddToOffer = intent === 'add_to_offer';
 
         if (!offer_id || !album_id) {
             return NextResponse.json({ error: 'Missing offer_id or album_id' }, { status: 400 });
@@ -34,10 +35,10 @@ export async function POST(request: NextRequest) {
                 data: {
                     client_id: offer.client_id || null,
                     client_email: offer.client_email || offer.user?.email || client_email || null,
-                    action: 'album_interest',
+                    action: isAddToOffer ? 'album_add_to_offer' : 'album_interest',
                     entity_type: 'offer',
                     entity_id: offer.id,
-                    details: JSON.stringify({ album_id: album.id, album_title: album.title, album_price: album.price, message: message || null }),
+                    details: JSON.stringify({ album_id: album.id, album_title: album.title, album_price: album.price, message: message || null, intent: intent || 'interest' }),
                 }
             });
         } catch (e) {
@@ -48,9 +49,11 @@ export async function POST(request: NextRequest) {
         try {
             await sendEmail({
                 to: 'pwlasniewski@gmail.com',
-                subject: `📸 Klient chce album: ${album.title} — oferta #${offer.offerNumber || offer.id}`,
+                subject: isAddToOffer
+                    ? `🟢 KLIENT DODAŁ ALBUM DO OFERTY: ${album.title} (+${album.price} ${album.currency}) — #${offer.offerNumber || offer.id}`
+                    : `📸 Klient chce album: ${album.title} — oferta #${offer.offerNumber || offer.id}`,
                 html: `
-                    <h2>Nowe zainteresowanie albumem</h2>
+                    <h2>${isAddToOffer ? '🟢 Klient zatwierdził dodanie albumu do oferty' : 'Nowe zainteresowanie albumem'}</h2>
                     <p><strong>Klient:</strong> ${client_name || offer.user?.email || offer.client_email}</p>
                     <p><strong>Email:</strong> ${client_email || offer.user?.email || offer.client_email}</p>
                     <p><strong>Oferta:</strong> #${offer.offerNumber || offer.id} — ${offer.title}</p>
@@ -60,7 +63,7 @@ export async function POST(request: NextRequest) {
                     ${album.cover_image_url ? `<p><img src="${album.cover_image_url}" style="max-width:300px;border-radius:8px"/></p>` : ''}
                     ${message ? `<hr><p><strong>Wiadomosc od klienta:</strong><br>${message}</p>` : ''}
                     <hr>
-                    <p style="color:#888">Akcja: oddzwon do klienta i potwierdz zamowienie albumu w pakiecie sesji.</p>
+                    <p style="color:#888">${isAddToOffer ? '<strong>AKCJA:</strong> Zaktualizuj ofertę o cenę albumu i potwierdź klientowi.' : 'Akcja: oddzwon do klienta i potwierdz zamowienie albumu w pakiecie sesji.'}</p>
                 `,
             });
         } catch (e) {
