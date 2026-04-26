@@ -9,6 +9,7 @@ import {
     Image as ImageIcon, Film, Search as SearchIcon, ExternalLink,
     Star, Eye, EyeOff
 } from 'lucide-react';
+import MediaPicker from '@/components/admin/MediaPicker';
 
 const CATEGORIES = [
     { value: 'album', label: 'Albumy' },
@@ -386,49 +387,18 @@ function Input({ value, onChange, placeholder, className, maxLength }: { value: 
 function ImageDualAdder(props: {
     placeholder: string;
     mode: 'single' | 'multi';
-    onAdd?: (url: string) => void;          // multi: append to list
-    currentValue?: string;                  // single: existing url
-    onChange?: (url: string) => void;       // single: replace url
+    onAdd?: (url: string) => void;
+    currentValue?: string;
+    onChange?: (url: string) => void;
 }) {
     const { placeholder, mode, onAdd, currentValue, onChange } = props;
     const [url, setUrl] = useState(mode === 'single' ? (currentValue || '') : '');
-    const [uploading, setUploading] = useState(false);
+    const [pickerOpen, setPickerOpen] = useState(false);
 
     function commit(value: string) {
         if (!value.trim()) return;
         if (mode === 'multi') { onAdd?.(value.trim()); setUrl(''); }
         else { onChange?.(value.trim()); setUrl(value.trim()); }
-    }
-
-    async function handleFiles(files: FileList | null) {
-        if (!files || files.length === 0) return;
-        setUploading(true);
-        try {
-            const token = localStorage.getItem('admin_token');
-            const arr = Array.from(files);
-            for (const file of arr) {
-                const fd = new FormData();
-                fd.append('file', file);
-                const res = await fetch('/api/admin/products/upload', {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${token}` },
-                    body: fd,
-                });
-                const data = await res.json();
-                if (data.success && data.url) {
-                    if (mode === 'multi') onAdd?.(data.url);
-                    else { onChange?.(data.url); setUrl(data.url); }
-                    toast.success(`Wysłano: ${file.name}`);
-                } else {
-                    toast.error(`Błąd: ${file.name}`);
-                }
-                if (mode === 'single') break;
-            }
-        } catch {
-            toast.error('Błąd uploadu');
-        } finally {
-            setUploading(false);
-        }
     }
 
     return (
@@ -443,12 +413,26 @@ function ImageDualAdder(props: {
                     <Plus className="w-4 h-4" />
                 </button>
             </div>
-            <label className={`flex items-center justify-center gap-2 border-2 border-dashed border-zinc-700 hover:border-gold-500 rounded-lg py-3 cursor-pointer text-sm transition ${uploading ? 'opacity-50 pointer-events-none' : 'text-zinc-300'}`}>
-                {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImageIcon className="w-4 h-4" />}
-                {uploading ? 'Wysyłanie...' : (mode === 'multi' ? 'lub wgraj zdjęcia z dysku (możesz wybrać kilka)' : 'lub wgraj zdjęcie z dysku')}
-                <input type="file" accept="image/*" multiple={mode === 'multi'} className="hidden"
-                    onChange={e => { handleFiles(e.target.files); e.target.value = ''; }} />
-            </label>
+            <button type="button" onClick={() => setPickerOpen(true)}
+                className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-zinc-700 hover:border-gold-500 hover:bg-zinc-900/40 rounded-lg py-3 cursor-pointer text-sm text-zinc-300 transition">
+                <ImageIcon className="w-4 h-4" />
+                {mode === 'multi' ? 'Wybierz z biblioteki / wgraj zdjęcia' : 'Wybierz z biblioteki / wgraj zdjęcie'}
+            </button>
+            <MediaPicker
+                isOpen={pickerOpen}
+                onClose={() => setPickerOpen(false)}
+                multiple={mode === 'multi'}
+                onSelect={(selUrl) => {
+                    if (Array.isArray(selUrl)) {
+                        if (mode === 'multi') { selUrl.forEach(u => onAdd?.(u)); }
+                        else if (selUrl[0]) { onChange?.(selUrl[0]); setUrl(selUrl[0]); }
+                    } else {
+                        if (mode === 'multi') onAdd?.(selUrl);
+                        else { onChange?.(selUrl); setUrl(selUrl); }
+                    }
+                    setPickerOpen(false);
+                }}
+            />
         </div>
     );
 }

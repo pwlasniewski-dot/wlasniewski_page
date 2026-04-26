@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
+import MediaPicker from '@/components/admin/MediaPicker';
 import {
     Plus, Search, Edit3, Trash2, Star, Eye, EyeOff,
     Image as ImageIcon, Film, Sparkles, ExternalLink, Heart,
@@ -405,7 +406,7 @@ function EmptyState({ onCreate, hasAlbums }: any) {
 // ─── Modal: Quick create form ─────────────────────────────────────────────────
 function AlbumFormModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
     const [saving, setSaving] = useState(false);
-    const [uploadingCover, setUploadingCover] = useState(false);
+    const [pickerOpen, setPickerOpen] = useState(false);
     const [form, setForm] = useState({
         title: '', slug: '', subtitle: '', description: '',
         category: 'album', occasion: [] as string[],
@@ -509,23 +510,20 @@ function AlbumFormModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
                             <input value={form.cover_image_url} onChange={e => setForm({ ...form, cover_image_url: e.target.value })}
                                 className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:border-gold-500 focus:outline-none"
                                 placeholder="https://..." />
-                            <label className="mt-2 flex items-center justify-center gap-2 border-2 border-dashed border-zinc-700 hover:border-gold-500 rounded-lg py-2 cursor-pointer text-xs text-zinc-300 transition">
-                                {uploadingCover ? '⏳ Wysyłanie...' : '📎 lub wgraj plik z dysku'}
-                                <input type="file" accept="image/*" className="hidden" disabled={uploadingCover}
-                                    onChange={async e => {
-                                        const file = e.target.files?.[0]; if (!file) return;
-                                        setUploadingCover(true);
-                                        try {
-                                            const token = localStorage.getItem('admin_token');
-                                            const fd = new FormData(); fd.append('file', file);
-                                            const res = await fetch('/api/admin/products/upload', { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: fd });
-                                            const data = await res.json();
-                                            if (data.success && data.url) { setForm(f => ({ ...f, cover_image_url: data.url })); toast.success('Wgrano okładkę'); }
-                                            else toast.error('Błąd uploadu');
-                                        } catch { toast.error('Błąd uploadu'); }
-                                        finally { setUploadingCover(false); e.target.value = ''; }
-                                    }} />
-                            </label>
+                            <button type="button" onClick={() => setPickerOpen(true)}
+                                className="mt-2 w-full flex items-center justify-center gap-2 border-2 border-dashed border-zinc-700 hover:border-gold-500 hover:bg-zinc-900/40 rounded-lg py-2 text-xs text-zinc-300 transition">
+                                <ImageIcon className="w-4 h-4" /> Wybierz z biblioteki / wgraj
+                            </button>
+                            <MediaPicker
+                                isOpen={pickerOpen}
+                                onClose={() => setPickerOpen(false)}
+                                multiple={false}
+                                onSelect={(url) => {
+                                    const u = Array.isArray(url) ? url[0] : url;
+                                    if (u) setForm(f => ({ ...f, cover_image_url: u }));
+                                    setPickerOpen(false);
+                                }}
+                            />
                         </div>
                         <div>
                             <label className="block text-sm text-zinc-300 mb-1">URL wideo (YouTube/Vimeo)</label>
