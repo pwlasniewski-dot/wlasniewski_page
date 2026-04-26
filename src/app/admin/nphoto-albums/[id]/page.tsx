@@ -265,8 +265,9 @@ export default function AlbumDetailPage() {
                     </Card>
 
                     <Card title="Wideo prezentacyjne">
-                        <Field label="URL wideo (YouTube/Vimeo)">
-                            <Input value={album.video_url || ''} onChange={v => update('video_url', v)} placeholder="https://youtube.com/watch?v=..." />
+                        <Field label="URL wideo (YouTube / Vimeo / plik MP4)">
+                            <Input value={album.video_url || ''} onChange={v => update('video_url', v)} placeholder="https://youtube.com/watch?v=... lub https://...mp4" />
+                            <VideoUploader onUploaded={url => update('video_url', url)} />
                         </Field>
                         <Field label="Miniatura wideo (URL)">
                             <Input value={album.video_thumbnail || ''} onChange={v => update('video_thumbnail', v)} />
@@ -482,5 +483,80 @@ function ImageDualAdder(props: {
                 }}
             />
         </div>
+    );
+}
+
+function VideoUploader({ onUploaded }: { onUploaded: (url: string) => void }) {
+    const [uploading, setUploading] = useState(false);
+    const [progress, setProgress] = useState(0);
+    const [dragOver, setDragOver] = useState(false);
+
+    async function upload(file: File) {
+        if (!file) return;
+        const maxMB = 200;
+        if (file.size > maxMB * 1024 * 1024) {
+            toast.error(`Plik za duży (max ${maxMB} MB)`);
+            return;
+        }
+        setUploading(true);
+        setProgress(0);
+        try {
+            const token = localStorage.getItem('admin_token') || localStorage.getItem('provider_token');
+
+            // 1. Get presigned URL
+            const presRes = await fetch('/api/media/upload/presigned', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ fileName: file.name, fileType: file.type, folder: 'videos' }),
+            });
+            const presData = await presRes.json();
+            if (!presData.success) throw new Error(presData.error || 'Brak presigned URL');
+
+            // 2. Upload directly to S3 with progress
+            await new Promise<void>((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open('PUT', presData.uploadUrl);
+                xhr.setRequestHeader('Content-Type', file.type);
+                xhr.upload.onprogress = (e) => {
+                    if (e.lengthComputable) setProgress(Math.round((e.loaded / e.total) * 100));
+                };
+                xhr.onload = () => xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error(`S3 ${xhr.status}`));
+                xhr.onerror = () => reject(new Error('Network error'));
+                xhr.send(file);
+            });
+
+            onUploaded(presData.publicUrl);
+            toast.success(`✓ Film wgrany (${(file.size / 1024 / 1024).toFixed(1)} MB)`);
+        } catch (e: any) {
+            toast.error('Błąd uploadu: ' + (e?.message || ''));
+        } finally {
+            setUploading(false);
+            setProgress(0);
+        }
+    }
+
+    return (
+        <label
+            onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={e => { e.preventDefault(); setDragOver(false); const f = e.dataTransfer.files?.[0]; if (f) upload(f); }}
+            className={`mt-2 flex items-center justify-center gap-2 border-2 border-dashed rounded-lg py-3 cursor-pointer text-sm transition ${dragOver ? 'border-gold-500 bg-gold-500/10 text-gold-300' : 'border-zinc-700 hover:border-gold-500 hover:bg-zinc-900/40 text-zinc-300'} ${uploading ? 'opacity-70 pointer-events-none' : ''}`}>
+            {uploading ? (
+                <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Wysyłanie... {progress}%</span>
+                    <div className="w-32 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                        <div className="h-full bg-gold-500 transition-all" style={{ width: `${progress}%` }} />
+                    </div>
+                </>
+            ) : (
+                <>
+                    <Film className="w-4 h-4" />
+                    <span>Przeciągnij film MP4 tutaj lub kliknij (max 200 MB)</span>
+                </>
+            )}
+            <input type="file" accept="video/mp4,video/webm,video/quicktime" className="hidden"
+                onChange={e => { const f = e.target.files?.[0]; if (f) upload(f); e.target.value = ''; }} />
+        </label>
     );
 }
