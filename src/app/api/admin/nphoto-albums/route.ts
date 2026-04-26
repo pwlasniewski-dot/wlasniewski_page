@@ -117,7 +117,7 @@ function buildJsonLdProduct(data: { title: string; description?: string; price?:
         },
         offers: data.price ? {
             '@type': 'Offer',
-            price: (data.price / 100).toFixed(2),
+            price: String(data.price),
             priceCurrency: data.currency,
             availability: 'https://schema.org/InStock',
         } : undefined,

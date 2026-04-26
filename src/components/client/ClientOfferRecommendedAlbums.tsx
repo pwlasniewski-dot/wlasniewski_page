@@ -132,7 +132,7 @@ function ClientAlbumMiniCard({ album, onPlayVideo }: { album: Album; onPlayVideo
                 )}
                 <div className="flex items-center justify-between gap-2 mt-2">
                     {album.price > 0 && (
-                        <div className="text-gold-400 font-bold text-sm">{(album.price / 100).toFixed(0)} {album.currency}</div>
+                        <div className="text-gold-400 font-bold text-sm">{album.price} {album.currency}</div>
                     )}
                     {album.nphoto_shop_url && (
                         <a href={album.nphoto_shop_url} target="_blank" rel="noopener"
