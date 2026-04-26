@@ -35,6 +35,15 @@ const config: Config = {
           900: "#4B3A0A",
         },
       },
+      keyframes: {
+        'pulse-soft': {
+          '0%, 100%': { boxShadow: '0 0 30px rgba(212,175,55,0.25)' },
+          '50%': { boxShadow: '0 0 50px rgba(212,175,55,0.55)' },
+        },
+      },
+      animation: {
+        'pulse-soft': 'pulse-soft 2.5s ease-in-out infinite',
+      },
     },
   },
   plugins: [

@@ -216,21 +216,36 @@ function AlbumShowcase({ album, offerId }: { album: Album; offerId: number }) {
                             </button>
                         )}
 
+                        {/* Counter badge */}
+                        {gallery.length > 1 && !videoPlaying && (
+                            <div className="absolute top-3 right-3 bg-black/70 backdrop-blur text-white text-xs font-semibold px-2.5 py-1 rounded-full flex items-center gap-1.5">
+                                <span className="text-gold-400 font-bold">{idx + 1}</span>
+                                <span className="text-zinc-400">/</span>
+                                <span>{gallery.length}</span>
+                                <span className="text-zinc-500 ml-1 hidden sm:inline">{isVideoSlide ? '🎬' : '📷'}</span>
+                            </div>
+                        )}
+
                         {/* Thumbnail strip */}
                         {gallery.length > 1 && !videoPlaying && (
-                            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 px-3 py-2 bg-black/60 backdrop-blur rounded-full max-w-[90%] overflow-x-auto">
-                                {gallery.map((g, i) => (
-                                    <button key={i} onClick={() => { setVideoPlaying(false); setIdx(i); }}
-                                        className={`relative w-10 h-10 rounded-md overflow-hidden shrink-0 transition border-2 ${i === idx ? 'border-gold-500 scale-110' : 'border-transparent opacity-60 hover:opacity-100'}`}>
-                                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                                        <img src={(g.type === 'video' ? g.thumb : g.url) || ''} alt="" className="w-full h-full object-cover" />
-                                        {g.type === 'video' && (
-                                            <div className="absolute inset-0 flex items-center justify-center bg-black/40">
-                                                <Play className="w-3 h-3 text-white fill-current" />
-                                            </div>
-                                        )}
-                                    </button>
-                                ))}
+                            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 max-w-[90%]">
+                                <span className="text-[10px] text-white/80 bg-black/60 backdrop-blur px-2 py-0.5 rounded-full">
+                                    👇 Przewiń wszystkie {gallery.length} - filmy i zdjęcia
+                                </span>
+                                <div className="flex gap-1.5 px-3 py-2 bg-black/60 backdrop-blur rounded-full overflow-x-auto">
+                                    {gallery.map((g, i) => (
+                                        <button key={i} onClick={() => { setVideoPlaying(false); setIdx(i); }}
+                                            className={`relative w-10 h-10 rounded-md overflow-hidden shrink-0 transition border-2 ${i === idx ? 'border-gold-500 scale-110' : 'border-transparent opacity-60 hover:opacity-100'}`}>
+                                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                                            <img src={(g.type === 'video' ? g.thumb : g.url) || ''} alt="" className="w-full h-full object-cover" />
+                                            {g.type === 'video' && (
+                                                <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                                                    <Play className="w-3 h-3 text-gold-400 fill-current" />
+                                                </div>
+                                            )}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
                         )}
                     </div>

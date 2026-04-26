@@ -247,13 +247,32 @@ export default function AccountPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     {userPermissions?.offers !== false && (
                         activeOffer ? (
-                            <button onClick={() => setActiveTab('documents')} className="text-left bg-zinc-900/60 border border-zinc-800 hover:border-gold-500/30 rounded-2xl p-5 transition-all group">
-                                <p className="text-xs text-zinc-600 uppercase tracking-widest mb-3">Aktualna Oferta</p>
-                                <p className="font-bold text-white text-sm mb-2 group-hover:text-gold-400 transition-colors line-clamp-1">{activeOffer?.title || 'Bez tytułu'}</p>
-                                <span className={`inline-block text-xs px-2 py-0.5 rounded-full border ${(offerStatusLabel[activeOffer?.status] || offerStatusLabel.draft).color}`}>
-                                    {(offerStatusLabel[activeOffer?.status] || offerStatusLabel.draft).label}
-                                </span>
-                            </button>
+                            (() => {
+                                const offerNeedsAction = activeOffer.status === 'pending' || activeOffer.status === 'sent' || activeOffer.status === 'draft';
+                                return (
+                                    <button onClick={() => setActiveTab('documents')} className={`text-left rounded-2xl p-5 transition-all group relative overflow-hidden ${offerNeedsAction
+                                        ? 'bg-gradient-to-br from-gold-500/20 via-gold-500/5 to-transparent border-2 border-gold-500/70 shadow-[0_0_30px_rgba(212,175,55,0.3)] animate-pulse-soft'
+                                        : 'bg-zinc-900/60 border border-zinc-800 hover:border-gold-500/30'}`}>
+                                        {offerNeedsAction && (
+                                            <div className="absolute top-2 right-2 flex items-center gap-1 bg-gold-500 text-zinc-950 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                                                <span className="relative flex h-1.5 w-1.5">
+                                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-zinc-950 opacity-75"></span>
+                                                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-zinc-950"></span>
+                                                </span>
+                                                AKCJA
+                                            </div>
+                                        )}
+                                        <p className="text-xs text-zinc-500 uppercase tracking-widest mb-3">Aktualna Oferta</p>
+                                        <p className="font-bold text-white text-sm mb-2 group-hover:text-gold-400 transition-colors line-clamp-1">{activeOffer?.title || 'Bez tytułu'}</p>
+                                        <span className={`inline-block text-xs px-2 py-0.5 rounded-full border ${(offerStatusLabel[activeOffer?.status] || offerStatusLabel.draft).color}`}>
+                                            {(offerStatusLabel[activeOffer?.status] || offerStatusLabel.draft).label}
+                                        </span>
+                                        {offerNeedsAction && (
+                                            <p className="mt-3 text-xs text-gold-300 font-semibold">👉 Kliknij aby zobaczyć szczegóły</p>
+                                        )}
+                                    </button>
+                                );
+                            })()
                         ) : (
                             <div className="bg-zinc-900/30 border border-dashed border-zinc-800 rounded-2xl p-5">
                                 <p className="text-xs text-zinc-600 uppercase tracking-widest mb-3">Aktualna Oferta</p>
@@ -545,8 +564,26 @@ export default function AccountPage() {
                                 const setNoteText = (val: string) => setNoteStates(prev => ({ ...prev, [noteKey]: val }));
 
                                 const isSaving = savingNote?.type === 'offer' && savingNote?.id === offer.id;
+                                const needsAction = offer.status === 'pending' || offer.status === 'sent' || offer.status === 'draft';
                                 return (
-                                    <div key={offer.id} className="bg-zinc-900/50 border border-zinc-800 rounded-[2rem] overflow-hidden">
+                                    <div key={offer.id} className={`rounded-[2rem] overflow-hidden transition-all ${needsAction
+                                        ? 'bg-gradient-to-br from-gold-500/15 via-zinc-900/80 to-zinc-900/50 border-2 border-gold-500/60 shadow-[0_0_40px_rgba(212,175,55,0.25)] animate-pulse-soft'
+                                        : 'bg-zinc-900/50 border border-zinc-800'}`}>
+                                        {needsAction && (
+                                            <Link href={`/strefa-klienta/oferty/${offer.id}`}
+                                                className="block bg-gradient-to-r from-gold-500 to-amber-500 text-zinc-950 px-6 py-3 font-bold text-sm flex items-center justify-between hover:from-gold-400 hover:to-amber-400 transition">
+                                                <span className="flex items-center gap-2">
+                                                    <span className="relative flex h-2.5 w-2.5">
+                                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-zinc-950 opacity-75"></span>
+                                                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-zinc-950"></span>
+                                                    </span>
+                                                    NOWA OFERTA CZEKA NA TWOJĄ ODPOWIEDŹ - kliknij aby zobaczyć szczegóły
+                                                </span>
+                                                <span className="hidden sm:inline-flex items-center gap-1">
+                                                    Otwórz <ChevronRight className="w-4 h-4" />
+                                                </span>
+                                            </Link>
+                                        )}
                                         <Link
                                             href={`/strefa-klienta/oferty/${offer.id}`}
                                             className="p-6 flex flex-col md:flex-row justify-between items-center gap-6 group hover:bg-white/[0.02] transition-all block"
