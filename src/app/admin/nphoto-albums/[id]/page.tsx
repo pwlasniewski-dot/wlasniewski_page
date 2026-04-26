@@ -422,22 +422,49 @@ function ImageDualAdder(props: {
         try {
             const token = localStorage.getItem('admin_token') || localStorage.getItem('provider_token');
             for (const file of arr) {
-                const fd = new FormData();
-                fd.append('file', file);
-                fd.append('folder', 'albums');
-                const res = await fetch('/api/media/upload', {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${token}` },
-                    body: fd,
-                });
-                const data = await res.json();
-                if (data.success && data.media?.file_path) {
-                    if (mode === 'multi') onAdd?.(data.media.file_path);
-                    else { onChange?.(data.media.file_path); setUrl(data.media.file_path); }
-                    toast.success(`✓ ${file.name}`);
-                } else {
-                    toast.error(`Błąd: ${file.name} – ${data.error || 'unknown'}`);
+                if (file.size > 50 * 1024 * 1024) {
+                    toast.error(`${file.name} > 50 MB - pomijam`);
+                    continue;
                 }
+                // 1. Presigned URL (bypass Netlify 6MB body limit)
+                const presRes = await fetch('/api/media/upload/presigned', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ fileName: file.name, fileType: file.type, folder: 'albums' }),
+                });
+                const pres = await presRes.json();
+                if (!pres.success) {
+                    toast.error(`Błąd: ${file.name} – ${pres.error || 'presign failed'}`);
+                    continue;
+                }
+
+                // 2. Upload directly to S3
+                const putRes = await fetch(pres.uploadUrl, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': file.type },
+                    body: file,
+                });
+                if (!putRes.ok) {
+                    toast.error(`Błąd S3: ${file.name} – HTTP ${putRes.status}`);
+                    continue;
+                }
+
+                // 3. Register in MediaLibrary
+                fetch('/api/media/upload/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({
+                        fileName: pres.key,
+                        publicUrl: pres.publicUrl,
+                        fileSize: file.size,
+                        mimeType: file.type,
+                        folder: 'albums',
+                    }),
+                }).catch(() => { /* registration is best-effort */ });
+
+                if (mode === 'multi') onAdd?.(pres.publicUrl);
+                else { onChange?.(pres.publicUrl); setUrl(pres.publicUrl); }
+                toast.success(`✓ ${file.name}`);
                 if (mode === 'single') break;
             }
         } catch (e: any) {
@@ -538,6 +565,19 @@ function VideoUploader({ onUploaded }: { onUploaded: (url: string) => void }) {
 
             onUploaded(presData.publicUrl);
             toast.success(`✓ Film wgrany (${(file.size / 1024 / 1024).toFixed(1)} MB)`);
+
+            // Register in MediaLibrary (best-effort)
+            fetch('/api/media/upload/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({
+                    fileName: presData.key,
+                    publicUrl: presData.publicUrl,
+                    fileSize: file.size,
+                    mimeType: file.type,
+                    folder: 'videos',
+                }),
+            }).catch(() => { /* ignore */ });
         } catch (e: any) {
             toast.error('Błąd uploadu: ' + (e?.message || ''));
         } finally {
