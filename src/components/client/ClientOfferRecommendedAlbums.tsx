@@ -23,6 +23,7 @@ interface Album {
     sample_pages?: any;
     video_url?: string;
     video_thumbnail?: string;
+    additional_videos?: any;
     nphoto_shop_url?: string;
     is_featured: boolean;
     _custom_note?: string;
@@ -115,10 +116,14 @@ export default function ClientOfferRecommendedAlbums({ offerId }: { offerId: num
 
 function AlbumShowcase({ album, offerId }: { album: Album; offerId: number }) {
     const gallery = useMemo(() => {
-        const out: { type: 'image' | 'video'; url: string; thumb?: string }[] = [];
+        const out: { type: 'image' | 'video'; url: string; thumb?: string; label?: string }[] = [];
         if (album.video_url) {
-            out.push({ type: 'video', url: album.video_url, thumb: album.video_thumbnail || album.cover_image_url });
+            out.push({ type: 'video', url: album.video_url, thumb: album.video_thumbnail || album.cover_image_url, label: 'Prezentacja albumu' });
         }
+        const extras = Array.isArray(album.additional_videos) ? album.additional_videos : [];
+        extras.forEach((v: any) => {
+            if (v?.url) out.push({ type: 'video', url: v.url, thumb: v.thumbnail || album.cover_image_url, label: v.label || 'Film' });
+        });
         if (album.cover_image_url) out.push({ type: 'image', url: album.cover_image_url });
         const previews = Array.isArray(album.preview_images) ? album.preview_images : [];
         previews.forEach((u: string) => { if (u && u !== album.cover_image_url) out.push({ type: 'image', url: u }); });
@@ -178,7 +183,7 @@ function AlbumShowcase({ album, offerId }: { album: Album; offerId: number }) {
                                         </div>
                                         <div className="absolute bottom-4 left-4 right-4 text-center">
                                             <span className="inline-flex items-center gap-2 bg-black/60 backdrop-blur px-4 py-2 rounded-full text-white text-sm font-semibold">
-                                                ▶ Zobacz prezentację albumu
+                                                ▶ {current.label || 'Zobacz prezentację albumu'}
                                             </span>
                                         </div>
                                     </button>

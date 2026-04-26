@@ -40,6 +40,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
                 'price', 'price_from', 'currency', 'format', 'pages_count',
                 'cover_type', 'paper_type', 'cover_image_url',
                 'preview_images', 'sample_pages', 'video_url', 'video_thumbnail',
+                'additional_videos',
                 'gallery_3d_url', 'nphoto_product_id', 'nphoto_shop_url', 'nphoto_embed_code',
                 'seo_title', 'seo_description', 'seo_keywords',
                 'is_active', 'is_featured', 'sort_order'

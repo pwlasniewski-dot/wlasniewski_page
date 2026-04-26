@@ -897,6 +897,7 @@ model NphotoAlbum {
   sample_pages      Json?                     @default("[]")
   video_url         String?
   video_thumbnail   String?
+  additional_videos Json?                     @default("[]")
   gallery_3d_url    String?
   nphoto_product_id String?
   nphoto_shop_url   String?

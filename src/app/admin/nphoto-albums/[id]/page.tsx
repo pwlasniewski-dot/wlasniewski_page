@@ -265,16 +265,27 @@ export default function AlbumDetailPage() {
                     </Card>
 
                     <Card title="Wideo prezentacyjne">
-                        <Field label="URL wideo (YouTube / Vimeo / plik MP4)">
+                        <Field label="Główny film (YouTube / Vimeo / MP4)">
                             <Input value={album.video_url || ''} onChange={v => update('video_url', v)} placeholder="https://youtube.com/watch?v=... lub https://...mp4" />
                             <VideoUploader onUploaded={url => update('video_url', url)} />
                         </Field>
                         <Field label="Miniatura wideo (URL)">
                             <Input value={album.video_thumbnail || ''} onChange={v => update('video_thumbnail', v)} />
                         </Field>
-                        <Field label="Galeria 3D - URL embed">
-                            <Input value={album.gallery_3d_url || ''} onChange={v => update('gallery_3d_url', v)} placeholder="iframe URL z nPhoto 3D" />
-                        </Field>
+
+                        <div className="mt-4 pt-4 border-t border-zinc-800">
+                            <div className="text-xs text-zinc-400 mb-2 font-medium">Dodatkowe filmy prezentacyjne (różne ujęcia, animacje 360°, itp.)</div>
+                            <AdditionalVideosEditor
+                                value={Array.isArray(album.additional_videos) ? album.additional_videos : []}
+                                onChange={v => update('additional_videos', v)}
+                            />
+                        </div>
+
+                        <div className="mt-4 pt-4 border-t border-zinc-800">
+                            <Field label="Galeria 3D - URL embed">
+                                <Input value={album.gallery_3d_url || ''} onChange={v => update('gallery_3d_url', v)} placeholder="iframe URL z nPhoto 3D" />
+                            </Field>
+                        </div>
                     </Card>
 
                     {/* nPhoto Integration */}
@@ -558,5 +569,58 @@ function VideoUploader({ onUploaded }: { onUploaded: (url: string) => void }) {
             <input type="file" accept="video/mp4,video/webm,video/quicktime" className="hidden"
                 onChange={e => { const f = e.target.files?.[0]; if (f) upload(f); e.target.value = ''; }} />
         </label>
+    );
+}
+
+interface ExtraVideo { url: string; label?: string; thumbnail?: string }
+
+function AdditionalVideosEditor({ value, onChange }: { value: ExtraVideo[]; onChange: (v: ExtraVideo[]) => void }) {
+    function update(i: number, patch: Partial<ExtraVideo>) {
+        const next = value.slice();
+        next[i] = { ...next[i], ...patch };
+        onChange(next);
+    }
+    function remove(i: number) {
+        onChange(value.filter((_, idx) => idx !== i));
+    }
+    function add() {
+        onChange([...value, { url: '', label: '', thumbnail: '' }]);
+    }
+
+    return (
+        <div className="space-y-3">
+            {value.map((v, i) => (
+                <div key={i} className="bg-zinc-900/60 border border-zinc-800 rounded-lg p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-gold-400 flex items-center gap-1">
+                            <Film className="w-3 h-3" /> Film #{i + 2}
+                        </span>
+                        <button type="button" onClick={() => remove(i)} className="text-red-400 hover:text-red-300">
+                            <X className="w-4 h-4" />
+                        </button>
+                    </div>
+                    <input
+                        value={v.label || ''}
+                        onChange={e => update(i, { label: e.target.value })}
+                        placeholder="Etykieta (np. Animacja 360°, Rozkładówka, Detal okładki)"
+                        className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:border-gold-500 focus:outline-none" />
+                    <input
+                        value={v.url}
+                        onChange={e => update(i, { url: e.target.value })}
+                        placeholder="URL filmu (YouTube / Vimeo / MP4)"
+                        className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:border-gold-500 focus:outline-none" />
+                    <VideoUploader onUploaded={url => update(i, { url })} />
+                    <input
+                        value={v.thumbnail || ''}
+                        onChange={e => update(i, { thumbnail: e.target.value })}
+                        placeholder="Miniatura (opcjonalnie)"
+                        className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-white text-xs focus:border-gold-500 focus:outline-none" />
+                </div>
+            ))}
+            <button type="button" onClick={add}
+                className="w-full border-2 border-dashed border-zinc-700 hover:border-gold-500 hover:bg-gold-500/5 rounded-lg py-3 text-sm text-zinc-400 hover:text-gold-300 transition flex items-center justify-center gap-2">
+                <Plus className="w-4 h-4" /> Dodaj kolejny film
+            </button>
+        </div>
     );
 }
