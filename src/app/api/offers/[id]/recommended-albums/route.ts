@@ -8,9 +8,9 @@ import prisma from '@/lib/db/prisma';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(_request: NextRequest, { params }: { params: Promise<{ offerId: string }> }) {
+export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
-        const { offerId: offerIdStr } = await params;
+        const { id: offerIdStr } = await params;
         const offerId = parseInt(offerIdStr, 10);
         if (isNaN(offerId)) return NextResponse.json({ error: 'Invalid offer ID' }, { status: 400 });
 

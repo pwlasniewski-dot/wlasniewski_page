@@ -11,9 +11,9 @@ import { withAuth } from '@/lib/auth/middleware';
 export const dynamic = 'force-dynamic';
 
 // GET: lista rekomendowanych albumów dla oferty
-export async function GET(_request: NextRequest, { params }: { params: Promise<{ offerId: string }> }) {
+export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
-        const { offerId: offerIdStr } = await params;
+        const { id: offerIdStr } = await params;
         const offerId = parseInt(offerIdStr, 10);
         if (isNaN(offerId)) return NextResponse.json({ error: 'Invalid offer ID' }, { status: 400 });
 
@@ -42,10 +42,10 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 }
 
 // POST: dodaj album do rekomendacji oferty
-export async function POST(request: NextRequest, { params }: { params: Promise<{ offerId: string }> }) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     return withAuth(request, async (req) => {
         try {
-            const { offerId: offerIdStr } = await params;
+            const { id: offerIdStr } = await params;
             const offerId = parseInt(offerIdStr, 10);
             if (isNaN(offerId)) return NextResponse.json({ error: 'Invalid offer ID' }, { status: 400 });
 
@@ -81,10 +81,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 }
 
 // DELETE: usuń rekomendację (przez ?recommendation_id=X albo ?album_id=X)
-export async function DELETE(request: NextRequest, { params }: { params: Promise<{ offerId: string }> }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     return withAuth(request, async () => {
         try {
-            const { offerId: offerIdStr } = await params;
+            const { id: offerIdStr } = await params;
             const offerId = parseInt(offerIdStr, 10);
             const { searchParams } = new URL(request.url);
             const recommendationId = searchParams.get('recommendation_id');
