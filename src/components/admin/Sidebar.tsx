@@ -48,6 +48,7 @@ const navigation = [
         ]
     },
     { name: 'Galerie', href: '/admin/galleries', icon: Image },
+    { name: 'Albumy nPhoto', href: '/admin/nphoto-albums', icon: Box },
     { name: 'Multimedia', href: '/admin/multimedia', icon: Sparkles },
     { name: 'Kostka 3D', href: '/admin/photo-cube', icon: Box },
     { name: 'Menu', href: '/admin/menu', icon: Menu },

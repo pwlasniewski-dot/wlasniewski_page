@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import OfferBuilder from '@/components/admin/OfferBuilder';
+import OfferRecommendedAlbumsManager from '@/components/admin/OfferRecommendedAlbumsManager';
 import { MessageCircle, Calendar, User, Send, Shield, UserCheck, Users, Package, CheckCircle2 } from 'lucide-react';
 
 export default function EditOfferPage({ params }: { params: Promise<{ id: string }> }) {
@@ -375,6 +376,9 @@ export default function EditOfferPage({ params }: { params: Promise<{ id: string
                     offerStatus={offer.status}
                 />
             </div>
+
+            {/* Rekomendowane albumy nPhoto */}
+            <OfferRecommendedAlbumsManager offerId={parseInt(id)} />
         </div>
     );
 }

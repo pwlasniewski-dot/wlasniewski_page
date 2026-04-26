@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -13,7 +13,7 @@ import {
 import RichTextEditor from './RichTextEditor';
 import MediaPicker from './MediaPicker';
 
-export type SectionType = 'hero_parallax' | 'hero' | 'rich_text' | 'image_text' | 'gallery' | 'contact' | 'thermal_slider' | 'contact_form' | 'hero_slider' | 'about' | 'features' | 'parallax' | 'info_band' | 'testimonials' | 'challenge_banner' | 'creative_slider' | 'certificates' | 'b2b_hero' | 'b2b_stats' | 'b2b_logos' | 'b2b_process' | 'b2b_cases' | 'b2b_contact' | 'b2b_video' | 'thermal_hero' | 'hero_video' | 'parallax_video' | 'thermal_report' | 'mini_gallery' | 'story_hero' | 'magazine_layout' | 'masonry_gallery' | 'client_story' | 'process_timeline' | 'investment_teaser' | 'narrative_text' | 'featured_carousel' | 'stories_grid' | 'chronological_gallery' | 'floating_button' | 'pointcloud_hero' | 'pointcloud_viewer' | 'pointcloud_services' | 'pointcloud_showcase' | 'pointcloud_tech' | 'photo_cube_3d';
+export type SectionType = 'hero_parallax' | 'hero' | 'rich_text' | 'image_text' | 'gallery' | 'contact' | 'thermal_slider' | 'contact_form' | 'hero_slider' | 'about' | 'features' | 'parallax' | 'info_band' | 'testimonials' | 'challenge_banner' | 'creative_slider' | 'certificates' | 'b2b_hero' | 'b2b_stats' | 'b2b_logos' | 'b2b_process' | 'b2b_cases' | 'b2b_contact' | 'b2b_video' | 'thermal_hero' | 'hero_video' | 'parallax_video' | 'thermal_report' | 'mini_gallery' | 'story_hero' | 'magazine_layout' | 'masonry_gallery' | 'client_story' | 'process_timeline' | 'investment_teaser' | 'narrative_text' | 'featured_carousel' | 'stories_grid' | 'chronological_gallery' | 'floating_button' | 'pointcloud_hero' | 'pointcloud_viewer' | 'pointcloud_services' | 'pointcloud_showcase' | 'pointcloud_tech' | 'photo_cube_3d' | 'nphoto_albums_showcase';
 
 export interface SliderSlide {
     id: string;
@@ -3372,6 +3372,11 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove, openMedia
                     </div>
                 )}
 
+                {/* NPHOTO ALBUMS SHOWCASE */}
+                {section.type === 'nphoto_albums_showcase' && (
+                    <NphotoAlbumsEditor section={section} onUpdate={onUpdate} />
+                )}
+
                 {/* POINTCLOUD TECHNOLOGY */}
                 {section.type === 'pointcloud_tech' && (
                     <div className="space-y-4">
@@ -3838,6 +3843,23 @@ export default function PageBuilder({ sections, onChange, pageType }: PageBuilde
                 { id: Math.random().toString(36).substr(2, 9), stepNumber: '03', title: 'Tworzenie Chmury Punktów', description: 'Przetwarzanie zdjęć w oprogramowaniu fotogrametrycznym. Generowanie gęstej chmury punktów z milionami pomiarów 3D.', details: 'Agisoft Metashape Professional / DJI Terra — SfM (Structure from Motion) + MVS (Multi-View Stereo). Klasyfikacja punktów: grunt, budynki, roślinność.' },
                 { id: Math.random().toString(36).substr(2, 9), stepNumber: '04', title: 'Model 3D i Produkty Końcowe', description: 'Generowanie modelu 3D mesh, ortofotomapy, DSM/DTM, przekrojów i raportów objętościowych. Export do formatów CAD, GIS i BIM.', details: 'Formaty: LAS/LAZ, TIF (ortofoto), DXF/DWG (CAD), GLB/OBJ (3D), PDF (raport). Każdy produkt wsparty georeferencją.' }
             ];
+        } else if (type === 'nphoto_albums_showcase') {
+            newSection.title = 'Profesjonalne <span class="text-gold-500">albumy</span> nPhoto';
+            newSection.subtitle = 'Zatrzymaj wspomnienia w najwyższej jakości — premium albumy, fotoksiążki i druki dla wymagających.';
+            newSection.data = {
+                source: 'featured', // 'featured' | 'category' | 'occasion' | 'manual'
+                category: '',
+                occasion: '',
+                album_ids: [], // gdy source='manual'
+                limit: 6,
+                layout: 'grid', // 'grid' | 'carousel' | 'masonry'
+                show_video: true,
+                show_price: true,
+                show_cta: true,
+                cta_label: 'Zobacz wszystkie albumy',
+                cta_link: '/sklep/albumy',
+                background_color: '',
+            };
         }
 
 
@@ -4293,6 +4315,9 @@ export default function PageBuilder({ sections, onChange, pageType }: PageBuilde
                 <button onClick={() => addSection('photo_cube_3d')} className="flex items-center gap-2 px-4 py-2 bg-yellow-600/20 hover:bg-yellow-600/30 border border-yellow-500/30 rounded text-sm text-yellow-400 transition-colors">
                     <Layout className="w-4 h-4" /> Kostka 3D 🎲
                 </button>
+                <button onClick={() => addSection('nphoto_albums_showcase')} className="flex items-center gap-2 px-4 py-2 bg-gold-500/20 hover:bg-gold-500/30 border border-gold-500/40 rounded text-sm text-gold-400 transition-colors">
+                    <Layout className="w-4 h-4" /> Albumy nPhoto 📖
+                </button>
 
             </div>
 
@@ -4392,6 +4417,167 @@ export default function PageBuilder({ sections, onChange, pageType }: PageBuilde
                 }}
                 multiple={mediaPickerTarget === 'gallery'}
             />
+        </div>
+    );
+}
+
+// ─── NPHOTO ALBUMS SHOWCASE EDITOR ────────────────────────────────────────────
+function NphotoAlbumsEditor({ section, onUpdate }: { section: any; onUpdate: (id: string, patch: any) => void }) {
+    const [albums, setAlbums] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const data = section.data || {};
+
+    useEffect(() => {
+        (async () => {
+            try {
+                const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null;
+                const res = await fetch('/api/admin/nphoto-albums?all=true', {
+                    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                });
+                const json = await res.json();
+                if (json.success) setAlbums(json.albums);
+            } catch { /* ignore */ }
+            setLoading(false);
+        })();
+    }, []);
+
+    function setData(patch: any) {
+        onUpdate(section.id, { data: { ...data, ...patch } });
+    }
+
+    function toggleAlbum(id: number) {
+        const ids: number[] = data.album_ids || [];
+        setData({ album_ids: ids.includes(id) ? ids.filter(x => x !== id) : [...ids, id] });
+    }
+
+    return (
+        <div className="space-y-4">
+            <div className="bg-gold-500/10 p-3 rounded border border-gold-500/30 mb-2">
+                <p className="text-xs text-zinc-300">📖 <strong className="text-gold-400">Albumy nPhoto:</strong> Wyświetla katalog albumów na stronie. Pozwala na automatyczne dopasowanie po kategorii/okazji lub ręczny wybór konkretnych produktów.</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+                <div>
+                    <label className="block text-xs text-zinc-400 mb-1">Tytuł sekcji</label>
+                    <input type="text" value={section.title || ''} onChange={e => onUpdate(section.id, { title: e.target.value })}
+                        className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white" />
+                </div>
+                <div>
+                    <label className="block text-xs text-zinc-400 mb-1">Podtytuł</label>
+                    <input type="text" value={section.subtitle || ''} onChange={e => onUpdate(section.id, { subtitle: e.target.value })}
+                        className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white" />
+                </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+                <div>
+                    <label className="block text-xs text-zinc-400 mb-1">Źródło danych</label>
+                    <select value={data.source || 'featured'} onChange={e => setData({ source: e.target.value })}
+                        className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white">
+                        <option value="featured">⭐ Wyróżnione</option>
+                        <option value="category">📁 Kategoria</option>
+                        <option value="occasion">🎉 Okazja</option>
+                        <option value="manual">✋ Ręczny wybór</option>
+                    </select>
+                </div>
+                {data.source === 'category' && (
+                    <div>
+                        <label className="block text-xs text-zinc-400 mb-1">Kategoria</label>
+                        <select value={data.category || ''} onChange={e => setData({ category: e.target.value })}
+                            className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white">
+                            <option value="album">Albumy</option>
+                            <option value="photobook">Fotoksiążki</option>
+                            <option value="canvas">Płótna</option>
+                            <option value="frame">Ramy</option>
+                            <option value="box">Pudełka</option>
+                        </select>
+                    </div>
+                )}
+                {data.source === 'occasion' && (
+                    <div>
+                        <label className="block text-xs text-zinc-400 mb-1">Okazja</label>
+                        <select value={data.occasion || ''} onChange={e => setData({ occasion: e.target.value })}
+                            className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white">
+                            <option value="wedding">💍 Ślub</option>
+                            <option value="communion">🕊️ Komunia</option>
+                            <option value="birthday">🎂 Urodziny</option>
+                            <option value="family">👨‍👩‍👧 Rodzinna</option>
+                            <option value="newborn">👶 Noworodki</option>
+                            <option value="engagement">💕 Zaręczyny</option>
+                        </select>
+                    </div>
+                )}
+                <div>
+                    <label className="block text-xs text-zinc-400 mb-1">Limit (max albumów)</label>
+                    <input type="number" min="1" max="24" value={data.limit || 6} onChange={e => setData({ limit: parseInt(e.target.value || '6') })}
+                        className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white" />
+                </div>
+                <div>
+                    <label className="block text-xs text-zinc-400 mb-1">Layout</label>
+                    <select value={data.layout || 'grid'} onChange={e => setData({ layout: e.target.value })}
+                        className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white">
+                        <option value="grid">Siatka</option>
+                        <option value="carousel">Karuzela</option>
+                        <option value="masonry">Masonry</option>
+                    </select>
+                </div>
+            </div>
+
+            {data.source === 'manual' && (
+                <div>
+                    <label className="block text-xs text-zinc-400 mb-2">Wybierz albumy ({(data.album_ids || []).length})</label>
+                    {loading ? (
+                        <div className="text-zinc-500 text-sm">Ładowanie...</div>
+                    ) : albums.length === 0 ? (
+                        <div className="text-zinc-500 text-sm bg-zinc-900 p-3 rounded border border-zinc-800">
+                            Brak albumów. <a href="/admin/nphoto-albums" target="_blank" className="text-gold-400 underline">Dodaj pierwszy</a>.
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-64 overflow-y-auto bg-zinc-950 p-2 rounded border border-zinc-800">
+                            {albums.map(a => {
+                                const selected = (data.album_ids || []).includes(a.id);
+                                return (
+                                    <button key={a.id} type="button" onClick={() => toggleAlbum(a.id)}
+                                        className={`relative aspect-square bg-zinc-800 rounded overflow-hidden border-2 ${selected ? 'border-gold-500' : 'border-transparent hover:border-zinc-600'}`}>
+                                        {a.cover_image_url && (
+                                            // eslint-disable-next-line @next/next/no-img-element
+                                            <img src={a.cover_image_url} alt={a.title} className="w-full h-full object-cover" />
+                                        )}
+                                        <div className="absolute bottom-0 left-0 right-0 bg-zinc-950/80 px-1 py-0.5 text-[10px] text-white truncate">{a.title}</div>
+                                        {selected && <div className="absolute top-1 right-1 bg-gold-500 text-zinc-950 rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">✓</div>}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-3">
+                <label className="flex items-center gap-2 text-xs text-zinc-300 bg-zinc-900 p-2 rounded">
+                    <input type="checkbox" checked={data.show_video !== false} onChange={e => setData({ show_video: e.target.checked })} className="w-4 h-4 accent-gold-500" />
+                    Pokaż wideo prezentacyjne
+                </label>
+                <label className="flex items-center gap-2 text-xs text-zinc-300 bg-zinc-900 p-2 rounded">
+                    <input type="checkbox" checked={data.show_price !== false} onChange={e => setData({ show_price: e.target.checked })} className="w-4 h-4 accent-gold-500" />
+                    Pokaż cenę
+                </label>
+            </div>
+
+            <div>
+                <label className="flex items-center gap-2 text-xs text-zinc-300 mb-2">
+                    <input type="checkbox" checked={data.show_cta !== false} onChange={e => setData({ show_cta: e.target.checked })} className="w-4 h-4 accent-gold-500" />
+                    Pokaż przycisk CTA
+                </label>
+                {data.show_cta !== false && (
+                    <div className="grid grid-cols-2 gap-3">
+                        <input type="text" value={data.cta_label || ''} onChange={e => setData({ cta_label: e.target.value })}
+                            placeholder="Etykieta przycisku" className="bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white text-sm" />
+                        <input type="text" value={data.cta_link || ''} onChange={e => setData({ cta_link: e.target.value })}
+                            placeholder="/sklep/albumy" className="bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white text-sm" />
+                    </div>
+                )}
+            </div>
         </div>
     );
 }

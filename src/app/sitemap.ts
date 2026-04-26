@@ -70,6 +70,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     let dbPages: Array<{ slug: string; updated_at: Date }> = [];
     let portfolioSessions: Array<{ slug: string; category: string; updated_at: Date }> = [];
     let blogPosts: Array<{ slug: string; updated_at: Date }> = [];
+    let nphotoAlbums: Array<{ slug: string; updated_at: Date }> = [];
 
     try {
         dbPages = await prisma.page.findMany({
@@ -83,6 +84,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         });
 
         blogPosts = await prisma.blogPost.findMany({
+            select: { slug: true, updated_at: true }
+        });
+
+        nphotoAlbums = await prisma.nphotoAlbum.findMany({
+            where: { is_active: true },
             select: { slug: true, updated_at: true }
         });
     } catch (error) {
@@ -128,6 +134,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             lastModified: post.updated_at,
             changeFrequency: 'weekly' as const,
             priority: 0.7,
+        })),
+
+        // ─── B2C: Albums catalog (SEO boost via product pages) ───
+        {
+            url: `${b2cBase}/sklep/albumy`,
+            lastModified: new Date(),
+            changeFrequency: 'weekly' as const,
+            priority: 0.85,
+        },
+        ...nphotoAlbums.map(album => ({
+            url: `${b2cBase}/sklep/albumy/${album.slug}`,
+            lastModified: album.updated_at,
+            changeFrequency: 'monthly' as const,
+            priority: 0.75,
         })),
     ];
 

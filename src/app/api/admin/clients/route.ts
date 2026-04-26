@@ -263,23 +263,17 @@ export async function POST(request: NextRequest) {
             const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://wlasniewski.pl';
             const setupUrl = `${appUrl}/logowanie/ustaw-haslo?token=${resetToken}`;
 
-            // Send welcome email with password setup link
-            try {
-                await sendEmail({
-                    to: email,
-                    subject: `Witaj ${name} w panelu klienta na stronie fotografa Przemka Właśniewskiego`,
-                    template: 'welcome-client',
-                    data: {
-                        name,
-                        email,
-                        loginUrl: setupUrl,
-                    }
-                });
-            } catch (emailError) {
-                console.error('Failed to send welcome email:', emailError);
-            }
+            // NOTE: Email is NOT sent automatically anymore
+            // Admin must manually send the welcome email after setting up offers
+            // Use the endpoint: POST /api/admin/clients/[id]/send-welcome-email
+            
+            await logSystem('INFO', 'SYSTEM', `Client created: ${name} (${email}) - welcome email NOT sent yet`, { clientId: user.id });
 
-            return NextResponse.json({ success: true, client: { id: user.id, name: user.name, email: user.email } });
+            return NextResponse.json({ 
+                success: true, 
+                client: { id: user.id, name: user.name, email: user.email },
+                message: 'Klient utworzony. Pamiętaj aby wysłać powiadomienie powitalne po dodaniu oferty.'
+            });
         } catch (error: any) {
             console.error('Create client error:', error);
             await logSystem('ERROR', 'SYSTEM', 'Failed to create client', { error: error.message });

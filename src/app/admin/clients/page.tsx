@@ -6,7 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import {
     Search, User, Image as ImageIcon,
     Plus, X, FileText, Camera, CheckCircle,
-    Clock, AlertCircle, XCircle, ChevronDown, ChevronUp, Trash2, ShieldAlert, MessageCircle
+    Clock, AlertCircle, XCircle, ChevronDown, ChevronUp, Trash2, ShieldAlert, MessageCircle, RefreshCw, Mail
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -156,6 +156,7 @@ function ClientsContent() {
     const [rodoLoading, setRodoLoading] = useState(false);
     const [selectedIds, setSelectedIds] = useState<number[]>([]);
     const [isDeletingBulk, setIsDeletingBulk] = useState(false);
+    const [sendingWelcomeEmail, setSendingWelcomeEmail] = useState<number | null>(null);
 
     useEffect(() => { fetchClients(); }, []);
 
@@ -186,7 +187,7 @@ function ClientsContent() {
             });
             const data = await res.json();
             if (res.ok) {
-                toast.success('Klient utworzony');
+                toast.success('Klient utworzony! Pamiętaj aby wysłać email powitalny po dodaniu oferty.', { duration: 6000 });
                 setShowCreateModal(false);
                 setNewClient({ name: '', email: '', phone: '' });
                 fetchClients();
@@ -219,6 +220,29 @@ function ClientsContent() {
             toast.error('Błąd połączenia');
         } finally {
             setRodoLoading(false);
+        }
+    };
+
+    const handleSendWelcomeEmail = async (clientId: number, clientEmail: string) => {
+        if (!confirm(`Czy wysłać email powitalny z linkiem do ustawienia hasła do ${clientEmail}?`)) return;
+
+        setSendingWelcomeEmail(clientId);
+        try {
+            const token = localStorage.getItem('admin_token');
+            const res = await fetch(`/api/admin/clients/${clientId}/send-welcome-email`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            if (res.ok) {
+                toast.success(data.message || 'Email powitalny wysłany');
+            } else {
+                toast.error(data.error || 'Błąd wysyłania emaila');
+            }
+        } catch {
+            toast.error('Błąd połączenia');
+        } finally {
+            setSendingWelcomeEmail(null);
         }
     };
 
@@ -513,6 +537,18 @@ function ClientsContent() {
                                                     <User className="w-3 h-3" /> Profil
                                                 </NextLink>
                                                 <button
+                                                    onClick={() => handleSendWelcomeEmail(client.id, client.email)}
+                                                    disabled={sendingWelcomeEmail === client.id}
+                                                    title="Wyślij email powitalny z linkiem do ustawienia hasła"
+                                                    className="p-1.5 bg-blue-900/20 hover:bg-blue-900/40 text-blue-400 hover:text-blue-300 rounded-lg text-xs transition-all border border-blue-900/30 hover:border-blue-700 disabled:opacity-50"
+                                                >
+                                                    {sendingWelcomeEmail === client.id ? (
+                                                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                                    ) : (
+                                                        <Mail className="w-3.5 h-3.5" />
+                                                    )}
+                                                </button>
+                                                <button
                                                     onClick={() => setRodoClient(client)}
                                                     title="Anonimizuj dane (RODO)"
                                                     className="p-1.5 bg-zinc-800 hover:bg-red-900/40 text-zinc-500 hover:text-red-400 rounded-lg text-xs transition-all border border-zinc-700 hover:border-red-800"
@@ -618,8 +654,8 @@ function ClientsContent() {
                                         </div>
                                     ))}
                                     <div className="bg-amber-900/20 border border-amber-700/30 rounded-lg p-3">
-                                        <p className="text-xs text-amber-400 font-medium">🔐 Klient sam ustawi hasło</p>
-                                        <p className="text-xs text-zinc-500 mt-1">Po utworzeniu konta, klient otrzyma email z linkiem do ustawienia własnego hasła. Nie musisz go przekazywać.</p>
+                                        <p className="text-xs text-amber-400 font-medium">� Email powitalny NIE zostanie wysłany automatycznie</p>
+                                        <p className="text-xs text-zinc-500 mt-1">Po utworzeniu konta, dodaj ofertę dla klienta, a następnie ręcznie wyślij email powitalny używając przycisku <Mail className="inline w-3 h-3" /> w tabeli klientów lub na profilu klienta.</p>
                                     </div>
                                 </div>
                                 <div className="p-6 border-t border-zinc-800 flex justify-end gap-3">

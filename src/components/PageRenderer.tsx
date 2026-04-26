@@ -60,6 +60,7 @@ const PointCloudShowcase = dynamic(() => import('@/components/sections/PointClou
 const PointCloudServices = dynamic(() => import('@/components/sections/PointCloudSections').then(m => ({ default: m.PointCloudServices })), { ssr: false });
 const PointCloudTechnology = dynamic(() => import('@/components/sections/PointCloudSections').then(m => ({ default: m.PointCloudTechnology })), { ssr: false });
 const PointCloudViewerSection = dynamic(() => import('@/components/sections/PointCloudSections').then(m => ({ default: m.PointCloudViewerSection })), { ssr: false });
+const NphotoAlbumsShowcase = dynamic(() => import('@/components/sections/NphotoAlbumsShowcase'), { ssr: false });
 
 export default function PageRenderer({ sections }: { sections: PageSection[] }) {
     const [selectedCert, setSelectedCert] = React.useState<any>(null);
@@ -1564,6 +1565,16 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                 description={data.description}
                                 steps={data.pointcloud_tech_steps || []}
                                 image={data.image}
+                            />
+                        );
+
+                    case 'nphoto_albums_showcase':
+                        return (
+                            <NphotoAlbumsShowcase
+                                key={section.id}
+                                title={data.title}
+                                subtitle={data.subtitle}
+                                config={data.data || {}}
                             />
                         );
 

@@ -274,6 +274,32 @@ function ClientDetailsContent({ id }: { id: string }) {
         }
     };
 
+    const [sendingWelcomeEmail, setSendingWelcomeEmail] = useState(false);
+
+    const handleSendWelcomeEmail = async () => {
+        if (!client) return;
+        if (!confirm(`Czy wysłać email powitalny z linkiem do ustawienia hasła do ${client.email}?`)) return;
+
+        setSendingWelcomeEmail(true);
+        try {
+            const token = localStorage.getItem('admin_token');
+            const res = await fetch(`/api/admin/clients/${client.id}/send-welcome-email`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            if (res.ok) {
+                toast.success(data.message || 'Email powitalny wysłany');
+            } else {
+                toast.error(data.error || 'Błąd wysyłania emaila');
+            }
+        } catch (error) {
+            toast.error('Błąd połączenia');
+        } finally {
+            setSendingWelcomeEmail(false);
+        }
+    };
+
     const handleDeleteGallery = async (galleryId: number) => {
         if (!confirm('Czy na pewno chcesz usunąć tę galerię? Tej operacji nie można cofnąć.')) return;
         try {
@@ -526,6 +552,22 @@ function ClientDetailsContent({ id }: { id: string }) {
                             </div>
                         </div>
                         <div className="ml-auto flex gap-3">
+                            <button
+                                onClick={handleSendWelcomeEmail}
+                                disabled={sendingWelcomeEmail}
+                                className="px-6 py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-zinc-700 text-white font-bold rounded-lg transition-all flex items-center gap-2"
+                                title="Wyślij email powitalny z linkiem do ustawienia hasła"
+                            >
+                                {sendingWelcomeEmail ? (
+                                    <>
+                                        <RefreshCw className="w-4 h-4 animate-spin" /> Wysyłanie...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Mail className="w-4 h-4" /> Wyślij Email Powitalny
+                                    </>
+                                )}
+                            </button>
                             <button
                                 onClick={handleUpdateClient}
                                 disabled={isSaving}

@@ -25,6 +25,7 @@ import {
     MessageSquare,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import ClientOfferRecommendedAlbums from '@/components/client/ClientOfferRecommendedAlbums';
 
 type Tab = 'overview' | 'sessions' | 'bookings' | 'documents' | 'gift_cards' | 'settings' | 'partner';
 
@@ -604,6 +605,9 @@ export default function AccountPage() {
                                                 </button>
                                             </div>
                                         </div>
+
+                                        {/* Recommended nPhoto Albums - dla każdej oferty */}
+                                        <ClientOfferRecommendedAlbums offerId={offer.id} />
                                     </div>
                                 );
                             })}

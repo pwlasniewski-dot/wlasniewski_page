@@ -485,6 +485,8 @@ model User {
   reset_token             String?                 @unique
   reset_token_expires     DateTime?
   permissions             Json?
+  welcome_email_sent_at   DateTime?
+  welcome_email_count     Int                     @default(0)
   baskets                 Basket[]
   assigned_bookings       Booking[]               @relation("PhotographerBookings")
   client_galleries        ClientGallery[]         @relation("ClientGalleries")
@@ -844,19 +846,93 @@ model GalleryPhoto {
 }
 
 model GalleryProduct {
-  id          Int            @id @default(autoincrement())
-  gallery_id  Int?
-  title       String
-  description String?
-  price       Int
-  image_url   String?
-  video_url   String?
-  is_active   Boolean        @default(true)
-  created_at  DateTime       @default(now())
-  updated_at  DateTime       @updatedAt
-  gallery     ClientGallery? @relation(fields: [gallery_id], references: [id])
+  id                Int            @id @default(autoincrement())
+  gallery_id        Int?
+  title             String
+  description       String?
+  price             Int
+  image_url         String?
+  video_url         String?
+  is_active         Boolean        @default(true)
+
+  // nPhoto Integration
+  nphoto_url        String?
+  nphoto_embed_code String?
+  nphoto_product_id String?
+  product_type      String?        @default("album")
+  preview_video_url String?
+  preview_images    Json?          @default("[]")
+  sample_pages      Json?          @default("[]")
+  recommended_for   String[]       @default([])
+  featured          Boolean        @default(false)
+  sort_order        Int            @default(0)
+  seo_slug          String?
+  seo_title         String?
+  seo_description   String?
+
+  created_at        DateTime       @default(now())
+  updated_at        DateTime       @updatedAt
+  gallery           ClientGallery? @relation(fields: [gallery_id], references: [id])
 
   @@map("gallery_products")
+}
+
+model NphotoAlbum {
+  id                Int                       @id @default(autoincrement())
+  title             String
+  slug              String                    @unique
+  subtitle          String?
+  description       String?
+  category          String                    @default("album")
+  occasion          String[]                  @default([])
+  price             Int                       @default(0)
+  price_from        Int?
+  currency          String?                   @default("PLN")
+  format            String?
+  pages_count       Int?
+  cover_type        String?
+  paper_type        String?
+  cover_image_url   String?
+  preview_images    Json?                     @default("[]")
+  sample_pages      Json?                     @default("[]")
+  video_url         String?
+  video_thumbnail   String?
+  gallery_3d_url    String?
+  nphoto_product_id String?
+  nphoto_shop_url   String?
+  nphoto_embed_code String?
+  nphoto_api_data   Json?
+  seo_title         String?
+  seo_description   String?
+  seo_keywords      String?
+  schema_markup     Json?
+  is_active         Boolean                   @default(true)
+  is_featured       Boolean                   @default(false)
+  sort_order        Int                       @default(0)
+  created_at        DateTime                  @default(now())
+  updated_at        DateTime                  @default(now()) @updatedAt
+  recommendations   OfferRecommendedAlbum[]
+
+  @@index([category])
+  @@index([is_active])
+  @@index([is_featured])
+  @@map("nphoto_albums")
+}
+
+model OfferRecommendedAlbum {
+  id              Int         @id @default(autoincrement())
+  offer_id        Int
+  album_id        Int
+  position        Int         @default(0)
+  custom_note     String?
+  is_highlighted  Boolean     @default(false)
+  created_at      DateTime    @default(now())
+  album           NphotoAlbum @relation(fields: [album_id], references: [id], onDelete: Cascade)
+
+  @@unique([offer_id, album_id])
+  @@index([offer_id])
+  @@index([album_id])
+  @@map("offer_recommended_albums")
 }
 
 model PhotoOrder {
