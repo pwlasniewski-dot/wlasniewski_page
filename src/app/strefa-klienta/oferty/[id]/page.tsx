@@ -482,6 +482,14 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
                                 <p className="text-2xl font-bold text-green-600">
                                     {calculatedTotal.toLocaleString('pl-PL')} PLN
                                 </p>
+                                {selectedAddons.length > 0 && (
+                                    <div className="mt-2 text-xs text-slate-700 space-y-0.5">
+                                        <p>Pakiet: <strong>{(calculatedTotal - selectedAddons.reduce((s, a) => s + a.final_price, 0)).toLocaleString('pl-PL')} PLN</strong></p>
+                                        {selectedAddons.map(a => (
+                                            <p key={a.id}>+ Album „{a.album_title}": <strong className="text-emerald-700">{a.final_price.toLocaleString('pl-PL')} PLN</strong></p>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         </div>
 
