@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import { X, Check, Search, Upload, FolderPlus, Folder, MoreHorizontal, Edit, Trash2, LayoutGrid, List as ListIcon, Move } from 'lucide-react';
 import { getApiUrl } from '@/lib/api-config';
@@ -498,13 +499,13 @@ export default function MediaPicker({ isOpen, onClose, onSelect, multiple = fals
     const Container = inline ? 'div' : 'div';
     const containerClasses = inline
         ? 'w-full h-full flex flex-col bg-zinc-950'
-        : 'fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4';
+        : 'fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4';
 
     const contentClasses = inline
         ? 'flex-1 flex overflow-hidden border border-zinc-800 rounded-xl bg-zinc-900 shadow-sm'
         : `bg-zinc-900 rounded-xl shadow-2xl w-full max-w-6xl h-[85vh] flex overflow-hidden border transition-colors ${isDraggingFile ? 'border-gold-500 ring-2 ring-gold-500/50' : 'border-zinc-800'}`;
 
-    return (
+    const content = (
         <Container
             className={containerClasses}
             onDragOver={handleDragOver}
@@ -745,4 +746,7 @@ export default function MediaPicker({ isOpen, onClose, onSelect, multiple = fals
             )}
         </Container>
     );
+
+    if (inline || typeof document === 'undefined') return content;
+    return createPortal(content, document.body);
 }
