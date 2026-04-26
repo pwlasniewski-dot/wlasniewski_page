@@ -28,7 +28,8 @@ import {
     FileEdit,
     Search,
     Box,
-    Cake
+    Cake,
+    TrendingUp
 } from 'lucide-react';
 
 const navigation = [
@@ -80,6 +81,7 @@ const navigation = [
     { name: 'Administratorzy', href: '/admin/users', icon: Shield },
 
     { name: 'Analityka', href: '/admin/analytics', icon: BarChart3 },
+    { name: 'Marketing & UTM', href: '/admin/marketing', icon: TrendingUp },
     { name: 'SEO Ops', href: '/admin/seo', icon: Search },
     { name: 'Logi', href: '/admin/logs', icon: List },
     { name: 'Stopka', href: '/admin/footer', icon: FileText },

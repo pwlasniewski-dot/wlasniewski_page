@@ -54,6 +54,7 @@ import { Suspense } from "react";
 import { headers } from "next/headers";
 import { AnalyticsTracker } from "@/hooks/useAnalytics";
 import AnalyticsLoader from "@/components/AnalyticsLoader";
+import UtmTracker from "@/components/UtmTracker";
 import FloatingContact from "@/components/FloatingContact";
 import SeasonalEffectsWrapper from "@/components/effects/SeasonalEffectsWrapper";
 import PhotoCubeIntro from "@/components/PhotoCubeIntro";
@@ -285,6 +286,7 @@ export default async function RootLayout({
                 <Suspense fallback={null}>
                     <AnalyticsTracker />
                     <AnalyticsLoader />
+                    <UtmTracker />
                 </Suspense>
                 <SeasonalEffectsWrapper />
                 <PhotoCubeIntro />
