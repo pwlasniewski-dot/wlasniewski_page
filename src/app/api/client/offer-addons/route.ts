@@ -29,17 +29,26 @@ type Addon = {
     status: 'pending';             // czeka na potwierdzenie fotografa
 };
 
-// Format (z bazy: NphotoAlbum.smaller_format_label) → rabat (smaller_format_discount_pct)
+// Format (z bazy: NphotoAlbum.format_options) → rabat (discount_pct)
 
 function normalizeFormat(s: string | null | undefined): string {
     return (s || '').toLowerCase().replace(/\s+/g, '').replace(/×/g, 'x').replace(/cm/g, '');
+}
+
+type FormatOption = { label: string; discount_pct: number };
+
+function findFormatOption(album: any, customFormat: string | null): FormatOption | null {
+    if (!customFormat) return null;
+    const opts: FormatOption[] = Array.isArray(album.format_options) ? album.format_options : [];
+    const norm = normalizeFormat(customFormat);
+    return opts.find(o => normalizeFormat(o.label) === norm) || null;
 }
 
 /**
  * 1 rozkładówka = 2 strony.
  * Minimalna liczba rozkładówek: 10 (= 20 stron).
  * Cena = base + (custom_spreads - base_spreads) * price_per_spread.
- * Jeśli klient wybrał mniejszy format (smaller_format_label) → −smaller_format_discount_pct%.
+ * Jeśli klient wybrał wariant formatu z `format_options` → −discount_pct%.
  */
 function calcFinal(
     basePrice: number,
@@ -47,8 +56,7 @@ function calcFinal(
     customPages: number | null,
     pricePerSpread: number,
     customFormat: string | null,
-    smallerFormatLabel: string | null,
-    smallerFormatDiscountPct: number,
+    album: any,
 ): number {
     let price = basePrice;
     if (basePages && customPages && customPages !== basePages) {
@@ -57,8 +65,9 @@ function calcFinal(
         const diffSpreads = customSpreads - baseSpreads;
         price = price + diffSpreads * pricePerSpread;
     }
-    if (customFormat && smallerFormatLabel && normalizeFormat(customFormat) === normalizeFormat(smallerFormatLabel)) {
-        const pct = Math.max(0, Math.min(90, smallerFormatDiscountPct));
+    const opt = findFormatOption(album, customFormat);
+    if (opt) {
+        const pct = Math.max(0, Math.min(90, Number(opt.discount_pct) || 0));
         price = price * (1 - pct / 100);
     }
     return Math.max(0, Math.round(price));
@@ -93,8 +102,7 @@ export async function POST(request: NextRequest) {
             custom_pages != null ? Number(custom_pages) : null,
             pricePerSpread,
             custom_format_request || null,
-            (album as any).smaller_format_label || null,
-            (album as any).smaller_format_discount_pct ?? 10,
+            album,
         );
 
         const addon: Addon = {

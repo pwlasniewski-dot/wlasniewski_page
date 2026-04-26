@@ -194,26 +194,19 @@ export default function AlbumDetailPage() {
                             </Field>
                             <Field label="Waluta"><Input value={album.currency} onChange={v => update('currency', v)} /></Field>
                         </div>
-                        <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div className="mt-3">
                             <Field label="Cena za rozkładówkę (zł) — używana gdy klient zmienia liczbę rozkł.">
                                 <input type="number" value={(album as any).price_per_spread ?? 40}
                                     onChange={e => update('price_per_spread' as any, e.target.value ? parseInt(e.target.value) : 40)}
                                     className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:border-gold-500 focus:outline-none" />
                                 <div className="text-xs text-zinc-500 mt-1">np. 40 zł — 1 rozkł. = 2 strony, min. 10 rozkł.</div>
                             </Field>
-                            <Field label="Mniejszy format (etykieta)">
-                                <input type="text" value={(album as any).smaller_format_label ?? '25×25 cm'}
-                                    onChange={e => update('smaller_format_label' as any, e.target.value)}
-                                    placeholder="np. 25×25 cm"
-                                    className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:border-gold-500 focus:outline-none" />
-                                <div className="text-xs text-zinc-500 mt-1">opcja, którą klient może wybrać zamiast bazowego formatu</div>
-                            </Field>
-                            <Field label="Rabat za mniejszy format (%)">
-                                <input type="number" min={0} max={90} value={(album as any).smaller_format_discount_pct ?? 10}
-                                    onChange={e => update('smaller_format_discount_pct' as any, e.target.value ? parseInt(e.target.value) : 10)}
-                                    className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:border-gold-500 focus:outline-none" />
-                                <div className="text-xs text-zinc-500 mt-1">np. 10 → −10% od ceny finalnej</div>
-                            </Field>
+                        </div>
+                        <div className="mt-4">
+                            <FormatOptionsEditor
+                                value={Array.isArray((album as any).format_options) ? (album as any).format_options : []}
+                                onChange={v => update('format_options' as any, v)}
+                            />
                         </div>
                     </Card>
 
@@ -415,6 +408,51 @@ function Input({ value, onChange, placeholder, className, maxLength }: { value: 
     return <input value={value} onChange={e => onChange(e.target.value)}
         placeholder={placeholder} maxLength={maxLength}
         className={`w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:border-gold-500 focus:outline-none ${className || ''}`} />;
+}
+
+function FormatOptionsEditor({ value, onChange }: { value: { label: string; discount_pct: number }[]; onChange: (v: { label: string; discount_pct: number }[]) => void }) {
+    const opts = Array.isArray(value) ? value : [];
+    function set(i: number, patch: Partial<{ label: string; discount_pct: number }>) {
+        const next = opts.map((o, idx) => idx === i ? { ...o, ...patch } : o);
+        onChange(next);
+    }
+    function remove(i: number) { onChange(opts.filter((_, idx) => idx !== i)); }
+    function add() { onChange([...opts, { label: '', discount_pct: 10 }]); }
+    return (
+        <div>
+            <div className="flex items-center justify-between mb-2">
+                <div>
+                    <label className="text-sm font-bold text-white">Opcje formatu (alternatywne rozmiary z rabatem)</label>
+                    <p className="text-xs text-zinc-500 mt-0.5">Klient zobaczy te formaty jako przyciski. Wybór nadpisuje bazowy format i daje rabat % od ceny finalnej.</p>
+                </div>
+                <button type="button" onClick={add} className="px-3 py-1.5 bg-gold-500 hover:bg-gold-400 text-zinc-950 rounded-lg font-bold text-xs flex items-center gap-1">
+                    <Plus className="w-3.5 h-3.5" /> Dodaj format
+                </button>
+            </div>
+            {opts.length === 0 && (
+                <p className="text-xs text-zinc-500 italic bg-zinc-950/50 border border-zinc-800 rounded-lg px-3 py-2">Brak alternatywnych formatów. Klient widzi tylko bazowy.</p>
+            )}
+            <div className="space-y-2">
+                {opts.map((o, i) => (
+                    <div key={i} className="flex items-center gap-2 bg-zinc-950 border border-zinc-700 rounded-lg p-2">
+                        <input type="text" value={o.label || ''} onChange={e => set(i, { label: e.target.value })}
+                            placeholder="np. 25×25 cm"
+                            className="flex-1 bg-zinc-900 border border-zinc-700 rounded px-3 py-1.5 text-white text-sm focus:border-gold-500 focus:outline-none" />
+                        <div className="flex items-center gap-1">
+                            <input type="number" min={0} max={90} value={o.discount_pct ?? 0}
+                                onChange={e => set(i, { discount_pct: e.target.value ? parseInt(e.target.value) : 0 })}
+                                className="w-20 bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-white text-sm text-center focus:border-gold-500 focus:outline-none" />
+                            <span className="text-xs text-zinc-400">% rabat</span>
+                        </div>
+                        <button type="button" onClick={() => remove(i)}
+                            className="w-8 h-8 rounded-lg bg-red-500/20 hover:bg-red-500 text-red-300 hover:text-white flex items-center justify-center">
+                            <X className="w-4 h-4" />
+                        </button>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
 }
 
 function ImageDualAdder(props: {
