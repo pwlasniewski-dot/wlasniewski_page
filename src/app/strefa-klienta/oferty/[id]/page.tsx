@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { FileText } from 'lucide-react';
 import SignaturePad from '@/components/SignaturePad';
-import ClientOfferRecommendedAlbums, { type OfferAddon } from '@/components/client/ClientOfferRecommendedAlbums';
+import ClientOfferAddonCheckbox, { type OfferAddon } from '@/components/client/ClientOfferAddonCheckbox';
 
 export default function OfferDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const router = useRouter();
@@ -820,7 +820,7 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
 
                                 {/* Polecane albumy nPhoto - z mozliwoscia wyboru bezposrednio z oferty */}
                                 <div style={{ margin: '24px 0' }}>
-                                    <ClientOfferRecommendedAlbums offerId={offer.id} onAddonsChange={setSelectedAddons} offerStatus={offer.status} />
+                                    <ClientOfferAddonCheckbox offerId={offer.id} onAddonsChange={setSelectedAddons} offerStatus={offer.status} />
                                 </div>
 
                                 {sectionVisibility.delivery && (

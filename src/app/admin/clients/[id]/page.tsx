@@ -421,6 +421,31 @@ function ClientDetailsContent({ id }: { id: string }) {
         }
     };
 
+    const [unlockingOfferId, setUnlockingOfferId] = useState<number | null>(null);
+    const handleUnlockOffer = async (offerId: number) => {
+        if (!confirm('Odblokować ofertę i pozwolić klientowi ponownie wybrać/edytować pakiet?')) return;
+        try {
+            setUnlockingOfferId(offerId);
+            const token = localStorage.getItem('admin_token');
+            const res = await fetch(`/api/admin/offers/${offerId}`, {
+                method: 'PATCH',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: 'sent', client_selection: null })
+            });
+            const data = await res.json();
+            if (data.offer || data.success) {
+                toast.success('Oferta odblokowana — klient może ponownie edytować');
+                fetchClientDetails();
+            } else {
+                toast.error(data.error || 'Błąd odblokowania');
+            }
+        } catch (error) {
+            toast.error('Błąd połączenia');
+        } finally {
+            setUnlockingOfferId(null);
+        }
+    };
+
     const handleAnonymizeClient = async (isHardDelete: boolean = false) => {
         if (!client) return;
         const actionName = isHardDelete ? 'USUNĄĆ CAŁKOWICIE (usuwa też rezerwacje)' : 'ZANONIMIZOWAĆ (RODO)';

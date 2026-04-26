@@ -194,12 +194,25 @@ export default function AlbumDetailPage() {
                             </Field>
                             <Field label="Waluta"><Input value={album.currency} onChange={v => update('currency', v)} /></Field>
                         </div>
-                        <div className="mt-3">
-                            <Field label="Cena za rozkładówkę (zł) — używana gdy klient zmienia liczbę stron">
+                        <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <Field label="Cena za rozkładówkę (zł) — używana gdy klient zmienia liczbę rozkł.">
                                 <input type="number" value={(album as any).price_per_spread ?? 40}
                                     onChange={e => update('price_per_spread' as any, e.target.value ? parseInt(e.target.value) : 40)}
                                     className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:border-gold-500 focus:outline-none" />
-                                <div className="text-xs text-zinc-500 mt-1">np. 40 zł — klient widzi cennik live: cena bazowa ± (różnica rozkładówek × ta stawka)</div>
+                                <div className="text-xs text-zinc-500 mt-1">np. 40 zł — 1 rozkł. = 2 strony, min. 10 rozkł.</div>
+                            </Field>
+                            <Field label="Mniejszy format (etykieta)">
+                                <input type="text" value={(album as any).smaller_format_label ?? '25×25 cm'}
+                                    onChange={e => update('smaller_format_label' as any, e.target.value)}
+                                    placeholder="np. 25×25 cm"
+                                    className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:border-gold-500 focus:outline-none" />
+                                <div className="text-xs text-zinc-500 mt-1">opcja, którą klient może wybrać zamiast bazowego formatu</div>
+                            </Field>
+                            <Field label="Rabat za mniejszy format (%)">
+                                <input type="number" min={0} max={90} value={(album as any).smaller_format_discount_pct ?? 10}
+                                    onChange={e => update('smaller_format_discount_pct' as any, e.target.value ? parseInt(e.target.value) : 10)}
+                                    className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:border-gold-500 focus:outline-none" />
+                                <div className="text-xs text-zinc-500 mt-1">np. 10 → −10% od ceny finalnej</div>
                             </Field>
                         </div>
                     </Card>

@@ -248,7 +248,7 @@ export default function AccountPage() {
                     {userPermissions?.offers !== false && (
                         activeOffer ? (
                             (() => {
-                                const offerNeedsAction = activeOffer.status === 'pending' || activeOffer.status === 'sent' || activeOffer.status === 'draft';
+                                const offerNeedsAction = activeOffer.status === 'pending' || activeOffer.status === 'sent' || activeOffer.status === 'draft' || activeOffer.status === 'unlock_requested';
                                 return (
                                     <button onClick={() => setActiveTab('documents')} className={`text-left rounded-2xl p-5 transition-all group relative overflow-hidden ${offerNeedsAction
                                         ? 'bg-gradient-to-br from-gold-500/20 via-gold-500/5 to-transparent border-2 border-gold-500/70 shadow-[0_0_30px_rgba(212,175,55,0.3)] animate-pulse-soft'
@@ -564,7 +564,7 @@ export default function AccountPage() {
                                 const setNoteText = (val: string) => setNoteStates(prev => ({ ...prev, [noteKey]: val }));
 
                                 const isSaving = savingNote?.type === 'offer' && savingNote?.id === offer.id;
-                                const needsAction = offer.status === 'pending' || offer.status === 'sent' || offer.status === 'draft';
+                                const needsAction = offer.status === 'pending' || offer.status === 'sent' || offer.status === 'draft' || offer.status === 'unlock_requested';
                                 return (
                                     <div key={offer.id} className={`rounded-[2rem] overflow-hidden transition-all ${needsAction
                                         ? 'bg-gradient-to-br from-gold-500/15 via-zinc-900/80 to-zinc-900/50 border-2 border-gold-500/60 shadow-[0_0_40px_rgba(212,175,55,0.25)] animate-pulse-soft'

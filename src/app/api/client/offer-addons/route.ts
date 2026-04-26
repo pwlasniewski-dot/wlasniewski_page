@@ -29,9 +29,7 @@ type Addon = {
     status: 'pending';             // czeka na potwierdzenie fotografa
 };
 
-// Format który redukuje cenę o 10% (mniejszy rozmiar)
-const SMALLER_FORMAT = '25x25';
-const SMALLER_FORMAT_DISCOUNT = 0.10;
+// Format (z bazy: NphotoAlbum.smaller_format_label) → rabat (smaller_format_discount_pct)
 
 function normalizeFormat(s: string | null | undefined): string {
     return (s || '').toLowerCase().replace(/\s+/g, '').replace(/×/g, 'x').replace(/cm/g, '');
@@ -40,8 +38,8 @@ function normalizeFormat(s: string | null | undefined): string {
 /**
  * 1 rozkładówka = 2 strony.
  * Minimalna liczba rozkładówek: 10 (= 20 stron).
- * Cena za rozkładówkę dodawana/odejmowana od ceny bazowej za każdą rozkł. powyżej/poniżej bazy.
- * Format 25x25 → −10% od ceny.
+ * Cena = base + (custom_spreads - base_spreads) * price_per_spread.
+ * Jeśli klient wybrał mniejszy format (smaller_format_label) → −smaller_format_discount_pct%.
  */
 function calcFinal(
     basePrice: number,
@@ -49,6 +47,8 @@ function calcFinal(
     customPages: number | null,
     pricePerSpread: number,
     customFormat: string | null,
+    smallerFormatLabel: string | null,
+    smallerFormatDiscountPct: number,
 ): number {
     let price = basePrice;
     if (basePages && customPages && customPages !== basePages) {
@@ -57,8 +57,9 @@ function calcFinal(
         const diffSpreads = customSpreads - baseSpreads;
         price = price + diffSpreads * pricePerSpread;
     }
-    if (customFormat && normalizeFormat(customFormat) === SMALLER_FORMAT) {
-        price = price * (1 - SMALLER_FORMAT_DISCOUNT);
+    if (customFormat && smallerFormatLabel && normalizeFormat(customFormat) === normalizeFormat(smallerFormatLabel)) {
+        const pct = Math.max(0, Math.min(90, smallerFormatDiscountPct));
+        price = price * (1 - pct / 100);
     }
     return Math.max(0, Math.round(price));
 }
@@ -92,6 +93,8 @@ export async function POST(request: NextRequest) {
             custom_pages != null ? Number(custom_pages) : null,
             pricePerSpread,
             custom_format_request || null,
+            (album as any).smaller_format_label || null,
+            (album as any).smaller_format_discount_pct ?? 10,
         );
 
         const addon: Addon = {
