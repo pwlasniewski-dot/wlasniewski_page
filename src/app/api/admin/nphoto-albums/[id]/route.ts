@@ -37,7 +37,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
             const allowedFields = [
                 'title', 'subtitle', 'description', 'category', 'occasion',
-                'price', 'price_from', 'currency', 'format', 'pages_count',
+                'price', 'price_from', 'currency', 'format', 'pages_count', 'price_per_spread',
                 'cover_type', 'paper_type', 'cover_image_url',
                 'preview_images', 'sample_pages', 'video_url', 'video_thumbnail',
                 'additional_videos',

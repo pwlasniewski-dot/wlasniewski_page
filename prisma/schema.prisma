@@ -523,6 +523,7 @@ model Offer {
   template_data    Json?
   total_price      Int            @default(0)
   client_selection Json?
+  selected_addons  Json?          @default("[]")
   negotiation_enabled Boolean @default(true)
   client_note      String?  // Notatka klienta widoczna dla fotografa
   contract         Contract?
@@ -890,6 +891,7 @@ model NphotoAlbum {
   currency          String?                   @default("PLN")
   format            String?
   pages_count       Int?
+  price_per_spread  Int?                      @default(40)
   cover_type        String?
   paper_type        String?
   cover_image_url   String?

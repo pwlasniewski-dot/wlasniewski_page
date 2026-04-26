@@ -13,6 +13,7 @@ interface Album {
     subtitle?: string;
     description?: string;
     price: number;
+    price_per_spread?: number;
     currency: string;
     format?: string;
     pages_count?: number;
@@ -30,62 +31,152 @@ interface Album {
     _is_highlighted?: boolean;
 }
 
-export default function ClientOfferRecommendedAlbums({ offerId }: { offerId: number }) {
+export type OfferAddon = {
+    id: string;
+    album_id: number;
+    album_title: string;
+    base_price: number;
+    base_pages: number | null;
+    base_format: string | null;
+    custom_pages: number | null;
+    custom_format_request: string | null;
+    price_per_spread: number;
+    final_price: number;
+    currency: string;
+    cover_image_url: string | null;
+    message: string | null;
+    selected_at: string;
+    status: 'pending';
+};
+
+export default function ClientOfferRecommendedAlbums({
+    offerId,
+    onAddonsChange,
+    offerStatus,
+}: {
+    offerId: number;
+    onAddonsChange?: (addons: OfferAddon[]) => void;
+    offerStatus?: string;
+}) {
+    const isLocked = offerStatus === 'accepted' || offerStatus === 'signed' || offerStatus === 'completed';
     const [albums, setAlbums] = useState<Album[]>([]);
     const [loading, setLoading] = useState(true);
     const [source, setSource] = useState<string>('');
     const [activeIdx, setActiveIdx] = useState(0);
+    const [addons, setAddons] = useState<OfferAddon[]>([]);
 
     useEffect(() => {
         let cancelled = false;
         (async () => {
             try {
-                const res = await fetch(`/api/offers/${offerId}/recommended-albums`);
-                const json = await res.json();
-                if (!cancelled && json.success) {
-                    setAlbums(json.albums || []);
-                    setSource(json.source);
+                const [albRes, addRes] = await Promise.all([
+                    fetch(`/api/offers/${offerId}/recommended-albums`),
+                    fetch(`/api/client/offer-addons?offer_id=${offerId}`),
+                ]);
+                const albJson = await albRes.json();
+                const addJson = await addRes.json();
+                if (!cancelled) {
+                    if (albJson.success) {
+                        setAlbums(albJson.albums || []);
+                        setSource(albJson.source);
+                    }
+                    if (addJson.success) {
+                        setAddons(addJson.addons || []);
+                        onAddonsChange?.(addJson.addons || []);
+                    }
                 }
             } catch { /* ignore */ }
             if (!cancelled) setLoading(false);
         })();
         return () => { cancelled = true; };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [offerId]);
 
+    function updateAddons(next: OfferAddon[]) {
+        setAddons(next);
+        onAddonsChange?.(next);
+    }
+
     if (loading || albums.length === 0) return null;
+    // Oferta zatwierdzona bez dodatkow - nic nie pokazuj (zachowaj stary widok)
+    if (isLocked && addons.length === 0) return null;
 
     const active = albums[activeIdx];
+    const activeAddon = addons.find(a => a.album_id === active.id);
 
     return (
         <div className="px-4 sm:px-6 pb-6 border-t border-gold-500/20 pt-6 bg-gradient-to-br from-gold-500/[0.04] via-transparent to-transparent">
-            <div className="flex items-end justify-between gap-3 mb-5 flex-wrap">
-                <div>
-                    <div className="flex items-center gap-2 mb-1">
-                        <Sparkles className="w-4 h-4 text-gold-400" />
-                        <h4 className="text-base sm:text-lg font-bold text-white">
-                            {source === 'admin_curated' ? 'Polecane albumy do Twojej sesji' : 'Inspiracja: Albumy dla Ciebie'}
+            {/* Lista dodanych addonow - kompaktowy widok na gorze */}
+            {addons.length > 0 && (
+                <div className="mb-5 bg-emerald-500/10 border-2 border-emerald-500/40 rounded-2xl p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                        <Check className="w-5 h-5 text-emerald-400" />
+                        <h4 className="text-sm font-bold text-emerald-300 uppercase tracking-wider">
+                            {isLocked ? 'Zatwierdzone dodatki' : 'Dodane do Twojej oferty'} ({addons.length})
                         </h4>
+                        {isLocked && <span className="text-[10px] bg-emerald-500/30 text-emerald-200 px-2 py-0.5 rounded-full uppercase font-bold">Zablokowane</span>}
                     </div>
-                    <p className="text-xs sm:text-sm text-zinc-400 max-w-xl">
-                        {source === 'admin_curated'
-                            ? 'Te albumy fotograf wybrał specjalnie dla Twojej sesji. Każdy wykonany na zamówienie u nPhoto - niemiecka jakość, dożywotnia gwarancja.'
-                            : 'Najczęściej wybierane do podobnych okazji.'}
-                    </p>
+                    <div className="space-y-2">
+                        {addons.map(a => (
+                            <AddonRow
+                                key={a.id}
+                                addon={a}
+                                readOnly={isLocked}
+                                onRemove={async () => {
+                                    const res = await fetch('/api/client/offer-addons', {
+                                        method: 'DELETE',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ offer_id: offerId, addon_id: a.id }),
+                                    });
+                                    const j = await res.json();
+                                    if (j.success) updateAddons(j.addons || []);
+                                }}
+                            />
+                        ))}
+                        <div className="flex justify-between items-center pt-3 border-t border-emerald-500/30">
+                            <span className="text-xs text-emerald-200 uppercase font-semibold">Suma dodatków</span>
+                            <span className="text-xl font-bold text-emerald-300">
+                                +{addons.reduce((s, a) => s + (a.final_price || 0), 0).toLocaleString('pl-PL')} PLN
+                            </span>
+                        </div>
+                    </div>
                 </div>
-                {albums.length > 1 && (
-                    <div className="text-xs text-zinc-500">
-                        <span className="text-gold-400 font-semibold">{activeIdx + 1}</span> / {albums.length}
+            )}
+
+            {!isLocked && (
+                <div className="flex items-end justify-between gap-3 mb-5 flex-wrap">
+                    <div>
+                        <div className="flex items-center gap-2 mb-1">
+                            <Sparkles className="w-4 h-4 text-gold-400" />
+                            <h4 className="text-base sm:text-lg font-bold text-white">
+                                {source === 'admin_curated' ? 'Polecane albumy do Twojej sesji' : 'Inspiracja: Albumy dla Ciebie'}
+                            </h4>
+                        </div>
+                        <p className="text-xs sm:text-sm text-zinc-400 max-w-xl">
+                            {source === 'admin_curated'
+                                ? 'Te albumy fotograf wybrał specjalnie dla Twojej sesji. Każdy wykonany na zamówienie u nPhoto - niemiecka jakość, dożywotnia gwarancja.'
+                                : 'Najczęściej wybierane do podobnych okazji.'}
+                        </p>
                     </div>
-                )}
-            </div>
+                    {albums.length > 1 && (
+                        <div className="text-xs text-zinc-500">
+                            <span className="text-gold-400 font-semibold">{activeIdx + 1}</span> / {albums.length}
+                        </div>
+                    )}
+                </div>
+            )}
 
-            <AlbumShowcase
-                key={active.id}
-                album={active}
-                offerId={offerId}
-            />
+            {!isLocked && (
+                <AlbumShowcase
+                    key={active.id}
+                    album={active}
+                    offerId={offerId}
+                    isAdded={!!activeAddon}
+                    onAdded={(addon) => updateAddons([...addons.filter(x => x.album_id !== addon.album_id), addon])}
+                />
+            )}
 
-            {albums.length > 1 && (
+            {!isLocked && albums.length > 1 && (
                 <div className="mt-5 flex items-center gap-2 overflow-x-auto pb-2 -mx-1 px-1">
                     <button onClick={() => setActiveIdx(i => (i - 1 + albums.length) % albums.length)}
                         className="shrink-0 w-9 h-9 rounded-full bg-zinc-800 hover:bg-gold-500 hover:text-zinc-950 text-white flex items-center justify-center transition">
@@ -114,7 +205,7 @@ export default function ClientOfferRecommendedAlbums({ offerId }: { offerId: num
 
 // ─── Album showcase ──────────────────────────────────────────────────────────
 
-function AlbumShowcase({ album, offerId }: { album: Album; offerId: number }) {
+function AlbumShowcase({ album, offerId, isAdded, onAdded }: { album: Album; offerId: number; isAdded: boolean; onAdded: (addon: OfferAddon) => void }) {
     const gallery = useMemo(() => {
         const out: { type: 'image' | 'video'; url: string; thumb?: string; label?: string }[] = [];
         if (album.video_url) {
@@ -134,7 +225,7 @@ function AlbumShowcase({ album, offerId }: { album: Album; offerId: number }) {
 
     const [idx, setIdx] = useState(0);
     const [videoPlaying, setVideoPlaying] = useState(false);
-    const [showInterestForm, setShowInterestForm] = useState(false);
+    const [showConfigurator, setShowConfigurator] = useState(false);
 
     const current = gallery[idx];
     const isVideoSlide = current?.type === 'video';
@@ -264,22 +355,28 @@ function AlbumShowcase({ album, offerId }: { album: Album; offerId: number }) {
                             </div>
                         )}
 
-                        {showInterestForm ? (
-                            <InterestForm
-                                albumId={album.id}
+                        {showConfigurator ? (
+                            <AddonConfigurator
+                                album={album}
                                 offerId={offerId}
-                                albumTitle={album.title}
-                                albumPrice={album.price}
-                                onClose={() => setShowInterestForm(false)}
+                                onClose={() => setShowConfigurator(false)}
+                                onAdded={(addon) => { setShowConfigurator(false); onAdded(addon); }}
                             />
+                        ) : isAdded ? (
+                            <div className="bg-emerald-500/10 border border-emerald-500/40 rounded-xl p-3 text-center">
+                                <p className="text-emerald-300 font-bold text-sm flex items-center justify-center gap-2">
+                                    <Check className="w-4 h-4" /> Album dodany do oferty
+                                </p>
+                                <p className="text-xs text-emerald-200/80 mt-1">Zarządzaj nim w sekcji „Dodane do Twojej oferty" powyżej</p>
+                            </div>
                         ) : (
                             <div className="space-y-2">
                                 <button
-                                    onClick={() => setShowInterestForm(true)}
+                                    onClick={() => setShowConfigurator(true)}
                                     className="w-full bg-gradient-to-r from-emerald-500 to-emerald-400 hover:from-emerald-400 hover:to-emerald-300 text-zinc-950 font-bold py-3 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/30 transition">
-                                    <Check className="w-5 h-5" /> Dodaj do mojej oferty {album.price > 0 && `(+${album.price} ${album.currency})`}
+                                    <Check className="w-5 h-5" /> Dodaj do mojej oferty {album.price > 0 && `(${album.price} ${album.currency})`}
                                 </button>
-                                <p className="text-[11px] text-zinc-500 text-center">Album zostanie doliczony do Twojej oferty - fotograf potwierdzi zamówienie</p>
+                                <p className="text-[11px] text-zinc-500 text-center">Możesz zmienić liczbę rozkładówek lub poprosić o inny format</p>
                             </div>
                         )}
                     </div>
@@ -411,6 +508,145 @@ function InterestForm({ albumId, offerId, albumTitle, albumPrice, onClose }: { a
                     Potwierdź dodanie do oferty
                 </button>
             </div>
+        </div>
+    );
+}
+
+
+function AddonConfigurator({ album, offerId, onClose, onAdded }: { album: Album; offerId: number; onClose: () => void; onAdded: (addon: OfferAddon) => void }) {
+    const basePages = album.pages_count || 0;
+    const pricePerSpread = album.price_per_spread || 40;
+    const [pages, setPages] = useState<number>(basePages);
+    const [customFormat, setCustomFormat] = useState<string>('');
+    const [message, setMessage] = useState('');
+    const [submitting, setSubmitting] = useState(false);
+    const [error, setError] = useState('');
+
+    const finalPrice = useMemo(() => {
+        if (!basePages || pages === basePages) return album.price;
+        return Math.max(0, album.price + (pages - basePages) * pricePerSpread);
+    }, [pages, basePages, album.price, pricePerSpread]);
+
+    async function submit() {
+        setSubmitting(true);
+        setError('');
+        try {
+            const res = await fetch('/api/client/offer-addons', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    offer_id: offerId,
+                    album_id: album.id,
+                    custom_pages: pages !== basePages ? pages : null,
+                    custom_format_request: customFormat || null,
+                    message,
+                }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                onAdded(data.addon);
+            } else {
+                setError(data.error || 'Bład. Spróbuj ponownie.');
+            }
+        } catch {
+            setError('Bład połączenia. Spróbuj ponownie.');
+        } finally {
+            setSubmitting(false);
+        }
+    }
+
+    return (
+        <div className="space-y-3 bg-emerald-500/5 border-2 border-emerald-500/40 rounded-xl p-4">
+            <div className="flex items-center justify-between">
+                <p className="text-xs text-emerald-300 font-bold uppercase tracking-wider flex items-center gap-1">
+                    <Check className="w-3.5 h-3.5" /> Konfiguracja dodatku
+                </p>
+                <span className="text-2xl font-bold text-emerald-300">{finalPrice.toLocaleString('pl-PL')} PLN</span>
+            </div>
+
+            {basePages > 0 && (
+                <div>
+                    <label className="text-xs text-zinc-400 mb-1 block">
+                        Liczba rozkładówek <span className="text-zinc-500">(bazowo {basePages}, cena za rozkł.: {pricePerSpread} PLN)</span>
+                    </label>
+                    <div className="flex items-center gap-2">
+                        <button type="button" onClick={() => setPages(p => Math.max(8, p - 2))}
+                            className="w-9 h-9 rounded-lg bg-zinc-800 hover:bg-emerald-500 hover:text-zinc-950 text-white font-bold">−</button>
+                        <input type="number" value={pages} min={8} max={120} step={2}
+                            onChange={e => setPages(Math.max(8, parseInt(e.target.value || '0')))}
+                            className="flex-1 bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-center text-white font-bold focus:border-emerald-500 focus:outline-none" />
+                        <button type="button" onClick={() => setPages(p => p + 2)}
+                            className="w-9 h-9 rounded-lg bg-zinc-800 hover:bg-emerald-500 hover:text-zinc-950 text-white font-bold">+</button>
+                    </div>
+                    {pages !== basePages && (
+                        <p className="text-[11px] text-emerald-400 mt-1">
+                            {pages > basePages ? `+${pages - basePages}` : `${pages - basePages}`} rozkł. = {pages > basePages ? '+' : ''}{((pages - basePages) * pricePerSpread).toLocaleString('pl-PL')} PLN
+                        </p>
+                    )}
+                </div>
+            )}
+
+            <div>
+                <label className="text-xs text-zinc-400 mb-1 block">
+                    Inny format? <span className="text-zinc-500">(np. 25×25 cm — fotograf wyceni i potwierdzi)</span>
+                </label>
+                <input type="text" value={customFormat} onChange={e => setCustomFormat(e.target.value)}
+                    placeholder={`Bazowo: ${album.format || '—'} — wpisz tylko jeśli chcesz zmienić`}
+                    className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none" />
+            </div>
+
+            <div>
+                <label className="text-xs text-zinc-400 mb-1 block">Uwagi (opcjonalnie)</label>
+                <textarea value={message} onChange={e => setMessage(e.target.value)}
+                    placeholder="np. okładka skórzana w kolorze granatowym, dedykacja..."
+                    rows={2}
+                    className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none resize-none" />
+            </div>
+
+            {error && <p className="text-xs text-red-400">{error}</p>}
+
+            <div className="flex gap-2">
+                <button onClick={onClose} className="px-3 py-2 text-xs text-zinc-400 hover:text-white">Anuluj</button>
+                <button onClick={submit} disabled={submitting}
+                    className="flex-1 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold py-2.5 rounded-lg flex items-center justify-center gap-2 disabled:opacity-60">
+                    {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                    Dodaj do oferty ({finalPrice.toLocaleString('pl-PL')} PLN)
+                </button>
+            </div>
+        </div>
+    );
+}
+
+function AddonRow({ addon, onRemove, readOnly }: { addon: OfferAddon; onRemove: () => void; readOnly?: boolean }) {
+    const [removing, setRemoving] = useState(false);
+    const pages = addon.custom_pages ?? addon.base_pages;
+    const format = addon.custom_format_request || addon.base_format;
+    return (
+        <div className="flex items-center gap-3 bg-zinc-950/60 rounded-lg p-3 border border-emerald-500/20">
+            {addon.cover_image_url && (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img src={addon.cover_image_url} alt="" className="w-14 h-14 object-cover rounded-md shrink-0" />
+            )}
+            <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-white truncate">{addon.album_title}</p>
+                <p className="text-xs text-zinc-400 mt-0.5">
+                    {format && <span>{format}</span>}
+                    {format && pages && <span className="mx-1">•</span>}
+                    {pages && <span>{pages} rozkładówek</span>}
+                    {addon.custom_format_request && <span className="ml-2 text-amber-400 font-semibold">(prośba o zmianę formatu)</span>}
+                </p>
+            </div>
+            <div className="text-right shrink-0">
+                <p className="text-lg font-bold text-emerald-300">+{addon.final_price.toLocaleString('pl-PL')}</p>
+                <p className="text-[10px] text-zinc-500">{addon.currency}</p>
+            </div>
+            {!readOnly && (
+                <button onClick={async () => { setRemoving(true); await onRemove(); }} disabled={removing}
+                    title="Usuń z oferty"
+                    className="shrink-0 w-8 h-8 rounded-lg bg-red-500/20 hover:bg-red-500 text-red-300 hover:text-white flex items-center justify-center transition disabled:opacity-50">
+                    {removing ? <Loader2 className="w-4 h-4 animate-spin" /> : '✕'}
+                </button>
+            )}
         </div>
     );
 }

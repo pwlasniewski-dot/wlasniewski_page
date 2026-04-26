@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { FileText } from 'lucide-react';
 import SignaturePad from '@/components/SignaturePad';
-import ClientOfferRecommendedAlbums from '@/components/client/ClientOfferRecommendedAlbums';
+import ClientOfferRecommendedAlbums, { type OfferAddon } from '@/components/client/ClientOfferRecommendedAlbums';
 
 export default function OfferDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const router = useRouter();
@@ -28,6 +28,7 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
     const [selectedPackageIndex, setSelectedPackageIndex] = useState<number | null>(null);
     const [offerId, setOfferId] = useState<string | null>(null);
     const [pdfUrl, setPdfUrl] = useState<string>('#');
+    const [selectedAddons, setSelectedAddons] = useState<OfferAddon[]>([]);
 
     const isCommunion = offer?.category?.toLowerCase() === 'komunia';
 
@@ -140,8 +141,11 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
             });
         });
 
+        // 3. Add selected album addons
+        selectedAddons.forEach(a => { total += (a.final_price || 0); });
+
         return total;
-    }, [offer, selectedOptionalItems, selectedPackageIndex, templateData, splitPackageCounts, isCommunion]);
+    }, [offer, selectedOptionalItems, selectedPackageIndex, templateData, splitPackageCounts, isCommunion, selectedAddons]);
 
     // Total Children Count Helper
     const totalChildren = useMemo(() => {
@@ -422,6 +426,11 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
                                 <p className="text-4xl font-bold bg-gradient-to-r from-gold-600 to-amber-600 bg-clip-text text-transparent">
                                     {calculatedTotal.toLocaleString('pl-PL')} PLN
                                 </p>
+                                {selectedAddons.length > 0 && (
+                                    <p className="text-xs text-emerald-700 mt-1 font-semibold">
+                                        ✓ w tym dodatki: +{selectedAddons.reduce((s, a) => s + (a.final_price || 0), 0).toLocaleString('pl-PL')} PLN ({selectedAddons.length} {selectedAddons.length === 1 ? 'album' : 'albumy'})
+                                    </p>
+                                )}
                                 {isCommunion && (
                                     <p className="text-xs text-slate-500 mt-1 font-bold">
                                         Wybrano łącznie: {totalChildren} dzieci
@@ -803,7 +812,7 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
 
                                 {/* Polecane albumy nPhoto - z mozliwoscia wyboru bezposrednio z oferty */}
                                 <div style={{ margin: '24px 0' }}>
-                                    <ClientOfferRecommendedAlbums offerId={offer.id} />
+                                    <ClientOfferRecommendedAlbums offerId={offer.id} onAddonsChange={setSelectedAddons} offerStatus={offer.status} />
                                 </div>
 
                                 {sectionVisibility.delivery && (
