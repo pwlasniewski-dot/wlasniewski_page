@@ -613,9 +613,20 @@ export default function AccountPage() {
                                                         <p className="text-sm text-zinc-500 italic">Oczekuje na zatwierdzenie</p>
                                                     )}
                                                 </div>
+                                                {needsAction ? (
+                                                    <span className="inline-flex items-center gap-2 bg-gradient-to-r from-gold-500 to-amber-500 hover:from-gold-400 hover:to-amber-400 text-zinc-950 font-bold px-5 py-3 rounded-xl shadow-lg shadow-gold-500/40 animate-pulse-soft text-sm whitespace-nowrap">
+                                                        <span className="relative flex h-2 w-2">
+                                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-600 opacity-75"></span>
+                                                            <span className="relative inline-flex rounded-full h-2 w-2 bg-red-600"></span>
+                                                        </span>
+                                                        OTWÓRZ OFERTĘ
+                                                        <ChevronRight className="w-4 h-4" />
+                                                    </span>
+                                                ) : (
                                                 <div className="w-10 h-10 bg-zinc-800 rounded-full flex items-center justify-center text-zinc-400 group-hover:bg-gold-600 group-hover:text-black transition-all">
                                                     <ChevronRight className="w-5 h-5" />
                                                 </div>
+                                                )}
                                             </div>
                                         </Link>
                                         {/* Client Note */}
