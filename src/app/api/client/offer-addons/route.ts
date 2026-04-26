@@ -7,7 +7,6 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
-import { sendEmail } from '@/lib/email/sender';
 import { logSystem } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
@@ -30,10 +29,38 @@ type Addon = {
     status: 'pending';             // czeka na potwierdzenie fotografa
 };
 
-function calcFinal(basePrice: number, basePages: number | null, customPages: number | null, pricePerSpread: number): number {
-    if (!basePages || !customPages || customPages === basePages) return basePrice;
-    const diff = customPages - basePages;
-    return Math.max(0, basePrice + diff * pricePerSpread);
+// Format który redukuje cenę o 10% (mniejszy rozmiar)
+const SMALLER_FORMAT = '25x25';
+const SMALLER_FORMAT_DISCOUNT = 0.10;
+
+function normalizeFormat(s: string | null | undefined): string {
+    return (s || '').toLowerCase().replace(/\s+/g, '').replace(/×/g, 'x').replace(/cm/g, '');
+}
+
+/**
+ * 1 rozkładówka = 2 strony.
+ * Minimalna liczba rozkładówek: 10 (= 20 stron).
+ * Cena za rozkładówkę dodawana/odejmowana od ceny bazowej za każdą rozkł. powyżej/poniżej bazy.
+ * Format 25x25 → −10% od ceny.
+ */
+function calcFinal(
+    basePrice: number,
+    basePages: number | null,
+    customPages: number | null,
+    pricePerSpread: number,
+    customFormat: string | null,
+): number {
+    let price = basePrice;
+    if (basePages && customPages && customPages !== basePages) {
+        const baseSpreads = Math.round(basePages / 2);
+        const customSpreads = Math.max(10, Math.round(customPages / 2));
+        const diffSpreads = customSpreads - baseSpreads;
+        price = price + diffSpreads * pricePerSpread;
+    }
+    if (customFormat && normalizeFormat(customFormat) === SMALLER_FORMAT) {
+        price = price * (1 - SMALLER_FORMAT_DISCOUNT);
+    }
+    return Math.max(0, Math.round(price));
 }
 
 export async function POST(request: NextRequest) {
@@ -63,7 +90,8 @@ export async function POST(request: NextRequest) {
             album.price || 0,
             album.pages_count || null,
             custom_pages != null ? Number(custom_pages) : null,
-            pricePerSpread
+            pricePerSpread,
+            custom_format_request || null,
         );
 
         const addon: Addon = {
@@ -109,30 +137,8 @@ export async function POST(request: NextRequest) {
             await logSystem('WARN', 'SYSTEM', 'CrmActivity addon_added failed', { error: String(e) });
         }
 
-        try {
-            await sendEmail({
-                to: 'pwlasniewski@gmail.com',
-                subject: `🟢 KLIENT DODAŁ ALBUM DO OFERTY: ${album.title} (+${finalPrice} PLN) — #${offer.offerNumber || offer.id}`,
-                html: `
-                    <h2>Klient dodał album do oferty</h2>
-                    <p><strong>Klient:</strong> ${offer.user?.email || offer.client_email}</p>
-                    <p><strong>Oferta:</strong> #${offer.offerNumber || offer.id} — ${offer.title}</p>
-                    <hr>
-                    <p><strong>Album:</strong> ${album.title}</p>
-                    <p><strong>Format bazowy:</strong> ${album.format || '—'}</p>
-                    <p><strong>Rozkładówki bazowo:</strong> ${album.pages_count || '—'}</p>
-                    ${addon.custom_pages ? `<p><strong>Wybrane rozkładówki:</strong> ${addon.custom_pages} (cena za rozkł.: ${pricePerSpread} PLN)</p>` : ''}
-                    ${addon.custom_format_request ? `<p><strong>PROŚBA O INNY FORMAT:</strong> ${addon.custom_format_request}</p>` : ''}
-                    <p><strong>Cena finalna:</strong> ${finalPrice} ${album.currency || 'PLN'}</p>
-                    ${album.cover_image_url ? `<p><img src="${album.cover_image_url}" style="max-width:280px;border-radius:8px"/></p>` : ''}
-                    ${message ? `<hr><p><strong>Wiadomość od klienta:</strong><br>${message}</p>` : ''}
-                    <hr>
-                    <p style="color:#888"><strong>AKCJA:</strong> Otwórz ofertę w panelu admin → zatwierdź/zaktualizuj cenę i odpowiedz klientowi.</p>
-                `,
-            });
-        } catch (e) {
-            await logSystem('WARN', 'EMAIL', 'Addon notification failed', { error: String(e) });
-        }
+        // UWAGA: NIE wysyłamy maila przy dodawaniu addona — klient sam ustala finalną cenę
+        // i może wielokrotnie zmieniać konfigurację. Mail wysyłamy dopiero przy akceptacji oferty.
 
         return NextResponse.json({ success: true, addon, addons: next });
     } catch (error: any) {
