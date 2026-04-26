@@ -226,46 +226,6 @@ function AlbumShowcase({ album, offerId }: { album: Album; offerId: number }) {
                             </div>
                         )}
                     </div>
-
-                    {/* Thumbnail strip - ZAWSZE widoczny pod oknem media (nie znika gdy film leci) */}
-                    {gallery.length > 1 && (
-                        <div className="bg-zinc-950 border-t border-zinc-800 px-3 py-3">
-                            <div className="flex items-center gap-2 mb-2">
-                                {videoPlaying && (
-                                    <button onClick={() => setVideoPlaying(false)}
-                                        className="text-[10px] bg-red-500/20 hover:bg-red-500 text-red-300 hover:text-white border border-red-500/40 px-2 py-1 rounded-full font-semibold transition flex items-center gap-1">
-                                        <Pause className="w-3 h-3" /> Zatrzymaj film
-                                    </button>
-                                )}
-                                <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-semibold">
-                                    Galeria ({gallery.length}) - przewiń lub kliknij
-                                </span>
-                            </div>
-                            <div className="flex gap-2 overflow-x-auto pb-1">
-                                <button onClick={prev}
-                                    className="shrink-0 w-12 h-12 rounded-md bg-zinc-800 hover:bg-gold-500 hover:text-zinc-950 text-white flex items-center justify-center transition">
-                                    <ChevronLeft className="w-4 h-4" />
-                                </button>
-                                {gallery.map((g, i) => (
-                                    <button key={i} onClick={() => { setVideoPlaying(false); setIdx(i); }}
-                                        className={`relative w-16 h-12 rounded-md overflow-hidden shrink-0 transition border-2 ${i === idx ? 'border-gold-500 ring-2 ring-gold-500/30' : 'border-zinc-700 opacity-70 hover:opacity-100 hover:border-gold-500/50'}`}>
-                                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                                        <img src={(g.type === 'video' ? g.thumb : g.url) || ''} alt="" className="w-full h-full object-cover" />
-                                        {g.type === 'video' && (
-                                            <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-                                                <Play className="w-4 h-4 text-gold-400 fill-current" />
-                                            </div>
-                                        )}
-                                        <span className="absolute bottom-0 right-0 bg-black/80 text-white text-[9px] px-1 leading-tight">{i + 1}</span>
-                                    </button>
-                                ))}
-                                <button onClick={next}
-                                    className="shrink-0 w-12 h-12 rounded-md bg-zinc-800 hover:bg-gold-500 hover:text-zinc-950 text-white flex items-center justify-center transition">
-                                    <ChevronRight className="w-4 h-4" />
-                                </button>
-                            </div>
-                        </div>
-                    )}
                 </div>
 
                 {/* RIGHT: Info */}
@@ -323,6 +283,48 @@ function AlbumShowcase({ album, offerId }: { album: Album; offerId: number }) {
                     </div>
                 </div>
             </div>
+
+            {/* Thumbnail strip - PEŁNA SZEROKOŚĆ pod całą prezentacją, ZAWSZE widoczny */}
+            {gallery.length > 1 && (
+                <div className="bg-zinc-950 border-t-2 border-gold-500/30 px-4 py-3">
+                    <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
+                        <span className="text-[11px] text-gold-400 uppercase tracking-wider font-bold flex items-center gap-1.5">
+                            <Sparkles className="w-3 h-3" />
+                            Galeria ({gallery.length}) — przewiń lub kliknij dowolną miniaturę
+                        </span>
+                        {videoPlaying && (
+                            <button onClick={() => setVideoPlaying(false)}
+                                className="text-[10px] bg-red-500/20 hover:bg-red-500 text-red-300 hover:text-white border border-red-500/40 px-2 py-1 rounded-full font-semibold transition flex items-center gap-1">
+                                <Pause className="w-3 h-3" /> Zatrzymaj film
+                            </button>
+                        )}
+                    </div>
+                    <div className="flex gap-2 overflow-x-auto pb-1 items-center">
+                        <button onClick={prev}
+                            className="shrink-0 w-12 h-14 rounded-md bg-zinc-800 hover:bg-gold-500 hover:text-zinc-950 text-white flex items-center justify-center transition">
+                            <ChevronLeft className="w-5 h-5" />
+                        </button>
+                        {gallery.map((g, i) => (
+                            <button key={i} onClick={() => { setVideoPlaying(false); setIdx(i); }}
+                                title={g.label || `Element ${i + 1}`}
+                                className={`relative w-20 h-14 rounded-md overflow-hidden shrink-0 transition border-2 ${i === idx ? 'border-gold-500 ring-2 ring-gold-500/40 scale-105' : 'border-zinc-700 opacity-70 hover:opacity-100 hover:border-gold-500/50'}`}>
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src={(g.type === 'video' ? g.thumb : g.url) || ''} alt="" className="w-full h-full object-cover" />
+                                {g.type === 'video' && (
+                                    <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                                        <Play className="w-5 h-5 text-gold-400 fill-current" />
+                                    </div>
+                                )}
+                                <span className="absolute bottom-0 right-0 bg-black/80 text-white text-[10px] px-1 leading-tight font-bold">{i + 1}</span>
+                            </button>
+                        ))}
+                        <button onClick={next}
+                            className="shrink-0 w-12 h-14 rounded-md bg-zinc-800 hover:bg-gold-500 hover:text-zinc-950 text-white flex items-center justify-center transition">
+                            <ChevronRight className="w-5 h-5" />
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
