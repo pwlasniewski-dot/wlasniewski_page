@@ -139,7 +139,7 @@ export default function AdminOfferRecommendedAlbumsManager({ offerId }: { offerI
                                 <div className="flex items-start justify-between gap-2 mb-2">
                                     <div>
                                         <div className="text-white text-sm font-bold line-clamp-1">{rec.album.title}</div>
-                                        {rec.album.price > 0 && <div className="text-gold-400 text-xs">{(rec.album.price / 100).toFixed(0)} {rec.album.currency}</div>}
+                                        {rec.album.price > 0 && <div className="text-gold-400 text-xs">{rec.album.price} {rec.album.currency}</div>}
                                     </div>
                                     <button onClick={() => removeRecommendation(rec.album.id)} className="text-red-400 hover:bg-red-500/20 p-1 rounded">
                                         <X className="w-4 h-4" />
@@ -198,7 +198,7 @@ export default function AdminOfferRecommendedAlbumsManager({ offerId }: { offerI
                                     )}
                                     <div className="p-2">
                                         <div className="text-xs text-white font-medium line-clamp-1 group-hover:text-gold-400">{a.title}</div>
-                                        {a.price > 0 && <div className="text-xs text-gold-400">{(a.price / 100).toFixed(0)} zł</div>}
+                                        {a.price > 0 && <div className="text-xs text-gold-400">{a.price} zł</div>}
                                     </div>
                                 </button>
                             ))}

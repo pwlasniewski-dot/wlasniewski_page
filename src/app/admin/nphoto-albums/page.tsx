@@ -286,7 +286,7 @@ function AlbumCard({ album, onEdit, onDelete, onToggleActive, onToggleFeatured }
                 <div className="flex items-start justify-between gap-2 mb-2">
                     <h3 className="font-bold text-white line-clamp-1">{album.title}</h3>
                     {album.price > 0 && (
-                        <span className="text-gold-400 font-bold whitespace-nowrap">{(album.price / 100).toFixed(0)} zł</span>
+                        <span className="text-gold-400 font-bold whitespace-nowrap">{album.price} zł</span>
                     )}
                 </div>
                 {album.subtitle && <p className="text-zinc-400 text-sm line-clamp-2 mb-2">{album.subtitle}</p>}
@@ -355,7 +355,7 @@ function AlbumList({ albums, onEdit, onDelete, onToggleActive, onToggleFeatured 
                                 </div>
                             </td>
                             <td className="px-4 py-3 text-zinc-400">{a.category}</td>
-                            <td className="px-4 py-3 text-gold-400 font-semibold">{a.price > 0 ? `${(a.price / 100).toFixed(0)} zł` : '—'}</td>
+                            <td className="px-4 py-3 text-gold-400 font-semibold">{a.price > 0 ? `${a.price} zł` : '—'}</td>
                             <td className="px-4 py-3">
                                 <div className="flex gap-1">
                                     {a.is_active ? <span className="text-emerald-400 text-xs">●</span> : <span className="text-zinc-600 text-xs">●</span>}
@@ -405,6 +405,7 @@ function EmptyState({ onCreate, hasAlbums }: any) {
 // ─── Modal: Quick create form ─────────────────────────────────────────────────
 function AlbumFormModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
     const [saving, setSaving] = useState(false);
+    const [uploadingCover, setUploadingCover] = useState(false);
     const [form, setForm] = useState({
         title: '', slug: '', subtitle: '', description: '',
         category: 'album', occasion: [] as string[],
@@ -508,6 +509,23 @@ function AlbumFormModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
                             <input value={form.cover_image_url} onChange={e => setForm({ ...form, cover_image_url: e.target.value })}
                                 className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:border-gold-500 focus:outline-none"
                                 placeholder="https://..." />
+                            <label className="mt-2 flex items-center justify-center gap-2 border-2 border-dashed border-zinc-700 hover:border-gold-500 rounded-lg py-2 cursor-pointer text-xs text-zinc-300 transition">
+                                {uploadingCover ? '⏳ Wysyłanie...' : '📎 lub wgraj plik z dysku'}
+                                <input type="file" accept="image/*" className="hidden" disabled={uploadingCover}
+                                    onChange={async e => {
+                                        const file = e.target.files?.[0]; if (!file) return;
+                                        setUploadingCover(true);
+                                        try {
+                                            const token = localStorage.getItem('admin_token');
+                                            const fd = new FormData(); fd.append('file', file);
+                                            const res = await fetch('/api/admin/products/upload', { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: fd });
+                                            const data = await res.json();
+                                            if (data.success && data.url) { setForm(f => ({ ...f, cover_image_url: data.url })); toast.success('Wgrano okładkę'); }
+                                            else toast.error('Błąd uploadu');
+                                        } catch { toast.error('Błąd uploadu'); }
+                                        finally { setUploadingCover(false); e.target.value = ''; }
+                                    }} />
+                            </label>
                         </div>
                         <div>
                             <label className="block text-sm text-zinc-300 mb-1">URL wideo (YouTube/Vimeo)</label>

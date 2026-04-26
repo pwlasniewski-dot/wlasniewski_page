@@ -101,7 +101,7 @@ export default function NphotoAlbumsShowcase({ title, subtitle, config }: Props)
                 image: a.cover_image_url,
                 offers: a.price ? {
                     '@type': 'Offer',
-                    price: (a.price / 100).toFixed(2),
+                    price: a.price,
                     priceCurrency: a.currency
                 } : undefined
             }
@@ -267,7 +267,7 @@ function AlbumShowcaseCard({ album, index, showPrice, showVideo, onPlay }: any) 
             <div className="p-4 flex items-center justify-between gap-3">
                 <div>
                     {showPrice && album.price > 0 && (
-                        <div className="text-gold-400 font-bold text-lg">{(album.price / 100).toFixed(0)} {album.currency}</div>
+                        <div className="text-gold-400 font-bold text-lg">{album.price} {album.currency}</div>
                     )}
                     {album.occasion?.length > 0 && (
                         <div className="text-zinc-500 text-xs flex flex-wrap gap-1 mt-1">
@@ -324,7 +324,7 @@ function CarouselLayout({ albums, activeIdx, setActiveIdx, showPrice, showVideo,
                     {active.subtitle && <p className="text-zinc-300 text-lg mb-4">{active.subtitle}</p>}
                     {active.description && <p className="text-zinc-400 text-sm mb-6 line-clamp-4">{active.description}</p>}
                     {showPrice && active.price > 0 && (
-                        <div className="text-gold-400 font-bold text-2xl mb-6">{(active.price / 100).toFixed(0)} {active.currency}</div>
+                        <div className="text-gold-400 font-bold text-2xl mb-6">{active.price} {active.currency}</div>
                     )}
                     {active.nphoto_shop_url && (
                         <a href={active.nphoto_shop_url} target="_blank" rel="noopener"

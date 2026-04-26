@@ -182,12 +182,12 @@ export default function AlbumDetailPage() {
                     {/* Cena */}
                     <Card title="Cena">
                         <div className="grid grid-cols-3 gap-3">
-                            <Field label="Cena (gr)">
+                            <Field label="Cena (zł)">
                                 <input type="number" value={album.price || 0} onChange={e => update('price', parseInt(e.target.value || '0'))}
                                     className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:border-gold-500 focus:outline-none" />
-                                <div className="text-xs text-zinc-500 mt-1">{((album.price || 0) / 100).toFixed(2)} zł</div>
+                                <div className="text-xs text-zinc-500 mt-1">{album.price || 0} zł</div>
                             </Field>
-                            <Field label="Cena od (gr)">
+                            <Field label="Cena od (zł)">
                                 <input type="number" value={album.price_from || ''} onChange={e => update('price_from', e.target.value ? parseInt(e.target.value) : null)}
                                     className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:border-gold-500 focus:outline-none" />
                             </Field>
@@ -222,8 +222,12 @@ export default function AlbumDetailPage() {
                         ) : (
                             <div className="text-zinc-500 text-sm mb-2">Brak okładki</div>
                         )}
-                        <Input value={album.cover_image_url || ''} onChange={v => update('cover_image_url', v)}
-                            placeholder="URL obrazu (https://...)" className="mt-2" />
+                        <ImageDualAdder
+                            currentValue={album.cover_image_url || ''}
+                            onChange={v => update('cover_image_url', v)}
+                            placeholder="URL okładki (https://...)"
+                            mode="single"
+                        />
                     </Card>
 
                     <Card title="Zdjęcia podglądowe">
@@ -239,7 +243,7 @@ export default function AlbumDetailPage() {
                                 </div>
                             ))}
                         </div>
-                        <ImageUrlAdder onAdd={addPreviewImage} placeholder="URL zdjęcia podglądowego..." />
+                        <ImageDualAdder onAdd={addPreviewImage} placeholder="URL zdjęcia podglądowego..." mode="multi" />
                     </Card>
 
                     <Card title="Próbki stron (sample pages)">
@@ -256,7 +260,7 @@ export default function AlbumDetailPage() {
                                 </div>
                             ))}
                         </div>
-                        <ImageUrlAdder onAdd={addSamplePage} placeholder="URL strony albumu..." />
+                        <ImageDualAdder onAdd={addSamplePage} placeholder="URL strony albumu..." mode="multi" />
                     </Card>
 
                     <Card title="Wideo prezentacyjne">
@@ -337,7 +341,7 @@ export default function AlbumDetailPage() {
                         <div className="mt-3 text-sm">
                             <div className="text-white font-bold">{album.title}</div>
                             {album.subtitle && <div className="text-zinc-400 text-xs">{album.subtitle}</div>}
-                            {album.price > 0 && <div className="text-gold-400 font-bold mt-2">{((album.price) / 100).toFixed(0)} {album.currency}</div>}
+                            {album.price > 0 && <div className="text-gold-400 font-bold mt-2">{album.price} {album.currency}</div>}
                         </div>
                     </Card>
 
@@ -379,16 +383,72 @@ function Input({ value, onChange, placeholder, className, maxLength }: { value: 
         className={`w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:border-gold-500 focus:outline-none ${className || ''}`} />;
 }
 
-function ImageUrlAdder({ onAdd, placeholder }: { onAdd: (url: string) => void; placeholder: string }) {
-    const [url, setUrl] = useState('');
+function ImageDualAdder(props: {
+    placeholder: string;
+    mode: 'single' | 'multi';
+    onAdd?: (url: string) => void;          // multi: append to list
+    currentValue?: string;                  // single: existing url
+    onChange?: (url: string) => void;       // single: replace url
+}) {
+    const { placeholder, mode, onAdd, currentValue, onChange } = props;
+    const [url, setUrl] = useState(mode === 'single' ? (currentValue || '') : '');
+    const [uploading, setUploading] = useState(false);
+
+    function commit(value: string) {
+        if (!value.trim()) return;
+        if (mode === 'multi') { onAdd?.(value.trim()); setUrl(''); }
+        else { onChange?.(value.trim()); setUrl(value.trim()); }
+    }
+
+    async function handleFiles(files: FileList | null) {
+        if (!files || files.length === 0) return;
+        setUploading(true);
+        try {
+            const token = localStorage.getItem('admin_token');
+            const arr = Array.from(files);
+            for (const file of arr) {
+                const fd = new FormData();
+                fd.append('file', file);
+                const res = await fetch('/api/admin/products/upload', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: fd,
+                });
+                const data = await res.json();
+                if (data.success && data.url) {
+                    if (mode === 'multi') onAdd?.(data.url);
+                    else { onChange?.(data.url); setUrl(data.url); }
+                    toast.success(`Wysłano: ${file.name}`);
+                } else {
+                    toast.error(`Błąd: ${file.name}`);
+                }
+                if (mode === 'single') break;
+            }
+        } catch {
+            toast.error('Błąd uploadu');
+        } finally {
+            setUploading(false);
+        }
+    }
+
     return (
-        <div className="flex gap-2">
-            <input value={url} onChange={e => setUrl(e.target.value)} placeholder={placeholder}
-                className="flex-1 bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:border-gold-500 focus:outline-none" />
-            <button onClick={() => { if (url.trim()) { onAdd(url.trim()); setUrl(''); } }}
-                className="bg-gold-500 hover:bg-gold-600 text-zinc-950 font-bold px-3 rounded-lg flex items-center gap-1">
-                <Plus className="w-4 h-4" />
-            </button>
+        <div className="space-y-2">
+            <div className="flex gap-2">
+                <input value={url} onChange={e => setUrl(e.target.value)} placeholder={placeholder}
+                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); commit(url); } }}
+                    className="flex-1 bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:border-gold-500 focus:outline-none" />
+                <button type="button" onClick={() => commit(url)}
+                    title="Dodaj z URL"
+                    className="bg-gold-500 hover:bg-gold-600 text-zinc-950 font-bold px-3 rounded-lg flex items-center gap-1">
+                    <Plus className="w-4 h-4" />
+                </button>
+            </div>
+            <label className={`flex items-center justify-center gap-2 border-2 border-dashed border-zinc-700 hover:border-gold-500 rounded-lg py-3 cursor-pointer text-sm transition ${uploading ? 'opacity-50 pointer-events-none' : 'text-zinc-300'}`}>
+                {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImageIcon className="w-4 h-4" />}
+                {uploading ? 'Wysyłanie...' : (mode === 'multi' ? 'lub wgraj zdjęcia z dysku (możesz wybrać kilka)' : 'lub wgraj zdjęcie z dysku')}
+                <input type="file" accept="image/*" multiple={mode === 'multi'} className="hidden"
+                    onChange={e => { handleFiles(e.target.files); e.target.value = ''; }} />
+            </label>
         </div>
     );
 }
