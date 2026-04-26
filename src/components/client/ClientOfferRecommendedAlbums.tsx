@@ -217,38 +217,55 @@ function AlbumShowcase({ album, offerId }: { album: Album; offerId: number }) {
                         )}
 
                         {/* Counter badge */}
-                        {gallery.length > 1 && !videoPlaying && (
-                            <div className="absolute top-3 right-3 bg-black/70 backdrop-blur text-white text-xs font-semibold px-2.5 py-1 rounded-full flex items-center gap-1.5">
+                        {gallery.length > 1 && (
+                            <div className="absolute top-3 right-3 bg-black/70 backdrop-blur text-white text-xs font-semibold px-2.5 py-1 rounded-full flex items-center gap-1.5 z-20">
                                 <span className="text-gold-400 font-bold">{idx + 1}</span>
                                 <span className="text-zinc-400">/</span>
                                 <span>{gallery.length}</span>
                                 <span className="text-zinc-500 ml-1 hidden sm:inline">{isVideoSlide ? '🎬' : '📷'}</span>
                             </div>
                         )}
-
-                        {/* Thumbnail strip */}
-                        {gallery.length > 1 && !videoPlaying && (
-                            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 max-w-[90%]">
-                                <span className="text-[10px] text-white/80 bg-black/60 backdrop-blur px-2 py-0.5 rounded-full">
-                                    👇 Przewiń wszystkie {gallery.length} - filmy i zdjęcia
-                                </span>
-                                <div className="flex gap-1.5 px-3 py-2 bg-black/60 backdrop-blur rounded-full overflow-x-auto">
-                                    {gallery.map((g, i) => (
-                                        <button key={i} onClick={() => { setVideoPlaying(false); setIdx(i); }}
-                                            className={`relative w-10 h-10 rounded-md overflow-hidden shrink-0 transition border-2 ${i === idx ? 'border-gold-500 scale-110' : 'border-transparent opacity-60 hover:opacity-100'}`}>
-                                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                                            <img src={(g.type === 'video' ? g.thumb : g.url) || ''} alt="" className="w-full h-full object-cover" />
-                                            {g.type === 'video' && (
-                                                <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-                                                    <Play className="w-3 h-3 text-gold-400 fill-current" />
-                                                </div>
-                                            )}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
                     </div>
+
+                    {/* Thumbnail strip - ZAWSZE widoczny pod oknem media (nie znika gdy film leci) */}
+                    {gallery.length > 1 && (
+                        <div className="bg-zinc-950 border-t border-zinc-800 px-3 py-3">
+                            <div className="flex items-center gap-2 mb-2">
+                                {videoPlaying && (
+                                    <button onClick={() => setVideoPlaying(false)}
+                                        className="text-[10px] bg-red-500/20 hover:bg-red-500 text-red-300 hover:text-white border border-red-500/40 px-2 py-1 rounded-full font-semibold transition flex items-center gap-1">
+                                        <Pause className="w-3 h-3" /> Zatrzymaj film
+                                    </button>
+                                )}
+                                <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-semibold">
+                                    Galeria ({gallery.length}) - przewiń lub kliknij
+                                </span>
+                            </div>
+                            <div className="flex gap-2 overflow-x-auto pb-1">
+                                <button onClick={prev}
+                                    className="shrink-0 w-12 h-12 rounded-md bg-zinc-800 hover:bg-gold-500 hover:text-zinc-950 text-white flex items-center justify-center transition">
+                                    <ChevronLeft className="w-4 h-4" />
+                                </button>
+                                {gallery.map((g, i) => (
+                                    <button key={i} onClick={() => { setVideoPlaying(false); setIdx(i); }}
+                                        className={`relative w-16 h-12 rounded-md overflow-hidden shrink-0 transition border-2 ${i === idx ? 'border-gold-500 ring-2 ring-gold-500/30' : 'border-zinc-700 opacity-70 hover:opacity-100 hover:border-gold-500/50'}`}>
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                        <img src={(g.type === 'video' ? g.thumb : g.url) || ''} alt="" className="w-full h-full object-cover" />
+                                        {g.type === 'video' && (
+                                            <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                                                <Play className="w-4 h-4 text-gold-400 fill-current" />
+                                            </div>
+                                        )}
+                                        <span className="absolute bottom-0 right-0 bg-black/80 text-white text-[9px] px-1 leading-tight">{i + 1}</span>
+                                    </button>
+                                ))}
+                                <button onClick={next}
+                                    className="shrink-0 w-12 h-12 rounded-md bg-zinc-800 hover:bg-gold-500 hover:text-zinc-950 text-white flex items-center justify-center transition">
+                                    <ChevronRight className="w-4 h-4" />
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* RIGHT: Info */}
