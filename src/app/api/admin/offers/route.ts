@@ -209,28 +209,11 @@ export async function POST(request: NextRequest) {
             }
         }
 
-        if (recipientEmail) {
-            try {
-                const portalUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://wlasniewski.pl'}/konto`;
-                await sendEmail({
-                    to: recipientEmail,
-                    subject: 'Witaj, otrzymałeś ofertę od fotografa Przemka Właśniewskiego – zaloguj się do panelu',
-                    html: generateOfferEmail({
-                        clientName: recipientName,
-                        offerNumber: offerNumber,
-                        offerTitle: title,
-                        offerCategory: category,
-                        totalPrice: totalPrice,
-                        offerUrl: portalUrl,
-                        type: type as 'b2b' | 'b2c',
-                        hasPdf: !!offer.pdf_url,
-                    }),
-                });
-                console.log('✅ Offer notification email sent to:', recipientEmail);
-            } catch (emailError) {
-                console.error('⚠️ Failed to send offer email (non-fatal):', emailError);
-            }
-        }
+        // ⛔ AUTO-EMAIL DISABLED ON OFFER CREATION (2026-04-27)
+        // Wcześniej tutaj automatycznie szedł mail do klienta przy zapisie nowej oferty,
+        // co powodowało wysyłki bez wiedzy admina. Wysyłka jest teraz WYŁĄCZNIE manualna,
+        // przez przycisk „📧 Email" / send-email z buildera (z confirm()).
+        void recipientEmail; // intentionally unused — email send is manual only
 
         return NextResponse.json({ offer }, { status: 201 });
     } catch (error) {

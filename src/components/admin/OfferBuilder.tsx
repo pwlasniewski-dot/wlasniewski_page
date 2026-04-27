@@ -421,6 +421,17 @@ export default function OfferBuilder({ offerId, initialData, onSave, saveButtonT
             alert('Najpierw zapisz ofertę!');
             return;
         }
+        // ✋ Email-sending actions require explicit confirmation. Default = OFF.
+        if (action === 'email' || action === 'all') {
+            const label = action === 'all'
+                ? 'WYKONAĆ pełną akcję (zapis PDF + Drive + WYSŁANIE MAILA z ofertą i PDF do klienta)?'
+                : 'WYSŁAĆ teraz maila z ofertą i PDF do klienta?';
+            const ok = confirm(label + '\n\nOK = tak, wyślij\nAnuluj = NIE wysyłaj nic');
+            if (!ok) {
+                toast('Anulowano — mail NIE został wysłany.', { icon: '✋' });
+                return;
+            }
+        }
         const token = localStorage.getItem('admin_token');
         const endpoint = `/api/admin/offers/${lastSavedId}/${action === 'all' ? 'send-all' : `${action === 'email' ? 'send-email' : `save-${action}`}`}`;
 
@@ -634,12 +645,21 @@ export default function OfferBuilder({ offerId, initialData, onSave, saveButtonT
             if (res.ok) {
                 toast.success(`Status zmieniony`);
                 if (newStatus === 'pending') {
-                    // Wyślij powiadomienie
-                    await fetch(`/api/admin/offers/${lastSavedId}/send-email`, {
-                        method: 'POST',
-                        headers: { 'Authorization': `Bearer ${token}` }
-                    });
-                    toast.success('Powiadomienie email wysłane do klienta.');
+                    // ✋ Świadoma decyzja admina — domyślnie NIC nie wysyłamy.
+                    const sendNow = confirm(
+                        'Status zmieniony na „pending".\n\n' +
+                        'Czy WYSŁAĆ teraz maila z ofertą i PDF do klienta?\n\n' +
+                        'OK = wyślij teraz\nAnuluj = nie wysyłaj (możesz zrobić to później przyciskiem 📧 Email)'
+                    );
+                    if (sendNow) {
+                        await fetch(`/api/admin/offers/${lastSavedId}/send-email`, {
+                            method: 'POST',
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        toast.success('Powiadomienie email wysłane do klienta.');
+                    } else {
+                        toast('Mail NIE został wysłany.', { icon: '✋' });
+                    }
                 }
                 setTimeout(() => window.location.reload(), 1500);
             } else {
