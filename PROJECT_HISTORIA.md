@@ -40,10 +40,31 @@
   9. **Share** (collapsible): WhatsApp, Facebook, Email, Copy link.
   10. **Footer**: NIP + Regulamin/Prywatność/Kontakt.
 
+### Foto-Wyzwanie — pełen flow "na profeske" (commit ff1b172)
+- **`GET /api/photo-challenge/[unique_link]/voucher`** — A4 PDF generowany pdfkit'em z QR (`qrcode` lib).
+  - Dostępny tylko gdy `status='accepted'` lub `'completed'`.
+  - Górny pas dark + gold ("Wałycz Studio · Wlasniewski Fotografia · VOUCHER FOTO-WYZWANIA").
+  - Sekcja "OD / DLA" (inviter / invitee), karta light bg z accent gold border, wiersze: pakiet, cena, data, godzina, miejsce.
+  - Wyróżniony box z 6-znakowym kodem weryfikacyjnym (`deriveShortCode`).
+  - QR pośrodku, skan → strona zaproszenia.
+  - Stopka dark: imię, studio, telefon, mail, NIP 8792583213, ID vouchera, data wygenerowania.
+  - Polish diacritics OK (Montserrat Regular/Bold/SemiBold z `public/fonts`).
+- **`GET /api/photo-challenge/[unique_link]/calendar.ics`** — plik RFC 5545 do dodania do Google/Apple/Outlook.
+  - Konwersja Europe/Warsaw → UTC z best-effort DST (last Sunday Mar/Oct).
+  - `VALARM TRIGGER:-P1D` (przypomnienie 24h przed), `STATUS:CONFIRMED`.
+  - Opis zawiera kod weryfikacyjny + URL zaproszenia + kontakt do fotografa.
+- **Success page rewrite** (`/foto-wyzwanie/accept/[unique_link]/success`):
+  - Wycięte: animowane konfetti emoji, "Hurra!", "Pochwal się galerią" (galeria nie istnieje przed sesją), typo "Pošlemy".
+  - Nowe: ikona ✓ w okręgu, "Rezerwacja potwierdzona", karta podsumowania (pakiet/data/godzina/miejsce + Google Maps link).
+  - 2 akcje: pobierz voucher PDF · dodaj do kalendarza (.ics).
+  - Uczciwa oś czasu "Co dalej" (3 punkty: e-mail, przypomnienie 24h, sesja+galeria).
+  - Karta fotografa z tel/mail/NIP, footer z linkami do Regulaminu/Prywatności/Kontaktu.
+  - Stary plik: `page.OLD_2026-04-28.tsx.bak`.
+
 ### Pending (na kolejne sesje)
 - Sesja 3 perf: `next.config.mjs` compress:true, `images.unoptimized:false`, HeroSlider `<Image priority>`, Portfolio `revalidate:3600`, własny `not-found.tsx`.
 - Sesja 4 SEO: Blog SSR + JSON-LD, dead code, reCAPTCHA.
-- Foto-wyzwanie: strona po płatności + voucher PDF z QR (`qrcode` zainstalowany), cron czyszczący nieopłacone.
+- Foto-wyzwanie: cron czyszczący nieopłacone zaproszenia po N dniach; mail-template z linkiem do voucher PDF i .ics.
 - Rotacja kredencjali (PayU, P24, SMTP, Neon, AWS).
 
 ---
