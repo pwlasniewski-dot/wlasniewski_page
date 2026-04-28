@@ -40,9 +40,19 @@ const config: Config = {
           '0%, 100%': { boxShadow: '0 0 30px rgba(212,175,55,0.25)' },
           '50%': { boxShadow: '0 0 50px rgba(212,175,55,0.55)' },
         },
+        float: {
+          '0%, 100%': { transform: 'translate(0, 0) scale(1)' },
+          '25%': { transform: 'translate(30px, -30px) scale(1.05)' },
+          '50%': { transform: 'translate(-20px, 20px) scale(0.95)' },
+          '75%': { transform: 'translate(20px, 30px) scale(1.02)' },
+        },
       },
       animation: {
         'pulse-soft': 'pulse-soft 2.5s ease-in-out infinite',
+        float: 'float 20s ease-in-out infinite',
+      },
+      backgroundImage: {
+        'gradient-radial': 'radial-gradient(circle, var(--tw-gradient-stops))',
       },
     },
   },

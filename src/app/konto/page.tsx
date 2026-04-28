@@ -117,9 +117,15 @@ export default function AccountPage() {
     }
 
     return (
-        <div className="min-h-screen bg-black text-zinc-100 pb-20">
+        <div className="min-h-screen bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950 text-zinc-100 pb-20 relative">
+            {/* Animated gradient mesh background */}
+            <div className="fixed inset-0 pointer-events-none overflow-hidden opacity-40">
+                <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-gradient-radial from-gold-500/15 to-transparent rounded-full blur-3xl animate-float" style={{ animationDelay: '0s' }} />
+                <div className="absolute bottom-0 right-0 w-[600px] h-[600px] bg-gradient-radial from-cyan-500/10 to-transparent rounded-full blur-3xl animate-float" style={{ animationDelay: '4s' }} />
+                <div className="absolute top-1/2 left-1/3 w-[400px] h-[400px] bg-gradient-radial from-rose-500/8 to-transparent rounded-full blur-3xl animate-float" style={{ animationDelay: '2s' }} />
+            </div>
             {/* Header / Hero */}
-            <div className="relative pt-32 pb-16 px-4 overflow-hidden">
+            <div className="relative pt-32 pb-16 px-4 overflow-hidden z-10">
                 <div className="absolute top-0 left-0 w-full h-[500px] bg-gradient-to-b from-gold-900/10 to-transparent opacity-30 pointer-events-none" />
 
                 <div className="max-w-6xl mx-auto relative z-10">
@@ -146,7 +152,7 @@ export default function AccountPage() {
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             onClick={logout}
-                            className="flex items-center gap-2 text-zinc-500 hover:text-white transition-colors py-2 group bg-zinc-900/50 px-4 rounded-xl"
+                            className="flex items-center gap-2 text-zinc-500 hover:text-white transition-colors py-2 group bg-zinc-900/30 backdrop-blur-xl px-4 rounded-xl"
                         >
                             <LogOut className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
                             <span>Wyloguj się</span>
@@ -209,7 +215,7 @@ export default function AccountPage() {
         return (
             <button
                 onClick={onClick}
-                className={`flex items-center gap-2 px-6 py-3 rounded-2xl whitespace-nowrap transition-all ${active ? 'bg-gold-600 text-black font-bold' : 'bg-zinc-900/50 text-zinc-400 hover:text-white hover:bg-zinc-800'}`}
+                className={`flex items-center gap-2 px-6 py-3 rounded-2xl whitespace-nowrap transition-all ${active ? 'bg-gold-600 text-black font-bold' : 'bg-zinc-900/30 backdrop-blur-xl text-zinc-400 hover:text-white hover:bg-zinc-800'}`}
             >
                 {icon}
                 <span>{label}</span>
@@ -252,7 +258,7 @@ export default function AccountPage() {
                                 return (
                                     <button onClick={() => setActiveTab('documents')} className={`text-left rounded-2xl p-5 transition-all group relative overflow-hidden ${offerNeedsAction
                                         ? 'bg-gradient-to-br from-gold-500/20 via-gold-500/5 to-transparent border-2 border-gold-500/70 shadow-[0_0_30px_rgba(212,175,55,0.3)] animate-pulse-soft'
-                                        : 'bg-zinc-900/60 border border-zinc-800 hover:border-gold-500/30'}`}>
+                                        : 'bg-zinc-900/30 backdrop-blur-xl border border-zinc-800 hover:border-gold-500/30'}`}>
                                         {offerNeedsAction && (
                                             <div className="absolute top-2 right-2 flex items-center gap-1 bg-gold-500 text-zinc-950 text-[10px] font-bold px-2 py-0.5 rounded-full">
                                                 <span className="relative flex h-1.5 w-1.5">
@@ -283,7 +289,7 @@ export default function AccountPage() {
 
                     {userPermissions?.contracts !== false && (
                         activeContract ? (
-                            <div className="bg-zinc-900/60 border border-zinc-800 hover:border-gold-500/30 rounded-2xl p-5 transition-all group relative">
+                            <div className="bg-zinc-900/20 backdrop-blur-xl border border-zinc-800 hover:border-gold-500/30 rounded-2xl p-5 transition-all group relative">
                                 <button onClick={() => setActiveTab('documents')} className="text-left w-full h-full">
                                     <p className="text-xs text-zinc-600 uppercase tracking-widest mb-3">Umowa</p>
                                     <p className="font-bold text-white text-sm mb-2 line-clamp-1">{activeContract?.offer?.title || activeContract?.contract_number || `Umowa #${activeContract?.id}`}</p>
@@ -313,7 +319,7 @@ export default function AccountPage() {
 
                     {userPermissions?.galleries !== false && (
                         activeGallery ? (
-                            <button onClick={() => setActiveTab('sessions')} className="text-left bg-zinc-900/60 border border-zinc-800 hover:border-gold-500/30 rounded-2xl p-5 transition-all group">
+                            <button onClick={() => setActiveTab('sessions')} className="text-left bg-zinc-900/20 backdrop-blur-xl border border-zinc-800 hover:border-gold-500/30 rounded-2xl p-5 transition-all group">
                                 <p className="text-xs text-zinc-600 uppercase tracking-widest mb-3">Galeria Zdjęć</p>
                                 <p className="font-bold text-white text-sm mb-2 group-hover:text-gold-400 transition-colors line-clamp-1">{activeGallery?.client_name || 'Twoja sesja'}</p>
                                 <span className="inline-block text-xs px-2 py-0.5 rounded-full border text-green-400 bg-green-900/20 border-green-700/30">
@@ -355,7 +361,7 @@ export default function AccountPage() {
                         </div>
 
                         {userPermissions?.gift_cards !== false && (
-                            <div className="bg-zinc-900/30 border border-zinc-800/50 rounded-3xl p-6">
+                            <div className="bg-zinc-900/30 backdrop-blur-xl border border-zinc-800/50 rounded-3xl p-6 hover:border-gold-500/30 transition-all hover:shadow-lg hover:shadow-gold-500/10">
                                 <h4 className="font-bold mb-3 flex items-center gap-2 text-gold-500">
                                     <Gift className="w-4 h-4 text-gold-500" />
                                     Prezent dla Ciebie
@@ -400,7 +406,7 @@ export default function AccountPage() {
 
     function QuickCard({ title, value, icon, actionLabel, onAction }: any) {
         return (
-            <div className="bg-zinc-900/40 border border-zinc-800 p-6 rounded-3xl hover:border-gold-500/30 transition-all group">
+            <div className="bg-zinc-900/30 backdrop-blur-xl border border-zinc-800 p-6 rounded-3xl hover:border-gold-500/40 transition-all group hover:scale-[1.02] hover:shadow-2xl hover:shadow-gold-500/10">
                 <div className="flex items-center justify-between mb-4">
                     <div className="p-3 bg-zinc-800 rounded-2xl text-gold-500 group-hover:scale-110 transition-transform">
                         {icon}
@@ -424,7 +430,7 @@ export default function AccountPage() {
                 <div className="grid grid-cols-1 gap-6">
                     {/* Standard Galleries */}
                     {galleries.map((gallery) => (
-                        <div key={`gallery-${gallery.id}`} className="bg-zinc-900/50 border border-zinc-800 p-8 rounded-[2rem] hover:border-gold-500/30 transition-all group overflow-hidden relative">
+                        <div key={`gallery-${gallery.id}`} className="bg-zinc-900/30 backdrop-blur-xl border border-zinc-800 p-8 rounded-[2rem] hover:border-gold-500/40 transition-all group overflow-hidden relative hover:shadow-2xl hover:shadow-gold-500/10 hover:scale-[1.01]">
                             <div className="absolute top-0 right-0 w-32 h-32 bg-gold-500/5 rounded-full -mr-16 -mt-16 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
 
                             <div className="flex flex-col md:flex-row justify-between gap-8 relative z-10">
@@ -469,7 +475,7 @@ export default function AccountPage() {
 
                     {/* Challenges */}
                     {challenges.map((challenge) => (
-                        <div key={`challenge-${challenge.id}`} className="bg-zinc-900/50 border border-zinc-800 p-8 rounded-[2rem] hover:border-gold-500/30 transition-all group overflow-hidden relative">
+                        <div key={`challenge-${challenge.id}`} className="bg-zinc-900/30 backdrop-blur-xl border border-zinc-800 p-8 rounded-[2rem] hover:border-gold-500/40 transition-all group overflow-hidden relative hover:shadow-2xl hover:shadow-gold-500/10 hover:scale-[1.01]">
                             <div className="flex flex-col md:flex-row justify-between gap-8">
                                 <div className="space-y-4">
                                     <div className="flex items-center gap-3">
@@ -551,7 +557,7 @@ export default function AccountPage() {
                     </div>
 
                     {offers.length === 0 ? (
-                        <div className="bg-zinc-900/20 border border-zinc-800 p-12 rounded-[2rem] text-center">
+                        <div className="bg-zinc-900/20 backdrop-blur-xl border border-zinc-800 p-12 rounded-[2rem] text-center">
                             <FileText className="w-12 h-12 text-zinc-700 mx-auto mb-4" />
                             <h3 className="text-lg font-bold mb-1">Brak aktywnych ofert</h3>
                             <p className="text-zinc-500 text-sm">Nie masz obecnie żadnych otwartych ofert.</p>
@@ -566,9 +572,9 @@ export default function AccountPage() {
                                 const isSaving = savingNote?.type === 'offer' && savingNote?.id === offer.id;
                                 const needsAction = offer.status === 'pending' || offer.status === 'sent' || offer.status === 'draft' || offer.status === 'unlock_requested';
                                 return (
-                                    <div key={offer.id} className={`rounded-[2rem] overflow-hidden transition-all ${needsAction
-                                        ? 'bg-gradient-to-br from-gold-500/15 via-zinc-900/80 to-zinc-900/50 border-2 border-gold-500/60 shadow-[0_0_40px_rgba(212,175,55,0.25)] animate-pulse-soft'
-                                        : 'bg-zinc-900/50 border border-zinc-800'}`}>
+                                    <div key={offer.id} className={`rounded-[2rem] overflow-hidden transition-all hover:scale-[1.01] ${needsAction
+                                        ? 'bg-gradient-to-br from-gold-500/15 via-zinc-900/80 to-zinc-900/50 backdrop-blur-xl border-2 border-gold-500/60 shadow-[0_0_40px_rgba(212,175,55,0.25)] animate-pulse-soft'
+                                        : 'bg-zinc-900/30 backdrop-blur-xl border border-zinc-800 hover:border-gold-500/40 hover:shadow-2xl hover:shadow-gold-500/10'}`}>
                                         {needsAction && (
                                             <Link href={`/strefa-klienta/oferty/${offer.id}`}
                                                 className="block bg-gradient-to-r from-gold-500 to-amber-500 text-zinc-950 px-6 py-3 font-bold text-sm flex items-center justify-between hover:from-gold-400 hover:to-amber-400 transition">
@@ -681,7 +687,7 @@ export default function AccountPage() {
 
                                 const isSaving = savingNote?.type === 'contract' && savingNote?.id === contract.id;
                                 return (
-                                    <div key={contract.id} className="bg-zinc-900/50 border border-zinc-800 rounded-[2rem] overflow-hidden">
+                                    <div key={contract.id} className="bg-zinc-900/30 backdrop-blur-xl border border-zinc-800 rounded-[2rem] overflow-hidden hover:border-gold-500/40 transition-all hover:shadow-2xl hover:shadow-gold-500/10 hover:scale-[1.01]">
                                         <div className="p-6 flex flex-col md:flex-row justify-between items-center gap-6 group">
                                             <Link
                                                 href={`/strefa-klienta/umowy/${contract.id}`}
@@ -760,7 +766,7 @@ export default function AccountPage() {
                         </div>
                         <div className="grid grid-cols-1 gap-4">
                             {photoOrders.map((order: any) => (
-                                <div key={order.id} className="bg-zinc-900/50 border border-zinc-800 p-6 rounded-[2rem] flex flex-col md:flex-row justify-between items-center gap-4">
+                                <div key={order.id} className="bg-zinc-900/30 backdrop-blur-xl border border-zinc-800 p-6 rounded-[2rem] flex flex-col md:flex-row justify-between items-center gap-4 hover:border-gold-500/40 transition-all hover:shadow-lg hover:shadow-gold-500/10">
                                     <div className="flex items-center gap-5 w-full md:w-auto">
                                         <div className="w-14 h-14 bg-zinc-800 rounded-2xl flex items-center justify-center text-gold-500">
                                             <ShoppingBag className="w-6 h-6" />
@@ -866,7 +872,7 @@ export default function AccountPage() {
                 ) : (
                     <div className="grid grid-cols-1 gap-6">
                         {bookings.map((booking) => (
-                            <div key={booking.id} className="bg-zinc-900/40 border border-zinc-800 p-8 rounded-[2rem] hover:border-gold-500/30 transition-all group flex flex-col md:flex-row justify-between items-center gap-8">
+                            <div key={booking.id} className="bg-zinc-900/30 backdrop-blur-xl border border-zinc-800 p-8 rounded-[2rem] hover:border-gold-500/40 transition-all group flex flex-col md:flex-row justify-between items-center gap-8 hover:shadow-2xl hover:shadow-gold-500/10 hover:scale-[1.01]">
                                 <div className="flex gap-6 w-full md:w-auto">
                                     <div className="w-16 h-16 bg-zinc-800 rounded-[1.5rem] flex items-center justify-center text-gold-500 text-2xl font-black">
                                         {new Date(booking.date).getDate()}
