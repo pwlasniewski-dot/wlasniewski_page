@@ -190,19 +190,24 @@ function renderTemplate(template: string, data: Record<string, any>): string {
 <body>
     <div class="container">
         <div class="header" style="border-color: #22c55e;">
-            <div class="logo">Wyzwanie <span class="logo-accent" style="color: #22c55e;">Potwierdzone!</span></div>
+            <div class="logo">Rezerwacja <span class="logo-accent" style="color: #22c55e;">Potwierdzona</span></div>
         </div>
         <div class="content">
-            <div class="greeting">Cześć ${d.inviteeName}!</div>
-            <p>Właśnie zaakceptowałeś/aś wyzwanie od <strong>${d.inviterName}</strong>. Do zobaczenia na ukośnej sesji!</p>
+            <div class="greeting">Cześć ${d.inviteeName},</div>
+            <p>Termin sesji od <strong>${d.inviterName}</strong> jest zarezerwowany. Voucher i plik kalendarza znajdziesz w załącznikach do tego maila.</p>
             <div class="details-box" style="border-color: rgba(34, 197, 94, 0.3);">
-                <p>📅 Data: ${d.sessionDate}</p>
-                <p>🕐 Godzina: ${d.sessionTime}</p>
+                <p>📅 Data: <strong>${d.sessionDate}</strong></p>
+                <p>🕐 Godzina: <strong>${d.sessionTime}</strong></p>
                 <p>📍 Lokalizacja: ${d.location}</p>
             </div>
-            <div class="cta-section">
-                <a href="${d.galleryLink}" class="cta-button">Twój Panel Zdjęć 📸</a>
-            </div>
+            <p style="margin-top: 24px;"><strong>Załączniki w tym mailu:</strong></p>
+            <ul style="color: #444; line-height: 1.8;">
+                <li>📄 <strong>Voucher PDF</strong> — A4, z kodem QR i kodem weryfikacyjnym</li>
+                <li>📅 <strong>Plik .ics</strong> — kliknij, aby dodać sesję do kalendarza (Google / Apple / Outlook)</li>
+            </ul>
+            <p style="font-size: 13px; color: #666; margin-top: 20px;">
+                Dzień przed sesją otrzymasz krótkie przypomnienie z dokładnym miejscem zbiórki i kontaktem awaryjnym.
+            </p>
         </div>
     </div>
 </body>

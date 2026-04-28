@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { sendEmail } from '@/lib/email/sender';
+import { generateVoucherPdfBuffer, generateIcs } from '@/lib/photo-challenge/voucher';
+import { deriveShortCode } from '@/lib/photo-challenge/short-code';
 
 export async function POST(
     request: NextRequest,
@@ -104,6 +106,39 @@ export async function POST(
         const galleryLink = `${baseUrl}/foto-wyzwanie/gallery/${challenge.id}`;
         const formattedDate = sessionDate.toLocaleDateString('pl-PL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
         const locationName = challenge.location?.name || challenge.custom_location || 'Będzie podane wkrótce';
+        const shortCode = deriveShortCode(challenge.unique_link);
+
+        // Generate voucher PDF + ICS attachments (best-effort; do NOT block accept on failure)
+        let attachments: any[] | undefined;
+        try {
+            const challengeFull = await prisma.photoChallenge.findUnique({
+                where: { unique_link },
+                include: { package: true, location: true },
+            });
+            const bookingTimes = { date: sessionDate, start_time: startTimeText, end_time: endTimeText };
+            if (challengeFull) {
+                const [pdfBuffer, ics] = await Promise.all([
+                    generateVoucherPdfBuffer(challengeFull, bookingTimes, baseUrl),
+                    Promise.resolve(generateIcs(challengeFull, bookingTimes, baseUrl)),
+                ]);
+                attachments = [
+                    {
+                        filename: `voucher-foto-wyzwanie-${shortCode}.pdf`,
+                        content: pdfBuffer,
+                        contentType: 'application/pdf',
+                    },
+                ];
+                if (ics) {
+                    attachments.push({
+                        filename: `foto-wyzwanie-${shortCode}.ics`,
+                        content: ics,
+                        contentType: 'text/calendar; charset=utf-8',
+                    });
+                }
+            }
+        } catch (attachErr) {
+            console.error('[accept] voucher/ics generation failed (continuing without attachments):', attachErr);
+        }
 
         // 1. Notify Invitee (the one who just accepted)
         try {
@@ -118,7 +153,8 @@ export async function POST(
                     sessionTime: startTimeText,
                     location: locationName,
                     galleryLink
-                }
+                },
+                attachments,
             });
         } catch (emailError) {
             console.error('Failed to send acceptance email to invitee:', emailError);
