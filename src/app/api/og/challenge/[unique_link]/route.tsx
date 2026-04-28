@@ -82,10 +82,10 @@ export async function GET(_req: Request, { params }: Props) {
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
                         <span style={{ fontSize: '22px', fontWeight: 700, color: '#d4af37' }}>
-                            Wałycz Studio
+                            Przemysław Właśniewski
                         </span>
                         <span style={{ fontSize: '14px', color: '#a1a1aa' }}>
-                            wlasniewski.pl · Fotografia 12 lat
+                            wlasniewski.pl · Sesje plenerowe
                         </span>
                     </div>
                 </div>

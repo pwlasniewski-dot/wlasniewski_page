@@ -33,8 +33,12 @@ export async function POST(request: NextRequest) {
         const signature = signatureParts.signature;
         const algorithm = signatureParts.algorithm || 'MD5';
 
-        // Get MD5 Key from DB
-        const setting = await prisma.setting.findFirst();
+        // Get MD5 Key from DB. Use deterministic order — multiple Setting rows
+        // may exist (legacy schema); pick the row that actually has the key set.
+        const setting = await prisma.setting.findFirst({
+            where: { payu_md5_key: { not: null } },
+            orderBy: { id: 'asc' },
+        });
         const md5Key = setting?.payu_md5_key;
 
         if (!md5Key) {
@@ -193,7 +197,10 @@ export async function POST(request: NextRequest) {
             }
 
             // Check if it's a booking (simple numeric ID for bookings from checkout endpoint)
-            if (!isNaN(resourceId)) {
+            // Skip if extOrderId uses typed format (CHALLENGE_<id>, BOOKING_<id>, CART_...) —
+            // those are handled by dedicated branches below.
+            const isTypedExtOrder = /^[A-Z]+_/.test(extOrderId);
+            if (!handled && !isTypedExtOrder && !isNaN(resourceId)) {
                 const booking = await prisma.booking.findUnique({
                     where: { id: resourceId }
                 }).catch(() => null);
@@ -213,7 +220,7 @@ export async function POST(request: NextRequest) {
             }
 
             // If not a booking, check if it's a gift card
-            if (!handled && !isNaN(resourceId)) {
+            if (!handled && !isTypedExtOrder && !isNaN(resourceId)) {
                 const giftCardOrder = await prisma.giftCardOrder.findUnique({
                     where: { id: resourceId },
                     include: { gift_card: true },
@@ -433,33 +440,104 @@ export async function POST(request: NextRequest) {
                 }
 
 
-                // Check for typed resources (CHALLENGE_ID, BOOKING_ID format)
-                if (!handled) {
-                    const type = typeOrId;
-                    const typedId = resourceId;
+            } // end CART branch
 
-                    if (type === 'CHALLENGE' && !isNaN(typedId)) {
-                        await prisma.photoChallenge.update({
-                            where: { id: typedId },
-                            data: {
-                                status: 'accepted',
-                                accepted_at: new Date(),
-                                admin_notes: `Paid via PayU(Order: ${orderId})`
-                            }
-                        }).catch(() => null);
+            // ============================================================
+            // Typed resources (CHALLENGE_<id>, BOOKING_<id>)
+            // ============================================================
+            if (!handled && typeOrId === 'CHALLENGE' && !isNaN(resourceId)) {
+                const typedId = resourceId;
+                const challenge = await prisma.photoChallenge.findUnique({
+                    where: { id: typedId },
+                    include: { package: true, location: true }
+                }).catch(() => null);
 
-                        await prisma.challengeTimelineEvent.create({
-                            data: {
-                                challenge_id: typedId,
-                                event_type: "PAYMENT_COMPLETED",
-                                event_description: `Płatność PayU zakończona pomyślnie.`,
-                                metadata: JSON.stringify({ orderId, amount: order.totalAmount })
-                            }
-                        }).catch(() => null);
+                if (challenge) {
+                    await prisma.photoChallenge.update({
+                        where: { id: typedId },
+                        data: {
+                            // Inviter just paid; invitee has NOT accepted yet.
+                            // 'sent' means: invite link is live, awaiting invitee action.
+                            status: 'sent',
+                            payment_status: 'paid',
+                            payment_id: orderId,
+                            payment_method: 'payu',
+                            paid_amount: Math.round(Number(order.totalAmount || 0) / 100),
+                            admin_notes: `Paid via PayU (Order: ${orderId})`
+                        } as any
+                    }).catch((e) => { console.error('[PayU] Challenge update failed:', e); });
 
-                        handled = true;
+                    await prisma.challengeTimelineEvent.create({
+                        data: {
+                            challenge_id: typedId,
+                            event_type: "PAYMENT_COMPLETED",
+                            event_description: 'Płatność PayU zakończona pomyślnie.',
+                            metadata: JSON.stringify({ orderId, amount: order.totalAmount })
+                        }
+                    }).catch(() => null);
+
+                    // Confirm the blocking booking now that payment cleared
+                    await prisma.booking.updateMany({
+                        where: { challenge_id: typedId, status: 'challenge_pending' },
+                        data: { status: 'challenge_paid' }
+                    }).catch(() => null);
+
+                    // Send notifications (best-effort; never fail webhook on email issues)
+                    try {
+                        const { sendEmail } = await import('@/lib/email/sender');
+                        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://wlasniewski.pl';
+                        const inviteLink = `${baseUrl}/foto-wyzwanie/invite/${challenge.unique_link}`;
+
+                        // → invitee
+                        if (challenge.invitee_contact && challenge.invitee_contact.includes('@')) {
+                            await sendEmail({
+                                to: challenge.invitee_contact,
+                                subject: `🎁 ${challenge.inviter_name} zaprasza Cię na sesję fotograficzną`,
+                                template: 'challenge-payment-received-invitee',
+                                data: {
+                                    inviteeName: challenge.invitee_name,
+                                    inviterName: challenge.inviter_name,
+                                    packageName: challenge.package?.name || 'Sesja fotograficzna',
+                                    inviteLink,
+                                }
+                            }).catch((e: any) => console.error('[PayU] invitee mail fail', e));
+                        }
+
+                        // → inviter
+                        if (challenge.inviter_email) {
+                            await sendEmail({
+                                to: challenge.inviter_email,
+                                subject: '✅ Płatność potwierdzona — zaproszenie wysłane',
+                                template: 'challenge-payment-received-inviter',
+                                data: {
+                                    inviterName: challenge.inviter_name,
+                                    inviteeName: challenge.invitee_name,
+                                    packageName: challenge.package?.name || 'Sesja fotograficzna',
+                                    amount: challenge.package?.challenge_price || 0,
+                                }
+                            }).catch((e: any) => console.error('[PayU] inviter mail fail', e));
+                        }
+                    } catch (e) {
+                        console.error('[PayU] Challenge email dispatch failed:', e);
                     }
+
+                    handled = true;
                 }
+            }
+
+            if (!handled && typeOrId === 'BOOKING' && !isNaN(resourceId)) {
+                await prisma.booking.update({
+                    where: { id: resourceId },
+                    data: {
+                        status: 'confirmed',
+                        notes: `Paid via PayU (Order: ${orderId})`
+                    }
+                }).catch((e) => { console.error('[PayU] Booking update failed:', e); });
+                handled = true;
+            }
+
+            if (!handled) {
+                console.warn(`[PayU] Unhandled extOrderId=${extOrderId}`);
             }
         }
 

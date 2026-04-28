@@ -32,12 +32,15 @@ interface ChallengeData {
     booking?: { date: string; start_time: string; end_time: string; status: string } | null;
 }
 
+import { BUSINESS_INFO } from '@/lib/business-info';
+
 const PHOTOGRAPHER = {
-    name: 'Przemysław Wlasniewski',
-    studio: 'Wałycz Studio',
-    phone: '+48 660 470 200',
-    email: 'kontakt@wlasniewski.pl',
-    nip: '8792583213',
+    name: BUSINESS_INFO.name,
+    studio: BUSINESS_INFO.tagline,
+    phone: BUSINESS_INFO.phone,
+    email: BUSINESS_INFO.email,
+    nip: BUSINESS_INFO.nip,
+    locationNote: BUSINESS_INFO.locationNote,
 };
 
 export default function ChallengeSuccessPage() {

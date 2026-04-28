@@ -23,6 +23,9 @@ export async function GET(
     if (challenge.status !== 'accepted' && challenge.status !== 'completed') {
         return NextResponse.json({ success: false, error: 'Brak potwierdzonego terminu.' }, { status: 403 });
     }
+    if ((challenge as any).payment_status !== 'paid') {
+        return NextResponse.json({ success: false, error: 'Brak potwierdzonej płatności.' }, { status: 403 });
+    }
 
     const booking = await prisma.booking.findFirst({ where: { challenge_id: challenge.id } });
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://wlasniewski.pl';

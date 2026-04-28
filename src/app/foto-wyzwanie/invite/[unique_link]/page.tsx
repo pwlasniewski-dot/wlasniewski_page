@@ -2,6 +2,7 @@ import prisma from '@/lib/db/prisma';
 import { Metadata } from 'next';
 import InviteClient from './InviteClient';
 import { deriveShortCode } from '@/lib/photo-challenge/short-code';
+import { BUSINESS_INFO } from '@/lib/business-info';
 
 interface Props {
     params: Promise<{ unique_link: string }>;
@@ -51,7 +52,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         };
     }
 
-    const title = `🎁 ${challenge.inviter_name} zaprasza Cię na sesję — Wałycz Studio`;
+    const title = `🎁 ${challenge.inviter_name} zaprasza Cię na sesję — ${BUSINESS_INFO.name}`;
     const description = `Sesja "${challenge.package?.name || 'Foto Wyzwanie'}" jest już opłacona. Zobacz szczegóły, portfolio i opinie. Możesz odrzucić jednym kliknięciem — bez zobowiązań.`;
 
     const baseUrl =
@@ -67,7 +68,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
             title,
             description,
             url: `${baseUrl}/foto-wyzwanie/invite/${unique_link}`,
-            siteName: 'Wałycz Studio · wlasniewski.pl',
+            siteName: `${BUSINESS_INFO.name} · ${BUSINESS_INFO.siteName}`,
             locale: 'pl_PL',
             images: [
                 {

@@ -11,6 +11,7 @@ import QRCode from 'qrcode';
 import fs from 'fs';
 import path from 'path';
 import { deriveShortCode } from './short-code';
+import { BUSINESS_INFO } from '@/lib/business-info';
 
 const COLOR_GOLD = '#c5a059';
 const COLOR_DARK = '#1a1a1a';
@@ -94,9 +95,9 @@ export async function generateVoucherPdfBuffer(
 
             doc.rect(0, 0, W, 110).fill(COLOR_DARK);
             doc.fillColor(COLOR_GOLD).font('M-Bold').fontSize(11)
-                .text('WAŁYCZ STUDIO · WLASNIEWSKI FOTOGRAFIA', 0, 38, { align: 'center', width: W, characterSpacing: 3 });
+                .text(BUSINESS_INFO.nameAscii.toUpperCase() + ' · FOTOGRAFIA', 0, 38, { align: 'center', width: W, characterSpacing: 3 });
             doc.fillColor('#ffffff').font('M').fontSize(9)
-                .text('foto-wyzwanie.pl · wlasniewski.pl', 0, 60, { align: 'center', width: W, characterSpacing: 1 });
+                .text(BUSINESS_INFO.siteName, 0, 60, { align: 'center', width: W, characterSpacing: 1 });
             doc.fillColor(COLOR_GOLD).fontSize(8)
                 .text('VOUCHER FOTO-WYZWANIA', 0, 82, { align: 'center', width: W, characterSpacing: 6 });
 
@@ -159,12 +160,12 @@ export async function generateVoucherPdfBuffer(
             const footerY = H - 110;
             doc.rect(0, footerY, W, 110).fill(COLOR_DARK);
             doc.fillColor('#ffffff').font('M-Semi').fontSize(10)
-                .text('Przemysław Wlasniewski', 60, footerY + 22);
+                .text(BUSINESS_INFO.nameAscii, 60, footerY + 22);
             doc.fillColor('#bdbdbd').font('M').fontSize(9)
-                .text('Wałycz Studio · Toruń · woj. kujawsko-pomorskie', 60, footerY + 38);
-            doc.text('+48 660 470 200  ·  kontakt@wlasniewski.pl', 60, footerY + 52);
+                .text(BUSINESS_INFO.regionAscii + ' - sesje plenerowe', 60, footerY + 38);
+            doc.text(BUSINESS_INFO.phone + '  ·  ' + BUSINESS_INFO.email, 60, footerY + 52);
             doc.fillColor(COLOR_GOLD).fontSize(8)
-                .text('NIP 8792583213', 60, footerY + 70, { characterSpacing: 1.5 });
+                .text('NIP ' + BUSINESS_INFO.nip, 60, footerY + 70, { characterSpacing: 1.5 });
 
             doc.fillColor('#bdbdbd').font('M').fontSize(8)
                 .text('Voucher imienny · nie podlega odsprzedaży', 0, footerY + 38,
@@ -257,12 +258,13 @@ export function generateIcs(
         `Pakiet: ${challenge.package?.name || ''}\n` +
         `Kod weryfikacyjny: ${shortCode}\n` +
         `Szczegóły: ${inviteUrl}\n` +
-        `Kontakt: Przemysław Wlasniewski, +48 660 470 200`;
+        `Kontakt: ${BUSINESS_INFO.name}, ${BUSINESS_INFO.phone}` + `\n` +
+        `Sesja w plenerze - dokladne miejsce ustalamy indywidualnie z fotografem.`;
 
     const lines = [
         'BEGIN:VCALENDAR',
         'VERSION:2.0',
-        'PRODID:-//Wlasniewski Studio//Foto Wyzwanie//PL',
+        `PRODID:-//${BUSINESS_INFO.nameAscii}//Foto Wyzwanie//PL`,
         'CALSCALE:GREGORIAN',
         'METHOD:PUBLISH',
         'BEGIN:VEVENT',

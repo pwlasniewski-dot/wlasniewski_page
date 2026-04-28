@@ -1,5 +1,68 @@
 # PROJECT_HISTORIA & VADEMECUM STABILNOŚCI
 
+## [2026-04-28] FOTO-WYZWANIE — PŁATNOŚĆ PRODUCTION-READY (PayU webhook fix)
+
+**Problem:** Cały tor płatności PayU dla Foto-Wyzwania działał tylko **przypadkiem**:
+1. **Bug strukturalny** — handler `CHALLENGE_<id>` w [src/app/api/payu/notify/route.ts](src/app/api/payu/notify/route.ts) był zagnieżdżony WEWNĄTRZ gałęzi `if (typeOrId === 'CART')` → martwy kod, nigdy nie odpalał.
+2. **Bug kradzieży zdarzenia** — generic numeric booking handler (linia 199) łapał ID `1` z `CHALLENGE_1_xxx` i ustawiał `Booking.status='confirmed'` zanim cokolwiek innego zdążyło zareagować.
+3. **`payment_status` nigdy nie aktualizowany** — voucher PDF działał tylko dlatego, że sprawdzał `status`, nie `payment_status`.
+4. **Brak maila do invitee po opłaceniu** — klient płacił, cisza.
+5. **`Setting.findFirst()` bez orderBy** zwracał losowy wiersz → MD5 key czasem null nawet gdy był ustawiony (legacy schema z 32 wierszami `Setting`).
+6. **Fikcyjne dane biznesowe** w voucherze i UI: "Wałycz Studio", "+48 660 470 200", "kontakt@wlasniewski.pl", NIP "8792583213" (nieprawdziwy).
+
+### Naprawione
+
+**[src/lib/business-info.ts](src/lib/business-info.ts) (NOWY)** — single source of truth:
+- Imię: Przemysław Właśniewski
+- Telefon: +48 530 788 694
+- E-mail: pwlasniewski@gmail.com
+- NIP: 8781430365
+- Region: Płużnica, woj. kujawsko-pomorskie
+- Tagline: „Fotograf — sesje plenerowe"
+- Notka: „Sesje wyłącznie w plenerze — miejsce ustalamy indywidualnie z fotografem."
+
+Importowane przez: [InviteClient.tsx](src/app/foto-wyzwanie/invite/%5Bunique_link%5D/InviteClient.tsx), [success/page.tsx](src/app/foto-wyzwanie/accept/%5Bunique_link%5D/success/page.tsx), [voucher.ts](src/lib/photo-challenge/voucher.ts) (PDF + ICS), [invite/page.tsx](src/app/foto-wyzwanie/invite/%5Bunique_link%5D/page.tsx) (OG meta), [og/challenge/route.tsx](src/app/api/og/challenge/%5Bunique_link%5D/route.tsx).
+
+**[src/app/api/payu/notify/route.ts](src/app/api/payu/notify/route.ts):**
+- `Setting.findFirst({ where: { payu_md5_key: { not: null } }, orderBy: { id: 'asc' } })` zamiast losowego `findFirst()`.
+- Guard `isTypedExtOrder = /^[A-Z]+_/.test(extOrderId)` — generic numeric handler nie odpala dla `CHALLENGE_*`/`BOOKING_*`/`CART_*`.
+- De-nest CHALLENGE handler z gałęzi CART → siostra po `} // end CART branch`.
+- Update PhotoChallenge: `status='sent'` (NIE `accepted` — zaproszony jeszcze nie zaakceptował), `payment_status='paid'`, `payment_id=orderId`, `payment_method='payu'`, `paid_amount` (whole PLN), `admin_notes`.
+- Confirm blocking Booking: `challenge_pending` → `challenge_paid`.
+- Wysyłka maila do invitee z linkiem `/foto-wyzwanie/invite/<unique_link>` (template `challenge-payment-received-invitee`).
+- Wysyłka maila do inviter z potwierdzeniem płatności (template `challenge-payment-received-inviter`).
+- Symetryczny BOOKING_<id> handler (legacy: `Booking.status='confirmed'`).
+
+**[src/lib/email/sender.ts](src/lib/email/sender.ts):** dwa nowe templaty:
+- `challenge-payment-received-invitee` — CTA „Zobacz zaproszenie →"
+- `challenge-payment-received-inviter` — potwierdzenie kwoty + statusu
+
+**[voucher/route.ts](src/app/api/photo-challenge/%5Bunique_link%5D/voucher/route.ts) + [calendar.ics/route.ts](src/app/api/photo-challenge/%5Bunique_link%5D/calendar.ics/route.ts):** dodany twardy guard `payment_status === 'paid'` (oprócz status). Nikt nie pobierze vouchera bez zaksięgowanej płatności.
+
+**[src/app/api/cron/cleanup-pending-challenges/route.ts](src/app/api/cron/cleanup-pending-challenges/route.ts) (NOWY):**
+- GET/POST z `Authorization: Bearer ${CRON_SECRET}`.
+- Usuwa PhotoChallenge `status='pending_payment' AND payment_status='pending'` starsze niż 24h + cascade delete blokujących Bookings (`status='challenge_pending'`).
+- Loguje do `SystemLog`. Do podpięcia w cron-job.org / Netlify scheduled function (codziennie 03:00).
+
+### E2E test (dev) — PASS
+[scripts/test-payu-webhook.js](scripts/test-payu-webhook.js): reset challenge → POST signed PayU notify → assert.
+
+```
+BEFORE: status='pending_payment', payment_status='pending', payment_id=null
+AFTER:  status='sent',           payment_status='paid',    payment_id='TEST-1777411505078'
+        paid_amount=790, payment_method='payu'
+EMAIL → marek.nowak@example.com  : "🎁 Anna Kowalska zaprasza Cię…"
+EMAIL → anna.kowalska@example.com: "✅ Płatność potwierdzona — zaproszenie wysłane"
+✅ E2E PASS
+```
+
+### TODO (post-deploy)
+- W panelu admina dodać input dla NIP/telefonu/maila (Setting model) i zmienić `BUSINESS_INFO` na fetch z DB. Na razie hardcoded w pliku TS.
+- W produkcji: ustawić `CRON_SECRET` w env, podpiąć cron-job.org → `https://wlasniewski.pl/api/cron/cleanup-pending-challenges` z headerem `Authorization: Bearer <secret>`.
+- W panelu admina: kalendarz rezerwacji (FullCalendar + webcal iCal feed) — zaplanowane.
+
+---
+
 ## [2026-04-28] AUDYT BEZPIECZEŃSTWA + REWRITE FOTO-WYZWANIA (Sesja "trust-rebuild")
 
 ### Sesja 1 — Bezpieczeństwo (commit 06fbb02, dd6031c)

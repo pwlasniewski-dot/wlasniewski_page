@@ -57,17 +57,20 @@ interface Props {
     uniqueLink: string;
 }
 
+import { BUSINESS_INFO } from '@/lib/business-info';
+
 const PHOTOGRAPHER = {
-    name: 'Przemysław Wlasniewski',
-    studio: 'Wałycz Studio',
+    name: BUSINESS_INFO.name,
+    studio: BUSINESS_INFO.tagline,
     yearsActive: 12,
     googleReviewsUrl: 'https://g.page/r/wlasniewski-fotografia/review',
     portfolioUrl: '/portfolio',
     aboutUrl: '/o-mnie',
-    phone: '+48 660 470 200',
-    email: 'kontakt@wlasniewski.pl',
-    nip: '8792583213',
-    addressShort: 'Toruń · Wałycz · woj. kujawsko-pomorskie',
+    phone: BUSINESS_INFO.phone,
+    email: BUSINESS_INFO.email,
+    nip: BUSINESS_INFO.nip,
+    addressShort: BUSINESS_INFO.region,
+    locationNote: BUSINESS_INFO.locationNote,
 };
 
 export default function InviteClient({ initialChallenge, uniqueLink }: Props) {

@@ -1,0 +1,26 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Wlasniewski Studio//Foto Wyzwanie//PL
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+BEGIN:VEVENT
+UID:foto-wyzwanie-1-5c5493b1-a97@wlasniewski.pl
+DTSTAMP:20260428T205505Z
+DTSTART:20260515T120000Z
+DTEND:20260515T130000Z
+SUMMARY:Sesja Foto-Wyzwanie · Sesja Rodzinna PREMIUM
+LOCATION:Wałycz Studio — Wałycz 12\, 87-200 Wąbrzeźno
+DESCRIPTION:Sesja zaproszeniowa od Anna Kowalska dla Marek Nowak.\nPakiet
+ : Sesja Rodzinna PREMIUM\nKod weryfikacyjny: 5C5493\nSzczegóły: http://lo
+ calhost:3000/foto-wyzwanie/invite/5c5493b1-a972-4010-9a60-d27c478dbd97\nK
+ ontakt: Przemysław Wlasniewski\, +48 660 470 200
+URL:http://localhost:3000/foto-wyzwanie/invite/5c5493b1-a972-4010-9a60-d2
+ 7c478dbd97
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-P1D
+ACTION:DISPLAY
+DESCRIPTION:Przypomnienie: jutro sesja Foto-Wyzwanie
+END:VALARM
+END:VEVENT
+END:VCALENDAR

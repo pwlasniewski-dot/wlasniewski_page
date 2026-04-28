@@ -212,6 +212,62 @@ function renderTemplate(template: string, data: Record<string, any>): string {
     </div>
 </body>
 </html>`,
+        'challenge-payment-received-invitee': (d) => `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>${baseStyles}</style>
+</head>
+<body>
+    <div class="container">
+        <div class="header" style="border-color: #d4af37;">
+            <div class="logo">Masz <span class="logo-accent" style="color: #d4af37;">Zaproszenie</span> 🎁</div>
+        </div>
+        <div class="content">
+            <div class="greeting">Cześć ${d.inviteeName},</div>
+            <p><strong>${d.inviterName}</strong> opłacił dla Ciebie sesję fotograficzną w pakiecie <strong>${d.packageName}</strong>.</p>
+            <p>Sesja jest <strong>w pełni opłacona z góry</strong> — Ty wybierasz tylko termin i akceptujesz zaproszenie. Możesz też je odrzucić jednym kliknięciem (bez zobowiązań).</p>
+            <div style="text-align: center; margin: 32px 0;">
+                <a href="${d.inviteLink}" style="display: inline-block; background: #d4af37; color: #1a1a1a; padding: 14px 32px; border-radius: 8px; font-weight: 700; text-decoration: none; font-size: 16px;">
+                    Zobacz zaproszenie →
+                </a>
+            </div>
+            <p style="font-size: 13px; color: #666;">
+                Link do zaproszenia: <br>
+                <a href="${d.inviteLink}" style="color: #d4af37; word-break: break-all;">${d.inviteLink}</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>`,
+        'challenge-payment-received-inviter': (d) => `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>${baseStyles}</style>
+</head>
+<body>
+    <div class="container">
+        <div class="header" style="border-color: #22c55e;">
+            <div class="logo">Płatność <span class="logo-accent" style="color: #22c55e;">Potwierdzona</span> ✅</div>
+        </div>
+        <div class="content">
+            <div class="greeting">Cześć ${d.inviterName},</div>
+            <p>Twoja płatność za sesję <strong>${d.packageName}</strong> dla <strong>${d.inviteeName}</strong> została pomyślnie zarejestrowana.</p>
+            <div class="details-box" style="border-color: rgba(34, 197, 94, 0.3);">
+                <p>💰 Kwota: <strong>${d.amount} PLN</strong></p>
+                <p>📨 Status: zaproszenie wysłane do ${d.inviteeName}</p>
+            </div>
+            <p>Zaproszony otrzymał właśnie e-mail z linkiem do akceptacji terminu. Powiadomię Cię, gdy zaakceptuje lub odrzuci zaproszenie.</p>
+            <p style="font-size: 13px; color: #666; margin-top: 20px;">
+                W razie pytań: kontakt@wlasniewski.pl &nbsp;·&nbsp; +48 530 788 694
+            </p>
+        </div>
+    </div>
+</body>
+</html>`,
         'challenge-rejected': (d) => `
 <!DOCTYPE html>
 <html>
