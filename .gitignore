@@ -58,3 +58,16 @@ public/api/db.php
 public/api/**/*.php
 *_settings_backup*.json
 full_settings.txt
+
+# Local-only secret backups (NEVER commit)
+backups/secrets_*/
+
+
+# Local-only secret backups (NEVER commit)
+backups/secrets_*/
+
+
+# Build logs
+build_*.log
+*.log
+
