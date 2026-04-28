@@ -1,5 +1,53 @@
 # PROJECT_HISTORIA & VADEMECUM STABILNOŚCI
 
+## [2026-04-28] AUDYT BEZPIECZEŃSTWA + REWRITE FOTO-WYZWANIA (Sesja "trust-rebuild")
+
+### Sesja 1 — Bezpieczeństwo (commit 06fbb02, dd6031c)
+- **JWT_SECRET fallbacks usunięte** w `src/lib/auth/jwt.ts` i `src/lib/photo-challenge/auth.ts` — kod walił `throw` przy starcie modułu, co wywaliło Netlify build (page-data collection ładuje wszystkie route'y zanim env się wczyta).
+- **FIX**: lazy `getSecret()` — walidacja przeniesiona do wywołania funkcji, nie do top-levelu modułu. Build przechodzi nawet gdy JWT_SECRET brakuje, ale runtime rzuca błąd zanim podpisze cokolwiek bez sekretu.
+- **Plain-text password compare naprawiony** w `challenge-login` route (bcrypt.compare zamiast `===`).
+- **.gitignore wzmocniony**: `*.tsbuildinfo`, `*.log`, `backups/secrets_*/`.
+- **Wycieki w git history (do rotacji przez użytkownika)**: PayU client_secret + md5_key, Przelewy24 crc_key, Gmail SMTP password, JWT_SECRET, Neon Postgres URL, AWS S3 secret. (MySQL `Kie@!st78ar?X` nieaktualne — DB z ery PHP nieżywa.)
+
+### Sesja 2 — Auth na endpoint'ach + SQL hardening
+- **`/api/photo-challenge/gallery/[challenge_id]`** — dodany Bearer JWT check gdy galeria nie jest publiczna; walidacja inviter_email (case-insensitive) lub invitee_user_id.
+- **`/z/[code]`** — przepisane z `$queryRawUnsafe` na `Prisma.sql` tagged template + regex `^[a-z0-9]{4,12}$`. Eliminacja vector SQL-i.
+
+### Cleanup (commit f5b81c8) — 56 plików
+- 27 dump'ów debug (.txt/.json) z roota → usunięte (część była w git).
+- 11 zostałości PHP (sender_*.php, generate_*.php) → usunięte.
+- 5 plików env/log → usunięte z trackingu (`git rm --cached`), pliki lokalne zostają.
+- 8 dokumentów reorganizowanych do `backups/documentation/`.
+- **ZERO LOSS**: nic nie wykasowane fizycznie z dysku — przeniesione lub `git rm --cached`.
+- Tag `pre-cleanup-2026-04-28` wypchnięty na GitHub jako rollback safety.
+
+### Foto-Wyzwanie — rewrite InviteClient (commit 285791b)
+- **Cel**: variant "trust-rebuild" — zaproszony nie ma żadnego powodu, żeby się wycofać.
+- **Plik**: `src/app/foto-wyzwanie/invite/[unique_link]/InviteClient.tsx` (309 → ~480 linii). Backup: `InviteClient.OLD_2026-04-28.tsx.bak` w tym samym folderze.
+- **Server (`page.tsx`)**: dodany `maskContact()` (email `ab***@x.com`, telefon `+48 600 *** 200`), `deriveShortCode()` (6-znakowy kod z UUID), best-effort `viewed_at` update, OG image przez `/api/og/challenge/[unique_link]`.
+- **Client — co usunięte**:
+  - **Fałszywy 10% rabat** (`challenge_price * 0.9`) — wycięty. Cena = cena.
+  - Liczniki FOMO i sztuczne deadliny.
+- **Client — co dodane**:
+  1. **Trust bar** sticky-top: "Zweryfikowane studio · PayU/SSL · Opinie Google".
+  2. **Hero** — pink badge "Zaproszenie imienne", invitee_name + inviter_name w gradiencie.
+  3. **Weryfikacja OLX-style**: złoty kod monospace + zamaskowany kontakt zapraszającego ("zadzwoń i poproś o potwierdzenie kodu").
+  4. **Karta oferty** z `accent_color` z DB, włączone pozycje (parsed JSON), badge "Już opłacone".
+  5. **Lokalizacja** z linkiem do Google Maps.
+  6. **Karta fotografa**: imię, studio Wałycz, 12 lat, NIP 8792583213, linki Opinie/Portfolio/O mnie, tel/mail buttons.
+  7. **Green-flag list** (collapsible): zero opłat, możesz odrzucić, brak danych płatniczych, NIP, RODO.
+  8. **2-stopniowy handshake decyzji**: najpierw "Pokaż przyciski", potem "Potwierdzam udział" / "Tym razem nie".
+  9. **Share** (collapsible): WhatsApp, Facebook, Email, Copy link.
+  10. **Footer**: NIP + Regulamin/Prywatność/Kontakt.
+
+### Pending (na kolejne sesje)
+- Sesja 3 perf: `next.config.mjs` compress:true, `images.unoptimized:false`, HeroSlider `<Image priority>`, Portfolio `revalidate:3600`, własny `not-found.tsx`.
+- Sesja 4 SEO: Blog SSR + JSON-LD, dead code, reCAPTCHA.
+- Foto-wyzwanie: strona po płatności + voucher PDF z QR (`qrcode` zainstalowany), cron czyszczący nieopłacone.
+- Rotacja kredencjali (PayU, P24, SMTP, Neon, AWS).
+
+---
+
 > [!IMPORTANT]
 > **## ZASADY STABILNOŚCI (ŹRÓDŁO PRAWDY)
 
