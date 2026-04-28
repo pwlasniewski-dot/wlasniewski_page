@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
+import { verifyUserToken } from '@/lib/photo-challenge/auth';
 
 export async function GET(
     request: NextRequest,
@@ -8,6 +9,13 @@ export async function GET(
     try {
         const { challenge_id } = await params;
         const challengeId = parseInt(challenge_id);
+
+        if (!Number.isFinite(challengeId) || challengeId <= 0) {
+            return NextResponse.json(
+                { success: false, error: 'Invalid challenge id' },
+                { status: 400 }
+            );
+        }
 
         // Fetch gallery
         const gallery = await prisma.challengeGallery.findUnique({
@@ -28,8 +36,32 @@ export async function GET(
             );
         }
 
-        // For now, allow public access. In production, verify token/email
-        // TODO: Add authentication check
+        // SECURITY: gallery is only freely accessible when explicitly published AND marked public.
+        // Otherwise require a JWT belonging to the inviter (challenge_user) or the invitee.
+        const isPublic = gallery.is_published && gallery.show_in_public_gallery;
+        if (!isPublic) {
+            const authHeader = request.headers.get('authorization') || request.headers.get('Authorization');
+            const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
+            const user = token ? await verifyUserToken(token) : null;
+
+            if (!user) {
+                return NextResponse.json(
+                    { success: false, error: 'Unauthorized' },
+                    { status: 401 }
+                );
+            }
+
+            const ch = gallery.challenge;
+            const isInviter = ch?.inviter_email && user.email && ch.inviter_email.toLowerCase() === user.email.toLowerCase();
+            const isInvitee = ch?.invitee_user_id && ch.invitee_user_id === user.id;
+
+            if (!isInviter && !isInvitee) {
+                return NextResponse.json(
+                    { success: false, error: 'Forbidden' },
+                    { status: 403 }
+                );
+            }
+        }
 
         return NextResponse.json({
             success: true,

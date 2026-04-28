@@ -1,4 +1,5 @@
 import { redirect, notFound } from 'next/navigation';
+import { Prisma } from '@prisma/client';
 import prisma from '@/lib/db/prisma';
 import { normalizeShortCode } from '@/lib/photo-challenge/short-code';
 
@@ -16,15 +17,16 @@ export default async function ShortLinkRedirect({ params }: Props) {
     const { code } = await params;
     const normalized = normalizeShortCode(code);
 
-    if (normalized.length < 4) {
+    // Defense-in-depth: normalizeShortCode already strips non-alphanum & lowercases,
+    // but we still validate the shape before touching the DB.
+    if (!/^[a-z0-9]{4,12}$/.test(normalized)) {
         notFound();
     }
 
-    // Look up by prefix on unique_link with dashes stripped.
-    // Postgres has no straightforward "stripped startsWith" so we use raw query.
-    const challenges = await prisma.$queryRawUnsafe<Array<{ unique_link: string }>>(
-        `SELECT unique_link FROM photo_challenges WHERE LOWER(REPLACE(unique_link, '-', '')) LIKE $1 LIMIT 2`,
-        `${normalized}%`
+    const pattern = `${normalized}%`;
+    // Parameterized tagged-template query (Prisma escapes $1 safely).
+    const challenges = await prisma.$queryRaw<Array<{ unique_link: string }>>(
+        Prisma.sql`SELECT unique_link FROM photo_challenges WHERE LOWER(REPLACE(unique_link, '-', '')) LIKE ${pattern} LIMIT 2`
     );
 
     if (!challenges || challenges.length === 0) {
