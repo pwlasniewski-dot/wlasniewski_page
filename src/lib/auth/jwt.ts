@@ -4,15 +4,19 @@ import bcrypt from 'bcryptjs';
 import { SignJWT, jwtVerify } from 'jose';
 
 // SECURITY: JWT_SECRET MUST be set via environment variable. No fallback — refuse to operate without it.
-// Previously used a hardcoded fallback that leaked into the codebase; that constant is now permanently invalidated.
-if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
-    throw new Error(
-        '[SECURITY] JWT_SECRET environment variable is missing or too short (min 32 chars). ' +
-        'Set it in your environment (Netlify / .env.local) before starting the server.'
-    );
+// Lazy validation: check at first USE (not at module load) so Next.js page-data collection at build time
+// doesn't crash when an env var happens to be unset on the build machine.
+function getSecret(): Uint8Array {
+    const s = process.env.JWT_SECRET;
+    if (!s || s.length < 32) {
+        throw new Error(
+            '[SECURITY] JWT_SECRET environment variable is missing or too short (min 32 chars). ' +
+            'Set it in your environment (Netlify / .env.local) before starting the server.'
+        );
+    }
+    return new TextEncoder().encode(s);
 }
 
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET);
 const SALT_ROUNDS = 10;
 
 // Hash password
@@ -31,13 +35,13 @@ export async function generateToken(payload: { id: number; email: string; role?:
         .setProtectedHeader({ alg: 'HS256' })
         .setIssuedAt()
         .setExpirationTime('7d')
-        .sign(JWT_SECRET);
+        .sign(getSecret());
 }
 
 // Verify JWT token
 export async function verifyToken(token: string): Promise<{ id: number; email: string } | null> {
     try {
-        const { payload } = await jwtVerify(token, JWT_SECRET);
+        const { payload } = await jwtVerify(token, getSecret());
         return payload as unknown as { id: number; email: string };
     } catch (error) {
         console.error('JWT Verification failed:', error);
