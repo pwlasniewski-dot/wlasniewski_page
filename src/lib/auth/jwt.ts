@@ -3,15 +3,16 @@
 import bcrypt from 'bcryptjs';
 import { SignJWT, jwtVerify } from 'jose';
 
-// SECURITY: JWT_SECRET should be set via environment variable.
-// The fallback is used for local development only — set JWT_SECRET in production!
-if (!process.env.JWT_SECRET) {
-    console.error('[SECURITY WARNING] JWT_SECRET is not set in environment variables! Using fallback — NOT safe for production.');
+// SECURITY: JWT_SECRET MUST be set via environment variable. No fallback — refuse to operate without it.
+// Previously used a hardcoded fallback that leaked into the codebase; that constant is now permanently invalidated.
+if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
+    throw new Error(
+        '[SECURITY] JWT_SECRET environment variable is missing or too short (min 32 chars). ' +
+        'Set it in your environment (Netlify / .env.local) before starting the server.'
+    );
 }
 
-const JWT_SECRET = new TextEncoder().encode(
-    process.env.JWT_SECRET || 'wlasniewski-fotograf-jwt-secret-2024-production'
-);
+const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET);
 const SALT_ROUNDS = 10;
 
 // Hash password

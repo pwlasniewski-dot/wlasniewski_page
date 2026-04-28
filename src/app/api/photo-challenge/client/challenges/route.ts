@@ -10,7 +10,10 @@ export async function GET(request: NextRequest) {
         }
 
         const token = authHeader.split(' ')[1];
-        const secret = process.env.JWT_SECRET || 'secret-key';
+        const secret = process.env.JWT_SECRET;
+        if (!secret) {
+            return NextResponse.json({ success: false, error: 'Server misconfiguration' }, { status: 500 });
+        }
 
         let decoded: any;
         try {

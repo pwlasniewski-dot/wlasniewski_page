@@ -50,3 +50,11 @@ prisma/migrations/
 # backups
 backups/
 *.backup
+
+# leaked secret files (DO NOT COMMIT — content lives in git history, rotate creds!)
+production_settings_backup.json
+production_settings*.json
+public/api/db.php
+public/api/**/*.php
+*_settings_backup*.json
+full_settings.txt

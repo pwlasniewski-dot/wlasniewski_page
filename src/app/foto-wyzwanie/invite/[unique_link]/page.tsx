@@ -32,13 +32,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         };
     }
 
-    const title = `${challenge.inviter_name} zaprasza Cię na Foto Wyzwanie! 📸`;
-    const description = `Hej! ${challenge.inviter_name} rzucił Ci fotograficzne wyzwanie. Czeka na Ciebie sesja: ${challenge.package?.name || 'Wyjątkowa pamiątka'}. Kliknij, aby zobaczyć szczegóły!`;
+    const title = `🎁 ${challenge.inviter_name} zaprasza Cię na sesję — Wałycz Studio`;
+    const description = `Sesja "${challenge.package?.name || 'Foto Wyzwanie'}" jest już opłacona. Zobacz szczegóły, portfolio i opinie. Możesz odrzucić jednym kliknięciem — bez zobowiązań.`;
 
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-    // Using a nice placeholder/generic image if none specific. 
-    // Ideally, this would be a professional photo from assets.
-    const ogImage = `${baseUrl}/assets/placeholder.jpg`;
+    const baseUrl =
+        process.env.NEXT_PUBLIC_APP_URL ||
+        process.env.NEXT_PUBLIC_BASE_URL ||
+        'https://wlasniewski.pl';
+    const ogImage = `${baseUrl}/api/og/challenge/${unique_link}`;
 
     return {
         title,
@@ -46,12 +47,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         openGraph: {
             title,
             description,
+            url: `${baseUrl}/foto-wyzwanie/invite/${unique_link}`,
+            siteName: 'Wałycz Studio · wlasniewski.pl',
+            locale: 'pl_PL',
             images: [
                 {
                     url: ogImage,
                     width: 1200,
                     height: 630,
-                    alt: 'Foto Wyzwanie - Zaproszenie',
+                    alt: `Zaproszenie od ${challenge.inviter_name}`,
                 },
             ],
             type: 'website',
@@ -72,10 +76,20 @@ export default async function InvitePage({ params }: Props) {
     // Pass as plain object to client component
     const initialData = challenge ? {
         ...challenge,
+        // Serialize Date fields to ISO strings for client component boundary
+        created_at: challenge.created_at?.toISOString?.() || null,
+        acceptance_deadline: challenge.acceptance_deadline?.toISOString?.() || null,
+        viewed_at: challenge.viewed_at?.toISOString?.() || null,
+        accepted_at: challenge.accepted_at?.toISOString?.() || null,
+        rejected_at: challenge.rejected_at?.toISOString?.() || null,
+        session_date: challenge.session_date?.toISOString?.() || null,
+        completed_at: challenge.completed_at?.toISOString?.() || null,
         package: challenge.package ? {
             package_name: challenge.package.name,
             package_description: challenge.package.description || undefined,
             challenge_price: challenge.package.challenge_price,
+            base_price: challenge.package.base_price,
+            included_items: challenge.package.included_items || undefined,
         } : undefined,
         location: challenge.location ? {
             location_name: challenge.location.name,

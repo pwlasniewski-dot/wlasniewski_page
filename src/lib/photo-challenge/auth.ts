@@ -2,9 +2,11 @@ import bcrypt from 'bcryptjs';
 import { SignJWT, jwtVerify } from 'jose';
 import prisma from '@/lib/db/prisma';
 
-const JWT_SECRET = new TextEncoder().encode(
-    process.env.JWT_SECRET || 'your-secret-key'
-);
+// SECURITY: no fallback. JWT_SECRET must come from env (validated centrally in src/lib/auth/jwt.ts at boot).
+if (!process.env.JWT_SECRET) {
+    throw new Error('[SECURITY] JWT_SECRET env var is required.');
+}
+const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET);
 
 export async function hashPassword(password: string): Promise<string> {
     const salt = await bcrypt.genSalt(10);
