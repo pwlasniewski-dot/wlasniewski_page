@@ -27,7 +27,13 @@ export async function GET(request: NextRequest) {
         }
 
         // Pobierz user zeby znać email (do wyzwań jako inviter)
-        const me = await prisma.user.findUnique({ where: { id: decoded.userId }, select: { email: true } });
+        const me = await prisma.user.findUnique({
+            where: { id: decoded.userId },
+            select: { id: true, name: true, email: true },
+        });
+        if (!me) {
+            return NextResponse.json({ success: false, error: 'User not found' }, { status: 404 });
+        }
 
         const challenges = await prisma.photoChallenge.findMany({
             where: {
@@ -57,7 +63,7 @@ export async function GET(request: NextRequest) {
             role: ch.invitee_user_id === decoded.userId ? 'invitee' : 'inviter',
         }));
 
-        return NextResponse.json({ success: true, challenges: enriched });
+        return NextResponse.json({ success: true, user: me, challenges: enriched });
 
     } catch (error) {
         console.error('Fetch client challenges error:', error);

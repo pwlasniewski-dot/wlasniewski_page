@@ -9,6 +9,8 @@ interface Challenge {
     id: number;
     unique_link: string;
     inviter_name: string;
+    invitee_name: string;
+    role?: 'invitee' | 'inviter';
     status: string;
     session_date: string | null;
     package: {
@@ -47,6 +49,7 @@ export default function ChallengePanelPage() {
             const data = await res.json();
             if (data.success) {
                 setChallenges(data.challenges);
+                setUser(data.user || null);
             } else {
                 // If token invalid, redirect to login
                 localStorage.removeItem('client_token');
@@ -86,16 +89,22 @@ export default function ChallengePanelPage() {
             <div className="max-w-5xl mx-auto">
                 {/* Header */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
-                    <div>
-                        <h1 className="text-4xl font-display font-bold mb-2 flex items-center gap-3">
-                            <Trophy className="text-gold-500" size={36} />
-                            Witaj w Panelu Wyzwań
+                    <div className="min-w-0">
+                        <h1 className="text-3xl md:text-4xl font-display font-bold mb-2 flex items-center gap-3">
+                            <Trophy className="text-gold-500 shrink-0" size={32} />
+                            <span>Cześć{user?.name ? `, ${user.name}` : ''}!</span>
                         </h1>
-                        <p className="text-zinc-400 text-lg">Twoje sesje i galerie w jednym miejscu</p>
+                        <p className="text-zinc-400 text-sm md:text-base">
+                            {user?.email ? (
+                                <>Zalogowany jako <span className="text-zinc-300 font-mono text-xs">{user.email}</span> · Twoje sesje i galerie</>
+                            ) : (
+                                <>Twoje sesje i galerie w jednym miejscu</>
+                            )}
+                        </p>
                     </div>
                     <button
                         onClick={handleLogout}
-                        className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors text-zinc-400 hover:text-white"
+                        className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors text-zinc-400 hover:text-white shrink-0"
                     >
                         <LogOut size={18} /> Wyloguj się
                     </button>
@@ -127,10 +136,15 @@ export default function ChallengePanelPage() {
 
                                         {/* Main Info */}
                                         <div className="flex-1">
-                                            <div className="flex items-center gap-3 mb-2">
+                                            <div className="flex items-center gap-2 mb-2 flex-wrap">
                                                 <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${status.color}`}>
                                                     {status.label}
                                                 </span>
+                                                {challenge.role && (
+                                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${challenge.role === 'inviter' ? 'bg-amber-500/15 text-amber-300' : 'bg-blue-500/15 text-blue-300'}`}>
+                                                        {challenge.role === 'inviter' ? 'Zapraszasz' : 'Zaproszony/a'}
+                                                    </span>
+                                                )}
                                                 <h2 className="text-xl font-bold">{challenge.package.name}</h2>
                                             </div>
                                             <div className="flex flex-wrap gap-4 text-sm text-zinc-400">
@@ -143,7 +157,9 @@ export default function ChallengePanelPage() {
                                                     {challenge.location?.name || challenge.custom_location || 'Lokalizacja wkrótce'}
                                                 </div>
                                             </div>
-                                            <p className="mt-3 text-sm italic text-zinc-500">Zaproszenie od: {challenge.inviter_name}</p>
+                                            <p className="mt-3 text-sm italic text-zinc-500">
+                                                {challenge.role === 'inviter' ? `Zaproszony/a: ${challenge.invitee_name}` : `Zaproszenie od: ${challenge.inviter_name}`}
+                                            </p>
                                         </div>
 
                                         {/* Action Buttons */}
