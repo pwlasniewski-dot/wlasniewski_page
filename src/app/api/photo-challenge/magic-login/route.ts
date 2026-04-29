@@ -12,7 +12,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { verifyMagicLinkToken } from '@/lib/photo-challenge/magic-link';
-import { createUserToken } from '@/lib/photo-challenge/auth';
+import { generateToken } from '@/lib/auth/jwt';
 
 export async function GET(request: NextRequest) {
     const token = request.nextUrl.searchParams.get('token');
@@ -43,10 +43,10 @@ export async function GET(request: NextRequest) {
         });
     } catch {}
 
-    const sessionToken = await createUserToken(user.id, user.email);
+    const sessionToken = await generateToken({ id: user.id, email: user.email });
 
-    // Decyzja o targecie: jeśli challengeId podany — od razu do panelu (i tak panel pokaże listę)
-    const redirectTo = '/foto-wyzwanie/panel';
+    // Po zalogowaniu klient ląduje w zunifikowanej strefie klienta (/konto).
+    const redirectTo = '/konto';
 
     return NextResponse.json({
         success: true,

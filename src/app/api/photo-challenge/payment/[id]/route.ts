@@ -49,9 +49,23 @@ export async function GET(
         try {
             const { sendEmail } = await import('@/lib/email/sender');
             const { getSiteUrl } = await import('@/lib/site-url');
+            const { createMagicLinkToken } = await import('@/lib/photo-challenge/magic-link');
             const baseUrl = getSiteUrl();
             const inviteLink = `${baseUrl}/foto-wyzwanie/invite/${challenge.unique_link}`;
-            const loginLink = `${baseUrl}/foto-wyzwanie/login`;
+
+            // Inviter — magic link 1-klik do /konto (bez konieczności pamiętania hasła).
+            // Fallback na /logowanie jeśli z jakiegoś powodu nie ma user_id zapraszającego.
+            let loginLink = `${baseUrl}/logowanie`;
+            const inviterUserId = (challenge as any).inviter_user_id as number | null;
+            if (inviterUserId && challenge.inviter_email) {
+                const magicToken = await createMagicLinkToken({
+                    userId: inviterUserId,
+                    email: challenge.inviter_email,
+                    challengeId: challenge.id,
+                    ttl: '60d',
+                });
+                loginLink = `${baseUrl}/foto-wyzwanie/wejdz?token=${encodeURIComponent(magicToken)}`;
+            }
 
             // 1. Send to Invitee
             await sendEmail({

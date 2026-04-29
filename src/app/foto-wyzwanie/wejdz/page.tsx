@@ -31,10 +31,11 @@ export default function MagicEnterPage() {
                 const res = await fetch(`/api/photo-challenge/magic-login?token=${encodeURIComponent(token)}`);
                 const data = await res.json();
                 if (data.success && data.token) {
-                    localStorage.setItem('client_token', data.token);
-                    // Mirror dla zgodności z resztą strefy klienta (PDF/oferty)
                     localStorage.setItem('user_token', data.token);
-                    router.replace(data.redirectTo || '/foto-wyzwanie/panel');
+                    localStorage.setItem('user_info', JSON.stringify(data.user));
+                    // Mirror dla starych miejsc, które czytały client_token
+                    localStorage.setItem('client_token', data.token);
+                    window.location.href = data.redirectTo || '/konto';
                 } else {
                     setErrorMsg(data.error || 'Link wygasł lub jest nieprawidłowy.');
                     setStatus('error');
@@ -64,8 +65,8 @@ export default function MagicEnterPage() {
                         <h1 className="text-2xl font-display font-bold mb-2">Nie udało się otworzyć linku</h1>
                         <p className="text-zinc-400 text-sm mb-6">{errorMsg}</p>
                         <div className="flex flex-col gap-3">
-                            <Link href="/foto-wyzwanie/login" className="px-5 py-3 bg-gold-500 hover:bg-gold-600 text-black font-bold rounded-lg">
-                                Spróbuj zalogować się hasłem
+                            <Link href="/logowanie/przypomnij-haslo" className="px-5 py-3 bg-gold-500 hover:bg-gold-600 text-black font-bold rounded-lg">
+                                Ustaw nowe hasło
                             </Link>
                             <Link href="/kontakt" className="text-zinc-400 hover:text-white text-sm">
                                 Skontaktuj się z fotografem

@@ -41,6 +41,10 @@ export default function LoginPage() {
                 <div className="absolute top-0 w-full h-1 bg-gradient-to-r from-gold-600 to-gold-300"></div>
                 <h1 className="text-3xl font-bold text-gold-400 mb-6 text-center">Logowanie</h1>
 
+                <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-3 mb-5 text-xs text-zinc-300">
+                    <strong className="text-emerald-300">Pierwszy raz?</strong> Jeśli dostałeś maila z foto-wyzwania, kliknij <Link href="/logowanie/przypomnij-haslo" className="text-gold-400 hover:text-gold-300 font-medium">„Nie pamiętasz hasła?"</Link> — wyślemy link do ustawienia hasła.
+                </div>
+
                 {error && <div className="bg-red-900/20 text-red-400 p-3 rounded mb-4 text-sm">{error}</div>}
 
                 <form onSubmit={handleSubmit} className="space-y-4">
