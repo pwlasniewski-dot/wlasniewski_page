@@ -5,7 +5,7 @@
 // Light, warm, premium look. Typography: Cormorant Garamond + Montserrat + Great Vibes.
 
 import { useEffect, useState } from 'react';
-import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import {
     Sparkles, Heart, Camera, Gift, Clock, ArrowRight,
@@ -42,10 +42,6 @@ export default function FotoWyzwaniePage() {
     const [stats, setStats] = useState<Stats | null>(null);
     const [packages, setPackages] = useState<Pkg[]>([]);
     const [loading, setLoading] = useState(true);
-
-    const { scrollY } = useScroll();
-    const heroY = useTransform(scrollY, [0, 600], [0, 120]);
-    const heroOpacity = useTransform(scrollY, [0, 400], [1, 0.4]);
 
     useEffect(() => {
         Promise.all([
@@ -93,21 +89,21 @@ export default function FotoWyzwaniePage() {
             <PromocodeBar code="WYZWANIE20" discount={20} discountType="percentage" />
 
             {/* HERO */}
-            <section className="relative min-h-[100vh] pt-32 pb-20 px-4 overflow-hidden">
-                <div className="absolute inset-0 -z-10">
-                    <div className="absolute top-20 -left-20 w-[500px] h-[500px] rounded-full bg-gradient-to-br from-rose-200/40 to-amber-200/30 blur-3xl animate-float" />
-                    <div className="absolute top-40 -right-32 w-[600px] h-[600px] rounded-full bg-gradient-to-br from-amber-200/40 to-orange-200/30 blur-3xl animate-float" style={{ animationDelay: '5s' }} />
-                    <div className="absolute bottom-0 left-1/3 w-[400px] h-[400px] rounded-full bg-gradient-to-br from-emerald-100/40 to-teal-100/30 blur-3xl animate-float" style={{ animationDelay: '10s' }} />
+            <section className="relative pt-28 pb-16 md:pt-36 md:pb-24 px-4 overflow-hidden">
+                <div className="absolute inset-0 -z-10 pointer-events-none">
+                    <div className="absolute top-20 -left-20 w-[300px] md:w-[500px] h-[300px] md:h-[500px] rounded-full bg-gradient-to-br from-rose-200/40 to-amber-200/30 blur-3xl animate-float" />
+                    <div className="absolute top-40 -right-32 w-[350px] md:w-[600px] h-[350px] md:h-[600px] rounded-full bg-gradient-to-br from-amber-200/40 to-orange-200/30 blur-3xl animate-float" style={{ animationDelay: '5s' }} />
+                    <div className="absolute bottom-0 left-1/3 w-[250px] md:w-[400px] h-[250px] md:h-[400px] rounded-full bg-gradient-to-br from-emerald-100/40 to-teal-100/30 blur-3xl animate-float" style={{ animationDelay: '10s' }} />
                 </div>
 
-                <motion.div style={{ y: heroY, opacity: heroOpacity }} className="max-w-6xl mx-auto">
-                    <div className="grid md:grid-cols-2 gap-12 items-center">
-                        <div>
+                <div className="max-w-6xl mx-auto">
+                    <div className="grid md:grid-cols-2 gap-8 md:gap-12 items-center">
+                        <div className="text-center md:text-left">
                             <motion.div
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ duration: 0.6 }}
-                                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/80 backdrop-blur border border-amber-200 text-amber-800 text-sm font-medium mb-6 shadow-sm"
+                                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/80 backdrop-blur border border-amber-200 text-amber-800 text-xs md:text-sm font-medium mb-6 shadow-sm"
                             >
                                 <Sparkles className="w-4 h-4" />
                                 Limitowana edycja — tylko {stats?.remaining_monthly_slots ?? 5} miejsc w tym miesiącu
@@ -117,26 +113,26 @@ export default function FotoWyzwaniePage() {
                                 initial={{ opacity: 0, y: 30 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ duration: 0.8, delay: 0.1 }}
-                                className="font-display font-bold text-5xl md:text-7xl leading-[1.05] text-stone-900 mb-6"
+                                className="font-display font-extrabold text-[2.75rem] sm:text-5xl md:text-6xl lg:text-7xl leading-[1.02] text-stone-900 mb-6 tracking-tight"
                             >
-                                {settings?.landing_headline || (
-                                    <>
-                                        Podaruj komuś<br />
-                                        <span className="bg-gradient-to-r from-amber-600 via-rose-500 to-amber-600 bg-clip-text text-transparent">
-                                            wspomnienie
-                                        </span>
-                                        <span className="font-handwriting text-amber-700 ml-3">na zawsze</span>
-                                    </>
-                                )}
+                                <span className="block">Podaruj komuś</span>
+                                <span className="block bg-gradient-to-r from-amber-600 via-rose-500 to-amber-600 bg-clip-text text-transparent">
+                                    wspomnienie
+                                </span>
+                                <span className="font-handwriting font-normal text-amber-700 text-4xl sm:text-5xl md:text-6xl block mt-1">
+                                    na zawsze
+                                </span>
                             </motion.h1>
 
                             <motion.p
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ duration: 0.8, delay: 0.3 }}
-                                className="text-lg md:text-xl text-stone-600 mb-8 leading-relaxed max-w-xl"
+                                className="text-base md:text-xl text-stone-600 mb-8 leading-relaxed max-w-xl mx-auto md:mx-0"
                             >
-                                {settings?.landing_subtitle || (
+                                {settings?.landing_subtitle && settings.landing_subtitle.length > 20 ? (
+                                    settings.landing_subtitle
+                                ) : (
                                     <>
                                         Foto Wyzwanie to <strong className="text-stone-900">prezent, którego nie da się odpakować z Allegro</strong>.
                                         Zaproś bliską osobę na wspólną sesję — w cenie nawet do <span className="text-amber-700 font-bold">21% niższej</span> niż standardowa.
@@ -148,11 +144,11 @@ export default function FotoWyzwaniePage() {
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ duration: 0.6, delay: 0.5 }}
-                                className="flex flex-wrap items-center gap-4"
+                                className="flex flex-wrap items-center justify-center md:justify-start gap-3 md:gap-4"
                             >
                                 <Link
                                     href="/foto-wyzwanie/stworz"
-                                    className="group relative inline-flex items-center gap-2 px-8 py-4 rounded-full bg-gradient-to-r from-amber-600 to-rose-500 text-white font-bold text-lg shadow-lg shadow-amber-500/30 hover:shadow-xl hover:shadow-amber-500/50 hover:-translate-y-0.5 transition-all animate-pulse-soft"
+                                    className="group relative inline-flex items-center gap-2 px-6 md:px-8 py-3.5 md:py-4 rounded-full bg-gradient-to-r from-amber-600 to-rose-500 text-white font-bold text-base md:text-lg shadow-lg shadow-amber-500/30 hover:shadow-xl hover:shadow-amber-500/50 hover:-translate-y-0.5 transition-all animate-pulse-soft"
                                 >
                                     <Gift className="w-5 h-5" />
                                     {settings?.cta_button_text || 'Stwórz wyzwanie'}
@@ -160,7 +156,7 @@ export default function FotoWyzwaniePage() {
                                 </Link>
                                 <a
                                     href="#jak-to-dziala"
-                                    className="inline-flex items-center gap-2 px-6 py-4 rounded-full bg-white/70 backdrop-blur border border-stone-300 text-stone-700 font-medium hover:bg-white transition-all"
+                                    className="inline-flex items-center gap-2 px-5 md:px-6 py-3.5 md:py-4 rounded-full bg-white/70 backdrop-blur border border-stone-300 text-stone-700 font-medium hover:bg-white transition-all"
                                 >
                                     Jak to działa? <ChevronDown className="w-4 h-4" />
                                 </a>
@@ -170,7 +166,7 @@ export default function FotoWyzwaniePage() {
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 transition={{ duration: 0.6, delay: 0.8 }}
-                                className="flex flex-wrap items-center gap-6 mt-8 text-sm text-stone-500"
+                                className="flex flex-wrap items-center justify-center md:justify-start gap-4 md:gap-6 mt-8 text-xs md:text-sm text-stone-500"
                             >
                                 <div className="flex items-center gap-2">
                                     <Shield className="w-4 h-4 text-emerald-600" />
@@ -187,25 +183,17 @@ export default function FotoWyzwaniePage() {
                             initial={{ opacity: 0, scale: 0.9 }}
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{ duration: 1, delay: 0.4 }}
-                            className="relative h-[500px] hidden md:block"
+                            className="relative h-[460px] hidden md:block"
                         >
                             <FloatingPolaroids />
                         </motion.div>
                     </div>
-                </motion.div>
-
-                <motion.div
-                    animate={{ y: [0, 10, 0] }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                    className="absolute bottom-6 left-1/2 -translate-x-1/2 text-stone-400"
-                >
-                    <ChevronDown className="w-6 h-6" />
-                </motion.div>
+                </div>
             </section>
 
             {/* STATS BAR */}
-            <section className="py-12 px-4 bg-gradient-to-r from-amber-50 via-rose-50 to-amber-50 border-y border-amber-100">
-                <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+            <section className="py-10 md:py-12 px-4 bg-gradient-to-r from-amber-50 via-rose-50 to-amber-50 border-y border-amber-100">
+                <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 text-center">
                     <StatTile icon={<Heart className="w-6 h-6" />} value={stats?.completed_sessions ?? 47} label="zrealizowanych sesji" />
                     <StatTile icon={<Sparkles className="w-6 h-6" />} value={stats?.accepted_this_month ?? 12} label="wyzwań w tym miesiącu" />
                     <StatTile icon={<Star className="w-6 h-6" />} value={5} suffix="/5" label="średnia ocena par" decimal />
@@ -214,17 +202,17 @@ export default function FotoWyzwaniePage() {
             </section>
 
             {/* WHY */}
-            <section className="py-24 px-4">
+            <section className="py-16 md:py-24 px-4">
                 <div className="max-w-5xl mx-auto">
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
-                        className="text-center mb-16"
+                        className="text-center mb-12 md:mb-16"
                     >
-                        <span className="font-handwriting text-3xl text-amber-700">a po co to wszystko?</span>
-                        <h2 className="font-display font-bold text-4xl md:text-5xl text-stone-900 mt-2">
-                            Bo zdjęcia żyją dłużej<br />niż ostatni model telefonu
+                        <span className="font-handwriting text-2xl md:text-3xl text-amber-700">a po co to wszystko?</span>
+                        <h2 className="font-display font-extrabold text-3xl sm:text-4xl md:text-5xl text-stone-900 mt-2 tracking-tight">
+                            Bo zdjęcia żyją dłużej<br className="hidden sm:block" /> niż ostatni model telefonu
                         </h2>
                     </motion.div>
 
@@ -255,21 +243,21 @@ export default function FotoWyzwaniePage() {
             </section>
 
             {/* HOW IT WORKS */}
-            <section id="jak-to-dziala" className="py-24 px-4 bg-gradient-to-b from-[#FBF7EF] to-amber-50/50">
+            <section id="jak-to-dziala" className="py-16 md:py-24 px-4 bg-gradient-to-b from-[#FBF7EF] to-amber-50/50 scroll-mt-24">
                 <div className="max-w-6xl mx-auto">
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
-                        className="text-center mb-20"
+                        className="text-center mb-12 md:mb-20"
                     >
-                        <span className="font-handwriting text-3xl text-amber-700">prosto jak drut</span>
-                        <h2 className="font-display font-bold text-4xl md:text-5xl text-stone-900 mt-2">
+                        <span className="font-handwriting text-2xl md:text-3xl text-amber-700">prosto jak drut</span>
+                        <h2 className="font-display font-extrabold text-3xl sm:text-4xl md:text-5xl text-stone-900 mt-2 tracking-tight">
                             Trzy kroki do wspomnień
                         </h2>
                     </motion.div>
 
-                    <div className="grid md:grid-cols-3 gap-8 relative">
+                    <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6 md:gap-8 relative">
                         <StepCard
                             number={1}
                             icon={<Heart className="w-7 h-7" />}
@@ -300,21 +288,21 @@ export default function FotoWyzwaniePage() {
 
             {/* PACKAGES PREVIEW */}
             {packages.length > 0 && (
-                <section className="py-24 px-4">
+                <section className="py-16 md:py-24 px-4">
                     <div className="max-w-6xl mx-auto">
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
-                            className="text-center mb-16"
+                            className="text-center mb-12 md:mb-16"
                         >
-                            <span className="font-handwriting text-3xl text-amber-700">wybierz coś dla siebie</span>
-                            <h2 className="font-display font-bold text-4xl md:text-5xl text-stone-900 mt-2">
+                            <span className="font-handwriting text-2xl md:text-3xl text-amber-700">wybierz coś dla siebie</span>
+                            <h2 className="font-display font-extrabold text-3xl sm:text-4xl md:text-5xl text-stone-900 mt-2 tracking-tight">
                                 Pakiety na każdą okazję
                             </h2>
                         </motion.div>
 
-                        <div className="grid md:grid-cols-3 gap-6">
+                        <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6">
                             {packages.map((p, i) => (
                                 <PackageCard key={p.id} pkg={p} delay={i * 0.1} highlighted={i === 1} />
                             ))}
@@ -333,7 +321,7 @@ export default function FotoWyzwaniePage() {
             )}
 
             {/* TESTIMONIAL */}
-            <section className="py-24 px-4 bg-gradient-to-r from-rose-50 via-amber-50 to-rose-50">
+            <section className="py-16 md:py-24 px-4 bg-gradient-to-r from-rose-50 via-amber-50 to-rose-50">
                 <div className="max-w-3xl mx-auto text-center">
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95 }}
@@ -346,7 +334,7 @@ export default function FotoWyzwaniePage() {
                                 <Star key={i} className="w-6 h-6 fill-amber-500 text-amber-500" />
                             ))}
                         </div>
-                        <blockquote className="font-display text-2xl md:text-3xl text-stone-800 leading-relaxed italic mb-6">
+                        <blockquote className="font-display text-xl sm:text-2xl md:text-3xl text-stone-800 leading-relaxed italic mb-6">
                             „Zaprosiłam mamę na sesję jako prezent na 60. urodziny.
                             Płakałyśmy obie — najpierw na sesji, potem oglądając zdjęcia. Najlepiej wydane pieniądze ostatnich lat."
                         </blockquote>
@@ -356,15 +344,15 @@ export default function FotoWyzwaniePage() {
             </section>
 
             {/* FAQ */}
-            <section className="py-24 px-4">
+            <section className="py-16 md:py-24 px-4">
                 <div className="max-w-3xl mx-auto">
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
-                        className="text-center mb-16"
+                        className="text-center mb-10 md:mb-16"
                     >
-                        <h2 className="font-display font-bold text-4xl md:text-5xl text-stone-900">
+                        <h2 className="font-display font-extrabold text-3xl sm:text-4xl md:text-5xl text-stone-900 tracking-tight">
                             Pytania, które padają najczęściej
                         </h2>
                     </motion.div>
@@ -395,7 +383,7 @@ export default function FotoWyzwaniePage() {
             </section>
 
             {/* FINAL CTA */}
-            <section className="py-24 px-4 bg-gradient-to-br from-stone-900 via-amber-950 to-stone-900 text-white relative overflow-hidden">
+            <section className="py-16 md:py-24 px-4 bg-gradient-to-br from-stone-900 via-amber-950 to-stone-900 text-white relative overflow-hidden">
                 <div className="absolute inset-0 -z-10">
                     <div className="absolute top-0 left-1/4 w-96 h-96 rounded-full bg-amber-500/20 blur-3xl animate-float" />
                     <div className="absolute bottom-0 right-1/4 w-96 h-96 rounded-full bg-rose-500/20 blur-3xl animate-float" style={{ animationDelay: '7s' }} />
@@ -406,21 +394,21 @@ export default function FotoWyzwaniePage() {
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
                     >
-                        <span className="font-handwriting text-3xl text-amber-300">no to co — robimy?</span>
-                        <h2 className="font-display font-bold text-4xl md:text-6xl mt-2 mb-6">
+                        <span className="font-handwriting text-2xl md:text-3xl text-amber-300">no to co — robimy?</span>
+                        <h2 className="font-display font-extrabold text-3xl sm:text-4xl md:text-6xl mt-2 mb-6 tracking-tight">
                             Daj komuś prezent,<br />
                             który przeżyje Was oboje
                         </h2>
-                        <p className="text-lg text-stone-300 mb-10 max-w-xl mx-auto">
+                        <p className="text-base md:text-lg text-stone-300 mb-8 md:mb-10 max-w-xl mx-auto">
                             Zostało <strong className="text-amber-300">{stats?.remaining_monthly_slots ?? 5} miejsc</strong> w tym miesiącu. Następne dopiero w przyszłym.
                         </p>
                         <Link
                             href="/foto-wyzwanie/stworz"
-                            className="group inline-flex items-center gap-3 px-10 py-5 rounded-full bg-gradient-to-r from-amber-400 to-rose-400 text-stone-900 font-bold text-xl shadow-2xl shadow-amber-500/40 hover:shadow-amber-500/60 hover:-translate-y-1 transition-all animate-pulse-soft"
+                            className="group inline-flex items-center gap-3 px-7 md:px-10 py-4 md:py-5 rounded-full bg-gradient-to-r from-amber-400 to-rose-400 text-stone-900 font-bold text-base md:text-xl shadow-2xl shadow-amber-500/40 hover:shadow-amber-500/60 hover:-translate-y-1 transition-all animate-pulse-soft"
                         >
-                            <Gift className="w-6 h-6" />
+                            <Gift className="w-5 md:w-6 h-5 md:h-6" />
                             Tak, stwarzam wyzwanie
-                            <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
+                            <ArrowRight className="w-5 md:w-6 h-5 md:h-6 group-hover:translate-x-1 transition-transform" />
                         </Link>
                     </motion.div>
                 </div>
