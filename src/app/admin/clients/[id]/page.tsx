@@ -58,6 +58,7 @@ function ClientDetailsContent({ id }: { id: string }) {
     const [isCreatingGallery, setIsCreatingGallery] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [deletingGalleryId, setDeletingGalleryId] = useState<number | null>(null);
+    const [expandedChallengeId, setExpandedChallengeId] = useState<number | null>(null);
     const [deletingOfferId, setDeletingOfferId] = useState<number | null>(null);
     const [confirmingOfferDelete, setConfirmingOfferDelete] = useState<number | null>(null);
     const [deletingContractId, setDeletingContractId] = useState<number | null>(null);
@@ -696,48 +697,180 @@ function ClientDetailsContent({ id }: { id: string }) {
                                 <div className="p-6 space-y-3">
                                     {client.challenges && client.challenges.length > 0 ? (
                                         client.challenges.map((ch: any) => {
-                                            const role = (ch.invitee_user_id === client.id || ch.invitee_contact === client.email) ? 'Zaproszony' : 'Zapraszający';
+                                            const isInvitee = ch.invitee_user_id === client.id || ch.invitee_contact === client.email;
+                                            const role = isInvitee ? 'Zaproszony' : 'Zapraszający';
+                                            const isExpanded = expandedChallengeId === ch.id;
                                             const statusColor: Record<string, string> = {
                                                 sent: 'bg-zinc-700 text-zinc-300',
                                                 viewed: 'bg-sky-500/15 text-sky-300',
                                                 accepted: 'bg-emerald-500/15 text-emerald-300',
                                                 rejected: 'bg-rose-500/15 text-rose-300',
                                                 paid: 'bg-gold-500/15 text-gold-300',
+                                                challenge_paid: 'bg-gold-500/15 text-gold-300',
                                                 completed: 'bg-purple-500/15 text-purple-300',
                                                 expired: 'bg-zinc-700 text-zinc-400',
                                             };
+                                            const eventLabel: Record<string, string> = {
+                                                page_viewed: 'Otworzył(a) zaproszenie',
+                                                scrolled_25: 'Przewinął(a) 25%',
+                                                scrolled_50: 'Przewinął(a) 50%',
+                                                scrolled_75: 'Przewinął(a) 75%',
+                                                scrolled_100: 'Doczytał(a) do końca',
+                                                cta_accept_clicked: 'Kliknął(a) AKCEPTUJĘ',
+                                                cta_reject_clicked: 'Kliknął(a) ODRZUĆ',
+                                                cta_pay_clicked: 'Kliknął(a) ZAPŁAĆ',
+                                                booking_created: 'Utworzono rezerwację',
+                                                gallery_opened: 'Otworzył(a) galerię',
+                                                shared_clicked: 'Udostępnił(a) zaproszenie',
+                                                pdf_downloaded: 'Pobrał(a) PDF voucher',
+                                                ics_downloaded: 'Pobrał(a) plik kalendarza',
+                                                photos_ready_notification: 'Powiadomienie „zdjęcia gotowe”',
+                                            };
+                                            const otherSide = isInvitee
+                                                ? { name: ch.inviter_name, user: ch.inviter_user, contact: ch.inviter_contact }
+                                                : { name: ch.invitee_name, user: ch.invitee_user, contact: ch.invitee_contact };
                                             return (
-                                                <NextLink
-                                                    key={ch.id}
-                                                    href={`/admin/challenges/${ch.id}`}
-                                                    className="block bg-zinc-950/50 p-4 rounded-lg border border-zinc-800/50 hover:border-gold-500/40 transition-colors"
-                                                >
-                                                    <div className="flex justify-between items-start gap-3">
-                                                        <div className="min-w-0 flex-1">
-                                                            <div className="flex items-center gap-2 mb-1">
-                                                                <p className="font-bold text-white truncate">#{ch.id} · {ch.package?.name || 'Pakiet'}</p>
-                                                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400 uppercase font-bold">{role}</span>
+                                                <div key={ch.id} className="bg-zinc-950/50 rounded-lg border border-zinc-800/50 overflow-hidden">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setExpandedChallengeId(isExpanded ? null : ch.id)}
+                                                        className="w-full text-left p-4 hover:bg-zinc-900/40 transition-colors"
+                                                    >
+                                                        <div className="flex justify-between items-start gap-3">
+                                                            <div className="min-w-0 flex-1">
+                                                                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                                                    <p className="font-bold text-white truncate">#{ch.id} · {ch.package?.name || 'Pakiet'}</p>
+                                                                    <span className={`text-[10px] px-2 py-0.5 rounded-full uppercase font-bold ${isInvitee ? 'bg-blue-500/15 text-blue-300' : 'bg-amber-500/15 text-amber-300'}`}>{role}</span>
+                                                                </div>
+                                                                <p className="text-xs text-zinc-500">
+                                                                    {ch.inviter_name} → {ch.invitee_name}
+                                                                    {ch.session_date ? ` · sesja: ${new Date(ch.session_date).toLocaleDateString('pl-PL')}` : ''}
+                                                                    {ch.location?.name ? ` · ${ch.location.name}` : ch.custom_location ? ` · ${ch.custom_location}` : ''}
+                                                                </p>
+                                                                <p className="text-[11px] text-zinc-600 mt-1">
+                                                                    Utworzono: {new Date(ch.created_at).toLocaleDateString('pl-PL')}
+                                                                    {ch.gallery ? ` · 📸 galeria${ch.gallery.is_published ? ' (opublikowana)' : ''}` : ''}
+                                                                    · {ch.timeline?.length || 0} zdarzeń
+                                                                </p>
                                                             </div>
-                                                            <p className="text-xs text-zinc-500">
-                                                                {ch.inviter_name} → {ch.invitee_name}
-                                                                {ch.session_date ? ` · sesja: ${new Date(ch.session_date).toLocaleDateString()}` : ''}
-                                                                {ch.location?.name ? ` · ${ch.location.name}` : ch.custom_location ? ` · ${ch.custom_location}` : ''}
-                                                            </p>
-                                                            <p className="text-[11px] text-zinc-600 mt-1">
-                                                                Utworzono: {new Date(ch.created_at).toLocaleDateString()}
-                                                                {ch.gallery ? ` · 📸 galeria${ch.gallery.is_published ? ' (opublikowana)' : ''}` : ''}
-                                                            </p>
+                                                            <div className="flex flex-col items-end gap-2 shrink-0">
+                                                                <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${statusColor[ch.status] || 'bg-zinc-700 text-zinc-400'}`}>
+                                                                    {ch.status}
+                                                                </span>
+                                                                {ch.payment_status === 'paid' && ch.paid_amount ? (
+                                                                    <span className="text-xs text-gold-400 font-bold">{(ch.paid_amount / 100).toFixed(0)} PLN</span>
+                                                                ) : null}
+                                                                <span className="text-[10px] text-zinc-500">{isExpanded ? 'Zwiń ▲' : 'Rozwiń ▼'}</span>
+                                                            </div>
                                                         </div>
-                                                        <div className="flex flex-col items-end gap-2 shrink-0">
-                                                            <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${statusColor[ch.status] || 'bg-zinc-700 text-zinc-400'}`}>
-                                                                {ch.status}
-                                                            </span>
-                                                            {ch.payment_status === 'paid' && ch.paid_amount ? (
-                                                                <span className="text-xs text-gold-400 font-bold">{(ch.paid_amount / 100).toFixed(0)} PLN</span>
-                                                            ) : null}
+                                                    </button>
+                                                    {isExpanded && (
+                                                        <div className="border-t border-zinc-800/60 p-4 space-y-4 bg-zinc-950/30">
+                                                            {/* Druga strona */}
+                                                            <div className="grid sm:grid-cols-2 gap-3 text-xs">
+                                                                <div className="bg-zinc-900/40 rounded p-3">
+                                                                    <div className="text-[10px] uppercase text-zinc-500 mb-1">{isInvitee ? 'Zaprosił(a) klienta' : 'Zaproszony'}</div>
+                                                                    {otherSide.user ? (
+                                                                        <NextLink href={`/admin/clients/${otherSide.user.id}`} className="text-gold-400 hover:underline font-semibold inline-flex items-center gap-1">
+                                                                            {otherSide.name} <ExternalLink size={10} />
+                                                                        </NextLink>
+                                                                    ) : (
+                                                                        <span className="text-white font-semibold">{otherSide.name}</span>
+                                                                    )}
+                                                                    <div className="text-zinc-400 mt-0.5">{otherSide.contact}</div>
+                                                                </div>
+                                                                <div className="bg-zinc-900/40 rounded p-3">
+                                                                    <div className="text-[10px] uppercase text-zinc-500 mb-1">Cena / rabat</div>
+                                                                    <div className="text-white font-semibold">{ch.package?.challenge_price} zł <span className="text-zinc-500 line-through font-normal text-[11px]">{ch.package?.base_price} zł</span></div>
+                                                                    <div className="text-emerald-400 mt-0.5">oszczędność: {ch.discount_amount} zł ({ch.discount_percentage}%)</div>
+                                                                </div>
+                                                                <div className="bg-zinc-900/40 rounded p-3">
+                                                                    <div className="text-[10px] uppercase text-zinc-500 mb-1">Daty</div>
+                                                                    <div className="text-zinc-300 space-y-0.5">
+                                                                        {ch.viewed_at && <div>👁 wyświetlone: {new Date(ch.viewed_at).toLocaleString('pl-PL')}</div>}
+                                                                        {ch.accepted_at && <div className="text-emerald-300">✅ zaakceptowane: {new Date(ch.accepted_at).toLocaleString('pl-PL')}</div>}
+                                                                        {ch.rejected_at && <div className="text-rose-300">❌ odrzucone: {new Date(ch.rejected_at).toLocaleString('pl-PL')}</div>}
+                                                                        {ch.session_date && <div className="text-gold-300">📅 sesja: {new Date(ch.session_date).toLocaleString('pl-PL')}</div>}
+                                                                        {ch.completed_at && <div>🏁 zakończone: {new Date(ch.completed_at).toLocaleString('pl-PL')}</div>}
+                                                                        {!ch.viewed_at && !ch.accepted_at && !ch.rejected_at && !ch.session_date && (
+                                                                            <div className="text-zinc-500 italic">brak aktywności</div>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                                <div className="bg-zinc-900/40 rounded p-3">
+                                                                    <div className="text-[10px] uppercase text-zinc-500 mb-1">Płatność</div>
+                                                                    <div className="text-zinc-300">
+                                                                        Status: <span className={ch.payment_status === 'paid' ? 'text-emerald-300' : 'text-zinc-400'}>{ch.payment_status || 'pending'}</span>
+                                                                    </div>
+                                                                    {ch.paid_amount ? <div className="text-gold-400 font-bold">{(ch.paid_amount / 100).toFixed(0)} PLN</div> : null}
+                                                                    {ch.payment_method && <div className="text-zinc-500 text-[11px]">metoda: {ch.payment_method}</div>}
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Link do zaproszenia */}
+                                                            <div className="flex items-center gap-2 text-xs">
+                                                                <a
+                                                                    href={`/foto-wyzwanie/invite/${ch.unique_link}`}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="text-gold-400 hover:underline inline-flex items-center gap-1"
+                                                                >
+                                                                    <ExternalLink size={12} /> Otwórz publiczne zaproszenie
+                                                                </a>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(`${window.location.origin}/foto-wyzwanie/invite/${ch.unique_link}`); toast.success('Skopiowano link'); }}
+                                                                    className="text-zinc-400 hover:text-white"
+                                                                >
+                                                                    kopiuj link
+                                                                </button>
+                                                            </div>
+
+                                                            {/* Notatki */}
+                                                            {ch.admin_notes && (
+                                                                <div className="bg-amber-500/5 border border-amber-500/20 rounded p-3 text-xs text-amber-200 whitespace-pre-wrap">
+                                                                    <div className="text-[10px] uppercase text-amber-400 mb-1">Notatki admina</div>
+                                                                    {ch.admin_notes}
+                                                                </div>
+                                                            )}
+
+                                                            {/* Timeline */}
+                                                            <div>
+                                                                <div className="text-[10px] uppercase text-zinc-500 mb-2">Aktywność ({ch.timeline?.length || 0})</div>
+                                                                {ch.timeline && ch.timeline.length > 0 ? (
+                                                                    <div className="space-y-1 max-h-64 overflow-y-auto pr-1">
+                                                                        {ch.timeline.map((ev: any) => (
+                                                                            <div key={ev.id} className="text-[11px] text-zinc-400 flex justify-between gap-2 py-1 border-b border-zinc-800/40">
+                                                                                <span className="truncate">{eventLabel[ev.event_type] || ev.event_description || ev.event_type}</span>
+                                                                                <span className="text-zinc-600 shrink-0">{new Date(ev.created_at).toLocaleString('pl-PL', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                ) : (
+                                                                    <p className="text-[11px] text-zinc-600 italic">Brak zdarzeń.</p>
+                                                                )}
+                                                            </div>
+
+                                                            {/* Edycja */}
+                                                            <div className="flex items-center justify-end gap-3 pt-2 border-t border-zinc-800/60">
+                                                                <NextLink
+                                                                    href={`/admin/challenges/${ch.id}`}
+                                                                    className="text-[11px] text-zinc-400 hover:text-gold-400 inline-flex items-center gap-1"
+                                                                >
+                                                                    Pełen panel edycji →
+                                                                </NextLink>
+                                                                {ch.gallery && (
+                                                                    <NextLink
+                                                                        href={`/admin/challenges/gallery/${ch.id}`}
+                                                                        className="text-[11px] text-zinc-400 hover:text-gold-400 inline-flex items-center gap-1"
+                                                                    >
+                                                                        Galeria →
+                                                                    </NextLink>
+                                                                )}
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                </NextLink>
+                                                    )}
+                                                </div>
                                             );
                                         })
                                     ) : (

@@ -107,7 +107,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
                     package: { select: { name: true, base_price: true, challenge_price: true } },
                     location: { select: { name: true } },
                     gallery: { select: { id: true, is_published: true } },
-                    timeline: { select: { id: true, event_type: true, created_at: true }, orderBy: { created_at: 'desc' }, take: 1 },
+                    invitee_user: { select: { id: true, name: true, email: true } },
+                    inviter_user: { select: { id: true, name: true, email: true } },
+                    timeline: {
+                        select: { id: true, event_type: true, event_description: true, metadata: true, created_at: true },
+                        orderBy: { created_at: 'desc' },
+                        take: 30,
+                    },
                 },
             }).catch(() => []);
 
