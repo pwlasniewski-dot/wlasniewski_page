@@ -52,6 +52,15 @@ export default function AcceptChallengePage() {
                 const res = await fetch(`/api/photo-challenge/${uniqueLink}`);
                 const data = await res.json();
                 if (data.success) {
+                    // Jeśli zaproszenie już zaakceptowane / odrzucone — nie pokazuj formularza, tylko ekran statusu.
+                    if (data.challenge?.status === 'accepted') {
+                        router.replace(`/foto-wyzwanie/accept/${uniqueLink}/success`);
+                        return;
+                    }
+                    if (data.challenge?.status === 'rejected' || data.challenge?.status === 'declined') {
+                        router.replace(`/foto-wyzwanie/invite/${uniqueLink}`);
+                        return;
+                    }
                     setChallenge(data.challenge);
                     if (!data.challenge?.booking) setUseProposed(false);
                 } else {
@@ -95,6 +104,12 @@ export default function AcceptChallengePage() {
             const data = await res.json();
             if (data.success) {
                 router.push(`/foto-wyzwanie/accept/${uniqueLink}/success`);
+            } else if (data.error === 'ALREADY_ACCEPTED') {
+                // Klient kliknął ponownie w stary link — po prostu pokaż ekran sukcesu.
+                router.push(`/foto-wyzwanie/accept/${uniqueLink}/success`);
+            } else if (data.error === 'ALREADY_DECLINED') {
+                alert(data.message || 'To zaproszenie zostało już wcześniej odrzucone.');
+                router.push(`/foto-wyzwanie/invite/${uniqueLink}`);
             } else if (data.error === 'NEED_INVITEE_TOKEN' || data.error === 'INVALID_INVITEE_TOKEN') {
                 alert(data.message || 'Tylko zaproszony może zaakceptować. Wróć do zaproszenia i poproś o osobisty link na maila.');
                 router.push(`/foto-wyzwanie/invite/${uniqueLink}`);

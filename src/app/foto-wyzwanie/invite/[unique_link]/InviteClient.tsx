@@ -80,7 +80,12 @@ export default function InviteClient({ initialChallenge, uniqueLink }: Props) {
     const acceptToken = searchParams?.get('t') || null;
     const challenge = initialChallenge;
 
-    const [responded, setResponded] = useState<'accepted' | 'rejected' | null>(null);
+    const [responded, setResponded] = useState<'accepted' | 'rejected' | null>(() => {
+        const s = initialChallenge?.status;
+        if (s === 'accepted') return 'accepted';
+        if (s === 'rejected' || s === 'declined') return 'rejected';
+        return null;
+    });
     const [showDetails, setShowDetails] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [shareOpen, setShareOpen] = useState(false);

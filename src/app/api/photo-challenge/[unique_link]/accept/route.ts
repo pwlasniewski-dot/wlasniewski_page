@@ -40,6 +40,27 @@ export async function POST(
             );
         }
 
+        // Idempotencja: jeśli wyzwanie zostało już zaakceptowane, nie pozwalamy nadpisać
+        // (klient klika ponownie w stary mail / cofa się przeglądarką).
+        if (challenge.status === 'accepted' || (challenge as any).accepted_at) {
+            return NextResponse.json(
+                {
+                    success: false,
+                    error: 'ALREADY_ACCEPTED',
+                    message: 'To zaproszenie zostało już zaakceptowane. Szczegóły sesji znajdziesz w swoim mailu lub w panelu klienta.',
+                    accepted_at: (challenge as any).accepted_at,
+                    session_date: challenge.session_date,
+                },
+                { status: 409 }
+            );
+        }
+        if (challenge.status === 'declined') {
+            return NextResponse.json(
+                { success: false, error: 'ALREADY_DECLINED', message: 'To zaproszenie zostało wcześniej odrzucone.' },
+                { status: 409 }
+            );
+        }
+
         // Token akceptacji jest opcjonalny — jeśli przyszedł z osobistego maila,
         // weryfikujemy go (i sprawdzamy challengeId), ale brak tokenu nie blokuje akceptacji.
         if (acceptToken) {
