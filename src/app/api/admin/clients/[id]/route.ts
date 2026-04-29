@@ -92,6 +92,25 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
                 }).catch(() => [])
             ]);
 
+            // Foto Wyzwania powi\u0105zane z klientem (jako zaproszony LUB zapraszaj\u0105cy po emailu)
+            const challenges = await prisma.photoChallenge.findMany({
+                where: {
+                    OR: [
+                        { invitee_user_id: userId },
+                        { invitee_contact: clientEmail },
+                        { inviter_contact: clientEmail },
+                        { inviter_email: clientEmail },
+                    ],
+                },
+                orderBy: { created_at: 'desc' },
+                include: {
+                    package: { select: { name: true, base_price: true, challenge_price: true } },
+                    location: { select: { name: true } },
+                    gallery: { select: { id: true, is_published: true } },
+                    timeline: { select: { id: true, event_type: true, created_at: true }, orderBy: { created_at: 'desc' }, take: 1 },
+                },
+            }).catch(() => []);
+
             // Deduplicate offers (by ID + by Email)
             const allOffers = [...offersById, ...offersByEmail]
                 .filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
@@ -108,7 +127,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
                 assigned_galleries: assignedGalleries,
                 baskets: basket ? [basket] : [],
                 offers: allOffers,
-                contracts
+                contracts,
+                challenges,
             };
 
             return NextResponse.json({ success: true, client: fullClient });

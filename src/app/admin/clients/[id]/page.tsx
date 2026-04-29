@@ -39,6 +39,7 @@ interface ClientDetails {
     client_galleries: any[]; // New field
     contracts: any[];
     baskets: any[];
+    challenges?: any[];
     permissions?: Record<string, boolean> | null;
 }
 
@@ -683,6 +684,64 @@ function ClientDetailsContent({ id }: { id: string }) {
                                         ))
                                     ) : (
                                         <p className="text-zinc-500 italic">Brak historii rezerwacji.</p>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden">
+                                <div className="p-6 border-b border-zinc-800 flex justify-between items-center">
+                                    <h3 className="text-lg font-bold text-white">Foto Wyzwania klienta {client.challenges?.length ? `(${client.challenges.length})` : ''}</h3>
+                                    <NextLink href="/admin/challenges" className="text-xs text-zinc-400 hover:text-gold-400">Wszystkie wyzwania →</NextLink>
+                                </div>
+                                <div className="p-6 space-y-3">
+                                    {client.challenges && client.challenges.length > 0 ? (
+                                        client.challenges.map((ch: any) => {
+                                            const role = (ch.invitee_user_id === client.id || ch.invitee_contact === client.email) ? 'Zaproszony' : 'Zapraszający';
+                                            const statusColor: Record<string, string> = {
+                                                sent: 'bg-zinc-700 text-zinc-300',
+                                                viewed: 'bg-sky-500/15 text-sky-300',
+                                                accepted: 'bg-emerald-500/15 text-emerald-300',
+                                                rejected: 'bg-rose-500/15 text-rose-300',
+                                                paid: 'bg-gold-500/15 text-gold-300',
+                                                completed: 'bg-purple-500/15 text-purple-300',
+                                                expired: 'bg-zinc-700 text-zinc-400',
+                                            };
+                                            return (
+                                                <NextLink
+                                                    key={ch.id}
+                                                    href={`/admin/challenges/${ch.id}`}
+                                                    className="block bg-zinc-950/50 p-4 rounded-lg border border-zinc-800/50 hover:border-gold-500/40 transition-colors"
+                                                >
+                                                    <div className="flex justify-between items-start gap-3">
+                                                        <div className="min-w-0 flex-1">
+                                                            <div className="flex items-center gap-2 mb-1">
+                                                                <p className="font-bold text-white truncate">#{ch.id} · {ch.package?.name || 'Pakiet'}</p>
+                                                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400 uppercase font-bold">{role}</span>
+                                                            </div>
+                                                            <p className="text-xs text-zinc-500">
+                                                                {ch.inviter_name} → {ch.invitee_name}
+                                                                {ch.session_date ? ` · sesja: ${new Date(ch.session_date).toLocaleDateString()}` : ''}
+                                                                {ch.location?.name ? ` · ${ch.location.name}` : ch.custom_location ? ` · ${ch.custom_location}` : ''}
+                                                            </p>
+                                                            <p className="text-[11px] text-zinc-600 mt-1">
+                                                                Utworzono: {new Date(ch.created_at).toLocaleDateString()}
+                                                                {ch.gallery ? ` · 📸 galeria${ch.gallery.is_published ? ' (opublikowana)' : ''}` : ''}
+                                                            </p>
+                                                        </div>
+                                                        <div className="flex flex-col items-end gap-2 shrink-0">
+                                                            <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${statusColor[ch.status] || 'bg-zinc-700 text-zinc-400'}`}>
+                                                                {ch.status}
+                                                            </span>
+                                                            {ch.payment_status === 'paid' && ch.paid_amount ? (
+                                                                <span className="text-xs text-gold-400 font-bold">{(ch.paid_amount / 100).toFixed(0)} PLN</span>
+                                                            ) : null}
+                                                        </div>
+                                                    </div>
+                                                </NextLink>
+                                            );
+                                        })
+                                    ) : (
+                                        <p className="text-zinc-500 italic">Brak Foto Wyzwań powiązanych z tym klientem.</p>
                                     )}
                                 </div>
                             </div>
