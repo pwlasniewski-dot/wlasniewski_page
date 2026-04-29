@@ -20,7 +20,8 @@ export async function GET(
                 include: {
                     package: true,
                     location: true,
-                    invitee_user: true,
+                    invitee_user: { select: { id: true, name: true, email: true, phone: true } },
+                    inviter_user: { select: { id: true, name: true, email: true, phone: true } },
                     timeline: {
                         orderBy: { created_at: 'asc' },
                     },

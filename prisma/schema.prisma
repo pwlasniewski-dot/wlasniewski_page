@@ -501,6 +501,7 @@ model User {
   photographer_profile    PhotographerProfile?    @relation(fields: [photographer_profile_id], references: [id])
   crm_activities          CrmActivity[]
   challenge_invites       PhotoChallenge[]        @relation("ChallengeInvitee")
+  challenges_initiated    PhotoChallenge[]        @relation("ChallengeInviter")
 
   @@map("users")
 }
@@ -701,6 +702,7 @@ model PhotoChallenge {
   invitee_contact          String
   invitee_contact_type     String                   @default("email")
   invitee_user_id          Int?
+  inviter_user_id          Int?
   package_id               Int
   location_id              Int?
   custom_location          String?
@@ -728,6 +730,7 @@ model PhotoChallenge {
   gallery                  ChallengeGallery?
   timeline                 ChallengeTimelineEvent[]
   invitee_user             User?                    @relation("ChallengeInvitee", fields: [invitee_user_id], references: [id], onDelete: SetNull)
+  inviter_user             User?                    @relation("ChallengeInviter", fields: [inviter_user_id], references: [id], onDelete: SetNull)
   location                 ChallengeLocation?       @relation(fields: [location_id], references: [id])
   package                  ChallengePackage         @relation(fields: [package_id], references: [id])
 

@@ -20,6 +20,8 @@ interface ChallengeDetails {
     invitee_name: string;
     invitee_contact: string;
     invitee_contact_type: string;
+    inviter_user?: { id: number; name: string; email: string; phone: string | null } | null;
+    invitee_user?: { id: number; name: string; email: string; phone: string | null } | null;
     status: string;
     created_at: string;
     viewed_at: string | null;
@@ -123,7 +125,14 @@ export default function ChallengeDetailPage() {
             if (data.success) {
                 setChallenge(data.challenge);
                 setAdminNotes(data.challenge.admin_notes || '');
-                setSessionDate(data.challenge.session_date || '');
+                // Convert ISO timestamp → "YYYY-MM-DDTHH:mm" for <input type="datetime-local">
+                if (data.challenge.session_date) {
+                    const d = new Date(data.challenge.session_date);
+                    const pad = (n: number) => String(n).padStart(2, '0');
+                    setSessionDate(`${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`);
+                } else {
+                    setSessionDate('');
+                }
                 setStatus(data.challenge.status);
             }
         } catch (error) {
@@ -298,8 +307,20 @@ export default function ChallengeDetailPage() {
                             Zapraszający
                         </h2>
                         <div className="space-y-2 text-sm">
-                            <div><span className="text-zinc-400">Imię:</span> <span className="text-white ml-2">{challenge.inviter_name}</span></div>
+                            <div>
+                                <span className="text-zinc-400">Imię:</span>
+                                {challenge.inviter_user ? (
+                                    <Link href={`/admin/clients/${challenge.inviter_user.id}`} className="text-gold-400 hover:underline ml-2 inline-flex items-center gap-1">
+                                        {challenge.inviter_name} <ExternalLink size={12} />
+                                    </Link>
+                                ) : (
+                                    <span className="text-white ml-2">{challenge.inviter_name}</span>
+                                )}
+                            </div>
                             <div><span className="text-zinc-400">Kontakt ({challenge.inviter_contact_type}):</span> <span className="text-white ml-2">{challenge.inviter_contact}</span></div>
+                            {challenge.inviter_user?.phone && (
+                                <div><span className="text-zinc-400">Telefon:</span> <span className="text-white ml-2">{challenge.inviter_user.phone}</span></div>
+                            )}
                         </div>
                     </div>
 
@@ -310,8 +331,20 @@ export default function ChallengeDetailPage() {
                             Zaproszony
                         </h2>
                         <div className="space-y-2 text-sm">
-                            <div><span className="text-zinc-400">Imię:</span> <span className="text-white ml-2">{challenge.invitee_name}</span></div>
+                            <div>
+                                <span className="text-zinc-400">Imię:</span>
+                                {challenge.invitee_user ? (
+                                    <Link href={`/admin/clients/${challenge.invitee_user.id}`} className="text-gold-400 hover:underline ml-2 inline-flex items-center gap-1">
+                                        {challenge.invitee_name} <ExternalLink size={12} />
+                                    </Link>
+                                ) : (
+                                    <span className="text-white ml-2">{challenge.invitee_name}</span>
+                                )}
+                            </div>
                             <div><span className="text-zinc-400">Kontakt ({challenge.invitee_contact_type}):</span> <span className="text-white ml-2">{challenge.invitee_contact}</span></div>
+                            {challenge.invitee_user?.phone && (
+                                <div><span className="text-zinc-400">Telefon:</span> <span className="text-white ml-2">{challenge.invitee_user.phone}</span></div>
+                            )}
                         </div>
                     </div>
 

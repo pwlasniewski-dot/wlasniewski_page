@@ -93,13 +93,13 @@ export async function POST(request: NextRequest) {
                 inviter_contact: body.inviter_email,
                 inviter_contact_type: 'email',
                 inviter_email: body.inviter_email,
-                admin_notes: `Inviter User ID: ${inviterUser.id}`,
 
                 // Invitee Info
                 invitee_name: body.invitee_name,
                 invitee_contact: body.invitee_email,
                 invitee_contact_type: 'email',
                 invitee_user_id: inviteeUser.id,
+                inviter_user_id: inviterUser.id,
 
                 // Details
                 package_id: body.package_id,
