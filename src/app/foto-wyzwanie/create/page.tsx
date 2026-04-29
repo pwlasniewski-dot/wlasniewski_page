@@ -122,7 +122,9 @@ export default function CreateChallengePage() {
                 // Redirect to Przelewy24 payment
                 window.location.href = data.paymentUrl;
             } else {
-                alert('Błąd przy tworzeniu zaproszenia');
+                console.error('[create-with-payment] response', data);
+                const detail = data?.error || data?.code || 'nieznany błąd';
+                alert(`Błąd przy tworzeniu zaproszenia: ${detail}`);
             }
         } catch (error) {
             console.error('Payment error:', error);

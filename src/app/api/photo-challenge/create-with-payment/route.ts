@@ -135,10 +135,24 @@ export async function POST(request: NextRequest) {
             unique_link: uniqueLink,
             paymentUrl
         });
-    } catch (error) {
-        console.error('Error creating challenge:', error);
+    } catch (error: any) {
+        // Verbose logging so Netlify/console actually shows root cause
+        const message = error?.message || String(error);
+        const code = error?.code || error?.name || null;
+        const meta = error?.meta || null;
+        console.error('[create-with-payment] FAIL', {
+            message,
+            code,
+            meta,
+            stack: error?.stack,
+        });
         return NextResponse.json(
-            { success: false, error: 'Internal server error' },
+            {
+                success: false,
+                error: message || 'Internal server error',
+                code,
+                meta,
+            },
             { status: 500 }
         );
     }
