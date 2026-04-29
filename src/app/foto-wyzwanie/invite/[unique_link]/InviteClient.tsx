@@ -128,20 +128,14 @@ export default function InviteClient({ initialChallenge, uniqueLink }: Props) {
     const handleAccept = async () => {
         if (submitting) return;
         trackChallengeEvent(uniqueLink, 'cta_accept_clicked');
-
-        // Bez tokena = nie da się zaakceptować. Zaproponuj wysłanie linku na maila.
-        if (!acceptToken) {
-            await handleRequestLink();
-            return;
-        }
-
         setSubmitting(true);
         try {
             const res = await fetch(`/api/photo-challenge/${uniqueLink}/accept-invite`, { method: 'POST' });
             const data = await res.json();
             if (data.success) {
                 setResponded('accepted');
-                setTimeout(() => router.push(`/foto-wyzwanie/accept/${uniqueLink}?t=${encodeURIComponent(acceptToken)}`), 1500);
+                const tokenParam = acceptToken ? `?t=${encodeURIComponent(acceptToken)}` : '';
+                setTimeout(() => router.push(`/foto-wyzwanie/accept/${uniqueLink}${tokenParam}`), 1200);
             } else {
                 alert(data.error || 'Coś poszło nie tak. Spróbuj ponownie za chwilę.');
             }
@@ -438,34 +432,13 @@ export default function InviteClient({ initialChallenge, uniqueLink }: Props) {
                     </div>
                 </details>
 
-                {/* DECYZJA — handshake 2-stopniowy */}
+                {/* DECYZJA — bezpośrednia akceptacja */}
                 {requestedLinkMasked ? (
                     <div className="bg-emerald-500/10 border border-emerald-500/40 rounded-2xl p-6 mb-6 text-center">
                         <div className="text-4xl mb-2">📬</div>
                         <h3 className="text-lg font-bold text-emerald-300 mb-1">Wysłaliśmy Ci osobisty link</h3>
                         <p className="text-sm text-zinc-300 mb-1">Sprawdź skrzynkę: <strong className="text-white font-mono">{requestedLinkMasked}</strong></p>
-                        <p className="text-xs text-zinc-500">Kliknij w link z maila, żeby zaakceptować wyzwanie. (Folder spam też warto sprawdzić.)</p>
-                    </div>
-                ) : !acceptToken ? (
-                    <div className="bg-amber-500/5 rounded-2xl p-6 border border-amber-500/30 mb-6">
-                        <div className="flex items-start gap-3 mb-4">
-                            <Lock size={20} className="text-amber-400 flex-shrink-0 mt-1" />
-                            <div>
-                                <h3 className="text-sm font-bold text-amber-200 mb-1">Tylko Ty możesz zaakceptować</h3>
-                                <p className="text-xs text-zinc-400">Zaproszenie potwierdzasz osobistym linkiem z maila — to gwarancja, że nikt nie zaakceptuje za Ciebie.</p>
-                            </div>
-                        </div>
-                        <button
-                            onClick={handleRequestLink}
-                            disabled={requestingLink}
-                            className="w-full py-4 rounded-xl font-bold text-base bg-gradient-to-r from-pink-500 to-amber-500 hover:from-pink-600 hover:to-amber-600 text-white transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-pink-500/20"
-                        >
-                            <Mail size={18} />
-                            {requestingLink ? 'Wysyłam…' : 'Wyślij mi osobisty link na maila'}
-                        </button>
-                        <p className="text-center text-[11px] text-zinc-500 mt-3">
-                            Link trafi na adres podany przez {challenge.inviter_name}.
-                        </p>
+                        <p className="text-xs text-zinc-500">Kliknij w link z maila, żeby zaakceptować wyzwanie.</p>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">

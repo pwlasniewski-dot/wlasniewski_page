@@ -40,20 +40,16 @@ export async function POST(
             );
         }
 
-        // Bezpieczeństwo: tylko zaproszony (z ważnym tokenem akceptacji) może zaakceptować.
-        // Token jest wysyłany zaproszonemu mailem; udostępnienie linku z tokenem = świadoma decyzja.
-        if (!acceptToken) {
-            return NextResponse.json(
-                { success: false, error: 'NEED_INVITEE_TOKEN', message: 'Tylko zaproszony może zaakceptować. Otwórz osobisty link z maila.' },
-                { status: 401 }
-            );
-        }
-        const payload = await verifyAcceptToken(acceptToken);
-        if (!payload || payload.challengeId !== challenge.id) {
-            return NextResponse.json(
-                { success: false, error: 'INVALID_INVITEE_TOKEN', message: 'Link akceptacji nieprawidłowy lub wygasł. Poproś o nowy link.' },
-                { status: 401 }
-            );
+        // Token akceptacji jest opcjonalny — jeśli przyszedł z osobistego maila,
+        // weryfikujemy go (i sprawdzamy challengeId), ale brak tokenu nie blokuje akceptacji.
+        if (acceptToken) {
+            const payload = await verifyAcceptToken(acceptToken);
+            if (!payload || payload.challengeId !== challenge.id) {
+                return NextResponse.json(
+                    { success: false, error: 'INVALID_INVITEE_TOKEN', message: 'Link akceptacji nieprawidłowy lub wygasł.' },
+                    { status: 401 }
+                );
+            }
         }
 
         // Check if a booking already exists for this challenge
