@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { v4 as uuidv4 } from 'uuid';
-import { createPayUOrder } from '@/lib/payu';
+import { createPayUOrder, extractClientIpv4 } from '@/lib/payu';
 import { sendEmail } from '@/lib/email/sender';
 
 export async function POST(request: NextRequest) {
@@ -90,7 +90,10 @@ export async function POST(request: NextRequest) {
 
         // Create PayU Order
         const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://wlasniewski.pl';
-        const clientIp = request.headers.get('x-forwarded-for') || '127.0.0.1';
+
+        // Extract a clean IPv4 for PayU (it rejects IP lists, IPv6 with brackets, empty, etc.)
+        const rawForwarded = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || '';
+        const clientIp = extractClientIpv4(rawForwarded);
 
         const orderRequest = {
             description: `Foto Wyzwanie - ${pkg.name}`,

@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 
 // Use standard import for library
-import { createPayUOrder } from '@/lib/payu';
+import { createPayUOrder, extractClientIpv4 } from '@/lib/payu';
 
 export async function POST(
     request: NextRequest,
@@ -101,7 +101,9 @@ export async function POST(
         let paymentId = '';
 
         try {
-            const ip = request.headers.get('x-forwarded-for') || '127.0.0.1';
+            const ip = extractClientIpv4(
+                request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip')
+            );
             const continueUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/galeria/${accessCode}/order/${order.id}/success`;
 
             const payuProducts = [];

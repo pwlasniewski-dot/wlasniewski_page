@@ -52,6 +52,21 @@ async function getAccessToken(settings: PayUSettings): Promise<string> {
     return data.access_token;
 }
 
+/**
+ * PayU rejects request when customerIp is missing, an IP list ("a, b"),
+ * empty, or IPv6 with brackets. This extracts the first valid IPv4
+ * from raw forwarded-headers and falls back to a safe loopback.
+ */
+export function extractClientIpv4(raw: string | null | undefined): string {
+    if (!raw) return '127.0.0.1';
+    const ipv4Re = /^(\d{1,3}\.){3}\d{1,3}$/;
+    const candidates = raw.split(',').map((s) => s.trim()).filter(Boolean);
+    for (const c of candidates) {
+        if (ipv4Re.test(c)) return c;
+    }
+    return '127.0.0.1';
+}
+
 export interface OrderRequest {
     description: string;
     currencyCode: string;
@@ -86,7 +101,7 @@ export async function createPayUOrder(orderData: OrderRequest, clientIp: string)
 
     const payload = {
         notifyUrl: settings.notifyUrl, // Our backend webhook
-        customerIp: clientIp,
+        customerIp: extractClientIpv4(clientIp),
         merchantPosId: settings.merchantPosId,
         validityTime: 3600, // 1 hour
         ...orderData,

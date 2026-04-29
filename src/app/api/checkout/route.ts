@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
-import { createPayUOrder, OrderRequest } from '@/lib/payu';
+import { createPayUOrder, OrderRequest, extractClientIpv4 } from '@/lib/payu';
 
 // PayU integration for booking payments
 export async function POST(request: NextRequest) {
@@ -22,7 +22,9 @@ export async function POST(request: NextRequest) {
         }
 
         const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://wlasniewski.pl';
-        const clientIp = request.headers.get('x-forwarded-for') || '127.0.0.1';
+        const clientIp = extractClientIpv4(
+            request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip')
+        );
 
         const orderRequest: OrderRequest = {
             description: `${serviceName} - ${packageName}`,
