@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Sprawdź czy email już istnieje
-        const existingUser = await prisma.challengeUser.findUnique({
+        const existingUser = await prisma.user.findUnique({
             where: { email: body.email },
         });
 
@@ -34,14 +34,15 @@ export async function POST(request: NextRequest) {
         // Hash hasła
         const passwordHash = await hashPassword(body.password);
 
-        // Utwórz użytkownika
-        const user = await prisma.challengeUser.create({
+        // Utwórz użytkownika (CRM-spójny: rola CLIENT)
+        const user = await prisma.user.create({
             data: {
                 email: body.email,
                 password_hash: passwordHash,
                 name: body.name,
                 phone: body.phone || null,
-                auth_provider: 'email',
+                role: 'CLIENT',
+                is_active: true,
                 last_login: new Date(),
             },
         });

@@ -33,7 +33,7 @@ export async function DELETE(req: Request) {
             // Ideally we should probably warn them, but for "Delete Account" usually we just proceed.
         }
 
-        await prisma.challengeUser.delete({
+        await prisma.user.delete({
             where: { id: userId }
         });
 

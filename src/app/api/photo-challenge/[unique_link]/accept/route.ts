@@ -76,19 +76,32 @@ export async function POST(
             });
         }
 
-        // Create or find ChallengeUser for the invitee
+        // Create or find User (CRM) for the invitee — unified user table
         let userId = challenge.invitee_user_id;
         if (!userId) {
-            const user = await prisma.challengeUser.upsert({
-                where: { email: challenge.invitee_contact },
-                update: { name: name },
-                create: {
-                    email: challenge.invitee_contact,
-                    name: name,
-                    phone: challenge.inviter_contact // Default to inviter contact for safety, or leave null
+            const bcrypt = (await import('bcryptjs')).default;
+            const crypto = await import('crypto');
+            // Hasło: jeśli istnieje, zostaw; jeśli nie, ustaw losowe (klient i tak loguje się magic-linkiem).
+            const existing = await prisma.user.findUnique({ where: { email: challenge.invitee_contact } });
+            if (existing) {
+                if (name && existing.name !== name) {
+                    await prisma.user.update({ where: { id: existing.id }, data: { name } });
                 }
-            });
-            userId = user.id;
+                userId = existing.id;
+            } else {
+                const randomPwd = await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 10);
+                const created = await prisma.user.create({
+                    data: {
+                        email: challenge.invitee_contact,
+                        password_hash: randomPwd,
+                        name,
+                        phone: challenge.inviter_contact,
+                        role: 'CLIENT',
+                        is_active: true,
+                    },
+                });
+                userId = created.id;
+            }
         }
 
         // Update challenge status and link user

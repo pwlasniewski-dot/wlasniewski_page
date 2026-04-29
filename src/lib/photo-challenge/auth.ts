@@ -37,7 +37,7 @@ export async function verifyUserToken(token: string): Promise<any> {
         }
 
         // Verify user exists in DB
-        const user = await prisma.challengeUser.findUnique({
+        const user = await prisma.user.findUnique({
             where: { id: decoded.userId },
         });
 

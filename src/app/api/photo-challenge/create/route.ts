@@ -23,31 +23,31 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // 2. Handle User (Inviter)
+        // 2. Handle User (Inviter) — unified CRM table
         let inviterUser;
 
         if (body.auth_mode === 'register') {
             // Check if exists
-            const existing = await prisma.challengeUser.findUnique({ where: { email: body.inviter_email } });
+            const existing = await prisma.user.findUnique({ where: { email: body.inviter_email } });
             if (existing) {
                 await logSystem('WARN', 'AUTH', 'Create Challenge: User exists', { email: body.inviter_email });
                 return NextResponse.json({ success: false, error: 'Użytkownik z tym emailem już istnieje. Zaloguj się.' }, { status: 400 });
             }
 
             const hashedPassword = await hashPassword(body.inviter_password || 'temp1234'); // Fallback if missing
-            inviterUser = await prisma.challengeUser.create({
+            inviterUser = await prisma.user.create({
                 data: {
                     email: body.inviter_email,
                     name: body.inviter_name,
                     phone: body.inviter_phone,
                     password_hash: hashedPassword,
-                    auth_provider: 'email',
-                    created_at: new Date(),
+                    role: 'CLIENT',
+                    is_active: true,
                 }
             });
-            await logSystem('INFO', 'AUTH', `New Challenge User Registered: ${inviterUser.email}`, { userId: inviterUser.id });
+            await logSystem('INFO', 'AUTH', `New CRM User Registered (via challenge): ${inviterUser.email}`, { userId: inviterUser.id });
         } else {
-            inviterUser = await prisma.challengeUser.findUnique({ where: { email: body.inviter_email } });
+            inviterUser = await prisma.user.findUnique({ where: { email: body.inviter_email } });
             if (!inviterUser) {
                 await logSystem('WARN', 'AUTH', 'Create Challenge: Login failed, user not found', { email: body.inviter_email });
                 return NextResponse.json({ success: false, error: 'Użytkownik nie istnieje.' }, { status: 404 });

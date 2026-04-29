@@ -25,11 +25,11 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ success: false, error: 'Link wygasł lub jest nieprawidłowy' }, { status: 401 });
     }
 
-    // Upewnij się że ChallengeUser istnieje (mógł zostać usunięty)
-    let user = await prisma.challengeUser.findUnique({ where: { id: payload.userId } });
+    // Upewnij się że User istnieje (mógł zostać usunięty)
+    let user = await prisma.user.findUnique({ where: { id: payload.userId } });
     if (!user) {
         // Może został odtworzony pod innym id? spróbuj po emailu
-        user = await prisma.challengeUser.findUnique({ where: { email: payload.email } });
+        user = await prisma.user.findUnique({ where: { email: payload.email } });
     }
     if (!user) {
         return NextResponse.json({ success: false, error: 'Konto nie istnieje' }, { status: 404 });
@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
 
     // Aktualizuj last_login
     try {
-        await prisma.challengeUser.update({
+        await prisma.user.update({
             where: { id: user.id },
             data: { last_login: new Date() },
         });

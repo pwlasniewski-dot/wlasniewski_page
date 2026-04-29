@@ -25,20 +25,29 @@ export async function POST(
                 return NextResponse.json({ success: false, error: 'Challenge not found' }, { status: 404 });
             }
 
-            // Upewnij się że istnieje ChallengeUser dla zaproszonego — magic-link wymaga userId.
-            // Dla starszych wyzwań (sprzed ery autouserów) twórz konto przy okazji.
+            // Upewnij się że istnieje User dla zaproszonego — magic-link wymaga userId.
+            // Dla starszych wyzwań (sprzed unifikacji) twórz konto przy okazji.
             let inviteeUser = challenge.invitee_user_id
-                ? await prisma.challengeUser.findUnique({ where: { id: challenge.invitee_user_id } })
+                ? await prisma.user.findUnique({ where: { id: challenge.invitee_user_id } })
                 : null;
             if (!inviteeUser) {
-                inviteeUser = await prisma.challengeUser.upsert({
-                    where: { email: challenge.invitee_contact },
-                    update: { name: inviteeUser?.name || challenge.invitee_name },
-                    create: {
-                        email: challenge.invitee_contact,
-                        name: challenge.invitee_name,
-                    },
-                });
+                const existing = await prisma.user.findUnique({ where: { email: challenge.invitee_contact } });
+                if (existing) {
+                    inviteeUser = existing;
+                } else {
+                    const bcrypt = (await import('bcryptjs')).default;
+                    const crypto = await import('crypto');
+                    const randomPwd = await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 10);
+                    inviteeUser = await prisma.user.create({
+                        data: {
+                            email: challenge.invitee_contact,
+                            password_hash: randomPwd,
+                            name: challenge.invitee_name,
+                            role: 'CLIENT',
+                            is_active: true,
+                        },
+                    });
+                }
                 if (!challenge.invitee_user_id) {
                     await prisma.photoChallenge.update({
                         where: { id: challenge.id },

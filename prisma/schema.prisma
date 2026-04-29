@@ -500,6 +500,7 @@ model User {
   provider_availability   provider_availability[]
   photographer_profile    PhotographerProfile?    @relation(fields: [photographer_profile_id], references: [id])
   crm_activities          CrmActivity[]
+  challenge_invites       PhotoChallenge[]        @relation("ChallengeInvitee")
 
   @@map("users")
 }
@@ -690,21 +691,6 @@ model ChallengeLocation {
   @@map("challenge_locations")
 }
 
-model ChallengeUser {
-  id               Int              @id @default(autoincrement())
-  email            String           @unique
-  password_hash    String?
-  name             String?
-  phone            String?
-  auth_provider    String           @default("email")
-  auth_provider_id String?
-  created_at       DateTime         @default(now())
-  last_login       DateTime?
-  challenges       PhotoChallenge[]
-
-  @@map("challenge_users")
-}
-
 model PhotoChallenge {
   id                       Int                      @id @default(autoincrement())
   unique_link              String                   @unique
@@ -741,7 +727,7 @@ model PhotoChallenge {
   refunded_at              DateTime?
   gallery                  ChallengeGallery?
   timeline                 ChallengeTimelineEvent[]
-  invitee_user             ChallengeUser?           @relation(fields: [invitee_user_id], references: [id])
+  invitee_user             User?                    @relation("ChallengeInvitee", fields: [invitee_user_id], references: [id], onDelete: SetNull)
   location                 ChallengeLocation?       @relation(fields: [location_id], references: [id])
   package                  ChallengePackage         @relation(fields: [package_id], references: [id])
 

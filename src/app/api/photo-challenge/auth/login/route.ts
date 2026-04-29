@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Znajdź użytkownika
-        const user = await prisma.challengeUser.findUnique({
+        const user = await prisma.user.findUnique({
             where: { email: body.email },
         });
 
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
         const token = await createUserToken(user.id, user.email);
 
         // Aktualizuj last_login
-        await prisma.challengeUser.update({
+        await prisma.user.update({
             where: { id: user.id },
             data: { last_login: new Date() },
         });
