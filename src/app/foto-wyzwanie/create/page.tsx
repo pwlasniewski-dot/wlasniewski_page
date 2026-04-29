@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { motion } from 'framer-motion';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowRight, Heart, MapPin, Package, Mail, User, Calendar, Clock, Check } from 'lucide-react';
 import BookingCalendar from '@/components/BookingCalendar';
@@ -21,18 +21,27 @@ interface ChallengeLocation {
 }
 
 export default function CreateChallengePage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-[#FBF7EF]" />}>
+            <CreateChallengePageInner />
+        </Suspense>
+    );
+}
+
+function CreateChallengePageInner() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [step, setStep] = useState(1);
     const [packages, setPackages] = useState<ChallengePackage[]>([]);
     const [locations, setLocations] = useState<ChallengeLocation[]>([]);
     const [loading, setLoading] = useState(true);
 
-    // Form state
-    const [inviterName, setInviterName] = useState('');
-    const [inviterPhone, setInviterPhone] = useState('');
-    const [inviterEmail, setInviterEmail] = useState('');
-    const [inviteeName, setInviteeName] = useState('');
-    const [inviteeEmail, setInviteeEmail] = useState('');
+    // Form state — prefill from query string (passed from /foto-wyzwanie hero quick-start form)
+    const [inviterName, setInviterName] = useState(() => searchParams?.get('inviter_name') || '');
+    const [inviterPhone, setInviterPhone] = useState(() => searchParams?.get('inviter_phone') || '');
+    const [inviterEmail, setInviterEmail] = useState(() => searchParams?.get('inviter_email') || '');
+    const [inviteeName, setInviteeName] = useState(() => searchParams?.get('invitee_name') || '');
+    const [inviteeEmail, setInviteeEmail] = useState(() => searchParams?.get('invitee_email') || '');
     const [selectedPackage, setSelectedPackage] = useState<number | null>(null);
     const [selectedLocation, setSelectedLocation] = useState<number | null>(null);
     const [hqCoords, setHqCoords] = useState({ lat: 53.2952, lon: 18.7845 });
@@ -49,6 +58,19 @@ export default function CreateChallengePage() {
 
     useEffect(() => {
         fetchData();
+    }, []);
+
+    // Auto-skip step 1 if everything was prefilled from the homepage quick-start form
+    useEffect(() => {
+        if (
+            searchParams?.get('skip_step1') === '1' &&
+            inviterName.trim() && inviterPhone.trim() && inviterEmail.trim() &&
+            inviteeName.trim() && inviteeEmail.trim()
+        ) {
+            setAcceptTerms(true);
+            setStep(2);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const fetchData = async () => {
