@@ -82,7 +82,6 @@ export default function InviteClient({ initialChallenge, uniqueLink }: Props) {
 
     const [responded, setResponded] = useState<'accepted' | 'rejected' | null>(null);
     const [showDetails, setShowDetails] = useState(false);
-    const [decisionUnlocked, setDecisionUnlocked] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [shareOpen, setShareOpen] = useState(false);
     const [copied, setCopied] = useState(false);
@@ -466,21 +465,6 @@ export default function InviteClient({ initialChallenge, uniqueLink }: Props) {
                         </button>
                         <p className="text-center text-[11px] text-zinc-500 mt-3">
                             Link trafi na adres podany przez {challenge.inviter_name}.
-                        </p>
-                    </div>
-                ) : !decisionUnlocked ? (
-                    <div className="bg-gradient-to-br from-pink-500/5 to-amber-500/5 rounded-2xl p-6 border border-pink-500/20 mb-6">
-                        <p className="text-center text-sm text-zinc-300 mb-4">
-                            Gotowy/gotowa na decyzję?
-                        </p>
-                        <button
-                            onClick={() => setDecisionUnlocked(true)}
-                            className="w-full py-4 rounded-xl font-bold text-base bg-zinc-100 hover:bg-white text-zinc-900 transition-all transform hover:scale-[1.02] flex items-center justify-center gap-2"
-                        >
-                            Tak, pokaż przyciski decyzji
-                        </button>
-                        <p className="text-center text-[11px] text-zinc-500 mt-3">
-                            Świadomy krok zamiast przypadkowego kliknięcia.
                         </p>
                     </div>
                 ) : (
