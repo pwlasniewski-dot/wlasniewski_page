@@ -3,16 +3,19 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
-import { withAuth } from '@/lib/auth/middleware';
+import { withAuth, requireAuth } from '@/lib/auth/middleware';
 
 export async function GET(request: NextRequest) {
     try {
+        const wantAll = new URL(request.url).searchParams.get('all') === '1';
+        let includeInactive = false;
+        if (wantAll) {
+            const authError = await requireAuth(request);
+            if (!authError) includeInactive = true;
+        }
         const locations = await prisma.challengeLocation.findMany({
-            // Show all for admin if requested via separate admin endpoint, but here we can just return all or filter by active
-            // For now return all and let frontend filter active if needed (or simple admin listing)
-            orderBy: {
-                display_order: 'asc',
-            },
+            where: includeInactive ? {} : { is_active: true },
+            orderBy: { display_order: 'asc' },
         });
 
         return NextResponse.json({

@@ -1,12 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
-import { withAuth } from '@/lib/auth/middleware';
+import { withAuth, requireAuth } from '@/lib/auth/middleware';
 
-// GET all packages
+// GET all packages. Public callers receive only active rows; admins (Authorization header valid) receive all when ?all=1.
 export async function GET(request: NextRequest) {
     try {
+        const wantAll = new URL(request.url).searchParams.get('all') === '1';
+        let includeInactive = false;
+        if (wantAll) {
+            const authError = await requireAuth(request);
+            if (!authError) includeInactive = true;
+        }
         const packages = await prisma.challengePackage.findMany({
-            where: { is_active: true }, // Only show active packages to public
+            where: includeInactive ? {} : { is_active: true },
             orderBy: { display_order: 'asc' }
         });
         return NextResponse.json({ success: true, packages });

@@ -1,10 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { getApiUrl } from '@/lib/api-config';
 import Link from 'next/link';
-import { ArrowLeft, Save, Calendar, MapPin, User, DollarSign } from 'lucide-react';
+import {
+    ArrowLeft, Save, Calendar, MapPin, User, DollarSign,
+    Eye, MousePointerClick, CreditCard, Cog, Share2, Download,
+    CheckCircle2, XCircle, Clock, Activity, Copy, ExternalLink,
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface ChallengeDetails {
@@ -40,8 +44,53 @@ interface ChallengeDetails {
         id: number;
         event_type: string;
         event_description: string;
+        metadata?: string | null;
         created_at: string;
     }[];
+}
+
+// Visual config per event_type. Unknown events fall back to neutral.
+const EVENT_META: Record<string, { label: string; icon: any; color: string; cat: 'visit' | 'cta' | 'payment' | 'system' | 'share' }> = {
+    page_viewed: { label: 'Otworzył(a) zaproszenie', icon: Eye, color: 'text-sky-400 bg-sky-500/10 border-sky-500/30', cat: 'visit' },
+    scrolled_25: { label: 'Przewinął(a) 25%', icon: Activity, color: 'text-zinc-400 bg-zinc-500/10 border-zinc-600', cat: 'visit' },
+    scrolled_50: { label: 'Przewinął(a) 50%', icon: Activity, color: 'text-zinc-300 bg-zinc-500/10 border-zinc-600', cat: 'visit' },
+    scrolled_75: { label: 'Przewinął(a) 75%', icon: Activity, color: 'text-zinc-200 bg-zinc-500/10 border-zinc-600', cat: 'visit' },
+    scrolled_100: { label: 'Doczytał(a) do końca', icon: Activity, color: 'text-emerald-300 bg-emerald-500/10 border-emerald-500/30', cat: 'visit' },
+    package_details_opened: { label: 'Rozwinął(a) szczegóły bezpieczeństwa', icon: MousePointerClick, color: 'text-amber-300 bg-amber-500/10 border-amber-500/30', cat: 'visit' },
+    maps_opened: { label: 'Otworzył(a) Google Maps', icon: MapPin, color: 'text-amber-300 bg-amber-500/10 border-amber-500/30', cat: 'visit' },
+    gallery_opened: { label: 'Otworzył(a) galerię', icon: Eye, color: 'text-amber-300 bg-amber-500/10 border-amber-500/30', cat: 'visit' },
+    shared_clicked: { label: 'Kliknął(a) udostępnij', icon: Share2, color: 'text-purple-300 bg-purple-500/10 border-purple-500/30', cat: 'share' },
+    cta_accept_clicked: { label: 'Kliknął(a) AKCEPTUJĘ', icon: CheckCircle2, color: 'text-emerald-300 bg-emerald-500/15 border-emerald-500/40', cat: 'cta' },
+    cta_reject_clicked: { label: 'Kliknął(a) ODRZUĆ', icon: XCircle, color: 'text-rose-300 bg-rose-500/15 border-rose-500/40', cat: 'cta' },
+    cta_pay_clicked: { label: 'Kliknął(a) ZAPŁAĆ', icon: CreditCard, color: 'text-amber-300 bg-amber-500/15 border-amber-500/40', cat: 'cta' },
+    pdf_downloaded: { label: 'Pobrał(a) PDF voucher', icon: Download, color: 'text-blue-300 bg-blue-500/10 border-blue-500/30', cat: 'cta' },
+    ics_downloaded: { label: 'Pobrał(a) plik kalendarza', icon: Download, color: 'text-blue-300 bg-blue-500/10 border-blue-500/30', cat: 'cta' },
+    booking_created: { label: 'Zarezerwowano termin', icon: Calendar, color: 'text-gold-300 bg-gold-500/15 border-gold-500/40', cat: 'system' },
+    photos_ready_notification: { label: 'Wysłano powiadomienie „zdjęcia gotowe”', icon: Cog, color: 'text-emerald-300 bg-emerald-500/10 border-emerald-500/30', cat: 'system' },
+};
+
+function prettifyEvent(e: { event_type: string; event_description?: string }): { label: string; icon: any; color: string; cat: string } {
+    const m = EVENT_META[e.event_type];
+    if (m) return m;
+    if (e.event_type.startsWith('status_')) {
+        return {
+            label: `Zmiana statusu → ${e.event_type.replace('status_', '')}`,
+            icon: Cog,
+            color: 'text-zinc-300 bg-zinc-500/10 border-zinc-600',
+            cat: 'system',
+        };
+    }
+    return {
+        label: e.event_description || e.event_type,
+        icon: Activity,
+        color: 'text-zinc-300 bg-zinc-500/10 border-zinc-600',
+        cat: 'system',
+    };
+}
+
+function safeJson<T = any>(raw: string | null | undefined): T | null {
+    if (!raw) return null;
+    try { return JSON.parse(raw) as T; } catch { return null; }
 }
 
 export default function ChallengeDetailPage() {
@@ -200,13 +249,28 @@ export default function ChallengeDetailPage() {
                             </div>
                             <div className="flex justify-between py-2 border-b border-zinc-800">
                                 <span className="text-zinc-400">Link:</span>
-                                <a
-                                    href={`/foto-wyzwanie/akceptuj/${challenge.unique_link}`}
-                                    target="_blank"
-                                    className="text-gold-400 hover:underline"
-                                >
-                                    Otwórz →
-                                </a>
+                                <div className="flex items-center gap-2">
+                                    <a
+                                        href={`/foto-wyzwanie/invite/${challenge.unique_link}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-gold-400 hover:underline inline-flex items-center gap-1"
+                                    >
+                                        <ExternalLink size={12} /> Otwórz
+                                    </a>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const url = `${window.location.origin}/foto-wyzwanie/invite/${challenge.unique_link}`;
+                                            navigator.clipboard.writeText(url);
+                                            toast.success('Skopiowano link');
+                                        }}
+                                        className="text-zinc-400 hover:text-white inline-flex items-center gap-1"
+                                        title="Kopiuj link zaproszenia"
+                                    >
+                                        <Copy size={12} />
+                                    </button>
+                                </div>
                             </div>
                             <div className="flex justify-between py-2 border-b border-zinc-800">
                                 <span className="text-zinc-400">Utworzone:</span>
@@ -325,18 +389,89 @@ export default function ChallengeDetailPage() {
 
                     {/* Timeline */}
                     <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6">
-                        <h2 className="text-xl font-semibold text-white mb-4">Historia zdarzeń</h2>
-                        <div className="space-y-3">
-                            {challenge.timeline.map((event) => (
-                                <div key={event.id} className="flex gap-3 text-sm">
-                                    <div className="text-zinc-500 whitespace-nowrap">
-                                        {new Date(event.created_at).toLocaleString('pl-PL', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-xl font-semibold text-white flex items-center gap-2">
+                                <Activity className="w-5 h-5" /> Zachowanie klienta
+                            </h2>
+                            <span className="text-xs text-zinc-500">{challenge.timeline.length} zdarzeń</span>
+                        </div>
+
+                        {/* Behavior summary */}
+                        {(() => {
+                            const t = challenge.timeline;
+                            const count = (k: string) => t.filter((e) => e.event_type === k).length;
+                            const last = (k: string) => t.filter((e) => e.event_type === k).slice(-1)[0]?.created_at;
+                            const visits = count('page_viewed');
+                            const maxScroll = ['scrolled_100', 'scrolled_75', 'scrolled_50', 'scrolled_25'].find((k) => count(k) > 0);
+                            const scrollPct = maxScroll ? maxScroll.replace('scrolled_', '') : '0';
+                            const acceptClicks = count('cta_accept_clicked');
+                            const rejectClicks = count('cta_reject_clicked');
+                            const lastVisit = last('page_viewed');
+                            return (
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-5">
+                                    <div className="bg-zinc-950/50 border border-zinc-800 rounded-lg p-3">
+                                        <div className="text-[10px] uppercase text-zinc-500 mb-1">Wejścia</div>
+                                        <div className="text-xl font-bold text-sky-300">{visits || (challenge.viewed_at ? 1 : 0)}</div>
+                                        {lastVisit && (
+                                            <div className="text-[10px] text-zinc-500 mt-1">
+                                                ostatnio {new Date(lastVisit).toLocaleString('pl-PL', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                                            </div>
+                                        )}
                                     </div>
-                                    <div className="text-zinc-300">
-                                        {event.event_description}
+                                    <div className="bg-zinc-950/50 border border-zinc-800 rounded-lg p-3">
+                                        <div className="text-[10px] uppercase text-zinc-500 mb-1">Przeczytał(a)</div>
+                                        <div className="text-xl font-bold text-emerald-300">{scrollPct}%</div>
+                                        <div className="text-[10px] text-zinc-500 mt-1">strony</div>
+                                    </div>
+                                    <div className="bg-zinc-950/50 border border-zinc-800 rounded-lg p-3">
+                                        <div className="text-[10px] uppercase text-zinc-500 mb-1">CTA Akceptuję</div>
+                                        <div className={`text-xl font-bold ${acceptClicks ? 'text-emerald-300' : 'text-zinc-600'}`}>{acceptClicks}</div>
+                                    </div>
+                                    <div className="bg-zinc-950/50 border border-zinc-800 rounded-lg p-3">
+                                        <div className="text-[10px] uppercase text-zinc-500 mb-1">CTA Odrzuć</div>
+                                        <div className={`text-xl font-bold ${rejectClicks ? 'text-rose-300' : 'text-zinc-600'}`}>{rejectClicks}</div>
                                     </div>
                                 </div>
-                            ))}
+                            );
+                        })()}
+
+                        <div className="space-y-2 max-h-[480px] overflow-y-auto pr-1">
+                            {challenge.timeline.length === 0 ? (
+                                <p className="text-sm text-zinc-500 italic">Brak zarejestrowanych zdarzeń.</p>
+                            ) : (
+                                [...challenge.timeline]
+                                    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                                    .map((event) => {
+                                        const meta = prettifyEvent(event);
+                                        const Icon = meta.icon;
+                                        const md = safeJson<{ ua?: string; ref?: string; ip?: string }>(event.metadata);
+                                        const device = md?.ua
+                                            ? /mobile|iphone|android/i.test(md.ua) ? 'mobile' : 'desktop'
+                                            : null;
+                                        return (
+                                            <div key={event.id} className={`flex items-start gap-3 p-2.5 rounded-lg border ${meta.color}`}>
+                                                <Icon size={16} className="mt-0.5 shrink-0" />
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="text-sm font-medium">{meta.label}</div>
+                                                    {event.event_description && event.event_description !== meta.label && (
+                                                        <div className="text-xs opacity-80 mt-0.5">{event.event_description}</div>
+                                                    )}
+                                                    <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] opacity-70 mt-1">
+                                                        <span>
+                                                            {new Date(event.created_at).toLocaleString('pl-PL', {
+                                                                day: '2-digit', month: '2-digit', year: '2-digit',
+                                                                hour: '2-digit', minute: '2-digit',
+                                                            })}
+                                                        </span>
+                                                        {device && (<><span>·</span><span>{device}</span></>)}
+                                                        {md?.ref && (<><span>·</span><span className="truncate max-w-[180px]" title={md.ref}>ref: {md.ref}</span></>)}
+                                                        {md?.ip && (<><span>·</span><span className="font-mono">{md.ip}</span></>)}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })
+                            )}
                         </div>
                     </div>
                 </div>

@@ -20,6 +20,7 @@ import {
     Heart, Check, X, ShieldCheck, Star, MapPin, Camera, Award,
     Lock, Phone, Mail, MessageCircle, Share2, Facebook, Copy, ChevronDown, ChevronUp,
 } from 'lucide-react';
+import { useChallengeTracking, trackChallengeEvent } from '@/lib/challenge-tracking';
 
 interface PackageData {
     package_name: string;
@@ -91,6 +92,9 @@ export default function InviteClient({ initialChallenge, uniqueLink }: Props) {
         }
     }, [uniqueLink]);
 
+    // Track page view + scroll milestones (best-effort, idempotent server-side)
+    useChallengeTracking(challenge ? uniqueLink : null);
+
     if (!challenge) {
         return (
             <div className="min-h-screen bg-gradient-to-b from-black to-zinc-900 flex items-center justify-center px-4">
@@ -120,6 +124,7 @@ export default function InviteClient({ initialChallenge, uniqueLink }: Props) {
 
     const handleAccept = async () => {
         if (submitting) return;
+        trackChallengeEvent(uniqueLink, 'cta_accept_clicked');
         setSubmitting(true);
         try {
             const res = await fetch(`/api/photo-challenge/${uniqueLink}/accept-invite`, { method: 'POST' });
@@ -140,6 +145,7 @@ export default function InviteClient({ initialChallenge, uniqueLink }: Props) {
 
     const handleReject = async () => {
         if (submitting) return;
+        trackChallengeEvent(uniqueLink, 'cta_reject_clicked');
         setSubmitting(true);
         try {
             const res = await fetch(`/api/photo-challenge/${uniqueLink}/reject`, { method: 'POST' });
@@ -309,6 +315,7 @@ export default function InviteClient({ initialChallenge, uniqueLink }: Props) {
                                         href={challenge.location.google_maps_url}
                                         target="_blank"
                                         rel="noopener noreferrer"
+                                        onClick={() => trackChallengeEvent(uniqueLink, 'maps_opened')}
                                         className="inline-flex items-center gap-1 text-xs text-gold-400 hover:text-gold-300 mt-2"
                                     >
                                         <MapPin size={12} />
@@ -364,7 +371,12 @@ export default function InviteClient({ initialChallenge, uniqueLink }: Props) {
                 {/* GREEN-FLAG LIST */}
                 <details className="bg-zinc-900/40 rounded-xl border border-zinc-800 mb-6 group" open={showDetails}>
                     <summary
-                        onClick={(e) => { e.preventDefault(); setShowDetails(!showDetails); }}
+                        onClick={(e) => {
+                            e.preventDefault();
+                            const next = !showDetails;
+                            setShowDetails(next);
+                            if (next) trackChallengeEvent(uniqueLink, 'package_details_opened');
+                        }}
                         className="cursor-pointer p-5 flex items-center justify-between text-sm font-medium text-white list-none"
                     >
                         <span className="flex items-center gap-2">
@@ -443,7 +455,12 @@ export default function InviteClient({ initialChallenge, uniqueLink }: Props) {
                 {/* SHARE — opcjonalne */}
                 <details className="bg-zinc-900/30 rounded-xl border border-zinc-800/60">
                     <summary
-                        onClick={(e) => { e.preventDefault(); setShareOpen(!shareOpen); }}
+                        onClick={(e) => {
+                            e.preventDefault();
+                            const next = !shareOpen;
+                            setShareOpen(next);
+                            if (next) trackChallengeEvent(uniqueLink, 'shared_clicked', { description: 'share panel opened' });
+                        }}
                         className="cursor-pointer px-5 py-4 flex items-center justify-between text-xs font-medium text-zinc-400 hover:text-zinc-200 list-none"
                     >
                         <span className="flex items-center gap-2">
