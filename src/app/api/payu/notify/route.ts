@@ -517,6 +517,30 @@ export async function POST(request: NextRequest) {
                                 }
                             }).catch((e: any) => console.error('[PayU] inviter mail fail', e));
                         }
+
+                        // → admin (fotograf)
+                        try {
+                            const { getAdminEmail } = await import('@/lib/email/sender');
+                            const adminEmail = await getAdminEmail();
+                            if (adminEmail) {
+                                const adminLink = `${baseUrl}/admin/challenges/${challenge.id}`;
+                                await sendEmail({
+                                    to: adminEmail,
+                                    subject: `🔔 Nowe Foto Wyzwanie opłacone — ${challenge.inviter_name} → ${challenge.invitee_name}`,
+                                    text: [
+                                        `Nowe Foto Wyzwanie zostało opłacone przez PayU i czeka na akceptację zaproszonego.`,
+                                        ``,
+                                        `Zapraszający: ${challenge.inviter_name} (${challenge.inviter_email || challenge.inviter_contact})`,
+                                        `Zaproszony: ${challenge.invitee_name} (${challenge.invitee_contact})`,
+                                        `Pakiet: ${challenge.package?.name || '-'} — ${challenge.package?.challenge_price || 0} zł`,
+                                        ``,
+                                        `Panel admina: ${adminLink}`,
+                                    ].join('\n'),
+                                }).catch((e: any) => console.error('[PayU] admin mail fail', e));
+                            }
+                        } catch (e) {
+                            console.error('[PayU] admin email dispatch failed:', e);
+                        }
                     } catch (e) {
                         console.error('[PayU] Challenge email dispatch failed:', e);
                     }

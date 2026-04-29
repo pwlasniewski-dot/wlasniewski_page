@@ -51,6 +51,7 @@ interface ChallengeData {
     package?: PackageData;
     location?: LocationData;
     acceptance_deadline?: string | null;
+    session_date?: string | null;
 }
 
 interface Props {
@@ -187,13 +188,66 @@ export default function InviteClient({ initialChallenge, uniqueLink }: Props) {
     };
 
     if (responded === 'accepted') {
+        const sessionDateLabel = challenge.session_date
+            ? new Date(challenge.session_date).toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+            : null;
+        const locName = challenge.location?.location_name || 'Lokalizacja do ustalenia';
         return (
-            <div className="min-h-screen bg-gradient-to-b from-black via-zinc-950 to-zinc-900 flex items-center justify-center px-4">
-                <div className="text-center max-w-md">
-                    <div className="text-7xl mb-4">✨</div>
-                    <h2 className="text-4xl font-display font-bold text-gold-400 mb-3">Świetnie, {challenge.invitee_name}!</h2>
-                    <p className="text-lg text-zinc-300 mb-2">Za chwilę otworzy się kalendarz.</p>
-                    <p className="text-sm text-zinc-500">Wybierzesz datę i godzinę, która Ci pasuje.</p>
+            <div className="min-h-screen bg-gradient-to-b from-black via-zinc-950 to-zinc-900 text-white py-16 px-4">
+                <div className="max-w-xl mx-auto">
+                    <div className="text-center mb-8">
+                        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-emerald-500/15 border border-emerald-500/40 mb-4">
+                            <Check className="text-emerald-400" size={32} />
+                        </div>
+                        <h2 className="text-3xl md:text-4xl font-display font-bold text-emerald-300 mb-2">Wyzwanie zaakceptowane</h2>
+                        <p className="text-zinc-400 text-sm">Wszystko ustawione. Tu masz podsumowanie.</p>
+                    </div>
+
+                    <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-6 space-y-4 mb-6">
+                        <div className="flex items-start gap-3">
+                            <Star className="text-gold-400 mt-0.5" size={18} />
+                            <div className="flex-1">
+                                <div className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold">Wyzwanie</div>
+                                <div className="text-white font-bold">{challenge.inviter_name} → {challenge.invitee_name}</div>
+                            </div>
+                        </div>
+                        <div className="flex items-start gap-3">
+                            <Camera className="text-gold-400 mt-0.5" size={18} />
+                            <div className="flex-1">
+                                <div className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold">Pakiet</div>
+                                <div className="text-white">{challenge.package?.package_name}</div>
+                            </div>
+                        </div>
+                        {sessionDateLabel && (
+                            <div className="flex items-start gap-3">
+                                <Award className="text-gold-400 mt-0.5" size={18} />
+                                <div className="flex-1">
+                                    <div className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold">Termin sesji</div>
+                                    <div className="text-white capitalize">{sessionDateLabel}</div>
+                                </div>
+                            </div>
+                        )}
+                        <div className="flex items-start gap-3">
+                            <MapPin className="text-gold-400 mt-0.5" size={18} />
+                            <div className="flex-1">
+                                <div className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold">Lokalizacja</div>
+                                <div className="text-white">{locName}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-3">
+                        <Link href="/konto" className="flex-1 px-6 py-4 bg-gold-500 hover:bg-gold-400 text-black font-bold rounded-xl text-center transition-colors">
+                            Otwórz mój panel
+                        </Link>
+                        <Link href="/foto-wyzwanie" className="flex-1 px-6 py-4 bg-zinc-800 hover:bg-zinc-700 text-white font-medium rounded-xl text-center transition-colors">
+                            Czym jest Foto Wyzwanie
+                        </Link>
+                    </div>
+
+                    <p className="text-center text-xs text-zinc-500 mt-6">
+                        Voucher i plik kalendarza wysłałem mailem. Galeria pojawi się tu po sesji.
+                    </p>
                 </div>
             </div>
         );

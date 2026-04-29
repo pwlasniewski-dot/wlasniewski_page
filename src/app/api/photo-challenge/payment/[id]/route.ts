@@ -98,6 +98,30 @@ export async function GET(
                     }
                 });
             }
+
+            // 3. Notify Admin (fotograf) o nowym opłaconym wyzwaniu
+            try {
+                const { getAdminEmail } = await import('@/lib/email/sender');
+                const adminEmail = await getAdminEmail();
+                if (adminEmail) {
+                    const adminLink = `${baseUrl}/admin/challenges/${challenge.id}`;
+                    await sendEmail({
+                        to: adminEmail,
+                        subject: `🔔 Nowe Foto Wyzwanie opłacone — ${challenge.inviter_name} → ${challenge.invitee_name}`,
+                        text: [
+                            `Nowe Foto Wyzwanie zostało opłacone i czeka na akceptację zaproszonego.`,
+                            ``,
+                            `Zapraszający: ${challenge.inviter_name} (${challenge.inviter_email || challenge.inviter_contact})`,
+                            `Zaproszony: ${challenge.invitee_name} (${challenge.invitee_contact})`,
+                            `Pakiet: ${challenge.package.name} — ${challenge.package.challenge_price} zł`,
+                            ``,
+                            `Panel admina: ${adminLink}`,
+                        ].join('\n'),
+                    });
+                }
+            } catch (adminEmailError) {
+                console.error('Failed to send admin notification:', adminEmailError);
+            }
         } catch (emailError) {
             console.error('Failed to send emails after payment:', emailError);
         }

@@ -245,6 +245,32 @@ export async function POST(
             }
         }
 
+        // 3. Notify Admin (fotograf) o akceptacji
+        try {
+            const { getAdminEmail } = await import('@/lib/email/sender');
+            const adminEmail = await getAdminEmail();
+            if (adminEmail) {
+                const adminLink = `${baseUrl}/admin/challenges/${challenge.id}`;
+                await sendEmail({
+                    to: adminEmail,
+                    subject: `✅ Foto Wyzwanie zaakceptowane — ${name} (${formattedDate} ${startTimeText})`,
+                    text: [
+                        `${name} zaakceptował(a) Foto Wyzwanie i wybrał(a) termin sesji.`,
+                        ``,
+                        `Zapraszający: ${challenge.inviter_name} (${challenge.inviter_email || challenge.inviter_contact})`,
+                        `Zaproszony: ${name} (${challenge.invitee_contact})`,
+                        `Pakiet: ${challenge.package?.name}`,
+                        `Termin: ${formattedDate} o ${startTimeText}`,
+                        `Lokalizacja: ${locationName}`,
+                        ``,
+                        `Panel admina: ${adminLink}`,
+                    ].join('\n'),
+                });
+            }
+        } catch (adminEmailError) {
+            console.error('Failed to send admin acceptance notification:', adminEmailError);
+        }
+
         return NextResponse.json({
             success: true,
             booking_id: booking.id

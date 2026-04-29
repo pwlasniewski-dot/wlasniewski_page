@@ -377,6 +377,35 @@ export default function AccountPage() {
                     </div>
 
                     <div className="lg:col-span-8 space-y-12">
+                        {(() => {
+                            // Wyzwania, które czekają na decyzję zaproszonego — powinny się świecić i mrugać.
+                            const pending = challenges.filter((c: any) =>
+                                c.role === 'invitee' && (c.status === 'sent' || c.status === 'viewed')
+                            );
+                            if (pending.length === 0) return null;
+                            const c = pending[0];
+                            return (
+                                <Link
+                                    href={`/foto-wyzwanie/invite/${c.unique_link}`}
+                                    className="relative block overflow-hidden rounded-3xl p-6 border-2 border-gold-500/60 bg-gradient-to-br from-gold-500/10 via-pink-500/10 to-amber-500/10 shadow-[0_0_40px_rgba(212,175,55,0.25)] hover:shadow-[0_0_60px_rgba(212,175,55,0.45)] transition-all animate-pulse-slow"
+                                >
+                                    <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-gold-400/20 blur-3xl animate-pulse" />
+                                    <div className="relative flex items-center gap-4">
+                                        <div className="w-14 h-14 rounded-2xl bg-gold-500 text-black flex items-center justify-center text-3xl shadow-lg shadow-gold-500/40">
+                                            🎁
+                                        </div>
+                                        <div className="flex-1">
+                                            <div className="text-[10px] uppercase tracking-widest text-gold-300 font-black">Czeka na Twoją decyzję</div>
+                                            <h3 className="text-xl font-bold text-white">{c.inviter_name} zaprasza Cię na sesję</h3>
+                                            <p className="text-sm text-zinc-300">{c.package?.name} • {c.location?.name || c.custom_location || 'Lokalizacja TBD'}</p>
+                                        </div>
+                                        <div className="hidden sm:flex items-center justify-center px-5 py-3 rounded-xl bg-gold-500 text-black font-bold text-sm whitespace-nowrap">
+                                            Otwórz →
+                                        </div>
+                                    </div>
+                                </Link>
+                            );
+                        })()}
                         <div className="grid md:grid-cols-2 gap-6">
                             {userPermissions?.galleries !== false && (
                                 <QuickCard
@@ -486,11 +515,12 @@ export default function AccountPage() {
                         };
                         const st = statusMap[challenge.status] || { label: challenge.status, color: 'bg-zinc-500/15 text-zinc-300' };
                         const isInviter = challenge.role === 'inviter';
+                        const needsDecision = !isInviter && (challenge.status === 'sent' || challenge.status === 'viewed');
                         const sessionDateLabel = challenge.session_date
                             ? new Date(challenge.session_date).toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
                             : null;
                         return (
-                        <div key={`challenge-${challenge.id}`} className="bg-zinc-900/30 backdrop-blur-xl border border-zinc-800 p-8 rounded-[2rem] hover:border-gold-500/40 transition-all group overflow-hidden relative hover:shadow-2xl hover:shadow-gold-500/10 hover:scale-[1.01]">
+                        <div key={`challenge-${challenge.id}`} className={`bg-zinc-900/30 backdrop-blur-xl border p-8 rounded-[2rem] transition-all group overflow-hidden relative hover:shadow-2xl hover:scale-[1.01] ${needsDecision ? 'border-gold-500/70 shadow-[0_0_40px_rgba(212,175,55,0.25)] animate-pulse-slow' : 'border-zinc-800 hover:border-gold-500/40 hover:shadow-gold-500/10'}`}>
                             <div className="flex flex-col md:flex-row justify-between gap-8">
                                 <div className="space-y-4 flex-1">
                                     <div className="flex items-center gap-3">
@@ -527,9 +557,9 @@ export default function AccountPage() {
                                 <div className="flex flex-col justify-center gap-3">
                                     <Link
                                         href={challenge.gallery?.is_published ? `/foto-wyzwanie/gallery/${challenge.id}` : `/foto-wyzwanie/invite/${challenge.unique_link}`}
-                                        className={`px-10 py-4 font-black rounded-2xl transition-all text-center text-md ${challenge.gallery?.is_published ? 'bg-gold-600 text-black hover:bg-gold-500 shadow-xl shadow-gold-600/10' : 'bg-zinc-800 text-white hover:bg-zinc-700'}`}
+                                        className={`px-10 py-4 font-black rounded-2xl transition-all text-center text-md ${needsDecision ? 'bg-gold-500 text-black hover:bg-gold-400 shadow-xl shadow-gold-500/30 animate-pulse' : challenge.gallery?.is_published ? 'bg-gold-600 text-black hover:bg-gold-500 shadow-xl shadow-gold-600/10' : 'bg-zinc-800 text-white hover:bg-zinc-700'}`}
                                     >
-                                        {challenge.gallery?.is_published ? 'Przejdź do galerii' : 'Szczegóły wyzwania'}
+                                        {needsDecision ? '🎁 Zdecyduj' : challenge.gallery?.is_published ? 'Przejdź do galerii' : 'Szczegóły wyzwania'}
                                     </Link>
                                 </div>
                             </div>
