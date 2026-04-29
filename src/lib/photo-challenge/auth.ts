@@ -32,13 +32,13 @@ export async function verifyUserToken(token: string): Promise<any> {
         const { payload } = await jwtVerify(token, getSecret());
         const decoded = payload as any;
 
-        if (decoded.role !== 'challenge_user') {
-            return null;
-        }
+        // Akceptujemy zar\u00f3wno legacy (`challenge_user`) jak i standardowe tokeny strefy klienta.
+        const userId: number | undefined = decoded.id ?? decoded.userId;
+        if (!userId) return null;
 
         // Verify user exists in DB
         const user = await prisma.user.findUnique({
-            where: { id: decoded.userId },
+            where: { id: userId },
         });
 
         if (!user) return null;

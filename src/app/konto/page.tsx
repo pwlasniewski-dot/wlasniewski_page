@@ -474,34 +474,59 @@ export default function AccountPage() {
                     ))}
 
                     {/* Challenges */}
-                    {challenges.map((challenge) => (
+                    {challenges.map((challenge) => {
+                        const statusMap: Record<string, { label: string; color: string }> = {
+                            sent: { label: 'Wysłane', color: 'bg-blue-500/15 text-blue-300' },
+                            viewed: { label: 'Zobaczone', color: 'bg-cyan-500/15 text-cyan-300' },
+                            accepted: { label: 'Zaakceptowane', color: 'bg-emerald-500/15 text-emerald-300' },
+                            rejected: { label: 'Odrzucone', color: 'bg-red-500/15 text-red-300' },
+                            declined: { label: 'Odrzucone', color: 'bg-red-500/15 text-red-300' },
+                            pending_payment: { label: 'Oczekuje płatności', color: 'bg-amber-500/15 text-amber-300' },
+                            completed: { label: 'Zakończone', color: 'bg-purple-500/15 text-purple-300' },
+                        };
+                        const st = statusMap[challenge.status] || { label: challenge.status, color: 'bg-zinc-500/15 text-zinc-300' };
+                        const isInviter = challenge.role === 'inviter';
+                        const sessionDateLabel = challenge.session_date
+                            ? new Date(challenge.session_date).toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+                            : null;
+                        return (
                         <div key={`challenge-${challenge.id}`} className="bg-zinc-900/30 backdrop-blur-xl border border-zinc-800 p-8 rounded-[2rem] hover:border-gold-500/40 transition-all group overflow-hidden relative hover:shadow-2xl hover:shadow-gold-500/10 hover:scale-[1.01]">
                             <div className="flex flex-col md:flex-row justify-between gap-8">
-                                <div className="space-y-4">
+                                <div className="space-y-4 flex-1">
                                     <div className="flex items-center gap-3">
                                         <div className="w-12 h-12 bg-zinc-800 text-gold-500 rounded-2xl flex items-center justify-center">
                                             <Star className="w-6 h-6" />
                                         </div>
-                                        <div>
+                                        <div className="flex-1">
                                             <h4 className="font-bold text-2xl group-hover:text-gold-400 transition-colors capitalize">
                                                 {challenge.inviter_name} → {challenge.invitee_name}
                                             </h4>
-                                            <div className="flex items-center gap-2 text-sm text-zinc-500 mt-0.5">
+                                            <div className="flex items-center gap-2 text-sm text-zinc-500 mt-0.5 flex-wrap">
                                                 <span className="px-2 py-0.5 bg-gold-500/10 text-gold-500 rounded text-[9px] uppercase font-black">Foto Wyzwanie</span>
+                                                <span className={`px-2 py-0.5 rounded text-[9px] uppercase font-black ${isInviter ? 'bg-pink-500/15 text-pink-300' : 'bg-cyan-500/15 text-cyan-300'}`}>
+                                                    {isInviter ? 'Zapraszasz' : 'Zaproszony/a'}
+                                                </span>
+                                                <span className={`px-2 py-0.5 rounded text-[9px] uppercase font-black ${st.color}`}>{st.label}</span>
                                                 <span>•</span>
                                                 <span className="flex items-center gap-1">
                                                     <MapPin className="w-3 h-3" />
-                                                    {challenge.location?.name || 'Toruń'}
+                                                    {challenge.location?.name || challenge.custom_location || 'Lokalizacja TBD'}
                                                 </span>
                                             </div>
                                         </div>
                                     </div>
                                     <p className="text-zinc-400 text-sm">Pakiet: <span className="text-white font-bold">{challenge.package?.name}</span></p>
+                                    {sessionDateLabel && (
+                                        <p className="text-zinc-400 text-sm flex items-center gap-2">
+                                            <Calendar className="w-4 h-4 text-gold-500" />
+                                            <span>Termin: <span className="text-white font-bold capitalize">{sessionDateLabel}</span></span>
+                                        </p>
+                                    )}
                                 </div>
 
                                 <div className="flex flex-col justify-center gap-3">
                                     <Link
-                                        href={challenge.gallery?.is_published ? `/foto-wyzwanie/gallery/${challenge.id}` : `/foto-wyzwanie?link=${challenge.unique_link}`}
+                                        href={challenge.gallery?.is_published ? `/foto-wyzwanie/gallery/${challenge.id}` : `/foto-wyzwanie/invite/${challenge.unique_link}`}
                                         className={`px-10 py-4 font-black rounded-2xl transition-all text-center text-md ${challenge.gallery?.is_published ? 'bg-gold-600 text-black hover:bg-gold-500 shadow-xl shadow-gold-600/10' : 'bg-zinc-800 text-white hover:bg-zinc-700'}`}
                                     >
                                         {challenge.gallery?.is_published ? 'Przejdź do galerii' : 'Szczegóły wyzwania'}
@@ -509,7 +534,8 @@ export default function AccountPage() {
                                 </div>
                             </div>
                         </div>
-                    ))}
+                        );
+                    })}
 
                     {challenges.length === 0 && galleries.length === 0 && (
                         <div className="bg-zinc-900/20 border-2 border-dashed border-zinc-800 p-20 rounded-[3rem] text-center">

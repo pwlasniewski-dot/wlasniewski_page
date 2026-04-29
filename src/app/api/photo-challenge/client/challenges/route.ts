@@ -22,13 +22,15 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ success: false, error: 'Invalid token' }, { status: 401 });
         }
 
-        if (decoded.role !== 'challenge_user') {
-            return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
+        // Wsparcie zarówno standardowego tokenu (/konto: { id, email }) jak i starszego challenge_user ({ userId, role }).
+        const userId: number | undefined = decoded.id ?? decoded.userId;
+        if (!userId) {
+            return NextResponse.json({ success: false, error: 'Invalid token payload' }, { status: 401 });
         }
 
         // Pobierz user zeby znać email (do wyzwań jako inviter)
         const me = await prisma.user.findUnique({
-            where: { id: decoded.userId },
+            where: { id: userId },
             select: { id: true, name: true, email: true },
         });
         if (!me) {
@@ -38,7 +40,8 @@ export async function GET(request: NextRequest) {
         const challenges = await prisma.photoChallenge.findMany({
             where: {
                 OR: [
-                    { invitee_user_id: decoded.userId },
+                    { invitee_user_id: userId },
+                    { inviter_user_id: userId },
                     ...(me?.email ? [
                         { inviter_email: me.email },
                         { inviter_contact: me.email },
@@ -60,7 +63,7 @@ export async function GET(request: NextRequest) {
         // Dorzuć pole `role` żeby UI mogło pokazać "Zapraszasz" vs "Zaproszony/a"
         const enriched = challenges.map((ch) => ({
             ...ch,
-            role: ch.invitee_user_id === decoded.userId ? 'invitee' : 'inviter',
+            role: ch.invitee_user_id === userId ? 'invitee' : 'inviter',
         }));
 
         return NextResponse.json({ success: true, user: me, challenges: enriched });
