@@ -205,6 +205,13 @@ function renderTemplate(template: string, data: Record<string, any>): string {
                 <li>📄 <strong>Voucher PDF</strong> — A4, z kodem QR i kodem weryfikacyjnym</li>
                 <li>📅 <strong>Plik .ics</strong> — kliknij, aby dodać sesję do kalendarza (Google / Apple / Outlook)</li>
             </ul>
+            ${d.panelLink ? `
+            <div class="cta-section" style="margin-top: 24px;">
+                <a href="${d.panelLink}" class="cta-button" style="background: #d4af37; color: black;">Otwórz mój panel</a>
+            </div>
+            <p style="font-size: 12px; color: #666; margin-top: 12px; text-align: center;">
+                1 kliknięcie — logujemy Cię automatycznie. Bez hasła. Link ważny 60 dni.
+            </p>` : ''}
             <p style="font-size: 13px; color: #666; margin-top: 20px;">
                 Dzień przed sesją otrzymasz krótkie przypomnienie z dokładnym miejscem zbiórki i kontaktem awaryjnym.
             </p>
@@ -333,13 +340,14 @@ function renderTemplate(template: string, data: Record<string, any>): string {
             <p>Mam świetną wiadomość! Zdjęcia z Twojego Foto Wyzwania od <strong>${d.inviterName}</strong> są już gotowe i czekają na Ciebie w prywatnym panelu.</p>
             <div class="details-box" style="border-color: rgba(212, 175, 55, 0.3); background: rgba(212, 175, 55, 0.05);">
                 <p>✨ Sesja: <strong>${d.packageName}</strong></p>
-                <p>🔐 Aby zobaczyć zdjęcia, zaloguj się na swoje konto klienta.</p>
+                <p>� Wystarczy jedno kliknięcie — zalogujemy Cię automatycznie.</p>
             </div>
             <div class="cta-section">
-                <a href="${d.loginLink}" class="cta-button" style="background: #d4af37; color: black;">Zaloguj się i zobacz zdjęcia 🖼️</a>
+                <a href="${d.loginLink}" class="cta-button" style="background: #d4af37; color: black;">Otwórz panel i zobacz zdjęcia 🖼️</a>
             </div>
             <p style="font-size: 12px; color: #666; margin-top: 20px;">
-                Jeśli to Twoje pierwsze logowanie, użyj przycisku "Nie pamiętam hasła" lub linku aktywacyjnego, aby ustawić swoje hasło.
+                Link jest ważny 30 dni i prowadzi tylko do Twojego konta. Jeśli przycisk nie działa, skopiuj ten adres do przeglądarki:<br>
+                <span style="word-break: break-all; color: #888;">${d.loginLink}</span>
             </p>
         </div>
     </div>

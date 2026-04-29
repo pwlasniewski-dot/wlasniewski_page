@@ -3,6 +3,8 @@ import prisma from '@/lib/db/prisma';
 import { sendEmail } from '@/lib/email/sender';
 import { generateVoucherPdfBuffer, generateIcs } from '@/lib/photo-challenge/voucher';
 import { deriveShortCode } from '@/lib/photo-challenge/short-code';
+import { getSiteUrl } from '@/lib/site-url';
+import { createMagicLinkToken } from '@/lib/photo-challenge/magic-link';
 
 export async function POST(
     request: NextRequest,
@@ -102,7 +104,10 @@ export async function POST(
 
         // Send confirmation email to invitee
         // Send confirmation e-mails
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+        const baseUrl = getSiteUrl();
+        // Magic-link: pozwala zaproszonemu zalogować się 1-klikiem do panelu (bez hasła).
+        const magicToken = await createMagicLinkToken({ userId: userId!, email: challenge.invitee_contact, challengeId: challenge.id, ttl: '60d' });
+        const magicLoginLink = `${baseUrl}/foto-wyzwanie/wejdz?token=${encodeURIComponent(magicToken)}`;
         const galleryLink = `${baseUrl}/foto-wyzwanie/gallery/${challenge.id}`;
         const formattedDate = sessionDate.toLocaleDateString('pl-PL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
         const locationName = challenge.location?.name || challenge.custom_location || 'Będzie podane wkrótce';
@@ -152,7 +157,8 @@ export async function POST(
                     sessionDate: formattedDate,
                     sessionTime: startTimeText,
                     location: locationName,
-                    galleryLink
+                    galleryLink,
+                    panelLink: magicLoginLink,
                 },
                 attachments,
             });

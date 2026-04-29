@@ -48,7 +48,8 @@ export async function GET(
         // Send invitation email AFTER successful payment
         try {
             const { sendEmail } = await import('@/lib/email/sender');
-            const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+            const { getSiteUrl } = await import('@/lib/site-url');
+            const baseUrl = getSiteUrl();
             const inviteLink = `${baseUrl}/foto-wyzwanie/invite/${challenge.unique_link}`;
             const loginLink = `${baseUrl}/foto-wyzwanie/login`;
 
@@ -88,7 +89,8 @@ export async function GET(
         }
 
         // Redirect to a success page
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+        const { getSiteUrl: _getSiteUrl } = await import('@/lib/site-url');
+        const baseUrl = _getSiteUrl();
         return NextResponse.redirect(`${baseUrl}/foto-wyzwanie/success?id=${challenge.unique_link}`);
 
     } catch (error) {

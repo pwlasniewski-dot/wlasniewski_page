@@ -52,6 +52,15 @@ export default function ChallengeLoginPage() {
                     <p className="text-zinc-400">Zaloguj się, aby zobaczyć swoje zdjęcia</p>
                 </div>
 
+                {/* INFO O MAGIC-LINKU — kluczowe dla zaproszonych, którzy nie mają hasła */}
+                <div className="bg-emerald-500/5 border border-emerald-500/30 rounded-xl p-4 mb-6 text-sm">
+                    <p className="text-emerald-300 font-medium mb-1">Dostałeś maila z linkiem?</p>
+                    <p className="text-zinc-400">
+                        Po prostu kliknij <span className="text-zinc-200 font-medium">„Otwórz panel"</span> w mailu —
+                        zalogujemy Cię automatycznie, bez hasła.
+                    </p>
+                </div>
+
                 {/* Login Form */}
                 <div className="bg-zinc-800/50 border border-zinc-700 rounded-2xl p-8 shadow-2xl backdrop-blur-sm">
                     {error && (

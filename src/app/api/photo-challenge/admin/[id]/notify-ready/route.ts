@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { withAuth } from '@/lib/auth/middleware';
 import { sendEmail } from '@/lib/email/sender';
+import { getSiteUrl } from '@/lib/site-url';
+import { createMagicLinkToken } from '@/lib/photo-challenge/magic-link';
 
 export async function POST(
     request: NextRequest,
@@ -23,8 +25,37 @@ export async function POST(
                 return NextResponse.json({ success: false, error: 'Challenge not found' }, { status: 404 });
             }
 
-            // Send email to invitee
-            const loginLink = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/foto-wyzwanie/login`;
+            // Upewnij się że istnieje ChallengeUser dla zaproszonego — magic-link wymaga userId.
+            // Dla starszych wyzwań (sprzed ery autouserów) twórz konto przy okazji.
+            let inviteeUser = challenge.invitee_user_id
+                ? await prisma.challengeUser.findUnique({ where: { id: challenge.invitee_user_id } })
+                : null;
+            if (!inviteeUser) {
+                inviteeUser = await prisma.challengeUser.upsert({
+                    where: { email: challenge.invitee_contact },
+                    update: { name: inviteeUser?.name || challenge.invitee_name },
+                    create: {
+                        email: challenge.invitee_contact,
+                        name: challenge.invitee_name,
+                    },
+                });
+                if (!challenge.invitee_user_id) {
+                    await prisma.photoChallenge.update({
+                        where: { id: challenge.id },
+                        data: { invitee_user_id: inviteeUser.id },
+                    });
+                }
+            }
+
+            // Magic-link: 1-klik logowanie do panelu, bez hasła.
+            const baseUrl = getSiteUrl();
+            const magicToken = await createMagicLinkToken({
+                userId: inviteeUser.id,
+                email: inviteeUser.email,
+                challengeId: challenge.id,
+                ttl: '30d',
+            });
+            const loginLink = `${baseUrl}/foto-wyzwanie/wejdz?token=${encodeURIComponent(magicToken)}`;
 
             await sendEmail({
                 to: challenge.invitee_contact,
