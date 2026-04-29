@@ -5,6 +5,7 @@ import { generateVoucherPdfBuffer, generateIcs } from '@/lib/photo-challenge/vou
 import { deriveShortCode } from '@/lib/photo-challenge/short-code';
 import { getSiteUrl } from '@/lib/site-url';
 import { createMagicLinkToken } from '@/lib/photo-challenge/magic-link';
+import { verifyAcceptToken } from '@/lib/photo-challenge/accept-token';
 
 export async function POST(
     request: NextRequest,
@@ -13,7 +14,11 @@ export async function POST(
     try {
         const { unique_link } = await params;
         const body = await request.json();
-        const { name, date, hour } = body;
+        const { name, date, hour, t: bodyToken } = body;
+
+        // Token może przyjść w body lub w nagłówku x-challenge-token
+        const headerToken = request.headers.get('x-challenge-token');
+        const acceptToken = bodyToken || headerToken;
 
         if (!date || hour === null) {
             return NextResponse.json(
@@ -32,6 +37,22 @@ export async function POST(
             return NextResponse.json(
                 { success: false, error: 'Challenge not found' },
                 { status: 404 }
+            );
+        }
+
+        // Bezpieczeństwo: tylko zaproszony (z ważnym tokenem akceptacji) może zaakceptować.
+        // Token jest wysyłany zaproszonemu mailem; udostępnienie linku z tokenem = świadoma decyzja.
+        if (!acceptToken) {
+            return NextResponse.json(
+                { success: false, error: 'NEED_INVITEE_TOKEN', message: 'Tylko zaproszony może zaakceptować. Otwórz osobisty link z maila.' },
+                { status: 401 }
+            );
+        }
+        const payload = await verifyAcceptToken(acceptToken);
+        if (!payload || payload.challengeId !== challenge.id) {
+            return NextResponse.json(
+                { success: false, error: 'INVALID_INVITEE_TOKEN', message: 'Link akceptacji nieprawidłowy lub wygasł. Poproś o nowy link.' },
+                { status: 401 }
             );
         }
 

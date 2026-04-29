@@ -14,7 +14,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
     Heart, Check, X, ShieldCheck, Star, MapPin, Camera, Award,
@@ -76,6 +76,8 @@ const PHOTOGRAPHER = {
 
 export default function InviteClient({ initialChallenge, uniqueLink }: Props) {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const acceptToken = searchParams?.get('t') || null;
     const challenge = initialChallenge;
 
     const [responded, setResponded] = useState<'accepted' | 'rejected' | null>(null);
@@ -84,6 +86,8 @@ export default function InviteClient({ initialChallenge, uniqueLink }: Props) {
     const [submitting, setSubmitting] = useState(false);
     const [shareOpen, setShareOpen] = useState(false);
     const [copied, setCopied] = useState(false);
+    const [requestingLink, setRequestingLink] = useState(false);
+    const [requestedLinkMasked, setRequestedLinkMasked] = useState<string | null>(null);
 
     const [shareUrl, setShareUrl] = useState('');
     useEffect(() => {
@@ -125,13 +129,20 @@ export default function InviteClient({ initialChallenge, uniqueLink }: Props) {
     const handleAccept = async () => {
         if (submitting) return;
         trackChallengeEvent(uniqueLink, 'cta_accept_clicked');
+
+        // Bez tokena = nie da się zaakceptować. Zaproponuj wysłanie linku na maila.
+        if (!acceptToken) {
+            await handleRequestLink();
+            return;
+        }
+
         setSubmitting(true);
         try {
             const res = await fetch(`/api/photo-challenge/${uniqueLink}/accept-invite`, { method: 'POST' });
             const data = await res.json();
             if (data.success) {
                 setResponded('accepted');
-                setTimeout(() => router.push(`/foto-wyzwanie/accept/${uniqueLink}`), 1500);
+                setTimeout(() => router.push(`/foto-wyzwanie/accept/${uniqueLink}?t=${encodeURIComponent(acceptToken)}`), 1500);
             } else {
                 alert(data.error || 'Coś poszło nie tak. Spróbuj ponownie za chwilę.');
             }
@@ -140,6 +151,25 @@ export default function InviteClient({ initialChallenge, uniqueLink }: Props) {
             alert('Błąd połączenia. Spróbuj ponownie.');
         } finally {
             setSubmitting(false);
+        }
+    };
+
+    const handleRequestLink = async () => {
+        if (requestingLink) return;
+        setRequestingLink(true);
+        try {
+            const res = await fetch(`/api/photo-challenge/${uniqueLink}/request-accept`, { method: 'POST' });
+            const data = await res.json();
+            if (data.success) {
+                setRequestedLinkMasked(data.masked || 'Twój adres email');
+            } else {
+                alert(data.error || 'Nie udało się wysłać linku. Spróbuj ponownie.');
+            }
+        } catch (e) {
+            console.error(e);
+            alert('Błąd połączenia.');
+        } finally {
+            setRequestingLink(false);
         }
     };
 
@@ -410,7 +440,35 @@ export default function InviteClient({ initialChallenge, uniqueLink }: Props) {
                 </details>
 
                 {/* DECYZJA — handshake 2-stopniowy */}
-                {!decisionUnlocked ? (
+                {requestedLinkMasked ? (
+                    <div className="bg-emerald-500/10 border border-emerald-500/40 rounded-2xl p-6 mb-6 text-center">
+                        <div className="text-4xl mb-2">📬</div>
+                        <h3 className="text-lg font-bold text-emerald-300 mb-1">Wysłaliśmy Ci osobisty link</h3>
+                        <p className="text-sm text-zinc-300 mb-1">Sprawdź skrzynkę: <strong className="text-white font-mono">{requestedLinkMasked}</strong></p>
+                        <p className="text-xs text-zinc-500">Kliknij w link z maila, żeby zaakceptować wyzwanie. (Folder spam też warto sprawdzić.)</p>
+                    </div>
+                ) : !acceptToken ? (
+                    <div className="bg-amber-500/5 rounded-2xl p-6 border border-amber-500/30 mb-6">
+                        <div className="flex items-start gap-3 mb-4">
+                            <Lock size={20} className="text-amber-400 flex-shrink-0 mt-1" />
+                            <div>
+                                <h3 className="text-sm font-bold text-amber-200 mb-1">Tylko Ty możesz zaakceptować</h3>
+                                <p className="text-xs text-zinc-400">Zaproszenie potwierdzasz osobistym linkiem z maila — to gwarancja, że nikt nie zaakceptuje za Ciebie.</p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={handleRequestLink}
+                            disabled={requestingLink}
+                            className="w-full py-4 rounded-xl font-bold text-base bg-gradient-to-r from-pink-500 to-amber-500 hover:from-pink-600 hover:to-amber-600 text-white transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-pink-500/20"
+                        >
+                            <Mail size={18} />
+                            {requestingLink ? 'Wysyłam…' : 'Wyślij mi osobisty link na maila'}
+                        </button>
+                        <p className="text-center text-[11px] text-zinc-500 mt-3">
+                            Link trafi na adres podany przez {challenge.inviter_name}.
+                        </p>
+                    </div>
+                ) : !decisionUnlocked ? (
                     <div className="bg-gradient-to-br from-pink-500/5 to-amber-500/5 rounded-2xl p-6 border border-pink-500/20 mb-6">
                         <p className="text-center text-sm text-zinc-300 mb-4">
                             Gotowy/gotowa na decyzję?

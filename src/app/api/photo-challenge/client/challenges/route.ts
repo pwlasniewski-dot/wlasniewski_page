@@ -26,8 +26,19 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
         }
 
+        // Pobierz user zeby znać email (do wyzwań jako inviter)
+        const me = await prisma.user.findUnique({ where: { id: decoded.userId }, select: { email: true } });
+
         const challenges = await prisma.photoChallenge.findMany({
-            where: { invitee_user_id: decoded.userId },
+            where: {
+                OR: [
+                    { invitee_user_id: decoded.userId },
+                    ...(me?.email ? [
+                        { inviter_email: me.email },
+                        { inviter_contact: me.email },
+                    ] : []),
+                ],
+            },
             include: {
                 package: true,
                 location: true,
@@ -40,7 +51,13 @@ export async function GET(request: NextRequest) {
             orderBy: { created_at: 'desc' }
         });
 
-        return NextResponse.json({ success: true, challenges });
+        // Dorzuć pole `role` żeby UI mogło pokazać "Zapraszasz" vs "Zaproszony/a"
+        const enriched = challenges.map((ch) => ({
+            ...ch,
+            role: ch.invitee_user_id === decoded.userId ? 'invitee' : 'inviter',
+        }));
+
+        return NextResponse.json({ success: true, challenges: enriched });
 
     } catch (error) {
         console.error('Fetch client challenges error:', error);

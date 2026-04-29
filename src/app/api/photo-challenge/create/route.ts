@@ -9,6 +9,10 @@ import { hashPassword, generateToken } from '@/lib/auth/jwt';
 import { sendEmail } from '@/lib/email/sender';
 import { generateChallengeCreatedEmail, generateChallengeInviteEmail } from '@/lib/email-templates';
 import { logSystem } from '@/lib/logger';
+import { getSiteUrl } from '@/lib/site-url';
+import { createAcceptToken } from '@/lib/photo-challenge/accept-token';
+import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 
 export async function POST(request: NextRequest) {
     try {
@@ -63,7 +67,23 @@ export async function POST(request: NextRequest) {
         const hours = await getSetting('fomo_countdown_hours', 24);
         const deadline = await getAcceptanceDeadline(hours);
 
-        // 4. Create Challenge
+        // 4. Create or find invitee User (CRM) — wymagane do magic-link akceptacji
+        let inviteeUser = await prisma.user.findUnique({ where: { email: body.invitee_email } });
+        if (!inviteeUser) {
+            const randomPwd = await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 10);
+            inviteeUser = await prisma.user.create({
+                data: {
+                    email: body.invitee_email,
+                    password_hash: randomPwd,
+                    name: body.invitee_name,
+                    role: 'CLIENT',
+                    is_active: true,
+                },
+            });
+            await logSystem('INFO', 'AUTH', `Auto-created invitee CRM user: ${inviteeUser.email}`, { userId: inviteeUser.id });
+        }
+
+        // 5. Create Challenge
         const newChallenge = await prisma.photoChallenge.create({
             data: {
                 unique_link: uniqueLink,
@@ -72,12 +92,14 @@ export async function POST(request: NextRequest) {
                 inviter_name: body.inviter_name,
                 inviter_contact: body.inviter_email,
                 inviter_contact_type: 'email',
+                inviter_email: body.inviter_email,
                 admin_notes: `Inviter User ID: ${inviterUser.id}`,
 
                 // Invitee Info
                 invitee_name: body.invitee_name,
                 invitee_contact: body.invitee_email,
                 invitee_contact_type: 'email',
+                invitee_user_id: inviteeUser.id,
 
                 // Details
                 package_id: body.package_id,
@@ -97,9 +119,24 @@ export async function POST(request: NextRequest) {
 
         await logSystem('INFO', 'CHALLENGE', `Challenge Created: #${newChallenge.id} by ${body.inviter_name}`, { challengeId: newChallenge.id });
 
-        // 6. Send Emails
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://wlasniewski.pl';
-        const challengeLink = `${baseUrl}/foto-wyzwanie/akceptuj/${uniqueLink}`;
+        // 6. Send Emails (z bezpiecznym accept-tokenem dla zaproszonego)
+        const baseUrl = getSiteUrl();
+        const acceptToken = await createAcceptToken({
+            challengeId: newChallenge.id,
+            inviteeEmail: body.invitee_email,
+            inviteeUserId: inviteeUser.id,
+        });
+        const challengeLink = `${baseUrl}/foto-wyzwanie/invite/${uniqueLink}?t=${encodeURIComponent(acceptToken)}`;
+
+        // Inviter — magic-login do panelu żłobku wyzwań (żadnego /status/{id} — ta strona nie istnieje)
+        const { createMagicLinkToken } = await import('@/lib/photo-challenge/magic-link');
+        const inviterMagic = await createMagicLinkToken({
+            userId: inviterUser.id,
+            email: inviterUser.email,
+            challengeId: newChallenge.id,
+            ttl: '60d',
+        });
+        const inviterStatusLink = `${baseUrl}/foto-wyzwanie/wejdz?token=${encodeURIComponent(inviterMagic)}`;
 
         try {
             // Email 1: To Invitee
@@ -116,7 +153,7 @@ export async function POST(request: NextRequest) {
             const createdHtml = generateChallengeCreatedEmail({
                 inviterName: body.inviter_name,
                 inviteeName: body.invitee_name,
-                link: `${baseUrl}/foto-wyzwanie/status/${newChallenge.id}`, // Status link
+                link: inviterStatusLink, // Status link
                 packageName: pkg.name,
                 dates: body.preferred_dates
             });

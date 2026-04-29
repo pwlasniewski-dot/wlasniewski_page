@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Calendar, Clock, Check, ChevronLeft, ChevronRight, MapPin, Package, Heart, User, ArrowRight } from 'lucide-react';
 import BookingCalendar from '@/components/BookingCalendar';
@@ -40,7 +40,9 @@ interface AvailabilitySlot {
 export default function AcceptChallengePage() {
     const params = useParams();
     const router = useRouter();
+    const searchParams = useSearchParams();
     const uniqueLink = params.unique_link as string;
+    const acceptToken = searchParams?.get('t') || null;
 
     const [step, setStep] = useState(1);
     const [challenge, setChallenge] = useState<ChallengeData | null>(null);
@@ -99,7 +101,8 @@ export default function AcceptChallengePage() {
                 body: JSON.stringify({
                     name,
                     date: slot.date,
-                    hour: slot.start ? parseInt(slot.start.split(':')[0]) : 12 // Default to 12:00 if no hour specified
+                    hour: slot.start ? parseInt(slot.start.split(':')[0]) : 12, // Default to 12:00 if no hour specified
+                    t: acceptToken,
                 })
             });
 
@@ -108,8 +111,11 @@ export default function AcceptChallengePage() {
             if (data.success) {
                 // Redirect to success page
                 router.push(`/foto-wyzwanie/accept/${uniqueLink}/success`);
+            } else if (data.error === 'NEED_INVITEE_TOKEN' || data.error === 'INVALID_INVITEE_TOKEN') {
+                alert(data.message || 'Tylko zaproszony może zaakceptować. Wróć do zaproszenia i poproś o osobisty link na maila.');
+                router.push(`/foto-wyzwanie/invite/${uniqueLink}`);
             } else {
-                alert('Błąd przy rezerwacji');
+                alert(data.error || 'Błąd przy rezerwacji');
             }
         } catch (err) {
             console.error('Error submitting:', err);
