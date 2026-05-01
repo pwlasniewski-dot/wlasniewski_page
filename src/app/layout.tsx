@@ -54,10 +54,7 @@ import { Suspense } from "react";
 import { headers } from "next/headers";
 import { AnalyticsTracker } from "@/hooks/useAnalytics";
 import AnalyticsLoader from "@/components/AnalyticsLoader";
-import UtmTracker from "@/components/UtmTracker";
-import FloatingContact from "@/components/FloatingContact";
-import SeasonalEffectsWrapper from "@/components/effects/SeasonalEffectsWrapper";
-import PhotoCubeIntro from "@/components/PhotoCubeIntro";
+import DeferredClientChrome from "@/components/DeferredClientChrome";
 import { isB2BContext } from "@/lib/context";
 
 const cormorant = Cormorant_Garamond({
@@ -286,14 +283,11 @@ export default async function RootLayout({
                 <Suspense fallback={null}>
                     <AnalyticsTracker />
                     <AnalyticsLoader />
-                    <UtmTracker />
                 </Suspense>
-                <SeasonalEffectsWrapper />
-                <PhotoCubeIntro />
                 <AppShell isB2B={isB2B}>
                     {children}
                 </AppShell>
-                <FloatingContact />
+                <DeferredClientChrome />
             </body>
         </html>
     );

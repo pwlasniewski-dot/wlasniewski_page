@@ -507,31 +507,31 @@ model User {
 }
 
 model Offer {
-  id               Int            @id @default(autoincrement())
-  slug             String         @unique
-  offerNumber      String?        @unique
-  title            String
-  type             String         @default("b2c")
-  category         String?
-  status           String         @default("draft")
-  valid_until      DateTime?
-  client_id        Int?
-  client_email     String?
-  is_template      Boolean        @default(false)
-  created_at       DateTime       @default(now())
-  updated_at       DateTime       @updatedAt
-  pdf_url          String?
-  drive_url        String?
-  template_data    Json?
-  total_price      Int            @default(0)
-  client_selection Json?
-  selected_addons  Json?          @default("[]")
-  negotiation_enabled Boolean @default(true)
-  client_note      String?  // Notatka klienta widoczna dla fotografa
-  contract         Contract?
-  negotiations     Negotiation[]
-  sections         OfferSection[]
-  user             User?          @relation(fields: [client_id], references: [id])
+  id                  Int            @id @default(autoincrement())
+  slug                String         @unique
+  offerNumber         String?        @unique
+  title               String
+  type                String         @default("b2c")
+  category            String?
+  status              String         @default("draft")
+  valid_until         DateTime?
+  client_id           Int?
+  client_email        String?
+  is_template         Boolean        @default(false)
+  created_at          DateTime       @default(now())
+  updated_at          DateTime       @updatedAt
+  pdf_url             String?
+  drive_url           String?
+  template_data       Json?
+  total_price         Int            @default(0)
+  client_selection    Json?
+  selected_addons     Json?          @default("[]")
+  negotiation_enabled Boolean        @default(true)
+  client_note         String? // Notatka klienta widoczna dla fotografa
+  contract            Contract?
+  negotiations        Negotiation[]
+  sections            OfferSection[]
+  user                User?          @relation(fields: [client_id], references: [id])
 
   @@map("offers")
 }
@@ -570,9 +570,9 @@ model Contract {
   content         String?
   signed_at       DateTime?
   pdf_url         String?
-  signed_pdf_url  String?   // URL do podpisanego skanu wgranego przez klienta
+  signed_pdf_url  String? // URL do podpisanego skanu wgranego przez klienta
   drive_url       String?
-  client_note     String?  // Notatka klienta widoczna dla fotografa
+  client_note     String? // Notatka klienta widoczna dla fotografa
   updated_at      DateTime  @default(now()) @updatedAt
   created_at      DateTime  @default(now())
   user            User?     @relation(fields: [client_id], references: [id])
@@ -836,77 +836,77 @@ model GalleryPhoto {
 }
 
 model GalleryProduct {
-  id                Int            @id @default(autoincrement())
-  gallery_id        Int?
-  title             String
-  description       String?
-  price             Int
-  image_url         String?
-  video_url         String?
-  is_active         Boolean        @default(true)
+  id          Int     @id @default(autoincrement())
+  gallery_id  Int?
+  title       String
+  description String?
+  price       Int
+  image_url   String?
+  video_url   String?
+  is_active   Boolean @default(true)
 
   // nPhoto Integration
   nphoto_url        String?
   nphoto_embed_code String?
   nphoto_product_id String?
-  product_type      String?        @default("album")
+  product_type      String?  @default("album")
   preview_video_url String?
-  preview_images    Json?          @default("[]")
-  sample_pages      Json?          @default("[]")
-  recommended_for   String[]       @default([])
-  featured          Boolean        @default(false)
-  sort_order        Int            @default(0)
+  preview_images    Json?    @default("[]")
+  sample_pages      Json?    @default("[]")
+  recommended_for   String[] @default([])
+  featured          Boolean  @default(false)
+  sort_order        Int      @default(0)
   seo_slug          String?
   seo_title         String?
   seo_description   String?
 
-  created_at        DateTime       @default(now())
-  updated_at        DateTime       @updatedAt
-  gallery           ClientGallery? @relation(fields: [gallery_id], references: [id])
+  created_at DateTime       @default(now())
+  updated_at DateTime       @updatedAt
+  gallery    ClientGallery? @relation(fields: [gallery_id], references: [id])
 
   @@map("gallery_products")
 }
 
 model NphotoAlbum {
-  id                Int                       @id @default(autoincrement())
-  title             String
-  slug              String                    @unique
-  subtitle          String?
-  description       String?
-  category          String                    @default("album")
-  occasion          String[]                  @default([])
-  price             Int                       @default(0)
-  price_from        Int?
-  currency          String?                   @default("PLN")
-  format            String?
-  pages_count       Int?
-  price_per_spread  Int?                      @default(40)
-  format_options    Json?                     @default("[{\"label\":\"25×25 cm\",\"discount_pct\":10},{\"label\":\"20×20 cm\",\"discount_pct\":20}]")
-  smaller_format_label         String?        @default("25×25 cm")
-  smaller_format_discount_pct  Int?           @default(10)
-  cover_type        String?
-  paper_type        String?
-  cover_image_url   String?
-  preview_images    Json?                     @default("[]")
-  sample_pages      Json?                     @default("[]")
-  video_url         String?
-  video_thumbnail   String?
-  additional_videos Json?                     @default("[]")
-  gallery_3d_url    String?
-  nphoto_product_id String?
-  nphoto_shop_url   String?
-  nphoto_embed_code String?
-  nphoto_api_data   Json?
-  seo_title         String?
-  seo_description   String?
-  seo_keywords      String?
-  schema_markup     Json?
-  is_active         Boolean                   @default(true)
-  is_featured       Boolean                   @default(false)
-  sort_order        Int                       @default(0)
-  created_at        DateTime                  @default(now())
-  updated_at        DateTime                  @default(now()) @updatedAt
-  recommendations   OfferRecommendedAlbum[]
+  id                          Int                     @id @default(autoincrement())
+  title                       String
+  slug                        String                  @unique
+  subtitle                    String?
+  description                 String?
+  category                    String                  @default("album")
+  occasion                    String[]                @default([])
+  price                       Int                     @default(0)
+  price_from                  Int?
+  currency                    String?                 @default("PLN")
+  format                      String?
+  pages_count                 Int?
+  price_per_spread            Int?                    @default(40)
+  format_options              Json?                   @default("[{\"label\":\"25×25 cm\",\"discount_pct\":10},{\"label\":\"20×20 cm\",\"discount_pct\":20}]")
+  smaller_format_label        String?                 @default("25×25 cm")
+  smaller_format_discount_pct Int?                    @default(10)
+  cover_type                  String?
+  paper_type                  String?
+  cover_image_url             String?
+  preview_images              Json?                   @default("[]")
+  sample_pages                Json?                   @default("[]")
+  video_url                   String?
+  video_thumbnail             String?
+  additional_videos           Json?                   @default("[]")
+  gallery_3d_url              String?
+  nphoto_product_id           String?
+  nphoto_shop_url             String?
+  nphoto_embed_code           String?
+  nphoto_api_data             Json?
+  seo_title                   String?
+  seo_description             String?
+  seo_keywords                String?
+  schema_markup               Json?
+  is_active                   Boolean                 @default(true)
+  is_featured                 Boolean                 @default(false)
+  sort_order                  Int                     @default(0)
+  created_at                  DateTime                @default(now())
+  updated_at                  DateTime                @default(now()) @updatedAt
+  recommendations             OfferRecommendedAlbum[]
 
   @@index([category])
   @@index([is_active])
@@ -915,14 +915,14 @@ model NphotoAlbum {
 }
 
 model OfferRecommendedAlbum {
-  id              Int         @id @default(autoincrement())
-  offer_id        Int
-  album_id        Int
-  position        Int         @default(0)
-  custom_note     String?
-  is_highlighted  Boolean     @default(false)
-  created_at      DateTime    @default(now())
-  album           NphotoAlbum @relation(fields: [album_id], references: [id], onDelete: Cascade)
+  id             Int         @id @default(autoincrement())
+  offer_id       Int
+  album_id       Int
+  position       Int         @default(0)
+  custom_note    String?
+  is_highlighted Boolean     @default(false)
+  created_at     DateTime    @default(now())
+  album          NphotoAlbum @relation(fields: [album_id], references: [id], onDelete: Cascade)
 
   @@unique([offer_id, album_id])
   @@index([offer_id])
@@ -1189,18 +1189,18 @@ model ClientContract {
 
 // ─── CRM ACTIVITY TRACKING ───
 model CrmActivity {
-  id            Int      @id @default(autoincrement())
-  client_id     Int?
-  client_email  String?
-  action        String   // offer_viewed, contract_viewed, contract_signed, pdf_downloaded, note_added, scan_uploaded, offer_selection, offer_accepted, offer_rejected, login, error
-  entity_type   String?  // offer, contract
-  entity_id     Int?
-  details       String?  // JSON z dodatkowymi danymi
-  ip_address    String?
-  user_agent    String?
-  created_at    DateTime @default(now())
+  id           Int      @id @default(autoincrement())
+  client_id    Int?
+  client_email String?
+  action       String // offer_viewed, contract_viewed, contract_signed, pdf_downloaded, note_added, scan_uploaded, offer_selection, offer_accepted, offer_rejected, login, error
+  entity_type  String? // offer, contract
+  entity_id    Int?
+  details      String? // JSON z dodatkowymi danymi
+  ip_address   String?
+  user_agent   String?
+  created_at   DateTime @default(now())
 
-  user          User?    @relation(fields: [client_id], references: [id])
+  user User? @relation(fields: [client_id], references: [id])
 
   @@index([client_id])
   @@index([client_email])
@@ -1208,4 +1208,36 @@ model CrmActivity {
   @@index([entity_type, entity_id])
   @@index([created_at])
   @@map("crm_activities")
+}
+
+// ============================================================
+// FOTO-MATCH (waitlist MVP)
+// Pierwszy moduł nowego produktu — na razie tylko zbieramy zapisy.
+// Cala konfiguracja kanonicznego URL-a (canonical / OG / linki w mailach)
+// idzie przez NEXT_PUBLIC_FOTO_MATCH_URL — jeden ENV pozwala
+// przeniesc moduł na osobną domenę (foto-match.pl) bez ruszania kodu.
+// ============================================================
+model FotoMatchWaitlist {
+  id                    Int       @id @default(autoincrement())
+  email                 String    @unique
+  city                  String?
+  role                  String? // 'inviter' | 'invitee' | 'both' | null
+  age_range             String? // np. '25-34'
+  source                String? // utm_source / referrer
+  marketing_opt_in      Boolean   @default(false)
+  rules_accepted_at     DateTime?
+  ip_address            String?
+  user_agent            String?
+  confirm_token         String?   @unique
+  confirm_token_expires DateTime?
+  confirmed_at          DateTime?
+  unsubscribed_at       DateTime?
+  notes                 String?
+  created_at            DateTime  @default(now())
+  updated_at            DateTime  @updatedAt
+
+  @@index([city])
+  @@index([confirmed_at])
+  @@index([created_at])
+  @@map("foto_match_waitlist")
 }

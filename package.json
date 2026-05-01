@@ -13,7 +13,9 @@
     "db:backup": "ts-node -P ./tsconfig.json ./prisma/db-management.ts backup",
     "db:restore": "ts-node -P ./tsconfig.json ./prisma/db-management.ts restore",
     "prisma:generate": "prisma generate",
-    "prisma:push-LOCAL-ONLY-DANGEROUS": "node scripts/guard-db.js push && prisma generate && prisma db push"
+    "prisma:push-LOCAL-ONLY-DANGEROUS": "node scripts/guard-db.js push && prisma generate && prisma db push",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
   },
   "prisma": {
     "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
@@ -82,6 +84,7 @@
   },
   "devDependencies": {
     "@netlify/plugin-nextjs": "^5.15.3",
+    "@playwright/test": "^1.59.1",
     "@types/bcrypt": "^6.0.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/cookie": "^0.6.0",

@@ -19,14 +19,57 @@ export async function POST(
             );
         }
 
-        // Update status to rejected
-        await prisma.photoChallenge.update({
-            where: { unique_link },
+        // Idempotencja: jeśli już odrzucone / zaakceptowane, nie wykonujemy
+        // ponownie update'u i NIE wysyłamy duplikatu emaila refundowego.
+        // (Klient klikając kilka razy "Odrzuć" mógł wcześniej zalać admina
+        // wieloma "WYMAGANY ZWROT".)
+        if (challenge.status === 'rejected' || (challenge as any).rejected_at) {
+            return NextResponse.json(
+                {
+                    success: false,
+                    error: 'ALREADY_REJECTED',
+                    message: 'To zaproszenie zostało już wcześniej odrzucone.',
+                    rejected_at: (challenge as any).rejected_at,
+                },
+                { status: 409 },
+            );
+        }
+        if (challenge.status === 'accepted' || (challenge as any).accepted_at) {
+            return NextResponse.json(
+                {
+                    success: false,
+                    error: 'ALREADY_ACCEPTED',
+                    message: 'To zaproszenie zostało już zaakceptowane i nie można go cofnąć przez ten formularz.',
+                },
+                { status: 409 },
+            );
+        }
+
+        // Update status to rejected — z guardem na warunki wyścigu (gdyby
+        // dwa requesty trafiły równocześnie, drugi zaktualizuje 0 wierszy).
+        const updated = await prisma.photoChallenge.updateMany({
+            where: {
+                unique_link,
+                status: { notIn: ['rejected', 'accepted'] },
+                rejected_at: null,
+            },
             data: {
                 status: 'rejected',
-                rejected_at: new Date()
-            }
+                rejected_at: new Date(),
+            },
         });
+
+        if (updated.count === 0) {
+            // Inny request wygrał wyścig — nie wysyłamy emaili.
+            return NextResponse.json(
+                {
+                    success: false,
+                    error: 'ALREADY_REJECTED',
+                    message: 'To zaproszenie zostało już wcześniej odrzucone.',
+                },
+                { status: 409 },
+            );
+        }
 
         // Cancel associated booking to free up the slot
         await prisma.booking.updateMany({

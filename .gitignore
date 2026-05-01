@@ -71,3 +71,9 @@ backups/secrets_*/
 build_*.log
 *.log
 
+
+# playwright
+test-results/
+playwright-report/
+playwright/.cache/
+

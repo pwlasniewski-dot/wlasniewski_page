@@ -565,6 +565,73 @@ export async function POST(request: NextRequest) {
             }
         }
 
+        // ============================================================
+        // Negatywne statusy PayU (CANCELED / REJECTED) — dla CHALLENGE_*
+        // Zwalniamy slot kalendarza i kasujemy wiszący challenge,
+        // żeby nie blokował terminów ani panelu admina.
+        // (PENDING/WAITING_FOR_CONFIRMATION zostawiamy — to stany przejściowe.)
+        // ============================================================
+        if (status === 'CANCELED' || status === 'REJECTED') {
+            const parts = extOrderId.split('_');
+            const typeOrId = parts[0];
+            const resourceId = parts.length > 1 ? parseInt(parts[1]) : NaN;
+
+            if (typeOrId === 'CHALLENGE' && !isNaN(resourceId)) {
+                const challenge = await prisma.photoChallenge.findUnique({
+                    where: { id: resourceId },
+                }).catch(() => null);
+
+                if (challenge && challenge.status === 'pending_payment') {
+                    // Zwolnij booking blokujący slot.
+                    await prisma.booking.deleteMany({
+                        where: { challenge_id: resourceId, status: 'challenge_pending' },
+                    }).catch(() => null);
+
+                    // Oznacz challenge jako anulowany (zachowujemy rekord do audytu).
+                    await prisma.photoChallenge.update({
+                        where: { id: resourceId },
+                        data: {
+                            status: 'payment_failed',
+                            payment_status: status === 'CANCELED' ? 'cancelled' : 'rejected',
+                            admin_notes: `PayU ${status} (Order: ${orderId})`,
+                        } as any,
+                    }).catch((e) => { console.error('[PayU] Challenge cancel failed:', e); });
+
+                    await prisma.challengeTimelineEvent.create({
+                        data: {
+                            challenge_id: resourceId,
+                            event_type: 'PAYMENT_FAILED',
+                            event_description: `Płatność PayU ${status === 'CANCELED' ? 'anulowana' : 'odrzucona'}.`,
+                            metadata: JSON.stringify({ orderId, status }),
+                        },
+                    }).catch(() => null);
+
+                    // Powiadom zapraszającego, żeby wiedział że transakcja się nie powiodła.
+                    if (challenge.inviter_email) {
+                        try {
+                            const { sendEmail } = await import('@/lib/email/sender');
+                            await sendEmail({
+                                to: challenge.inviter_email,
+                                subject: '⚠️ Płatność za Foto Wyzwanie nie powiodła się',
+                                text: [
+                                    `Cześć ${challenge.inviter_name},`,
+                                    ``,
+                                    `Twoja płatność PayU za Foto Wyzwanie nie została zrealizowana (${status === 'CANCELED' ? 'anulowana' : 'odrzucona'}).`,
+                                    `Slot kalendarza został zwolniony — nic nie zostało Ci pobrane.`,
+                                    ``,
+                                    `Możesz spróbować ponownie: https://wlasniewski.pl/foto-wyzwanie/create`,
+                                    ``,
+                                    `Jeśli to pomyłka, skontaktuj się z nami: https://wlasniewski.pl/kontakt`,
+                                ].join('\n'),
+                            }).catch((e: any) => console.error('[PayU] inviter cancel mail fail', e));
+                        } catch (e) {
+                            console.error('[PayU] cancel email dispatch failed:', e);
+                        }
+                    }
+                }
+            }
+        }
+
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error("PayU Notify Error:", error);

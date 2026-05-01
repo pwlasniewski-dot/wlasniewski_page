@@ -4,6 +4,22 @@ import { v4 as uuidv4 } from 'uuid';
 import { createPayUOrder, extractClientIpv4 } from '@/lib/payu';
 import { sendEmail } from '@/lib/email/sender';
 
+// In-memory rate limit (best-effort, per process). Chroni przed:
+//  - DoS na kalendarz (atakujący tworzy 1000 challenges blokujących sloty),
+//  - lawiną wywołań PayU API (zablokowanie naszego konta merchant).
+// Limit: 5 prób / 10 min per IP, 3 próby / 10 min per email.
+const recentByIp = new Map<string, number[]>();
+const recentByEmail = new Map<string, number[]>();
+
+function rateOk(map: Map<string, number[]>, key: string, max: number, windowMs: number): boolean {
+    const now = Date.now();
+    const arr = (map.get(key) || []).filter((t) => now - t < windowMs);
+    if (arr.length >= max) return false;
+    arr.push(now);
+    map.set(key, arr);
+    return true;
+}
+
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
@@ -27,6 +43,25 @@ export async function POST(request: NextRequest) {
             return NextResponse.json(
                 { success: false, error: 'Missing required fields' },
                 { status: 400 }
+            );
+        }
+
+        // Rate limiting — chroni przed spamem rezerwacji blokujących sloty.
+        // Robimy to PO walidacji, żeby pusty/zły request nie zliczał się.
+        const rawForwardedRl = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || '';
+        const rlIp = extractClientIpv4(rawForwardedRl) || 'unknown';
+        const WINDOW = 10 * 60 * 1000; // 10 min
+        if (!rateOk(recentByIp, rlIp, 5, WINDOW)) {
+            return NextResponse.json(
+                { success: false, error: 'RATE_LIMITED', message: 'Zbyt wiele prób z tego adresu IP. Spróbuj ponownie za kilka minut.' },
+                { status: 429 },
+            );
+        }
+        const emailKey = String(inviter_email).trim().toLowerCase();
+        if (!rateOk(recentByEmail, emailKey, 3, WINDOW)) {
+            return NextResponse.json(
+                { success: false, error: 'RATE_LIMITED', message: 'Zbyt wiele prób utworzenia wyzwania z tym adresem email. Spróbuj ponownie za kilka minut.' },
+                { status: 429 },
             );
         }
 

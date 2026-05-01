@@ -61,6 +61,39 @@ export async function POST(
             );
         }
 
+        // Walidacja deadline'u: jeśli klient klika w stary link zaproszenia
+        // po upływie acceptance_deadline, blokujemy akceptację (slot mógł
+        // zostać zwolniony, oferta nieaktualna). Nie wysyłamy żadnych
+        // emaili, nie tworzymy bookingu.
+        const deadline = (challenge as any).acceptance_deadline as Date | null | undefined;
+        if (deadline && new Date() > new Date(deadline)) {
+            return NextResponse.json(
+                {
+                    success: false,
+                    error: 'DEADLINE_EXPIRED',
+                    message:
+                        'Termin akceptacji tego zaproszenia upłynął. Skontaktuj się z osobą zapraszającą lub fotografem.',
+                    acceptance_deadline: deadline,
+                },
+                { status: 410 },
+            );
+        }
+
+        // Płatność musi być potwierdzona przed akceptacją — chroni przed
+        // sytuacją w której zaproszony klika w link zanim webhook PayU
+        // potwierdził status (challenge wisi w `pending_payment`).
+        if (challenge.status === 'pending_payment' || (challenge as any).payment_status !== 'paid') {
+            return NextResponse.json(
+                {
+                    success: false,
+                    error: 'PAYMENT_NOT_CONFIRMED',
+                    message:
+                        'Płatność za to zaproszenie nie została jeszcze potwierdzona. Spróbuj ponownie za kilka minut.',
+                },
+                { status: 409 },
+            );
+        }
+
         // Token akceptacji jest opcjonalny — jeśli przyszedł z osobistego maila,
         // weryfikujemy go (i sprawdzamy challengeId), ale brak tokenu nie blokuje akceptacji.
         if (acceptToken) {
