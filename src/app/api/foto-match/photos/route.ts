@@ -92,6 +92,14 @@ export async function POST(request: NextRequest) {
         },
     });
 
+    // Aktualizuj flagged_count na profilu (admin filtruje po tym polu).
+    if (photo.ai_status === 'FLAGGED') {
+        await prisma.fotoMatchProfile.update({
+            where: { id: profile.id },
+            data: { flagged_count: { increment: 1 } },
+        });
+    }
+
     return NextResponse.json({
         ok: true,
         photo,

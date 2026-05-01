@@ -396,7 +396,98 @@ function renderTemplate(template: string, data: Record<string, any>): string {
         'password-reset': (d) => {
             const { generatePasswordResetEmail } = require('@/lib/email-templates');
             return generatePasswordResetEmail(d);
-        }
+        },
+        'foto-match-submitted': (d) => `
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><style>${baseStyles}</style></head>
+<body><div class="container">
+    <div class="header"><div class="logo">Foto <span class="logo-accent">Match</span></div></div>
+    <div class="content">
+        <div class="greeting">Cześć ${d.name || 'na pokładzie'} 👋</div>
+        <p>Twój profil został przesłany do weryfikacji. Sprawdzamy ręcznie każdą zgłoszenie — to zwykle zajmuje do 48 godzin w dni robocze.</p>
+        <p>Otrzymasz osobnego maila gdy profil zostanie zatwierdzony.</p>
+        <div class="cta-section"><a href="${d.profileUrl}" class="cta-button">Otwórz mój profil</a></div>
+        <p style="color:#888;font-size:13px">Jeśli czegoś brakuje (np. dokumentu tożsamości), poprosimy o uzupełnienie.</p>
+    </div>
+</div></body></html>`,
+        'foto-match-approved': (d) => `
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><style>${baseStyles}</style></head>
+<body><div class="container">
+    <div class="header" style="border-color:#22c55e"><div class="logo">Foto <span class="logo-accent" style="color:#22c55e">Match</span></div></div>
+    <div class="content">
+        <div class="greeting">Cześć ${d.name || ''} 🎉</div>
+        <p>Twój profil <strong>${d.displayName}</strong> został zaakceptowany! Od teraz jesteś widoczna(y) dla innych uczestników Foto-Match w Twojej okolicy.</p>
+        <div class="cta-section"><a href="${d.discoverUrl}" class="cta-button">Zobacz dopasowania 💞</a></div>
+        <p style="margin-top:20px"><a href="${d.referUrl}" style="color:#9f7a16">💌 Polec znajomych i odbierz bonus</a></p>
+    </div>
+</div></body></html>`,
+        'foto-match-rejected': (d) => `
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><style>${baseStyles}</style></head>
+<body><div class="container">
+    <div class="header" style="border-color:#ef4444"><div class="logo">Foto <span class="logo-accent" style="color:#ef4444">Match</span></div></div>
+    <div class="content">
+        <div class="greeting">Cześć ${d.name || ''}</div>
+        <p>Twój profil <strong>${d.displayName}</strong> wymaga zmian zanim go zaakceptujemy.</p>
+        ${d.reason ? `<div style="background:#1a1a1a;border-left:4px solid #ef4444;padding:15px;margin:20px 0;border-radius:6px"><strong>Powód:</strong><br>${d.reason}</div>` : ''}
+        <p>Możesz edytować swój profil i ponownie wysłać do weryfikacji.</p>
+        <div class="cta-section"><a href="${d.profileUrl}" class="cta-button">Edytuj profil</a></div>
+    </div>
+</div></body></html>`,
+        'foto-match-suspended': (d) => `
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><style>${baseStyles}</style></head>
+<body><div class="container">
+    <div class="header" style="border-color:#f59e0b"><div class="logo">Foto <span class="logo-accent" style="color:#f59e0b">Match</span></div></div>
+    <div class="content">
+        <div class="greeting">Cześć ${d.name || ''}</div>
+        <p>Twój profil w Foto-Match został zawieszony${d.reason ? ` z powodu: <strong>${d.reason}</strong>` : ''}.</p>
+        <p>Profil nie jest obecnie widoczny dla innych. Skontaktuj się z nami, jeśli uważasz że to pomyłka.</p>
+        <div class="cta-section"><a href="mailto:${d.contactEmail || 'kontakt@wlasniewski.pl'}" class="cta-button">Napisz do nas</a></div>
+    </div>
+</div></body></html>`,
+        'foto-match-referral-rewarded': (d) => `
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><style>${baseStyles}</style></head>
+<body><div class="container">
+    <div class="header" style="border-color:#fbbf24"><div class="logo">🎁 <span class="logo-accent" style="color:#fbbf24">Bonus przyznany!</span></div></div>
+    <div class="content">
+        <div class="greeting">Cześć ${d.name || ''} 🎉</div>
+        <p>Twoja polecona osoba dołączyła do Foto-Match — dostajesz <strong>${d.bonusLabel}</strong> rabatu na pierwszą sesję.</p>
+        <div style="background:#1a1a1a;border:2px dashed #fbbf24;padding:20px;border-radius:12px;margin:20px 0;text-align:center">
+            <p style="color:#888;font-size:12px;margin:0 0 6px">TWÓJ KOD VOUCHERA</p>
+            <div style="font-size:28px;font-weight:bold;letter-spacing:2px;color:#fbbf24;font-family:monospace">${d.voucherCode}</div>
+            ${d.expiresAt ? `<p style="color:#888;font-size:12px;margin:8px 0 0">Ważny do ${d.expiresAt}</p>` : ''}
+        </div>
+        <div class="cta-section"><a href="${d.bookingUrl}" class="cta-button">Zarezerwuj sesję</a></div>
+    </div>
+</div></body></html>`,
+        'booking-deposit-paid': (d) => `
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><style>${baseStyles}</style></head>
+<body><div class="container">
+    <div class="header"><div class="logo">✅ <span class="logo-accent">Zaliczka zaksięgowana</span></div></div>
+    <div class="content">
+        <div class="greeting">Cześć ${d.name}</div>
+        <p>Otrzymaliśmy Twoją zaliczkę w wysokości <strong>${d.deposit_amount_pln} zł</strong>. Sesja jest wstępnie potwierdzona.</p>
+        <p><strong>Pozostała kwota: ${d.remaining_amount_pln} zł</strong></p>
+        <p>Termin wpłaty dopłaty: <strong>${d.remaining_due_at}</strong> (sesja ${d.session_date}).</p>
+        <p>Kilka dni przed terminem wyślemy przypomnienie z linkiem do płatności.</p>
+    </div>
+</div></body></html>`,
+        'booking-payment-reminder': (d) => `
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><style>${baseStyles}</style></head>
+<body><div class="container">
+    <div class="header" style="border-color:#fbbf24"><div class="logo">⏰ <span class="logo-accent" style="color:#fbbf24">Przypomnienie o dopłacie</span></div></div>
+    <div class="content">
+        <div class="greeting">Cześć ${d.name}</div>
+        <p>Przypominamy, że pozostała dopłata za Twoją sesję wynosi <strong>${d.remaining_amount_pln} zł</strong>.</p>
+        <p>Termin wpłaty: <strong>${d.remaining_due_at}</strong> (sesja ${d.session_date}).</p>
+        ${d.paymentUrl ? `<div class="cta-section"><a href="${d.paymentUrl}" class="cta-button">Zapłać teraz</a></div>` : '<p>Skontaktuj się z nami, aby otrzymać link do płatności.</p>'}
+    </div>
+</div></body></html>`,
     };
 
     const templateFn = templates[template];

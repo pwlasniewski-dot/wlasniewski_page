@@ -78,6 +78,19 @@ const navigation = [
             { name: 'Lista klientów', href: '/admin/clients' },
         ]
     },
+    {
+        name: 'Foto-Match',
+        href: '/admin/foto-match',
+        icon: Sparkles,
+        children: [
+            { name: 'Dashboard', href: '/admin/foto-match' },
+            { name: 'Profile', href: '/admin/foto-match/profiles' },
+            { name: 'Zdjęcia do akceptacji', href: '/admin/foto-match/photos' },
+            { name: 'Lista oczekujących', href: '/admin/foto-match/waitlist' },
+            { name: 'Matching i bonusy', href: '/admin/foto-match/match-settings' },
+            { name: 'Ustawienia', href: '/admin/foto-match/settings' },
+        ]
+    },
     { name: 'Administratorzy', href: '/admin/users', icon: Shield },
 
     { name: 'Analityka', href: '/admin/analytics', icon: BarChart3 },

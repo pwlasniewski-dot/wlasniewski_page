@@ -35,6 +35,8 @@ export async function POST(request: Request) {
             promoCode,
             promo_code,
             gift_card_code,
+            fm_voucher_code,
+            payment_plan: requestedPaymentPlan,
             originalPrice
         } = body;
 
@@ -45,6 +47,51 @@ export async function POST(request: Request) {
                 { ok: false, message: "Brak wymaganych danych" },
                 { status: 400 }
             );
+        }
+
+        // Foto-Match voucher: walidacja przed stworzeniem rezerwacji.
+        // Frontend już mógł zaaplikować rabat na price; my tylko upewniamy się że voucher istnieje
+        // i jest niewykorzystany, oraz oznaczamy go jako zużyty po stworzeniu rezerwacji.
+        let validatedVoucher: { id: number; code: string } | null = null;
+        if (fm_voucher_code) {
+            const code = String(fm_voucher_code).trim().toUpperCase();
+            const ref = await prisma.fotoMatchReferral.findUnique({
+                where: { reward_voucher_code: code },
+                select: { id: true, status: true, reward_redeemed_at: true, reward_expires_at: true },
+            });
+            const now = new Date();
+            if (!ref || ref.status !== 'REWARDED' || ref.reward_redeemed_at || (ref.reward_expires_at && ref.reward_expires_at < now)) {
+                return NextResponse.json(
+                    { ok: false, message: 'Voucher Foto-Match nieważny lub już użyty' },
+                    { status: 400 }
+                );
+            }
+            validatedVoucher = { id: ref.id, code };
+        }
+
+        // Split payment 50/50: aktywne tylko gdy globalny toggle ON i klient zaznaczył 'SPLIT'.
+        let paymentPlan: 'FULL' | 'SPLIT' = 'FULL';
+        let depositAmount: number | null = null;
+        let remainingAmount: number | null = null;
+        let remainingDueAt: Date | null = null;
+        if (requestedPaymentPlan === 'SPLIT') {
+            const splitSettings = await prisma.setting.findFirst({
+                orderBy: { id: 'asc' },
+                select: {
+                    split_payment_enabled: true,
+                    split_payment_deposit_percent: true,
+                    split_payment_remaining_due_days: true,
+                },
+            });
+            if (splitSettings?.split_payment_enabled) {
+                const pct = Math.max(1, Math.min(99, splitSettings.split_payment_deposit_percent ?? 50));
+                const total = Number(price);
+                depositAmount = Math.round((total * pct) / 100);
+                remainingAmount = total - depositAmount;
+                paymentPlan = 'SPLIT';
+                const dueDays = splitSettings.split_payment_remaining_due_days ?? 7;
+                remainingDueAt = new Date(new Date(date).getTime() - dueDays * 86400_000);
+            }
         }
 
         const booking = await prisma.booking.create({
@@ -64,8 +111,29 @@ export async function POST(request: Request) {
                 promo_code: promo_code || promoCode || null,
                 gift_card_code: gift_card_code || null,
                 status: Number(price) === 0 ? "confirmed" : "pending",
+                payment_plan: paymentPlan,
+                deposit_amount: depositAmount,
+                remaining_amount: remainingAmount,
+                remaining_due_at: remainingDueAt,
             },
         });
+
+        // Voucher: mark redeemed (best-effort, nie blokuje rezerwacji jeśli się nie uda).
+        if (validatedVoucher) {
+            try {
+                await prisma.fotoMatchReferral.update({
+                    where: { id: validatedVoucher.id },
+                    data: {
+                        reward_redeemed_at: new Date(),
+                        reward_redeemed_for: `BOOKING:${booking.id}`,
+                    },
+                });
+                await logSystem('INFO', 'FOTO_MATCH_VOUCHER', `Voucher ${validatedVoucher.code} redeemed for booking #${booking.id}`);
+            } catch (voucherErr) {
+                console.error('Failed to mark fm voucher redeemed:', voucherErr);
+                await logSystem('ERROR', 'FOTO_MATCH_VOUCHER', `Failed to redeem voucher ${validatedVoucher.code}`, { bookingId: booking.id, error: String(voucherErr) });
+            }
+        }
 
         // Mark gift card as used if provided
         if (gift_card_code) {

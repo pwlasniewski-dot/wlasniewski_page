@@ -96,22 +96,66 @@ export async function POST(request: NextRequest) {
                 });
 
                 for (const booking of bookings) {
+                    const isSplit = booking.payment_plan === 'SPLIT';
+                    const isDepositPayment = isSplit && booking.deposit_session_id === cartId && !booking.deposit_paid_at;
+                    const isRemainingPayment = isSplit && booking.remaining_session_id === cartId && !booking.remaining_paid_at;
+
+                    let updateData: any;
+                    if (isRemainingPayment) {
+                        updateData = {
+                            status: 'confirmed',
+                            remaining_paid_at: new Date(),
+                            notes: `${booking.notes || ''}\n[PayU] Dopłata zaksięgowana (${cartId}, PayU: ${orderId})`.trim(),
+                        };
+                    } else if (isDepositPayment) {
+                        updateData = {
+                            status: 'deposit_paid',
+                            deposit_paid_at: new Date(),
+                            notes: `${booking.notes || ''}\n[PayU] Zaliczka zaksięgowana (${cartId}, PayU: ${orderId})`.trim(),
+                        };
+                    } else {
+                        // FULL payment (or fallback)
+                        updateData = {
+                            status: 'confirmed',
+                            notes: `Paid via PayU (Cart: ${cartId}, PayU: ${orderId})`,
+                        };
+                    }
+
                     await prisma.booking.update({
                         where: { id: booking.id },
-                        data: {
-                            status: 'confirmed',
-                            notes: `Paid via PayU (Cart: ${cartId}, PayU: ${orderId})`
-                        }
+                        data: updateData,
                     });
-                    console.log(`[PayU] Booking #${booking.id} confirmed from Cart`);
+                    console.log(`[PayU] Booking #${booking.id} → ${updateData.status} from Cart`);
 
-                    // Trigger Confirmation Email
-                    try {
-                        const { sendBookingConfirmationEmail } = await import('@/lib/email/booking');
-                        await sendBookingConfirmationEmail(booking);
-                        console.log(`[PayU] Email dispatched for booking #${booking.id}`);
-                    } catch (e) {
-                        console.error(`[PayU] Failed to send email for booking #${booking.id}`, e);
+                    // Trigger Confirmation Email (only for non-deposit-only payments)
+                    if (!isDepositPayment) {
+                        try {
+                            const { sendBookingConfirmationEmail } = await import('@/lib/email/booking');
+                            const refreshed = await prisma.booking.findUnique({ where: { id: booking.id } });
+                            if (refreshed) await sendBookingConfirmationEmail(refreshed);
+                            console.log(`[PayU] Email dispatched for booking #${booking.id}`);
+                        } catch (e) {
+                            console.error(`[PayU] Failed to send email for booking #${booking.id}`, e);
+                        }
+                    } else {
+                        // Deposit-paid email (lightweight)
+                        try {
+                            const { sendEmail } = await import('@/lib/email/sender');
+                            await sendEmail({
+                                to: booking.email!,
+                                subject: 'Zaliczka zaksięgowana — czekamy na dopłatę przed sesją',
+                                template: 'booking-deposit-paid',
+                                data: {
+                                    name: booking.client_name || 'Kliencie',
+                                    deposit_amount_pln: ((booking.deposit_amount ?? 0) / 100).toFixed(2),
+                                    remaining_amount_pln: ((booking.remaining_amount ?? 0) / 100).toFixed(2),
+                                    remaining_due_at: booking.remaining_due_at ? booking.remaining_due_at.toISOString().slice(0, 10) : '',
+                                    session_date: booking.date ? booking.date.toISOString().slice(0, 10) : '',
+                                },
+                            } as any);
+                        } catch (e) {
+                            console.error(`[PayU] Failed deposit email for #${booking.id}`, e);
+                        }
                     }
                 }
 

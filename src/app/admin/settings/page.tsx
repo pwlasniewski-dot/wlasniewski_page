@@ -79,6 +79,10 @@ export default function SettingsPage() {
         b2b_phone: '',
         b2b_email: '',
         b2b_footer_config: '',
+        // Split payment 50/50
+        split_payment_enabled: false,
+        split_payment_deposit_percent: 50,
+        split_payment_remaining_due_days: 7,
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -177,7 +181,8 @@ export default function SettingsPage() {
             // Convert boolean fields to actual booleans
             const booleanFields = ['urgency_enabled', 'promo_code_discount_enabled', 'gift_card_promo_enabled',
                 'navbar_sticky', 'navbar_transparent', 'p24_test_mode', 'social_proof_enabled',
-                'p24_method_blik', 'p24_method_card', 'p24_method_transfer', 'booking_require_payment'];
+                'p24_method_blik', 'p24_method_card', 'p24_method_transfer', 'booking_require_payment',
+                'split_payment_enabled'];
 
             for (const field of booleanFields) {
                 if (field in settingsToSave) {
@@ -188,7 +193,7 @@ export default function SettingsPage() {
             // Convert numeric fields to numbers
             const numericFields = ['navbar_font_size', 'logo_size', 'smtp_port', 'urgency_slots_remaining',
                 'social_proof_total_clients', 'booking_min_days_ahead', 'gift_card_promo_rotation_interval', 'gift_card_hero_opacity',
-                'hero_slider_interval'];
+                'hero_slider_interval', 'split_payment_deposit_percent', 'split_payment_remaining_due_days'];
 
             for (const field of numericFields) {
                 if (field in settingsToSave && settingsToSave[field] !== '' && settingsToSave[field] !== null) {
@@ -1125,6 +1130,56 @@ export default function SettingsPage() {
                         />
                         <p className="mt-1 text-xs text-zinc-500">Adres, na który PayU wyśle potwierdzenie wpłaty. Musi być publicznie dostępny.</p>
                     </div>
+                </div>
+            </div>
+
+            {/* Płatności 50/50 (split payment) */}
+            <div className="bg-zinc-900 shadow rounded-lg border border-zinc-800 p-6">
+                <h2 className="text-lg font-medium text-white mb-4">Płatności 50/50 (zaliczka + dopłata)</h2>
+                <div className="space-y-4">
+                    <label className="flex items-start gap-3 cursor-pointer">
+                        <input
+                            type="checkbox"
+                            checked={!!settings.split_payment_enabled}
+                            onChange={e => setSettings(s => ({ ...s, split_payment_enabled: e.target.checked }))}
+                            className="mt-1 w-5 h-5 rounded accent-amber-500"
+                        />
+                        <div>
+                            <div className="text-white text-sm font-medium">Włącz opcję płatności podzielonej</div>
+                            <div className="text-xs text-zinc-400 mt-0.5">
+                                Klient w koszyku zobaczy wybór: pełna kwota albo zaliczka teraz + dopłata przed sesją.
+                            </div>
+                        </div>
+                    </label>
+
+                    {settings.split_payment_enabled && (
+                        <>
+                            <div>
+                                <label className="block text-sm font-medium text-zinc-300 mb-1">Procent zaliczki (%)</label>
+                                <input
+                                    type="number"
+                                    min={1}
+                                    max={99}
+                                    value={settings.split_payment_deposit_percent ?? 50}
+                                    onChange={e => setSettings(s => ({ ...s, split_payment_deposit_percent: Number(e.target.value) }))}
+                                    className="block w-32 rounded-md border-zinc-700 bg-zinc-800 text-white shadow-sm focus:border-gold-500 focus:ring-gold-500 sm:text-sm px-3 py-2"
+                                />
+                                <p className="mt-1 text-xs text-zinc-500">Domyślnie 50%. Reszta zostaje do dopłaty przed sesją.</p>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-zinc-300 mb-1">Dopłata wymagana N dni przed sesją</label>
+                                <input
+                                    type="number"
+                                    min={0}
+                                    max={365}
+                                    value={settings.split_payment_remaining_due_days ?? 7}
+                                    onChange={e => setSettings(s => ({ ...s, split_payment_remaining_due_days: Number(e.target.value) }))}
+                                    className="block w-32 rounded-md border-zinc-700 bg-zinc-800 text-white shadow-sm focus:border-gold-500 focus:ring-gold-500 sm:text-sm px-3 py-2"
+                                />
+                                <p className="mt-1 text-xs text-zinc-500">Klient dostanie maila przypominającego o dopłacie.</p>
+                            </div>
+                        </>
+                    )}
                 </div>
             </div>
 

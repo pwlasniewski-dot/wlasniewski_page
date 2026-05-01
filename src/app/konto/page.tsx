@@ -45,6 +45,7 @@ export default function AccountPage() {
     const [photoOrders, setPhotoOrders] = useState<any[]>([]);
     const [userPermissions, setUserPermissions] = useState<Record<string, boolean> | null>(null);
     const [fotoMatchProfile, setFotoMatchProfile] = useState<{ id: number; status: string; display_name: string } | null>(null);
+    const [fotoMatchEnabled, setFotoMatchEnabled] = useState<boolean>(false);
     const [savingNote, setSavingNote] = useState<{ type: string; id: number } | null>(null);
     const [noteStates, setNoteStates] = useState<Record<string, string>>({});
 
@@ -69,11 +70,12 @@ export default function AccountPage() {
         if (token) {
             async function fetchData() {
                 try {
-                    const [userRes, challengeRes, galleriesRes, fmRes] = await Promise.all([
+                    const [userRes, challengeRes, galleriesRes, fmRes, fmSettingsRes] = await Promise.all([
                         fetch('/api/user/me', { headers: { 'Authorization': `Bearer ${token}` } }),
                         fetch('/api/photo-challenge/client/challenges', { headers: { 'Authorization': `Bearer ${token}` } }),
                         fetch('/api/galleries/client', { headers: { 'Authorization': `Bearer ${token}` } }),
-                        fetch('/api/foto-match/profile/me', { headers: { 'Authorization': `Bearer ${token}` } })
+                        fetch('/api/foto-match/profile/me', { headers: { 'Authorization': `Bearer ${token}` } }),
+                        fetch('/api/foto-match/settings/public')
                     ]);
 
                     if (userRes.ok) {
@@ -108,6 +110,11 @@ export default function AccountPage() {
                                 display_name: data.profile.display_name,
                             });
                         }
+                    }
+
+                    if (fmSettingsRes.ok) {
+                        const data = await fmSettingsRes.json();
+                        setFotoMatchEnabled(!!data.enabled);
                     }
                 } catch (e) {
                     console.error(e);
@@ -264,8 +271,10 @@ export default function AccountPage() {
 
         return (
             <div className="space-y-10">
-                {/* Foto-Match block */}
-                <FotoMatchOverviewBlock profile={fotoMatchProfile} />
+                {/* Foto-Match block (tylko gdy enabled lub klient ma profil) */}
+                {(fotoMatchEnabled || fotoMatchProfile) && (
+                    <FotoMatchOverviewBlock profile={fotoMatchProfile} />
+                )}
 
                 {/* Hero Status Block */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

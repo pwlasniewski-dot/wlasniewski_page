@@ -7,7 +7,7 @@ import crypto from 'crypto';
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { items, customer, totalAmount, createAccount, password } = body;
+        const { items, customer, totalAmount, createAccount, password, fm_voucher_code, payment_plan } = body;
 
         if (!items || !customer || items.length === 0) {
             return NextResponse.json({ ok: false, message: "Brak danych zamówienia" }, { status: 400 });
@@ -15,10 +15,44 @@ export async function POST(request: Request) {
 
         const clientIp = (request.headers.get("x-forwarded-for") ?? "127.0.0.1").split(",")[0];
 
+        // 0. Validate Foto-Match referral voucher (if provided)
+        let voucherRef: { id: number; reward_amount_grosze: number | null; reward_percent: number | null; reward_type: string | null } | null = null;
+        if (fm_voucher_code) {
+            const code = String(fm_voucher_code).trim().toUpperCase();
+            const ref = await prisma.fotoMatchReferral.findUnique({
+                where: { reward_voucher_code: code },
+                select: { id: true, status: true, reward_amount_grosze: true, reward_percent: true, reward_type: true, reward_expires_at: true, reward_redeemed_at: true },
+            });
+            if (!ref || ref.status !== 'REWARDED' || ref.reward_redeemed_at || (ref.reward_expires_at && ref.reward_expires_at < new Date())) {
+                return NextResponse.json({ ok: false, message: "Voucher nieprawidłowy, wykorzystany lub wygasły" }, { status: 400 });
+            }
+            voucherRef = { id: ref.id, reward_amount_grosze: ref.reward_amount_grosze, reward_percent: ref.reward_percent, reward_type: ref.reward_type };
+        }
+
+        // 0b. Validate split-payment plan (only single booking)
+        let useSplitPayment = false;
+        let depositPercent = 50;
+        let remainingDueDays = 7;
+        if (payment_plan === 'SPLIT') {
+            const bookingItems = items.filter((it: any) => it.type === 'booking');
+            if (bookingItems.length !== 1 || items.length !== 1) {
+                return NextResponse.json({ ok: false, message: "Płatność 50/50 dostępna tylko dla pojedynczej rezerwacji w koszyku." }, { status: 400 });
+            }
+            const setting = await prisma.setting.findFirst({ orderBy: { id: 'asc' } });
+            if (!setting?.split_payment_enabled) {
+                return NextResponse.json({ ok: false, message: "Płatność 50/50 nie jest aktualnie dostępna." }, { status: 400 });
+            }
+            depositPercent = setting.split_payment_deposit_percent ?? 50;
+            remainingDueDays = setting.split_payment_remaining_due_days ?? 7;
+            useSplitPayment = true;
+        }
+
         await logSystem('INFO', 'CHECKOUT', `Starting unified checkout for ${customer.email}`, {
             itemCount: items.length,
             total: totalAmount,
-            createAccount: body.createAccount
+            createAccount: body.createAccount,
+            voucher: !!voucherRef,
+            split: useSplitPayment,
         });
 
         // 1. Handle account creation if requested
@@ -61,9 +95,30 @@ export async function POST(request: Request) {
 
         for (const item of items) {
             if (item.type === 'booking') {
+                let extraBookingFields: Record<string, any> = {};
+                if (useSplitPayment) {
+                    const totalGrosze = Number(item.price);
+                    const depositGrosze = Math.round(totalGrosze * depositPercent / 100);
+                    const remainingGrosze = totalGrosze - depositGrosze;
+                    const dueAt = item.metadata?.date ? new Date(item.metadata.date) : new Date();
+                    dueAt.setDate(dueAt.getDate() - remainingDueDays);
+                    extraBookingFields = {
+                        payment_plan: 'SPLIT',
+                        deposit_amount: depositGrosze,
+                        deposit_session_id: cartId,
+                        remaining_amount: remainingGrosze,
+                        remaining_due_at: dueAt,
+                    };
+                } else {
+                    extraBookingFields = { payment_plan: 'FULL' };
+                }
+                if (voucherRef) {
+                    extraBookingFields.fm_voucher_code = String(fm_voucher_code).trim().toUpperCase();
+                }
                 const booking = await prisma.booking.create({
                     data: {
                         ...item.metadata,
+                        ...extraBookingFields,
                         status: 'pending',
                         email: customer.email,
                         client_name: customer.name,
@@ -74,7 +129,7 @@ export async function POST(request: Request) {
                 createdResourceIds.push(`Booking #${booking.id}`);
                 payuProducts.push({
                     name: item.title || 'Rezerwacja',
-                    unitPrice: item.price,
+                    unitPrice: useSplitPayment ? Math.round(Number(item.price) * depositPercent / 100) : item.price,
                     quantity: 1
                 });
             } else if (item.type === 'gift_card') {
@@ -140,6 +195,15 @@ export async function POST(request: Request) {
                 products: payuProducts,
                 continueUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'https://wlasniewski.pl'}/rezerwacja/potwierdzenie?status=success`
             }, clientIp);
+
+            // Mark voucher as redeemed after successful PayU init.
+            // Note: if user abandons payment, voucher stays redeemed (acceptable trade-off vs double-use risk).
+            if (voucherRef) {
+                await prisma.fotoMatchReferral.update({
+                    where: { id: voucherRef.id },
+                    data: { reward_redeemed_at: new Date() },
+                }).catch(() => { });
+            }
 
             return NextResponse.json({
                 ok: true,

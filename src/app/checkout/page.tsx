@@ -1,14 +1,87 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useCart } from '@/context/CartContext';
-import { ShoppingBag, Lock, ShieldCheck, CreditCard } from 'lucide-react';
+import { ShoppingBag, Lock, ShieldCheck, CreditCard, Gift, Wallet } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function CheckoutPage() {
     const { items, totalAmount, clearCart } = useCart();
     const [submitting, setSubmitting] = useState(false);
+
+    // Foto-Match referral voucher
+    const [voucherCode, setVoucherCode] = useState('');
+    const [voucherInfo, setVoucherInfo] = useState<{ valid: boolean; discount_grosze: number; label: string } | null>(null);
+    const [checkingVoucher, setCheckingVoucher] = useState(false);
+
+    // Split payment
+    const [splitPaymentAvailable, setSplitPaymentAvailable] = useState(false);
+    const [depositPercent, setDepositPercent] = useState(50);
+    const [paymentPlan, setPaymentPlan] = useState<'FULL' | 'SPLIT'>('FULL');
+
+    const hasOnlyOneBooking = items.length === 1 && items[0]?.type === 'booking';
+
+    useEffect(() => {
+        fetch('/api/settings/public')
+            .then(r => r.json())
+            .then(d => {
+                const s = d?.settings || d || {};
+                if (s.split_payment_enabled === true || s.split_payment_enabled === 'true') {
+                    setSplitPaymentAvailable(true);
+                    if (s.split_payment_deposit_percent) setDepositPercent(Number(s.split_payment_deposit_percent));
+                }
+            })
+            .catch(() => { });
+    }, []);
+
+    async function checkVoucher() {
+        const code = voucherCode.trim().toUpperCase();
+        if (!code) return;
+        setCheckingVoucher(true);
+        setVoucherInfo(null);
+        try {
+            const r = await fetch(`/api/foto-match/voucher/check?code=${encodeURIComponent(code)}`);
+            const d = await r.json();
+            if (!r.ok || !d.valid) {
+                const reasonMap: Record<string, string> = {
+                    NOT_FOUND: 'Voucher nie istnieje',
+                    ALREADY_USED: 'Voucher już wykorzystany',
+                    EXPIRED: 'Voucher wygasł',
+                    NO_CODE: 'Wpisz kod',
+                };
+                setVoucherInfo({ valid: false, discount_grosze: 0, label: reasonMap[d.reason] || 'Voucher nieprawidłowy' });
+                return;
+            }
+            const amount = Number(d.amount_grosze ?? 0);
+            const percent = Number(d.percent ?? 0);
+            const type = String(d.type || 'AMOUNT');
+            let discount = 0;
+            const parts: string[] = [];
+            if (type === 'AMOUNT' || type === 'BOTH') {
+                discount += amount;
+                if (amount > 0) parts.push(`−${(amount / 100).toFixed(2)} zł`);
+            }
+            if (type === 'PERCENT' || type === 'BOTH') {
+                const fromPercent = Math.round(totalAmount * percent / 100);
+                discount += fromPercent;
+                if (percent > 0) parts.push(`−${percent}%`);
+            }
+            // Cap to total
+            discount = Math.min(discount, totalAmount);
+            setVoucherInfo({ valid: true, discount_grosze: discount, label: parts.join(' + ') || 'Voucher zaakceptowany' });
+        } catch (e: any) {
+            setVoucherInfo({ valid: false, discount_grosze: 0, label: e?.message || 'Błąd weryfikacji' });
+        } finally {
+            setCheckingVoucher(false);
+        }
+    }
+
+    const voucherDiscount = voucherInfo?.valid ? voucherInfo.discount_grosze : 0;
+    const totalAfterVoucher = Math.max(0, totalAmount - voucherDiscount);
+    const depositAmount = Math.round(totalAfterVoucher * depositPercent / 100);
+    const remainingAmount = totalAfterVoucher - depositAmount;
+    const amountNow = paymentPlan === 'SPLIT' && hasOnlyOneBooking && splitPaymentAvailable ? depositAmount : totalAfterVoucher;
 
     const [createAccount, setCreateAccount] = useState(false);
     const [password, setPassword] = useState('');
@@ -85,9 +158,11 @@ export default function CheckoutPage() {
                         email: formData.email,
                         phone: formData.phone
                     },
-                    totalAmount,
+                    totalAmount: amountNow,
                     createAccount,
-                    password: createAccount ? password : null
+                    password: createAccount ? password : null,
+                    fm_voucher_code: voucherInfo?.valid ? voucherCode.trim().toUpperCase() : null,
+                    payment_plan: (paymentPlan === 'SPLIT' && hasOnlyOneBooking && splitPaymentAvailable) ? 'SPLIT' : 'FULL',
                 })
             });
 
@@ -285,7 +360,7 @@ export default function CheckoutPage() {
                                 ) : (
                                     <>
                                         <CreditCard className="w-6 h-6" />
-                                        <span>Zapłać {(totalAmount / 100).toFixed(2)} zł</span>
+                                        <span>Zapłać {(amountNow / 100).toFixed(2)} zł</span>
                                     </>
                                 )}
                             </button>
@@ -324,9 +399,73 @@ export default function CheckoutPage() {
                                 <span>Dostawa e-mail:</span>
                                 <span className="text-green-500 font-bold">BEZPŁATNIE</span>
                             </div>
+
+                            {/* Voucher Foto-Match */}
+                            <div className="pt-4 border-t border-zinc-800">
+                                <label className="text-xs text-zinc-400 flex items-center gap-1.5 mb-1.5">
+                                    <Gift className="w-3.5 h-3.5 text-amber-500" />
+                                    Kod polecający (Foto-Match)
+                                </label>
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        value={voucherCode}
+                                        onChange={e => { setVoucherCode(e.target.value); setVoucherInfo(null); }}
+                                        placeholder="np. FM-A1B2C3"
+                                        className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white uppercase tracking-wider"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={checkVoucher}
+                                        disabled={checkingVoucher || !voucherCode.trim()}
+                                        className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-amber-400 rounded-lg text-sm font-bold disabled:opacity-50"
+                                    >
+                                        {checkingVoucher ? '…' : 'Sprawdź'}
+                                    </button>
+                                </div>
+                                {voucherInfo && (
+                                    <p className={`text-xs mt-1.5 ${voucherInfo.valid ? 'text-emerald-400' : 'text-red-400'}`}>
+                                        {voucherInfo.valid ? `✓ ${voucherInfo.label}` : voucherInfo.label}
+                                    </p>
+                                )}
+                            </div>
+
+                            {voucherInfo?.valid && voucherDiscount > 0 && (
+                                <div className="flex justify-between text-emerald-400">
+                                    <span>Rabat z polecenia:</span>
+                                    <span>−{(voucherDiscount / 100).toFixed(2)} zł</span>
+                                </div>
+                            )}
+
+                            {/* Payment plan */}
+                            {hasOnlyOneBooking && splitPaymentAvailable && (
+                                <div className="pt-4 border-t border-zinc-800 space-y-2">
+                                    <label className="text-xs text-zinc-400 flex items-center gap-1.5 mb-1">
+                                        <Wallet className="w-3.5 h-3.5 text-amber-500" />
+                                        Plan płatności
+                                    </label>
+                                    <label className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer ${paymentPlan === 'FULL' ? 'border-amber-500 bg-amber-500/10' : 'border-zinc-700 bg-zinc-800/50'}`}>
+                                        <input type="radio" name="plan" checked={paymentPlan === 'FULL'} onChange={() => setPaymentPlan('FULL')} className="accent-amber-500" />
+                                        <div className="flex-1">
+                                            <div className="text-sm font-bold text-white">Pełna kwota</div>
+                                            <div className="text-xs text-zinc-400">{(totalAfterVoucher / 100).toFixed(2)} zł teraz</div>
+                                        </div>
+                                    </label>
+                                    <label className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer ${paymentPlan === 'SPLIT' ? 'border-amber-500 bg-amber-500/10' : 'border-zinc-700 bg-zinc-800/50'}`}>
+                                        <input type="radio" name="plan" checked={paymentPlan === 'SPLIT'} onChange={() => setPaymentPlan('SPLIT')} className="accent-amber-500" />
+                                        <div className="flex-1">
+                                            <div className="text-sm font-bold text-white">Zaliczka {depositPercent}%</div>
+                                            <div className="text-xs text-zinc-400">
+                                                {(depositAmount / 100).toFixed(2)} zł teraz, dopłata {(remainingAmount / 100).toFixed(2)} zł przed sesją
+                                            </div>
+                                        </div>
+                                    </label>
+                                </div>
+                            )}
+
                             <div className="pt-4 border-t border-zinc-800 flex justify-between items-end">
-                                <span className="text-lg font-bold">Łącznie:</span>
-                                <span className="text-3xl font-black text-amber-500">{(totalAmount / 100).toFixed(2)} zł</span>
+                                <span className="text-lg font-bold">Do zapłaty teraz:</span>
+                                <span className="text-3xl font-black text-amber-500">{(amountNow / 100).toFixed(2)} zł</span>
                             </div>
                         </div>
 

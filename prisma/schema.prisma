@@ -100,6 +100,12 @@ model Setting {
   b2b_google_analytics_id           String?
   b2b_google_tag_manager_id         String?
   b2b_facebook_pixel_id             String?
+  foto_match_enabled                Boolean  @default(false)
+
+  // Split payment 50/50 (globalny toggle + procent zaliczki)
+  split_payment_enabled              Boolean @default(false)
+  split_payment_deposit_percent      Int     @default(50)
+  split_payment_remaining_due_days   Int     @default(7)
 
   @@map("settings")
 }
@@ -366,6 +372,20 @@ model Booking {
   photographer_id   Int?
   client_rating     Int?
   client_review     String?
+
+  // Split payment 50/50
+  payment_plan         String?   @default("FULL") @db.VarChar(20)
+  deposit_amount       Int?
+  deposit_paid_at      DateTime?
+  deposit_session_id   String?
+  remaining_amount     Int?
+  remaining_paid_at    DateTime?
+  remaining_session_id String?
+  remaining_due_at     DateTime?
+
+  // Foto-Match referral voucher (jeśli klient użył kodu polecającego)
+  fm_voucher_code      String?   @db.VarChar(32)
+
   photographer      User?    @relation("PhotographerBookings", fields: [photographer_id], references: [id])
 
   @@map("bookings")
@@ -1259,6 +1279,8 @@ model FotoMatchProfile {
   gender           String    @db.VarChar(20)  // male | female | other
   city             String    @db.VarChar(60)
   radius_km        Int       @default(30)
+  latitude         Float?
+  longitude        Float?
   bio              String?   @db.Text
   interests        String[]  @default([])
   experience       String?   @db.VarChar(40)  // never_modeled | few_times | experienced
@@ -1283,6 +1305,10 @@ model FotoMatchProfile {
   updated_at       DateTime  @updatedAt
 
   photos           FotoMatchPhoto[]
+  referrals_sent     FotoMatchReferral[] @relation("ReferralsByMe")
+  referrals_received FotoMatchReferral[] @relation("ReferralsToMe")
+  swipes_sent      FotoMatchSwipe[]    @relation("SwipesByMe")
+  swipes_received  FotoMatchSwipe[]    @relation("SwipesToMe")
 
   @@index([status])
   @@index([city])
@@ -1319,4 +1345,117 @@ model FotoMatchPhoto {
   @@index([profile_id])
   @@index([ai_status])
   @@map("foto_match_photo")
+}
+
+// ============================================================
+// MATCH SETTINGS — singleton, admin steruje 15 cechami filtrującymi
+// + bonus referralowy (kwota/procent/typ).
+// ============================================================
+model FotoMatchMatchSettings {
+  id                            Int      @id @default(autoincrement())
+
+  opposite_gender_only          Boolean  @default(false)
+  same_gender_only              Boolean  @default(false)
+
+  same_city                     Boolean  @default(false)
+  respect_search_radius         Boolean  @default(false)
+
+  age_range                     Boolean  @default(false)
+  age_range_years               Int      @default(5)
+
+  min_shared_interests          Boolean  @default(false)
+  min_shared_interests_count    Int      @default(2)
+
+  same_experience_level         Boolean  @default(false)
+  complementary_experience      Boolean  @default(false)
+  same_comfort_level            Boolean  @default(false)
+
+  verified_only                 Boolean  @default(false)
+  min_photos                    Boolean  @default(false)
+  min_photos_count              Int      @default(3)
+  no_flagged_photos             Boolean  @default(false)
+
+  recently_active               Boolean  @default(false)
+  recently_active_days          Int      @default(30)
+
+  exclude_already_seen          Boolean  @default(false)
+  exclude_already_matched       Boolean  @default(false)
+
+  // Bonus referralowy
+  referral_bonus_enabled        Boolean  @default(false)
+  referral_bonus_amount_grosze  Int      @default(5000)
+  referral_bonus_percent        Int      @default(10)
+  referral_bonus_type           String   @default("AMOUNT") @db.VarChar(20)
+  referral_bonus_min_to_redeem  Int      @default(1)
+  referral_bonus_expires_days   Int      @default(90)
+
+  updated_at                    DateTime @updatedAt
+  updated_by                    Int?
+
+  @@map("foto_match_match_settings")
+}
+
+// ============================================================
+// REFERRAL — polec parę / znajomego, dostań rabat po jego rejestracji.
+// Przygotowane pod FB / IG / WhatsApp share (invite_token w URL + OG image).
+// ============================================================
+model FotoMatchReferral {
+  id                    Int       @id @default(autoincrement())
+
+  referrer_profile_id   Int
+  referrer              FotoMatchProfile @relation("ReferralsByMe", fields: [referrer_profile_id], references: [id], onDelete: Cascade)
+
+  invited_email         String?   @db.VarChar(255)
+  invited_user_id       Int?
+  invited_profile_id    Int?
+  invited_profile       FotoMatchProfile? @relation("ReferralsToMe", fields: [invited_profile_id], references: [id], onDelete: SetNull)
+
+  status                String    @default("PENDING") @db.VarChar(20)
+  // PENDING | REGISTERED | ACTIVE | REWARDED | EXPIRED | CANCELED
+
+  reward_amount_grosze  Int?
+  reward_percent        Int?
+  reward_type           String?   @db.VarChar(20)
+  reward_voucher_code   String?   @unique @db.VarChar(40)
+  reward_expires_at     DateTime?
+  reward_redeemed_at    DateTime?
+  reward_redeemed_for   String?   @db.VarChar(40)
+
+  invite_token          String    @unique @db.VarChar(64)
+  share_count           Int       @default(0)
+  click_count           Int       @default(0)
+
+  created_at            DateTime  @default(now())
+  updated_at            DateTime  @updatedAt
+
+  @@index([referrer_profile_id])
+  @@index([status])
+  @@index([invited_email])
+  @@index([invite_token])
+  @@map("foto_match_referral")
+}
+
+// ============================================================
+// SWIPE / LIKE / SKIP
+// from_profile -> to_profile, action: LIKE | SKIP | SUPER_LIKE | REPORT
+// MATCH = pair LIKE w obie strony (denormalizowane przez `is_match`).
+// ============================================================
+model FotoMatchSwipe {
+  id              Int       @id @default(autoincrement())
+  from_profile_id Int
+  to_profile_id   Int
+  from_profile    FotoMatchProfile @relation("SwipesByMe", fields: [from_profile_id], references: [id], onDelete: Cascade)
+  to_profile      FotoMatchProfile @relation("SwipesToMe", fields: [to_profile_id], references: [id], onDelete: Cascade)
+
+  action          String    @db.VarChar(20)  // LIKE | SKIP | SUPER_LIKE
+  is_match        Boolean   @default(false)
+  matched_at      DateTime?
+
+  created_at      DateTime  @default(now())
+
+  @@unique([from_profile_id, to_profile_id])
+  @@index([from_profile_id, action])
+  @@index([to_profile_id, action])
+  @@index([is_match])
+  @@map("foto_match_swipe")
 }

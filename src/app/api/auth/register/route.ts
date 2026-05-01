@@ -4,7 +4,13 @@ import { hashPassword, generateToken } from '@/lib/auth/jwt';
 
 export async function POST(req: NextRequest) {
     try {
-        const { name, email, password } = await req.json();
+        const body = await req.json();
+        const { name, email, password } = body;
+        // Referral token: priorytet body.referralToken (frontend), fallback do cookie fm_ref_token (landing).
+        const referralToken: string | null =
+            (typeof body.referralToken === 'string' && body.referralToken.trim()) ||
+            req.cookies.get('fm_ref_token')?.value ||
+            null;
 
         if (!email || !password) {
             return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
@@ -44,11 +50,38 @@ export async function POST(req: NextRequest) {
         // Auto-login logic
         const token = await generateToken({ id: user.id, email: user.email });
 
-        return NextResponse.json({
+        // Foto-Match referral: jeśli user przyszedł z linku polecającego,
+        // podlinkuj rekord referral z świeżo stworzonym userem (status REGISTERED).
+        // Voucher zostanie wygenerowany dopiero po zatwierdzeniu profilu.
+        if (referralToken) {
+            try {
+                await prisma.fotoMatchReferral.updateMany({
+                    where: {
+                        invite_token: referralToken,
+                        invited_user_id: null,
+                        status: 'PENDING',
+                    },
+                    data: {
+                        invited_user_id: user.id,
+                        invited_email: user.email,
+                        status: 'REGISTERED',
+                    },
+                });
+            } catch (e) {
+                console.error('[REGISTER_REFERRAL_LINK]', (e as any)?.message || e);
+            }
+        }
+
+        const res = NextResponse.json({
             success: true,
             token,
             user: { id: user.id, email: user.email, name: user.name }
         });
+        // Wyczyść cookie referral (już zapisany na koncie).
+        if (referralToken) {
+            res.cookies.set('fm_ref_token', '', { maxAge: 0, path: '/' });
+        }
+        return res;
 
     } catch (error) {
         console.error('Registration error:', error);

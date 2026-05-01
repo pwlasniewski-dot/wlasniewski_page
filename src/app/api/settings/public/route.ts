@@ -52,7 +52,11 @@ export async function GET(request: NextRequest) {
             // B2B Branding
             b2b_footer_config: await getSetting('b2b_footer_config'),
             // Photo Challenge
-            challenge: await getChallengeSettings()
+            challenge: await getChallengeSettings(),
+            // Split payment (zaliczka + dopłata)
+            split_payment_enabled: settings.split_payment_enabled ?? false,
+            split_payment_deposit_percent: settings.split_payment_deposit_percent ?? 50,
+            split_payment_remaining_due_days: settings.split_payment_remaining_due_days ?? 7,
         };
 
         return NextResponse.json({ success: true, settings: publicSettings });

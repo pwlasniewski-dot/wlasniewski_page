@@ -74,6 +74,8 @@ export default function OnboardingWizard() {
     const [bootstrapped, setBootstrapped] = useState(false);
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [programEnabled, setProgramEnabled] = useState<boolean | null>(null);
+    const [hasExistingProfile, setHasExistingProfile] = useState(false);
 
     const [form, setForm] = useState<ProfileForm>({
         display_name: '',
@@ -101,20 +103,27 @@ export default function OnboardingWizard() {
         }
     }, [authLoading, user, router]);
 
-    // Pobierz aktualny profil (jeśli istnieje)
+    // Pobierz aktualny profil (jeśli istnieje) + sprawdź globalne włączenie programu
     useEffect(() => {
         if (!token || bootstrapped) return;
         (async () => {
             try {
-                const r = await fetch('/api/foto-match/profile/me', {
-                    headers: { Authorization: `Bearer ${token}` },
-                });
-                if (!r.ok) {
+                const [enRes, profRes] = await Promise.all([
+                    fetch('/api/foto-match/settings/public'),
+                    fetch('/api/foto-match/profile/me', {
+                        headers: { Authorization: `Bearer ${token}` },
+                    }),
+                ]);
+                const en = enRes.ok ? await enRes.json() : { enabled: false };
+                setProgramEnabled(!!en.enabled);
+
+                if (!profRes.ok) {
                     setBootstrapped(true);
                     return;
                 }
-                const data: ProfileResponse = await r.json();
+                const data: ProfileResponse = await profRes.json();
                 if (data.profile) {
+                    setHasExistingProfile(true);
                     setProfileId(data.profile.id);
                     setProfileStatus(data.profile.status);
                     setForm({
@@ -291,6 +300,28 @@ export default function OnboardingWizard() {
         return (
             <div className="min-h-screen flex items-center justify-center">
                 <Loader2 className="w-8 h-8 animate-spin text-amber-400" />
+            </div>
+        );
+    }
+
+    // Program globalnie wyłączony i klient NIE ma jeszcze profilu — friendly screen
+    if (programEnabled === false && !hasExistingProfile && bootstrapped) {
+        return (
+            <div className="max-w-2xl mx-auto px-4 py-20 text-center">
+                <div className="inline-flex w-16 h-16 rounded-full bg-amber-500/10 border border-amber-500/30 items-center justify-center mb-6">
+                    <Sparkles className="w-8 h-8 text-amber-400" />
+                </div>
+                <h1 className="text-3xl font-bold mb-3">Foto-Match jeszcze nieotwarty</h1>
+                <p className="text-zinc-300 mb-8">
+                    Pracujemy nad uruchomieniem programu. Zostaw e-mail na stronie głównej Foto-Match,
+                    a powiadomimy Cię gdy ruszą zapisy.
+                </p>
+                <a
+                    href="/foto-match"
+                    className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-rose-500 px-6 py-3 font-bold text-white"
+                >
+                    Zapisz się na listę <ArrowRight className="w-4 h-4" />
+                </a>
             </div>
         );
     }

@@ -15,6 +15,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import prisma from '@/lib/db/prisma';
 import { getFotoMatchAuth } from '@/lib/foto-match/auth';
+import { isFotoMatchEnabled } from '@/lib/foto-match/settings';
+import { sendProfileSubmitted } from '@/lib/foto-match/notifications';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -60,8 +62,24 @@ export async function POST(request: NextRequest) {
     const data = parsed.data;
     const existing = auth.profile;
 
+    // Nowe profile tylko gdy program globalnie włączony.
+    // Edycja istniejących zawsze dostępna (admin mógł wyłączyć po onboardingu).
+    if (!existing) {
+        const enabled = await isFotoMatchEnabled();
+        if (!enabled) {
+            return NextResponse.json(
+                { error: 'FOTO_MATCH_DISABLED' },
+                { status: 403 }
+            );
+        }
+    }
+
     if (existing) {
-        // Update — nie ruszamy status/verification, klient tylko edytuje treść
+        // Recovery po REJECTED: gdy klient ponownie wysyła profil po odrzuceniu,
+        // status wraca do PENDING, czyścimy rejection_reason i is_active=false (już jest false).
+        // ACTIVE / SUSPENDED zostawiamy bez zmian — klient może edytować dane bez utraty statusu.
+        const shouldResetToPending = existing.status === 'REJECTED';
+
         const updated = await prisma.fotoMatchProfile.update({
             where: { id: existing.id },
             data: {
@@ -75,9 +93,17 @@ export async function POST(request: NextRequest) {
                 experience: data.experience ?? null,
                 comfort_level: data.comfort_level ?? null,
                 last_active: new Date(),
+                ...(shouldResetToPending
+                    ? { status: 'PENDING', rejection_reason: null, is_active: false }
+                    : {}),
             },
         });
-        return NextResponse.json({ ok: true, profile: updated, created: false });
+        return NextResponse.json({
+            ok: true,
+            profile: updated,
+            created: false,
+            resubmitted: shouldResetToPending,
+        });
     }
 
     const created = await prisma.fotoMatchProfile.create({
@@ -97,5 +123,7 @@ export async function POST(request: NextRequest) {
             last_active: new Date(),
         },
     });
+    // Best-effort mail powitalny + info o weryfikacji
+    void sendProfileSubmitted({ to: auth.user.email, name: auth.user.name });
     return NextResponse.json({ ok: true, profile: created, created: true });
 }

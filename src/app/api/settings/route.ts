@@ -101,6 +101,8 @@ export async function POST(request: NextRequest) {
                 'payu_client_id', 'payu_client_secret', 'payu_merchant_pos_id', 'payu_md5_key', 'payu_environment', 'payu_notify_url',
                 // Booking Settings
                 'booking_require_payment', 'booking_payment_method', 'booking_currency', 'booking_min_days_ahead',
+                // Split payment (Foto-Match + standard)
+                'split_payment_enabled', 'split_payment_deposit_percent', 'split_payment_remaining_due_days',
                 // Email SMTP
                 'smtp_host', 'smtp_port', 'smtp_user', 'smtp_password', 'smtp_from',
                 // SEO & Analytics
@@ -136,7 +138,8 @@ export async function POST(request: NextRequest) {
                 'urgency_enabled', 'promo_code_discount_enabled',
                 'gift_card_promo_enabled', 'p24_test_mode',
                 'p24_method_blik', 'p24_method_card', 'p24_method_transfer',
-                'booking_require_payment', 'social_proof_enabled'
+                'booking_require_payment', 'social_proof_enabled',
+                'split_payment_enabled'
             ];
 
             // Map of numeric fields that need type conversion
@@ -144,7 +147,8 @@ export async function POST(request: NextRequest) {
                 'navbar_font_size', 'logo_size', 'smtp_port',
                 'urgency_slots_remaining', 'social_proof_total_clients',
                 'booking_min_days_ahead', 'gift_card_promo_rotation_interval',
-                'gift_card_hero_opacity', 'promo_code_discount_amount'
+                'gift_card_hero_opacity', 'promo_code_discount_amount',
+                'split_payment_deposit_percent', 'split_payment_remaining_due_days'
             ];
 
             for (const [key, value] of Object.entries(body)) {
