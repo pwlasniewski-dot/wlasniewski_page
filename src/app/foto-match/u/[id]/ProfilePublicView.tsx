@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Heart, X, Star, Sparkles, MapPin, Loader2, ShieldCheck, Clock, ArrowLeft } from 'lucide-react';
+import { Heart, X, Star, Sparkles, MapPin, Loader2, ShieldCheck, Clock, ArrowLeft, Flag, Ban } from 'lucide-react';
 
 type Photo = { id: number; url: string };
 type Profile = {
@@ -89,6 +89,32 @@ export default function ProfilePublicView({ id }: { id: string }) {
         }
     }
 
+    async function blockProfile() {
+        if (!profile || !confirm(`Zablokować ${profile.display_name}? Nie zobaczycie się więcej w odkrywaniu.`)) return;
+        const r = await fetch('/api/foto-match/block', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json', Authorization: `Bearer ${getToken()}` },
+            body: JSON.stringify({ profile_id: profile.id }),
+        });
+        if (r.ok) window.location.href = '/foto-match/odkryj';
+        else { const d = await r.json(); setError(d.error || 'Błąd blokady'); }
+    }
+
+    async function reportProfile() {
+        if (!profile) return;
+        const category = prompt('Powod zgłoszenia (FAKE / INAPPROPRIATE / HARASSMENT / SPAM / OTHER):', 'INAPPROPRIATE');
+        if (!category) return;
+        const description = prompt('Opisz problem (opcjonalnie, max 2000 znaków):') || '';
+        const r = await fetch('/api/foto-match/report', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json', Authorization: `Bearer ${getToken()}` },
+            body: JSON.stringify({ reported_profile_id: profile.id, category: category.toUpperCase(), description }),
+        });
+        const d = await r.json();
+        if (r.ok) alert('Zgłoszenie wysłane. Moderacja zajmie się sprawą.');
+        else setError(d.error || 'Błąd zgłoszenia');
+    }
+
     if (loading) {
         return <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-zinc-400"><Loader2 className="w-6 h-6 animate-spin" /></div>;
     }
@@ -122,6 +148,8 @@ export default function ProfilePublicView({ id }: { id: string }) {
                                 <img
                                     src={profile.photos[activePhoto]?.url}
                                     alt={profile.display_name}
+                                    loading="lazy"
+                                    decoding="async"
                                     className="w-full h-full object-cover"
                                 />
                                 {profile.verified && (
@@ -138,7 +166,7 @@ export default function ProfilePublicView({ id }: { id: string }) {
                                             onClick={() => setActivePhoto(i)}
                                             className={`flex-none w-16 h-20 rounded-lg overflow-hidden border-2 ${i === activePhoto ? 'border-amber-500' : 'border-zinc-800'}`}
                                         >
-                                            <img src={p.url} alt="" className="w-full h-full object-cover" />
+                                            <img src={p.url} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
                                         </button>
                                     ))}
                                 </div>
@@ -206,6 +234,20 @@ export default function ProfilePublicView({ id }: { id: string }) {
             {!relation?.is_self && (
                 <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent pt-8 pb-6 px-4 z-40">
                     <div className="max-w-3xl mx-auto flex items-center justify-center gap-4">
+                        <button
+                            onClick={reportProfile}
+                            className="w-12 h-12 rounded-full bg-zinc-900 hover:bg-zinc-800 flex items-center justify-center border border-zinc-800"
+                            title="Zgłoś profil"
+                        >
+                            <Flag className="w-4 h-4 text-amber-400" />
+                        </button>
+                        <button
+                            onClick={blockProfile}
+                            className="w-12 h-12 rounded-full bg-zinc-900 hover:bg-zinc-800 flex items-center justify-center border border-zinc-800"
+                            title="Zablokuj"
+                        >
+                            <Ban className="w-4 h-4 text-red-400" />
+                        </button>
                         {relation?.is_match ? (
                             <div className="bg-gradient-to-r from-rose-500/90 to-amber-500/90 text-white px-6 py-4 rounded-2xl font-bold shadow-xl">
                                 💖 Macie match!

@@ -101,6 +101,9 @@ model Setting {
   b2b_google_tag_manager_id         String?
   b2b_facebook_pixel_id             String?
   foto_match_enabled                Boolean  @default(false)
+  cancellation_full_refund_days     Int      @default(7)
+  cancellation_partial_days         Int      @default(3)
+  cancellation_partial_pct          Int      @default(50)
 
   // Split payment 50/50 (globalny toggle + procent zaliczki)
   split_payment_enabled              Boolean @default(false)
@@ -386,7 +389,18 @@ model Booking {
   // Foto-Match referral voucher (jeśli klient użył kodu polecającego)
   fm_voucher_code      String?   @db.VarChar(32)
 
+  // Refund / anulowanie
+  refund_amount        Int?
+  refund_status        String?   @db.VarChar(20)  // PENDING | COMPLETED | FAILED | REJECTED
+  refunded_at          DateTime?
+  refund_id            String?   @db.VarChar(80)  // PayU refund id
+  cancellation_reason  String?   @db.Text
+  cancelled_at         DateTime?
+  cancelled_by         String?   @db.VarChar(20)  // CLIENT | ADMIN | SYSTEM
+  payu_order_id        String?   @db.VarChar(80)  // PayU orderId — potrzebne do refund
+
   photographer      User?    @relation("PhotographerBookings", fields: [photographer_id], references: [id])
+  complaints        BookingComplaint[]
 
   @@map("bookings")
 }
@@ -523,6 +537,16 @@ model User {
   challenge_invites       PhotoChallenge[]        @relation("ChallengeInvitee")
   challenges_initiated    PhotoChallenge[]        @relation("ChallengeInviter")
   foto_match_profile      FotoMatchProfile?
+
+  // Zgody i RODO
+  terms_accepted_at       DateTime?
+  gdpr_consent_at         DateTime?
+  marketing_consent_at    DateTime?
+  consent_ip              String?  @db.VarChar(64)
+  consent_user_agent      String?  @db.VarChar(255)
+  // Soft-delete (Art. 17 RODO) — anonymizujemy email, profile.status='DELETED'
+  deleted_at              DateTime?
+  deletion_requested_at   DateTime?
 
   @@map("users")
 }
@@ -1288,10 +1312,21 @@ model FotoMatchProfile {
 
   // Weryfikacja tożsamości (manual przez admina)
   selfie_url       String?
-  id_doc_url       String?
+  id_doc_url       String?  // DEPRECATED (RODO data minimization) — pozostawione nullable dla starych rekordów
   verified_at      DateTime?
   verified_by      Int?
   rejection_reason String?
+
+  // Weryfikacja numeru telefonu (zastępuje skan dowodu — RODO data minimization)
+  phone                          String?   @db.VarChar(20)
+  phone_verified_at              DateTime?
+  phone_verification_code_hash   String?   @db.VarChar(120)
+  phone_verification_expires_at  DateTime?
+  phone_verification_attempts    Int       @default(0)
+
+  // Oświadczenie pełnoletności (zamiast skanu dowodu)
+  age_declared_at  DateTime?
+  age_declared_ip  String?   @db.VarChar(64)
 
   // Moderacja / status
   status           String    @default("PENDING") @db.VarChar(20)
@@ -1309,11 +1344,19 @@ model FotoMatchProfile {
   referrals_received FotoMatchReferral[] @relation("ReferralsToMe")
   swipes_sent      FotoMatchSwipe[]    @relation("SwipesByMe")
   swipes_received  FotoMatchSwipe[]    @relation("SwipesToMe")
+  blocks_sent      FotoMatchBlock[]    @relation("BlocksByMe")
+  blocks_received  FotoMatchBlock[]    @relation("BlocksToMe")
+  reports_sent     FotoMatchReport[]   @relation("ReportsByMe")
+  reports_received FotoMatchReport[]   @relation("ReportsToMe")
+  messages_sent    FotoMatchMessage[]  @relation("MessagesByMe")
+  messages_received FotoMatchMessage[] @relation("MessagesToMe")
 
   @@index([status])
   @@index([city])
   @@index([is_active])
   @@index([created_at])
+  @@index([last_active])
+  @@index([status, is_active, city])
   @@map("foto_match_profile")
 }
 
@@ -1458,4 +1501,111 @@ model FotoMatchSwipe {
   @@index([to_profile_id, action])
   @@index([is_match])
   @@map("foto_match_swipe")
+}
+
+// ============================================================
+// BLOCK — wzajemne blokady, wykluczane w discover/swipe.
+// ============================================================
+model FotoMatchBlock {
+  id              Int       @id @default(autoincrement())
+  blocker_id      Int
+  blocked_id      Int
+  blocker         FotoMatchProfile @relation("BlocksByMe", fields: [blocker_id], references: [id], onDelete: Cascade)
+  blocked         FotoMatchProfile @relation("BlocksToMe", fields: [blocked_id], references: [id], onDelete: Cascade)
+  reason          String?   @db.VarChar(255)
+  created_at      DateTime  @default(now())
+
+  @@unique([blocker_id, blocked_id])
+  @@index([blocker_id])
+  @@index([blocked_id])
+  @@map("foto_match_block")
+}
+
+// ============================================================
+// REPORT — zgłoszenia (wulgarność / oszustwo / fake / inne).
+// ============================================================
+model FotoMatchReport {
+  id              Int       @id @default(autoincrement())
+  reporter_id     Int
+  reported_id     Int
+  reporter        FotoMatchProfile @relation("ReportsByMe", fields: [reporter_id], references: [id], onDelete: Cascade)
+  reported        FotoMatchProfile @relation("ReportsToMe", fields: [reported_id], references: [id], onDelete: Cascade)
+  category        String    @db.VarChar(40)  // FAKE | INAPPROPRIATE | HARASSMENT | SPAM | OTHER
+  description     String?   @db.Text
+  status          String    @default("PENDING") @db.VarChar(20)  // PENDING | REVIEWING | RESOLVED | DISMISSED
+  admin_note      String?   @db.Text
+  resolved_by     Int?
+  resolved_at     DateTime?
+  created_at      DateTime  @default(now())
+
+  @@index([status])
+  @@index([reported_id])
+  @@index([reporter_id])
+  @@map("foto_match_report")
+}
+
+// ============================================================
+// MESSAGE — wiadomości po MATCH. Tylko między profilami w MATCH.
+// ============================================================
+model FotoMatchMessage {
+  id              Int       @id @default(autoincrement())
+  from_profile_id Int
+  to_profile_id   Int
+  from_profile    FotoMatchProfile @relation("MessagesByMe", fields: [from_profile_id], references: [id], onDelete: Cascade)
+  to_profile      FotoMatchProfile @relation("MessagesToMe", fields: [to_profile_id], references: [id], onDelete: Cascade)
+  body            String    @db.Text
+  read_at         DateTime?
+  created_at      DateTime  @default(now())
+
+  @@index([from_profile_id, to_profile_id])
+  @@index([to_profile_id, read_at])
+  @@map("foto_match_message")
+}
+
+// ============================================================
+// CONSENT — Model Release. Per profil, kategorie zgody.
+// Tworzony po zaakceptowaniu match-pair przed sesją.
+// ============================================================
+model FotoMatchSessionConsent {
+  id                  Int       @id @default(autoincrement())
+  profile_id          Int
+  match_partner_id    Int       // profile_id drugiej osoby z match-pair
+  booking_id          Int?      // opcjonalnie powiązane z konkretnym bookingiem
+  consent_publish     Boolean   @default(false)
+  consent_portfolio   Boolean   @default(false)
+  consent_marketing   Boolean   @default(false)
+  signed_at           DateTime  @default(now())
+  signed_ip           String?   @db.VarChar(64)
+  withdrawn_at        DateTime?
+  withdrawn_reason    String?   @db.Text
+
+  @@index([profile_id])
+  @@index([match_partner_id])
+  @@index([booking_id])
+  @@map("foto_match_session_consent")
+}
+
+// ============================================================
+// COMPLAINT — reklamacja klienta na sesję / booking.
+// ============================================================
+model BookingComplaint {
+  id                  Int       @id @default(autoincrement())
+  booking_id          Int
+  booking             Booking   @relation(fields: [booking_id], references: [id], onDelete: Cascade)
+  client_email        String    @db.VarChar(255)
+  category            String    @db.VarChar(40)  // QUALITY | DELAY | NO_SHOW | OTHER
+  body                String    @db.Text
+  status              String    @default("PENDING") @db.VarChar(20)  // PENDING | RESPONDED | RESOLVED | REJECTED
+  admin_response      String?   @db.Text
+  responded_at        DateTime?
+  responded_by        Int?
+  refund_offered      Int?      // grosze
+  refund_accepted     Boolean?
+  created_at          DateTime  @default(now())
+  updated_at          DateTime  @updatedAt
+
+  @@index([booking_id])
+  @@index([status])
+  @@index([client_email])
+  @@map("booking_complaint")
 }

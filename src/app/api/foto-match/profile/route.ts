@@ -36,6 +36,8 @@ const profileSchema = z.object({
     interests: z.array(z.string().trim().min(1).max(40)).max(20).default([]),
     experience: z.enum(['never_modeled', 'few_times', 'experienced']).optional().nullable(),
     comfort_level: z.enum(['shy', 'neutral', 'open']).optional().nullable(),
+    accept_terms: z.boolean().optional(),
+    accept_gdpr: z.boolean().optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -123,6 +125,24 @@ export async function POST(request: NextRequest) {
             last_active: new Date(),
         },
     });
+
+    // Zapisz consent (jeśli przekazany przy pierwszym tworzeniu profilu Foto-Match)
+    if (data.accept_terms && data.accept_gdpr) {
+        const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+            || request.headers.get('x-real-ip')
+            || 'unknown';
+        const ua = (request.headers.get('user-agent') || '').slice(0, 255);
+        await prisma.user.update({
+            where: { id: auth.user.id },
+            data: {
+                terms_accepted_at: new Date(),
+                gdpr_consent_at: new Date(),
+                consent_ip: ip,
+                consent_user_agent: ua,
+            } as any,
+        }).catch(() => null);
+    }
+
     // Best-effort mail powitalny + info o weryfikacji
     void sendProfileSubmitted({ to: auth.user.email, name: auth.user.name });
     return NextResponse.json({ ok: true, profile: created, created: true });

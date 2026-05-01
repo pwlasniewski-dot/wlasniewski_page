@@ -5,7 +5,7 @@ import { hashPassword, generateToken } from '@/lib/auth/jwt';
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
-        const { name, email, password } = body;
+        const { name, email, password, accept_terms, accept_gdpr, accept_marketing } = body;
         // Referral token: priorytet body.referralToken (frontend), fallback do cookie fm_ref_token (landing).
         const referralToken: string | null =
             (typeof body.referralToken === 'string' && body.referralToken.trim()) ||
@@ -14,6 +14,9 @@ export async function POST(req: NextRequest) {
 
         if (!email || !password) {
             return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
+        }
+        if (!accept_terms || !accept_gdpr) {
+            return NextResponse.json({ error: 'Wymagana akceptacja regulaminu i polityki prywatnosci.' }, { status: 400 });
         }
 
         const existingUser = await prisma.user.findUnique({ where: { email } });
@@ -28,12 +31,23 @@ export async function POST(req: NextRequest) {
 
         const hashedPassword = await hashPassword(password);
 
+        const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+            || req.headers.get('x-real-ip')
+            || 'unknown';
+        const ua = (req.headers.get('user-agent') || '').slice(0, 255);
+        const now = new Date();
+
         const user = await prisma.user.create({
             data: {
                 name,
                 email,
                 password_hash: hashedPassword,
                 role: 'CLIENT',
+                terms_accepted_at: now,
+                gdpr_consent_at: now,
+                marketing_consent_at: accept_marketing ? now : null,
+                consent_ip: ip,
+                consent_user_agent: ua,
                 // Self-registered clients start with limited access.
                 // Admin must explicitly grant offers/contracts access.
             } as any,

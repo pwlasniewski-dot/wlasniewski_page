@@ -109,6 +109,21 @@ export async function GET(request: NextRequest) {
         }
     }
 
+    // 16) Wykluczamy zablokowanych (w obie strony) — zawsze, bezwarunkowo.
+    const blocks = await prisma.fotoMatchBlock.findMany({
+        where: { OR: [{ blocker_id: me.id }, { blocked_id: me.id }] },
+        select: { blocker_id: true, blocked_id: true },
+    });
+    if (blocks.length > 0) {
+        const blockedIds = new Set<number>();
+        for (const b of blocks) {
+            if (b.blocker_id !== me.id) blockedIds.add(b.blocker_id);
+            if (b.blocked_id !== me.id) blockedIds.add(b.blocked_id);
+        }
+        const existingNotIn: number[] = where.id?.notIn || [];
+        where.id = { not: me.id, notIn: [...existingNotIn, ...Array.from(blockedIds)] };
+    }
+
     // Pobierz kandydatów + zdjęcia.
     const rawCandidates = await prisma.fotoMatchProfile.findMany({
         where,
@@ -178,23 +193,57 @@ export async function GET(request: NextRequest) {
         });
     }
 
-    candidates = candidates.slice(0, limit);
+    // 7) SCORING — sortuj kandydatow po dopasowaniu zamiast losowo
+    const myInterestsAll = new Set(((me.interests as any[]) || []).map(String));
+    const scored = candidates.map(c => {
+        const theirs = new Set(((c.interests as any[]) || []).map(String));
+        let shared = 0;
+        for (const i of myInterestsAll) if (theirs.has(i)) shared++;
+        const sameCity = !!(me.city && c.city && me.city.toLowerCase() === c.city.toLowerCase());
+        const verified = !!c.verified_at;
+        const complementaryExp = !!(me.experience && c.experience && me.experience !== c.experience);
+        const dist = (c as any)._distance_km;
+        const distScore = (typeof dist === 'number') ? Math.max(0, 50 - dist) / 10 : 0;
+        const score = shared * 3
+            + (sameCity ? 2 : 0)
+            + (verified ? 2 : 0)
+            + (complementaryExp ? 1 : 0)
+            + distScore;
+        return { c, score };
+    });
+    scored.sort((a, b) => b.score - a.score);
+    candidates = scored.slice(0, limit).map(s => s.c);
 
     const now = new Date().getFullYear();
-    const result = candidates.map(c => ({
-        id: c.id,
-        display_name: c.display_name,
-        age: c.birth_year ? now - c.birth_year : null,
-        gender: c.gender,
-        city: c.city,
-        bio: c.bio,
-        interests: c.interests,
-        experience: c.experience,
-        comfort_level: c.comfort_level,
-        verified: !!c.verified_at,
-        photos: c.photos,
-        distance_km: (c as any)._distance_km != null ? Math.round((c as any)._distance_km) : null,
-    }));
+    const result = candidates.map(c => {
+        const theirs = new Set(((c.interests as any[]) || []).map(String));
+        let shared = 0;
+        for (const i of myInterestsAll) if (theirs.has(i)) shared++;
+        const sameCity = !!(me.city && c.city && me.city.toLowerCase() === c.city.toLowerCase());
+        const dist = (c as any)._distance_km;
+        const distScore = (typeof dist === 'number') ? Math.max(0, 50 - dist) / 10 : 0;
+        const matchScore = shared * 3
+            + (sameCity ? 2 : 0)
+            + (c.verified_at ? 2 : 0)
+            + ((me.experience && c.experience && me.experience !== c.experience) ? 1 : 0)
+            + distScore;
+        return {
+            id: c.id,
+            display_name: c.display_name,
+            age: c.birth_year ? now - c.birth_year : null,
+            gender: c.gender,
+            city: c.city,
+            bio: c.bio,
+            interests: c.interests,
+            experience: c.experience,
+            comfort_level: c.comfort_level,
+            verified: !!c.verified_at,
+            photos: c.photos,
+            distance_km: dist != null ? Math.round(dist) : null,
+            match_score: Math.round(matchScore * 10) / 10,
+            shared_interests: shared,
+        };
+    });
 
     return NextResponse.json({
         candidates: result,

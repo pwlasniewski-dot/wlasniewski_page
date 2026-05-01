@@ -105,18 +105,21 @@ export async function POST(request: NextRequest) {
                         updateData = {
                             status: 'confirmed',
                             remaining_paid_at: new Date(),
+                            payu_order_id: orderId,
                             notes: `${booking.notes || ''}\n[PayU] Dopłata zaksięgowana (${cartId}, PayU: ${orderId})`.trim(),
                         };
                     } else if (isDepositPayment) {
                         updateData = {
                             status: 'deposit_paid',
                             deposit_paid_at: new Date(),
+                            payu_order_id: orderId,
                             notes: `${booking.notes || ''}\n[PayU] Zaliczka zaksięgowana (${cartId}, PayU: ${orderId})`.trim(),
                         };
                     } else {
                         // FULL payment (or fallback)
                         updateData = {
                             status: 'confirmed',
+                            payu_order_id: orderId,
                             notes: `Paid via PayU (Cart: ${cartId}, PayU: ${orderId})`,
                         };
                     }
@@ -254,6 +257,7 @@ export async function POST(request: NextRequest) {
                         where: { id: resourceId },
                         data: {
                             status: 'confirmed',
+                            payu_order_id: orderId,
                             notes: `Paid via PayU(Order: ${orderId})`
                         }
                     });
@@ -598,6 +602,7 @@ export async function POST(request: NextRequest) {
                     where: { id: resourceId },
                     data: {
                         status: 'confirmed',
+                        payu_order_id: orderId,
                         notes: `Paid via PayU (Order: ${orderId})`
                     }
                 }).catch((e) => { console.error('[PayU] Booking update failed:', e); });
@@ -673,6 +678,26 @@ export async function POST(request: NextRequest) {
                         }
                     }
                 }
+            }
+        }
+
+        // ============================================================
+        // REFUND notify — PayU wysyla obiekt body.refund po zwrocie.
+        // ============================================================
+        const refundEvent = (body as any).refund;
+        if (refundEvent && refundEvent.refundId) {
+            const refundedBooking = await prisma.booking.findFirst({ where: { payu_order_id: order.orderId } });
+            if (refundedBooking) {
+                const isComplete = refundEvent.status === 'FINALIZED' || refundEvent.status === 'COMPLETED';
+                await prisma.booking.update({
+                    where: { id: refundedBooking.id },
+                    data: {
+                        refund_status: isComplete ? 'COMPLETED' : (refundEvent.status === 'CANCELED' ? 'FAILED' : 'PENDING'),
+                        refunded_at: isComplete ? new Date() : refundedBooking.refunded_at,
+                        refund_id: refundEvent.refundId,
+                    },
+                });
+                await logSystem('INFO', 'PAYMENT', `REFUND ${refundEvent.status} booking #${refundedBooking.id}`, { refundEvent });
             }
         }
 

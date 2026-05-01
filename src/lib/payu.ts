@@ -154,3 +154,31 @@ export function verifyPayUSignature(signatureHeader: string, body: string, merch
     // Simplest: just parse header
     return true;
 }
+
+/**
+ * PayU Refund: POST /api/v2_1/orders/{orderId}/refunds
+ * amount in grosze (1 PLN = 100). Pełny zwrot, jeśli amount nieokreślony.
+ */
+export async function refundPayUOrder(orderId: string, amount: number | undefined, description: string) {
+    const settings = await getPayUSettings();
+    if (!settings) throw new Error('PayU settings not configured');
+    const token = await getAccessToken(settings);
+    const domain = settings.environment === 'secure' ? 'secure.payu.com' : 'secure.snd.payu.com';
+    const url = `https://${domain}/api/v2_1/orders/${encodeURIComponent(orderId)}/refunds`;
+
+    const payload: any = { refund: { description } };
+    if (typeof amount === 'number' && amount > 0) payload.refund.amount = String(amount);
+
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(payload),
+    });
+    const text = await response.text();
+    let data: any = {};
+    try { data = text ? JSON.parse(text) : {}; } catch { /* not json */ }
+    if (!response.ok) {
+        throw new Error(`PayU Refund Failed: ${response.status} ${text}`);
+    }
+    return data;
+}

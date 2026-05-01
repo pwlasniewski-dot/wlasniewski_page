@@ -47,6 +47,8 @@ type ProfileResponse = {
         status: string;
         selfie_url: string | null;
         id_doc_url: string | null;
+        phone: string | null;
+        phone_verified_at: string | null;
     } | null;
     photos: Photo[];
 };
@@ -92,8 +94,18 @@ export default function OnboardingWizard() {
     const [profileStatus, setProfileStatus] = useState<string | null>(null);
     const [photos, setPhotos] = useState<Photo[]>([]);
     const [selfieFile, setSelfieFile] = useState<File | null>(null);
-    const [idDocFile, setIdDocFile] = useState<File | null>(null);
     const [verificationDone, setVerificationDone] = useState(false);
+    const [acceptTerms, setAcceptTerms] = useState(false);
+    const [acceptGdpr, setAcceptGdpr] = useState(false);
+
+    // Weryfikacja telefonu (SMS OTP) — zastępuje dawny upload dowodu
+    const [phoneInput, setPhoneInput] = useState('');
+    const [phoneVerified, setPhoneVerified] = useState(false);
+    const [phoneCodeSent, setPhoneCodeSent] = useState(false);
+    const [phoneCodeInput, setPhoneCodeInput] = useState('');
+    const [phoneBusy, setPhoneBusy] = useState(false);
+    const [phoneInfo, setPhoneInfo] = useState<string | null>(null);
+    const [ageDeclared, setAgeDeclared] = useState(false);
 
     // Redirect jak nie zalogowany
     useEffect(() => {
@@ -138,7 +150,9 @@ export default function OnboardingWizard() {
                         comfort_level: (data.profile.comfort_level as any) ?? '',
                     });
                     setPhotos(data.photos);
-                    if (data.profile.selfie_url && data.profile.id_doc_url) {
+                    if (data.profile.phone) setPhoneInput(data.profile.phone);
+                    if (data.profile.phone_verified_at) setPhoneVerified(true);
+                    if (data.profile.selfie_url && data.profile.phone_verified_at) {
                         setVerificationDone(true);
                     }
                     // Wybierz pierwszy nieskończony krok
@@ -170,6 +184,8 @@ export default function OnboardingWizard() {
             interests: form.interests,
             experience: form.experience || null,
             comfort_level: form.comfort_level || null,
+            accept_terms: acceptTerms,
+            accept_gdpr: acceptGdpr,
         };
 
         try {
@@ -205,6 +221,10 @@ export default function OnboardingWizard() {
         const currentYear = new Date().getFullYear();
         if (typeof form.birth_year === 'number' && currentYear - form.birth_year < 18) {
             setError('Foto-Match jest dla osób 18+.');
+            return;
+        }
+        if (!acceptTerms || !acceptGdpr) {
+            setError('Zaakceptuj regulamin i politykę prywatności.');
             return;
         }
         const ok = await saveProfile();
@@ -264,16 +284,78 @@ export default function OnboardingWizard() {
         }
     };
 
+    const sendPhoneCode = async () => {
+        if (!token) return;
+        setPhoneBusy(true);
+        setPhoneInfo(null);
+        setError(null);
+        try {
+            const r = await fetch('/api/foto-match/phone/send-code', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify({ phone: phoneInput }),
+            });
+            const data = await r.json();
+            if (!r.ok) {
+                setError(data.message || data.error || 'Nie udało się wysłać kodu.');
+                return;
+            }
+            setPhoneCodeSent(true);
+            setPhoneInfo(
+                data.dev_code
+                    ? `Kod (DEV mock): ${data.dev_code} — w produkcji przyjdzie SMS.`
+                    : 'Kod wysłany SMS-em. Wpisz go poniżej (ważny 10 minut).'
+            );
+        } catch (e: any) {
+            setError(e.message || 'Błąd sieci');
+        } finally {
+            setPhoneBusy(false);
+        }
+    };
+
+    const verifyPhoneCode = async () => {
+        if (!token) return;
+        setPhoneBusy(true);
+        setError(null);
+        try {
+            const r = await fetch('/api/foto-match/phone/verify-code', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify({ code: phoneCodeInput }),
+            });
+            const data = await r.json();
+            if (!r.ok) {
+                const left = data.attempts_left != null ? ` (pozostało prób: ${data.attempts_left})` : '';
+                setError((data.message || data.error || 'Nieprawidłowy kod') + left);
+                return;
+            }
+            setPhoneVerified(true);
+            setPhoneInfo('Numer telefonu zweryfikowany.');
+        } catch (e: any) {
+            setError(e.message || 'Błąd sieci');
+        } finally {
+            setPhoneBusy(false);
+        }
+    };
+
     const submitVerification = async () => {
-        if (!token || !selfieFile || !idDocFile) {
-            setError('Wybierz oba pliki.');
+        if (!token || !selfieFile) {
+            setError('Wybierz selfie.');
+            return;
+        }
+        if (!phoneVerified) {
+            setError('Najpierw zweryfikuj numer telefonu.');
+            return;
+        }
+        if (!ageDeclared) {
+            setError('Wymagane oświadczenie pełnoletności (18+).');
             return;
         }
         setBusy(true);
         setError(null);
         const fd = new FormData();
         fd.append('selfie', selfieFile);
-        fd.append('id_doc', idDocFile);
+        fd.append('age_declaration', '1');
         try {
             const r = await fetch('/api/foto-match/verify', {
                 method: 'POST',
@@ -282,12 +364,11 @@ export default function OnboardingWizard() {
             });
             const data = await r.json();
             if (!r.ok) {
-                setError(data.error || 'Błąd weryfikacji');
+                setError(data.message || data.error || 'Błąd weryfikacji');
                 return;
             }
             setVerificationDone(true);
             setProfileStatus(data.profile.status);
-            // Sukces — przekieruj na stronę profilu
             router.push('/foto-match/profil');
         } catch (e: any) {
             setError(e.message || 'Błąd sieci');
@@ -423,7 +504,34 @@ export default function OnboardingWizard() {
                             ))}
                         </select>
                     </Field>
-                    <Nav onNext={handleNextFromBasics} busy={busy} />
+
+                    {/* Zgody RODO + regulamin (wymagane przy pierwszym tworzeniu profilu) */}
+                    <div className="space-y-3 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
+                        <label className="flex items-start gap-3 cursor-pointer text-sm text-zinc-200">
+                            <input
+                                type="checkbox"
+                                checked={acceptTerms}
+                                onChange={(e) => setAcceptTerms(e.target.checked)}
+                                className="mt-1 w-4 h-4 accent-amber-500"
+                            />
+                            <span>
+                                Akceptuję <a href="/regulamin-foto-match" target="_blank" className="text-amber-400 underline">regulamin Foto-Match</a> (model release, zasady spotkań, zachowanie).
+                            </span>
+                        </label>
+                        <label className="flex items-start gap-3 cursor-pointer text-sm text-zinc-200">
+                            <input
+                                type="checkbox"
+                                checked={acceptGdpr}
+                                onChange={(e) => setAcceptGdpr(e.target.checked)}
+                                className="mt-1 w-4 h-4 accent-amber-500"
+                            />
+                            <span>
+                                Wyrażam zgodę na przetwarzanie danych osobowych zgodnie z <a href="/polityka-prywatnosci" target="_blank" className="text-amber-400 underline">polityką prywatności</a> (RODO).
+                            </span>
+                        </label>
+                    </div>
+
+                    <Nav onNext={handleNextFromBasics} busy={busy} nextDisabled={!acceptTerms || !acceptGdpr} />
                 </section>
             )}
 
@@ -608,16 +716,85 @@ export default function OnboardingWizard() {
                         <>
                             <Field label="Selfie (Twoja twarz)">
                                 <FileInput onFile={setSelfieFile} file={selfieFile} />
+                                <p className="text-xs text-zinc-500 mt-2">
+                                    Selfie służy wyłącznie weryfikacji że konto jest realną osobą — nie pokazujemy go innym użytkownikom.
+                                </p>
                             </Field>
-                            <Field label="Dokument tożsamości (dowód, paszport, prawo jazdy — możesz zasłonić numer i adres)">
-                                <FileInput onFile={setIdDocFile} file={idDocFile} />
+
+                            <Field label="Numer telefonu (PL, 9 cyfr) — wyślemy kod SMS">
+                                <div className="flex gap-2">
+                                    <input
+                                        type="tel"
+                                        inputMode="tel"
+                                        autoComplete="tel"
+                                        className="input flex-1"
+                                        placeholder="123 456 789"
+                                        value={phoneInput}
+                                        onChange={(e) => setPhoneInput(e.target.value)}
+                                        disabled={phoneVerified || phoneBusy}
+                                    />
+                                    {!phoneVerified && (
+                                        <button
+                                            type="button"
+                                            onClick={sendPhoneCode}
+                                            disabled={phoneBusy || !phoneInput.trim()}
+                                            className="px-4 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-sm whitespace-nowrap disabled:opacity-50"
+                                        >
+                                            {phoneBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : (phoneCodeSent ? 'Wyślij ponownie' : 'Wyślij kod')}
+                                        </button>
+                                    )}
+                                    {phoneVerified && (
+                                        <span className="px-3 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-sm flex items-center gap-1">
+                                            <CheckCircle2 className="w-4 h-4" /> Zweryfikowany
+                                        </span>
+                                    )}
+                                </div>
+                                {phoneCodeSent && !phoneVerified && (
+                                    <div className="mt-3 flex gap-2">
+                                        <input
+                                            type="text"
+                                            inputMode="numeric"
+                                            maxLength={6}
+                                            className="input flex-1 tracking-widest text-center text-lg"
+                                            placeholder="6-cyfrowy kod"
+                                            value={phoneCodeInput}
+                                            onChange={(e) => setPhoneCodeInput(e.target.value.replace(/\D/g, ''))}
+                                            disabled={phoneBusy}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={verifyPhoneCode}
+                                            disabled={phoneBusy || phoneCodeInput.length !== 6}
+                                            className="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-zinc-900 font-semibold text-sm disabled:opacity-50"
+                                        >
+                                            {phoneBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Potwierdź'}
+                                        </button>
+                                    </div>
+                                )}
+                                {phoneInfo && (
+                                    <p className="text-xs text-amber-300 mt-2">{phoneInfo}</p>
+                                )}
+                                <p className="text-xs text-zinc-500 mt-2">
+                                    Telefon nie jest pokazywany innym użytkownikom — używamy go tylko do weryfikacji konta i (opcjonalnie) potwierdzenia sesji.
+                                </p>
                             </Field>
+
+                            <label className="flex items-start gap-3 text-sm text-zinc-300 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={ageDeclared}
+                                    onChange={(e) => setAgeDeclared(e.target.checked)}
+                                    className="mt-1"
+                                />
+                                <span>Oświadczam, że ukończyłem(am) 18 lat. Świadomy(a) odpowiedzialności karnej za podanie nieprawdy.</span>
+                            </label>
+
                             <Nav
                                 onPrev={() => setStep(3)}
                                 onNext={submitVerification}
                                 nextLabel="Wyślij do weryfikacji"
                                 busy={busy}
-                                nextDisabled={!selfieFile || !idDocFile}
+                                nextDisabled={!selfieFile || !phoneVerified || !ageDeclared}
                             />
                         </>
                     )}

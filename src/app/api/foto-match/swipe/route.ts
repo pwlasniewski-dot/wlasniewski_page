@@ -46,6 +46,20 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'TARGET_NOT_AVAILABLE' }, { status: 404 });
     }
 
+    // Block guard — żaden swipe nie może być wykonany jeśli ktokolwiek z pary ma blokadę.
+    const block = await prisma.fotoMatchBlock.findFirst({
+        where: {
+            OR: [
+                { blocker_id: fromProfile.id, blocked_id: toProfileId },
+                { blocker_id: toProfileId, blocked_id: fromProfile.id },
+            ],
+        },
+        select: { id: true },
+    });
+    if (block) {
+        return NextResponse.json({ error: 'BLOCKED' }, { status: 403 });
+    }
+
     // Upsert swipe (idempotentny — pozwala "zmienić zdanie" SKIP→LIKE).
     const swipe = await prisma.fotoMatchSwipe.upsert({
         where: { from_profile_id_to_profile_id: { from_profile_id: fromProfile.id, to_profile_id: toProfileId } },

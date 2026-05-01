@@ -136,7 +136,7 @@ export default function DiscoverClient() {
                                     <div className="aspect-[3/4] bg-zinc-800 relative overflow-hidden">
                                         {c.photos[0] ? (
                                             // eslint-disable-next-line @next/next/no-img-element
-                                            <img src={c.photos[0].url} alt={c.display_name} className="w-full h-full object-cover" />
+                                            <img src={c.photos[0].url} alt={c.display_name} loading="lazy" decoding="async" className="w-full h-full object-cover" />
                                         ) : (
                                             <div className="w-full h-full flex items-center justify-center text-6xl">📸</div>
                                         )}
