@@ -9,7 +9,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
-    Sparkles, Heart, Camera, Users, Shield, Mail, Coffee, Briefcase,
+    Sparkles, Camera, Users, Shield, Mail, Coffee, Briefcase,
     UserPlus, MapPin, CheckCircle2, ArrowRight, Quote
 } from 'lucide-react';
 import { getFotoMatchBaseUrl, getFotoMatchPathPrefix } from '@/lib/foto-match/base-url';
@@ -23,25 +23,25 @@ const PREFIX = getFotoMatchPathPrefix();
 const CANONICAL = `${BASE}${PREFIX || ''}`;
 
 export const metadata: Metadata = {
-    title: 'Foto-Match — wspólna sesja fotograficzna zamiast aplikacji randkowej | pre-launch',
+    title: 'Foto-Match — wspólna fotograficzna przygoda. Poznaj kogoś w niecodzienny sposób | pre-launch',
     description:
-        'Foto-Match to nowy sposób poznawania ludzi. Zamiast godzin w aplikacjach randkowych — 60 minut prawdziwego spotkania ze wspólną sesją zdjęciową. Profesjonalny fotograf jako świadek, neutralna lokalizacja, pamiątkowe zdjęcia. Toruń, Bydgoszcz. Zapisz się na waitlist.',
+        'Foto-Match to pierwszy taki projekt w Polsce. Dwie obce osoby, jeden fotograf, jedna sesja w plenerze — 60 minut wspólnej fotograficznej przygody, która zostawia po sobie zdjęcia i (często) nową znajomość. Toruń, Bydgoszcz. Zapisz się na waitlist.',
     keywords:
-        'foto match, foto-match, sesja fotograficzna we dwoje, randka fotograficzna, poznaj kogoś sesja foto, alternatywa tinder, sesja foto z nieznajomym, wspólna sesja fotograficzna toruń, fotograf swatka, blind date sesja, oryginalna randka',
+        'foto match, foto-match, wspólna sesja fotograficzna, sesja fotograficzna we dwoje, projekt fotograficzny poznać ludzi, sesja foto z nieznajomym, niecodzienna sesja foto, fotograficzna przygoda toruń, kreatywna sesja foto, oryginalny pomysł poznać kogoś, sesja w plenerze toruń bydgoszcz',
     alternates: { canonical: CANONICAL },
     openGraph: {
-        title: 'Foto-Match — wspólna sesja zamiast aplikacji randkowej',
-        description: '60 minut prawdziwego spotkania zamiast 60 godzin w czacie. Profesjonalny fotograf, neutralna lokalizacja, pamiątkowe zdjęcia. Pre-launch — zapisz się.',
+        title: 'Foto-Match — wspólna fotograficzna przygoda',
+        description: 'Pierwszy taki projekt w Polsce. 60 minut wspólnej sesji w plenerze z osobą, której do tej pory nie znałeś. Pamiątkowe zdjęcia w cenie. Pre-launch — zapisz się.',
         type: 'website',
         locale: 'pl_PL',
         url: CANONICAL,
         siteName: 'Foto-Match',
-        images: [{ url: HERO_BG, width: 1200, height: 630, alt: 'Foto-Match — sesja fotograficzna w plenerze' }],
+        images: [{ url: HERO_BG, width: 1200, height: 630, alt: 'Foto-Match — wspólna sesja fotograficzna w plenerze' }],
     },
     twitter: {
         card: 'summary_large_image',
-        title: 'Foto-Match — wspólna sesja zamiast aplikacji randkowej',
-        description: 'Pre-launch — zapisz się na waitlist.',
+        title: 'Foto-Match — wspólna fotograficzna przygoda',
+        description: 'Pierwszy taki projekt w Polsce. Pre-launch — zapisz się na waitlist.',
         images: [HERO_BG],
     },
     robots: {
@@ -55,34 +55,34 @@ export const metadata: Metadata = {
 
 const INTENTIONS = [
     {
-        icon: Heart,
-        tag: 'Randka',
-        title: 'Szukasz kogoś bliskiego',
+        icon: Sparkles,
+        tag: 'Wspólna przygoda',
+        title: 'Niecodzienne doświadczenie zamiast kolejnej kawy',
         bullets: [
-            'Zamiast 3 miesięcy w czacie — 60 minut realnego spotkania',
-            'Bez presji „co teraz powiedzieć?" — fotograf prowadzi sesję',
-            'Pamiątkowe zdjęcia zostają z Tobą niezależnie czy zaiskrzy',
+            'Pretekst do spotkania, którego nie wymyśli aplikacja',
+            'Fotograf prowadzi sesję — nie musicie planować „o czym rozmawiać”',
+            'Pamiątkowe zdjęcia zostają z Wami na zawsze',
         ],
-        color: 'from-pink-500 to-rose-500',
+        color: 'from-amber-500 to-orange-500',
     },
     {
         icon: Coffee,
-        tag: 'Nowi znajomi',
-        title: 'Chcesz poznać ludzi po przeprowadzce',
+        tag: 'Lokalna społeczność',
+        title: 'Poznać ludzi z miasta po swojemu',
         bullets: [
-            'Profile filtrowane po wspólnych zainteresowaniach',
-            'Spotkanie w neutralnym miejscu — kawa + 60 min sesji',
-            'Brak romantycznej presji — przyjaźń to też powód',
+            'Dobór po wspólnych zainteresowaniach i etapie życia',
+            'Spotkanie w plenerze — Wisła, starowka, parki',
+            'Idealne po przeprowadzce, pracy zdalnej, zmianie etapu życia',
         ],
         color: 'from-purple-500 to-indigo-500',
     },
     {
         icon: Briefcase,
-        tag: 'Networking',
-        title: 'Budujesz relacje zawodowe',
+        tag: 'Networking kreatywny',
+        title: 'Poznać ludzi z branży poza konferencją',
         bullets: [
-            'Dobór po branży, etapie kariery i celach',
-            'LinkedIn jest jałowy — tu dostajesz realną rozmowę',
+            'Dobór po branży, etapie kariery i obszarze działania',
+            'Realna rozmowa zamiast wymiany wizytówek na evencie',
             'Bonus: świeże zdjęcie portretowe na profil zawodowy',
         ],
         color: 'from-emerald-500 to-teal-500',
@@ -110,7 +110,7 @@ const STEPS = [
     },
     {
         n: '4',
-        icon: Heart,
+        icon: Sparkles,
         title: 'Co dalej zależy od Was',
         text: 'Pamiątkowe zdjęcia trafiają do Was w 7 dni. Decyzja o kolejnym spotkaniu — Wasza, nie nasza.',
     },
@@ -125,28 +125,32 @@ const SAFETY = [
 
 const FAQ = [
     {
-        q: 'Czym Foto-Match różni się od Tindera, Bumble, Hinge?',
-        a: 'Aplikacje randkowe optymalizują pod czas spędzony w aplikacji — im dłużej przeglądasz profile i piszesz, tym lepiej dla nich. Foto-Match optymalizuje pod realne spotkanie. Płacisz raz, dobieramy parę, idziesz na sesję. Brak czatu, brak przeglądania kart bez końca, brak nagabywania. Zamiast 60 godzin w aplikacji — 60 minut przy aparacie z drugim człowiekiem.',
+        q: 'Co to właściwie jest Foto-Match?',
+        a: 'Pierwszy w Polsce projekt fotograficzny, w którym dwie obce osoby spotykają się na 60-minutową wspólną sesję zdjęciową w plenerze. Dobieramy ludzi po wspólnych zainteresowaniach, etapie życia i intencji (poznanie ludzi z miasta, networking branżowy, kreatywne doświadczenie). Fotograf prowadzi sesję — nie musisz się zastanawiać „o czym rozmawiać”. Wychodzicie z 8–15 obrobionymi zdjęciami i nową znajomością.',
     },
     {
-        q: 'Czy to wyłącznie randki?',
-        a: 'Nie. Wybierasz intencję: „randka" (cel romantyczny), „nowi znajomi" (przyjaźń, hobby, networking lokalny po przeprowadzce), „networking biznesowy" (founderzy, freelancerzy, branża). System dobiera tylko w obrębie tej samej intencji — nikt nie zmusza Cię do randki gdy chcesz przyjaciół.',
+        q: 'Czy to jest aplikacja randkowa?',
+        a: 'Nie. Foto-Match to projekt fotograficzny i społeczny — nie platforma randkowa. Wybierasz intencję (lokalna społeczność, networking branżowy, doświadczenie kreatywne), system dobiera tylko w jej obrębie. Romantyczny kontekst nie jest celem produktu — choć jak ludzie się polubią, nikt im tego nie zabrania.',
     },
     {
-        q: 'Co jeśli druga osoba mi się nie spodoba na zdjęciu?',
-        a: 'Po dobraniu pary widzisz profil i 2–3 zdjęcia drugiej osoby. Możesz odrzucić bez podawania powodu — nie traci ona pieniędzy, dostaje propozycję kolejnej osoby. To nie aukcja — to miękki wybór po obu stronach.',
+        q: 'Jak działa sama sesja?',
+        a: 'Spotykacie się w umówionym miejscu (kawiarnia, park, bulwar, starowka). Fotograf wita Was, krótko tłumaczy plan i prowadzi 30–60-minutową sesję — spacer, naturalne kadry, krótkie scenki. Bez sztywnych póz, bez „stań prosto i uśmiechnij się”. To bardziej jak wspólne wyjście, na którym ktoś robi Wam zdjęcia, niż klasyczny shoot studyjny.',
     },
     {
-        q: 'Co dostaję poza poznaniem osoby?',
-        a: 'Profesjonalną sesję fotograficzną 30–60 min, 8–15 obrobionych zdjęć w 7 dni. Nawet jeśli z drugą osobą „nie zaiskrzy" — wychodzisz z sesją, której koszt na otwartym rynku to 400–600 zł. To realna wartość niezależna od wyniku spotkania.',
+        q: 'Co jeśli druga osoba mi nie pasuje?',
+        a: 'Po dobraniu pary widzisz profil i 2–3 zdjęcia drugiej osoby. Możesz odrzucić bez podawania powodu — nie traci ona pieniędzy, dostaje propozycję kolejnej osoby. To nie aukcja — to miękki wybór po obu stronach, zanim spotkanie się odbędzie.',
+    },
+    {
+        q: 'Co konkretnie dostaję?',
+        a: 'Profesjonalną sesję fotograficzną 30–60 min, 8–15 obrobionych zdjęć w 7 dni, dobór drugiej osoby z systemu. Sama sesja na otwartym rynku to koszt 400–600 zł. Foto-Match to realna wartość fotograficzna niezależnie od tego czy z drugą osobą „zaiskrzy” — zdjęcia zostają z Wami.',
     },
     {
         q: 'Bezpieczeństwo — jak realnie wygląda?',
-        a: 'Trzy warstwy: (1) weryfikacja tożsamości przy zapisie — selfie + dokument, (2) miejsca tylko publiczne, fotograf obecny przez całą sesję jako świadek, (3) jeden klik = blokada osoby na zawsze, każde zgłoszenie sprawdzamy ręcznie. Zero anonimowości — każdy uczestnik jest zweryfikowany.',
+        a: 'Trzy warstwy: (1) weryfikacja tożsamości przy zapisie — selfie + dokument, (2) miejsca tylko publiczne, fotograf obecny przez całą sesję, (3) jeden klik = blokada osoby na zawsze, każde zgłoszenie sprawdzamy ręcznie. Zero anonimowości — każdy uczestnik jest zweryfikowany.',
     },
     {
         q: 'Ile to kosztuje?',
-        a: 'Cenę finalną ogłaszamy przy starcie. Osoby z waitlist dostają cenę „early-bird" — istotnie niższą niż docelowa. W cenie: dobór, 60-minutowa sesja, 8–15 obrobionych zdjęć. Jeśli rynkowa wartość samej sesji to 400–600 zł, target Foto-Match to znacząco mniej.',
+        a: 'Cenę finalną ogłaszamy przy starcie. Osoby z waitlist dostają cenę „early-bird” — istotnie niższą niż docelowa. W cenie: dobór, 60-minutowa sesja, 8–15 obrobionych zdjęć. Porównaj z rynkową ceną samej sesji (400–600 zł) — Foto-Match to znacząco mniej, plus dodatkowo dobrana osoba i nowa znajomość.',
     },
     {
         q: 'Kiedy start? W jakich miastach?',
@@ -154,7 +158,7 @@ const FAQ = [
     },
     {
         q: 'A jeśli chcę się wypisać?',
-        a: 'W każdym mailu znajdziesz link „Wypisz mnie". Twoje dane usuwamy w 7 dni od kliknięcia (możliwość zachowania jeśli korzystasz z usługi). Zero retencji „na wszelki wypadek".',
+        a: 'W każdym mailu znajdziesz link „Wypisz mnie”. Twoje dane usuwamy w 7 dni od kliknięcia. Zero retencji „na wszelki wypadek”.',
     },
 ] as const;
 
@@ -175,7 +179,7 @@ const orgJsonLd = {
     '@type': 'WebSite',
     name: 'Foto-Match',
     url: CANONICAL,
-    description: 'Platforma łącząca ludzi przez wspólne sesje fotograficzne. Pre-launch w Toruniu i Bydgoszczy.',
+    description: 'Pierwszy w Polsce projekt fotograficzno-społeczny: dwie obce osoby + jeden fotograf + jedna wspólna sesja w plenerze. Pre-launch w Toruniu i Bydgoszczy.',
     inLanguage: 'pl-PL',
     publisher: {
         '@type': 'Organization',
@@ -203,7 +207,7 @@ export default function FotoMatchPage() {
                 <div className="absolute inset-0">
                     <Image
                         src={HERO_BG}
-                        alt="Sesja fotograficzna w plenerze podczas złotej godziny — Toruń"
+                        alt="Wspólna sesja fotograficzna w plenerze podczas złotej godziny — Toruń"
                         fill
                         priority
                         sizes="100vw"
@@ -216,29 +220,30 @@ export default function FotoMatchPage() {
                 <div className="relative max-w-7xl mx-auto px-4 pt-24 pb-16 sm:pt-32 sm:pb-24 grid lg:grid-cols-[1.2fr_1fr] gap-12 items-center min-h-[100svh]">
                     <div>
                         <div className="inline-flex items-center gap-2 rounded-full bg-amber-400/15 border border-amber-300/30 px-4 py-1.5 text-xs font-semibold text-amber-200 mb-6 backdrop-blur">
-                            <Sparkles className="w-3.5 h-3.5" /> Pre-launch · zapisy na waitlist trwają
+                            <Sparkles className="w-3.5 h-3.5" /> Pierwszy taki projekt w Polsce · pre-launch
                         </div>
                         <h1 className="text-4xl sm:text-6xl lg:text-7xl font-bold leading-[1.05] tracking-tight">
-                            Wspólna sesja foto{' '}
-                            <span className="bg-gradient-to-r from-pink-400 via-rose-400 to-amber-300 bg-clip-text text-transparent">
-                                zamiast aplikacji randkowej.
-                            </span>
+                            Wspólna fotograficzna{' '}
+                            <span className="bg-gradient-to-r from-amber-300 via-rose-400 to-pink-400 bg-clip-text text-transparent">
+                                przygoda.
+                            </span>{' '}
+                            <span className="block mt-2 text-3xl sm:text-5xl lg:text-6xl text-zinc-200">Poznaj kogoś w niecodzienny sposób.</span>
                         </h1>
                         <p className="mt-7 text-lg sm:text-2xl text-zinc-200 max-w-2xl leading-relaxed">
-                            Zamiast 60&nbsp;godzin przeglądania profili i pisania „cześć, co tam?" —
-                            <strong className="text-white"> 60&nbsp;minut realnego spotkania</strong> z drugim
-                            człowiekiem, profesjonalnym fotografem i pamiątkowymi zdjęciami na koniec.
+                            Dwie obce osoby, jeden fotograf, jedna 60-minutowa sesja w plenerze.
+                            Zostają <strong className="text-white">profesjonalne zdjęcia</strong>{' '}
+                            i — często — nowa znajomość, której nie dałaby żadna aplikacja.
                         </p>
                         <div className="mt-8 flex flex-wrap gap-3 text-sm">
                             <Pill>✓ Profil zweryfikowany</Pill>
-                            <Pill>✓ Miejsce publiczne</Pill>
-                            <Pill>✓ Fotograf jako świadek</Pill>
-                            <Pill>✓ Zdjęcia zostają z Tobą</Pill>
+                            <Pill>✓ Sesja w plenerze</Pill>
+                            <Pill>✓ Profesjonalny fotograf</Pill>
+                            <Pill>✓ 8–15 obrobionych zdjęć</Pill>
                         </div>
                         <div className="mt-10 flex flex-col sm:flex-row gap-4">
                             <a
                                 href="#waitlist"
-                                className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 px-7 py-4 text-base font-bold text-white shadow-2xl shadow-rose-500/30 transition hover:scale-[1.02]"
+                                className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-rose-500 px-7 py-4 text-base font-bold text-white shadow-2xl shadow-rose-500/30 transition hover:scale-[1.02]"
                             >
                                 Zapisz mnie na waitlist <ArrowRight className="w-5 h-5" />
                             </a>
@@ -268,33 +273,33 @@ export default function FotoMatchPage() {
                 <a href="#problem" aria-label="Przewiń niżej" className="hidden md:flex absolute bottom-6 left-1/2 -translate-x-1/2 w-10 h-10 items-center justify-center rounded-full border border-white/20 text-white/70 hover:text-white hover:border-white/50 transition">↓</a>
             </section>
 
-            {/* ═══ PROBLEM ═══ */}
+            {/* ═══ IDEA ═══ */}
             <section id="problem" className="relative py-20 px-4 overflow-hidden">
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,_rgba(244,114,182,0.08),_transparent_50%)]" />
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,_rgba(251,191,36,0.06),_transparent_50%)]" />
                 <div className="relative max-w-5xl mx-auto">
                     <div className="grid md:grid-cols-2 gap-12 items-center">
                         <div>
-                            <div className="text-pink-400 font-semibold mb-3 text-sm tracking-wider uppercase">Co Cię tutaj sprowadziło</div>
+                            <div className="text-amber-400 font-semibold mb-3 text-sm tracking-wider uppercase">Pierwszy taki projekt w Polsce</div>
                             <h2 className="text-3xl sm:text-5xl font-bold leading-tight mb-6">
-                                Aplikacje randkowe nie chcą, żebyś znalazł osobę.
+                                Co jeśli pretekstem do poznania dobrego człowieka byłaby{' '}
+                                <span className="bg-gradient-to-r from-amber-300 to-rose-400 bg-clip-text text-transparent">wspólna sesja foto?</span>
                             </h2>
                             <p className="text-lg text-zinc-300 leading-relaxed mb-4">
-                                Im dłużej tam jesteś, tym lepiej dla nich. Ich biznes to retencja, nie skuteczność.
-                                Twoja statystyka? Średnio <strong className="text-white">8 godzin tygodniowo</strong> na
-                                czacie z osobami, które prawdopodobnie nigdy nie umówią się na żywo.
+                                Foto-Match to połączenie dwóch światów: <strong className="text-white">profesjonalnej fotografii w plenerze</strong>{' '}
+                                i <strong className="text-white">społeczności ludzi</strong>, którzy chcą poznać kogoś nowego — nie przez ekran, tylko przez wspólne doświadczenie.
                             </p>
                             <p className="text-lg text-zinc-300 leading-relaxed">
-                                Foto-Match ma odwrotny model: <strong className="text-white">płacisz raz, dobieramy
-                                    osobę, idziesz na sesję.</strong> Im szybciej znajdziesz to czego szukasz, tym lepiej
-                                dla nas (rekomendacje, wracający użytkownicy).
+                                Dobieramy dwie osoby po wspólnych zainteresowaniach i intencji,
+                                organizujemy 60-minutową sesję w plenerze, dostarczamy zdjęcia.
+                                <strong className="text-white"> Co dalej — zależy od Was.</strong>
                             </p>
                         </div>
 
                         <div className="grid grid-cols-2 gap-3">
-                            <ProblemBox label="Średni czas w aplikacjach dziennie" value="2.4h" tone="bad" />
-                            <ProblemBox label="Czat → realne spotkanie" value="3%" tone="bad" />
-                            <ProblemBox label="Twój czas dla Foto-Match" value="60min" tone="good" />
-                            <ProblemBox label="Realna sesja na końcu" value="100%" tone="good" />
+                            <ProblemBox label="Profesjonalna sesja w plenerze" value="60 min" tone="good" />
+                            <ProblemBox label="Obrobione zdjęcia w 7 dni" value="8–15" tone="good" />
+                            <ProblemBox label="Pierwszy taki projekt w PL" value="#1" tone="good" />
+                            <ProblemBox label="Miasta startowe" value="2" tone="good" />
                         </div>
                     </div>
                 </div>
@@ -304,11 +309,11 @@ export default function FotoMatchPage() {
             <section className="py-20 px-4 bg-gradient-to-b from-zinc-950 to-zinc-900">
                 <div className="max-w-7xl mx-auto">
                     <div className="text-center mb-14">
-                        <div className="text-pink-400 font-semibold mb-3 text-sm tracking-wider uppercase">Wybierasz po co przychodzisz</div>
-                        <h2 className="text-3xl sm:text-5xl font-bold mb-4">Trzy intencje. Trzy światy.</h2>
+                        <div className="text-amber-400 font-semibold mb-3 text-sm tracking-wider uppercase">Wybierasz po co przychodzisz</div>
+                        <h2 className="text-3xl sm:text-5xl font-bold mb-4">Trzy konteksty. Jedno doświadczenie.</h2>
                         <p className="text-lg text-zinc-400 max-w-2xl mx-auto">
-                            System dobiera tylko w obrębie tej samej intencji. Nikt nie zaprosi Cię na randkę,
-                            jeśli chcesz tylko poznać ludzi.
+                            System dobiera osoby tylko w obrębie tej samej intencji.
+                            Wybierasz po co tu jesteś — i z kim chcesz się spotkać.
                         </p>
                     </div>
 
@@ -344,7 +349,7 @@ export default function FotoMatchPage() {
             <section id="jak-to-dziala" className="py-20 px-4 bg-zinc-900">
                 <div className="max-w-6xl mx-auto">
                     <div className="text-center mb-14">
-                        <div className="text-pink-400 font-semibold mb-3 text-sm tracking-wider uppercase">4 kroki</div>
+                        <div className="text-amber-400 font-semibold mb-3 text-sm tracking-wider uppercase">4 kroki</div>
                         <h2 className="text-3xl sm:text-5xl font-bold">Od zapisu do zdjęć — jak to wygląda</h2>
                     </div>
 
@@ -355,16 +360,16 @@ export default function FotoMatchPage() {
                                 <div key={s.n} className="relative">
                                     <div className="rounded-2xl bg-zinc-950 border border-white/10 p-6 h-full">
                                         <div className="flex items-center gap-3 mb-4">
-                                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-500 to-rose-500 grid place-items-center font-black text-white shadow-lg">
+                                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-rose-500 grid place-items-center font-black text-white shadow-lg">
                                                 {s.n}
                                             </div>
-                                            <Icon className="w-5 h-5 text-pink-400" />
+                                            <Icon className="w-5 h-5 text-amber-400" />
                                         </div>
                                         <h3 className="font-bold text-lg mb-2">{s.title}</h3>
                                         <p className="text-sm text-zinc-400 leading-relaxed">{s.text}</p>
                                     </div>
                                     {i < STEPS.length - 1 && (
-                                        <ArrowRight className="hidden md:block absolute top-1/2 -right-3 -translate-y-1/2 w-6 h-6 text-pink-500/60 z-10" aria-hidden="true" />
+                                        <ArrowRight className="hidden md:block absolute top-1/2 -right-3 -translate-y-1/2 w-6 h-6 text-amber-500/60 z-10" aria-hidden="true" />
                                     )}
                                 </div>
                             );
@@ -377,7 +382,7 @@ export default function FotoMatchPage() {
             <section className="py-20 px-4 bg-zinc-950">
                 <div className="max-w-7xl mx-auto">
                     <div className="text-center mb-14 max-w-3xl mx-auto">
-                        <div className="text-pink-400 font-semibold mb-3 text-sm tracking-wider uppercase">Tak wyglądają sesje</div>
+                        <div className="text-amber-400 font-semibold mb-3 text-sm tracking-wider uppercase">Tak wyglądają sesje</div>
                         <h2 className="text-3xl sm:text-5xl font-bold mb-4">Wasze zdjęcia. Nasza estetyka.</h2>
                         <p className="text-lg text-zinc-400">
                             Naturalne kadry w plenerze, złota godzina, ulice Torunia i Bydgoszczy.
@@ -423,10 +428,10 @@ export default function FotoMatchPage() {
                         <div className="inline-flex items-center gap-2 text-emerald-400 font-semibold mb-3 text-sm tracking-wider uppercase">
                             <Shield className="w-4 h-4" /> Bezpieczeństwo
                         </div>
-                        <h2 className="text-3xl sm:text-5xl font-bold mb-4">Spotkanie z nieznajomą osobą — bez ryzyka</h2>
+                        <h2 className="text-3xl sm:text-5xl font-bold mb-4">Spotkanie z nową osobą — w komfortowych warunkach</h2>
                         <p className="text-lg text-zinc-400">
-                            Mówimy wprost: idziesz na spotkanie z kimś, kogo nie znasz. Dlatego bezpieczeństwo
-                            jest wpisane w sam produkt, nie dodane na końcu jako regulamin.
+                            Foto-Match z definicji łączy ludzi, którzy się nie znają.
+                            Dlatego bezpieczeństwo i komfort uczestników wpisaliśmy w sam produkt — nie dodaliśmy na końcu jako regulamin.
                         </p>
                     </div>
 
@@ -449,18 +454,18 @@ export default function FotoMatchPage() {
 
             {/* ═══ MANIFESTO ═══ */}
             <section className="py-20 px-4 bg-zinc-900 relative overflow-hidden">
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_30%,_rgba(244,114,182,0.06),_transparent_50%)]" />
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_30%,_rgba(251,191,36,0.06),_transparent_50%)]" />
                 <div className="relative max-w-4xl mx-auto text-center">
-                    <Quote className="w-12 h-12 text-pink-500/40 mx-auto mb-6" aria-hidden="true" />
+                    <Quote className="w-12 h-12 text-amber-500/40 mx-auto mb-6" aria-hidden="true" />
                     <blockquote className="text-2xl sm:text-3xl lg:text-4xl font-bold leading-tight">
-                        „Ludzie nie potrzebują kolejnej aplikacji. Potrzebują pretekstu, żeby
-                        wyjść z domu i zobaczyć drugiego człowieka{' '}
-                        <span className="bg-gradient-to-r from-pink-400 to-rose-400 bg-clip-text text-transparent">
-                            poza ekranem.
-                        </span>"
+                        „Fotografia od zawsze łączyła ludzi.
+                        Foto-Match po prostu zamienia kolejność — najpierw{' '}
+                        <span className="bg-gradient-to-r from-amber-300 to-rose-400 bg-clip-text text-transparent">
+                            wspólna sesja, potem znajomość.
+                        </span>”
                     </blockquote>
                     <cite className="block mt-6 text-sm text-zinc-500 not-italic">
-                        — założyciel Foto-Match
+                        — Przemysław Właśniewski, fotograf i pomysłodawca
                     </cite>
                 </div>
             </section>
@@ -469,11 +474,11 @@ export default function FotoMatchPage() {
             <section id="waitlist" className="py-20 px-4 bg-gradient-to-b from-zinc-900 via-zinc-950 to-black">
                 <div className="max-w-5xl mx-auto grid lg:grid-cols-[1fr_1.1fr] gap-10 items-start">
                     <div className="lg:sticky lg:top-24">
-                        <div className="inline-flex items-center gap-2 rounded-full bg-pink-500/15 border border-pink-400/30 px-4 py-1.5 text-xs font-semibold text-pink-200 mb-5">
+                        <div className="inline-flex items-center gap-2 rounded-full bg-amber-500/15 border border-amber-400/30 px-4 py-1.5 text-xs font-semibold text-amber-200 mb-5">
                             <Mail className="w-3.5 h-3.5" /> Zapis na waitlist
                         </div>
                         <h2 className="text-4xl sm:text-5xl font-bold mb-5 leading-tight">
-                            Bądź jedną z pierwszych osób.
+                            Bądź w pierwszej fali uczestników.
                         </h2>
                         <p className="text-lg text-zinc-300 leading-relaxed mb-6">
                             Zapisani dostają dostęp <strong className="text-white">przed publicznym startem</strong> i{' '}
@@ -500,18 +505,18 @@ export default function FotoMatchPage() {
             <section className="py-20 px-4 bg-black">
                 <div className="max-w-3xl mx-auto">
                     <div className="text-center mb-12">
-                        <div className="text-pink-400 font-semibold mb-3 text-sm tracking-wider uppercase">FAQ</div>
+                        <div className="text-amber-400 font-semibold mb-3 text-sm tracking-wider uppercase">FAQ</div>
                         <h2 className="text-3xl sm:text-5xl font-bold">Pytania, które pewnie masz</h2>
                     </div>
                     <div className="space-y-3">
                         {FAQ.map((f, i) => (
                             <details
                                 key={i}
-                                className="group rounded-2xl border border-white/10 bg-zinc-900/50 p-5 sm:p-6 open:bg-zinc-900 open:border-pink-500/30 transition"
+                                className="group rounded-2xl border border-white/10 bg-zinc-900/50 p-5 sm:p-6 open:bg-zinc-900 open:border-amber-500/30 transition"
                             >
                                 <summary className="cursor-pointer list-none font-semibold text-base sm:text-lg flex justify-between items-center gap-4">
                                     <span>{f.q}</span>
-                                    <span className="text-pink-400 group-open:rotate-180 transition-transform shrink-0 w-6 h-6 grid place-items-center">▾</span>
+                                    <span className="text-amber-400 group-open:rotate-180 transition-transform shrink-0 w-6 h-6 grid place-items-center">▾</span>
                                 </summary>
                                 <p className="mt-4 text-zinc-300 leading-relaxed">{f.a}</p>
                             </details>
@@ -521,13 +526,13 @@ export default function FotoMatchPage() {
             </section>
 
             {/* ═══ FOOTER CTA ═══ */}
-            <section className="py-16 px-4 bg-gradient-to-r from-pink-600 via-rose-600 to-amber-500">
+            <section className="py-16 px-4 bg-gradient-to-r from-amber-600 via-rose-600 to-amber-500">
                 <div className="max-w-3xl mx-auto text-center">
-                    <h2 className="text-3xl sm:text-4xl font-bold mb-4 text-white">Następny krok jest prosty.</h2>
-                    <p className="text-white/90 text-lg mb-7">Zapisz się i bądź w pierwszej fali użytkowników, gdy startujemy.</p>
+                    <h2 className="text-3xl sm:text-4xl font-bold mb-4 text-white">Pierwsza fala. Najniższa cena. Pierwsze sesje.</h2>
+                    <p className="text-white/90 text-lg mb-7">Zapisz się i bądź w pierwszej grupie uczestników pierwszego takiego projektu w Polsce.</p>
                     <a
                         href="#waitlist"
-                        className="inline-flex items-center gap-2 rounded-xl bg-white px-8 py-4 text-base font-bold text-rose-600 shadow-2xl hover:scale-[1.03] transition"
+                        className="inline-flex items-center gap-2 rounded-xl bg-white px-8 py-4 text-base font-bold text-rose-700 shadow-2xl hover:scale-[1.03] transition"
                     >
                         Zapisz mnie na waitlist <ArrowRight className="w-5 h-5" />
                     </a>

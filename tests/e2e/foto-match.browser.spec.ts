@@ -5,8 +5,8 @@ test.describe('Foto-Match landing /foto-match', () => {
         const res = await page.goto('/foto-match');
         expect(res?.status()).toBe(200);
 
-        // H1 — nowy hero "Wspólna sesja foto zamiast aplikacji randkowej"
-        await expect(page.getByRole('heading', { level: 1 })).toContainText(/Wspólna sesja foto/i);
+        // H1 — nowy hero "Wspólna fotograficzna przygoda"
+        await expect(page.getByRole('heading', { level: 1 })).toContainText(/Wspólna fotograficzna/i);
 
         // Form pól (SSR — bez JS już są w HTML)
         await expect(page.locator('input[name="email"]')).toBeVisible();
@@ -65,14 +65,19 @@ test.describe('Foto-Match SEO — content w surowym HTML (bez JS)', () => {
         const html = await res.text();
 
         // H1
-        expect(html).toMatch(/Wspólna sesja foto/i);
+        expect(html).toMatch(/Wspólna fotograficzna/i);
+        expect(html).toMatch(/Poznaj kogoś w niecodzienny sposób/i);
+        expect(html).toMatch(/Pierwszy taki projekt w Polsce/i);
         // FAQ — kluczowe pytania w HTML
-        expect(html).toMatch(/Czym Foto-Match różni się od Tindera/i);
+        expect(html).toMatch(/Co to właściwie jest Foto-Match/i);
+        expect(html).toMatch(/Czy to jest aplikacja randkowa/i);
         expect(html).toMatch(/Bezpieczeństwo/i);
-        // Trzy intencje
-        expect(html).toMatch(/Randka/);
-        expect(html).toMatch(/Nowi znajomi/);
-        expect(html).toMatch(/Networking/);
+        // Trzy intencje (nowe nazwy — brak "Randka")
+        expect(html).toMatch(/Wspólna przygoda/i);
+        expect(html).toMatch(/Lokalna społeczność/i);
+        expect(html).toMatch(/Networking kreatywny/i);
+        // Anty-asercja: usunęliśmy framing "alternatywa Tindera" — nie powinno być
+        expect(html).not.toMatch(/zamiast aplikacji randkowej/i);
         // How it works
         expect(html).toMatch(/Jak to działa/i);
         // Galeria stylu — captiony i disclaimer
@@ -88,6 +93,6 @@ test.describe('Foto-Match SEO — content w surowym HTML (bez JS)', () => {
         expect(html).toMatch(/name="email"/);
         expect(html).toMatch(/name="rules_accepted"/);
         // Pre-launch indicator
-        expect(html).toMatch(/Pre-launch/i);
+        expect(html).toMatch(/pre-launch/i);
     });
 });
