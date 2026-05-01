@@ -87,7 +87,7 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
         switch (action) {
             case 'approve':
                 if (!reason) {
-                    // Wymagamy potwierdzenia że selfie + dowód widziane
+                    // Wymagamy potwierdzenia: selfie + numer telefonu zweryfikowany + oświadczenie 18+
                 }
                 updateData.status = 'ACTIVE';
                 updateData.is_active = true;
