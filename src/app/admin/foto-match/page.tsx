@@ -20,6 +20,7 @@ type Stats = {
         rejected: number;
         flaggedPhotos: number;
         waitlist: number;
+        pendingReports?: number;
     };
     enabled: boolean;
     recentProfiles: Array<{
@@ -113,12 +114,13 @@ export default function FotoMatchDashboardPage() {
             )}
 
             {/* Statystyki */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4">
                 <StatCard label="Oczekujące" value={c.pending} icon={<Clock />} color="amber" href="/admin/foto-match/profiles?status=PENDING" />
                 <StatCard label="Aktywne" value={c.active} icon={<CheckCircle2 />} color="emerald" href="/admin/foto-match/profiles?status=ACTIVE" />
                 <StatCard label="Zawieszone" value={c.suspended} icon={<ShieldCheck />} color="rose" href="/admin/foto-match/profiles?status=SUSPENDED" />
                 <StatCard label="Odrzucone" value={c.rejected} icon={<AlertTriangle />} color="zinc" href="/admin/foto-match/profiles?status=REJECTED" />
                 <StatCard label="Zdjęcia FLAGGED" value={c.flaggedPhotos} icon={<ImageIcon />} color="rose" href="/admin/foto-match/photos" />
+                <StatCard label="Zgłoszenia" value={c.pendingReports ?? 0} icon={<AlertTriangle />} color="rose" href="/admin/foto-match/reports?status=PENDING" />
                 <StatCard label="Waitlist" value={c.waitlist} icon={<Mail />} color="blue" href="/admin/foto-match/waitlist" />
             </div>
 

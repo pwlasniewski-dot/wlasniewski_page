@@ -18,6 +18,7 @@ export async function GET(request: NextRequest) {
             rejectedCount,
             flaggedPhotosCount,
             waitlistCount,
+            pendingReportsCount,
             setting,
             recentProfiles,
         ] = await Promise.all([
@@ -27,6 +28,7 @@ export async function GET(request: NextRequest) {
             prisma.fotoMatchProfile.count({ where: { status: 'REJECTED' } }),
             prisma.fotoMatchPhoto.count({ where: { ai_status: 'FLAGGED' } }),
             prisma.fotoMatchWaitlist.count(),
+            prisma.fotoMatchReport.count({ where: { status: 'PENDING' } }).catch(() => 0),
             prisma.setting.findFirst({
                 orderBy: { id: 'asc' },
                 select: { foto_match_enabled: true },
@@ -48,6 +50,7 @@ export async function GET(request: NextRequest) {
                 rejected: rejectedCount,
                 flaggedPhotos: flaggedPhotosCount,
                 waitlist: waitlistCount,
+                pendingReports: pendingReportsCount,
             },
             enabled: !!setting?.foto_match_enabled,
             recentProfiles,
