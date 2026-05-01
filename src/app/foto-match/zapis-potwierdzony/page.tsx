@@ -1,10 +1,12 @@
 // SERVER COMPONENT — strona potwierdzenia maila (double opt-in landing).
-// Robi GET na /api/foto-match/waitlist/confirm?t=… i pokazuje wynik.
+// Wywołuje confirmWaitlistToken() bezpośrednio z bazy — bez self-fetch
+// (poprzednia wersja robiła HTTP do /api/... co na Netlify funkcji potrafi
+// crashować przez DNS/timeout w sandboxie).
 
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { CheckCircle2, AlertTriangle, Mail } from 'lucide-react';
-import { getFotoMatchBaseUrl, getFotoMatchPathPrefix } from '@/lib/foto-match/base-url';
+import { confirmWaitlistToken } from '@/lib/foto-match/confirm';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,20 +16,6 @@ export const metadata: Metadata = {
 };
 
 interface SearchParams { t?: string }
-
-async function confirmToken(token: string) {
-    try {
-        const base = getFotoMatchBaseUrl();
-        const prefix = getFotoMatchPathPrefix();
-        // Wewnętrzny API call — bezpośrednio przez fetch (server-side).
-        const url = `${base}${prefix}/api/foto-match/waitlist/confirm?t=${encodeURIComponent(token)}`;
-        const res = await fetch(url, { cache: 'no-store' });
-        const data = await res.json().catch(() => ({}));
-        return { ok: res.ok, status: res.status, data };
-    } catch (e) {
-        return { ok: false, status: 0, data: { error: 'NETWORK' } };
-    }
-}
 
 export default async function Page({ searchParams }: { searchParams: Promise<SearchParams> }) {
     const sp = await searchParams;
@@ -41,11 +29,10 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
         );
     }
 
-    const result = await confirmToken(token);
-    const isOk = result.ok && (result.data?.status === 'confirmed' || result.data?.status === 'already');
-    const isAlready = result.data?.status === 'already';
+    const result = await confirmWaitlistToken(token);
 
-    if (isOk) {
+    if (result.ok) {
+        const isAlready = result.status === 'already';
         return (
             <Shell>
                 <Card
@@ -61,19 +48,9 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
         );
     }
 
-    const err = result.data?.error || 'UNKNOWN';
-    const msg =
-        err === 'TOKEN_EXPIRED'
-            ? 'Link wygasł (24 h). Zapisz się ponownie, wyślemy świeży link.'
-            : err === 'TOKEN_NOT_FOUND'
-                ? 'Link nieprawidłowy lub już wykorzystany.'
-                : err === 'INVALID_TOKEN'
-                    ? 'Token jest niepoprawny.'
-                    : 'Coś poszło nie tak. Spróbuj ponownie za chwilę.';
-
     return (
         <Shell>
-            <Card icon="warn" title="Nie udało się potwierdzić" text={msg} />
+            <Card icon="warn" title="Nie udało się potwierdzić" text={result.message} />
         </Shell>
     );
 }
