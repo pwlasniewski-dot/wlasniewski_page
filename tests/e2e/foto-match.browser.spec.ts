@@ -5,8 +5,8 @@ test.describe('Foto-Match landing /foto-match', () => {
         const res = await page.goto('/foto-match');
         expect(res?.status()).toBe(200);
 
-        // H1
-        await expect(page.getByRole('heading', { level: 1 })).toContainText(/Poznaj kogoś/i);
+        // H1 — nowy hero "Wspólna sesja foto zamiast aplikacji randkowej"
+        await expect(page.getByRole('heading', { level: 1 })).toContainText(/Wspólna sesja foto/i);
 
         // Form pól (SSR — bez JS już są w HTML)
         await expect(page.locator('input[name="email"]')).toBeVisible();
@@ -54,5 +54,40 @@ test.describe('Foto-Match /zapis-potwierdzony', () => {
         await expect(page.getByText(/Brak tokenu/i)).toBeVisible();
         const robots = await page.locator('meta[name="robots"]').getAttribute('content');
         expect(robots || '').toMatch(/noindex/);
+    });
+});
+
+test.describe('Foto-Match SEO — content w surowym HTML (bez JS)', () => {
+    test('cały content jest w SSR HTML — Googlebot nie potrzebuje JS', async ({ request }) => {
+        // Pobieramy raw HTML, bez egzekucji JS.
+        const res = await request.get('/foto-match');
+        expect(res.status()).toBe(200);
+        const html = await res.text();
+
+        // H1
+        expect(html).toMatch(/Wspólna sesja foto/i);
+        // FAQ — kluczowe pytania w HTML
+        expect(html).toMatch(/Czym Foto-Match różni się od Tindera/i);
+        expect(html).toMatch(/Bezpieczeństwo/i);
+        // Trzy intencje
+        expect(html).toMatch(/Randka/);
+        expect(html).toMatch(/Nowi znajomi/);
+        expect(html).toMatch(/Networking/);
+        // How it works
+        expect(html).toMatch(/Jak to działa/i);
+        // Galeria stylu — captiony i disclaimer
+        expect(html).toMatch(/Złota godzina/);
+        expect(html).toMatch(/Bulwar Filadelfijski/);
+        expect(html).toMatch(/portfolio.*Przemysława/i);
+        // Sekcja bezpieczeństwa
+        expect(html).toMatch(/Weryfikacja tożsamości/i);
+        expect(html).toMatch(/miejsca publiczne/i);
+        // JSON-LD FAQPage
+        expect(html).toMatch(/"@type":"FAQPage"/);
+        // Form pól w HTML (bez JS)
+        expect(html).toMatch(/name="email"/);
+        expect(html).toMatch(/name="rules_accepted"/);
+        // Pre-launch indicator
+        expect(html).toMatch(/Pre-launch/i);
     });
 });

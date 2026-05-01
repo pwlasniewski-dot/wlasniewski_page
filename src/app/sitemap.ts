@@ -50,6 +50,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         '/portfolio',
         '/blog',
         '/foto-wyzwanie',
+        '/foto-match',
         '/regulamin',
         '/polityka-prywatnosci',
         '/reklamacje',
