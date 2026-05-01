@@ -18,7 +18,9 @@ import { RekognitionClient, DetectModerationLabelsCommand } from '@aws-sdk/clien
 
 const accessKeyId = (process.env.MY_AWS_ACCESS_KEY_ID || process.env.AWS_ACCESS_KEY_ID || '').trim();
 const secretAccessKey = (process.env.MY_AWS_SECRET_ACCESS_KEY || process.env.AWS_SECRET_ACCESS_KEY || '').trim();
-const region = process.env.S3_REGION || 'eu-north-1';
+// Rekognition NIE jest dostępny w eu-north-1 (Stockholm) — używamy eu-west-1 (Ireland).
+// Override przez REKOGNITION_REGION jeśli kiedyś AWS udostępni w innym regionie.
+const region = (process.env.REKOGNITION_REGION || 'eu-west-1').trim();
 
 let client: RekognitionClient | null = null;
 function getClient(): RekognitionClient {
