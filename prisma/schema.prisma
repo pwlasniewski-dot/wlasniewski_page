@@ -502,6 +502,7 @@ model User {
   crm_activities          CrmActivity[]
   challenge_invites       PhotoChallenge[]        @relation("ChallengeInvitee")
   challenges_initiated    PhotoChallenge[]        @relation("ChallengeInviter")
+  foto_match_profile      FotoMatchProfile?
 
   @@map("users")
 }
@@ -1240,4 +1241,82 @@ model FotoMatchWaitlist {
   @@index([confirmed_at])
   @@index([created_at])
   @@map("foto_match_waitlist")
+}
+
+// ============================================================
+// FOTO-MATCH — PROFIL UŻYTKOWNIKA (Faza 1)
+// 1:1 z User (klient z CRM, jedna kartoteka). Brak profilu = po prostu klient,
+// który nie zarejestrował się do Foto-Match — nie widać go w panelu Foto-Match.
+// ============================================================
+model FotoMatchProfile {
+  id               Int       @id @default(autoincrement())
+  user_id          Int       @unique
+  user             User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  // Profil podstawowy
+  display_name     String    @db.VarChar(60)
+  birth_year       Int
+  gender           String    @db.VarChar(20)  // male | female | other
+  city             String    @db.VarChar(60)
+  radius_km        Int       @default(30)
+  bio              String?   @db.Text
+  interests        String[]  @default([])
+  experience       String?   @db.VarChar(40)  // never_modeled | few_times | experienced
+  comfort_level    String?   @db.VarChar(40)  // shy | neutral | open
+
+  // Weryfikacja tożsamości (manual przez admina)
+  selfie_url       String?
+  id_doc_url       String?
+  verified_at      DateTime?
+  verified_by      Int?
+  rejection_reason String?
+
+  // Moderacja / status
+  status           String    @default("PENDING") @db.VarChar(20)
+  // PENDING (po onboardingu) -> ACTIVE (po akceptacji admina) | SUSPENDED | DELETED
+  is_active        Boolean   @default(false)
+  flagged_count    Int       @default(0)
+
+  // Metryki
+  last_active      DateTime?
+  created_at       DateTime  @default(now())
+  updated_at       DateTime  @updatedAt
+
+  photos           FotoMatchPhoto[]
+
+  @@index([status])
+  @@index([city])
+  @@index([is_active])
+  @@index([created_at])
+  @@map("foto_match_profile")
+}
+
+// ============================================================
+// ZDJĘCIA PROFILOWE (3-6 per profil)
+// Po uploadzie idzie auto-moderacja AWS Rekognition; flagged trafia do admina.
+// ============================================================
+model FotoMatchPhoto {
+  id              Int               @id @default(autoincrement())
+  profile_id      Int
+  profile         FotoMatchProfile  @relation(fields: [profile_id], references: [id], onDelete: Cascade)
+
+  url             String
+  position        Int               @default(0)  // 0 = main
+
+  // AI moderacja
+  ai_status       String            @default("PENDING") @db.VarChar(20)
+  // PENDING | APPROVED | FLAGGED | REJECTED
+  ai_labels       Json?
+  ai_flagged_for  String?
+
+  // Manual review
+  reviewed_by     Int?
+  reviewed_at     DateTime?
+  review_notes    String?
+
+  created_at      DateTime          @default(now())
+
+  @@index([profile_id])
+  @@index([ai_status])
+  @@map("foto_match_photo")
 }

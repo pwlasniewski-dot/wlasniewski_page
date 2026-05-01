@@ -23,6 +23,8 @@ import {
     ShoppingBag,
     Send,
     MessageSquare,
+    Sparkles,
+    Heart,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ClientOfferRecommendedAlbums from '@/components/client/ClientOfferRecommendedAlbums';
@@ -42,6 +44,7 @@ export default function AccountPage() {
     const [contracts, setContracts] = useState<any[]>([]);
     const [photoOrders, setPhotoOrders] = useState<any[]>([]);
     const [userPermissions, setUserPermissions] = useState<Record<string, boolean> | null>(null);
+    const [fotoMatchProfile, setFotoMatchProfile] = useState<{ id: number; status: string; display_name: string } | null>(null);
     const [savingNote, setSavingNote] = useState<{ type: string; id: number } | null>(null);
     const [noteStates, setNoteStates] = useState<Record<string, string>>({});
 
@@ -66,10 +69,11 @@ export default function AccountPage() {
         if (token) {
             async function fetchData() {
                 try {
-                    const [userRes, challengeRes, galleriesRes] = await Promise.all([
+                    const [userRes, challengeRes, galleriesRes, fmRes] = await Promise.all([
                         fetch('/api/user/me', { headers: { 'Authorization': `Bearer ${token}` } }),
                         fetch('/api/photo-challenge/client/challenges', { headers: { 'Authorization': `Bearer ${token}` } }),
-                        fetch('/api/galleries/client', { headers: { 'Authorization': `Bearer ${token}` } })
+                        fetch('/api/galleries/client', { headers: { 'Authorization': `Bearer ${token}` } }),
+                        fetch('/api/foto-match/profile/me', { headers: { 'Authorization': `Bearer ${token}` } })
                     ]);
 
                     if (userRes.ok) {
@@ -93,6 +97,17 @@ export default function AccountPage() {
                     if (galleriesRes.ok) {
                         const data = await galleriesRes.json();
                         setGalleries(data.galleries || []);
+                    }
+
+                    if (fmRes.ok) {
+                        const data = await fmRes.json();
+                        if (data.profile) {
+                            setFotoMatchProfile({
+                                id: data.profile.id,
+                                status: data.profile.status,
+                                display_name: data.profile.display_name,
+                            });
+                        }
                     }
                 } catch (e) {
                     console.error(e);
@@ -249,6 +264,9 @@ export default function AccountPage() {
 
         return (
             <div className="space-y-10">
+                {/* Foto-Match block */}
+                <FotoMatchOverviewBlock profile={fotoMatchProfile} />
+
                 {/* Hero Status Block */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     {userPermissions?.offers !== false && (
@@ -1106,4 +1124,62 @@ export default function AccountPage() {
             </section>
         );
     }
+}
+
+function FotoMatchOverviewBlock({ profile }: { profile: { id: number; status: string; display_name: string } | null }) {
+    if (!profile) {
+        return (
+            <Link
+                href="/foto-match/onboarding"
+                className="group block relative overflow-hidden rounded-3xl border border-amber-500/30 bg-gradient-to-br from-amber-500/10 via-rose-500/5 to-zinc-950 p-6 hover:border-amber-400 transition"
+            >
+                <div className="absolute -top-20 -right-20 w-40 h-40 bg-amber-500/20 rounded-full blur-3xl" />
+                <div className="relative">
+                    <div className="flex items-center gap-2 text-xs uppercase tracking-widest text-amber-300 mb-3">
+                        <Sparkles className="w-4 h-4" /> Nowość · Foto-Match
+                    </div>
+                    <h3 className="text-xl sm:text-2xl font-bold text-white mb-2">
+                        Wspólna fotograficzna przygoda
+                    </h3>
+                    <p className="text-sm text-zinc-300 mb-4 max-w-2xl">
+                        Pierwszy w Polsce projekt łączący ludzi w pary, które razem stworzą sesję fotograficzną.
+                        Stwórz profil w 4 krokach i odkryj kogoś, z kim chcesz mieć wspólne zdjęcia.
+                    </p>
+                    <span className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-rose-500 px-5 py-2.5 font-bold text-white text-sm group-hover:scale-[1.02] transition">
+                        Dołącz do Foto-Match <Heart className="w-4 h-4" />
+                    </span>
+                </div>
+            </Link>
+        );
+    }
+
+    const statusBadge: Record<string, { label: string; cls: string }> = {
+        PENDING: { label: 'Czeka na akceptację', cls: 'bg-amber-500/10 text-amber-300 border-amber-500/30' },
+        ACTIVE: { label: 'Aktywny', cls: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30' },
+        SUSPENDED: { label: 'Zawieszony', cls: 'bg-rose-500/10 text-rose-300 border-rose-500/30' },
+        REJECTED: { label: 'Odrzucony', cls: 'bg-rose-500/10 text-rose-300 border-rose-500/30' },
+    };
+    const badge = statusBadge[profile.status] || statusBadge.PENDING;
+
+    return (
+        <Link
+            href="/foto-match/profil"
+            className="group block rounded-3xl border border-zinc-800 hover:border-amber-400 bg-gradient-to-br from-zinc-900/60 to-zinc-950 p-6 transition"
+        >
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+                <div>
+                    <div className="flex items-center gap-2 text-xs uppercase tracking-widest text-amber-300 mb-2">
+                        <Sparkles className="w-4 h-4" /> Foto-Match
+                    </div>
+                    <h3 className="text-lg font-bold text-white">Mój profil: {profile.display_name}</h3>
+                    <span className={`inline-block mt-2 text-xs px-2.5 py-1 rounded-full border ${badge.cls}`}>
+                        {badge.label}
+                    </span>
+                </div>
+                <span className="inline-flex items-center gap-2 text-sm font-bold text-amber-300 group-hover:text-amber-200">
+                    Otwórz <ChevronRight className="w-4 h-4" />
+                </span>
+            </div>
+        </Link>
+    );
 }
