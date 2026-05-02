@@ -43,6 +43,7 @@ const navigation = [
         icon: Calendar,
         children: [
             { name: 'Złożone rezerwacje', href: '/admin/bookings' },
+            { name: 'Kalendarz', href: '/admin/bookings/calendar' },
             { name: 'Grafik / Dostępność', href: '/admin/availability' },
             { name: 'Zamówienia (Sklep)', href: '/admin/bookings/orders' },
             { name: 'Pakiety rezerwacji', href: '/admin/rezerwacja' },
@@ -92,6 +93,7 @@ const navigation = [
         ]
     },
     { name: 'Administratorzy', href: '/admin/users', icon: Shield },
+    { name: 'Fotografowie', href: '/admin/photographers', icon: Camera },
 
     { name: 'Analityka', href: '/admin/analytics', icon: BarChart3 },
     { name: 'Marketing & UTM', href: '/admin/marketing', icon: TrendingUp },

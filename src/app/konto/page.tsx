@@ -205,6 +205,14 @@ export default function AccountPage() {
                         {user?.role === 'PHOTOGRAPHER' && (
                             <TabButton id="partner" label="Strefa Partnera" active={activeTab === 'partner'} onClick={() => setActiveTab('partner')} icon={<Star className="w-4 h-4 text-gold-500" />} />
                         )}
+                        {(user?.role === 'PHOTOGRAPHER' || user?.role === 'ADMIN') && (
+                            <Link
+                                href="/panel-fotografa"
+                                className="flex items-center gap-2 px-6 py-3 rounded-2xl whitespace-nowrap transition-all bg-gradient-to-r from-rose-500 to-amber-500 text-white font-bold shadow-lg hover:shadow-xl"
+                            >
+                                <Calendar className="w-4 h-4" /> Mój kalendarz
+                            </Link>
+                        )}
                     </div>
                 </div>
             </div>
