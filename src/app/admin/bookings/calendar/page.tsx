@@ -39,7 +39,7 @@ export default function AdminCalendarPage() {
             if (photographerFilter !== 'all') params.set('photographer_id', photographerFilter);
 
             const [bRes, pRes] = await Promise.all([
-                fetch(`/api/bookings?${params.toString()}`, { headers: { Authorization: `Bearer ${token}` } }),
+                fetch(`/api/admin/calendar-events?${params.toString()}`, { headers: { Authorization: `Bearer ${token}` } }),
                 fetch('/api/admin/photographers', { headers: { Authorization: `Bearer ${token}` } }),
             ]);
             if (bRes.status === 401) {
@@ -49,7 +49,33 @@ export default function AdminCalendarPage() {
             }
             const bData = await bRes.json();
             const pData = await pRes.json();
-            setBookings(bData.bookings || []);
+            // Mapuj events na CalendarBooking shape (kalendarz oczekuje service/package zamiast title)
+            type RawEvent = {
+                id: string; source: 'booking' | 'offer' | 'challenge'; source_id: number;
+                date: string; start_time: string | null; end_time: string | null;
+                title: string; client_name: string;
+                venue: string | null; status: string;
+                photographer_id: number | null; detail_url: string;
+            };
+            let events: CalendarBooking[] = (bData.events || []).map((e: RawEvent) => ({
+                id: e.id,
+                service: e.title.split(' — ')[0] || e.title,
+                package: e.title.split(' — ')[1] || '',
+                date: e.date,
+                start_time: e.start_time,
+                end_time: e.end_time,
+                client_name: e.client_name,
+                venue_city: e.venue,
+                venue_place: null,
+                status: e.status,
+                photographer_id: e.photographer_id,
+                source: e.source,
+                detail_url: e.detail_url,
+            }));
+            // Filtry po stronie klienta (nasz endpoint nie ma jeszcze status/photographer)
+            if (statusFilter !== 'all') events = events.filter(e => e.status === statusFilter);
+            if (photographerFilter !== 'all') events = events.filter(e => String(e.photographer_id) === photographerFilter);
+            setBookings(events);
             setPhotographers(pData.photographers || []);
         } finally {
             setLoading(false);
@@ -163,6 +189,10 @@ function BookingDetailModal({
     const updateStatus = async (status: string) => {
         const token = localStorage.getItem('admin_token');
         if (!token) return;
+        if (booking.source && booking.source !== 'booking') {
+            alert('Zmiana statusu działa tylko dla rezerwacji. Edytuj ofertę / wyzwanie w jego panelu.');
+            return;
+        }
         setSaving(true);
         try {
             await fetch(`/api/bookings?id=${booking.id}`, {
@@ -177,13 +207,24 @@ function BookingDetailModal({
         }
     };
 
+    const sourceLabels: Record<string, { label: string; color: string }> = {
+        booking: { label: 'Rezerwacja', color: 'bg-rose-100 text-rose-800' },
+        offer: { label: 'Oferta handlowa', color: 'bg-amber-100 text-amber-800' },
+        challenge: { label: 'Foto-wyzwanie', color: 'bg-violet-100 text-violet-800' },
+    };
+    const srcInfo = sourceLabels[booking.source || 'booking'];
+    const isBooking = !booking.source || booking.source === 'booking';
+
     return (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center p-3" onClick={onClose}>
             <div className="bg-white rounded-2xl max-w-lg w-full p-5 shadow-2xl" onClick={e => e.stopPropagation()}>
                 <div className="flex justify-between items-start mb-3">
                     <div>
+                        <div className="flex items-center gap-2 mb-1">
+                            <span className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded ${srcInfo.color}`}>{srcInfo.label}</span>
+                        </div>
                         <h3 className="text-xl font-bold text-zinc-900">{booking.client_name}</h3>
-                        <p className="text-sm text-zinc-500">{booking.service} \u00b7 {booking.package}</p>
+                        <p className="text-sm text-zinc-500">{booking.service}{booking.package ? ` · ${booking.package}` : ''}</p>
                     </div>
                     <button onClick={onClose} className="p-1 hover:bg-zinc-100 rounded">
                         <X className="w-5 h-5" />
@@ -204,24 +245,24 @@ function BookingDetailModal({
                 </div>
                 <div className="mt-4 flex flex-wrap gap-2">
                     <Link
-                        href={`/admin/bookings?id=${booking.id}`}
+                        href={booking.detail_url || `/admin/bookings?id=${booking.id}`}
                         className="px-3 py-2 rounded-lg bg-zinc-900 text-white text-sm font-semibold"
                     >
-                        Pelne szczegoly
+                        Pełne szczegóły
                     </Link>
-                    {booking.status !== 'confirmed' && (
+                    {isBooking && booking.status !== 'confirmed' && (
                         <button disabled={saving} onClick={() => updateStatus('confirmed')}
                             className="px-3 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold disabled:opacity-50">
-                            Potwierdz
+                            Potwierdź
                         </button>
                     )}
-                    {booking.status !== 'paid' && (
+                    {isBooking && booking.status !== 'paid' && (
                         <button disabled={saving} onClick={() => updateStatus('paid')}
                             className="px-3 py-2 rounded-lg bg-emerald-600 text-white text-sm font-semibold disabled:opacity-50">
-                            Oznacz oplacona
+                            Oznacz opłaconą
                         </button>
                     )}
-                    {booking.status !== 'cancelled' && (
+                    {isBooking && booking.status !== 'cancelled' && (
                         <button disabled={saving} onClick={() => updateStatus('cancelled')}
                             className="px-3 py-2 rounded-lg bg-rose-600 text-white text-sm font-semibold disabled:opacity-50">
                             Anuluj

@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, MapPin, Clock, User } from 'lucide-react';
 
 export type CalendarBooking = {
-    id: number;
+    id: number | string;
     service: string;
     package: string;
     date: string;
@@ -15,6 +15,8 @@ export type CalendarBooking = {
     venue_place?: string | null;
     status: string;
     photographer_id?: number | null;
+    source?: 'booking' | 'offer' | 'challenge';
+    detail_url?: string;
 };
 
 const STATUS_COLORS: Record<string, string> = {
@@ -23,6 +25,18 @@ const STATUS_COLORS: Record<string, string> = {
     paid: 'bg-emerald-100 text-emerald-900 border-emerald-300',
     completed: 'bg-zinc-200 text-zinc-700 border-zinc-300',
     cancelled: 'bg-rose-100 text-rose-700 border-rose-300 line-through',
+};
+
+const SOURCE_BADGE: Record<string, string> = {
+    booking: 'bg-rose-500 text-white',
+    offer: 'bg-amber-500 text-white',
+    challenge: 'bg-violet-500 text-white',
+};
+
+const SOURCE_LABEL: Record<string, string> = {
+    booking: 'R',
+    offer: 'O',
+    challenge: 'W',
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -192,10 +206,15 @@ export default function BookingsCalendar({
                                         {dayBookings.slice(0, 2).map(b => (
                                             <div
                                                 key={b.id}
-                                                className={`text-[10px] sm:text-[11px] px-1 py-0.5 rounded truncate border ${STATUS_COLORS[b.status] || STATUS_COLORS.pending}`}
+                                                className={`text-[10px] sm:text-[11px] px-1 py-0.5 rounded truncate border flex items-center gap-1 ${STATUS_COLORS[b.status] || STATUS_COLORS.pending}`}
                                                 title={`${b.client_name} \u2014 ${b.service}`}
                                             >
-                                                {b.start_time || ''} {b.client_name}
+                                                {b.source && (
+                                                    <span className={`inline-flex items-center justify-center w-3.5 h-3.5 rounded-full text-[8px] font-bold flex-shrink-0 ${SOURCE_BADGE[b.source]}`}>
+                                                        {SOURCE_LABEL[b.source]}
+                                                    </span>
+                                                )}
+                                                <span className="truncate">{b.start_time || ''} {b.client_name}</span>
                                             </div>
                                         ))}
                                         {dayBookings.length > 2 && (
