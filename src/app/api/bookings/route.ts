@@ -305,15 +305,31 @@ export async function GET(request: Request) {
             return NextResponse.json({ availability });
         }
 
-        // Default: List all bookings (Admin only)
+        // Default: List all bookings (Admin only) — z opcjonalnymi filtrami
         const authError = await requireAuth(request as any);
         if (authError) return authError;
 
+        const from = searchParams.get('from'); // ISO date YYYY-MM-DD
+        const to = searchParams.get('to');     // ISO date YYYY-MM-DD
+        const status = searchParams.get('status'); // pending|confirmed|paid|cancelled|archived
+        const photographerId = searchParams.get('photographer_id');
+
+        const where: any = { status: { not: 'archived' } };
+        if (status && status !== 'all') {
+            where.status = status;
+        }
+        if (from || to) {
+            where.date = {};
+            if (from) where.date.gte = new Date(from + 'T00:00:00.000Z');
+            if (to) where.date.lte = new Date(to + 'T23:59:59.999Z');
+        }
+        if (photographerId) {
+            where.photographer_id = parseInt(photographerId, 10);
+        }
+
         const bookings = await prisma.booking.findMany({
-            where: { status: { not: 'archived' } },
-            orderBy: {
-                created_at: "desc",
-            },
+            where,
+            orderBy: { date: 'asc' },
         });
 
         return NextResponse.json({ bookings });

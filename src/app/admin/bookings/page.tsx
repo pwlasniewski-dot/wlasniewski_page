@@ -162,7 +162,17 @@ export default function AdminBookingsPage() {
 
     return (
         <div className="max-w-7xl mx-auto">
-            <h1 className="text-3xl font-bold text-zinc-900 mb-8">Rezerwacje</h1>
+            <div className="flex items-center justify-between flex-wrap gap-2 mb-8">
+                <h1 className="text-3xl font-bold text-zinc-900">Rezerwacje</h1>
+                <div className="flex gap-2">
+                    <Link href="/admin/bookings/calendar" className="px-3 py-2 rounded-lg bg-gradient-to-r from-rose-500 to-amber-500 text-white text-sm font-semibold inline-flex items-center gap-1 shadow">
+                        <Calendar className="w-4 h-4" /> Kalendarz
+                    </Link>
+                    <Link href="/admin/photographers" className="px-3 py-2 rounded-lg bg-white border border-zinc-200 text-sm font-semibold text-zinc-700 hover:border-amber-400">
+                        Fotografowie
+                    </Link>
+                </div>
+            </div>
 
             {/* Statistics */}
             <div className="grid grid-cols-4 gap-6 mb-8">

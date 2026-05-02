@@ -142,6 +142,33 @@ const baseMetadata: Metadata = {
         canonical: 'https://wlasniewski.pl',
     },
     category: 'photography',
+    manifest: '/site.webmanifest',
+    appleWebApp: {
+        capable: true,
+        title: 'Właśniewski Foto',
+        statusBarStyle: 'black-translucent',
+    },
+    icons: {
+        icon: [
+            { url: '/favicon.ico' },
+            { url: '/favicon-192.png', sizes: '192x192', type: 'image/png' },
+            { url: '/favicon-512.png', sizes: '512x512', type: 'image/png' },
+        ],
+        apple: [
+            { url: '/favicon-192.png', sizes: '192x192', type: 'image/png' },
+        ],
+    },
+};
+
+export const viewport = {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 5,
+    viewportFit: 'cover' as const,
+    themeColor: [
+        { media: '(prefers-color-scheme: light)', color: '#fffbeb' },
+        { media: '(prefers-color-scheme: dark)', color: '#18181b' },
+    ],
 };
 
 export async function generateMetadata(): Promise<Metadata> {

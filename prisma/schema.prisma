@@ -659,6 +659,17 @@ model PhotographerProfile {
   avatar_url        String?
   logo_url          String?
   highlight_photos  String?
+
+  // Publiczny profil + sloty (admin toggles)
+  display_name             String?  @db.VarChar(80)
+  slug                     String?  @unique @db.VarChar(80)
+  is_active                Boolean  @default(false)  // widoczny gdziekolwiek publicznie
+  available_for_bookings   Boolean  @default(false)  // można go wybrać przy rezerwacji
+  available_for_foto_match Boolean  @default(false)  // pojawia się w foto-match jako fotograf
+  available_for_challenges Boolean  @default(false)  // hostuje foto-wyzwania
+  google_calendar_id       String?  @db.VarChar(120) // do sync rezerwacji
+  google_refresh_token     String?  @db.Text
+
   user              User?
 
   @@map("photographer_profiles")
