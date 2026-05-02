@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
+import { parsePolishDate, parsePolishTime } from '@/lib/calendar/polishDate';
 import { requireAuth } from '@/lib/auth/middleware';
 import { generateOfferNumber } from '@/lib/services/numbering';
 import { sendEmail } from '@/lib/email/sender';
@@ -117,6 +118,12 @@ export async function POST(request: NextRequest) {
             sections = [],
             template_data = null, // New field
             negotiation_enabled,
+            // Kanoniczne pola sesji (opcjonalne; jak nie podane — wyciągamy z template_data.eventDate)
+            session_date,
+            session_time,
+            session_duration_min,
+            session_location,
+            photographer_id,
         } = body;
 
         // ... validation ...
@@ -165,6 +172,22 @@ export async function POST(request: NextRequest) {
             });
         }
 
+        // Wyznacz session_date (priorytet: jawnie podane > template_data.eventDate)
+        let resolvedSessionDate: Date | null = null;
+        let resolvedSessionTime: string | null = session_time || null;
+        let resolvedSessionLocation: string | null = session_location || null;
+        if (session_date) {
+            resolvedSessionDate = new Date(session_date);
+            if (isNaN(resolvedSessionDate.getTime())) resolvedSessionDate = null;
+        }
+        if (!resolvedSessionDate && template_data) {
+            const td = template_data as Record<string, unknown>;
+            resolvedSessionDate = parsePolishDate((td.eventDate as string) || (td.event_date as string) || null);
+            if (!resolvedSessionTime) resolvedSessionTime = parsePolishTime((td.eventTime as string) || (td.eventHour as string) || (td.eventDate as string) || null);
+            if (!resolvedSessionLocation) resolvedSessionLocation = (td.eventLocation as string) || (td.location as string) || null;
+        }
+        const parsedPhotographerId = photographer_id ? parseInt(String(photographer_id), 10) : null;
+
         const offer = await prisma.offer.create({
             data: {
                 slug,
@@ -180,6 +203,11 @@ export async function POST(request: NextRequest) {
                 template_data: template_data,
                 total_price: totalPrice,
                 negotiation_enabled: negotiation_enabled !== false, // Default to true if not specified
+                session_date: resolvedSessionDate,
+                session_time: resolvedSessionTime,
+                session_duration_min: session_duration_min ? parseInt(String(session_duration_min), 10) || null : null,
+                session_location: resolvedSessionLocation,
+                photographer_id: parsedPhotographerId && !isNaN(parsedPhotographerId) ? parsedPhotographerId : null,
                 sections: template_data ? undefined : {
                     create: sections.map((section: any, idx: number) => ({
                         title: String(section.title || ''),

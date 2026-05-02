@@ -85,31 +85,41 @@ export async function GET(request: NextRequest) {
         });
     }
 
-    // ── 2) OFFERS (data tylko w template_data.eventDate) ─────
+    // ── 2) OFFERS (preferujemy kolumnę session_date; fallback do template_data.eventDate) ─────
     const offers = await prisma.offer.findMany({
         where: {
-            status: { in: ['sent', 'accepted', 'negotiating'] },
+            status: { in: ['sent', 'accepted', 'negotiating', 'pending'] },
             is_template: false,
         },
         select: {
             id: true, slug: true, title: true, status: true,
             total_price: true, client_email: true, template_data: true,
+            session_date: true, session_time: true, session_duration_min: true,
+            session_location: true, photographer_id: true,
             user: { select: { id: true, name: true, email: true, phone: true } },
         },
     });
     for (const o of offers) {
         const td = (o.template_data || {}) as Record<string, unknown>;
-        const eventDateStr = (td.eventDate as string) || (td.event_date as string) || null;
-        const eventTimeStr = (td.eventTime as string) || (td.event_time as string) || (td.eventHour as string) || null;
-        const venueStr = (td.eventLocation as string) || (td.location as string) || null;
-        const parsedDate = parsePolishDate(eventDateStr);
+
+        // Priorytet: kolumna DB > template_data
+        let parsedDate: Date | null = o.session_date ? new Date(o.session_date) : null;
+        let startTime: string | null = o.session_time || null;
+        let venueStr: string | null = o.session_location || null;
+
+        if (!parsedDate) {
+            const eventDateStr = (td.eventDate as string) || (td.event_date as string) || null;
+            const eventTimeStr = (td.eventTime as string) || (td.event_time as string) || (td.eventHour as string) || null;
+            parsedDate = parsePolishDate(eventDateStr);
+            if (parsedDate && !startTime) startTime = parsePolishTime(eventTimeStr) || parsePolishTime(eventDateStr);
+            if (!venueStr) venueStr = (td.eventLocation as string) || (td.location as string) || null;
+        }
         if (!parsedDate) continue;
 
         // filtr from/to
         if (dateFilter.gte && parsedDate < dateFilter.gte) continue;
         if (dateFilter.lte && parsedDate > dateFilter.lte) continue;
 
-        const startTime = parsePolishTime(eventTimeStr) || parsePolishTime(eventDateStr);
         const clientName = o.user?.name || (td.clientName as string) || o.client_email || 'Klient';
 
         events.push({
@@ -127,7 +137,7 @@ export async function GET(request: NextRequest) {
             price: o.total_price || null,
             venue: venueStr,
             notes: null,
-            photographer_id: null,
+            photographer_id: o.photographer_id,
             detail_url: `/admin/offers/${o.id}`,
         });
     }

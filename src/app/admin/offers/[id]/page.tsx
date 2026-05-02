@@ -122,6 +122,17 @@ export default function EditOfferPage({ params }: { params: Promise<{ id: string
         title: offer.title,
     };
 
+    // Pre-fill kanonicznych pól sesji z kolumn DB (jeśli były zbackfillowane lub ustawione wcześniej)
+    if (offer.session_date && !initialBuilderData.sessionDateIso) {
+        initialBuilderData.sessionDateIso = new Date(offer.session_date).toISOString().slice(0, 10);
+    }
+    if (offer.session_time && !initialBuilderData.sessionTime) {
+        initialBuilderData.sessionTime = offer.session_time;
+    }
+    if (offer.session_duration_min && !initialBuilderData.sessionDurationMin) {
+        initialBuilderData.sessionDurationMin = offer.session_duration_min;
+    }
+
     const handleAcceptForClient = async () => {
         const finalPrice = isCommunion ? calculatedTotal : manualPrice;
         if (isCommunion && totalChildren === 0) {

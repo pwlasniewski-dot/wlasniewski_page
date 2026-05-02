@@ -26,6 +26,12 @@ interface OfferData {
     eventDate: string;
     eventCount: string;
     eventTeam: string;
+    /** Kanoniczna data sesji (YYYY-MM-DD) — synchronizowana z kalendarzem */
+    sessionDateIso?: string;
+    /** Godzina sesji "HH:MM" — synchronizowana z kalendarzem */
+    sessionTime?: string;
+    /** Czas trwania sesji w minutach (opcjonalny) */
+    sessionDurationMin?: number;
 
     preparations: {
         before: string;
@@ -373,6 +379,11 @@ export default function OfferBuilder({ offerId, initialData, onSave, saveButtonT
                     client_email: data.contactEmail, // Sync email to top level
                     negotiation_enabled: data.negotiation_enabled,
                     category: data.category,
+                    // Kanoniczne pola sesji (spinają się z kalendarzem)
+                    session_date: data.sessionDateIso || null,
+                    session_time: data.sessionTime || null,
+                    session_duration_min: data.sessionDurationMin || null,
+                    session_location: data.eventLocation || null,
                     template_data: data // Wrap the A4 builder state
                 })
             });
@@ -1041,6 +1052,29 @@ export default function OfferBuilder({ offerId, initialData, onSave, saveButtonT
                         <div className="grid grid-cols-2 gap-2 mb-2">
                             <Input label="" value={data.labels.date} onChange={v => updateNested('labels', 'date', v)} />
                             <Input label="" value={data.eventDate} onChange={v => update('eventDate', v)} />
+                        </div>
+                        {/* Kanoniczna data sesji - spina sie z kalendarzem (/admin/bookings/calendar) */}
+                        <div className="bg-amber-50 border border-amber-200 rounded-lg p-2 mb-2">
+                            <div className="text-[10px] uppercase font-bold text-amber-700 mb-1.5">
+                                Data sesji (kalendarz)
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                                <input
+                                    type="date"
+                                    value={data.sessionDateIso || ''}
+                                    onChange={e => update('sessionDateIso', e.target.value)}
+                                    className="w-full px-2 py-1.5 border border-amber-300 rounded text-sm focus:ring-2 focus:ring-amber-400 focus:outline-none"
+                                />
+                                <input
+                                    type="time"
+                                    value={data.sessionTime || ''}
+                                    onChange={e => update('sessionTime', e.target.value)}
+                                    className="w-full px-2 py-1.5 border border-amber-300 rounded text-sm focus:ring-2 focus:ring-amber-400 focus:outline-none"
+                                />
+                            </div>
+                            <div className="text-[10px] text-amber-800 mt-1">
+                                Wypelnij zeby sesja pokazala sie w kalendarzu admina/fotografa. Pole &quot;Data&quot; powyzej sluzy tylko do wyswietlenia w PDF.
+                            </div>
                         </div>
                         <div className="grid grid-cols-2 gap-2 mb-2">
                             <Input label="" value={data.labels.count} onChange={v => updateNested('labels', 'count', v)} />

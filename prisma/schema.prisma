@@ -535,6 +535,7 @@ model User {
   orders                  GiftCardOrder[]
   gift_cards              GiftCard[]              @relation("UserGiftCards")
   offers                  Offer[]
+  assigned_offers         Offer[]                 @relation("OfferPhotographer")
   packages                Package[]
   payouts                 payouts[]
   provider_availability   provider_availability[]
@@ -579,11 +580,19 @@ model Offer {
   selected_addons     Json?          @default("[]")
   negotiation_enabled Boolean        @default(true)
   client_note         String? // Notatka klienta widoczna dla fotografa
+  // Data sesji (kanoniczna, indeksowana — uzupełnia/zastępuje template_data.eventDate)
+  session_date         DateTime?
+  session_time         String?       // "HH:MM"
+  session_duration_min Int?
+  session_location     String?
+  photographer_id      Int?
+  photographer         User?         @relation("OfferPhotographer", fields: [photographer_id], references: [id], onDelete: SetNull)
   contract            Contract?
   negotiations        Negotiation[]
   sections            OfferSection[]
   user                User?          @relation(fields: [client_id], references: [id])
 
+  @@index([session_date])
   @@map("offers")
 }
 
