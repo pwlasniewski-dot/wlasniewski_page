@@ -532,6 +532,7 @@ model User {
   client_galleries        ClientGallery[]         @relation("ClientGalleries")
   assigned_galleries      ClientGallery[]         @relation("PhotographerGalleries")
   contracts               Contract[]
+  assigned_contracts      Contract[]              @relation("ContractPhotographer")
   orders                  GiftCardOrder[]
   gift_cards              GiftCard[]              @relation("UserGiftCards")
   offers                  Offer[]
@@ -633,11 +634,18 @@ model Contract {
   signed_pdf_url  String? // URL do podpisanego skanu wgranego przez klienta
   drive_url       String?
   client_note     String? // Notatka klienta widoczna dla fotografa
+  // Data sesji (dla kontraktów standalone, bez powiązanej oferty)
+  session_date    DateTime?
+  session_time    String?
+  session_location String?
+  photographer_id  Int?
+  photographer    User?     @relation("ContractPhotographer", fields: [photographer_id], references: [id], onDelete: SetNull)
   updated_at      DateTime  @default(now()) @updatedAt
   created_at      DateTime  @default(now())
   user            User?     @relation(fields: [client_id], references: [id])
   offer           Offer?    @relation(fields: [offer_id], references: [id])
 
+  @@index([session_date])
   @@map("contracts")
 }
 

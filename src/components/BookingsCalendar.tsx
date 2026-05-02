@@ -15,7 +15,7 @@ export type CalendarBooking = {
     venue_place?: string | null;
     status: string;
     photographer_id?: number | null;
-    source?: 'booking' | 'offer' | 'challenge';
+    source?: 'booking' | 'offer' | 'challenge' | 'contract';
     detail_url?: string;
 };
 
@@ -31,12 +31,14 @@ const SOURCE_BADGE: Record<string, string> = {
     booking: 'bg-rose-500 text-white',
     offer: 'bg-amber-500 text-white',
     challenge: 'bg-violet-500 text-white',
+    contract: 'bg-emerald-600 text-white',
 };
 
 const SOURCE_LABEL: Record<string, string> = {
     booking: 'R',
     offer: 'O',
     challenge: 'W',
+    contract: 'U',
 };
 
 const STATUS_LABELS: Record<string, string> = {

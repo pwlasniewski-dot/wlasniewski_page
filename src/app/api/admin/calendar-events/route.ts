@@ -17,7 +17,7 @@ export const dynamic = 'force-dynamic';
 
 type CalendarEvent = {
     id: string;
-    source: 'booking' | 'offer' | 'challenge';
+    source: 'booking' | 'offer' | 'challenge' | 'contract';
     source_id: number;
     date: string;            // ISO date YYYY-MM-DD
     start_time: string | null;
@@ -187,6 +187,47 @@ export async function GET(request: NextRequest) {
         console.warn('[calendar-events] Challenges skipped:', (e as Error).message);
     }
 
+    // ── 4) CONTRACTS (zwłaszcza standalone bez offer_id) ─────────
+    try {
+        const contracts = await prisma.contract.findMany({
+            where: {
+                session_date: from || to ? dateFilter : { not: null },
+            },
+            select: {
+                id: true, contract_number: true, status: true,
+                session_date: true, session_time: true, session_location: true,
+                offer_id: true, photographer_id: true,
+                user: { select: { id: true, name: true, email: true, phone: true } },
+                offer: { select: { title: true, total_price: true } },
+            },
+        });
+        for (const c of contracts) {
+            if (!c.session_date) continue;
+            // jesli jest offer_id i ofertę juz mamy w events -- pomijamy zeby nie dublowac
+            if (c.offer_id && events.find(e => e.source === 'offer' && e.source_id === c.offer_id)) continue;
+            events.push({
+                id: `contract-${c.id}`,
+                source: 'contract',
+                source_id: c.id,
+                date: c.session_date.toISOString().slice(0, 10),
+                start_time: c.session_time || null,
+                end_time: null,
+                title: c.offer?.title || `Umowa ${c.contract_number || c.id}`,
+                client_name: c.user?.name || c.user?.email || 'Klient',
+                email: c.user?.email || null,
+                phone: c.user?.phone || null,
+                status: c.status === 'signed' ? 'confirmed' : 'pending',
+                price: c.offer?.total_price || null,
+                venue: c.session_location || null,
+                notes: c.contract_number,
+                photographer_id: c.photographer_id,
+                detail_url: `/admin/umowy/${c.id}`,
+            });
+        }
+    } catch (e) {
+        console.warn('[calendar-events] Contracts skipped:', (e as Error).message);
+    }
+
     events.sort((a, b) => a.date.localeCompare(b.date) || (a.start_time || '').localeCompare(b.start_time || ''));
 
     return NextResponse.json({
@@ -195,6 +236,7 @@ export async function GET(request: NextRequest) {
             bookings: events.filter(e => e.source === 'booking').length,
             offers: events.filter(e => e.source === 'offer').length,
             challenges: events.filter(e => e.source === 'challenge').length,
+            contracts: events.filter(e => e.source === 'contract').length,
             total: events.length,
         },
     });

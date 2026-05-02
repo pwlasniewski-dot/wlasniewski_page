@@ -51,7 +51,7 @@ export default function AdminCalendarPage() {
             const pData = await pRes.json();
             // Mapuj events na CalendarBooking shape (kalendarz oczekuje service/package zamiast title)
             type RawEvent = {
-                id: string; source: 'booking' | 'offer' | 'challenge'; source_id: number;
+                id: string; source: 'booking' | 'offer' | 'challenge' | 'contract'; source_id: number;
                 date: string; start_time: string | null; end_time: string | null;
                 title: string; client_name: string;
                 venue: string | null; status: string;
@@ -211,6 +211,7 @@ function BookingDetailModal({
         booking: { label: 'Rezerwacja', color: 'bg-rose-100 text-rose-800' },
         offer: { label: 'Oferta handlowa', color: 'bg-amber-100 text-amber-800' },
         challenge: { label: 'Foto-wyzwanie', color: 'bg-violet-100 text-violet-800' },
+        contract: { label: 'Umowa', color: 'bg-emerald-100 text-emerald-800' },
     };
     const srcInfo = sourceLabels[booking.source || 'booking'];
     const isBooking = !booking.source || booking.source === 'booking';

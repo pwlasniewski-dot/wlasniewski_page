@@ -1360,9 +1360,9 @@ function ClientDetailsContent({ id }: { id: string }) {
                                             )}
                                         </div>
                                         <div className="flex gap-2">
-                                            {/* View contract link */}
+                                            {/* View contract link (admin) */}
                                             <a
-                                                href={`/strefa-klienta/umowy/${contract.id}`}
+                                                href={`/admin/umowy/${contract.id}`}
                                                 target="_blank"
                                                 className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white rounded-lg text-sm border border-zinc-700 transition-all font-semibold"
                                             >
