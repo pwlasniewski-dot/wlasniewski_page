@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Compass, Heart, MessageCircle, User as UserIcon, Sparkles } from 'lucide-react';
+import { Compass, MessageCircle, User as UserIcon, Sparkles } from 'lucide-react';
 
 /**
  * Sticky bottom nav dla zalogowanych użytkowników Foto-Match.
@@ -11,7 +11,7 @@ import { Compass, Heart, MessageCircle, User as UserIcon, Sparkles } from 'lucid
 const ITEMS = [
     { href: '/foto-match', label: 'Start', icon: Sparkles, match: (p: string) => p === '/foto-match' },
     { href: '/foto-match/odkryj', label: 'Odkryj', icon: Compass, match: (p: string) => p.startsWith('/foto-match/odkryj') || p.startsWith('/foto-match/u/') },
-    { href: '/foto-match/odkryj?tab=matches', label: 'Matche', icon: Heart, match: (p: string) => p.includes('matches') },
+    { href: '/foto-match/wiadomosci', label: 'Wiadomości', icon: MessageCircle, match: (p: string) => p.startsWith('/foto-match/wiadomosci') },
     { href: '/foto-match/profil', label: 'Profil', icon: UserIcon, match: (p: string) => p.startsWith('/foto-match/profil') },
 ];
 

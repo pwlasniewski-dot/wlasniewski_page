@@ -249,9 +249,12 @@ export default function ProfilePublicView({ id }: { id: string }) {
                             <Ban className="w-4 h-4 text-red-400" />
                         </button>
                         {relation?.is_match ? (
-                            <div className="bg-gradient-to-r from-rose-500/90 to-amber-500/90 text-white px-6 py-4 rounded-2xl font-bold shadow-xl">
-                                💖 Macie match!
-                            </div>
+                            <Link
+                                href={`/foto-match/wiadomosci/${profile.id}`}
+                                className="bg-gradient-to-r from-rose-500 to-amber-500 text-white px-6 py-4 rounded-2xl font-bold shadow-xl hover:scale-[1.03] transition-transform inline-flex items-center gap-2"
+                            >
+                                💬 Napisz wiadomość
+                            </Link>
                         ) : (
                             <>
                                 <button

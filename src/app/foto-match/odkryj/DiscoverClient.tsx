@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { MapPin, Heart, ShieldCheck, Camera, X } from 'lucide-react';
 
 interface Candidate {
@@ -23,7 +24,7 @@ export default function DiscoverClient() {
     const [error, setError] = useState<string | null>(null);
     const [candidates, setCandidates] = useState<Candidate[]>([]);
     const [actionId, setActionId] = useState<number | null>(null);
-    const [matchToast, setMatchToast] = useState<string | null>(null);
+    const [matchToast, setMatchToast] = useState<{ name: string; partnerId: number } | null>(null);
 
     function getToken() {
         return typeof window !== 'undefined'
@@ -42,12 +43,19 @@ export default function DiscoverClient() {
             });
             const d = await r.json();
             if (!r.ok) {
-                setError(d.error || 'Błąd akcji');
+                const errMap: Record<string, string> = {
+                    BLOCKED: 'Ta osoba jest niedostępna',
+                    TARGET_NOT_AVAILABLE: 'Profil chwilowo niedostępny',
+                    RATE_LIMITED: 'Zbyt wiele akcji — poczekaj chwilę',
+                    NO_TOKEN: 'Sesja wygasła — zaloguj się ponownie',
+                    PROFILE_NOT_ACTIVE: 'Twój profil czeka na weryfikację',
+                };
+                setError(errMap[d.error] || d.error || 'Błąd akcji');
                 return;
             }
             if (d.is_match) {
-                setMatchToast(`💖 To match z ${d.target?.display_name || name}!`);
-                setTimeout(() => setMatchToast(null), 4000);
+                setMatchToast({ name: d.target?.display_name || name, partnerId: targetId });
+                setTimeout(() => setMatchToast(null), 8000);
             }
             // Niezależnie od wyniku usuwamy kandydata z listy.
             setCandidates(prev => prev.filter(c => c.id !== targetId));
@@ -108,8 +116,14 @@ export default function DiscoverClient() {
     return (
         <main className="min-h-screen bg-gradient-to-br from-pink-500 via-purple-600 to-indigo-700 text-white">
             {matchToast && (
-                <div className="fixed top-20 left-1/2 -translate-x-1/2 bg-gradient-to-r from-rose-500 to-amber-500 text-white px-6 py-3 rounded-full font-bold shadow-2xl z-50 animate-bounce">
-                    {matchToast}
+                <div className="fixed top-20 left-1/2 -translate-x-1/2 bg-gradient-to-r from-rose-500 to-amber-500 text-white px-6 py-4 rounded-2xl font-bold shadow-2xl z-50 flex items-center gap-3">
+                    <span>💖 To match z {matchToast.name}!</span>
+                    <Link
+                        href={`/foto-match/wiadomosci/${matchToast.partnerId}`}
+                        className="bg-white text-rose-600 px-3 py-1.5 rounded-full text-sm hover:scale-105 transition-transform"
+                    >
+                        Napisz →
+                    </Link>
                 </div>
             )}
             <div className="max-w-6xl mx-auto px-6 py-12">
