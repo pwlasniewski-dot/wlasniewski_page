@@ -99,6 +99,23 @@ export default function RezerwacjaPage() {
     // Payment
     const [submitting, setSubmitting] = useState(false);
 
+    // Pre-selected photographer (z URL ?photographer=ID)
+    const [preselectedPhotographer, setPreselectedPhotographer] = useState<{ id: number; name: string } | null>(null);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const sp = new URLSearchParams(window.location.search);
+        const pid = sp.get('photographer');
+        if (!pid || !/^\d+$/.test(pid)) return;
+        fetch(`/api/photographers/public?purpose=bookings`)
+            .then(r => r.ok ? r.json() : null)
+            .then(data => {
+                const found = data?.items?.find((p: { id: number }) => p.id === parseInt(pid, 10));
+                if (found) setPreselectedPhotographer({ id: found.id, name: found.display_name });
+            })
+            .catch(() => {});
+    }, []);
+
     // Load service types on mount
     useEffect(() => {
         const loadServices = async () => {
@@ -372,6 +389,8 @@ export default function RezerwacjaPage() {
             notes: notes || null,
             promo_code: discount ? discount.code : null,
             gift_card_code: giftCard ? giftCard.code : null,
+            photographer_id: preselectedPhotographer?.id ?? null,
+            photographer_name: preselectedPhotographer?.name ?? null,
         };
 
         // Event snippet for Prośba o wycenę conversion page
@@ -492,6 +511,29 @@ export default function RezerwacjaPage() {
                     </motion.section>
 
                     <form onSubmit={handleSubmit} className="space-y-8">
+                        {preselectedPhotographer && (
+                            <motion.div
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="bg-gradient-to-r from-rose-500/20 to-amber-500/20 border border-rose-400/40 rounded-2xl p-4 flex items-center gap-3"
+                            >
+                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-rose-500 to-amber-500 flex items-center justify-center text-white font-bold">
+                                    {preselectedPhotographer.name.charAt(0).toUpperCase()}
+                                </div>
+                                <div className="flex-1">
+                                    <p className="text-white font-bold">Wybrany fotograf: {preselectedPhotographer.name}</p>
+                                    <p className="text-zinc-300 text-xs">Zostanie przypisany do tej rezerwacji.</p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setPreselectedPhotographer(null)}
+                                    className="text-zinc-300 hover:text-white text-xs underline"
+                                >
+                                    Zmień
+                                </button>
+                            </motion.div>
+                        )}
+
                         {/* Step 1: Service Selection */}
                         <motion.section
                             initial={{ opacity: 0, y: 20 }}

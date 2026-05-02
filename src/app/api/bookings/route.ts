@@ -36,6 +36,7 @@ export async function POST(request: Request) {
             promo_code,
             gift_card_code,
             fm_voucher_code,
+            photographer_id,
             payment_plan: requestedPaymentPlan,
             originalPrice
         } = body;
@@ -115,6 +116,7 @@ export async function POST(request: Request) {
                 deposit_amount: depositAmount,
                 remaining_amount: remainingAmount,
                 remaining_due_at: remainingDueAt,
+                photographer_id: photographer_id ? Number(photographer_id) : null,
             },
         });
 

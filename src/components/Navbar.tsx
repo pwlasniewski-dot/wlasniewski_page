@@ -19,10 +19,11 @@ interface MenuItem {
 const MENU_ITEMS: MenuItem[] = [
     { id: 1, label: 'Start', href: '/' },
     { id: 2, label: 'Portfolio', href: '/portfolio' },
-    { id: 3, label: 'O mnie', href: '/o-mnie' },
-    { id: 4, label: 'Blog', href: '/blog' },
-    { id: 5, label: 'Kontakt', href: '/kontakt' },
-    { id: 6, label: 'Rezerwacja', href: '/rezerwacja' },
+    { id: 3, label: 'Fotografowie', href: '/fotografowie' },
+    { id: 4, label: 'O mnie', href: '/o-mnie' },
+    { id: 5, label: 'Blog', href: '/blog' },
+    { id: 6, label: 'Kontakt', href: '/kontakt' },
+    { id: 7, label: 'Rezerwacja', href: '/rezerwacja' },
 ];
 
 const B2B_MENU_ITEMS: MenuItem[] = [

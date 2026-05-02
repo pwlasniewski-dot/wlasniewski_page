@@ -93,9 +93,9 @@ export default async function PublicPhotographerPage(
 
                 {/* Action cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    {profile.available_for_bookings && (
+                    {profile.available_for_bookings && profile.user && (
                         <Link
-                            href={`/rezerwacja?photographer=${profile.id}`}
+                            href={`/rezerwacja?photographer=${profile.user.id}`}
                             className="group bg-white rounded-2xl border border-zinc-200 p-5 hover:border-rose-400 hover:shadow-md transition shadow-sm"
                         >
                             <Calendar className="w-8 h-8 text-rose-500 mb-2" />
@@ -103,9 +103,9 @@ export default async function PublicPhotographerPage(
                             <p className="text-sm text-zinc-500 mt-1">Wybierz pakiet i termin</p>
                         </Link>
                     )}
-                    {profile.available_for_foto_match && (
+                    {profile.available_for_foto_match && profile.user && (
                         <Link
-                            href={`/foto-match?photographer=${profile.id}`}
+                            href={`/foto-match?photographer=${profile.user.id}`}
                             className="group bg-white rounded-2xl border border-zinc-200 p-5 hover:border-rose-400 hover:shadow-md transition shadow-sm"
                         >
                             <Heart className="w-8 h-8 text-rose-500 mb-2" />
@@ -113,9 +113,9 @@ export default async function PublicPhotographerPage(
                             <p className="text-sm text-zinc-500 mt-1">Wspólna sesja na 4 ręce</p>
                         </Link>
                     )}
-                    {profile.available_for_challenges && (
+                    {profile.available_for_challenges && profile.user && (
                         <Link
-                            href={`/foto-wyzwania?photographer=${profile.id}`}
+                            href={`/foto-wyzwania?photographer=${profile.user.id}`}
                             className="group bg-white rounded-2xl border border-zinc-200 p-5 hover:border-amber-400 hover:shadow-md transition shadow-sm"
                         >
                             <Trophy className="w-8 h-8 text-amber-500 mb-2" />

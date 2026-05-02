@@ -19,20 +19,23 @@ export async function GET(request: NextRequest) {
         orderBy: { rating: 'desc' },
     });
 
-    const items = profiles.map(p => ({
-        id: p.id,
-        slug: p.slug,
-        display_name: p.display_name || p.user?.name || 'Fotograf',
-        city: p.user?.city || null,
-        bio: p.bio,
-        specialties: p.specialties,
-        experience_years: p.experience_years,
-        rating: p.rating,
-        avatar_url: p.avatar_url,
-        available_for_bookings: p.available_for_bookings,
-        available_for_foto_match: p.available_for_foto_match,
-        available_for_challenges: p.available_for_challenges,
-    }));
+    const items = profiles
+        .filter(p => p.user) // bez przypisanego usera nie da się zarezerwować
+        .map(p => ({
+            id: p.user!.id, // user.id (booking.photographer_id wskazuje na User)
+            profile_id: p.id,
+            slug: p.slug,
+            display_name: p.display_name || p.user?.name || 'Fotograf',
+            city: p.user?.city || null,
+            bio: p.bio,
+            specialties: p.specialties,
+            experience_years: p.experience_years,
+            rating: p.rating,
+            avatar_url: p.avatar_url,
+            available_for_bookings: p.available_for_bookings,
+            available_for_foto_match: p.available_for_foto_match,
+            available_for_challenges: p.available_for_challenges,
+        }));
 
     return NextResponse.json({ items });
 }
