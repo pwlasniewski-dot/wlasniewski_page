@@ -55,6 +55,7 @@ import { headers } from "next/headers";
 import { AnalyticsTracker } from "@/hooks/useAnalytics";
 import AnalyticsLoader from "@/components/AnalyticsLoader";
 import DeferredClientChrome from "@/components/DeferredClientChrome";
+import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 import { isB2BContext } from "@/lib/context";
 
 const cormorant = Cormorant_Garamond({
@@ -315,6 +316,7 @@ export default async function RootLayout({
                     {children}
                 </AppShell>
                 <DeferredClientChrome />
+                <ServiceWorkerRegister />
             </body>
         </html>
     );
