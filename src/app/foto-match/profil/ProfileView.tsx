@@ -138,6 +138,18 @@ export default function ProfileView() {
                             <Sparkles className="w-4 h-4" /> Odkryj profile
                         </Link>
                         <Link
+                            href="/foto-match/lajki"
+                            className="inline-flex items-center gap-2 rounded-lg border border-rose-500/40 bg-rose-500/10 hover:bg-rose-500/20 px-5 py-2.5 font-semibold text-sm transition text-rose-200"
+                        >
+                            <Heart className="w-4 h-4" /> Twoje polubienia
+                        </Link>
+                        <Link
+                            href="/foto-match/wiadomosci"
+                            className="inline-flex items-center gap-2 rounded-lg border border-zinc-700 hover:border-amber-400 px-5 py-2.5 font-semibold text-sm transition"
+                        >
+                            💬 Wiadomości
+                        </Link>
+                        <Link
                             href="/foto-match/zapros"
                             className="inline-flex items-center gap-2 rounded-lg border border-zinc-700 hover:border-amber-400 px-5 py-2.5 font-semibold text-sm transition"
                         >

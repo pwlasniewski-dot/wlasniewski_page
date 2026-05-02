@@ -154,5 +154,27 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ ok: true, likes: incoming.map(s => ({ ...s.from_profile, swiped_at: s.created_at, action: s.action })) });
     }
 
-    return NextResponse.json({ error: 'INVALID_TYPE', allowed: ['matches', 'likes_received'] }, { status: 400 });
+    if (type === 'likes_sent') {
+        // Kogo ja polubiłem, ale jeszcze nie odwzajemnił (brak match).
+        const outgoing = await prisma.fotoMatchSwipe.findMany({
+            where: {
+                from_profile_id: profile.id,
+                action: { in: ['LIKE', 'SUPER_LIKE'] },
+                is_match: false,
+            },
+            orderBy: { created_at: 'desc' },
+            take: 100,
+            include: {
+                to_profile: {
+                    select: {
+                        id: true, display_name: true, city: true, birth_year: true,
+                        photos: { where: { ai_status: { in: ['APPROVED', 'PENDING'] } }, orderBy: { id: 'asc' }, take: 1, select: { url: true } },
+                    },
+                },
+            },
+        });
+        return NextResponse.json({ ok: true, likes: outgoing.map(s => ({ ...s.to_profile, swiped_at: s.created_at, action: s.action })) });
+    }
+
+    return NextResponse.json({ error: 'INVALID_TYPE', allowed: ['matches', 'likes_received', 'likes_sent'] }, { status: 400 });
 }

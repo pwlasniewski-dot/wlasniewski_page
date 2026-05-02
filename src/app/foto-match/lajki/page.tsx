@@ -1,16 +1,16 @@
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
-import MessagesListClient from './MessagesListClient';
+import LikesClient from './LikesClient';
 
 export const metadata: Metadata = {
-    title: 'Wiadomości — Foto-Match',
+    title: 'Twoje polubienia — Foto-Match',
     robots: { index: false, follow: false },
 };
 
-export default function MessagesPage() {
+export default function LikesPage() {
     return (
         <Suspense fallback={null}>
-            <MessagesListClient />
+            <LikesClient />
         </Suspense>
     );
 }

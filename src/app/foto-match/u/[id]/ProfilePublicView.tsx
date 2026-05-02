@@ -128,14 +128,19 @@ export default function ProfilePublicView({ id }: { id: string }) {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-zinc-950 to-black text-white pb-32">
+        <div className="min-h-screen bg-gradient-to-b from-zinc-950 to-black text-white pb-28">
             {matchToast && (
-                <div className="fixed top-20 left-1/2 -translate-x-1/2 bg-gradient-to-r from-rose-500 to-amber-500 text-white px-6 py-3 rounded-full font-bold shadow-2xl z-50 animate-bounce">
-                    💖 {matchToast}
+                <div className="fixed top-20 left-1/2 -translate-x-1/2 bg-gradient-to-r from-rose-500 to-amber-500 text-white px-6 py-4 rounded-2xl font-bold shadow-2xl z-50 flex items-center gap-3">
+                    <span>💖 {matchToast}</span>
+                    {relation?.is_match && (
+                        <Link href={`/foto-match/wiadomosci/${profile.id}`} className="bg-white text-rose-600 px-3 py-1.5 rounded-full text-sm hover:scale-105 transition-transform">
+                            Napisz →
+                        </Link>
+                    )}
                 </div>
             )}
 
-            <div className="max-w-3xl mx-auto px-4 pt-8">
+            <div className="max-w-3xl mx-auto px-4 pt-6">
                 <Link href="/foto-match/odkryj" className="text-zinc-400 hover:text-white inline-flex items-center gap-1 text-sm mb-4">
                     <ArrowLeft className="w-4 h-4" /> Lista kandydatów
                 </Link>
@@ -176,6 +181,60 @@ export default function ProfilePublicView({ id }: { id: string }) {
                         <div className="aspect-[3/4] flex items-center justify-center text-zinc-600">Brak zdjęć</div>
                     )}
                 </div>
+
+                {/* Pasek akcji \u2014 PROMINENT, zaraz pod galeri\u0105 */}
+                {!relation?.is_self && (
+                    <div className="mt-5">
+                        {relation?.is_match ? (
+                            <Link
+                                href={`/foto-match/wiadomosci/${profile.id}`}
+                                className="block w-full bg-gradient-to-r from-rose-500 to-amber-500 hover:scale-[1.01] text-white text-center px-6 py-5 rounded-2xl font-bold text-lg shadow-2xl transition-transform"
+                            >
+                                💬 Napisz wiadomość
+                            </Link>
+                        ) : relation?.i_liked ? (
+                            <div className="w-full bg-zinc-900/80 border border-amber-500/40 rounded-2xl px-6 py-5 text-center">
+                                <p className="text-amber-300 font-semibold">✓ Polubiono — czekamy aż ona też kliknie ❤️</p>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-3 gap-3">
+                                <button
+                                    disabled={actionLoading}
+                                    onClick={() => swipe('SKIP')}
+                                    className="flex flex-col items-center justify-center gap-1.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 rounded-2xl py-5 shadow-lg disabled:opacity-50 transition"
+                                >
+                                    <X className="w-7 h-7 text-zinc-300" />
+                                    <span className="text-sm font-semibold text-zinc-300">Pomiń</span>
+                                </button>
+                                <button
+                                    disabled={actionLoading}
+                                    onClick={() => swipe('SUPER_LIKE')}
+                                    className="flex flex-col items-center justify-center gap-1.5 bg-gradient-to-br from-blue-500 to-cyan-400 hover:scale-[1.03] rounded-2xl py-5 shadow-lg disabled:opacity-50 transition-transform"
+                                >
+                                    <Star className="w-7 h-7 text-white fill-white" />
+                                    <span className="text-sm font-bold text-white">Super</span>
+                                </button>
+                                <button
+                                    disabled={actionLoading}
+                                    onClick={() => swipe('LIKE')}
+                                    className="flex flex-col items-center justify-center gap-1.5 bg-gradient-to-br from-rose-500 to-amber-500 hover:scale-[1.03] rounded-2xl py-5 shadow-lg disabled:opacity-50 transition-transform"
+                                >
+                                    <Heart className="w-7 h-7 text-white" />
+                                    <span className="text-sm font-bold text-white">Polub</span>
+                                </button>
+                            </div>
+                        )}
+                        <div className="flex items-center justify-center gap-3 mt-3 text-xs">
+                            <button onClick={reportProfile} className="text-zinc-500 hover:text-amber-400 inline-flex items-center gap-1">
+                                <Flag className="w-3 h-3" /> Zgłoś
+                            </button>
+                            <span className="text-zinc-700">·</span>
+                            <button onClick={blockProfile} className="text-zinc-500 hover:text-red-400 inline-flex items-center gap-1">
+                                <Ban className="w-3 h-3" /> Zablokuj
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 {/* Info */}
                 <div className="mt-6 space-y-4">
@@ -229,63 +288,6 @@ export default function ProfilePublicView({ id }: { id: string }) {
                     )}
                 </div>
             </div>
-
-            {/* Pasek akcji (sticky bottom) */}
-            {!relation?.is_self && (
-                <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent pt-8 pb-6 px-4 z-40">
-                    <div className="max-w-3xl mx-auto flex items-center justify-center gap-4">
-                        <button
-                            onClick={reportProfile}
-                            className="w-12 h-12 rounded-full bg-zinc-900 hover:bg-zinc-800 flex items-center justify-center border border-zinc-800"
-                            title="Zgłoś profil"
-                        >
-                            <Flag className="w-4 h-4 text-amber-400" />
-                        </button>
-                        <button
-                            onClick={blockProfile}
-                            className="w-12 h-12 rounded-full bg-zinc-900 hover:bg-zinc-800 flex items-center justify-center border border-zinc-800"
-                            title="Zablokuj"
-                        >
-                            <Ban className="w-4 h-4 text-red-400" />
-                        </button>
-                        {relation?.is_match ? (
-                            <Link
-                                href={`/foto-match/wiadomosci/${profile.id}`}
-                                className="bg-gradient-to-r from-rose-500 to-amber-500 text-white px-6 py-4 rounded-2xl font-bold shadow-xl hover:scale-[1.03] transition-transform inline-flex items-center gap-2"
-                            >
-                                💬 Napisz wiadomość
-                            </Link>
-                        ) : (
-                            <>
-                                <button
-                                    disabled={actionLoading}
-                                    onClick={() => swipe('SKIP')}
-                                    className="w-16 h-16 rounded-full bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center shadow-xl border border-zinc-700 disabled:opacity-50"
-                                    title="Pomiń"
-                                >
-                                    <X className="w-7 h-7 text-zinc-300" />
-                                </button>
-                                <button
-                                    disabled={actionLoading}
-                                    onClick={() => swipe('SUPER_LIKE')}
-                                    className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-cyan-400 hover:scale-105 flex items-center justify-center shadow-xl disabled:opacity-50 transition-transform"
-                                    title="Super-like"
-                                >
-                                    <Star className="w-6 h-6 text-white fill-white" />
-                                </button>
-                                <button
-                                    disabled={actionLoading || relation?.i_liked}
-                                    onClick={() => swipe('LIKE')}
-                                    className="w-16 h-16 rounded-full bg-gradient-to-br from-rose-500 to-amber-500 hover:scale-105 flex items-center justify-center shadow-xl disabled:opacity-50 transition-transform"
-                                    title={relation?.i_liked ? 'Już polubiono' : 'Polub'}
-                                >
-                                    <Heart className={`w-7 h-7 text-white ${relation?.i_liked ? 'fill-white' : ''}`} />
-                                </button>
-                            </>
-                        )}
-                    </div>
-                </div>
-            )}
         </div>
     );
 }
