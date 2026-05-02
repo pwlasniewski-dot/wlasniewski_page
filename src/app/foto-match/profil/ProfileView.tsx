@@ -96,37 +96,38 @@ export default function ProfileView() {
     const isSuspended = profile.status === 'SUSPENDED';
 
     return (
+        <div className="min-h-screen bg-gradient-to-b from-amber-50 via-white to-rose-50 text-zinc-900">
         <div className="max-w-4xl mx-auto px-4 py-12">
             <Link
                 href="/foto-match"
-                className="inline-flex items-center gap-1 text-sm text-zinc-400 hover:text-amber-400 mb-4 transition"
+                className="inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-900 mb-4 transition"
             >
                 ← Wróć do Foto-Match
             </Link>
-            <div className="flex items-center gap-2 mb-2 text-sm text-amber-300">
+            <div className="flex items-center gap-2 mb-2 text-sm text-amber-700">
                 <Sparkles className="w-4 h-4" /> Mój profil Foto-Match
             </div>
 
             {/* Status banner */}
             {isPending && (
-                <div className="mb-6 rounded-xl bg-amber-500/10 border border-amber-500/30 p-4 flex gap-3 items-start">
-                    <Clock className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                <div className="mb-6 rounded-xl bg-amber-50 border border-amber-200 p-4 flex gap-3 items-start">
+                    <Clock className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
                     <div>
-                        <p className="font-semibold text-amber-200 mb-1">Profil oczekuje na akceptację</p>
-                        <p className="text-sm text-zinc-300">
+                        <p className="font-semibold text-amber-800 mb-1">Profil oczekuje na akceptację</p>
+                        <p className="text-sm text-zinc-700">
                             Administrator weryfikuje Twoje zdjęcia i dokumenty. Damy znać mailem (zwykle do 24h).
                         </p>
                     </div>
                 </div>
             )}
             {isActive && (
-                <div className="mb-6 rounded-xl bg-emerald-500/10 border border-emerald-500/30 p-4">
+                <div className="mb-6 rounded-xl bg-emerald-50 border border-emerald-200 p-4">
                     <div className="flex gap-3 items-start mb-3">
-                        <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+                        <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
                         <div>
-                            <p className="font-semibold text-emerald-200 mb-1">Profil aktywny</p>
-                            <p className="text-sm text-zinc-300">
-                                Możesz przeglądać profile innych osób, polubić te które Cię zainteresują i pisać po wzajemnym dopasowaniu.
+                            <p className="font-semibold text-emerald-800 mb-1">Profil aktywny</p>
+                            <p className="text-sm text-zinc-700">
+                                Możesz przeglądać profile innych osób, zapraszać je na sesję i pisać po wzajemnym dopasowaniu.
                             </p>
                         </div>
                     </div>
@@ -135,23 +136,23 @@ export default function ProfileView() {
                             href="/foto-match/odkryj"
                             className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-amber-500 to-rose-500 px-5 py-2.5 font-semibold text-white shadow hover:shadow-lg transition text-sm"
                         >
-                            <Sparkles className="w-4 h-4" /> Odkryj profile
+                            <Heart className="w-4 h-4" /> Zaproś na sesję
                         </Link>
                         <Link
                             href="/foto-match/lajki"
-                            className="inline-flex items-center gap-2 rounded-lg border border-rose-500/40 bg-rose-500/10 hover:bg-rose-500/20 px-5 py-2.5 font-semibold text-sm transition text-rose-200"
+                            className="inline-flex items-center gap-2 rounded-lg border border-rose-200 bg-rose-50 hover:bg-rose-100 px-5 py-2.5 font-semibold text-sm transition text-rose-700"
                         >
-                            <Heart className="w-4 h-4" /> Twoje polubienia
+                            <Heart className="w-4 h-4" /> Twoje zaproszenia
                         </Link>
                         <Link
                             href="/foto-match/wiadomosci"
-                            className="inline-flex items-center gap-2 rounded-lg border border-zinc-700 hover:border-amber-400 px-5 py-2.5 font-semibold text-sm transition"
+                            className="inline-flex items-center gap-2 rounded-lg bg-white border border-zinc-200 hover:border-amber-400 px-5 py-2.5 font-semibold text-sm transition text-zinc-800"
                         >
                             💬 Wiadomości
                         </Link>
                         <Link
                             href="/foto-match/zapros"
-                            className="inline-flex items-center gap-2 rounded-lg border border-zinc-700 hover:border-amber-400 px-5 py-2.5 font-semibold text-sm transition"
+                            className="inline-flex items-center gap-2 rounded-lg bg-white border border-zinc-200 hover:border-amber-400 px-5 py-2.5 font-semibold text-sm transition text-zinc-800"
                         >
                             <Heart className="w-4 h-4" /> Zaproś znajomych
                         </Link>
@@ -159,30 +160,30 @@ export default function ProfileView() {
                 </div>
             )}
             {isSuspended && (
-                <div className="mb-6 rounded-xl bg-rose-500/10 border border-rose-500/30 p-4 flex gap-3 items-start">
-                    <ShieldAlert className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+                <div className="mb-6 rounded-xl bg-rose-50 border border-rose-200 p-4 flex gap-3 items-start">
+                    <ShieldAlert className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
                     <div>
-                        <p className="font-semibold text-rose-200 mb-1">Profil zawieszony</p>
+                        <p className="font-semibold text-rose-800 mb-1">Profil zawieszony</p>
                         {profile.rejection_reason && (
-                            <p className="text-sm text-zinc-300">Powód: {profile.rejection_reason}</p>
+                            <p className="text-sm text-zinc-700">Powód: {profile.rejection_reason}</p>
                         )}
                     </div>
                 </div>
             )}
             {profile.rejection_reason && !isSuspended && (
-                <div className="mb-6 rounded-xl bg-rose-500/10 border border-rose-500/30 p-4 flex gap-3 items-start">
-                    <AlertCircle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+                <div className="mb-6 rounded-xl bg-rose-50 border border-rose-200 p-4 flex gap-3 items-start">
+                    <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
                     <div>
-                        <p className="font-semibold text-rose-200 mb-1">Wymagana poprawka</p>
-                        <p className="text-sm text-zinc-300">{profile.rejection_reason}</p>
+                        <p className="font-semibold text-rose-800 mb-1">Wymagana poprawka</p>
+                        <p className="text-sm text-zinc-700">{profile.rejection_reason}</p>
                     </div>
                 </div>
             )}
 
-            <div className="rounded-2xl bg-zinc-900/60 border border-zinc-800 overflow-hidden mb-6">
+            <div className="rounded-2xl bg-white border border-zinc-200 shadow-sm overflow-hidden mb-6">
                 {/* Hero photo */}
                 {photos[0] && (
-                    <div className="aspect-[16/9] bg-zinc-900">
+                    <div className="aspect-[16/9] bg-zinc-100">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={photos[0].url} alt={profile.display_name} className="w-full h-full object-cover" />
                     </div>
@@ -191,27 +192,27 @@ export default function ProfileView() {
                 <div className="p-6">
                     <div className="flex items-start justify-between gap-4 mb-4">
                         <div>
-                            <h1 className="text-3xl font-bold">{profile.display_name}, {age}</h1>
-                            <p className="text-zinc-400 inline-flex items-center gap-1 mt-1">
+                            <h1 className="text-3xl font-bold text-zinc-900">{profile.display_name}, {age}</h1>
+                            <p className="text-zinc-500 inline-flex items-center gap-1 mt-1">
                                 <MapPin className="w-4 h-4" /> {profile.city}
                             </p>
                         </div>
                         <Link
                             href="/foto-match/onboarding"
-                            className="inline-flex items-center gap-2 rounded-lg border border-zinc-700 hover:border-amber-400 px-4 py-2 text-sm font-semibold transition"
+                            className="inline-flex items-center gap-2 rounded-lg bg-white border border-zinc-200 hover:border-amber-400 px-4 py-2 text-sm font-semibold transition text-zinc-800"
                         >
                             <Edit3 className="w-4 h-4" /> Edytuj
                         </Link>
                     </div>
 
                     {profile.bio && (
-                        <p className="text-zinc-300 leading-relaxed mb-4">{profile.bio}</p>
+                        <p className="text-zinc-700 leading-relaxed mb-4">{profile.bio}</p>
                     )}
 
                     {profile.interests.length > 0 && (
                         <div className="flex flex-wrap gap-2 mb-4">
                             {profile.interests.map((i) => (
-                                <span key={i} className="px-3 py-1 rounded-full bg-zinc-800 text-zinc-300 text-xs">
+                                <span key={i} className="px-3 py-1 rounded-full bg-amber-100 text-amber-900 text-xs">
                                     {i}
                                 </span>
                             ))}
@@ -223,12 +224,12 @@ export default function ProfileView() {
             {/* Photos grid */}
             {photos.length > 1 && (
                 <div className="mb-6">
-                    <h2 className="text-lg font-bold mb-3 inline-flex items-center gap-2">
-                        <Camera className="w-5 h-5 text-amber-400" /> Twoje zdjęcia ({photos.length})
+                    <h2 className="text-lg font-bold mb-3 inline-flex items-center gap-2 text-zinc-900">
+                        <Camera className="w-5 h-5 text-amber-600" /> Twoje zdjęcia ({photos.length})
                     </h2>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                         {photos.map((p) => (
-                            <div key={p.id} className="aspect-[3/4] rounded-xl overflow-hidden bg-zinc-900 relative">
+                            <div key={p.id} className="aspect-[3/4] rounded-xl overflow-hidden bg-zinc-100 border border-zinc-200 relative">
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img src={p.url} alt="" className="w-full h-full object-cover" />
                                 {p.ai_status === 'FLAGGED' && (
@@ -242,11 +243,12 @@ export default function ProfileView() {
                 </div>
             )}
 
-            <div className="rounded-xl bg-zinc-900/40 border border-zinc-800 p-5 text-sm text-zinc-400">
-                <Heart className="w-5 h-5 text-rose-400 inline mr-2" />
+            <div className="rounded-xl bg-white border border-zinc-200 p-5 text-sm text-zinc-600 shadow-sm">
+                <Heart className="w-5 h-5 text-rose-500 inline mr-2" />
                 Po akceptacji profilu odblokujemy tworzenie intencji sesji i wyszukiwanie partnerów.
                 Pracujemy nad tymi funkcjami.
             </div>
+        </div>
         </div>
     );
 }

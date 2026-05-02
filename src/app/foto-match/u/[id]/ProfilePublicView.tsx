@@ -116,19 +116,19 @@ export default function ProfilePublicView({ id }: { id: string }) {
     }
 
     if (loading) {
-        return <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-zinc-400"><Loader2 className="w-6 h-6 animate-spin" /></div>;
+        return <div className="min-h-screen flex items-center justify-center bg-amber-50 text-zinc-600"><Loader2 className="w-6 h-6 animate-spin" /></div>;
     }
     if (error || !profile) {
         return (
-            <div className="min-h-screen flex flex-col items-center justify-center bg-zinc-950 text-white p-6">
-                <p className="text-red-400 mb-4">{error || 'Profil niedostępny'}</p>
-                <Link href="/foto-match/odkryj" className="text-amber-400 underline">← Wróć do listy</Link>
+            <div className="min-h-screen flex flex-col items-center justify-center bg-amber-50 text-zinc-900 p-6">
+                <p className="text-rose-700 mb-4">{error || 'Profil niedostępny'}</p>
+                <Link href="/foto-match/odkryj" className="text-rose-600 underline">← Wróć do listy</Link>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-zinc-950 to-black text-white pb-28">
+        <div className="min-h-screen bg-gradient-to-b from-amber-50 via-white to-rose-50 text-zinc-900 pb-12">
             {matchToast && (
                 <div className="fixed top-20 left-1/2 -translate-x-1/2 bg-gradient-to-r from-rose-500 to-amber-500 text-white px-6 py-4 rounded-2xl font-bold shadow-2xl z-50 flex items-center gap-3">
                     <span>💖 {matchToast}</span>
@@ -141,15 +141,15 @@ export default function ProfilePublicView({ id }: { id: string }) {
             )}
 
             <div className="max-w-3xl mx-auto px-4 pt-6">
-                <Link href="/foto-match/odkryj" className="text-zinc-400 hover:text-white inline-flex items-center gap-1 text-sm mb-4">
+                <Link href="/foto-match/odkryj" className="text-zinc-500 hover:text-zinc-900 inline-flex items-center gap-1 text-sm mb-4">
                     <ArrowLeft className="w-4 h-4" /> Lista kandydatów
                 </Link>
 
                 {/* Galeria */}
-                <div className="relative bg-zinc-900 rounded-3xl overflow-hidden border border-zinc-800">
+                <div className="relative bg-white rounded-3xl overflow-hidden border border-zinc-200 shadow-lg">
                     {profile.photos.length > 0 ? (
                         <>
-                            <div className="aspect-[3/4] bg-zinc-900 relative">
+                            <div className="aspect-[3/4] bg-zinc-100 relative">
                                 <img
                                     src={profile.photos[activePhoto]?.url}
                                     alt={profile.display_name}
@@ -169,7 +169,7 @@ export default function ProfilePublicView({ id }: { id: string }) {
                                         <button
                                             key={p.id}
                                             onClick={() => setActivePhoto(i)}
-                                            className={`flex-none w-16 h-20 rounded-lg overflow-hidden border-2 ${i === activePhoto ? 'border-amber-500' : 'border-zinc-800'}`}
+                                            className={`flex-none w-16 h-20 rounded-lg overflow-hidden border-2 ${i === activePhoto ? 'border-amber-500' : 'border-zinc-200'}`}
                                         >
                                             <img src={p.url} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
                                         </button>
@@ -193,43 +193,42 @@ export default function ProfilePublicView({ id }: { id: string }) {
                                 💬 Napisz wiadomość
                             </Link>
                         ) : relation?.i_liked ? (
-                            <div className="w-full bg-zinc-900/80 border border-amber-500/40 rounded-2xl px-6 py-5 text-center">
-                                <p className="text-amber-300 font-semibold">✓ Polubiono — czekamy aż ona też kliknie ❤️</p>
+                            <div className="w-full bg-emerald-50 border border-emerald-200 rounded-2xl px-6 py-5 text-center">
+                                <p className="text-emerald-700 font-semibold">✓ Zaproszenie wysłane — czekamy aż ona też kliknie ❤</p>
                             </div>
                         ) : (
-                            <div className="grid grid-cols-3 gap-3">
-                                <button
-                                    disabled={actionLoading}
-                                    onClick={() => swipe('SKIP')}
-                                    className="flex flex-col items-center justify-center gap-1.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 rounded-2xl py-5 shadow-lg disabled:opacity-50 transition"
-                                >
-                                    <X className="w-7 h-7 text-zinc-300" />
-                                    <span className="text-sm font-semibold text-zinc-300">Pomiń</span>
-                                </button>
-                                <button
-                                    disabled={actionLoading}
-                                    onClick={() => swipe('SUPER_LIKE')}
-                                    className="flex flex-col items-center justify-center gap-1.5 bg-gradient-to-br from-blue-500 to-cyan-400 hover:scale-[1.03] rounded-2xl py-5 shadow-lg disabled:opacity-50 transition-transform"
-                                >
-                                    <Star className="w-7 h-7 text-white fill-white" />
-                                    <span className="text-sm font-bold text-white">Super</span>
-                                </button>
+                            <div className="space-y-2">
                                 <button
                                     disabled={actionLoading}
                                     onClick={() => swipe('LIKE')}
-                                    className="flex flex-col items-center justify-center gap-1.5 bg-gradient-to-br from-rose-500 to-amber-500 hover:scale-[1.03] rounded-2xl py-5 shadow-lg disabled:opacity-50 transition-transform"
+                                    className="w-full bg-gradient-to-r from-rose-500 to-amber-500 hover:from-rose-600 hover:to-amber-600 text-white rounded-2xl py-5 px-6 flex items-center justify-center gap-2 font-bold text-lg shadow-lg disabled:opacity-50 transition"
                                 >
-                                    <Heart className="w-7 h-7 text-white" />
-                                    <span className="text-sm font-bold text-white">Polub</span>
+                                    <Heart className="w-5 h-5" /> Zaproś na sesję
                                 </button>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <button
+                                        disabled={actionLoading}
+                                        onClick={() => swipe('SUPER_LIKE')}
+                                        className="flex items-center justify-center gap-2 bg-white border border-zinc-200 hover:border-amber-400 text-zinc-800 rounded-xl py-3 font-semibold disabled:opacity-50 transition"
+                                    >
+                                        <Star className="w-4 h-4 text-blue-500 fill-blue-500" /> Super
+                                    </button>
+                                    <button
+                                        disabled={actionLoading}
+                                        onClick={() => swipe('SKIP')}
+                                        className="flex items-center justify-center gap-2 bg-white border border-zinc-200 hover:border-zinc-400 text-zinc-500 rounded-xl py-3 font-semibold disabled:opacity-50 transition"
+                                    >
+                                        <X className="w-4 h-4" /> Pomiń
+                                    </button>
+                                </div>
                             </div>
                         )}
                         <div className="flex items-center justify-center gap-3 mt-3 text-xs">
-                            <button onClick={reportProfile} className="text-zinc-500 hover:text-amber-400 inline-flex items-center gap-1">
+                            <button onClick={reportProfile} className="text-zinc-400 hover:text-amber-600 inline-flex items-center gap-1">
                                 <Flag className="w-3 h-3" /> Zgłoś
                             </button>
-                            <span className="text-zinc-700">·</span>
-                            <button onClick={blockProfile} className="text-zinc-500 hover:text-red-400 inline-flex items-center gap-1">
+                            <span className="text-zinc-300">·</span>
+                            <button onClick={blockProfile} className="text-zinc-400 hover:text-red-600 inline-flex items-center gap-1">
                                 <Ban className="w-3 h-3" /> Zablokuj
                             </button>
                         </div>
@@ -239,11 +238,11 @@ export default function ProfilePublicView({ id }: { id: string }) {
                 {/* Info */}
                 <div className="mt-6 space-y-4">
                     <div>
-                        <h1 className="text-3xl font-bold flex items-baseline gap-3">
+                        <h1 className="text-3xl font-bold text-zinc-900 flex items-baseline gap-3">
                             {profile.display_name}
-                            <span className="text-zinc-400 font-normal text-2xl">{profile.age}</span>
+                            <span className="text-zinc-500 font-normal text-2xl">{profile.age}</span>
                         </h1>
-                        <p className="text-zinc-400 text-sm mt-1 flex items-center gap-3">
+                        <p className="text-zinc-500 text-sm mt-1 flex items-center gap-3">
                             <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> {profile.city}</span>
                             {profile.last_active && (
                                 <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> Aktywny: {new Date(profile.last_active).toLocaleDateString('pl-PL')}</span>
@@ -252,19 +251,19 @@ export default function ProfilePublicView({ id }: { id: string }) {
                     </div>
 
                     {profile.bio && (
-                        <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-4">
-                            <p className="text-zinc-200 whitespace-pre-line">{profile.bio}</p>
+                        <div className="bg-white border border-zinc-200 rounded-2xl p-4 shadow-sm">
+                            <p className="text-zinc-700 whitespace-pre-line">{profile.bio}</p>
                         </div>
                     )}
 
                     {profile.interests?.length > 0 && (
-                        <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-4">
-                            <h3 className="text-xs uppercase tracking-wider text-zinc-500 mb-2 flex items-center gap-1">
+                        <div className="bg-white border border-zinc-200 rounded-2xl p-4 shadow-sm">
+                            <h3 className="text-xs uppercase tracking-wider text-zinc-400 mb-2 flex items-center gap-1">
                                 <Sparkles className="w-3 h-3" /> Zainteresowania
                             </h3>
                             <div className="flex flex-wrap gap-2">
                                 {profile.interests.map(i => (
-                                    <span key={i} className="bg-zinc-800 text-zinc-200 text-xs px-3 py-1.5 rounded-full">{i}</span>
+                                    <span key={i} className="bg-amber-100 text-amber-900 text-xs px-3 py-1.5 rounded-full">{i}</span>
                                 ))}
                             </div>
                         </div>
@@ -273,15 +272,15 @@ export default function ProfilePublicView({ id }: { id: string }) {
                     {(profile.experience || profile.comfort_level) && (
                         <div className="grid grid-cols-2 gap-3">
                             {profile.experience && (
-                                <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-4">
-                                    <p className="text-xs uppercase tracking-wider text-zinc-500 mb-1">Doświadczenie</p>
-                                    <p className="text-white">{translateExperience(profile.experience)}</p>
+                                <div className="bg-white border border-zinc-200 rounded-2xl p-4 shadow-sm">
+                                    <p className="text-xs uppercase tracking-wider text-zinc-400 mb-1">Doświadczenie</p>
+                                    <p className="text-zinc-900 font-medium">{translateExperience(profile.experience)}</p>
                                 </div>
                             )}
                             {profile.comfort_level && (
-                                <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-4">
-                                    <p className="text-xs uppercase tracking-wider text-zinc-500 mb-1">Komfort</p>
-                                    <p className="text-white">{translateComfort(profile.comfort_level)}</p>
+                                <div className="bg-white border border-zinc-200 rounded-2xl p-4 shadow-sm">
+                                    <p className="text-xs uppercase tracking-wider text-zinc-400 mb-1">Komfort</p>
+                                    <p className="text-zinc-900 font-medium">{translateComfort(profile.comfort_level)}</p>
                                 </div>
                             )}
                         </div>

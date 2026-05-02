@@ -399,6 +399,12 @@ model Booking {
   cancelled_by         String?   @db.VarChar(20)  // CLIENT | ADMIN | SYSTEM
   payu_order_id        String?   @db.VarChar(80)  // PayU orderId — potrzebne do refund
 
+  // Calendar / Google Calendar sync
+  google_event_id      String?   @db.VarChar(120)
+  google_calendar_id   String?   @db.VarChar(120)
+  ics_uid              String?   @unique @db.VarChar(80)
+  calendar_synced_at   DateTime?
+
   photographer      User?    @relation("PhotographerBookings", fields: [photographer_id], references: [id])
   complaints        BookingComplaint[]
 

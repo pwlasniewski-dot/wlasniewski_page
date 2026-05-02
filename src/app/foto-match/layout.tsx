@@ -1,10 +1,10 @@
-import FotoMatchBottomNav from './_components/FotoMatchBottomNav';
+import FotoMatchTopNav from './_components/FotoMatchTopNav';
 
 export default function FotoMatchLayout({ children }: { children: React.ReactNode }) {
     return (
         <>
-            <div className="pb-20 sm:pb-24">{children}</div>
-            <FotoMatchBottomNav />
+            <FotoMatchTopNav />
+            <div>{children}</div>
         </>
     );
 }

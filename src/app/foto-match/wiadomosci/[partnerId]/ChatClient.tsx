@@ -112,7 +112,7 @@ export default function ChatClient({ partnerId }: { partnerId: string }) {
 
     if (loading) {
         return (
-            <main className="min-h-screen bg-zinc-950 flex items-center justify-center text-zinc-400">
+            <main className="min-h-screen bg-amber-50 flex items-center justify-center text-zinc-700">
                 <Loader2 className="w-6 h-6 animate-spin mr-2" /> Wczytywanie…
             </main>
         );
@@ -120,33 +120,33 @@ export default function ChatClient({ partnerId }: { partnerId: string }) {
 
     if (error && !partner) {
         return (
-            <main className="min-h-screen bg-zinc-950 text-white flex flex-col items-center justify-center p-6">
-                <div className="bg-rose-500/10 border border-rose-500/40 text-rose-200 rounded-xl p-6 max-w-md text-center mb-4">
+            <main className="min-h-screen bg-amber-50 text-zinc-900 flex flex-col items-center justify-center p-6">
+                <div className="bg-rose-50 border border-rose-200 text-rose-700 rounded-xl p-6 max-w-md text-center mb-4">
                     {error}
                 </div>
-                <Link href="/foto-match/wiadomosci" className="text-amber-400 hover:underline">← Wszystkie rozmowy</Link>
+                <Link href="/foto-match/wiadomosci" className="text-rose-600 hover:underline">← Wszystkie rozmowy</Link>
             </main>
         );
     }
 
     return (
-        <main className="min-h-screen bg-zinc-950 text-white flex flex-col">
+        <main className="min-h-screen bg-amber-50 text-zinc-900 flex flex-col">
             {/* Header */}
-            <header className="sticky top-0 z-30 bg-zinc-950/95 backdrop-blur border-b border-zinc-800 px-4 py-3">
+            <header className="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-zinc-200 shadow-sm px-4 py-3">
                 <div className="max-w-2xl mx-auto flex items-center gap-3">
-                    <Link href="/foto-match/wiadomosci" className="text-zinc-400 hover:text-white">
+                    <Link href="/foto-match/wiadomosci" className="text-zinc-500 hover:text-zinc-900">
                         <ArrowLeft className="w-5 h-5" />
                     </Link>
                     {partner?.photos[0] ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={partner.photos[0].url} alt={partner.display_name}
-                            className="w-10 h-10 rounded-full object-cover border border-zinc-800" />
+                            className="w-10 h-10 rounded-full object-cover border border-zinc-200" />
                     ) : (
-                        <div className="w-10 h-10 rounded-full bg-zinc-800" />
+                        <div className="w-10 h-10 rounded-full bg-zinc-200" />
                     )}
                     <div className="flex-1 min-w-0">
                         <Link href={`/foto-match/u/${pid}`}
-                            className="font-bold truncate hover:text-amber-400 inline-flex items-center gap-1">
+                            className="font-bold truncate hover:text-rose-600 inline-flex items-center gap-1">
                             {partner?.display_name || `Profil ${pid}`}
                         </Link>
                         {partner?.city && <p className="text-xs text-zinc-500">{partner.city}</p>}
@@ -159,23 +159,23 @@ export default function ChatClient({ partnerId }: { partnerId: string }) {
                 <div className="max-w-2xl mx-auto space-y-2">
                     {messages.length === 0 ? (
                         <div className="text-center py-12">
-                            <div className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-bold mb-3">
+                            <div className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold mb-3">
                                 <ShieldCheck className="w-3 h-3" /> Macie match
                             </div>
-                            <p className="text-zinc-400 text-sm">Brak jeszcze wiadomości — napisz pierwsza/y!</p>
+                            <p className="text-zinc-500 text-sm">Brak jeszcze wiadomości — napisz pierwsza/y!</p>
                         </div>
                     ) : (
                         messages.map(m => {
-                            const mine = m.to_profile_id === pid; // wysłałem do partnera = ja
+                            const mine = m.to_profile_id === pid;
                             return (
                                 <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
-                                    <div className={`max-w-[75%] px-4 py-2 rounded-2xl ${
+                                    <div className={`max-w-[75%] px-4 py-2 rounded-2xl shadow-sm ${
                                         mine
                                             ? 'bg-gradient-to-br from-amber-500 to-rose-500 text-white rounded-br-sm'
-                                            : 'bg-zinc-800 text-zinc-100 rounded-bl-sm'
+                                            : 'bg-white border border-zinc-200 text-zinc-900 rounded-bl-sm'
                                     }`}>
                                         <p className="whitespace-pre-wrap break-words">{m.body}</p>
-                                        <p className={`text-[10px] mt-1 ${mine ? 'text-white/70' : 'text-zinc-500'}`}>
+                                        <p className={`text-[10px] mt-1 ${mine ? 'text-white/80' : 'text-zinc-400'}`}>
                                             {fmtTime(m.created_at)}
                                         </p>
                                     </div>
@@ -184,7 +184,7 @@ export default function ChatClient({ partnerId }: { partnerId: string }) {
                         })
                     )}
                     {error && (
-                        <div className="bg-rose-500/10 border border-rose-500/40 text-rose-200 rounded-lg p-3 text-sm">
+                        <div className="bg-rose-50 border border-rose-200 text-rose-700 rounded-lg p-3 text-sm">
                             {error}
                         </div>
                     )}
@@ -192,7 +192,7 @@ export default function ChatClient({ partnerId }: { partnerId: string }) {
             </div>
 
             {/* Composer */}
-            <div className="sticky bottom-0 bg-zinc-950/95 backdrop-blur border-t border-zinc-800 px-4 py-3">
+            <div className="sticky bottom-0 bg-white/95 backdrop-blur border-t border-zinc-200 px-4 py-3">
                 <div className="max-w-2xl mx-auto flex gap-2">
                     <textarea
                         value={text}
@@ -206,7 +206,7 @@ export default function ChatClient({ partnerId }: { partnerId: string }) {
                         placeholder="Napisz wiadomość…"
                         rows={1}
                         maxLength={2000}
-                        className="flex-1 resize-none bg-zinc-900 border border-zinc-800 rounded-2xl px-4 py-2 text-white placeholder-zinc-500 focus:border-amber-500 focus:outline-none max-h-32"
+                        className="flex-1 resize-none bg-zinc-50 border border-zinc-200 rounded-2xl px-4 py-2 text-zinc-900 placeholder-zinc-400 focus:border-amber-500 focus:outline-none max-h-32"
                     />
                     <button
                         onClick={send}

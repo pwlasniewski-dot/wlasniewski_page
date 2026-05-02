@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { MapPin, Heart, ShieldCheck, Camera, X } from 'lucide-react';
+import { MapPin, ShieldCheck, Camera, X, Calendar, Info } from 'lucide-react';
 
 interface Candidate {
     id: number;
@@ -25,6 +25,7 @@ export default function DiscoverClient() {
     const [candidates, setCandidates] = useState<Candidate[]>([]);
     const [actionId, setActionId] = useState<number | null>(null);
     const [matchToast, setMatchToast] = useState<{ name: string; partnerId: number } | null>(null);
+    const [sentToast, setSentToast] = useState<string | null>(null);
 
     function getToken() {
         return typeof window !== 'undefined'
@@ -56,8 +57,10 @@ export default function DiscoverClient() {
             if (d.is_match) {
                 setMatchToast({ name: d.target?.display_name || name, partnerId: targetId });
                 setTimeout(() => setMatchToast(null), 8000);
+            } else if (action === 'LIKE') {
+                setSentToast(`Zaproszenie wysłane do ${name}. Czekamy aż ona też kliknie ❤`);
+                setTimeout(() => setSentToast(null), 5000);
             }
-            // Niezależnie od wyniku usuwamy kandydata z listy.
             setCandidates(prev => prev.filter(c => c.id !== targetId));
         } catch (e: any) {
             setError(e?.message || String(e));
@@ -96,25 +99,25 @@ export default function DiscoverClient() {
 
     if (loading) {
         return (
-            <main className="min-h-screen bg-gradient-to-br from-pink-500 via-purple-600 to-indigo-700 flex items-center justify-center text-white">
+            <main className="min-h-screen bg-gradient-to-b from-amber-50 to-white flex items-center justify-center text-zinc-700">
                 <p className="text-lg animate-pulse">Wczytywanie dopasowań…</p>
             </main>
         );
     }
 
-    if (error) {
+    if (error && !candidates.length) {
         return (
-            <main className="min-h-screen bg-gradient-to-br from-pink-500 via-purple-600 to-indigo-700 flex items-center justify-center text-white p-6">
-                <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-8 max-w-md text-center">
-                    <p className="text-lg font-bold mb-2">Hej!</p>
-                    <p className="text-white/90">{error}</p>
+            <main className="min-h-screen bg-gradient-to-b from-amber-50 to-white flex items-center justify-center p-6">
+                <div className="bg-white border border-zinc-200 shadow-lg rounded-2xl p-8 max-w-md text-center">
+                    <p className="text-lg font-bold mb-2 text-zinc-900">Hej!</p>
+                    <p className="text-zinc-600">{error}</p>
                 </div>
             </main>
         );
     }
 
     return (
-        <main className="min-h-screen bg-gradient-to-br from-pink-500 via-purple-600 to-indigo-700 text-white">
+        <main className="min-h-screen bg-gradient-to-b from-amber-50 via-white to-rose-50 text-zinc-900">
             {matchToast && (
                 <div className="fixed top-20 left-1/2 -translate-x-1/2 bg-gradient-to-r from-rose-500 to-amber-500 text-white px-6 py-4 rounded-2xl font-bold shadow-2xl z-50 flex items-center gap-3">
                     <span>💖 To match z {matchToast.name}!</span>
@@ -126,28 +129,40 @@ export default function DiscoverClient() {
                     </Link>
                 </div>
             )}
-            <div className="max-w-6xl mx-auto px-6 py-12">
-                <div className="flex items-end justify-between mb-8 flex-wrap gap-4">
-                    <div>
-                        <h1 className="text-4xl md:text-5xl font-black">Odkryj</h1>
-                        <p className="text-white/85 mt-2">Osoby dopasowane na podstawie kryteriów ustawionych przez fotografa.</p>
+            {sentToast && (
+                <div className="fixed top-20 left-1/2 -translate-x-1/2 bg-emerald-600 text-white px-6 py-3 rounded-2xl font-semibold shadow-xl z-50">
+                    ✓ {sentToast}
+                </div>
+            )}
+
+            <div className="max-w-6xl mx-auto px-4 py-8">
+                <div className="mb-6">
+                    <h1 className="text-3xl md:text-4xl font-black text-zinc-900">Odkryj osoby do wspólnej sesji</h1>
+                    <p className="text-zinc-600 mt-2 max-w-3xl">
+                        Te osoby pasują do Twoich kryteriów. Wybierz kogoś i wyślij zaproszenie na wspólną sesję fotograficzną.
+                    </p>
+                    <div className="mt-4 bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-900 flex gap-3">
+                        <Info className="w-5 h-5 shrink-0 mt-0.5 text-amber-600" />
+                        <p>
+                            <strong>Jak to działa:</strong> klikasz <span className="font-bold text-rose-700">„Zaproś na sesję"</span> przy osobie, która Cię zainteresowała. Jeśli ona też kliknie Ciebie — powstaje <strong>match</strong> i możecie napisać do siebie, żeby ustalić termin sesji z Przemkiem.
+                        </p>
                     </div>
-                    <a href="/foto-match/zapros" className="bg-white/15 hover:bg-white/25 backdrop-blur-md border border-white/30 rounded-full px-5 py-2 text-sm font-semibold">
-                        💌 Polec znajomych
-                    </a>
                 </div>
 
                 {candidates.length === 0 ? (
-                    <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-10 text-center">
-                        <p className="text-xl font-bold mb-2">Brak nowych dopasowań</p>
-                        <p className="text-white/80">Sprawdź ponownie później — codziennie dochodzą nowi uczestnicy.</p>
+                    <div className="bg-white border border-zinc-200 rounded-2xl shadow-sm p-10 text-center">
+                        <p className="text-xl font-bold mb-2 text-zinc-900">Brak nowych dopasowań</p>
+                        <p className="text-zinc-600 mb-5">Sprawdź ponownie później — codziennie dochodzą nowi uczestnicy.</p>
+                        <Link href="/foto-match/lajki" className="inline-flex items-center gap-2 bg-zinc-900 text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-zinc-800">
+                            Zobacz swoje polubienia
+                        </Link>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                         {candidates.map((c) => (
-                            <article key={c.id} className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl overflow-hidden shadow-xl flex flex-col">
-                                <a href={`/foto-match/u/${c.id}`} className="block">
-                                    <div className="aspect-[3/4] bg-zinc-800 relative overflow-hidden">
+                            <article key={c.id} className="bg-white border border-zinc-200 rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-shadow flex flex-col">
+                                <Link href={`/foto-match/u/${c.id}`} className="block">
+                                    <div className="aspect-[3/4] bg-zinc-100 relative overflow-hidden">
                                         {c.photos[0] ? (
                                             // eslint-disable-next-line @next/next/no-img-element
                                             <img src={c.photos[0].url} alt={c.display_name} loading="lazy" decoding="async" className="w-full h-full object-cover" />
@@ -155,58 +170,64 @@ export default function DiscoverClient() {
                                             <div className="w-full h-full flex items-center justify-center text-6xl">📸</div>
                                         )}
                                         {c.verified && (
-                                            <div className="absolute top-3 right-3 bg-emerald-500 text-white text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                                            <div className="absolute top-3 right-3 bg-emerald-500 text-white text-xs font-bold px-2.5 py-1 rounded-full flex items-center gap-1 shadow">
                                                 <ShieldCheck className="w-3 h-3" /> Zweryfikowany
                                             </div>
                                         )}
                                         {c.distance_km != null && (
-                                            <div className="absolute top-3 left-3 bg-black/60 text-white text-xs font-bold px-2 py-1 rounded-full">
+                                            <div className="absolute top-3 left-3 bg-white/95 text-zinc-800 text-xs font-bold px-2.5 py-1 rounded-full shadow">
                                                 {c.distance_km} km
                                             </div>
                                         )}
                                     </div>
-                                </a>
+                                </Link>
                                 <div className="p-5 flex-1 flex flex-col">
-                                    <div className="flex items-center justify-between mb-2">
-                                        <h2 className="text-xl font-extrabold">
-                                            {c.display_name}{c.age ? `, ${c.age}` : ''}
-                                        </h2>
-                                    </div>
+                                    <h2 className="text-xl font-extrabold text-zinc-900">
+                                        {c.display_name}{c.age ? `, ${c.age}` : ''}
+                                    </h2>
                                     {c.city && (
-                                        <p className="text-sm text-white/80 flex items-center gap-1 mb-3">
+                                        <p className="text-sm text-zinc-500 flex items-center gap-1 mt-0.5 mb-3">
                                             <MapPin className="w-4 h-4" /> {c.city}
                                         </p>
                                     )}
-                                    {c.bio && <p className="text-sm text-white/85 line-clamp-3 mb-3">{c.bio}</p>}
+                                    {c.bio && <p className="text-sm text-zinc-700 line-clamp-3 mb-3">{c.bio}</p>}
                                     {c.interests.length > 0 && (
                                         <div className="flex flex-wrap gap-1.5 mb-3">
                                             {c.interests.slice(0, 4).map((i, ix) => (
-                                                <span key={ix} className="text-xs bg-white/15 px-2 py-0.5 rounded-full">{i}</span>
+                                                <span key={ix} className="text-xs bg-amber-100 text-amber-900 px-2.5 py-0.5 rounded-full">{i}</span>
                                             ))}
                                         </div>
                                     )}
-                                    <div className="flex gap-2 text-xs text-white/70 mb-4">
-                                        {c.photos.length > 0 && (
-                                            <span className="flex items-center gap-1">
-                                                <Camera className="w-3 h-3" /> {c.photos.length}
-                                            </span>
-                                        )}
-                                    </div>
-                                    <div className="mt-auto flex gap-2">
-                                        <button
-                                            disabled={actionId === c.id}
-                                            onClick={() => swipe(c.id, 'SKIP', c.display_name)}
-                                            className="flex-1 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl py-2.5 flex items-center justify-center gap-1 font-semibold disabled:opacity-50"
-                                        >
-                                            <X className="w-4 h-4" /> Pomiń
-                                        </button>
+                                    {c.photos.length > 1 && (
+                                        <p className="text-xs text-zinc-500 inline-flex items-center gap-1 mb-4">
+                                            <Camera className="w-3 h-3" /> {c.photos.length} zdjęć
+                                        </p>
+                                    )}
+
+                                    <div className="mt-auto space-y-2">
                                         <button
                                             disabled={actionId === c.id}
                                             onClick={() => swipe(c.id, 'LIKE', c.display_name)}
-                                            className="flex-1 bg-gradient-to-r from-rose-500 to-amber-500 hover:scale-[1.02] rounded-xl py-2.5 flex items-center justify-center gap-1 font-bold disabled:opacity-50 transition-transform"
+                                            className="w-full bg-gradient-to-r from-rose-500 to-amber-500 hover:from-rose-600 hover:to-amber-600 text-white rounded-xl py-3.5 px-4 flex items-center justify-center gap-2 font-bold text-base shadow-lg disabled:opacity-50 transition-all hover:scale-[1.01]"
                                         >
-                                            <Heart className="w-4 h-4" /> Polub
+                                            <Calendar className="w-5 h-5" />
+                                            Zaproś na sesję
                                         </button>
+                                        <div className="flex gap-2">
+                                            <Link
+                                                href={`/foto-match/u/${c.id}`}
+                                                className="flex-1 text-center bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-700 rounded-xl py-2 text-sm font-semibold transition"
+                                            >
+                                                Zobacz profil
+                                            </Link>
+                                            <button
+                                                disabled={actionId === c.id}
+                                                onClick={() => swipe(c.id, 'SKIP', c.display_name)}
+                                                className="px-4 bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-500 rounded-xl flex items-center justify-center gap-1 text-sm font-semibold disabled:opacity-50"
+                                            >
+                                                <X className="w-4 h-4" /> Pomiń
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </article>

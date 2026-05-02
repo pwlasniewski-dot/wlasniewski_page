@@ -106,19 +106,15 @@ export default function LikesClient() {
         });
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-zinc-950 to-black text-white pb-28">
-            <div className="max-w-3xl mx-auto px-4 pt-6">
-                <Link href="/foto-match" className="text-zinc-400 hover:text-white inline-flex items-center gap-1 text-sm mb-4">
-                    <ArrowLeft className="w-4 h-4" /> Foto-Match
-                </Link>
-
-                <h1 className="text-3xl font-black mb-1 flex items-center gap-2">
-                    <Heart className="w-7 h-7 text-rose-400" /> Twoje polubienia
+        <div className="min-h-screen bg-gradient-to-b from-amber-50 via-white to-rose-50 text-zinc-900">
+            <div className="max-w-3xl mx-auto px-4 py-8">
+                <h1 className="text-3xl font-black mb-1 flex items-center gap-2 text-zinc-900">
+                    <Heart className="w-7 h-7 text-rose-500" /> Twoje polubienia
                 </h1>
-                <p className="text-zinc-400 text-sm mb-6">Tutaj zobaczysz kogo polubiłeś, kto polubił Ciebie i z kim macie wzajemny match.</p>
+                <p className="text-zinc-600 text-sm mb-6">Tutaj zobaczysz kogo zaprosiłeś na sesję, kto zaprosił Ciebie i z kim macie wzajemny match.</p>
 
                 {/* Tabs */}
-                <div className="flex gap-2 mb-6 bg-zinc-900/60 border border-zinc-800 rounded-2xl p-1.5">
+                <div className="flex gap-2 mb-6 bg-white border border-zinc-200 rounded-2xl p-1.5 shadow-sm">
                     {(['sent', 'received', 'matches'] as Tab[]).map(t => (
                         <button
                             key={t}
@@ -126,7 +122,7 @@ export default function LikesClient() {
                             className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition ${
                                 tab === t
                                     ? 'bg-gradient-to-r from-rose-500 to-amber-500 text-white shadow'
-                                    : 'text-zinc-400 hover:text-white'
+                                    : 'text-zinc-500 hover:text-zinc-900'
                             }`}
                         >
                             {TAB_CONFIG[t].label}
@@ -136,21 +132,21 @@ export default function LikesClient() {
 
                 {/* Filtry — widoczne tylko gdy są wyniki */}
                 {!loading && !error && items.length > 0 && (
-                    <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-3 mb-4 flex flex-col sm:flex-row gap-2">
+                    <div className="bg-white border border-zinc-200 shadow-sm rounded-2xl p-3 mb-4 flex flex-col sm:flex-row gap-2">
                         <div className="relative flex-1">
-                            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
+                            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
                             <input
                                 type="text"
                                 placeholder="Szukaj po imieniu…"
                                 value={query}
                                 onChange={e => setQuery(e.target.value)}
-                                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl pl-9 pr-3 py-2 text-sm focus:border-amber-500 outline-none"
+                                className="w-full bg-zinc-50 border border-zinc-200 rounded-xl pl-9 pr-3 py-2 text-sm focus:border-amber-500 outline-none"
                             />
                         </div>
                         <select
                             value={cityFilter}
                             onChange={e => setCityFilter(e.target.value)}
-                            className="bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-sm focus:border-amber-500 outline-none"
+                            className="bg-zinc-50 border border-zinc-200 rounded-xl px-3 py-2 text-sm focus:border-amber-500 outline-none"
                         >
                             <option value="">Wszystkie miasta</option>
                             {cities.map(c => <option key={c} value={c}>{c}</option>)}
@@ -158,7 +154,7 @@ export default function LikesClient() {
                         <select
                             value={sort}
                             onChange={e => setSort(e.target.value as any)}
-                            className="bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-sm focus:border-amber-500 outline-none"
+                            className="bg-zinc-50 border border-zinc-200 rounded-xl px-3 py-2 text-sm focus:border-amber-500 outline-none"
                         >
                             <option value="newest">Najnowsze</option>
                             <option value="oldest">Najstarsze</option>
@@ -169,20 +165,20 @@ export default function LikesClient() {
 
                 {loading ? (
                     <div className="flex justify-center py-20">
-                        <Loader2 className="w-6 h-6 animate-spin text-zinc-500" />
+                        <Loader2 className="w-6 h-6 animate-spin text-zinc-400" />
                     </div>
                 ) : error ? (
-                    <div className="bg-rose-500/10 border border-rose-500/30 rounded-2xl p-6 text-center">
-                        <p className="text-rose-300">{error}</p>
+                    <div className="bg-rose-50 border border-rose-200 rounded-2xl p-6 text-center">
+                        <p className="text-rose-700">{error}</p>
                     </div>
                 ) : items.length === 0 ? (
-                    <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-10 text-center">
-                        <Sparkles className="w-10 h-10 text-amber-400 mx-auto mb-3" />
-                        <p className="text-lg font-bold mb-2">{TAB_CONFIG[tab].emptyTitle}</p>
-                        <p className="text-zinc-400 text-sm mb-5">{TAB_CONFIG[tab].emptyText}</p>
+                    <div className="bg-white border border-zinc-200 shadow-sm rounded-2xl p-10 text-center">
+                        <Sparkles className="w-10 h-10 text-amber-500 mx-auto mb-3" />
+                        <p className="text-lg font-bold mb-2 text-zinc-900">{TAB_CONFIG[tab].emptyTitle}</p>
+                        <p className="text-zinc-600 text-sm mb-5">{TAB_CONFIG[tab].emptyText}</p>
                         <Link
                             href="/foto-match/odkryj"
-                            className="inline-flex items-center gap-2 bg-gradient-to-r from-rose-500 to-amber-500 px-5 py-2.5 rounded-xl font-bold text-sm hover:scale-[1.02] transition-transform"
+                            className="inline-flex items-center gap-2 bg-gradient-to-r from-rose-500 to-amber-500 px-5 py-2.5 rounded-xl font-bold text-sm text-white hover:scale-[1.02] transition-transform"
                         >
                             <Sparkles className="w-4 h-4" /> Idź do Odkryj
                         </Link>
@@ -199,9 +195,9 @@ export default function LikesClient() {
                                 <Link
                                     key={it.id}
                                     href={href}
-                                    className="group relative bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden hover:border-amber-500/50 transition"
+                                    className="group relative bg-white border border-zinc-200 shadow-sm rounded-2xl overflow-hidden hover:shadow-lg hover:border-amber-300 transition"
                                 >
-                                    <div className="aspect-[3/4] bg-zinc-800 relative">
+                                    <div className="aspect-[3/4] bg-zinc-100 relative">
                                         {photo ? (
                                             // eslint-disable-next-line @next/next/no-img-element
                                             <img src={photo} alt={it.display_name} loading="lazy" decoding="async" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
@@ -215,16 +211,16 @@ export default function LikesClient() {
                                         )}
                                         {tab === 'received' && (
                                             <div className="absolute top-2 right-2 bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow animate-pulse">
-                                                ❤ POLUBIŁ CIĘ
+                                                ❤ ZAPROSIŁ CIĘ
                                             </div>
                                         )}
                                     </div>
                                     <div className="p-3">
-                                        <p className="font-bold truncate text-sm">
+                                        <p className="font-bold truncate text-sm text-zinc-900">
                                             {it.display_name}{age ? `, ${age}` : ''}
                                         </p>
                                         {it.city && (
-                                            <p className="text-xs text-zinc-400 flex items-center gap-1 mt-0.5">
+                                            <p className="text-xs text-zinc-500 flex items-center gap-1 mt-0.5">
                                                 <MapPin className="w-3 h-3" /> {it.city}
                                             </p>
                                         )}
