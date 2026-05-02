@@ -97,6 +97,12 @@ export default function ProfileView() {
 
     return (
         <div className="max-w-4xl mx-auto px-4 py-12">
+            <Link
+                href="/foto-match"
+                className="inline-flex items-center gap-1 text-sm text-zinc-400 hover:text-amber-400 mb-4 transition"
+            >
+                ← Wróć do Foto-Match
+            </Link>
             <div className="flex items-center gap-2 mb-2 text-sm text-amber-300">
                 <Sparkles className="w-4 h-4" /> Mój profil Foto-Match
             </div>
