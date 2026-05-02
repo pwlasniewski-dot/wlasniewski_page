@@ -2,6 +2,7 @@
  * Foto-Match: pomocnicze maile lifecycle.
  * Każdy mail jest best-effort (nie blokuje API gdy SMTP padnie).
  */
+import prisma from '@/lib/db/prisma';
 import { sendEmail } from '@/lib/email/sender';
 import { getSiteUrl } from '@/lib/site-url';
 
@@ -79,5 +80,44 @@ export function sendReferralRewarded(opts: {
             expiresAt: opts.expiresAt,
             bookingUrl: `${SITE()}/rezerwacja`,
         },
+    }));
+}
+
+/**
+ * Email wysyłany do `recipientProfileId` po wzajemnym match-u z `partnerProfileId`.
+ * Pomija profile testowe (@fotomatch.test).
+ */
+export async function sendMatchEmail(recipientProfileId: number, partnerProfileId: number): Promise<void> {
+    const [recipient, partner] = await Promise.all([
+        prisma.fotoMatchProfile.findUnique({
+            where: { id: recipientProfileId },
+            include: { user: { select: { email: true, name: true } } },
+        }),
+        prisma.fotoMatchProfile.findUnique({
+            where: { id: partnerProfileId },
+            select: { id: true, display_name: true, city: true, photos: { take: 1, orderBy: { id: 'asc' }, select: { url: true } } },
+        }),
+    ]);
+
+    if (!recipient?.user?.email || !partner) return;
+    if (recipient.user.email.endsWith('@fotomatch.test')) return; // pomiń seed test
+
+    const partnerPhoto = partner.photos[0]?.url;
+    const link = `${SITE()}/foto-match/odkryj?match=${partner.id}`;
+    const html = `
+<div style="font-family:Inter,Arial,sans-serif;background:#0a0a0a;color:#fff;padding:32px;max-width:600px;margin:0 auto;border-radius:12px">
+  <h1 style="margin:0 0 8px;font-size:28px;color:#f59e0b">Masz nowy match!</h1>
+  <p style="color:#a1a1aa;margin:0 0 24px">${recipient.display_name}, polubiła/polubił Cię osoba która wcześniej polubiła Twój profil.</p>
+  ${partnerPhoto ? `<img src="${partnerPhoto}" alt="${partner.display_name}" style="width:100%;max-width:360px;border-radius:12px;margin-bottom:16px">` : ''}
+  <h2 style="margin:0 0 4px;font-size:22px">${partner.display_name}${partner.city ? ` &middot; ${partner.city}` : ''}</h2>
+  <p style="color:#a1a1aa;margin:0 0 24px">Możecie zacząć rozmowę i umówić wspólną sesję zdjęciową.</p>
+  <a href="${link}" style="display:inline-block;padding:14px 28px;background:#f59e0b;color:#000;text-decoration:none;border-radius:8px;font-weight:bold">Otwórz Foto-Match &rarr;</a>
+  <p style="color:#71717a;font-size:12px;margin-top:32px">Nie chcesz takich powiadomień? Zmień ustawienia w profilu Foto-Match.</p>
+</div>`;
+
+    await safeSend(sendEmail({
+        to: recipient.user.email,
+        subject: `Nowy match: ${partner.display_name}`,
+        html,
     }));
 }

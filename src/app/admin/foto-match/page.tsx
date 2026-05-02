@@ -113,6 +113,8 @@ export default function FotoMatchDashboardPage() {
                 </div>
             )}
 
+            <HealthCheckWidget />
+
             {/* Statystyki */}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4">
                 <StatCard label="Oczekujące" value={c.pending} icon={<Clock />} color="amber" href="/admin/foto-match/profiles?status=PENDING" />
@@ -172,3 +174,68 @@ function StatCard({ label, value, icon, color, href }: { label: string; value: n
         </Link>
     );
 }
+
+type HealthAlert = { severity: 'critical' | 'warning' | 'info'; code: string; label: string; count: number; href: string };
+
+function HealthCheckWidget() {
+    const [data, setData] = useState<{ healthy: boolean; alerts: HealthAlert[] } | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const load = async () => {
+            try {
+                const token = localStorage.getItem('admin_token');
+                if (!token) return;
+                const r = await fetch('/api/admin/foto-match/health', { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store' });
+                if (r.ok) setData(await r.json());
+            } finally { setLoading(false); }
+        };
+        load();
+        const t = setInterval(load, 60_000);
+        return () => clearInterval(t);
+    }, []);
+
+    if (loading) return null;
+    if (!data) return null;
+
+    if (data.healthy) {
+        return (
+            <div className="rounded-xl bg-emerald-500/5 border border-emerald-500/20 p-4 flex items-center gap-3">
+                <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                <div>
+                    <p className="text-emerald-300 font-semibold text-sm">Wszystko OK — brak pilnych spraw.</p>
+                    <p className="text-xs text-zinc-500">Health-check odświeża się co 60 sekund.</p>
+                </div>
+            </div>
+        );
+    }
+
+    const colorBy: Record<HealthAlert['severity'], string> = {
+        critical: 'border-rose-500/40 bg-rose-500/10 text-rose-200',
+        warning: 'border-amber-500/40 bg-amber-500/10 text-amber-200',
+        info: 'border-zinc-700 bg-zinc-900 text-zinc-300',
+    };
+
+    return (
+        <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
+            <div className="flex items-center gap-2 mb-3">
+                <AlertTriangle className="w-5 h-5 text-rose-400" />
+                <h2 className="font-bold text-white">Health-check</h2>
+                <span className="text-xs text-zinc-500 ml-auto">odświeżane co 60s</span>
+            </div>
+            <div className="space-y-2">
+                {data.alerts.map((a) => (
+                    <Link
+                        key={a.code}
+                        href={a.href}
+                        className={`flex items-center justify-between gap-3 rounded-lg border p-3 hover:opacity-90 transition ${colorBy[a.severity]}`}
+                    >
+                        <span className="text-sm font-semibold">{a.label}</span>
+                        <ChevronRight className="w-4 h-4 opacity-60" />
+                    </Link>
+                ))}
+            </div>
+        </div>
+    );
+}
+

@@ -81,6 +81,19 @@ export async function POST(request: NextRequest) {
                 prisma.fotoMatchSwipe.update({ where: { id: reciprocal.id }, data: { is_match: true, matched_at: matchedAt } }),
             ]);
             await logSystem('INFO', 'FOTO_MATCH', `MATCH ${fromProfile.id} <-> ${toProfileId}`).catch(() => { });
+
+            // Powiadomienia email — fire-and-forget, by nie blokować odpowiedzi.
+            (async () => {
+                try {
+                    const { sendMatchEmail } = await import('@/lib/foto-match/notifications');
+                    await Promise.allSettled([
+                        sendMatchEmail(fromProfile.id, toProfileId),
+                        sendMatchEmail(toProfileId, fromProfile.id),
+                    ]);
+                } catch (e) {
+                    await logSystem('WARN', 'FOTO_MATCH', `match email failed: ${e instanceof Error ? e.message : String(e)}`).catch(() => { });
+                }
+            })();
         }
     }
 
