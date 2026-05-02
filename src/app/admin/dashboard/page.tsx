@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { getApiUrl } from '@/lib/api-config';
 import Link from 'next/link';
+import DashboardCalendarWidget from '@/components/admin/DashboardCalendarWidget';
 
 export default function DashboardPage() {
     const [stats, setStats] = useState({
@@ -103,6 +104,11 @@ export default function DashboardPage() {
                         <p className="text-sm text-zinc-500 mt-1">Zaktualizuj licznik wolnych miejsc</p>
                     </Link>
                 </div>
+            </div>
+
+            {/* Kalendarz - najblizsze sesje */}
+            <div className="mt-8">
+                <DashboardCalendarWidget />
             </div>
 
             {/* Ostatnia Aktywność */}
