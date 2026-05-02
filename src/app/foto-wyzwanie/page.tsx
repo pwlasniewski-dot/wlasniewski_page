@@ -12,6 +12,7 @@ import prisma from '@/lib/db/prisma';
 import PromocodeBar from '@/components/PromocodeBar';
 import QuickStartForm from './_components/QuickStartForm';
 import FAQAccordion from './_components/FAQAccordion';
+import { getText, interpolate } from '@/lib/photo-challenge/texts';
 
 export const revalidate = 600; // ISR: 10 min
 
@@ -84,6 +85,7 @@ async function getData() {
                 acceptedThisMonth: monthlyCount,
                 remainingMonthlySlots: remaining,
             },
+            settings,
         };
     } catch (e) {
         console.error('[foto-wyzwanie] data fetch failed', e);
@@ -91,6 +93,7 @@ async function getData() {
             moduleEnabled: true,
             packages: [] as Pkg[],
             stats: { completedSessions: 0, acceptedThisMonth: 0, remainingMonthlySlots: 5 },
+            settings: {} as Record<string, string>,
         };
     }
 }
@@ -109,7 +112,9 @@ const FAQ_ITEMS = [
 ];
 
 export default async function FotoWyzwaniePage() {
-    const { moduleEnabled, packages, stats } = await getData();
+    const { moduleEnabled, packages, stats, settings } = await getData();
+    const t = (key: string) => getText(settings, key);
+    const slotsVar = { N: stats.remainingMonthlySlots };
 
     if (!moduleEnabled) {
         return (
@@ -139,19 +144,17 @@ export default async function FotoWyzwaniePage() {
                         <div className="text-center md:text-left">
                             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/80 backdrop-blur border border-amber-200 text-amber-800 text-xs md:text-sm font-medium mb-6 shadow-sm">
                                 <Sparkles className="w-4 h-4" />
-                                Limitowana edycja — tylko {stats.remainingMonthlySlots} miejsc w tym miesiącu
+                                {interpolate(t('text_hero_badge'), slotsVar)}
                             </div>
 
                             <h1 className="font-display font-extrabold text-[2.75rem] sm:text-5xl md:text-6xl lg:text-7xl leading-[1.02] text-stone-900 mb-6 tracking-tight">
-                                <span className="block">Podaruj komuś</span>
-                                <span className="block bg-gradient-to-r from-amber-600 via-rose-500 to-amber-600 bg-clip-text text-transparent">wspomnienie</span>
-                                <span className="font-handwriting font-normal text-amber-700 text-4xl sm:text-5xl md:text-6xl block mt-1">na zawsze</span>
+                                <span className="block">{t('text_hero_h1_line1')}</span>
+                                <span className="block bg-gradient-to-r from-amber-600 via-rose-500 to-amber-600 bg-clip-text text-transparent">{t('text_hero_h1_line2')}</span>
+                                <span className="font-handwriting font-normal text-amber-700 text-4xl sm:text-5xl md:text-6xl block mt-1">{t('text_hero_h1_line3')}</span>
                             </h1>
 
-                            <p className="text-base md:text-xl text-stone-600 mb-8 leading-relaxed max-w-xl mx-auto md:mx-0">
-                                Foto Wyzwanie to <strong className="text-stone-900">prezent, którego nie da się odpakować z Allegro</strong>.
-                                Zaproś bliską osobę na wspólną sesję fotograficzną w Toruniu lub Bydgoszczy — w cenie nawet do <span className="text-amber-700 font-bold">21% niższej</span> niż standardowa.
-                            </p>
+                            <p className="text-base md:text-xl text-stone-600 mb-8 leading-relaxed max-w-xl mx-auto md:mx-0"
+                                dangerouslySetInnerHTML={{ __html: t('text_hero_subtitle') }} />
 
                             <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 md:gap-4">
                                 <a
@@ -197,19 +200,16 @@ export default async function FotoWyzwaniePage() {
             <section className="py-16 md:py-24 px-4">
                 <div className="max-w-5xl mx-auto">
                     <div className="text-center mb-12 md:mb-16">
-                        <span className="font-handwriting text-2xl md:text-3xl text-amber-700">a po co to wszystko?</span>
+                        <span className="font-handwriting text-2xl md:text-3xl text-amber-700">{t('text_why_kicker')}</span>
                         <h2 className="font-display font-extrabold text-3xl sm:text-4xl md:text-5xl text-stone-900 mt-2 tracking-tight">
-                            Bo zdjęcia żyją dłużej<br className="hidden sm:block" /> niż ostatni model telefonu
+                            {t('text_why_h2')}
                         </h2>
                     </div>
 
                     <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6">
-                        <Benefit color="rose" icon={<Gift className="w-7 h-7" />} title="Prezent z historią"
-                            description="Zamiast kolejnego kubka — wspólne 2 godziny śmiechu, których nikt Wam nie odbierze." />
-                        <Benefit color="amber" icon={<Sparkles className="w-7 h-7" />} title="Rabat aż do 21%"
-                            description="Wspólna sesja jest tańsza niż dwie osobne. Zyskujecie i zdjęcia, i pieniądze." />
-                        <Benefit color="emerald" icon={<Award className="w-7 h-7" />} title="Ja robię resztę"
-                            description="Lokalizacja, światło, pozy, kawa. Wy tylko przyjeżdżacie i bawicie się dobrze." />
+                        <Benefit color="rose" icon={<Gift className="w-7 h-7" />} title={t('text_benefit_1_title')} description={t('text_benefit_1_desc')} />
+                        <Benefit color="amber" icon={<Sparkles className="w-7 h-7" />} title={t('text_benefit_2_title')} description={t('text_benefit_2_desc')} />
+                        <Benefit color="emerald" icon={<Award className="w-7 h-7" />} title={t('text_benefit_3_title')} description={t('text_benefit_3_desc')} />
                     </div>
                 </div>
             </section>
@@ -218,17 +218,14 @@ export default async function FotoWyzwaniePage() {
             <section id="jak-to-dziala" className="py-16 md:py-24 px-4 bg-gradient-to-b from-[#FBF7EF] to-amber-50/50 scroll-mt-24">
                 <div className="max-w-6xl mx-auto">
                     <div className="text-center mb-12 md:mb-20">
-                        <span className="font-handwriting text-2xl md:text-3xl text-amber-700">prosto jak drut</span>
-                        <h2 className="font-display font-extrabold text-3xl sm:text-4xl md:text-5xl text-stone-900 mt-2 tracking-tight">Trzy kroki do wspomnień</h2>
+                        <span className="font-handwriting text-2xl md:text-3xl text-amber-700">{t('text_steps_kicker')}</span>
+                        <h2 className="font-display font-extrabold text-3xl sm:text-4xl md:text-5xl text-stone-900 mt-2 tracking-tight">{t('text_steps_h2')}</h2>
                     </div>
 
                     <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6 md:gap-8">
-                        <Step n={1} color="rose" icon={<Heart className="w-7 h-7" />} title="Wybierz pakiet i osobę"
-                            description="Klikasz, wybierasz pakiet, wpisujesz imię osoby, którą chcesz zaprosić, i opłacasz online." />
-                        <Step n={2} color="amber" icon={<Gift className="w-7 h-7" />} title="Ona dostaje zaproszenie"
-                            description="Wysyłam jej e‑mail z prywatnym linkiem. Ma 24 h, żeby wybrać termin i lokalizację. Bez logowania, bez haseł." />
-                        <Step n={3} color="emerald" icon={<Camera className="w-7 h-7" />} title="Spotykamy się na sesji"
-                            description="Toruń, Bydgoszcz lub Wasze ulubione miejsce. 60–90 minut zabawy, dziesiątki ujęć w galerii online." />
+                        <Step n={1} color="rose" icon={<Heart className="w-7 h-7" />} title={t('text_step_1_title')} description={t('text_step_1_desc')} />
+                        <Step n={2} color="amber" icon={<Gift className="w-7 h-7" />} title={t('text_step_2_title')} description={t('text_step_2_desc')} />
+                        <Step n={3} color="emerald" icon={<Camera className="w-7 h-7" />} title={t('text_step_3_title')} description={t('text_step_3_desc')} />
                     </div>
                 </div>
             </section>
@@ -238,8 +235,8 @@ export default async function FotoWyzwaniePage() {
                 <section className="py-16 md:py-24 px-4">
                     <div className="max-w-6xl mx-auto">
                         <div className="text-center mb-12 md:mb-16">
-                            <span className="font-handwriting text-2xl md:text-3xl text-amber-700">wybierz coś dla siebie</span>
-                            <h2 className="font-display font-extrabold text-3xl sm:text-4xl md:text-5xl text-stone-900 mt-2 tracking-tight">Pakiety na każdą okazję</h2>
+                            <span className="font-handwriting text-2xl md:text-3xl text-amber-700">{t('text_packages_kicker')}</span>
+                            <h2 className="font-display font-extrabold text-3xl sm:text-4xl md:text-5xl text-stone-900 mt-2 tracking-tight">{t('text_packages_h2')}</h2>
                         </div>
 
                         <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6">
@@ -264,9 +261,9 @@ export default async function FotoWyzwaniePage() {
                         {[1, 2, 3, 4, 5].map(i => (<Star key={i} className="w-6 h-6 fill-amber-500 text-amber-500" />))}
                     </div>
                     <blockquote className="font-display text-xl sm:text-2xl md:text-3xl text-stone-800 leading-relaxed italic mb-6">
-                        „Zaprosiłam mamę na sesję jako prezent na 60. urodziny. Płakałyśmy obie — najpierw na sesji, potem oglądając zdjęcia. Najlepiej wydane pieniądze ostatnich lat."
+                        {t('text_testimonial_quote')}
                     </blockquote>
-                    <p className="font-handwriting text-2xl text-amber-700">— Magda, Toruń</p>
+                    <p className="font-handwriting text-2xl text-amber-700">{t('text_testimonial_author')}</p>
                 </div>
             </section>
 
@@ -374,12 +371,12 @@ export default async function FotoWyzwaniePage() {
                             <p className="text-center text-sm text-stone-500">Fotograf · Toruń</p>
                         </div>
                         <div className="md:col-span-2">
-                            <span className="font-handwriting text-2xl text-amber-700">kto Was sfotografuje?</span>
-                            <h2 className="font-display font-extrabold text-3xl md:text-4xl text-stone-900 mt-2 mb-5 tracking-tight">Profesjonalny fotograf z 10‑letnim doświadczeniem</h2>
+                            <span className="font-handwriting text-2xl text-amber-700">{t('text_author_kicker')}</span>
+                            <h2 className="font-display font-extrabold text-3xl md:text-4xl text-stone-900 mt-2 mb-5 tracking-tight">{t('text_author_h2')}</h2>
                             <div className="space-y-4 text-stone-700 leading-relaxed">
-                                <p>Robię zdjęcia od 2014 roku. W tym czasie sfotografowałem ponad <strong>300 sesji rodzinnych, par i indywidualnych</strong>, kilkadziesiąt ślubów i niezliczoną ilość komunii. Specjalizuję się w naturalnych, niewymuszonych kadrach — bez sztywnego pozowania, bez „ptaszka", bez sztucznych uśmiechów.</p>
-                                <p>Pracuję na sprzęcie pełnoklatkowym Sony A7, używam stałych obiektywów i światła naturalnego. Każdą sesję obrabiam osobiście — galerię online udostępniam w ciągu 14 dni.</p>
-                                <p>Foto Wyzwanie to mój autorski projekt — chciałem dać ludziom narzędzie do robienia <strong>prezentów, które naprawdę zostają</strong>. Nie kolejny voucher do spa, nie kolejny kubek z napisem. Wspólny czas, wspomnienie, zdjęcie na ścianie za 20 lat.</p>
+                                <p dangerouslySetInnerHTML={{ __html: t('text_author_p1') }} />
+                                <p dangerouslySetInnerHTML={{ __html: t('text_author_p2') }} />
+                                <p dangerouslySetInnerHTML={{ __html: t('text_author_p3') }} />
                             </div>
                             <div className="flex flex-wrap gap-3 mt-6">
                                 <span className="px-3 py-1.5 rounded-full bg-amber-100 text-amber-800 text-sm font-medium">300+ sesji</span>
@@ -410,16 +407,15 @@ export default async function FotoWyzwaniePage() {
                     <div className="absolute bottom-0 right-1/4 w-96 h-96 rounded-full bg-rose-500/20 blur-3xl animate-float" style={{ animationDelay: '7s' }} />
                 </div>
                 <div className="max-w-3xl mx-auto text-center relative">
-                    <span className="font-handwriting text-2xl md:text-3xl text-amber-300">no to co — robimy?</span>
+                    <span className="font-handwriting text-2xl md:text-3xl text-amber-300">{t('text_cta_kicker')}</span>
                     <h2 className="font-display font-extrabold text-3xl sm:text-4xl md:text-6xl mt-2 mb-6 tracking-tight">
-                        Daj komuś prezent,<br /> który przeżyje Was oboje
+                        {t('text_cta_h2')}
                     </h2>
-                    <p className="text-base md:text-lg text-stone-300 mb-8 md:mb-10 max-w-xl mx-auto">
-                        Zostało <strong className="text-amber-300">{stats.remainingMonthlySlots} miejsc</strong> w tym miesiącu. Następne dopiero w przyszłym.
-                    </p>
+                    <p className="text-base md:text-lg text-stone-300 mb-8 md:mb-10 max-w-xl mx-auto"
+                        dangerouslySetInnerHTML={{ __html: interpolate(t('text_cta_subtitle'), slotsVar) }} />
                     <a href="#quick-start" className="group inline-flex items-center gap-3 px-7 md:px-10 py-4 md:py-5 rounded-full bg-gradient-to-r from-amber-400 to-rose-400 text-stone-900 font-bold text-base md:text-xl shadow-2xl shadow-amber-500/40 hover:shadow-amber-500/60 hover:-translate-y-1 transition-all animate-pulse-soft">
                         <Gift className="w-5 md:w-6 h-5 md:h-6" />
-                        Tak, stwarzam wyzwanie
+                        {t('text_cta_button')}
                         <ArrowRight className="w-5 md:w-6 h-5 md:h-6 group-hover:translate-x-1 transition-transform" />
                     </a>
                 </div>

@@ -83,7 +83,13 @@ export default function ChallengesAdminPage() {
                     Zarządzaj wszystkimi wyzwaniami zdjęciowymi
                 </p>
 
-                <div className="flex gap-4">
+                <div className="flex flex-wrap gap-3">
+                    <Link
+                        href="/admin/challenges/texts"
+                        className="px-4 py-2 bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-400 hover:to-rose-400 rounded-lg text-stone-900 font-bold transition-colors shadow-lg shadow-amber-500/20"
+                    >
+                        ✏️ Edytuj teksty strony
+                    </Link>
                     <Link
                         href="/admin/challenges/packages"
                         className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-white font-medium transition-colors"
