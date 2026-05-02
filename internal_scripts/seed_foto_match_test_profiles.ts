@@ -23,8 +23,7 @@ import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
-const TEST_PREFIX = '[T]';
-const TEST_EMAIL_DOMAIN = '@fotomatch.test';
+const TEST_EMAIL_DOMAIN = '@fotomatch.test'; // marker — cleanup filtruje po tym
 const TEST_PASSWORD = 'Test1234!';
 
 type Profile = {
@@ -78,8 +77,11 @@ const SKIPS: [number, number][] = [
     [0, 8], [0, 11], [1, 8], [4, 8], [5, 9], [3, 11], [2, 11], [5, 11], [10, 8], [10, 11],
 ];
 
-function avatarUrl(seed: number, idx = 0) {
-    return `https://i.pravatar.cc/600?img=${seed + idx}`;
+function avatarUrl(gender: 'male' | 'female', seed: number) {
+    const slot = ((seed % 90) + 90) % 90 + 1; // 1..90
+    return gender === 'female'
+        ? `https://randomuser.me/api/portraits/women/${slot}.jpg`
+        : `https://randomuser.me/api/portraits/men/${slot}.jpg`;
 }
 
 async function main() {
@@ -93,7 +95,7 @@ async function main() {
     for (let i = 0; i < PROFILES.length; i++) {
         const p = PROFILES[i];
         const email = `test${String(i + 1).padStart(2, '0')}${TEST_EMAIL_DOMAIN}`;
-        const display_name = `${TEST_PREFIX} ${p.nick}`;
+        const display_name = p.nick;
 
         // upsert user
         const user = await prisma.user.upsert({
@@ -123,7 +125,7 @@ async function main() {
                 interests: p.interests,
                 experience: p.experience,
                 comfort_level: p.comfort_level,
-                selfie_url: avatarUrl(p.avatarSeed),
+                selfie_url: avatarUrl(p.gender, p.avatarSeed),
                 phone: `+48${500000000 + i * 11111}`,
                 phone_verified_at: now,
                 age_declared_at: now,
@@ -151,7 +153,7 @@ async function main() {
             await prisma.fotoMatchPhoto.createMany({
                 data: [0, 1, 2].map((pos) => ({
                     profile_id: profile.id,
-                    url: avatarUrl(p.avatarSeed, pos * 7),
+                    url: avatarUrl(p.gender, p.avatarSeed + pos * 13),
                     position: pos,
                     ai_status: 'APPROVED',
                     reviewed_at: now,

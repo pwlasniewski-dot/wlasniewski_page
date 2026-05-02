@@ -15,7 +15,7 @@ async function main() {
     console.log('🧹 CLEANUP — usuwanie testowych profili Foto-Match\n');
 
     const profiles = await prisma.fotoMatchProfile.findMany({
-        where: { display_name: { startsWith: '[T]' } },
+        where: { user: { email: { endsWith: '@fotomatch.test' } } },
         select: { id: true, user_id: true, display_name: true },
     });
     console.log(`Znalezione profile: ${profiles.length}`);
