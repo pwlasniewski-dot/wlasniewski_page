@@ -114,13 +114,29 @@ export default function ProfileView() {
                 </div>
             )}
             {isActive && (
-                <div className="mb-6 rounded-xl bg-emerald-500/10 border border-emerald-500/30 p-4 flex gap-3 items-start">
-                    <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
-                    <div>
-                        <p className="font-semibold text-emerald-200 mb-1">Profil aktywny</p>
-                        <p className="text-sm text-zinc-300">
-                            Możesz tworzyć intencje sesji i przeglądać profile innych użytkowników (wkrótce).
-                        </p>
+                <div className="mb-6 rounded-xl bg-emerald-500/10 border border-emerald-500/30 p-4">
+                    <div className="flex gap-3 items-start mb-3">
+                        <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+                        <div>
+                            <p className="font-semibold text-emerald-200 mb-1">Profil aktywny</p>
+                            <p className="text-sm text-zinc-300">
+                                Możesz przeglądać profile innych osób, polubić te które Cię zainteresują i pisać po wzajemnym dopasowaniu.
+                            </p>
+                        </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2 ml-8">
+                        <Link
+                            href="/foto-match/odkryj"
+                            className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-amber-500 to-rose-500 px-5 py-2.5 font-semibold text-white shadow hover:shadow-lg transition text-sm"
+                        >
+                            <Sparkles className="w-4 h-4" /> Odkryj profile
+                        </Link>
+                        <Link
+                            href="/foto-match/zapros"
+                            className="inline-flex items-center gap-2 rounded-lg border border-zinc-700 hover:border-amber-400 px-5 py-2.5 font-semibold text-sm transition"
+                        >
+                            <Heart className="w-4 h-4" /> Zaproś znajomych
+                        </Link>
                     </div>
                 </div>
             )}

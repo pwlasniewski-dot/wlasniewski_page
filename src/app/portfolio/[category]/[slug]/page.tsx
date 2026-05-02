@@ -109,7 +109,6 @@ export default async function SessionPage({ params }: Props) {
 
     return (
         <main className="min-h-screen bg-black text-white">
-            EMPTY_STRING
             {/* Hero Section Wrapper for Overlay */}
             <div className="relative">
                 <HeroSlider
