@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Users, Camera, Heart, Trophy, ToggleLeft, ToggleRight, ArrowLeft, Calendar } from 'lucide-react';
+import { Users, Camera, Heart, Trophy, ToggleLeft, ToggleRight, ArrowLeft, Calendar, UserPlus, X, Copy, Check } from 'lucide-react';
 
 type Profile = {
     id: number;
@@ -36,6 +36,8 @@ export default function AdminPhotographersPage() {
     const [list, setList] = useState<Photographer[]>([]);
     const [loading, setLoading] = useState(true);
     const [savingId, setSavingId] = useState<number | null>(null);
+    const [showCreate, setShowCreate] = useState(false);
+    const [createdInfo, setCreatedInfo] = useState<{ email: string; password: string } | null>(null);
 
     const load = useCallback(async () => {
         const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null;
@@ -100,6 +102,30 @@ export default function AdminPhotographersPage() {
                         <Calendar className="w-4 h-4" /> Kalendarz
                     </Link>
                 </div>
+
+                <div className="mb-4">
+                    <button
+                        onClick={() => setShowCreate(true)}
+                        className="px-4 py-2.5 rounded-lg bg-gradient-to-r from-rose-500 to-amber-500 text-white text-sm font-bold shadow inline-flex items-center gap-2 hover:shadow-lg"
+                    >
+                        <UserPlus className="w-4 h-4" /> Nowy fotograf
+                    </button>
+                </div>
+
+                {showCreate && (
+                    <CreatePhotographerModal
+                        onClose={() => setShowCreate(false)}
+                        onCreated={(info) => {
+                            setShowCreate(false);
+                            setCreatedInfo(info);
+                            load();
+                        }}
+                    />
+                )}
+
+                {createdInfo && (
+                    <CredentialsBanner info={createdInfo} onClose={() => setCreatedInfo(null)} />
+                )}
 
                 {loading ? (
                     <p className="text-zinc-500">Wczytywanie…</p>
@@ -222,3 +248,138 @@ function Toggle({ icon, label, value, onChange, disabled }: {
         </button>
     );
 }
+
+function CreatePhotographerModal({ onClose, onCreated }: {
+    onClose: () => void;
+    onCreated: (info: { email: string; password: string }) => void;
+}) {
+    const [name, setName] = useState('');
+    const [email, setEmail] = useState('');
+    const [phone, setPhone] = useState('');
+    const [password, setPassword] = useState('');
+    const [bio, setBio] = useState('');
+    const [submitting, setSubmitting] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    const submit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError(null);
+        setSubmitting(true);
+        try {
+            const token = localStorage.getItem('admin_token');
+            const res = await fetch('/api/admin/photographers', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify({
+                    name, email, phone: phone || null,
+                    password: password || undefined,
+                    bio: bio || null,
+                }),
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                setError(data.error || 'Błąd serwera');
+                return;
+            }
+            onCreated({
+                email: data.user.email,
+                password: data.generated_password || password || '(własne hasło użytkownika)',
+            });
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 bg-zinc-900/60 flex items-center justify-center p-4" onClick={onClose}>
+            <div className="bg-white rounded-2xl max-w-md w-full p-5 shadow-xl" onClick={e => e.stopPropagation()}>
+                <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-lg font-bold text-zinc-900 inline-flex items-center gap-2">
+                        <UserPlus className="w-5 h-5 text-rose-500" /> Nowy fotograf
+                    </h2>
+                    <button onClick={onClose} className="text-zinc-400 hover:text-zinc-700"><X className="w-5 h-5" /></button>
+                </div>
+                <form onSubmit={submit} className="space-y-3">
+                    <Field label="Imię i nazwisko *" value={name} onChange={setName} required />
+                    <Field label="Email *" value={email} onChange={setEmail} type="email" required />
+                    <Field label="Telefon" value={phone} onChange={setPhone} type="tel" />
+                    <Field label="Hasło (zostaw puste = wygenerujemy)" value={password} onChange={setPassword} type="text" />
+                    <div>
+                        <label className="block text-xs font-semibold text-zinc-700 mb-1">Krótkie bio (opcjonalnie)</label>
+                        <textarea
+                            value={bio}
+                            onChange={e => setBio(e.target.value)}
+                            rows={3}
+                            className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm focus:border-amber-400 focus:outline-none"
+                        />
+                    </div>
+                    {error && <p className="text-rose-600 text-sm">{error}</p>}
+                    <div className="flex gap-2 pt-2">
+                        <button type="button" onClick={onClose} className="flex-1 px-4 py-2.5 rounded-lg border border-zinc-200 text-zinc-700 text-sm font-semibold">Anuluj</button>
+                        <button
+                            type="submit"
+                            disabled={submitting}
+                            className="flex-1 px-4 py-2.5 rounded-lg bg-gradient-to-r from-rose-500 to-amber-500 text-white text-sm font-bold disabled:opacity-50"
+                        >
+                            {submitting ? 'Tworzę…' : 'Utwórz fotografa'}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+}
+
+function Field({ label, value, onChange, type = 'text', required }: {
+    label: string; value: string; onChange: (v: string) => void; type?: string; required?: boolean;
+}) {
+    return (
+        <div>
+            <label className="block text-xs font-semibold text-zinc-700 mb-1">{label}</label>
+            <input
+                type={type}
+                value={value}
+                onChange={e => onChange(e.target.value)}
+                required={required}
+                className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm focus:border-amber-400 focus:outline-none"
+            />
+        </div>
+    );
+}
+
+function CredentialsBanner({ info, onClose }: { info: { email: string; password: string }; onClose: () => void }) {
+    const [copied, setCopied] = useState(false);
+    const text = `Login: ${info.email}\nHasło: ${info.password}\nPanel: https://wlasniewski.pl/strefa-klienta/login`;
+    const copy = () => {
+        navigator.clipboard?.writeText(text);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
+    return (
+        <div className="mb-4 bg-emerald-50 border-2 border-emerald-300 rounded-2xl p-4 shadow-sm">
+            <div className="flex items-start justify-between gap-2">
+                <div className="flex-1">
+                    <h3 className="font-bold text-emerald-900 mb-1">✅ Fotograf utworzony — przekaż mu dane:</h3>
+                    <div className="bg-white rounded-lg p-3 font-mono text-xs space-y-1 mt-2 border border-emerald-200">
+                        <div><span className="text-zinc-500">Email:</span> <strong className="text-zinc-900">{info.email}</strong></div>
+                        <div><span className="text-zinc-500">Hasło:</span> <strong className="text-zinc-900 select-all">{info.password}</strong></div>
+                        <div><span className="text-zinc-500">Logowanie:</span> <strong className="text-zinc-900">/strefa-klienta/login</strong></div>
+                    </div>
+                    <p className="text-xs text-emerald-700 mt-2">
+                        ⚠ To jedyny moment, gdy widzisz hasło. Skopiuj i wyślij je fotografowi (najlepiej innym kanałem niż email — np. SMS / Signal).
+                    </p>
+                </div>
+                <button onClick={onClose} className="text-emerald-700 hover:text-emerald-900"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="flex gap-2 mt-3">
+                <button
+                    onClick={copy}
+                    className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-semibold inline-flex items-center gap-1 hover:bg-emerald-700"
+                >
+                    {copied ? <><Check className="w-3.5 h-3.5" /> Skopiowano</> : <><Copy className="w-3.5 h-3.5" /> Kopiuj dane</>}
+                </button>
+            </div>
+        </div>
+    );
+}
+
