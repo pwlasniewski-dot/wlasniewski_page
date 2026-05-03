@@ -147,7 +147,7 @@ export default function AdminCalendarPage() {
                     <select
                         value={statusFilter}
                         onChange={e => setStatusFilter(e.target.value)}
-                        className="px-3 py-1.5 rounded-lg bg-zinc-50 border border-zinc-200 text-sm"
+                        className="px-3 py-1.5 rounded-lg bg-white border border-zinc-300 text-zinc-900 text-sm"
                     >
                         <option value="all">Wszystkie statusy</option>
                         <option value="pending">Oczekujace</option>
@@ -159,7 +159,7 @@ export default function AdminCalendarPage() {
                     <select
                         value={photographerFilter}
                         onChange={e => setPhotographerFilter(e.target.value)}
-                        className="px-3 py-1.5 rounded-lg bg-zinc-50 border border-zinc-200 text-sm"
+                        className="px-3 py-1.5 rounded-lg bg-white border border-zinc-300 text-zinc-900 text-sm"
                     >
                         <option value="all">Wszyscy fotografowie</option>
                         {photographers.map(p => (

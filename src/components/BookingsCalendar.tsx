@@ -126,9 +126,10 @@ export default function BookingsCalendar({
 
     const todayKey = ymd(new Date());
     const upcomingFromCursor = useMemo(() => {
+        // Lista pokazuje wszystkie wydarzenia od początku wybranego miesiąca w przód
+        const start = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
         return [...bookings]
-            .filter(b => new Date(b.date) >= new Date(cursor.getFullYear(), cursor.getMonth(), 1)
-                && new Date(b.date) < new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1))
+            .filter(b => new Date(b.date) >= start)
             .sort((a, b) => a.date.localeCompare(b.date) || (a.start_time || '').localeCompare(b.start_time || ''));
     }, [bookings, cursor]);
 

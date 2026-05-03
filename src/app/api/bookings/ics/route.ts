@@ -58,7 +58,66 @@ export async function GET(request: NextRequest) {
         },
     });
 
-    const ics = bookingsToIcs(bookings, calName);
+    // Warsztaty (wszystkie dni z harmonogramu) - tylko dla admina (bez photographer_id filtra)
+    let workshopBookings: any[] = [];
+    if (!photographerIdParam && !token) {
+        const workshops = await prisma.workshop.findMany({
+            where: { status: { notIn: ['draft', 'archived'] } },
+            select: {
+                id: true, slug: true, title: true, location: true,
+                starts_at: true, ends_at: true, schedule: true, status: true,
+                description: true, updated_at: true,
+            },
+        });
+        for (const w of workshops) {
+            const schedule: any[] = Array.isArray(w.schedule) ? (w.schedule as any[]) : [];
+            const days = schedule.filter(d => d && d.date);
+            if (days.length > 0) {
+                for (let i = 0; i < days.length; i++) {
+                    const d = days[i];
+                    const eventDate = new Date(d.date + 'T00:00:00');
+                    if (isNaN(eventDate.getTime())) continue;
+                    workshopBookings.push({
+                        id: w.id * 1000 + i,
+                        service: `🎓 Warsztat: ${w.title}`,
+                        package: `Dzień ${i + 1}${d.topic ? ' — ' + d.topic : ''}`,
+                        date: eventDate,
+                        start_time: d.start || null,
+                        end_time: d.end || null,
+                        client_name: w.title,
+                        email: null,
+                        phone: null,
+                        venue_city: w.location || null,
+                        venue_place: null,
+                        notes: d.plan || w.description || null,
+                        status: w.status === 'active' ? 'confirmed' : 'pending',
+                        ics_uid: `workshop-${w.id}-${d.date}@wlasniewski.pl`,
+                        updated_at: w.updated_at,
+                    });
+                }
+            } else if (w.starts_at && w.ends_at) {
+                workshopBookings.push({
+                    id: w.id * 1000,
+                    service: `🎓 Warsztat: ${w.title}`,
+                    package: '',
+                    date: w.starts_at,
+                    start_time: null,
+                    end_time: null,
+                    client_name: w.title,
+                    email: null,
+                    phone: null,
+                    venue_city: w.location || null,
+                    venue_place: null,
+                    notes: w.description || null,
+                    status: w.status === 'active' ? 'confirmed' : 'pending',
+                    ics_uid: `workshop-${w.id}@wlasniewski.pl`,
+                    updated_at: w.updated_at,
+                });
+            }
+        }
+    }
+
+    const ics = bookingsToIcs([...bookings, ...workshopBookings], calName);
 
     return new NextResponse(ics, {
         status: 200,
