@@ -64,10 +64,9 @@ export default function PortfolioContent({ categories, sections, fallbackHeroSli
                                     {section.data.title}
                                 </h2>
                             )}
-                            <div
-                                className={`prose prose-invert lg:prose-xl mx-auto ${textColors.body}`}
-                                dangerouslySetInnerHTML={{ __html: section.data.content }}
-                            />
+                            <div className={`prose prose-invert lg:prose-xl mx-auto ${textColors.body} whitespace-pre-wrap`}>
+                                {section.data.content}
+                            </div>
                         </div>
                     </section>
                 );
@@ -144,12 +143,12 @@ export default function PortfolioContent({ categories, sections, fallbackHeroSli
                             {/* Wrapper for aspect ratio / sizing */}
                             <div className="relative w-full">
                                 {category.coverImage ? (
-                                    /* Image - Full Width, Auto Height (No Crop) */
-                                    <div className="relative w-full overflow-hidden">
+                                    /* Image - Full Width, Aspect Ratio Maintained */
+                                    <div className="relative w-full overflow-hidden aspect-[16/9]">
                                         <img
                                             src={category.coverImage}
                                             alt={category.title}
-                                            className="w-full h-auto object-contain min-h-[50vh] transition-transform duration-[3s] ease-out group-hover:scale-110"
+                                            className="w-full h-full object-cover transition-transform duration-[3s] ease-out group-hover:scale-110"
                                         />
                                     </div>
                                 ) : (

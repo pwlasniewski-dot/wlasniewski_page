@@ -34,7 +34,7 @@ export default function CategoryColumnView({ sessions }: CategoryColumnViewProps
                                             fill
                                             className="object-cover"
                                             sizes="100vw"
-                                            priority={index < 2}
+                                            priority={index === 0}
                                         />
                                     </div>
                                 )}
@@ -48,7 +48,7 @@ export default function CategoryColumnView({ sessions }: CategoryColumnViewProps
                                             fill
                                             className="object-cover"
                                             sizes="(max-width: 768px) 100vw, 90vw"
-                                            priority={index < 2}
+                                            priority={index === 0}
                                         />
                                     </div>
                                 )}

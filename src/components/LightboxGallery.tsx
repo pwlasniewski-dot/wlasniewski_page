@@ -102,7 +102,7 @@ export default function LightboxGallery({ photos, highlightedIndices = [], fitMo
                       {/* Main Image */}
                       <img
                         src={photo.src}
-                        alt={photo.alt ?? ""}
+                        alt={photo.alt || photo.linkLabel || "Zdjęcie z portfolio"}
                         className={`relative w-full h-full z-10 shadow-xl transition-transform duration-700 group-hover:scale-[1.02] ${fitMode === 'blur' ? 'object-contain p-0 md:p-4' : 'object-cover'}`}
                       />
 
@@ -180,23 +180,25 @@ export default function LightboxGallery({ photos, highlightedIndices = [], fitMo
                     exit={{ opacity: 0, x: -direction * 40 }}
                     transition={{ duration: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
                   >
-                    <motion.img
-                      src={photos[idx].src}
-                      alt={photos[idx].alt ?? ""}
+                    {photos[idx] && (
+                      <motion.img
+                        src={photos[idx].src}
+                        alt={photos[idx].alt || "Zdjęcie z galerii"}
                       className="max-h-[92vh] max-w-[96vw] w-auto h-auto object-contain rounded-2xl shadow-2xl select-none"
                       draggable={false}
                       drag="x"
                       dragConstraints={{ left: 0, right: 0 }}
                       dragElastic={0.25}
-                      onDragEnd={(_, info) => {
-                        const threshold = 60;
-                        if (info.offset.x < -threshold) {
-                          next();
-                        } else if (info.offset.x > threshold) {
-                          prev();
-                        }
-                      }}
-                    />
+                        onDragEnd={(_, info) => {
+                          const threshold = 60;
+                          if (info.offset.x < -threshold) {
+                            next();
+                          } else if (info.offset.x > threshold) {
+                            prev();
+                          }
+                        }}
+                      />
+                    )}
                   </motion.div>
                 </AnimatePresence>
               </div>

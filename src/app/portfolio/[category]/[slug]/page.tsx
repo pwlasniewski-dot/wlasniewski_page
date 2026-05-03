@@ -15,6 +15,49 @@ type Props = {
 // Revalidate every hour for better performance
 export const revalidate = 3600;
 
+export async function generateMetadata({ params }: Props) {
+    const { slug } = await params;
+    
+    try {
+        const prisma = (await import('@/lib/db/prisma')).default;
+        const session = await prisma.portfolioSession.findUnique({
+            where: { slug },
+            include: { cover_image: true },
+        });
+
+        if (!session) {
+            return {
+                title: 'Sesja nie znaleziona',
+            };
+        }
+
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL || 'https://wlasniewski.pl';
+        const coverImageUrl = session.cover_image?.file_path || null;
+
+        return {
+            title: `${session.title} | Portfolio`,
+            description: session.description || `Zobacz zdjęcia z sesji: ${session.title}`,
+            openGraph: {
+                title: session.title,
+                description: session.description || `Zobacz zdjęcia z sesji: ${session.title}`,
+                type: 'website',
+                url: `${baseUrl}/portfolio/${session.category}/${slug}`,
+                images: coverImageUrl ? [{
+                    url: coverImageUrl.startsWith('http') ? coverImageUrl : `${baseUrl}${coverImageUrl}`,
+                    width: 1200,
+                    height: 630,
+                    alt: session.title,
+                }] : [],
+            },
+        };
+    } catch (error) {
+        console.error('Error generating metadata:', error);
+        return {
+            title: 'Portfolio',
+        };
+    }
+}
+
 export async function generateStaticParams() {
     try {
         const prisma = (await import('@/lib/db/prisma')).default;
@@ -81,8 +124,6 @@ export default async function SessionPage({ params }: Props) {
         console.error('Error parsing media_ids', e);
         galleryIds = [];
     }
-
-    console.log('[SessionPage] Parsed gallery IDs:', galleryIds);
 
     // Fetch actual image URLs directly from MediaLibrary
     let galleryImages: Array<{ id: number; url: string }> = [];
