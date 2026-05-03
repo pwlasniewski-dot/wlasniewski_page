@@ -2,7 +2,7 @@
 
 import { use, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Plus, Printer, Trash2, KeyRound, Edit2, Save, X, Send, Calendar as CalendarIcon, Bell } from 'lucide-react';
+import { ArrowLeft, Plus, Printer, Trash2, KeyRound, Edit2, Save, X, Send, Calendar as CalendarIcon, Bell, Upload, Image as ImageIcon, BookOpen, Star } from 'lucide-react';
 
 interface Participant {
     id: number;
@@ -35,7 +35,7 @@ export default function WorkshopDetailPage({ params }: { params: Promise<{ id: s
     const [loading, setLoading] = useState(true);
     const [generating, setGenerating] = useState(false);
     const [recentlyCreated, setRecentlyCreated] = useState<Participant[] | null>(null);
-    const [activeTab, setActiveTab] = useState<'info' | 'schedule' | 'participants' | 'offers'>('info');
+    const [activeTab, setActiveTab] = useState<'info' | 'schedule' | 'materials' | 'gallery' | 'participants' | 'offers'>('info');
     const [editing, setEditing] = useState(false);
     const [form, setForm] = useState({ title: '', location: '', description: '', status: '', starts_at: '', ends_at: '' });
     const [showOfferModal, setShowOfferModal] = useState(false);
@@ -164,13 +164,15 @@ export default function WorkshopDetailPage({ params }: { params: Promise<{ id: s
 
                 {/* Tabs */}
                 <div className="flex gap-2 mb-6 border-b border-zinc-200 overflow-x-auto">
-                    {(['info', 'schedule', 'offers', 'participants'] as const).map(tab => (
+                    {(['info', 'schedule', 'materials', 'offers', 'participants', 'gallery'] as const).map(tab => (
                         <button key={tab} onClick={() => setActiveTab(tab)}
                             className={`px-4 py-2 font-bold text-sm transition whitespace-nowrap ${activeTab === tab ? 'border-b-2 border-rose-500 text-zinc-900' : 'text-zinc-500 hover:text-zinc-700'}`}>
                             {tab === 'info' && '📋 Informacje'}
                             {tab === 'schedule' && '📅 Program'}
+                            {tab === 'materials' && '📚 Materiały / Powtórki'}
                             {tab === 'offers' && '✉️ Oferty / Zapisy'}
                             {tab === 'participants' && `👥 Uczestnicy (${w.participants.length})`}
+                            {tab === 'gallery' && '🖼️ Galeria zdjęć'}
                         </button>
                     ))}
                 </div>
@@ -178,6 +180,8 @@ export default function WorkshopDetailPage({ params }: { params: Promise<{ id: s
                 {/* Content */}
                 {activeTab === 'info' && <InfoTab workshop={w} editing={editing} form={form} setForm={setForm} />}
                 {activeTab === 'schedule' && <ScheduleTab workshop={w} reload={load} />}
+                {activeTab === 'materials' && <MaterialsTab workshop={w} reload={load} />}
+                {activeTab === 'gallery' && <GalleryTab workshopId={w.id} />}
                 {activeTab === 'offers' && <OffersTab workshopId={w.id} onSendOffer={() => setShowOfferModal(true)} reloadParent={load} />}
                 {activeTab === 'participants' && (
                     <ParticipantsTab
@@ -265,7 +269,9 @@ function InfoTab({ workshop, editing, form, setForm }: any) {
 function ScheduleTab({ workshop, reload }: { workshop: Workshop; reload: () => void }) {
     const [items, setItems] = useState<any[]>(workshop.schedule || []);
     const [adding, setAdding] = useState(false);
-    const [newItem, setNewItem] = useState({ date: '', start: '', end: '', topic: '', plan: '' });
+    const [newItem, setNewItem] = useState<{ date: string; start: string; end: string; topic: string; plan: string; image_url: string }>({ date: '', start: '', end: '', topic: '', plan: '', image_url: '' });
+    const [editIdx, setEditIdx] = useState<number | null>(null);
+    const [uploading, setUploading] = useState<number | null>(null); // -1 = newItem, n>=0 = item index
 
     useEffect(() => { setItems(workshop.schedule || []); }, [workshop.schedule]);
 
@@ -276,14 +282,45 @@ function ScheduleTab({ workshop, reload }: { workshop: Workshop; reload: () => v
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
             body: JSON.stringify({ schedule: items }),
         });
+        setEditIdx(null);
         reload();
     }
 
     function add() {
         if (!newItem.topic) return;
         setItems([...items, { ...newItem }]);
-        setNewItem({ date: '', start: '', end: '', topic: '', plan: '' });
+        setNewItem({ date: '', start: '', end: '', topic: '', plan: '', image_url: '' });
         setAdding(false);
+    }
+
+    async function uploadImage(file: File, target: 'new' | number) {
+        const token = localStorage.getItem('admin_token') || '';
+        const fd = new FormData();
+        fd.append('file', file);
+        fd.append('kind', 'schedule');
+        setUploading(target === 'new' ? -1 : target);
+        try {
+            const r = await fetch('/api/admin/workshops/upload-asset', {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${token}` },
+                body: fd,
+            });
+            const j = await r.json();
+            if (!r.ok) { alert(j.error || 'Błąd uploadu'); return; }
+            if (target === 'new') {
+                setNewItem({ ...newItem, image_url: j.url });
+            } else {
+                const next = [...items];
+                next[target] = { ...next[target], image_url: j.url };
+                setItems(next);
+            }
+        } finally { setUploading(null); }
+    }
+
+    function updateField(idx: number, key: string, value: string) {
+        const next = [...items];
+        next[idx] = { ...next[idx], [key]: value };
+        setItems(next);
     }
 
     return (
@@ -308,9 +345,22 @@ function ScheduleTab({ workshop, reload }: { workshop: Workshop; reload: () => v
                     <textarea value={newItem.plan} onChange={e => setNewItem({ ...newItem, plan: e.target.value })}
                         placeholder="Plan szczegółowy (opcjonalnie)" rows={2}
                         className="border border-zinc-300 rounded px-2 py-1.5 text-zinc-900 text-sm md:col-span-4" />
-                    <div className="flex gap-2">
-                        <button onClick={add} className="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded text-sm font-bold">Dodaj</button>
-                        <button onClick={() => setAdding(false)} className="text-zinc-600 px-2">Anuluj</button>
+                    <div className="md:col-span-5 flex items-center gap-3 flex-wrap">
+                        <label className="text-xs bg-amber-100 hover:bg-amber-200 text-amber-900 px-3 py-1.5 rounded font-bold cursor-pointer flex items-center gap-1">
+                            <Upload size={12} /> {newItem.image_url ? 'Zmień grafikę' : 'Dodaj grafikę z internetu / dysku'}
+                            <input type="file" accept="image/*,application/pdf" hidden
+                                onChange={e => { const f = e.target.files?.[0]; if (f) uploadImage(f, 'new'); e.target.value = ''; }} />
+                        </label>
+                        {uploading === -1 && <span className="text-xs text-zinc-500">wgrywam…</span>}
+                        {newItem.image_url && (
+                            <a href={newItem.image_url} target="_blank" rel="noreferrer" className="text-xs text-rose-600 underline">
+                                <ImageIcon size={12} className="inline" /> podgląd grafiki
+                            </a>
+                        )}
+                        <div className="flex gap-2 ml-auto">
+                            <button onClick={add} className="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded text-sm font-bold">Dodaj</button>
+                            <button onClick={() => setAdding(false)} className="text-zinc-600 px-2">Anuluj</button>
+                        </div>
                     </div>
                 </div>
             )}
@@ -320,28 +370,326 @@ function ScheduleTab({ workshop, reload }: { workshop: Workshop; reload: () => v
             ) : (
                 <div className="space-y-2">
                     {items.map((item, idx) => (
-                        <div key={idx} className="bg-zinc-50 border border-zinc-200 rounded-lg p-3 flex items-start justify-between">
-                            <div className="flex-1">
-                                <div className="flex items-center gap-3 mb-1">
-                                    <span className="text-xs text-zinc-600 font-mono">{item.date || '—'}</span>
-                                    <span className="text-xs text-zinc-500 font-mono">{item.start} – {item.end}</span>
+                        <div key={idx} className="bg-zinc-50 border border-zinc-200 rounded-lg p-3">
+                            {editIdx === idx ? (
+                                <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
+                                    <input type="date" value={item.date || ''} onChange={e => updateField(idx, 'date', e.target.value)} className="border border-zinc-300 rounded px-2 py-1.5 text-sm" />
+                                    <input type="time" value={item.start || ''} onChange={e => updateField(idx, 'start', e.target.value)} className="border border-zinc-300 rounded px-2 py-1.5 text-sm" />
+                                    <input type="time" value={item.end || ''} onChange={e => updateField(idx, 'end', e.target.value)} className="border border-zinc-300 rounded px-2 py-1.5 text-sm" />
+                                    <input value={item.topic || ''} onChange={e => updateField(idx, 'topic', e.target.value)} className="border border-zinc-300 rounded px-2 py-1.5 text-sm md:col-span-2" />
+                                    <textarea value={item.plan || ''} onChange={e => updateField(idx, 'plan', e.target.value)} rows={3} className="border border-zinc-300 rounded px-2 py-1.5 text-sm md:col-span-5" />
+                                    <div className="md:col-span-5 flex items-center gap-3 flex-wrap">
+                                        <label className="text-xs bg-amber-100 hover:bg-amber-200 text-amber-900 px-3 py-1.5 rounded font-bold cursor-pointer flex items-center gap-1">
+                                            <Upload size={12} /> {item.image_url ? 'Zmień grafikę' : 'Dodaj grafikę'}
+                                            <input type="file" accept="image/*,application/pdf" hidden
+                                                onChange={e => { const f = e.target.files?.[0]; if (f) uploadImage(f, idx); e.target.value = ''; }} />
+                                        </label>
+                                        {uploading === idx && <span className="text-xs text-zinc-500">wgrywam…</span>}
+                                        {item.image_url && (
+                                            <>
+                                                <a href={item.image_url} target="_blank" rel="noreferrer" className="text-xs text-rose-600 underline"><ImageIcon size={12} className="inline" /> podgląd</a>
+                                                <button onClick={() => updateField(idx, 'image_url', '')} className="text-xs text-zinc-500 hover:text-rose-600">usuń grafikę</button>
+                                            </>
+                                        )}
+                                        <button onClick={save} className="ml-auto bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded text-sm font-bold">Zapisz</button>
+                                        <button onClick={() => { setEditIdx(null); setItems(workshop.schedule || []); }} className="text-zinc-600 px-2 text-sm">Anuluj</button>
+                                    </div>
                                 </div>
-                                <div className="font-bold text-zinc-900">{item.topic}</div>
-                                {item.plan && <div className="text-sm text-zinc-600 mt-1">{item.plan}</div>}
-                            </div>
-                            <button onClick={() => setItems(items.filter((_, i) => i !== idx))}
-                                className="text-rose-500 hover:text-rose-700">
-                                <Trash2 size={14} />
-                            </button>
+                            ) : (
+                                <div className="flex items-start gap-3">
+                                    {item.image_url && (
+                                        <a href={item.image_url} target="_blank" rel="noreferrer" className="flex-shrink-0">
+                                            <img src={item.image_url} alt="" className="w-20 h-20 object-cover rounded border border-zinc-300" />
+                                        </a>
+                                    )}
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-3 mb-1">
+                                            <span className="text-xs text-zinc-600 font-mono">{item.date || '—'}</span>
+                                            <span className="text-xs text-zinc-500 font-mono">{item.start} – {item.end}</span>
+                                        </div>
+                                        <div className="font-bold text-zinc-900">{item.topic}</div>
+                                        {item.plan && <div className="text-sm text-zinc-600 mt-1 whitespace-pre-wrap">{item.plan}</div>}
+                                    </div>
+                                    <div className="flex flex-col gap-1">
+                                        <button onClick={() => setEditIdx(idx)} className="text-zinc-500 hover:text-zinc-900 p-1" title="Edytuj"><Edit2 size={14} /></button>
+                                        <button onClick={() => { if (confirm('Usunąć ten dzień?')) setItems(items.filter((_, i) => i !== idx)); }} className="text-rose-500 hover:text-rose-700 p-1" title="Usuń"><Trash2 size={14} /></button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     ))}
                 </div>
             )}
 
-            {items.length > 0 && (
+            {items.length > 0 && editIdx === null && (
                 <button onClick={save} className="bg-gradient-to-r from-rose-500 to-amber-500 hover:from-rose-600 hover:to-amber-600 text-white font-bold px-4 py-2 rounded-lg flex items-center gap-2">
                     <Save size={16} /> Zapisz harmonogram
                 </button>
+            )}
+        </div>
+    );
+}
+
+// === MATERIA\u0141Y / POWT\u00d3RKI ===
+
+function MaterialsTab({ workshop, reload }: { workshop: Workshop; reload: () => void }) {
+    const [items, setItems] = useState<any[]>(workshop.materials || []);
+    const [adding, setAdding] = useState(false);
+    const [newItem, setNewItem] = useState<{ title: string; body_md: string; image_url: string }>({ title: '', body_md: '', image_url: '' });
+    const [editIdx, setEditIdx] = useState<number | null>(null);
+    const [uploading, setUploading] = useState<number | null>(null);
+
+    useEffect(() => { setItems(workshop.materials || []); }, [workshop.materials]);
+
+    async function save() {
+        const token = localStorage.getItem('admin_token') || '';
+        await fetch(`/api/admin/workshops/${workshop.id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ materials: items }),
+        });
+        setEditIdx(null);
+        reload();
+    }
+
+    function add() {
+        if (!newItem.title) return;
+        setItems([...items, { ...newItem }]);
+        setNewItem({ title: '', body_md: '', image_url: '' });
+        setAdding(false);
+    }
+
+    async function uploadImage(file: File, target: 'new' | number) {
+        const token = localStorage.getItem('admin_token') || '';
+        const fd = new FormData();
+        fd.append('file', file);
+        fd.append('kind', 'materials');
+        setUploading(target === 'new' ? -1 : target);
+        try {
+            const r = await fetch('/api/admin/workshops/upload-asset', {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${token}` }, body: fd,
+            });
+            const j = await r.json();
+            if (!r.ok) { alert(j.error || 'B\u0142\u0105d uploadu'); return; }
+            if (target === 'new') setNewItem({ ...newItem, image_url: j.url });
+            else { const next = [...items]; next[target] = { ...next[target], image_url: j.url }; setItems(next); }
+        } finally { setUploading(null); }
+    }
+
+    function updateField(idx: number, key: string, value: string) {
+        const next = [...items];
+        next[idx] = { ...next[idx], [key]: value };
+        setItems(next);
+    }
+
+    return (
+        <div className="bg-white border border-zinc-200 rounded-xl p-6 space-y-4 shadow-sm">
+            <div className="flex items-center justify-between">
+                <div>
+                    <h3 className="font-bold text-lg text-zinc-900 flex items-center gap-2"><BookOpen size={18} /> Materia\u0142y edukacyjne / powt\u00f3rki</h3>
+                    <p className="text-xs text-zinc-500 mt-0.5">Te materia\u0142y zobacz\u0105 dzieciaki w panelu w zak\u0142adce \u201ePowt\u00f3rki\u201d \u2014 mo\u017cesz wgra\u0107 grafik\u0119 (skan z ksi\u0105\u017cki, infografik\u0119, schemat).</p>
+                </div>
+                <button onClick={() => setAdding(!adding)} className="text-rose-600 hover:text-rose-700 flex items-center gap-2 font-bold">
+                    <Plus size={16} /> Dodaj materia\u0142
+                </button>
+            </div>
+
+            {adding && (
+                <div className="space-y-2 p-4 bg-zinc-50 rounded-lg border border-zinc-200">
+                    <input value={newItem.title} onChange={e => setNewItem({ ...newItem, title: e.target.value })}
+                        placeholder="Tytu\u0142 (np. Tr\u00f3jk\u0105t ekspozycji)" className="w-full border border-zinc-300 rounded px-3 py-2 text-zinc-900 font-bold" />
+                    <textarea value={newItem.body_md} onChange={e => setNewItem({ ...newItem, body_md: e.target.value })}
+                        placeholder="Tre\u015b\u0107 (Markdown). U\u017cywaj **pogrubienia**, list 1./2./3., cytat\u00f3w >."
+                        rows={6} className="w-full border border-zinc-300 rounded px-3 py-2 text-zinc-900 text-sm font-mono" />
+                    <div className="flex items-center gap-3 flex-wrap">
+                        <label className="text-xs bg-amber-100 hover:bg-amber-200 text-amber-900 px-3 py-1.5 rounded font-bold cursor-pointer flex items-center gap-1">
+                            <Upload size={12} /> {newItem.image_url ? 'Zmie\u0144 grafik\u0119' : 'Wgraj grafik\u0119 (np. skan z ksi\u0105\u017cki)'}
+                            <input type="file" accept="image/*,application/pdf" hidden
+                                onChange={e => { const f = e.target.files?.[0]; if (f) uploadImage(f, 'new'); e.target.value = ''; }} />
+                        </label>
+                        {uploading === -1 && <span className="text-xs text-zinc-500">wgrywam\u2026</span>}
+                        {newItem.image_url && <a href={newItem.image_url} target="_blank" rel="noreferrer" className="text-xs text-rose-600 underline"><ImageIcon size={12} className="inline" /> podgl\u0105d</a>}
+                        <div className="ml-auto flex gap-2">
+                            <button onClick={add} className="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded text-sm font-bold">Dodaj</button>
+                            <button onClick={() => setAdding(false)} className="text-zinc-600 px-2">Anuluj</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {items.length === 0 ? (
+                <div className="text-zinc-500 text-center py-8">Brak materia\u0142\u00f3w. Dodaj pierwszy powy\u017cej.</div>
+            ) : (
+                <div className="space-y-3">
+                    {items.map((m, idx) => (
+                        <div key={idx} className="bg-zinc-50 border border-zinc-200 rounded-lg p-3">
+                            {editIdx === idx ? (
+                                <div className="space-y-2">
+                                    <input value={m.title || ''} onChange={e => updateField(idx, 'title', e.target.value)} className="w-full border border-zinc-300 rounded px-2 py-1.5 font-bold" />
+                                    <textarea value={m.body_md || ''} onChange={e => updateField(idx, 'body_md', e.target.value)} rows={8} className="w-full border border-zinc-300 rounded px-2 py-1.5 text-sm font-mono" />
+                                    <div className="flex items-center gap-3 flex-wrap">
+                                        <label className="text-xs bg-amber-100 hover:bg-amber-200 text-amber-900 px-3 py-1.5 rounded font-bold cursor-pointer flex items-center gap-1">
+                                            <Upload size={12} /> {m.image_url ? 'Zmie\u0144 grafik\u0119' : 'Wgraj grafik\u0119'}
+                                            <input type="file" accept="image/*,application/pdf" hidden
+                                                onChange={e => { const f = e.target.files?.[0]; if (f) uploadImage(f, idx); e.target.value = ''; }} />
+                                        </label>
+                                        {uploading === idx && <span className="text-xs text-zinc-500">wgrywam\u2026</span>}
+                                        {m.image_url && (
+                                            <>
+                                                <a href={m.image_url} target="_blank" rel="noreferrer" className="text-xs text-rose-600 underline"><ImageIcon size={12} className="inline" /> podgl\u0105d</a>
+                                                <button onClick={() => updateField(idx, 'image_url', '')} className="text-xs text-zinc-500 hover:text-rose-600">usu\u0144 grafik\u0119</button>
+                                            </>
+                                        )}
+                                        <button onClick={save} className="ml-auto bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded text-sm font-bold">Zapisz</button>
+                                        <button onClick={() => { setEditIdx(null); setItems(workshop.materials || []); }} className="text-zinc-600 px-2 text-sm">Anuluj</button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="flex items-start gap-3">
+                                    {m.image_url && (
+                                        <a href={m.image_url} target="_blank" rel="noreferrer" className="flex-shrink-0">
+                                            <img src={m.image_url} alt="" className="w-24 h-24 object-cover rounded border border-zinc-300" />
+                                        </a>
+                                    )}
+                                    <div className="flex-1 min-w-0">
+                                        <div className="font-bold text-zinc-900">{m.title}</div>
+                                        <div className="text-sm text-zinc-600 mt-1 whitespace-pre-wrap line-clamp-3">{m.body_md}</div>
+                                    </div>
+                                    <div className="flex flex-col gap-1">
+                                        <button onClick={() => setEditIdx(idx)} className="text-zinc-500 hover:text-zinc-900 p-1" title="Edytuj"><Edit2 size={14} /></button>
+                                        <button onClick={() => { if (confirm('Usun\u0105\u0107 materia\u0142?')) setItems(items.filter((_, i) => i !== idx)); }} className="text-rose-500 hover:text-rose-700 p-1" title="Usu\u0144"><Trash2 size={14} /></button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {items.length > 0 && editIdx === null && (
+                <button onClick={save} className="bg-gradient-to-r from-rose-500 to-amber-500 hover:from-rose-600 hover:to-amber-600 text-white font-bold px-4 py-2 rounded-lg flex items-center gap-2">
+                    <Save size={16} /> Zapisz materia\u0142y
+                </button>
+            )}
+        </div>
+    );
+}
+
+// === GALERIA ZDJ\u0118\u0106 (UCZESTNIK\u00d3W) ===
+
+type GalleryUpload = {
+    id: number; file_url: string; caption: string | null; feedback: string | null; rating: number | null; created_at: string;
+    participant: { id: number; login: string; display_name: string | null; avatar: string | null };
+};
+
+function GalleryTab({ workshopId }: { workshopId: number }) {
+    const [items, setItems] = useState<GalleryUpload[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [filter, setFilter] = useState<number | 'all'>('all');
+    const [editing, setEditing] = useState<number | null>(null);
+    const [draftFeedback, setDraftFeedback] = useState('');
+    const [draftRating, setDraftRating] = useState<number | null>(null);
+
+    async function load() {
+        setLoading(true);
+        const token = localStorage.getItem('admin_token') || '';
+        const r = await fetch(`/api/admin/workshops/${workshopId}/uploads`, { headers: { Authorization: `Bearer ${token}` } });
+        if (r.ok) { const d = await r.json(); setItems(d.uploads || []); }
+        setLoading(false);
+    }
+    useEffect(() => { load(); }, [workshopId]);
+
+    function startEdit(u: GalleryUpload) {
+        setEditing(u.id);
+        setDraftFeedback(u.feedback || '');
+        setDraftRating(u.rating);
+    }
+
+    async function saveFeedback(id: number) {
+        const token = localStorage.getItem('admin_token') || '';
+        await fetch(`/api/admin/workshops/${workshopId}/uploads/${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ feedback: draftFeedback, rating: draftRating }),
+        });
+        setEditing(null);
+        load();
+    }
+
+    async function removeUpload(id: number) {
+        if (!confirm('Usun\u0105\u0107 zdj\u0119cie uczestnika?')) return;
+        const token = localStorage.getItem('admin_token') || '';
+        await fetch(`/api/admin/workshops/${workshopId}/uploads/${id}`, {
+            method: 'DELETE', headers: { Authorization: `Bearer ${token}` },
+        });
+        load();
+    }
+
+    const participants = Array.from(new Map(items.map(u => [u.participant.id, u.participant])).values());
+    const filtered = filter === 'all' ? items : items.filter(u => u.participant.id === filter);
+
+    return (
+        <div className="bg-white border border-zinc-200 rounded-xl p-6 shadow-sm">
+            <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+                <h3 className="font-bold text-lg text-zinc-900 flex items-center gap-2"><ImageIcon size={18} /> Galeria zdj\u0119\u0107 uczestnik\u00f3w ({items.length})</h3>
+                <select value={filter} onChange={e => setFilter(e.target.value === 'all' ? 'all' : parseInt(e.target.value, 10))}
+                    className="border border-zinc-300 rounded px-3 py-2 text-sm">
+                    <option value="all">Wszyscy uczestnicy</option>
+                    {participants.map(p => <option key={p.id} value={p.id}>{p.avatar} {p.display_name || p.login}</option>)}
+                </select>
+            </div>
+
+            {loading ? (
+                <div className="text-center text-zinc-500 py-8">\u0141adowanie\u2026</div>
+            ) : filtered.length === 0 ? (
+                <div className="text-center text-zinc-500 py-8">
+                    {items.length === 0 ? 'Uczestnicy jeszcze nie wgrali \u017cadnych zdj\u0119\u0107.' : 'Brak zdj\u0119\u0107 dla wybranego uczestnika.'}
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {filtered.map(u => (
+                        <div key={u.id} className="bg-zinc-50 border border-zinc-200 rounded-lg overflow-hidden">
+                            <a href={u.file_url} target="_blank" rel="noreferrer" className="block aspect-square bg-zinc-200">
+                                <img src={u.file_url} alt={u.caption || ''} className="w-full h-full object-cover" />
+                            </a>
+                            <div className="p-3 space-y-2">
+                                <div className="flex items-center justify-between text-xs">
+                                    <span className="text-zinc-600">{u.participant.avatar} {u.participant.display_name || u.participant.login}</span>
+                                    <span className="text-zinc-400">{new Date(u.created_at).toLocaleDateString('pl-PL')}</span>
+                                </div>
+                                {u.caption && <div className="text-sm text-zinc-700 italic">\u201e{u.caption}\u201d</div>}
+                                {editing === u.id ? (
+                                    <div className="space-y-2">
+                                        <div className="flex items-center gap-1">
+                                            {[1, 2, 3, 4, 5].map(n => (
+                                                <button key={n} onClick={() => setDraftRating(n)} type="button"
+                                                    className={`text-lg ${(draftRating || 0) >= n ? 'text-amber-500' : 'text-zinc-300'}`}>\u2605</button>
+                                            ))}
+                                            {draftRating !== null && <button onClick={() => setDraftRating(null)} className="text-xs text-zinc-500 ml-1">wyczy\u015b\u0107</button>}
+                                        </div>
+                                        <textarea value={draftFeedback} onChange={e => setDraftFeedback(e.target.value)}
+                                            placeholder="Konkretna wskaz\u00f3wka dla dzieciaka\u2026" rows={3}
+                                            className="w-full border border-zinc-300 rounded px-2 py-1.5 text-sm" />
+                                        <div className="flex gap-2">
+                                            <button onClick={() => saveFeedback(u.id)} className="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1 rounded text-xs font-bold">Zapisz</button>
+                                            <button onClick={() => setEditing(null)} className="text-zinc-500 text-xs">Anuluj</button>
+                                            <button onClick={() => removeUpload(u.id)} className="ml-auto text-rose-500 hover:text-rose-700 p-1"><Trash2 size={14} /></button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-1">
+                                        {u.rating ? <div className="text-amber-500">{'\u2605'.repeat(u.rating)}<span className="text-zinc-300">{'\u2605'.repeat(5 - u.rating)}</span></div> : null}
+                                        {u.feedback && <div className="text-xs text-zinc-700 bg-amber-50 border-l-2 border-amber-400 p-2 rounded">\ud83d\udcac {u.feedback}</div>}
+                                        <button onClick={() => startEdit(u)} className="text-xs text-rose-600 hover:text-rose-700 font-bold flex items-center gap-1">
+                                            <Star size={12} /> {u.feedback || u.rating ? 'Edytuj ocen\u0119' : 'Dodaj ocen\u0119 i komentarz'}
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    ))}
+                </div>
             )}
         </div>
     );

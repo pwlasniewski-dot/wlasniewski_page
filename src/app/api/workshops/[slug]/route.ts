@@ -10,7 +10,7 @@ export async function GET(_request: NextRequest, ctx: { params: Promise<{ slug: 
         where: { slug },
         select: {
             id: true, slug: true, title: true, location: true, description: true,
-            schedule: true, status: true, starts_at: true, ends_at: true,
+            schedule: true, materials: true, status: true, starts_at: true, ends_at: true,
             _count: { select: { participants: true } },
         },
     });
