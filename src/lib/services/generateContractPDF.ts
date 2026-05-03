@@ -75,9 +75,9 @@ export async function generateContractPDFBuffer(
             doc.fillColor('#1F2937');
 
             if (contract.content) {
-                // Strip HTML tags and decode entities
+                // Strip HTML tags and decode entities, then render line by line
                 const plainText = contract.content
-                    .replace(/<[^>]*>/g, '') // Remove HTML tags
+                    .replace(/<[^>]*>/g, '')
                     .replace(/&nbsp;/g, ' ')
                     .replace(/&lt;/g, '<')
                     .replace(/&gt;/g, '>')
@@ -86,11 +86,75 @@ export async function generateContractPDFBuffer(
                     .replace(/&amp;/g, '&')
                     .trim();
 
-                doc.text(plainText, {
-                    align: 'left',
-                    width: 515,
-                    lineGap: 4,
-                });
+                const lines = plainText.split('\n');
+                const stripBold = (s: string) => s.replace(/\*\*([^*]+)\*\*/g, '$1').replace(/\*([^*]+)\*/g, '$1');
+
+                let i = 0;
+                while (i < lines.length) {
+                    const raw = lines[i];
+                    const trimmed = raw.trim();
+
+                    if (!trimmed) {
+                        doc.moveDown(0.3);
+                        i++;
+                        continue;
+                    }
+
+                    // Detect two-column signature: "Wykonawca: ..." followed by "Zleceniodawca: ..."
+                    const plain = stripBold(trimmed);
+                    const nextPlain = i + 1 < lines.length ? stripBold(lines[i + 1].trim()) : '';
+                    if (plain.startsWith('Wykonawca:') && nextPlain.startsWith('Zleceniodawca:')) {
+                        doc.moveDown(0.5);
+                        const y = doc.y;
+                        doc.font('Montserrat', 10).fillColor('#1F2937');
+                        doc.text(plain, 40, y, { width: 240, lineGap: 4 });
+                        doc.text(nextPlain, 310, y, { width: 245, lineGap: 4 });
+                        doc.moveDown(1);
+                        i += 2;
+                        continue;
+                    }
+
+                    // Section heading (##)
+                    if (trimmed.startsWith('## ')) {
+                        doc.moveDown(0.4);
+                        doc.font('Montserrat-Bold', 11).fillColor('#1D4ED8');
+                        doc.text(stripBold(trimmed.slice(3)), { width: 515, lineGap: 3 });
+                        doc.moveDown(0.2);
+                        i++;
+                        continue;
+                    }
+
+                    // Title (#)
+                    if (trimmed.startsWith('# ')) {
+                        doc.moveDown(0.4);
+                        doc.font('Montserrat-Bold', 13).fillColor('#111827');
+                        doc.text(stripBold(trimmed.slice(2)), { align: 'center', width: 515 });
+                        doc.moveDown(0.3);
+                        i++;
+                        continue;
+                    }
+
+                    // Horizontal rule
+                    if (trimmed.startsWith('---')) {
+                        doc.moveDown(0.2);
+                        doc.strokeColor('#D1D5DB').lineWidth(0.5)
+                           .moveTo(40, doc.y).lineTo(doc.page.width - 40, doc.y).stroke();
+                        doc.moveDown(0.3);
+                        i++;
+                        continue;
+                    }
+
+                    // Regular line
+                    doc.font('Montserrat', 10).fillColor('#1F2937');
+                    const cleanLine = stripBold(trimmed);
+                    if (cleanLine.startsWith('- ') || cleanLine.startsWith('* ')) {
+                        doc.text('•  ' + cleanLine.slice(2), { indent: 10, width: 505, lineGap: 3 });
+                    } else {
+                        doc.text(cleanLine, { width: 515, lineGap: 3 });
+                    }
+                    doc.moveDown(0.1);
+                    i++;
+                }
                 doc.moveDown(0.5);
             }
 

@@ -45,9 +45,29 @@ async function generatePDF(content) {
         } catch { useCustomFont = false; }
 
         const lines = content.split('\n');
-        for (const line of lines) {
-            const trimmed = line.trim();
-            if (!trimmed) { doc.moveDown(0.4); continue; }
+        let i = 0;
+        while (i < lines.length) {
+            const trimmed = lines[i].trim();
+            if (!trimmed) { doc.moveDown(0.4); i++; continue; }
+
+            // strip markdown bold
+            const plain = trimmed.replace(/\*\*([^*]+)\*\*/g, '$1').replace(/\*([^*]+)\*/g, '$1');
+            const nextPlain = i + 1 < lines.length
+                ? lines[i + 1].trim().replace(/\*\*([^*]+)\*\*/g, '$1').replace(/\*([^*]+)\*/g, '$1')
+                : '';
+
+            // Two-column signature row
+            if (plain.startsWith('Wykonawca:') && nextPlain.startsWith('Zleceniodawca:')) {
+                doc.moveDown(0.5);
+                const y = doc.y;
+                useCustomFont ? doc.font('Regular').fontSize(10) : doc.font('Helvetica').fontSize(10);
+                doc.fillColor('#1f2937');
+                doc.text(plain, 50, y, { width: 230 });
+                doc.text(nextPlain, 310, y, { width: 235 });
+                doc.moveDown(1);
+                i += 2;
+                continue;
+            }
 
             if (trimmed.startsWith('# ')) {
                 const txt = trimmed.slice(2);
@@ -69,8 +89,6 @@ async function generatePDF(content) {
                    .moveTo(50, doc.y).lineTo(doc.page.width - 50, doc.y).stroke();
                 doc.moveDown(0.3);
             } else {
-                // strip markdown bold (**text**)
-                const plain = trimmed.replace(/\*\*([^*]+)\*\*/g, '$1').replace(/\*([^*]+)\*/g, '$1');
                 const isBullet = plain.startsWith('- ') || plain.startsWith('* ');
                 useCustomFont ? doc.font('Regular').fontSize(10) : doc.font('Helvetica').fontSize(10);
                 doc.fillColor('#1f2937');
@@ -81,6 +99,7 @@ async function generatePDF(content) {
                 }
                 doc.moveDown(0.1);
             }
+            i++;
         }
 
         // Footer
