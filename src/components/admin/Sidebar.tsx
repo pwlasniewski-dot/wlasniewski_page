@@ -29,7 +29,8 @@ import {
     Search,
     Box,
     Cake,
-    TrendingUp
+    TrendingUp,
+    GraduationCap
 } from 'lucide-react';
 
 const navigation = [
@@ -90,6 +91,15 @@ const navigation = [
             { name: 'Lista oczekujących', href: '/admin/foto-match/waitlist' },
             { name: 'Matching i bonusy', href: '/admin/foto-match/match-settings' },
             { name: 'Ustawienia', href: '/admin/foto-match/settings' },
+        ]
+    },
+    {
+        name: 'Warsztaty',
+        href: '/admin/warsztaty',
+        icon: GraduationCap,
+        children: [
+            { name: 'Lista warsztatów', href: '/admin/warsztaty' },
+            { name: 'Uczestnicy', href: '/admin/warsztaty/uczestnicy' },
         ]
     },
     { name: 'Administratorzy', href: '/admin/users', icon: Shield },

@@ -1773,7 +1773,7 @@ function ContractDepositInline({ contract, onChanged }: { contract: any; onChang
     const dueSoon = !isPaid && hasAmount && due && !overdue && (due.getTime() - now.getTime() < 7 * 86400000);
 
     const status = isPaid
-        ? { txt: '✓ Zaliczka opłacona', cls: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' }
+        ? { txt: hasAmount ? '✓ Zaliczka opłacona' : '✓ Opłacona (bez kwoty)', cls: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' }
         : overdue
             ? { txt: '⚠ Po terminie', cls: 'bg-rose-500/10 text-rose-400 border-rose-500/20 animate-pulse' }
             : dueSoon
@@ -1840,7 +1840,7 @@ function ContractDepositInline({ contract, onChanged }: { contract: any; onChang
 
                 {!editing ? (
                     <div className="flex flex-wrap gap-2">
-                        {!isPaid && hasAmount && (
+                        {!isPaid && (
                             <button disabled={busy} onClick={() => togglePaid(true)}
                                 className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded transition disabled:opacity-50">
                                 ✓ Oznacz wpłatę
