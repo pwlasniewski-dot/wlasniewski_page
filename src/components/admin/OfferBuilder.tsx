@@ -30,6 +30,8 @@ interface OfferData {
     sessionDateIso?: string;
     /** Godzina sesji "HH:MM" — synchronizowana z kalendarzem */
     sessionTime?: string;
+    /** Godzina zakonczenia sesji "HH:MM" (opcjonalna) */
+    sessionEndTime?: string;
     /** Czas trwania sesji w minutach (opcjonalny) */
     sessionDurationMin?: number;
 
@@ -382,6 +384,7 @@ export default function OfferBuilder({ offerId, initialData, onSave, saveButtonT
                     // Kanoniczne pola sesji (spinają się z kalendarzem)
                     session_date: data.sessionDateIso || null,
                     session_time: data.sessionTime || null,
+                    session_end_time: data.sessionEndTime || null,
                     session_duration_min: data.sessionDurationMin || null,
                     session_location: data.eventLocation || null,
                     template_data: data // Wrap the A4 builder state
@@ -1058,7 +1061,7 @@ export default function OfferBuilder({ offerId, initialData, onSave, saveButtonT
                             <div className="text-[10px] uppercase font-bold text-amber-700 mb-1.5">
                                 Data sesji (kalendarz)
                             </div>
-                            <div className="grid grid-cols-2 gap-2">
+                            <div className="grid grid-cols-3 gap-2">
                                 <input
                                     type="date"
                                     value={data.sessionDateIso || ''}
@@ -1069,11 +1072,19 @@ export default function OfferBuilder({ offerId, initialData, onSave, saveButtonT
                                     type="time"
                                     value={data.sessionTime || ''}
                                     onChange={e => update('sessionTime', e.target.value)}
+                                    placeholder="Start"
+                                    className="w-full px-2 py-1.5 border border-amber-300 rounded text-sm focus:ring-2 focus:ring-amber-400 focus:outline-none"
+                                />
+                                <input
+                                    type="time"
+                                    value={data.sessionEndTime || ''}
+                                    onChange={e => update('sessionEndTime', e.target.value)}
+                                    placeholder="Koniec"
                                     className="w-full px-2 py-1.5 border border-amber-300 rounded text-sm focus:ring-2 focus:ring-amber-400 focus:outline-none"
                                 />
                             </div>
                             <div className="text-[10px] text-amber-800 mt-1">
-                                Wypelnij zeby sesja pokazala sie w kalendarzu admina/fotografa. Pole &quot;Data&quot; powyzej sluzy tylko do wyswietlenia w PDF.
+                                Wypelnij zeby sesja pokazala sie w kalendarzu admina/fotografa. Godzina koncowa jest opcjonalna (np. "14:00 - 17:00"). Pole &quot;Data&quot; powyzej sluzy tylko do wyswietlenia w PDF.
                             </div>
                         </div>
                         <div className="grid grid-cols-2 gap-2 mb-2">

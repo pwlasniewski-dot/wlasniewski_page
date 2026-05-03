@@ -94,7 +94,7 @@ export async function GET(request: NextRequest) {
         select: {
             id: true, slug: true, title: true, status: true,
             total_price: true, client_email: true, template_data: true,
-            session_date: true, session_time: true, session_duration_min: true,
+            session_date: true, session_time: true, session_end_time: true, session_duration_min: true,
             session_location: true, photographer_id: true,
             user: { select: { id: true, name: true, email: true, phone: true } },
         },
@@ -128,7 +128,7 @@ export async function GET(request: NextRequest) {
             source_id: o.id,
             date: parsedDate.toISOString().slice(0, 10),
             start_time: startTime,
-            end_time: null,
+            end_time: o.session_end_time || null,
             title: o.title || 'Oferta',
             client_name: clientName,
             email: o.user?.email || o.client_email || null,

@@ -121,6 +121,7 @@ export async function POST(request: NextRequest) {
             // Kanoniczne pola sesji (opcjonalne; jak nie podane — wyciągamy z template_data.eventDate)
             session_date,
             session_time,
+            session_end_time,
             session_duration_min,
             session_location,
             photographer_id,
@@ -205,6 +206,7 @@ export async function POST(request: NextRequest) {
                 negotiation_enabled: negotiation_enabled !== false, // Default to true if not specified
                 session_date: resolvedSessionDate,
                 session_time: resolvedSessionTime,
+                session_end_time: session_end_time || null,
                 session_duration_min: session_duration_min ? parseInt(String(session_duration_min), 10) || null : null,
                 session_location: resolvedSessionLocation,
                 photographer_id: parsedPhotographerId && !isNaN(parsedPhotographerId) ? parsedPhotographerId : null,
