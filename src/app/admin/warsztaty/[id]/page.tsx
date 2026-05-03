@@ -641,16 +641,16 @@ function ScheduleTab({ workshop, reload }: { workshop: Workshop; reload: () => v
             {adding && (
                 <div className="grid grid-cols-1 md:grid-cols-5 gap-3 p-4 bg-zinc-50 rounded-lg border border-zinc-200">
                     <input type="date" value={newItem.date} onChange={e => setNewItem({ ...newItem, date: e.target.value })}
-                        className="border border-zinc-300 rounded px-2 py-1.5 text-zinc-900 text-sm" />
+                        className="border border-zinc-300 rounded px-2 py-1.5 bg-white text-zinc-900 text-sm placeholder:text-zinc-400" />
                     <input type="time" value={newItem.start} onChange={e => setNewItem({ ...newItem, start: e.target.value })}
-                        placeholder="Start" className="border border-zinc-300 rounded px-2 py-1.5 text-zinc-900 text-sm" />
+                        placeholder="Start" className="border border-zinc-300 rounded px-2 py-1.5 bg-white text-zinc-900 text-sm placeholder:text-zinc-400" />
                     <input type="time" value={newItem.end} onChange={e => setNewItem({ ...newItem, end: e.target.value })}
-                        placeholder="Koniec" className="border border-zinc-300 rounded px-2 py-1.5 text-zinc-900 text-sm" />
+                        placeholder="Koniec" className="border border-zinc-300 rounded px-2 py-1.5 bg-white text-zinc-900 text-sm placeholder:text-zinc-400" />
                     <input value={newItem.topic} onChange={e => setNewItem({ ...newItem, topic: e.target.value })}
-                        placeholder="Temat (np. Ekspozycja)" className="border border-zinc-300 rounded px-2 py-1.5 text-zinc-900 text-sm md:col-span-2" />
+                        placeholder="Temat (np. Ekspozycja)" className="border border-zinc-300 rounded px-2 py-1.5 bg-white text-zinc-900 text-sm placeholder:text-zinc-400 md:col-span-2" />
                     <textarea value={newItem.plan} onChange={e => setNewItem({ ...newItem, plan: e.target.value })}
                         placeholder="Plan szczegółowy (opcjonalnie)" rows={2}
-                        className="border border-zinc-300 rounded px-2 py-1.5 text-zinc-900 text-sm md:col-span-4" />
+                        className="border border-zinc-300 rounded px-2 py-1.5 bg-white text-zinc-900 text-sm placeholder:text-zinc-400 md:col-span-4" />
                     <div className="md:col-span-5 flex items-center gap-3 flex-wrap">
                         <label className="text-xs bg-amber-100 hover:bg-amber-200 text-amber-900 px-3 py-1.5 rounded font-bold cursor-pointer flex items-center gap-1">
                             <Upload size={12} /> {newItem.image_url ? 'Zmień grafikę' : 'Dodaj grafikę z internetu / dysku'}
@@ -679,11 +679,11 @@ function ScheduleTab({ workshop, reload }: { workshop: Workshop; reload: () => v
                         <div key={idx} className="bg-zinc-50 border border-zinc-200 rounded-lg p-3">
                             {editIdx === idx ? (
                                 <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
-                                    <input type="date" value={item.date || ''} onChange={e => updateField(idx, 'date', e.target.value)} className="border border-zinc-300 rounded px-2 py-1.5 text-sm" />
-                                    <input type="time" value={item.start || ''} onChange={e => updateField(idx, 'start', e.target.value)} className="border border-zinc-300 rounded px-2 py-1.5 text-sm" />
-                                    <input type="time" value={item.end || ''} onChange={e => updateField(idx, 'end', e.target.value)} className="border border-zinc-300 rounded px-2 py-1.5 text-sm" />
-                                    <input value={item.topic || ''} onChange={e => updateField(idx, 'topic', e.target.value)} className="border border-zinc-300 rounded px-2 py-1.5 text-sm md:col-span-2" />
-                                    <textarea value={item.plan || ''} onChange={e => updateField(idx, 'plan', e.target.value)} rows={3} className="border border-zinc-300 rounded px-2 py-1.5 text-sm md:col-span-5" />
+                                    <input type="date" value={item.date || ''} onChange={e => updateField(idx, 'date', e.target.value)} className="border border-zinc-300 rounded px-2 py-1.5 bg-white text-zinc-900 text-sm placeholder:text-zinc-400" />
+                                    <input type="time" value={item.start || ''} onChange={e => updateField(idx, 'start', e.target.value)} className="border border-zinc-300 rounded px-2 py-1.5 bg-white text-zinc-900 text-sm placeholder:text-zinc-400" />
+                                    <input type="time" value={item.end || ''} onChange={e => updateField(idx, 'end', e.target.value)} className="border border-zinc-300 rounded px-2 py-1.5 bg-white text-zinc-900 text-sm placeholder:text-zinc-400" />
+                                    <input value={item.topic || ''} onChange={e => updateField(idx, 'topic', e.target.value)} className="border border-zinc-300 rounded px-2 py-1.5 bg-white text-zinc-900 text-sm placeholder:text-zinc-400 md:col-span-2" />
+                                    <textarea value={item.plan || ''} onChange={e => updateField(idx, 'plan', e.target.value)} rows={3} className="border border-zinc-300 rounded px-2 py-1.5 bg-white text-zinc-900 text-sm placeholder:text-zinc-400 md:col-span-5" />
                                     <div className="md:col-span-5 flex items-center gap-3 flex-wrap">
                                         <label className="text-xs bg-amber-100 hover:bg-amber-200 text-amber-900 px-3 py-1.5 rounded font-bold cursor-pointer flex items-center gap-1">
                                             <Upload size={12} /> {item.image_url ? 'Zmień grafikę' : 'Dodaj grafikę'}
