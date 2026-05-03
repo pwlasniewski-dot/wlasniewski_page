@@ -103,6 +103,10 @@ export default function DashboardPage() {
                         <h3 className="text-gold-400 font-medium group-hover:text-gold-300">Zarządzaj terminami</h3>
                         <p className="text-sm text-zinc-500 mt-1">Zaktualizuj licznik wolnych miejsc</p>
                     </Link>
+                    <Link href="/admin/warsztaty" className="p-4 bg-zinc-900 border border-zinc-800 rounded-lg hover:border-gold-500/50 transition-colors text-left group">
+                        <h3 className="text-gold-400 font-medium group-hover:text-gold-300">Warsztaty fotograficzne</h3>
+                        <p className="text-sm text-zinc-500 mt-1">Generuj konta dla dzieci, drukuj karty z PIN-ami</p>
+                    </Link>
                 </div>
             </div>
 

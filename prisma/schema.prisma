@@ -1644,3 +1644,73 @@ model BookingComplaint {
   @@index([client_email])
   @@map("booking_complaint")
 }
+
+
+// ============================================================
+// WARSZTATY FOTOGRAFICZNE
+// Model warsztatów dla grup (np. dzieci) + uczestnicy bez maila (RODO).
+// Uczestnik loguje sie loginem warsztatowym + krotkim PIN-em.
+// ============================================================
+model Workshop {
+  id              Int       @id @default(autoincrement())
+  slug            String    @unique @db.VarChar(80)
+  title           String    @db.VarChar(160)
+  location        String?   @db.VarChar(160)
+  description     String?
+  // Plan warsztatow: tablica obiektow {date, start, end, topic, plan}
+  schedule        Json?     @default("[]")
+  // Materialy edukacyjne: tablica obiektow {title, body_md}
+  materials       Json?     @default("[]")
+  host_user_id    Int?      // prowadzacy (admin/fotograf)
+  status          String    @default("draft") @db.VarChar(20) // draft | active | finished | archived
+  starts_at       DateTime?
+  ends_at         DateTime?
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
+  participants    WorkshopParticipant[]
+  uploads         WorkshopUpload[]
+
+  @@index([status])
+  @@index([starts_at])
+  @@map("workshops")
+}
+
+model WorkshopParticipant {
+  id              Int       @id @default(autoincrement())
+  workshop_id     Int
+  workshop        Workshop  @relation(fields: [workshop_id], references: [id], onDelete: Cascade)
+  // Login warsztatowy (np. "wieldzadz-01"). Wymagany, unikalny w obrebie warsztatu.
+  login           String    @db.VarChar(40)
+  // Krotki PIN trzymany jako bcrypt hash (np. 6 znakow).
+  pin_hash        String    @db.VarChar(120)
+  // PIN w jawnej formie pokazywany tylko raz przy generowaniu/wydruku karty.
+  pin_plain_temp  String?   @db.VarChar(20)
+  display_name    String?   @db.VarChar(60) // pseudonim, opcjonalny
+  avatar          String?   @db.VarChar(40) // emoji albo nazwa awatara
+  active          Boolean   @default(true)
+  last_login      DateTime?
+  created_at      DateTime  @default(now())
+  uploads         WorkshopUpload[]
+
+  @@unique([workshop_id, login])
+  @@index([workshop_id])
+  @@map("workshop_participants")
+}
+
+model WorkshopUpload {
+  id              Int       @id @default(autoincrement())
+  workshop_id     Int
+  workshop        Workshop  @relation(fields: [workshop_id], references: [id], onDelete: Cascade)
+  participant_id  Int
+  participant     WorkshopParticipant @relation(fields: [participant_id], references: [id], onDelete: Cascade)
+  file_url        String    @db.VarChar(500)
+  thumb_url       String?   @db.VarChar(500)
+  caption         String?
+  feedback        String?   // notatka prowadzacego
+  rating          Int?      // 1-5
+  created_at      DateTime  @default(now())
+
+  @@index([workshop_id])
+  @@index([participant_id])
+  @@map("workshop_uploads")
+}
