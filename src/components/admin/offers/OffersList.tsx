@@ -109,9 +109,13 @@ export default function OffersList() {
         setTimeout(() => setCopySuccess(null), 2000);
     };
 
-    const sendReminder = async (offerId: number, type: 'unread' | 'deposit') => {
-        const label = type === 'deposit' ? 'przypomnienie o zaliczce' : 'przypomnienie o niezatwierdzonej ofercie';
-        if (!confirm(`Wysłać do klienta ${label}?`)) return;
+    const sendReminder = async (offerId: number, type: 'unread' | 'deposit' | 'risk') => {
+        const label = type === 'risk'
+            ? 'PILNE przypomnienie — sesja zagrożona (zaliczka po terminie)'
+            : type === 'deposit'
+                ? 'przypomnienie o zaliczce'
+                : 'przypomnienie o niezatwierdzonej ofercie';
+        if (!confirm(`Wysłać do klienta: ${label}?`)) return;
         try {
             const token = localStorage.getItem('admin_token');
             if (!token) { router.push('/admin/login'); return; }
@@ -384,6 +388,16 @@ export default function OffersList() {
                                                         title="Przypomnij o wpłacie zaliczki (mail)"
                                                     >
                                                         💰
+                                                    </button>
+                                                )}
+                                                {/* PILNE: sesja zagrozona (po akceptacji + termin zaliczki minal) */}
+                                                {offer.status === 'accepted' && (
+                                                    <button
+                                                        onClick={() => sendReminder(offer.id, 'risk')}
+                                                        className="p-2 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-lg transition-all"
+                                                        title="PILNE: sesja zagrożona — zaliczka po terminie"
+                                                    >
+                                                        ⚠️
                                                     </button>
                                                 )}
 

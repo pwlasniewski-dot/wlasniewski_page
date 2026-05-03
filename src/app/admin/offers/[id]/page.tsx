@@ -89,6 +89,28 @@ export default function EditOfferPage({ params }: { params: Promise<{ id: string
     const isCommunion = offer?.category?.toLowerCase() === 'komunia';
     const isPending = offer?.status === 'sent' || offer?.status === 'pending';
 
+    // Suma z sekcji oferty (price * quantity wszystkich pozycji) — autoryzowane zrodlo prawdy o kwocie
+    const sectionsTotal = useMemo(() => {
+        if (!offer?.sections) return 0;
+        let sum = 0;
+        for (const sec of offer.sections) {
+            for (const it of (sec.items || [])) {
+                const p = Number(it.price) || 0;
+                const q = Number(it.quantity) || 1;
+                sum += p * q;
+            }
+        }
+        return sum;
+    }, [offer?.sections]);
+
+    // Auto-fill "Kwota oferty" — wypelnia sie automatycznie z total_price oferty lub z sumy pozycji.
+    // Admin moze nadpisac recznie jesli chce negocjowac, ale nie musi przepisywac.
+    useEffect(() => {
+        if (!offer || isCommunion) return;
+        const auto = (offer.total_price && offer.total_price > 0) ? offer.total_price : sectionsTotal;
+        if (auto > 0) setManualPrice(auto);
+    }, [offer?.id, offer?.total_price, sectionsTotal, isCommunion]);
+
     const totalChildren = useMemo(() => {
         return Object.values(splitCounts).reduce((a: number, b: number) => a + (b as number), 0);
     }, [splitCounts]);
@@ -362,6 +384,20 @@ export default function EditOfferPage({ params }: { params: Promise<{ id: string
                                 placeholder="np. 2500"
                                 className="w-full max-w-xs px-4 py-3 border border-gray-300 rounded-lg text-gray-900 font-bold text-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                             />
+                            {sectionsTotal > 0 && (
+                                <p className="text-xs text-gray-500 mt-2">
+                                    Wypełnione automatycznie z pozycji oferty ({sectionsTotal.toLocaleString('pl-PL')} PLN).
+                                    {manualPrice !== sectionsTotal && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setManualPrice(sectionsTotal)}
+                                            className="ml-2 text-blue-600 underline hover:text-blue-700"
+                                        >
+                                            Przywróć z oferty
+                                        </button>
+                                    )}
+                                </p>
+                            )}
                         </div>
                     )}
 
