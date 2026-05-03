@@ -28,6 +28,8 @@ interface ContractData {
     offerTitle: string;
     packageDetails: string;
     totalPrice: string;
+    depositAmount: string;        // PLN, jako string w UI (input)
+    depositDueDate: string;       // YYYY-MM-DD, termin platnosci zaliczki
     content: string; // The legal markdown/HTML
     signedAt: string | null;
     signature: string; // Added signature field
@@ -75,6 +77,8 @@ export default function ContractBuilder() {
         offerTitle: '',
         packageDetails: '',
         totalPrice: '0',
+        depositAmount: '',
+        depositDueDate: '',
         content: DEFAULT_CONTRACT_TEMPLATE,
         signedAt: null,
         signature: 'Przemysław Właśniewski'
@@ -226,6 +230,15 @@ export default function ContractBuilder() {
                 else if (offer.template_data?.eventCount) eventCountStr = String(offer.template_data.eventCount);
                 else if (offer.template_data?.children_count) eventCountStr = String(offer.template_data.children_count);
                 const eventTeamStr = offer.template_data?.eventTeam || '';
+                // Domyslna zaliczka = 30% (lub dziedziczona z istniejacej umowy)
+                const existingContract = offer.contract || null;
+                const defaultDepositAmount = existingContract?.deposit_amount
+                    ?? Math.round((finalPrice || 0) * 0.3);
+                const defaultDepositDue = existingContract?.deposit_due_at
+                    ? new Date(existingContract.deposit_due_at).toISOString().slice(0, 10)
+                    : (offer.session_date
+                        ? new Date(new Date(offer.session_date).getTime() - 14 * 86400000).toISOString().slice(0, 10)
+                        : '');
                 setData(prev => ({
                     ...prev,
                     contractNumber: draftNum,
@@ -240,6 +253,8 @@ export default function ContractBuilder() {
                     offerTitle: offer.title,
                     packageDetails: packageDetails,
                     totalPrice: finalPrice.toString(),
+                    depositAmount: defaultDepositAmount ? String(defaultDepositAmount) : '',
+                    depositDueDate: defaultDepositDue,
                     content: getContractTemplate(suggested),
                 }));
             }
@@ -274,7 +289,9 @@ export default function ContractBuilder() {
                 body: JSON.stringify({
                     offer_id: offerId ? parseInt(offerId) : null,
                     client_id: clientId ? parseInt(clientId) : null,
-                    content: data.content
+                    content: data.content,
+                    deposit_amount: data.depositAmount ? parseInt(data.depositAmount, 10) : null,
+                    deposit_due_at: data.depositDueDate || null,
                 })
             });
             const result = await res.json();
@@ -345,6 +362,8 @@ export default function ContractBuilder() {
         .replace(/{{eventTeam}}/g, data.eventTeam || '[uzupełnij: eventTeam]')
         .replace(/{{workshopPlan}}/g, '[uzupełnij plan zajęć: dzień 1 / dzień 2 / dzień 3]')
         .replace(/{{deliveryDays}}/g, '21')
+        .replace(/{{depositAmount}}/g, data.depositAmount || '0')
+        .replace(/{{depositDueDate}}/g, data.depositDueDate ? new Date(data.depositDueDate).toLocaleDateString('pl-PL') : '[brak terminu]')
         .replace(/{{totalPrice}}/g, data.totalPrice)
         .replace(/{{currentDate}}/g, new Date().toLocaleDateString('pl-PL'));
 
@@ -438,6 +457,33 @@ export default function ContractBuilder() {
 
                     {/* Signature Panel */}
                     <div className="absolute bottom-0 left-0 right-0 bg-zinc-900/95 backdrop-blur border-t border-zinc-800 p-6 flex flex-col gap-4">
+                        <div>
+                            <label className="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-2">
+                                💰 Zaliczka
+                            </label>
+                            <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                    <input
+                                        type="number"
+                                        min={0}
+                                        placeholder="Kwota (PLN)"
+                                        value={data.depositAmount}
+                                        onChange={e => setData(prev => ({ ...prev, depositAmount: e.target.value }))}
+                                        className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-2 text-white text-sm outline-none focus:border-amber-500"
+                                    />
+                                    <p className="text-[10px] text-zinc-600 mt-1">Wstępnie 30% wartości umowy. Zmień jeśli inaczej ustaliłeś z klientem.</p>
+                                </div>
+                                <div>
+                                    <input
+                                        type="date"
+                                        value={data.depositDueDate}
+                                        onChange={e => setData(prev => ({ ...prev, depositDueDate: e.target.value }))}
+                                        className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-2 text-white text-sm outline-none focus:border-amber-500"
+                                    />
+                                    <p className="text-[10px] text-zinc-600 mt-1">Termin wpłaty (domyślnie 14 dni przed sesją).</p>
+                                </div>
+                            </div>
+                        </div>
                         <div>
                             <label className="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-2">
                                 <FileEdit size={14} className="text-yellow-500" />

@@ -17,6 +17,15 @@ export type CalendarBooking = {
     photographer_id?: number | null;
     source?: 'booking' | 'offer' | 'challenge' | 'contract';
     detail_url?: string;
+    deposit_amount?: number | null;
+    deposit_status?: 'paid' | 'overdue' | 'due_soon' | 'pending' | null;
+};
+
+const DEPOSIT_DOT: Record<string, string> = {
+    paid: 'bg-emerald-400 ring-emerald-200',
+    pending: 'bg-zinc-400 ring-zinc-200',
+    due_soon: 'bg-amber-400 ring-amber-200',
+    overdue: 'bg-rose-500 ring-rose-200 animate-pulse',
 };
 
 const STATUS_COLORS: Record<string, string> = {
@@ -212,8 +221,14 @@ export default function BookingsCalendar({
                                                 title={`${b.client_name} \u2014 ${b.service}`}
                                             >
                                                 {b.source && (
-                                                    <span className={`inline-flex items-center justify-center w-3.5 h-3.5 rounded-full text-[8px] font-bold flex-shrink-0 ${SOURCE_BADGE[b.source]}`}>
+                                                    <span className={`relative inline-flex items-center justify-center w-3.5 h-3.5 rounded-full text-[8px] font-bold flex-shrink-0 ${SOURCE_BADGE[b.source]}`}>
                                                         {SOURCE_LABEL[b.source]}
+                                                        {b.deposit_status && (
+                                                            <span
+                                                                title={`Zaliczka: ${b.deposit_status}${b.deposit_amount ? ` (${b.deposit_amount.toLocaleString('pl-PL')} PLN)` : ''}`}
+                                                                className={`absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full ring-1 ${DEPOSIT_DOT[b.deposit_status] || ''}`}
+                                                            />
+                                                        )}
                                                     </span>
                                                 )}
                                                 <span className="truncate">{b.start_time || ''} {b.client_name}</span>

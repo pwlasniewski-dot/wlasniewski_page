@@ -56,6 +56,8 @@ export default function AdminCalendarPage() {
                 title: string; client_name: string;
                 venue: string | null; status: string;
                 photographer_id: number | null; detail_url: string;
+                deposit_amount?: number | null;
+                deposit_status?: 'paid' | 'overdue' | 'due_soon' | 'pending' | null;
             };
             let events: CalendarBooking[] = (bData.events || []).map((e: RawEvent) => ({
                 id: e.id,
@@ -71,6 +73,8 @@ export default function AdminCalendarPage() {
                 photographer_id: e.photographer_id,
                 source: e.source,
                 detail_url: e.detail_url,
+                deposit_amount: e.deposit_amount ?? null,
+                deposit_status: e.deposit_status ?? null,
             }));
             // Filtry po stronie klienta (nasz endpoint nie ma jeszcze status/photographer)
             if (statusFilter !== 'all') events = events.filter(e => e.status === statusFilter);

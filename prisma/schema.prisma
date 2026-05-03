@@ -110,6 +110,12 @@ model Setting {
   split_payment_deposit_percent      Int     @default(50)
   split_payment_remaining_due_days   Int     @default(7)
 
+  // Dane do przelewu (pokazywane w mailach przypominajek o zaliczce)
+  bank_account_number    String?  // np. "12 1234 5678 9012 3456 7890 1234"
+  bank_account_holder    String?  // np. "FOTO-DRON Przemyslaw Wlasniewski"
+  bank_name              String?  // np. "mBank"
+  bank_swift             String?  // opcjonalnie dla zagranicznych klientow
+
   @@map("settings")
 }
 
@@ -641,6 +647,11 @@ model Contract {
   session_location String?
   photographer_id  Int?
   photographer    User?     @relation("ContractPhotographer", fields: [photographer_id], references: [id], onDelete: SetNull)
+  // Zaliczka (manualne ksiegowanie po wplywie na konto bankowe)
+  deposit_amount   Int?      // kwota zaliczki w PLN (calkowite zlote)
+  deposit_due_at   DateTime? // termin platnosci zaliczki
+  deposit_paid_at  DateTime? // data zaksiegowania platnosci (NULL = nie zaplacono)
+  deposit_note     String?   // np. "przelew nr X", notatka admina
   updated_at      DateTime  @default(now()) @updatedAt
   created_at      DateTime  @default(now())
   user            User?     @relation(fields: [client_id], references: [id])

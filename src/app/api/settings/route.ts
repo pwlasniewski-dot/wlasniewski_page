@@ -103,6 +103,8 @@ export async function POST(request: NextRequest) {
                 'booking_require_payment', 'booking_payment_method', 'booking_currency', 'booking_min_days_ahead',
                 // Split payment (Foto-Match + standard)
                 'split_payment_enabled', 'split_payment_deposit_percent', 'split_payment_remaining_due_days',
+                // Bank account (zaliczki / przypomnienia)
+                'bank_account_number', 'bank_account_holder', 'bank_name', 'bank_swift',
                 // Email SMTP
                 'smtp_host', 'smtp_port', 'smtp_user', 'smtp_password', 'smtp_from',
                 // SEO & Analytics

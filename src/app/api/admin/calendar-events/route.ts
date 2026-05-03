@@ -32,7 +32,23 @@ type CalendarEvent = {
     notes: string | null;
     photographer_id: number | null;
     detail_url: string;
+    // Zaliczka (manualne ksiegowanie po wplywie na konto)
+    deposit_amount: number | null;
+    deposit_paid_at: string | null;
+    deposit_due_at: string | null;
+    deposit_status: 'paid' | 'overdue' | 'due_soon' | 'pending' | null;
 };
+
+function calcDepositStatus(amount: number | null | undefined, paidAt: Date | null | undefined, dueAt: Date | null | undefined, sessionDate: Date | null | undefined): CalendarEvent['deposit_status'] {
+    if (amount == null || amount === 0) return null;
+    if (paidAt) return 'paid';
+    const now = new Date();
+    const eff = dueAt || (sessionDate ? new Date(sessionDate.getTime() - 14 * 86400000) : null);
+    if (!eff) return 'pending';
+    if (eff < now) return 'overdue';
+    if (eff.getTime() - now.getTime() < 7 * 86400000) return 'due_soon';
+    return 'pending';
+}
 
 export async function GET(request: NextRequest) {
     const authError = await requireAuth(request);
@@ -62,6 +78,7 @@ export async function GET(request: NextRequest) {
             client_name: true, email: true, phone: true,
             venue_city: true, venue_place: true, notes: true,
             status: true, photographer_id: true,
+            deposit_amount: true, deposit_paid_at: true,
         },
     });
     for (const b of bookings) {
@@ -82,6 +99,10 @@ export async function GET(request: NextRequest) {
             notes: b.notes,
             photographer_id: b.photographer_id,
             detail_url: `/admin/bookings?id=${b.id}`,
+            deposit_amount: b.deposit_amount ?? null,
+            deposit_paid_at: b.deposit_paid_at ? b.deposit_paid_at.toISOString() : null,
+            deposit_due_at: null,
+            deposit_status: calcDepositStatus(b.deposit_amount, b.deposit_paid_at, null, b.date),
         });
     }
 
@@ -97,6 +118,7 @@ export async function GET(request: NextRequest) {
             session_date: true, session_time: true, session_end_time: true, session_duration_min: true,
             session_location: true, photographer_id: true,
             user: { select: { id: true, name: true, email: true, phone: true } },
+            contract: { select: { deposit_amount: true, deposit_paid_at: true, deposit_due_at: true } },
         },
     });
     for (const o of offers) {
@@ -139,6 +161,10 @@ export async function GET(request: NextRequest) {
             notes: null,
             photographer_id: o.photographer_id,
             detail_url: `/admin/offers/${o.id}`,
+            deposit_amount: o.contract?.deposit_amount ?? null,
+            deposit_paid_at: o.contract?.deposit_paid_at ? o.contract.deposit_paid_at.toISOString() : null,
+            deposit_due_at: o.contract?.deposit_due_at ? o.contract.deposit_due_at.toISOString() : null,
+            deposit_status: calcDepositStatus(o.contract?.deposit_amount, o.contract?.deposit_paid_at, o.contract?.deposit_due_at, parsedDate),
         });
     }
 
@@ -180,6 +206,10 @@ export async function GET(request: NextRequest) {
                 notes: c.location?.address || null,
                 photographer_id: null,
                 detail_url: `/admin/challenges/${c.id}`,
+                deposit_amount: null,
+                deposit_paid_at: null,
+                deposit_due_at: null,
+                deposit_status: null,
             });
         }
     } catch (e) {
@@ -197,14 +227,24 @@ export async function GET(request: NextRequest) {
                 id: true, contract_number: true, status: true,
                 session_date: true, session_time: true, session_location: true,
                 offer_id: true, photographer_id: true,
+                deposit_amount: true, deposit_paid_at: true, deposit_due_at: true,
                 user: { select: { id: true, name: true, email: true, phone: true } },
                 offer: { select: { title: true, total_price: true } },
             },
         });
         for (const c of contracts) {
             if (!c.session_date) continue;
-            // jesli jest offer_id i ofertę juz mamy w events -- pomijamy zeby nie dublowac
-            if (c.offer_id && events.find(e => e.source === 'offer' && e.source_id === c.offer_id)) continue;
+            // jesli jest offer_id i ofertę juz mamy w events -- aktualizujemy zaliczke i pomijamy duplikat
+            if (c.offer_id) {
+                const existing = events.find(e => e.source === 'offer' && e.source_id === c.offer_id);
+                if (existing) {
+                    existing.deposit_amount = c.deposit_amount ?? existing.deposit_amount;
+                    existing.deposit_paid_at = c.deposit_paid_at ? c.deposit_paid_at.toISOString() : existing.deposit_paid_at;
+                    existing.deposit_due_at = c.deposit_due_at ? c.deposit_due_at.toISOString() : existing.deposit_due_at;
+                    existing.deposit_status = calcDepositStatus(c.deposit_amount, c.deposit_paid_at, c.deposit_due_at, c.session_date);
+                    continue;
+                }
+            }
             events.push({
                 id: `contract-${c.id}`,
                 source: 'contract',
@@ -222,6 +262,10 @@ export async function GET(request: NextRequest) {
                 notes: c.contract_number,
                 photographer_id: c.photographer_id,
                 detail_url: `/admin/umowy/${c.id}`,
+                deposit_amount: c.deposit_amount ?? null,
+                deposit_paid_at: c.deposit_paid_at ? c.deposit_paid_at.toISOString() : null,
+                deposit_due_at: c.deposit_due_at ? c.deposit_due_at.toISOString() : null,
+                deposit_status: calcDepositStatus(c.deposit_amount, c.deposit_paid_at, c.deposit_due_at, c.session_date),
             });
         }
     } catch (e) {

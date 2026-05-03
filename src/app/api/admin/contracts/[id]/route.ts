@@ -45,7 +45,8 @@ export async function PATCH(
             const params = await context.params;
             const contractId = parseInt(params.id);
             const body = await req.json();
-            const { session_date, session_time, session_location, photographer_id, status, client_note } = body;
+            const { session_date, session_time, session_location, photographer_id, status, client_note,
+                deposit_amount, deposit_due_at, deposit_paid_at, deposit_note } = body;
 
             const data: Record<string, unknown> = {};
             if (session_date !== undefined) data.session_date = session_date ? new Date(session_date) : null;
@@ -57,6 +58,13 @@ export async function PATCH(
             }
             if (status !== undefined) data.status = status;
             if (client_note !== undefined) data.client_note = client_note;
+            if (deposit_amount !== undefined) {
+                const v = deposit_amount === null || deposit_amount === '' ? null : parseInt(String(deposit_amount), 10);
+                data.deposit_amount = v != null && !isNaN(v) ? v : null;
+            }
+            if (deposit_due_at !== undefined) data.deposit_due_at = deposit_due_at ? new Date(deposit_due_at) : null;
+            if (deposit_paid_at !== undefined) data.deposit_paid_at = deposit_paid_at ? new Date(deposit_paid_at) : null;
+            if (deposit_note !== undefined) data.deposit_note = deposit_note;
 
             const updated = await prisma.contract.update({ where: { id: contractId }, data });
             return NextResponse.json({ contract: updated });

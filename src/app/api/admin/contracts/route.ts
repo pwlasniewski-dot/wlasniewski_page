@@ -11,6 +11,10 @@ export async function POST(request: NextRequest) {
     try {
       const body = await req.json();
       const { offer_id, client_id, content } = body;
+      const depositAmountRaw = body.deposit_amount;
+      const depositDueAtRaw = body.deposit_due_at;
+      const depositAmount = depositAmountRaw == null || depositAmountRaw === '' ? null : parseInt(String(depositAmountRaw), 10);
+      const depositDueAt = depositDueAtRaw ? new Date(depositDueAtRaw) : null;
 
       const offerIdInt = offer_id ? parseInt(offer_id) : null;
 
@@ -72,13 +76,17 @@ export async function POST(request: NextRequest) {
           update: {
             content: finalContent,
             client_id: data.client_id,
+            ...(depositAmount != null && !isNaN(depositAmount) ? { deposit_amount: depositAmount } : {}),
+            ...(depositDueAt ? { deposit_due_at: depositDueAt } : {}),
           },
           create: {
             offer_id: offerIdInt,
             client_id: data.client_id,
             contract_number,
             content: finalContent,
-            status: 'pending'
+            status: 'pending',
+            ...(depositAmount != null && !isNaN(depositAmount) ? { deposit_amount: depositAmount } : {}),
+            ...(depositDueAt ? { deposit_due_at: depositDueAt } : {}),
           }
         });
       } else {
@@ -89,6 +97,8 @@ export async function POST(request: NextRequest) {
             contract_number,
             content: finalContent,
             status: 'pending',
+            ...(depositAmount != null && !isNaN(depositAmount) ? { deposit_amount: depositAmount } : {}),
+            ...(depositDueAt ? { deposit_due_at: depositDueAt } : {}),
           }
         });
       }

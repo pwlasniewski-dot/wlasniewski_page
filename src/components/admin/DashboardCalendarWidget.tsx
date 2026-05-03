@@ -14,6 +14,15 @@ type Event = {
     venue: string | null;
     status: string;
     detail_url: string;
+    deposit_amount?: number | null;
+    deposit_status?: 'paid' | 'overdue' | 'due_soon' | 'pending' | null;
+};
+
+const DEPOSIT_STYLE: Record<string, { cls: string; label: string; icon: string }> = {
+    paid:     { cls: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/40', label: 'Zaliczka opłacona', icon: '✓' },
+    pending:  { cls: 'bg-zinc-700/30 text-zinc-300 border-zinc-600/40',           label: 'Zaliczka oczekuje', icon: '·'  },
+    due_soon: { cls: 'bg-amber-500/15 text-amber-300 border-amber-500/40',        label: 'Zaliczka — termin blisko', icon: '!' },
+    overdue:  { cls: 'bg-rose-600/20 text-rose-300 border-rose-500/50 animate-pulse', label: 'Zaliczka po terminie', icon: '⚠' },
 };
 
 const SOURCE_BADGE: Record<string, string> = {
@@ -80,7 +89,7 @@ export default function DashboardCalendarWidget() {
                                 <div className="text-[10px] uppercase text-zinc-400 mt-1">{month}</div>
                             </div>
                             <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-0.5">
+                                <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                                     <span className={`text-[9px] uppercase font-bold px-1.5 py-0.5 rounded border ${SOURCE_BADGE[e.source]}`}>
                                         {SOURCE_LABEL[e.source]}
                                     </span>
@@ -89,6 +98,17 @@ export default function DashboardCalendarWidget() {
                                             <Clock className="w-3 h-3" /> {e.start_time}
                                         </span>
                                     )}
+                                    {e.deposit_status && (() => {
+                                        const s = DEPOSIT_STYLE[e.deposit_status];
+                                        return (
+                                            <span
+                                                title={`${s.label}${e.deposit_amount ? ` (${e.deposit_amount.toLocaleString('pl-PL')} PLN)` : ''}`}
+                                                className={`text-[9px] uppercase font-bold px-1.5 py-0.5 rounded border inline-flex items-center gap-1 ${s.cls}`}
+                                            >
+                                                {s.icon} zaliczka{e.deposit_amount ? ` ${e.deposit_amount.toLocaleString('pl-PL')} zł` : ''}
+                                            </span>
+                                        );
+                                    })()}
                                 </div>
                                 <div className="text-sm font-semibold text-white truncate">{e.client_name}</div>
                                 <div className="text-xs text-zinc-400 truncate">{e.title}</div>

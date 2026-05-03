@@ -39,6 +39,19 @@ export async function POST(
             const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL || 'https://wlasniewski.pl';
             const offerLink = `${appUrl}/strefa-klienta/oferty/${offer.id}`;
 
+            // Dane bankowe + procent zaliczki z Settings (jeden globalny rekord id=1)
+            const settings = await prisma.settings.findFirst({
+                select: {
+                    bank_account_number: true,
+                    bank_account_holder: true,
+                    bank_name: true,
+                    bank_swift: true,
+                    split_payment_deposit_percent: true,
+                },
+            });
+            const depositPct = settings?.split_payment_deposit_percent || 30;
+            const depositAmount = Math.round((offer.total_price || 0) * (depositPct / 100));
+
             // Walidacje sensu zalecenia
             if (type === 'deposit' && offer.status !== 'accepted') {
                 return NextResponse.json({
@@ -52,10 +65,23 @@ export async function POST(
                 : `Czeka na Ciebie oferta: ${offer.title}`;
 
             const intro = type === 'deposit'
-                ? `Dziękuję za zaakceptowanie oferty <strong>${offer.title}</strong>. Aby zarezerwować termin sesji, czekam jeszcze na <strong>wpłatę zaliczki (30% wartości umowy)</strong>.`
+                ? `Dziękuję za zaakceptowanie oferty <strong>${offer.title}</strong>. Aby zarezerwować termin sesji, czekam jeszcze na <strong>wpłatę zaliczki (${depositPct}% wartości umowy)</strong>.`
                 : `Przypominam, że na Twoim koncie czeka spersonalizowana oferta <strong>${offer.title}</strong>. Po jej akceptacji ustalimy szczegóły i termin sesji.`;
 
-            const cta = type === 'deposit' ? 'Sprawdź szczegóły płatności' : 'Otwórz ofertę';
+            const cta = type === 'deposit' ? 'Zapłać online (PayU)' : 'Otwórz ofertę';
+
+            // Sekcja z numerem konta — tylko dla przypominajki o zaliczce i tylko jeśli admin uzupełnił dane
+            const bankBlock = (type === 'deposit' && settings?.bank_account_number) ? `
+      <div style="margin:18px 0; padding:16px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; font-size:13px; color:#1f2937;">
+        <div style="font-weight:bold; margin-bottom:8px; color:#0f172a;">Dane do przelewu tradycyjnego:</div>
+        ${settings.bank_account_holder ? `<div><span style="color:#64748b;">Odbiorca:</span> ${settings.bank_account_holder}</div>` : ''}
+        <div style="font-family: 'Courier New', monospace; font-size:14px; margin:6px 0; padding:8px; background:#fff; border:1px dashed #94a3b8; border-radius:4px; letter-spacing:1px;">
+          ${settings.bank_account_number}
+        </div>
+        ${settings.bank_name ? `<div><span style="color:#64748b;">Bank:</span> ${settings.bank_name}</div>` : ''}
+        <div style="margin-top:6px;"><span style="color:#64748b;">Tytuł przelewu:</span> <strong>Zaliczka — ${offer.offerNumber || `#${offer.id}`}</strong></div>
+        <div style="margin-top:6px;"><span style="color:#64748b;">Kwota:</span> <strong>${depositAmount.toLocaleString('pl-PL')} PLN</strong></div>
+      </div>` : '';
 
             const html = `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><title>${subject}</title></head>
@@ -66,10 +92,11 @@ export async function POST(
     ${type === 'deposit' ? `
       <div style="margin:18px 0; padding:14px; background:#fef9c3; border-left:4px solid #c5a059; border-radius:4px; font-size:13px; color:#1f2937;">
         <strong>Wartość oferty:</strong> ${(offer.total_price || 0).toLocaleString('pl-PL')} PLN<br>
-        <strong>Zaliczka (30%):</strong> ${Math.round((offer.total_price || 0) * 0.3).toLocaleString('pl-PL')} PLN<br>
-        <strong>Numer oferty:</strong> ${offer.offerNumber || `#${offer.id}`}<br>
-        <span style="color:#6b7280; font-size:12px;">Dane do przelewu znajdziesz na stronie oferty.</span>
-      </div>` : ''}
+        <strong>Zaliczka (${depositPct}%):</strong> ${depositAmount.toLocaleString('pl-PL')} PLN<br>
+        <strong>Numer oferty:</strong> ${offer.offerNumber || `#${offer.id}`}
+      </div>
+      ${bankBlock}
+      <p style="color:#374151; font-size:13px; line-height:1.6; margin:18px 0 8px;">Możesz zapłacić <strong>online przez PayU/BLIK</strong> z poziomu strony oferty (przycisk poniżej) lub klasycznym przelewem na podany rachunek.</p>` : ''}
     <p style="text-align:center; margin:28px 0;">
       <a href="${offerLink}" style="display:inline-block; background:#c5a059; color:#fff; text-decoration:none; padding:14px 28px; border-radius:6px; font-weight:bold; font-size:14px; letter-spacing:0.5px;">${cta} →</a>
     </p>

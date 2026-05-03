@@ -83,6 +83,11 @@ export default function SettingsPage() {
         split_payment_enabled: false,
         split_payment_deposit_percent: 50,
         split_payment_remaining_due_days: 7,
+        // Bank account (do przypomnień i umowy)
+        bank_account_number: '',
+        bank_account_holder: '',
+        bank_name: '',
+        bank_swift: '',
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -1180,6 +1185,54 @@ export default function SettingsPage() {
                             </div>
                         </>
                     )}
+                </div>
+            </div>
+
+            {/* Konto bankowe (do umowy + przypomnień) */}
+            <div className="bg-zinc-900 shadow rounded-lg border border-zinc-800 p-6">
+                <h2 className="text-lg font-medium text-white mb-1">Konto bankowe</h2>
+                <p className="text-xs text-zinc-500 mb-4">Używane w przypomnieniach o zaliczce i w umowach. Klient widzi numer konta w mailu.</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-zinc-300 mb-1">Numer konta (IBAN)</label>
+                        <input
+                            type="text"
+                            placeholder="PL00 0000 0000 0000 0000 0000 0000"
+                            value={(settings as any).bank_account_number ?? ''}
+                            onChange={e => setSettings(s => ({ ...s, bank_account_number: e.target.value }))}
+                            className="block w-full rounded-md border-zinc-700 bg-zinc-800 text-white shadow-sm focus:border-gold-500 focus:ring-gold-500 sm:text-sm px-3 py-2 font-mono"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-zinc-300 mb-1">Właściciel rachunku</label>
+                        <input
+                            type="text"
+                            placeholder="Przemysław Właśniewski"
+                            value={(settings as any).bank_account_holder ?? ''}
+                            onChange={e => setSettings(s => ({ ...s, bank_account_holder: e.target.value }))}
+                            className="block w-full rounded-md border-zinc-700 bg-zinc-800 text-white shadow-sm focus:border-gold-500 focus:ring-gold-500 sm:text-sm px-3 py-2"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-zinc-300 mb-1">Nazwa banku</label>
+                        <input
+                            type="text"
+                            placeholder="np. mBank, ING, PKO"
+                            value={(settings as any).bank_name ?? ''}
+                            onChange={e => setSettings(s => ({ ...s, bank_name: e.target.value }))}
+                            className="block w-full rounded-md border-zinc-700 bg-zinc-800 text-white shadow-sm focus:border-gold-500 focus:ring-gold-500 sm:text-sm px-3 py-2"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-zinc-300 mb-1">SWIFT/BIC (opcjonalnie)</label>
+                        <input
+                            type="text"
+                            placeholder="BREXPLPWMBK"
+                            value={(settings as any).bank_swift ?? ''}
+                            onChange={e => setSettings(s => ({ ...s, bank_swift: e.target.value }))}
+                            className="block w-full rounded-md border-zinc-700 bg-zinc-800 text-white shadow-sm focus:border-gold-500 focus:ring-gold-500 sm:text-sm px-3 py-2 font-mono"
+                        />
+                    </div>
                 </div>
             </div>
 

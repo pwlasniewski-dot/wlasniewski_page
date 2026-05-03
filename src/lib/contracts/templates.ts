@@ -70,7 +70,7 @@ Przedmiotem umowy jest wykonanie usługi fotograficznej zgodnie z ofertą **"{{o
 
 ## §2 WYNAGRODZENIE
 Strony ustalają wynagrodzenie w kwocie **{{totalPrice}} PLN** brutto. Płatność:
-- Zadatek: 30% wartości umowy w ciągu 7 dni od podpisania.
+- **Zaliczka: {{depositAmount}} PLN** — płatna do **{{depositDueDate}}** przelewem na rachunek Wykonawcy. Brak wpłaty zaliczki w terminie powoduje unieważnienie rezerwacji terminu sesji.
 - Pozostała kwota: w dniu wydania materiałów.
 
 ## §3 TERMIN WYDANIA MATERIAŁÓW
@@ -99,7 +99,7 @@ Przedmiotem umowy jest wykonanie profesjonalnego reportażu fotograficznego z ur
 
 ## §3 WYNAGRODZENIE I PŁATNOŚĆ
 Strony ustalają wynagrodzenie w kwocie **{{totalPrice}} PLN** brutto.
-- Zadatek: 30% wartości umowy w ciągu 7 dni od podpisania.
+- **Zaliczka: {{depositAmount}} PLN** — płatna do **{{depositDueDate}}** przelewem na rachunek Wykonawcy. Brak wpłaty zaliczki w terminie powoduje unieważnienie rezerwacji terminu uroczystości.
 - Pozostała kwota: w dniu wydania galerii.
 
 ## §4 TERMIN WYDANIA MATERIAŁÓW
@@ -130,7 +130,7 @@ Przedmiotem umowy jest wykonanie reportażu fotograficznego z **przyjęcia urodz
 
 ## §3 WYNAGRODZENIE
 Strony ustalają wynagrodzenie w kwocie **{{totalPrice}} PLN** brutto.
-- Zadatek: 30% w ciągu 7 dni od podpisania.
+- **Zaliczka: {{depositAmount}} PLN** — płatna do **{{depositDueDate}}** przelewem na rachunek Wykonawcy. Brak wpłaty zaliczki w terminie powoduje unieważnienie rezerwacji terminu wydarzenia.
 - Pozostała kwota: w dniu wydarzenia lub bezpośrednio po wydaniu materiałów.
 
 ## §4 TERMIN WYDANIA MATERIAŁÓW
@@ -160,8 +160,8 @@ Przedmiotem umowy jest wykonanie pełnego reportażu fotograficznego z uroczysto
 
 ## §3 WYNAGRODZENIE
 Strony ustalają wynagrodzenie w kwocie **{{totalPrice}} PLN** brutto.
-- Zadatek rezerwujący termin: 1000 PLN w ciągu 7 dni od podpisania (bezzwrotny).
-- 50% wartości pozostałej kwoty: do 30 dni przed datą ślubu.
+- **Zaliczka rezerwująca termin: {{depositAmount}} PLN** — płatna do **{{depositDueDate}}** przelewem na rachunek Wykonawcy (bezzwrotna). Brak wpłaty w terminie skutkuje zwolnieniem rezerwacji.
+- 50% pozostałej kwoty: do 30 dni przed datą ślubu.
 - Pozostała część: w dniu ślubu lub do 7 dni po wydaniu galerii.
 
 ## §4 TERMIN WYDANIA MATERIAŁÓW
@@ -225,7 +225,7 @@ Przedmiotem umowy jest przeprowadzenie przez Wykonawcę cyklu warsztatów fotogr
 
 ## §5 WYNAGRODZENIE
 Wynagrodzenie ryczałtowe wynosi **{{totalPrice}} PLN** brutto.
-- Zaliczka: 30% w ciągu 7 dni od podpisania.
+- **Zaliczka: {{depositAmount}} PLN** — płatna do **{{depositDueDate}}** przelewem na rachunek Wykonawcy. Brak wpłaty w terminie powoduje unieważnienie rezerwacji terminu warsztatów.
 - Pozostała kwota: w terminie 7 dni po zakończeniu ostatniego dnia warsztatów.
 
 ## §6 BEZPIECZEŃSTWO I RODO

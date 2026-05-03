@@ -16,6 +16,10 @@ type Contract = {
     session_date: string | null;
     session_time: string | null;
     session_location: string | null;
+    deposit_amount: number | null;
+    deposit_due_at: string | null;
+    deposit_paid_at: string | null;
+    deposit_note: string | null;
     user: { id: number; name: string | null; email: string; phone: string | null } | null;
     offer: {
         id: number; title: string; total_price: number; offerNumber: string | null;
@@ -148,6 +152,8 @@ export default function AdminContractViewPage({ params }: { params: Promise<{ id
                     </div>
                 )}
 
+                <DepositPanel contract={contract} token={token} onChanged={() => window.location.reload()} />
+
                 <div className="bg-white rounded-2xl shadow-sm border border-zinc-200 p-5">
                     <div className="flex items-center justify-between mb-3">
                         <h2 className="font-bold text-zinc-900">Dokument PDF</h2>
@@ -195,6 +201,150 @@ function SetSessionDateForm({ contractId, token, onSaved }: { contractId: number
                 className="sm:col-span-3 px-3 py-1.5 bg-amber-600 text-white text-sm font-semibold rounded disabled:opacity-50">
                 {saving ? 'Zapisywanie...' : 'Zapisz datę sesji'}
             </button>
+        </div>
+    );
+}
+
+function DepositPanel({ contract, token, onChanged }: { contract: Contract; token: string; onChanged: () => void }) {
+    const [busy, setBusy] = useState(false);
+    const [editing, setEditing] = useState(false);
+    const [amount, setAmount] = useState(contract.deposit_amount?.toString() || '');
+    const [dueAt, setDueAt] = useState(contract.deposit_due_at ? contract.deposit_due_at.slice(0, 10) : '');
+    const [note, setNote] = useState(contract.deposit_note || '');
+
+    const isPaid = !!contract.deposit_paid_at;
+    const hasAmount = (contract.deposit_amount || 0) > 0;
+
+    const now = new Date();
+    const due = contract.deposit_due_at ? new Date(contract.deposit_due_at) : null;
+    const overdue = !isPaid && hasAmount && due && due < now;
+    const dueSoon = !isPaid && hasAmount && due && !overdue && (due.getTime() - now.getTime() < 7 * 86400000);
+
+    const statusBadge = isPaid
+        ? { txt: '✓ Zaliczka opłacona', cls: 'bg-emerald-100 text-emerald-800 border-emerald-200' }
+        : overdue
+            ? { txt: '⚠ Po terminie', cls: 'bg-rose-100 text-rose-800 border-rose-200 animate-pulse' }
+            : dueSoon
+                ? { txt: '! Termin wkrótce', cls: 'bg-amber-100 text-amber-800 border-amber-200' }
+                : hasAmount
+                    ? { txt: 'Oczekuje wpłaty', cls: 'bg-zinc-100 text-zinc-700 border-zinc-200' }
+                    : { txt: 'Brak ustalonej zaliczki', cls: 'bg-zinc-100 text-zinc-500 border-zinc-200' };
+
+    const togglePaid = async (paid: boolean) => {
+        if (!confirm(paid ? 'Oznaczyć zaliczkę jako wpłaconą?' : 'Cofnąć oznaczenie wpłaty?')) return;
+        setBusy(true);
+        try {
+            const res = await fetch(`/api/admin/contracts/${contract.id}/mark-deposit-paid`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify({ paid }),
+            });
+            if (res.ok) onChanged(); else alert('Błąd zapisu');
+        } finally { setBusy(false); }
+    };
+
+    const saveEdit = async () => {
+        setBusy(true);
+        try {
+            const res = await fetch(`/api/admin/contracts/${contract.id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify({
+                    deposit_amount: amount ? parseInt(amount, 10) : null,
+                    deposit_due_at: dueAt || null,
+                    deposit_note: note || null,
+                }),
+            });
+            if (res.ok) { setEditing(false); onChanged(); } else alert('Błąd zapisu');
+        } finally { setBusy(false); }
+    };
+
+    return (
+        <div className="bg-white rounded-2xl shadow-sm border border-zinc-200 p-5 mb-4">
+            <div className="flex items-center justify-between mb-3">
+                <h2 className="font-bold text-zinc-900">💰 Zaliczka</h2>
+                <span className={`px-3 py-1 rounded-full text-xs font-bold border ${statusBadge.cls}`}>{statusBadge.txt}</span>
+            </div>
+
+            {!editing ? (
+                <div className="grid sm:grid-cols-3 gap-3 text-sm">
+                    <div>
+                        <div className="text-xs text-zinc-500 uppercase tracking-wider mb-0.5">Kwota</div>
+                        <div className="font-bold text-zinc-900">
+                            {hasAmount ? `${contract.deposit_amount!.toLocaleString('pl-PL')} PLN` : <span className="text-zinc-400">—</span>}
+                        </div>
+                    </div>
+                    <div>
+                        <div className="text-xs text-zinc-500 uppercase tracking-wider mb-0.5">Termin</div>
+                        <div className="text-zinc-900">
+                            {due ? due.toLocaleDateString('pl-PL') : <span className="text-zinc-400">—</span>}
+                        </div>
+                    </div>
+                    <div>
+                        <div className="text-xs text-zinc-500 uppercase tracking-wider mb-0.5">Wpłacono</div>
+                        <div className="text-zinc-900">
+                            {isPaid
+                                ? new Date(contract.deposit_paid_at!).toLocaleDateString('pl-PL')
+                                : <span className="text-zinc-400">—</span>}
+                        </div>
+                    </div>
+                    {contract.deposit_note && (
+                        <div className="sm:col-span-3 text-xs text-zinc-500 italic">{contract.deposit_note}</div>
+                    )}
+                </div>
+            ) : (
+                <div className="grid sm:grid-cols-3 gap-2">
+                    <div>
+                        <label className="block text-xs text-zinc-500 mb-1">Kwota (PLN)</label>
+                        <input type="number" min={0} value={amount} onChange={e => setAmount(e.target.value)}
+                            className="w-full px-2 py-1.5 border border-zinc-300 rounded text-sm" />
+                    </div>
+                    <div>
+                        <label className="block text-xs text-zinc-500 mb-1">Termin wpłaty</label>
+                        <input type="date" value={dueAt} onChange={e => setDueAt(e.target.value)}
+                            className="w-full px-2 py-1.5 border border-zinc-300 rounded text-sm" />
+                    </div>
+                    <div>
+                        <label className="block text-xs text-zinc-500 mb-1">Notatka</label>
+                        <input type="text" value={note} onChange={e => setNote(e.target.value)} placeholder="opcjonalnie"
+                            className="w-full px-2 py-1.5 border border-zinc-300 rounded text-sm" />
+                    </div>
+                </div>
+            )}
+
+            <div className="flex flex-wrap gap-2 mt-4 pt-3 border-t border-zinc-100">
+                {!editing ? (
+                    <>
+                        {!isPaid && hasAmount && (
+                            <button disabled={busy} onClick={() => togglePaid(true)}
+                                className="px-3 py-1.5 bg-emerald-600 text-white text-sm font-semibold rounded hover:bg-emerald-700 disabled:opacity-50">
+                                ✓ Oznacz jako wpłaconą
+                            </button>
+                        )}
+                        {isPaid && (
+                            <button disabled={busy} onClick={() => togglePaid(false)}
+                                className="px-3 py-1.5 bg-zinc-200 text-zinc-800 text-sm font-semibold rounded hover:bg-zinc-300 disabled:opacity-50">
+                                Cofnij wpłatę
+                            </button>
+                        )}
+                        <button disabled={busy} onClick={() => setEditing(true)}
+                            className="px-3 py-1.5 bg-zinc-100 text-zinc-700 text-sm font-semibold rounded hover:bg-zinc-200 disabled:opacity-50">
+                            Edytuj kwotę / termin
+                        </button>
+                    </>
+                ) : (
+                    <>
+                        <button disabled={busy} onClick={saveEdit}
+                            className="px-3 py-1.5 bg-rose-600 text-white text-sm font-semibold rounded hover:bg-rose-700 disabled:opacity-50">
+                            {busy ? 'Zapisywanie...' : 'Zapisz'}
+                        </button>
+                        <button disabled={busy} onClick={() => { setEditing(false); setAmount(contract.deposit_amount?.toString() || ''); setDueAt(contract.deposit_due_at?.slice(0, 10) || ''); setNote(contract.deposit_note || ''); }}
+                            className="px-3 py-1.5 bg-zinc-100 text-zinc-700 text-sm font-semibold rounded hover:bg-zinc-200 disabled:opacity-50">
+                            Anuluj
+                        </button>
+                    </>
+                )}
+            </div>
         </div>
     );
 }

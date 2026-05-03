@@ -34,6 +34,11 @@ interface ClientStats {
     // Booking
     nextBookingDate: string | null;
     bookingStatus: string | null;
+    // Deposit
+    depositAmount?: number | null;
+    depositPaidAt?: string | null;
+    depositDueAt?: string | null;
+    depositStatus?: 'paid' | 'overdue' | 'due_soon' | 'pending' | null;
     // Negotiations
     negotiationsCount: number;
 }
@@ -409,6 +414,9 @@ function ClientsContent() {
                                         Umowa
                                     </th>
                                     <th className="px-4 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">
+                                        Zaliczka
+                                    </th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">
                                         Galeria
                                     </th>
                                     <th className="px-4 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider cursor-pointer hover:text-zinc-300" onClick={() => toggleSort('totalSpent')}>
@@ -424,9 +432,9 @@ function ClientsContent() {
                             </thead>
                             <tbody className="divide-y divide-zinc-800/60">
                                 {loading ? (
-                                    <tr><td colSpan={8} className="px-6 py-12 text-center text-zinc-500">Ładowanie bazy klientów...</td></tr>
+                                    <tr><td colSpan={9} className="px-6 py-12 text-center text-zinc-500">Ładowanie bazy klientów...</td></tr>
                                 ) : filtered.length === 0 ? (
-                                    <tr><td colSpan={8} className="px-6 py-12 text-center text-zinc-500">Brak klientów spełniających kryteria.</td></tr>
+                                    <tr><td colSpan={9} className="px-6 py-12 text-center text-zinc-500">Brak klientów spełniających kryteria.</td></tr>
                                 ) : filtered.map(client => (
                                     <tr key={client.id} className={`hover:bg-zinc-800/20 transition-colors group ${selectedIds.includes(client.id) ? 'bg-gold-500/5' : ''}`}>
                                         <td className="px-4 py-3">
@@ -484,6 +492,36 @@ function ClientsContent() {
                                                     </div>
                                                 )}
                                             </div>
+                                        </td>
+
+                                        {/* Zaliczka */}
+                                        <td className="px-4 py-3">
+                                            {client.stats.depositAmount ? (
+                                                <div className="space-y-0.5">
+                                                    <div className={`text-xs font-bold ${client.stats.depositStatus === 'paid' ? 'text-emerald-400' :
+                                                        client.stats.depositStatus === 'overdue' ? 'text-rose-400' :
+                                                            client.stats.depositStatus === 'due_soon' ? 'text-amber-400' :
+                                                                'text-zinc-300'}`}>
+                                                        {client.stats.depositAmount.toLocaleString('pl-PL')} PLN
+                                                    </div>
+                                                    <div className={`text-[10px] uppercase tracking-wider ${client.stats.depositStatus === 'paid' ? 'text-emerald-500' :
+                                                        client.stats.depositStatus === 'overdue' ? 'text-rose-500 animate-pulse' :
+                                                            client.stats.depositStatus === 'due_soon' ? 'text-amber-500' :
+                                                                'text-zinc-500'}`}>
+                                                        {client.stats.depositStatus === 'paid' ? '✓ opłacona' :
+                                                            client.stats.depositStatus === 'overdue' ? '⚠ po terminie' :
+                                                                client.stats.depositStatus === 'due_soon' ? '! wkrótce' :
+                                                                    'oczekuje'}
+                                                    </div>
+                                                    {client.stats.depositDueAt && client.stats.depositStatus !== 'paid' && (
+                                                        <div className="text-zinc-600 text-[10px]">
+                                                            do {new Date(client.stats.depositDueAt).toLocaleDateString('pl-PL')}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <span className="text-zinc-600 text-xs">—</span>
+                                            )}
                                         </td>
 
                                         {/* Galeria */}

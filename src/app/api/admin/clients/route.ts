@@ -44,6 +44,9 @@ export async function GET(request: NextRequest) {
                         category: true,
                         type: true,
                         template_data: true,
+                        session_date: true,
+                        session_time: true,
+                        session_location: true,
                         created_at: true
                     },
                     orderBy: { created_at: 'desc' }
@@ -83,7 +86,13 @@ export async function GET(request: NextRequest) {
                         client_id: true,
                         status: true,
                         signed_at: true,
-                        created_at: true
+                        created_at: true,
+                        session_date: true,
+                        session_time: true,
+                        deposit_amount: true,
+                        deposit_due_at: true,
+                        deposit_paid_at: true,
+                        offer: { select: { total_price: true } },
                     },
                     orderBy: { created_at: 'desc' }
                 }).catch(() => [])
@@ -166,6 +175,38 @@ export async function GET(request: NextRequest) {
                 const contractStatus = latestContract?.status || null;
                 const contractSignedAt = latestContract?.signed_at || null;
 
+                // Sesja: priorytet = nadchodzaca z Booking, nastepnie session_date z umowy lub oferty.
+                const now = new Date();
+                const candidateSessions: { date: Date; status: string | null; source: string }[] = [];
+                for (const b of clientBookings) {
+                    if (b.date) candidateSessions.push({ date: new Date(b.date), status: b.status, source: 'booking' });
+                }
+                for (const c of clientContracts) {
+                    if (c.session_date) candidateSessions.push({ date: new Date(c.session_date), status: c.status === 'signed' ? 'confirmed' : 'pending', source: 'contract' });
+                }
+                for (const o of clientOffers) {
+                    if (o.session_date) candidateSessions.push({ date: new Date(o.session_date), status: o.status === 'accepted' ? 'confirmed' : 'pending', source: 'offer' });
+                }
+                // Wybierz najblizsza w przyszlosci, fallback do najnowszej w przeszlosci
+                candidateSessions.sort((a, b) => a.date.getTime() - b.date.getTime());
+                const upcoming = candidateSessions.find(s => s.date >= now);
+                const fallback = candidateSessions.length ? candidateSessions[candidateSessions.length - 1] : null;
+                const sessionPick = upcoming || fallback;
+                const nextSessionDate = sessionPick?.date.toISOString() || null;
+                const sessionStatus = sessionPick?.status || null;
+
+                // Zaliczka: bierzemy z najnowszej umowy z deposit_amount lub z deposit_paid_at.
+                const contractWithDeposit = clientContracts.find(c => c.deposit_amount != null || c.deposit_paid_at != null) || null;
+                const depositAmount = contractWithDeposit?.deposit_amount ?? null;
+                const depositPaidAt = contractWithDeposit?.deposit_paid_at ?? null;
+                const depositDueAt = contractWithDeposit?.deposit_due_at ?? null;
+                const depositStatus: 'paid' | 'overdue' | 'due_soon' | 'pending' | null =
+                    depositAmount == null ? null
+                        : depositPaidAt ? 'paid'
+                            : depositDueAt && new Date(depositDueAt) < now ? 'overdue'
+                                : depositDueAt && (new Date(depositDueAt).getTime() - now.getTime()) < 7 * 86400000 ? 'due_soon'
+                                    : 'pending';
+
                 // Job type
                 const offerCategory = latestOffer?.category ||
                     (latestOffer?.template_data as any)?.category || null;
@@ -197,10 +238,15 @@ export async function GET(request: NextRequest) {
                         isPaid: false,
                         jobType,
                         isKomunia,
-                        nextBookingDate: latestBooking?.date || null,
-                        bookingStatus: latestBooking?.status || null,
+                        nextBookingDate: nextSessionDate,
+                        bookingStatus: sessionStatus,
                         hasBookings: clientBookings.length > 0,
-                        negotiationsCount: clientNegotiations.length
+                        negotiationsCount: clientNegotiations.length,
+                        // Zaliczka
+                        depositAmount,
+                        depositPaidAt: depositPaidAt ? (depositPaidAt as Date).toISOString() : null,
+                        depositDueAt: depositDueAt ? (depositDueAt as Date).toISOString() : null,
+                        depositStatus,
                     }
                 };
             });
