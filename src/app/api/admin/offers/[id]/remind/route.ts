@@ -41,7 +41,7 @@ export async function POST(
             const offerLink = `${appUrl}/strefa-klienta/oferty/${offer.id}`;
 
             // Dane bankowe + procent zaliczki z Settings (jeden globalny rekord id=1)
-            const settings = await prisma.settings.findFirst({
+            const settings = await prisma.setting.findFirst({
                 select: {
                     bank_account_number: true,
                     bank_account_holder: true,

@@ -40,7 +40,7 @@ async function handle(request: NextRequest) {
         include: { workshop: true },
     });
 
-    const settings = await prisma.settings.findFirst({
+    const settings = await prisma.setting.findFirst({
         select: { bank_account_number: true, bank_account_holder: true, bank_name: true },
     }).catch(() => null);
 

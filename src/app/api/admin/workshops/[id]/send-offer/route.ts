@@ -39,7 +39,7 @@ export async function POST(request: NextRequest, ctx: { params: Promise<{ id: st
         const workshop = await prisma.workshop.findUnique({ where: { id: wid } });
         if (!workshop) return NextResponse.json({ error: 'Warsztat nie istnieje' }, { status: 404 });
 
-        const settings = await prisma.settings.findFirst({
+        const settings = await prisma.setting.findFirst({
             select: {
                 bank_account_number: true,
                 bank_account_holder: true,

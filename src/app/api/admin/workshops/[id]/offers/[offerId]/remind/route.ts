@@ -50,7 +50,7 @@ export async function POST(
             if (!type) type = due && due < now ? 'overdue' : 'upcoming';
             if (!['upcoming', 'overdue'].includes(type)) type = 'upcoming';
 
-            const settings = await prisma.settings.findFirst({
+            const settings = await prisma.setting.findFirst({
                 select: {
                     bank_account_number: true,
                     bank_account_holder: true,

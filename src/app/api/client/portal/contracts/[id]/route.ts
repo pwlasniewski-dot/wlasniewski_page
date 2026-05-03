@@ -107,7 +107,7 @@ export async function GET(
         // -------------------------------------
 
         // Dane bankowe z Settings (dla podgladu zaliczki w portalu klienta)
-        const settings = await prisma.settings.findFirst({
+        const settings = await prisma.setting.findFirst({
             select: {
                 bank_account_number: true,
                 bank_account_holder: true,
