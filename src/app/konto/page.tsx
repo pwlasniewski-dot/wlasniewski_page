@@ -194,7 +194,15 @@ export default function AccountPage() {
                         <TabButton id="overview" label="Przegląd" active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} icon={<Star className="w-4 h-4" />} />
 
                         {userPermissions?.galleries !== false && (
-                            <TabButton id="sessions" label="Galerie" active={activeTab === 'sessions'} onClick={() => setActiveTab('sessions')} icon={<ImageIcon className="w-4 h-4" />} count={galleries.length + challenges.length} />
+                            <TabButton 
+                                id="sessions" 
+                                label="Galerie" 
+                                active={activeTab === 'sessions'} 
+                                onClick={() => setActiveTab('sessions')} 
+                                icon={<ImageIcon className="w-4 h-4" />} 
+                                count={galleries.length + challenges.length}
+                                hasAlert={challenges.some((c: any) => c.role === 'invitee' && (c.status === 'sent' || c.status === 'viewed'))}
+                            />
                         )}
 
                         {userPermissions?.bookings !== false && (
@@ -202,7 +210,15 @@ export default function AccountPage() {
                         )}
 
                         {(userPermissions?.offers !== false || userPermissions?.contracts !== false) && (
-                            <TabButton id="documents" label="Oferty i Umowy" active={activeTab === 'documents'} onClick={() => setActiveTab('documents')} icon={<FileText className="w-4 h-4" />} count={offers.length + contracts.length} />
+                            <TabButton 
+                                id="documents" 
+                                label="Oferty i Umowy" 
+                                active={activeTab === 'documents'} 
+                                onClick={() => setActiveTab('documents')} 
+                                icon={<FileText className="w-4 h-4" />} 
+                                count={offers.length + contracts.length}
+                                hasAlert={offers.some((o: any) => o.status === 'sent' || o.status === 'pending' || o.status === 'draft' || o.status === 'unlock_requested')}
+                            />
                         )}
 
                         {userPermissions?.gift_cards !== false && (
@@ -210,7 +226,19 @@ export default function AccountPage() {
                         )}
 
                         {/* Warsztaty — zawsze widoczna jako bajer; jesli brak dostepu -> zablokowany widok */}
-                        <TabButton id="workshops" label="Warsztaty" active={activeTab === 'workshops'} onClick={() => setActiveTab('workshops')} icon={<GraduationCap className="w-4 h-4" />} count={workshops.length || undefined} />
+                        <TabButton 
+                            id="workshops" 
+                            label="Warsztaty" 
+                            active={activeTab === 'workshops'} 
+                            onClick={() => setActiveTab('workshops')} 
+                            icon={<GraduationCap className="w-4 h-4" />} 
+                            count={workshops.length || undefined}
+                            hasAlert={workshops.some((w: any) => {
+                                const isDepositOverdue = w.deposit_due_at && !w.deposit_paid_at && new Date(w.deposit_due_at) < new Date();
+                                const canPayDeposit = w.deposit_amount && !w.deposit_paid_at;
+                                return isDepositOverdue || canPayDeposit;
+                            })}
+                        />
 
                         <TabButton id="settings" label="Ustawienia" active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} icon={<UserIcon className="w-4 h-4" />} />
                         {user?.role === 'PHOTOGRAPHER' && (
@@ -253,16 +281,28 @@ export default function AccountPage() {
 
     // --- Sub-renderers ---
 
-    function TabButton({ id, label, active, onClick, icon, count }: { id: Tab, label: string, active: boolean, onClick: () => void, icon: React.ReactNode, count?: number }) {
+    function TabButton({ id, label, active, onClick, icon, count, hasAlert }: { id: Tab, label: string, active: boolean, onClick: () => void, icon: React.ReactNode, count?: number, hasAlert?: boolean }) {
         return (
             <button
                 onClick={onClick}
-                className={`flex items-center justify-center gap-2 px-3 md:px-6 py-3 rounded-xl transition-all text-sm ${active ? 'bg-gold-600 text-black font-bold' : 'bg-zinc-900/30 backdrop-blur-xl text-zinc-400 hover:text-white hover:bg-zinc-800'}`}
+                className={`relative flex items-center justify-center gap-2 px-3 md:px-6 py-3 rounded-xl transition-all text-sm ${
+                    active 
+                        ? 'bg-gold-600 text-black font-bold' 
+                        : hasAlert
+                        ? 'bg-gradient-to-br from-gold-500/20 via-gold-500/5 to-transparent border-2 border-gold-500/70 text-gold-200 hover:text-white animate-pulse-soft shadow-[0_0_20px_rgba(212,175,55,0.2)]'
+                        : 'bg-zinc-900/30 backdrop-blur-xl text-zinc-400 hover:text-white hover:bg-zinc-800'
+                }`}
             >
+                {hasAlert && !active && (
+                    <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-gold-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-3 w-3 bg-gold-500"></span>
+                    </span>
+                )}
                 {icon}
                 <span className="hidden sm:inline">{label}</span>
                 {count !== undefined && count > 0 && (
-                    <span className={`hidden sm:inline px-2 py-0.5 rounded-full text-[10px] ${active ? 'bg-black/20 text-black' : 'bg-zinc-800 text-zinc-500'}`}>
+                    <span className={`hidden sm:inline px-2 py-0.5 rounded-full text-[10px] ${active ? 'bg-black/20 text-black' : hasAlert ? 'bg-gold-500/30 text-gold-200' : 'bg-zinc-800 text-zinc-500'}`}>
                         {count}
                     </span>
                 )}
@@ -289,8 +329,106 @@ export default function AccountPage() {
             rejected: { label: 'Odrzucona', color: 'text-red-400 bg-red-900/20 border-red-700/30' },
         };
 
+        // Wykryj elementy wymagające akcji
+        const pendingChallenges = challenges.filter((c: any) =>
+            c.role === 'invitee' && (c.status === 'sent' || c.status === 'viewed')
+        );
+        const pendingWorkshops = workshops.filter((w: any) => {
+            const isDepositOverdue = w.deposit_due_at && !w.deposit_paid_at && new Date(w.deposit_due_at) < new Date();
+            const canPayDeposit = w.deposit_amount && !w.deposit_paid_at;
+            return isDepositOverdue || canPayDeposit;
+        });
+        const offerNeedsAction = activeOffer && (activeOffer.status === 'pending' || activeOffer.status === 'sent' || activeOffer.status === 'draft' || activeOffer.status === 'unlock_requested');
+
         return (
             <div className="space-y-10">
+                {/* SEKCJA AKCJI — Wszystko co wymaga reakcji klienta */}
+                {(pendingChallenges.length > 0 || pendingWorkshops.length > 0 || offerNeedsAction) && (
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-3">
+                            <div className="relative flex h-2 w-2">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-gold-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-gold-500"></span>
+                            </div>
+                            <h2 className="text-xl font-bold text-gold-400">Wymaga Twojej uwagi</h2>
+                        </div>
+
+                        {/* Wyzwania czekające na decyzję */}
+                        {pendingChallenges.map((c: any) => (
+                            <Link
+                                key={c.id}
+                                href={`/foto-wyzwanie/invite/${c.unique_link}`}
+                                className="relative block overflow-hidden rounded-3xl p-4 md:p-6 border-2 border-gold-500/60 bg-gradient-to-br from-gold-500/10 via-pink-500/10 to-amber-500/10 shadow-[0_0_40px_rgba(212,175,55,0.25)] hover:shadow-[0_0_60px_rgba(212,175,55,0.45)] transition-all animate-pulse-slow"
+                            >
+                                <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-gold-400/20 blur-3xl animate-pulse" />
+                                <div className="relative flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                                    <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-gold-500 text-black flex items-center justify-center text-2xl md:text-3xl shadow-lg shadow-gold-500/40">
+                                        🎁
+                                    </div>
+                                    <div className="flex-1">
+                                        <div className="text-[10px] uppercase tracking-widest text-gold-300 font-black">Czeka na Twoją decyzję</div>
+                                        <h3 className="text-lg md:text-xl font-bold text-white">{c.inviter_name} zaprasza Cię na sesję</h3>
+                                        <p className="text-sm text-zinc-300">{c.package?.name} • {c.location?.name || c.custom_location || 'Lokalizacja TBD'}</p>
+                                    </div>
+                                    <div className="hidden sm:flex items-center justify-center px-5 py-3 rounded-xl bg-gold-500 text-black font-bold text-sm whitespace-nowrap">
+                                        Otwórz →
+                                    </div>
+                                </div>
+                            </Link>
+                        ))}
+
+                        {/* Warsztaty do opłacenia */}
+                        {pendingWorkshops.map((w: any) => {
+                            const isDepositOverdue = w.deposit_due_at && !w.deposit_paid_at && new Date(w.deposit_due_at) < new Date();
+                            return (
+                                <button
+                                    key={w.offer_id}
+                                    onClick={() => setActiveTab('workshops')}
+                                    className="w-full text-left relative block overflow-hidden rounded-3xl p-4 md:p-6 border-2 border-rose-500/60 bg-gradient-to-br from-rose-500/10 via-amber-500/10 to-transparent shadow-[0_0_40px_rgba(244,63,94,0.25)] hover:shadow-[0_0_60px_rgba(244,63,94,0.45)] transition-all animate-pulse-soft"
+                                >
+                                    <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-rose-400/20 blur-3xl animate-pulse" />
+                                    <div className="relative flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                                        <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-rose-500 text-white flex items-center justify-center text-2xl md:text-3xl shadow-lg shadow-rose-500/40">
+                                            📸
+                                        </div>
+                                        <div className="flex-1">
+                                            <div className="text-[10px] uppercase tracking-widest text-rose-300 font-black">{isDepositOverdue ? '⚠️ Termin minął!' : '⏰ Do zapłaty'}</div>
+                                            <h3 className="text-lg md:text-xl font-bold text-white">{w.workshop.title}</h3>
+                                            <p className="text-sm text-zinc-300">Zaliczka: {(w.deposit_amount / 100).toFixed(2)} PLN{w.deposit_due_at && ` • Termin: ${new Date(w.deposit_due_at).toLocaleDateString('pl-PL')}`}</p>
+                                        </div>
+                                        <div className="hidden sm:flex items-center justify-center px-5 py-3 rounded-xl bg-rose-500 text-white font-bold text-sm whitespace-nowrap">
+                                            Opłać →
+                                        </div>
+                                    </div>
+                                </button>
+                            );
+                        })}
+
+                        {/* Oferta do zatwierdzenia */}
+                        {offerNeedsAction && (
+                            <button
+                                onClick={() => setActiveTab('documents')}
+                                className="w-full text-left relative block overflow-hidden rounded-3xl p-4 md:p-6 border-2 border-gold-500/60 bg-gradient-to-br from-gold-500/10 via-gold-500/5 to-transparent shadow-[0_0_40px_rgba(212,175,55,0.25)] hover:shadow-[0_0_60px_rgba(212,175,55,0.45)] transition-all animate-pulse-soft"
+                            >
+                                <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-gold-400/20 blur-3xl animate-pulse" />
+                                <div className="relative flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                                    <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-gold-500 text-black flex items-center justify-center text-2xl md:text-3xl shadow-lg shadow-gold-500/40">
+                                        📄
+                                    </div>
+                                    <div className="flex-1">
+                                        <div className="text-[10px] uppercase tracking-widest text-gold-300 font-black">Do zatwierdzenia</div>
+                                        <h3 className="text-lg md:text-xl font-bold text-white">{activeOffer?.title || 'Oferta sesji'}</h3>
+                                        <p className="text-sm text-zinc-300">Sprawdź szczegóły i zaakceptuj ofertę</p>
+                                    </div>
+                                    <div className="hidden sm:flex items-center justify-center px-5 py-3 rounded-xl bg-gold-500 text-black font-bold text-sm whitespace-nowrap">
+                                        Zobacz →
+                                    </div>
+                                </div>
+                            </button>
+                        )}
+                    </div>
+                )}
+
                 {/* Foto-Match block (tylko gdy enabled lub klient ma profil) */}
                 {(fotoMatchEnabled || fotoMatchProfile) && (
                     <FotoMatchOverviewBlock profile={fotoMatchProfile} />
@@ -298,34 +436,15 @@ export default function AccountPage() {
 
                 {/* Hero Status Block */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    {userPermissions?.offers !== false && (
+                    {userPermissions?.offers !== false && !offerNeedsAction && (
                         activeOffer ? (
-                            (() => {
-                                const offerNeedsAction = activeOffer.status === 'pending' || activeOffer.status === 'sent' || activeOffer.status === 'draft' || activeOffer.status === 'unlock_requested';
-                                return (
-                                    <button onClick={() => setActiveTab('documents')} className={`text-left rounded-2xl p-5 transition-all group relative overflow-hidden ${offerNeedsAction
-                                        ? 'bg-gradient-to-br from-gold-500/20 via-gold-500/5 to-transparent border-2 border-gold-500/70 shadow-[0_0_30px_rgba(212,175,55,0.3)] animate-pulse-soft'
-                                        : 'bg-zinc-900/30 backdrop-blur-xl border border-zinc-800 hover:border-gold-500/30'}`}>
-                                        {offerNeedsAction && (
-                                            <div className="absolute top-2 right-2 flex items-center gap-1 bg-gold-500 text-zinc-950 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                                                <span className="relative flex h-1.5 w-1.5">
-                                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-zinc-950 opacity-75"></span>
-                                                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-zinc-950"></span>
-                                                </span>
-                                                AKCJA
-                                            </div>
-                                        )}
-                                        <p className="text-xs text-zinc-500 uppercase tracking-widest mb-3">Aktualna Oferta</p>
-                                        <p className="font-bold text-white text-sm mb-2 group-hover:text-gold-400 transition-colors line-clamp-1">{activeOffer?.title || 'Bez tytułu'}</p>
-                                        <span className={`inline-block text-xs px-2 py-0.5 rounded-full border ${(offerStatusLabel[activeOffer?.status] || offerStatusLabel.draft).color}`}>
-                                            {(offerStatusLabel[activeOffer?.status] || offerStatusLabel.draft).label}
-                                        </span>
-                                        {offerNeedsAction && (
-                                            <p className="mt-3 text-xs text-gold-300 font-semibold">👉 Kliknij aby zobaczyć szczegóły</p>
-                                        )}
-                                    </button>
-                                );
-                            })()
+                            <button onClick={() => setActiveTab('documents')} className="text-left rounded-2xl p-5 transition-all group bg-zinc-900/30 backdrop-blur-xl border border-zinc-800 hover:border-gold-500/30">
+                                <p className="text-xs text-zinc-500 uppercase tracking-widest mb-3">Aktualna Oferta</p>
+                                <p className="font-bold text-white text-sm mb-2 group-hover:text-gold-400 transition-colors line-clamp-1">{activeOffer?.title || 'Bez tytułu'}</p>
+                                <span className={`inline-block text-xs px-2 py-0.5 rounded-full border ${(offerStatusLabel[activeOffer?.status] || offerStatusLabel.draft).color}`}>
+                                    {(offerStatusLabel[activeOffer?.status] || offerStatusLabel.draft).label}
+                                </span>
+                            </button>
                         ) : (
                             <div className="bg-zinc-900/30 border border-dashed border-zinc-800 rounded-2xl p-5">
                                 <p className="text-xs text-zinc-600 uppercase tracking-widest mb-3">Aktualna Oferta</p>
@@ -424,35 +543,6 @@ export default function AccountPage() {
                     </div>
 
                     <div className="lg:col-span-8 space-y-6 md:space-y-12">
-                        {(() => {
-                            // Wyzwania, które czekają na decyzję zaproszonego — powinny się świecić i mrugać.
-                            const pending = challenges.filter((c: any) =>
-                                c.role === 'invitee' && (c.status === 'sent' || c.status === 'viewed')
-                            );
-                            if (pending.length === 0) return null;
-                            const c = pending[0];
-                            return (
-                                <Link
-                                    href={`/foto-wyzwanie/invite/${c.unique_link}`}
-                                    className="relative block overflow-hidden rounded-3xl p-4 md:p-6 border-2 border-gold-500/60 bg-gradient-to-br from-gold-500/10 via-pink-500/10 to-amber-500/10 shadow-[0_0_40px_rgba(212,175,55,0.25)] hover:shadow-[0_0_60px_rgba(212,175,55,0.45)] transition-all animate-pulse-slow"
-                                >
-                                    <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-gold-400/20 blur-3xl animate-pulse" />
-                                    <div className="relative flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                                        <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-gold-500 text-black flex items-center justify-center text-2xl md:text-3xl shadow-lg shadow-gold-500/40">
-                                            🎁
-                                        </div>
-                                        <div className="flex-1">
-                                            <div className="text-[10px] uppercase tracking-widest text-gold-300 font-black">Czeka na Twoją decyzję</div>
-                                            <h3 className="text-lg md:text-xl font-bold text-white">{c.inviter_name} zaprasza Cię na sesję</h3>
-                                            <p className="text-sm text-zinc-300">{c.package?.name} • {c.location?.name || c.custom_location || 'Lokalizacja TBD'}</p>
-                                        </div>
-                                        <div className="hidden sm:flex items-center justify-center px-5 py-3 rounded-xl bg-gold-500 text-black font-bold text-sm whitespace-nowrap">
-                                            Otwórz →
-                                        </div>
-                                    </div>
-                                </Link>
-                            );
-                        })()}
                         <div className="grid md:grid-cols-2 gap-6">
                             {userPermissions?.galleries !== false && (
                                 <QuickCard

@@ -40,6 +40,10 @@ const config: Config = {
           '0%, 100%': { boxShadow: '0 0 30px rgba(212,175,55,0.25)' },
           '50%': { boxShadow: '0 0 50px rgba(212,175,55,0.55)' },
         },
+        'pulse-slow': {
+          '0%, 100%': { opacity: '1' },
+          '50%': { opacity: '0.85' },
+        },
         float: {
           '0%, 100%': { transform: 'translate(0, 0) scale(1)' },
           '25%': { transform: 'translate(30px, -30px) scale(1.05)' },
@@ -49,6 +53,7 @@ const config: Config = {
       },
       animation: {
         'pulse-soft': 'pulse-soft 2.5s ease-in-out infinite',
+        'pulse-slow': 'pulse-slow 3s ease-in-out infinite',
         float: 'float 20s ease-in-out infinite',
       },
       backgroundImage: {
