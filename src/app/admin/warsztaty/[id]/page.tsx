@@ -96,32 +96,61 @@ export default function WorkshopDetailPage({ params }: { params: Promise<{ id: s
     function printCards() {
         const win = window.open('', '_blank');
         if (!win || !w) return;
-        const cards = w.participants.map(p => `
-            <div class="card">
-                <div class="avatar">${p.avatar || '🦊'}</div>
-                <div class="title">${w.title}</div>
-                <div class="loc">${w.location || ''}</div>
-                <div class="creds">
-                    <div><span>Login:</span><strong>${p.login}</strong></div>
-                    <div><span>PIN:</span><strong>${p.pin_plain_temp || '••••••'}</strong></div>
+        const origin = typeof window !== 'undefined' ? window.location.origin : '';
+        const loginUrl = `${origin}/warsztaty/${w.slug}/login`;
+        // Paleta gradientów — każda karta dostaje inny kolor, żeby uczestnik szybko znalazł "swoją"
+        const palettes = [
+            ['#fde68a', '#fb7185'], // amber → rose
+            ['#bae6fd', '#6366f1'], // sky → indigo
+            ['#bbf7d0', '#10b981'], // green → emerald
+            ['#fbcfe8', '#a855f7'], // pink → purple
+            ['#fed7aa', '#ef4444'], // orange → red
+            ['#a7f3d0', '#14b8a6'], // mint → teal
+            ['#fef08a', '#f59e0b'], // yellow → amber
+            ['#ddd6fe', '#7c3aed'], // violet
+        ];
+        const cards = w.participants.map((p, idx) => {
+            const [c1, c2] = palettes[idx % palettes.length];
+            // Magic-link z loginem prefillowanym — dziecko skanuje QR i ma od razu swój login wpisany
+            const qrTarget = `${loginUrl}?u=${encodeURIComponent(p.login)}`;
+            const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=0&data=${encodeURIComponent(qrTarget)}`;
+            const pin = p.pin_plain_temp || '------';
+            return `
+            <div class="card" style="background:linear-gradient(135deg, ${c1} 0%, ${c2} 100%);">
+                <div class="inner">
+                    <div class="avatar">${p.avatar || '📸'}</div>
+                    <div class="title">${w.title}</div>
+                    <div class="loc">${w.location || ''}</div>
+                    <div class="creds">
+                        <div class="row"><span>Login</span><strong>${p.login}</strong></div>
+                        <div class="row"><span>PIN</span><strong class="pin">${pin}</strong></div>
+                    </div>
+                    <img class="qr" src="${qrSrc}" alt="QR" />
+                    <div class="hint">Zeskanuj kod → wpisz PIN</div>
+                    <div class="url">${loginUrl}</div>
                 </div>
-                <div class="url">${typeof window !== 'undefined' ? window.location.origin : ''}/warsztaty/${w.slug}/login</div>
-            </div>`).join('');
+            </div>`;
+        }).join('');
         win.document.write(`<!doctype html><html><head><title>Karty uczestników</title><style>
-            @page { size: A4; margin: 8mm; }
-            body { font-family: -apple-system, Segoe UI, sans-serif; margin: 0; }
-            .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6mm; }
-            .card { border: 2px dashed #c4b5a3; border-radius: 12px; padding: 10mm 6mm; text-align: center; page-break-inside: avoid; }
-            .avatar { font-size: 36pt; line-height: 1; }
-            .title { font-weight: bold; margin-top: 4mm; font-size: 11pt; color: #1f2937; }
-            .loc { color: #6b7280; font-size: 9pt; margin-top: 1mm; }
-            .creds { margin-top: 5mm; font-size: 13pt; }
-            .creds div { margin: 1mm 0; }
-            .creds span { color:#9ca3af; font-size: 10pt; margin-right: 3mm; }
-            .creds strong { color:#0f172a; letter-spacing: 1px; }
-            .url { margin-top: 4mm; color:#9ca3af; font-size: 7pt; word-break:break-all; }
+            @page { size: A4; margin: 6mm; }
+            * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            body { font-family: -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; background: #fff; }
+            .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 5mm; }
+            .card { border-radius: 16px; padding: 4mm; page-break-inside: avoid; box-shadow: 0 0 0 1px rgba(0,0,0,0.08); }
+            .inner { background: #ffffff; border-radius: 12px; padding: 6mm 5mm; text-align: center; }
+            .avatar { font-size: 40pt; line-height: 1; }
+            .title { font-weight: 800; margin-top: 3mm; font-size: 12pt; color: #0f172a; }
+            .loc { color: #475569; font-size: 9pt; margin-top: 1mm; }
+            .creds { margin-top: 4mm; }
+            .row { display:flex; align-items:center; justify-content:space-between; padding: 2mm 4mm; margin: 1.5mm 0; border-radius: 8px; background: #f8fafc; }
+            .row span { color:#64748b; font-size: 10pt; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+            .row strong { color:#0f172a; font-size: 14pt; font-weight: 800; letter-spacing: 1px; }
+            .row .pin { font-size: 20pt; font-family: 'Courier New', monospace; color: #be123c; letter-spacing: 4px; }
+            .qr { display:block; margin: 4mm auto 2mm; width: 35mm; height: 35mm; }
+            .hint { color:#475569; font-size: 9pt; font-weight: 600; }
+            .url { margin-top: 2mm; color:#94a3b8; font-size: 7pt; word-break:break-all; }
         </style></head><body><div class="grid">${cards}</div>
-        <script>window.onload=()=>window.print();</script></body></html>`);
+        <script>window.onload=()=>setTimeout(()=>window.print(), 600);</script></body></html>`);
         win.document.close();
     }
 

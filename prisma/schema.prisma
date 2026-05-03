@@ -533,6 +533,8 @@ model User {
   permissions             Json?
   welcome_email_sent_at   DateTime?
   welcome_email_count     Int                     @default(0)
+  // Czy klient ma odblokowany moduł Warsztatów (B2B/organizator grupy)
+  workshops_enabled       Boolean                 @default(false)
   baskets                 Basket[]
   assigned_bookings       Booking[]               @relation("PhotographerBookings")
   client_galleries        ClientGallery[]         @relation("ClientGalleries")
@@ -551,6 +553,8 @@ model User {
   challenge_invites       PhotoChallenge[]        @relation("ChallengeInvitee")
   challenges_initiated    PhotoChallenge[]        @relation("ChallengeInviter")
   foto_match_profile      FotoMatchProfile?
+  organized_workshops     Workshop[]              @relation("WorkshopOrganizer")
+  workshop_offers         WorkshopOffer[]         @relation("WorkshopOfferClient")
 
   // Zgody i RODO
   terms_accepted_at       DateTime?
@@ -1673,6 +1677,9 @@ model Workshop {
   // Materialy edukacyjne: tablica obiektow {title, body_md}
   materials       Json?     @default("[]")
   host_user_id    Int?      // prowadzacy (admin/fotograf)
+  // Klient CRM który organizuje grupę (np. opiekun ze szkoły, fundacja unijna)
+  organizer_client_id Int?
+  organizer_client    User? @relation("WorkshopOrganizer", fields: [organizer_client_id], references: [id])
   status          String    @default("draft") @db.VarChar(20) // draft | active | finished | archived
   starts_at       DateTime?
   ends_at         DateTime?
@@ -1684,6 +1691,7 @@ model Workshop {
 
   @@index([status])
   @@index([starts_at])
+  @@index([organizer_client_id])
   @@map("workshops")
 }
 
@@ -1733,6 +1741,9 @@ model WorkshopOffer {
   id                Int       @id @default(autoincrement())
   workshop_id       Int
   workshop          Workshop  @relation(fields: [workshop_id], references: [id], onDelete: Cascade)
+  // Powiązanie z kontem klienta CRM (opiekun grupy / organizator). Null gdy oferta wysłana na obcy email.
+  client_id         Int?
+  client            User?     @relation("WorkshopOfferClient", fields: [client_id], references: [id])
   recipient_email   String    @db.VarChar(160)
   recipient_name    String?   @db.VarChar(120)
   recipient_phone   String?   @db.VarChar(40)
@@ -1752,5 +1763,6 @@ model WorkshopOffer {
   @@index([workshop_id])
   @@index([recipient_email])
   @@index([status])
+  @@index([client_id])
   @@map("workshop_offers")
 }

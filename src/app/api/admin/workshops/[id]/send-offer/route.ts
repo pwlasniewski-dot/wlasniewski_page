@@ -175,6 +175,16 @@ export async function POST(request: NextRequest, ctx: { params: Promise<{ id: st
                 },
             });
 
+            // Powiąż ofertę i warsztat z klientem CRM jeśli istnieje taki user
+            const user = await prisma.user.findFirst({ where: { email: recipient_email } });
+            if (user) {
+                await prisma.workshopOffer.update({ where: { id: saved.id }, data: { client_id: user.id } });
+                // Jeśli warsztat nie ma jeszcze organizatora, ustaw go
+                if (!workshop.organizer_client_id) {
+                    await prisma.workshop.update({ where: { id: wid }, data: { organizer_client_id: user.id } });
+                }
+            }
+
             return NextResponse.json({ ok: true, sent_to: recipient_email, offer_id: saved.id });
         } catch (e: any) {
             console.error('[send-offer]', e);

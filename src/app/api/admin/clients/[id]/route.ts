@@ -1,4 +1,3 @@
-
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { withAuth } from '@/lib/auth/middleware';
@@ -163,6 +162,16 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
                 `;
                 await logSystem('INFO', 'SYSTEM', `Updated permissions for client #${userId}`, { permissions: body.permissions });
                 return NextResponse.json({ success: true, permissions: body.permissions });
+            }
+
+            // --- Warsztaty: włączanie/wyłączanie ---
+            if (body.workshops_enabled !== undefined) {
+                const updated = await prisma.user.update({
+                    where: { id: userId },
+                    data: { workshops_enabled: !!body.workshops_enabled },
+                });
+                await logSystem('INFO', 'SYSTEM', `Updated workshops_enabled for client #${userId}`, { workshops_enabled: !!body.workshops_enabled });
+                return NextResponse.json({ success: true, workshops_enabled: updated.workshops_enabled });
             }
 
             // --- Profile update ---

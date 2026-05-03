@@ -16,7 +16,7 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ id: str
                     select: {
                         id: true, login: true, display_name: true, avatar: true,
                         active: true, last_login: true, created_at: true,
-                        // pin_plain_temp celowo NIE zwracamy w GET listy — tylko bezpośrednio po wygenerowaniu
+                        pin_plain_temp: true, // admin musi widzieć PIN do wydruku kart logowania
                     },
                 },
                 _count: { select: { uploads: true } },

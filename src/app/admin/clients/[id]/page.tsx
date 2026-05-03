@@ -583,7 +583,7 @@ function ClientDetailsContent({ id }: { id: string }) {
                                 onClick={handleSendWelcomeEmail}
                                 disabled={sendingWelcomeEmail}
                                 className="px-6 py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-zinc-700 text-white font-bold rounded-lg transition-all flex items-center gap-2"
-                                title="Wyślij email powitalny z linkiem do ustawienia hasła"
+                                title="Wyślij email powitalny z linkiem do ustawienia hasła do ${client.email}"
                             >
                                 {sendingWelcomeEmail ? (
                                     <>
@@ -1040,7 +1040,7 @@ function ClientDetailsContent({ id }: { id: string }) {
                                                         <a
                                                             href={`/galeria/${gallery.access_code}`}
                                                             target="_blank"
-                                                            className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white rounded-lg transition-colors border border-zinc-700 hover:border-zinc-600"
+                                                            className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white rounded-lg transition-colors border border-zinc-700 hover:border-zinc-500"
                                                         >
                                                             <ExternalLink className="w-4 h-4" />
                                                         </a>
@@ -1241,53 +1241,64 @@ function ClientDetailsContent({ id }: { id: string }) {
                                                     </button>
                                                 </div>
                                             </div>
-                                        </div>
 
-                                        {/* Detailed breakdown for accepted offers */}
-                                        {offer.status === 'accepted' && offer.client_selection && (
-                                            <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-xl p-4 ml-14 animate-in fade-in slide-in-from-top-2 duration-300">
-                                                <div className="flex flex-wrap gap-6 items-start">
-                                                    {offer.client_selection.childCount !== undefined && (
-                                                        <div>
-                                                            <p className="text-[10px] text-zinc-500 uppercase font-bold mb-1">Liczba dzieci</p>
-                                                            <p className="text-xl font-bold text-gold-400">{offer.client_selection.childCount}</p>
-                                                        </div>
-                                                    )}
-
-                                                    {offer.client_selection.selectedPackage && (
-                                                        <div>
-                                                            <p className="text-[10px] text-zinc-500 uppercase font-bold mb-1">Wybrany pakiet</p>
-                                                            <p className="text-sm font-bold text-white mb-1">{offer.client_selection.selectedPackage.name}</p>
-                                                            <p className="text-xs text-zinc-400">{offer.client_selection.selectedPackage.price}</p>
-                                                        </div>
-                                                    )}
-
-                                                    {offer.client_selection.packagesBreakdown && offer.client_selection.packagesBreakdown.length > 0 && (
-                                                        <div className="flex-1">
-                                                            <p className="text-[10px] text-zinc-500 uppercase font-bold mb-2">Rozliczenie pakietów</p>
-                                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                                                                {offer.client_selection.packagesBreakdown.map((pkg: any, idx: number) => (
-                                                                    <div key={idx} className="bg-zinc-950/50 p-2 rounded-lg border border-zinc-800">
-                                                                        <p className="text-xs font-bold text-zinc-300 truncate" title={pkg.name}>{pkg.name}</p>
-                                                                        <div className="flex justify-between items-end mt-1">
-                                                                            <p className="text-xs text-zinc-500">{pkg.count} x {pkg.price}</p>
-                                                                            <p className="font-bold text-white text-xs">{pkg.subtotal?.toLocaleString() || 0} PLN</p>
-                                                                        </div>
-                                                                    </div>
-                                                                ))}
+                                            {/* Detailed breakdown for accepted offers */}
+                                            {offer.status === 'accepted' && offer.client_selection && (
+                                                <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-xl p-4 ml-14 animate-in fade-in slide-in-from-top-2 duration-300">
+                                                    <div className="flex flex-wrap gap-6 items-start">
+                                                        {offer.client_selection.childCount !== undefined && (
+                                                            <div>
+                                                                <p className="text-[10px] text-zinc-500 uppercase font-bold mb-1">Liczba dzieci</p>
+                                                                <p className="text-xl font-bold text-gold-400">{offer.client_selection.childCount}</p>
                                                             </div>
-                                                        </div>
-                                                    )}
+                                                        )}
 
-                                                    {offer.client_selection.selectedOptionalItems && offer.client_selection.selectedOptionalItems.length > 0 && (
-                                                        <div>
-                                                            <p className="text-[10px] text-zinc-500 uppercase font-bold mb-1">Dodatki</p>
-                                                            <p className="text-xs text-zinc-400">{offer.client_selection.selectedOptionalItems.length} wybranych</p>
-                                                        </div>
-                                                    )}
+                                                        {offer.client_selection.selectedPackage && (
+                                                            <div>
+                                                                <p className="text-[10px] text-zinc-500 uppercase font-bold mb-1">Wybrany pakiet</p>
+                                                                <p className="text-sm font-bold text-white mb-1">{offer.client_selection.selectedPackage.name}</p>
+                                                                <p className="text-xs text-zinc-400">{offer.client_selection.selectedPackage.price}</p>
+                                                            </div>
+                                                        )}
+
+                                                        {offer.client_selection.packagesBreakdown && offer.client_selection.packagesBreakdown.length > 0 && (
+                                                            <div className="flex-1">
+                                                                <p className="text-[10px] text-zinc-500 uppercase font-bold mb-2">Rozliczenie pakietów</p>
+                                                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                                                    {offer.client_selection.packagesBreakdown.map((pkg: any, idx: number) => (
+                                                                        <div key={idx} className="bg-zinc-950/50 p-2 rounded-lg border border-zinc-800">
+                                                                            <p className="text-xs font-bold text-zinc-300 truncate" title={pkg.name}>{pkg.name}</p>
+                                                                            <div className="flex justify-between items-end mt-1">
+                                                                                <p className="text-xs text-zinc-500">{pkg.count} x {pkg.price}</p>
+                                                                                <p className="font-bold text-white text-xs">{pkg.subtotal?.toLocaleString() || 0} PLN</p>
+                                                                            </div>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        )}
+
+                                                        {offer.client_selection.selectedOptionalItems && offer.client_selection.selectedOptionalItems.length > 0 && (
+                                                            <div>
+                                                                <p className="text-[10px] text-zinc-500 uppercase font-bold mb-1">Dodatki</p>
+                                                                <p className="text-xs text-zinc-400">{offer.client_selection.selectedOptionalItems.length} wybranych</p>
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        )}
+                                            )}
+
+                                            {/* Client note (notatka klienta) */}
+                                            {offer.client_note && (
+                                                <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-4 ml-14 mt-2">
+                                                    <p className="text-[10px] font-bold text-amber-500 uppercase tracking-widest mb-1 flex items-center gap-1.5">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" /></svg>
+                                                        Notatka od klienta
+                                                    </p>
+                                                    <p className="text-sm text-zinc-200 whitespace-pre-wrap">{offer.client_note}</p>
+                                                </div>
+                                            )}
+                                        </div>
 
                                         {/* Client note (notatka klienta) */}
                                         {offer.client_note && (
@@ -1713,7 +1724,7 @@ function ClientDetailsContent({ id }: { id: string }) {
                         </div>
 
                         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl divide-y divide-zinc-800 mb-6">
-                            {[
+                            {([
                                 { key: 'galleries', label: 'Galerie i Zdjęcia', desc: 'Dostęp do galerii i wyzwań fotograficznych' },
                                 { key: 'offers', label: 'Oferty', desc: 'Przeglądanie i akceptowanie ofert' },
                                 { key: 'contracts', label: 'Umowy', desc: 'Podgląd i podpisywanie umów' },
@@ -1733,6 +1744,38 @@ function ClientDetailsContent({ id }: { id: string }) {
                                     </button>
                                 </div>
                             ))}
+                            {/* Nowy przełącznik: Warsztaty */}
+                            <div className="flex items-center justify-between p-5 border-t border-zinc-800">
+                                <div>
+                                    <p className="font-medium text-white">Warsztaty</p>
+                                    <p className="text-xs text-zinc-500 mt-0.5">Dostęp do panelu warsztatów grupowych (B2B)</p>
+                                </div>
+                                <button
+                                    onClick={async () => {
+                                        if (!client) return;
+                                        const token = localStorage.getItem('admin_token');
+                                        const newVal = !client.workshops_enabled;
+                                        try {
+                                            const res = await fetch(`/api/admin/clients/${client.id}`, {
+                                                method: 'PATCH',
+                                                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({ workshops_enabled: newVal })
+                                            });
+                                            if (res.ok) {
+                                                toast.success(newVal ? 'Warsztaty włączone' : 'Warsztaty wyłączone');
+                                                setClient({ ...client, workshops_enabled: newVal });
+                                            } else {
+                                                toast.error('Błąd zapisu warsztatów');
+                                            }
+                                        } catch {
+                                            toast.error('Błąd połączenia');
+                                        }
+                                    }}
+                                    className={`w-12 h-6 rounded-full transition-colors relative flex-shrink-0 ${client?.workshops_enabled ? 'bg-emerald-500' : 'bg-zinc-700'}`}
+                                >
+                                    <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${client?.workshops_enabled ? 'translate-x-6' : 'translate-x-0.5'}`} />
+                                </button>
+                            </div>
                         </div>
 
                         <button
@@ -1783,7 +1826,7 @@ function ContractDepositInline({ contract, onChanged }: { contract: any; onChang
                     : { txt: 'Brak ustalonej zaliczki', cls: 'bg-zinc-800 text-zinc-500 border-zinc-700' };
 
     const togglePaid = async (paid: boolean) => {
-        if (!confirm(paid ? 'Oznaczyć zaliczkę jako wpłaconą?' : 'Cofnąć oznaczenie wpłaty?')) return;
+        if (!confirm(paid ? 'Oznaczyć zaliczkę jako wpłatę' : 'Cofnąć oznaczenie wpłaty?')) return;
         setBusy(true);
         try {
             const token = localStorage.getItem('admin_token');
