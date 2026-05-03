@@ -297,17 +297,17 @@ function DepositPanel({ contract, token, onChanged }: { contract: Contract; toke
                     <div>
                         <label className="block text-xs text-zinc-500 mb-1">Kwota (PLN)</label>
                         <input type="number" min={0} value={amount} onChange={e => setAmount(e.target.value)}
-                            className="w-full px-2 py-1.5 border border-zinc-300 rounded text-sm" />
+                            className="w-full px-2 py-1.5 border border-zinc-300 rounded text-sm text-zinc-900 bg-white" />
                     </div>
                     <div>
                         <label className="block text-xs text-zinc-500 mb-1">Termin wpłaty</label>
                         <input type="date" value={dueAt} onChange={e => setDueAt(e.target.value)}
-                            className="w-full px-2 py-1.5 border border-zinc-300 rounded text-sm" />
+                            className="w-full px-2 py-1.5 border border-zinc-300 rounded text-sm text-zinc-900 bg-white" />
                     </div>
                     <div>
                         <label className="block text-xs text-zinc-500 mb-1">Notatka</label>
                         <input type="text" value={note} onChange={e => setNote(e.target.value)} placeholder="opcjonalnie"
-                            className="w-full px-2 py-1.5 border border-zinc-300 rounded text-sm" />
+                            className="w-full px-2 py-1.5 border border-zinc-300 rounded text-sm text-zinc-900 bg-white placeholder:text-zinc-400" />
                     </div>
                 </div>
             )}

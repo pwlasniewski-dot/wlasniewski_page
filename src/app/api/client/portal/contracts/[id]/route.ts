@@ -106,6 +106,16 @@ export async function GET(
         const processedContract = { ...contract, content: finalContent };
         // -------------------------------------
 
+        // Dane bankowe z Settings (dla podgladu zaliczki w portalu klienta)
+        const settings = await prisma.settings.findFirst({
+            select: {
+                bank_account_number: true,
+                bank_account_holder: true,
+                bank_name: true,
+                bank_swift: true,
+            },
+        }).catch(() => null);
+
         // CRM Activity: contract viewed (skip for admin)
         if (!isAdmin) {
             logClientActivity(decoded, 'contract_viewed', {
@@ -116,7 +126,7 @@ export async function GET(
             });
         }
 
-        return NextResponse.json({ contract: processedContract });
+        return NextResponse.json({ contract: processedContract, bank: settings });
     } catch (error) {
         console.error('Error fetching contract:', error);
         return NextResponse.json({ error: 'Failed to fetch contract' }, { status: 500 });

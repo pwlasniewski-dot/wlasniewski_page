@@ -8,6 +8,7 @@ import { Download, CheckCircle2, FileText, Upload, RefreshCw } from 'lucide-reac
 export default function ContractSigningPage({ params }: { params: Promise<{ id: string }> }) {
     const router = useRouter();
     const [contract, setContract] = useState<any>(null);
+    const [bank, setBank] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [signing, setSigning] = useState(false);
     const [signError, setSignError] = useState<string | null>(null);
@@ -46,6 +47,7 @@ export default function ContractSigningPage({ params }: { params: Promise<{ id: 
             if (res.ok) {
                 const data = await res.json();
                 setContract(data.contract);
+                setBank(data.bank || null);
                 // Load existing note if any
                 if (data.contract?.client_note) {
                     setClientNote(data.contract.client_note);
@@ -159,6 +161,11 @@ export default function ContractSigningPage({ params }: { params: Promise<{ id: 
                             Pobierz PDF
                         </a>
                     </div>
+                )}
+
+                {/* Panel zaliczki */}
+                {contract.deposit_amount > 0 && (
+                    <ClientDepositPanel contract={contract} bank={bank} />
                 )}
 
                 <div className="p-8">
@@ -316,6 +323,89 @@ export default function ContractSigningPage({ params }: { params: Promise<{ id: 
                     )}
                 </div>
             </div>
+        </div>
+    );
+}
+
+function ClientDepositPanel({ contract, bank }: { contract: any; bank: any }) {
+    const [copied, setCopied] = useState<string | null>(null);
+    const isPaid = !!contract.deposit_paid_at;
+    const due = contract.deposit_due_at ? new Date(contract.deposit_due_at) : null;
+    const now = new Date();
+    const overdue = !isPaid && due && due < now;
+    const dueSoon = !isPaid && due && !overdue && (due.getTime() - now.getTime() < 7 * 86400000);
+    const amount = contract.deposit_amount || 0;
+
+    const copy = async (text: string, key: string) => {
+        try {
+            await navigator.clipboard.writeText(text);
+            setCopied(key);
+            setTimeout(() => setCopied(null), 1800);
+        } catch { /* noop */ }
+    };
+
+    const banner = isPaid
+        ? { cls: 'bg-emerald-50 border-emerald-200', titleCls: 'text-emerald-900', title: '✓ Zaliczka opłacona — dziękujemy!', sub: contract.deposit_paid_at ? `Zaksięgowano ${new Date(contract.deposit_paid_at).toLocaleDateString('pl-PL')}` : '' }
+        : overdue
+            ? { cls: 'bg-rose-50 border-rose-300', titleCls: 'text-rose-900', title: '⚠ Termin zaliczki minął', sub: 'Prosimy o pilne uregulowanie wpłaty.' }
+            : dueSoon
+                ? { cls: 'bg-amber-50 border-amber-300', titleCls: 'text-amber-900', title: '! Termin zaliczki wkrótce', sub: due ? `Termin: ${due.toLocaleDateString('pl-PL')}` : '' }
+                : { cls: 'bg-blue-50 border-blue-200', titleCls: 'text-blue-900', title: 'Zaliczka rezerwująca termin', sub: due ? `Termin: ${due.toLocaleDateString('pl-PL')}` : '' };
+
+    return (
+        <div className={`border-b ${banner.cls} px-6 py-5`}>
+            <div className="flex items-start justify-between gap-4 flex-wrap">
+                <div>
+                    <h3 className={`text-base font-bold ${banner.titleCls} flex items-center gap-2`}>💰 {banner.title}</h3>
+                    {banner.sub && <p className="text-sm text-gray-700 mt-1">{banner.sub}</p>}
+                </div>
+                <div className="text-right">
+                    <div className="text-[11px] uppercase tracking-widest text-gray-500 font-bold">Kwota zaliczki</div>
+                    <div className={`text-2xl font-bold ${isPaid ? 'text-emerald-700' : overdue ? 'text-rose-700' : 'text-gray-900'}`}>
+                        {amount.toLocaleString('pl-PL')} PLN
+                    </div>
+                </div>
+            </div>
+
+            {!isPaid && bank?.bank_account_number && (
+                <div className="mt-4 bg-white border border-gray-200 rounded-lg p-4">
+                    <div className="text-xs uppercase tracking-widest text-gray-500 font-bold mb-3">Dane do przelewu</div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                        <div>
+                            <div className="text-[10px] uppercase text-gray-500">Numer konta</div>
+                            <div className="flex items-center gap-2">
+                                <code className="font-mono text-gray-900 font-semibold">{bank.bank_account_number}</code>
+                                <button onClick={() => copy(bank.bank_account_number, 'iban')}
+                                    className="text-xs px-2 py-0.5 bg-gray-100 hover:bg-gray-200 rounded text-gray-700 transition">
+                                    {copied === 'iban' ? '✓ skopiowano' : 'kopiuj'}
+                                </button>
+                            </div>
+                        </div>
+                        {bank.bank_account_holder && (
+                            <div>
+                                <div className="text-[10px] uppercase text-gray-500">Odbiorca</div>
+                                <div className="text-gray-900">{bank.bank_account_holder}</div>
+                            </div>
+                        )}
+                        {bank.bank_name && (
+                            <div>
+                                <div className="text-[10px] uppercase text-gray-500">Bank</div>
+                                <div className="text-gray-900">{bank.bank_name}</div>
+                            </div>
+                        )}
+                        <div>
+                            <div className="text-[10px] uppercase text-gray-500">Tytuł przelewu</div>
+                            <div className="flex items-center gap-2">
+                                <code className="font-mono text-gray-900">Zaliczka {contract.contract_number}</code>
+                                <button onClick={() => copy(`Zaliczka ${contract.contract_number}`, 'title')}
+                                    className="text-xs px-2 py-0.5 bg-gray-100 hover:bg-gray-200 rounded text-gray-700 transition">
+                                    {copied === 'title' ? '✓ skopiowano' : 'kopiuj'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
