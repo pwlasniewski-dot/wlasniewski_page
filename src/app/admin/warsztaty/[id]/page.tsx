@@ -2,7 +2,7 @@
 
 import { use, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Plus, Printer, Trash2, KeyRound, Edit2, Save, X, Send, Calendar as CalendarIcon } from 'lucide-react';
+import { ArrowLeft, Plus, Printer, Trash2, KeyRound, Edit2, Save, X, Send, Calendar as CalendarIcon, Bell } from 'lucide-react';
 
 interface Participant {
     id: number;
@@ -662,6 +662,23 @@ function OffersTab({ workshopId, onSendOffer, reloadParent }: { workshopId: numb
         } finally { setBusy(null); }
     }
 
+    async function remind(id: number, type: 'auto' | 'upcoming' | 'overdue' = 'auto') {
+        const label = type === 'overdue' ? 'PILNE — termin zaliczki minął' : type === 'upcoming' ? 'standardowe przypomnienie' : 'auto-dobrane przypomnienie';
+        if (!confirm(`Wysłać ${label} mailem?`)) return;
+        setBusy(id);
+        try {
+            const token = localStorage.getItem('admin_token') || '';
+            const qs = type === 'auto' ? '' : `?type=${type}`;
+            const r = await fetch(`/api/admin/workshops/${workshopId}/offers/${id}/remind${qs}`, {
+                method: 'POST', headers: { Authorization: `Bearer ${token}` },
+            });
+            const j = await r.json().catch(() => ({}));
+            if (r.ok) alert(`Wysłano (${j.type}) do: ${j.sent_to}`);
+            else alert(j.error || 'Błąd wysyłki przypomnienia');
+            await load();
+        } finally { setBusy(null); }
+    }
+
     return (
         <div className="bg-white border border-zinc-200 rounded-xl shadow-sm">
             <div className="flex items-center justify-between p-4 border-b border-zinc-200">
@@ -734,6 +751,13 @@ function OffersTab({ workshopId, onSendOffer, reloadParent }: { workshopId: numb
                                                 <button disabled={busy === o.id} onClick={() => convert(o.id)}
                                                     className="text-[11px] bg-rose-600 hover:bg-rose-500 text-white px-2 py-1 rounded font-bold disabled:opacity-50">
                                                     Utwórz konto
+                                                </button>
+                                            )}
+                                            {o.status !== 'confirmed' && o.status !== 'cancelled' && !o.deposit_paid_at && (
+                                                <button disabled={busy === o.id} onClick={() => remind(o.id, 'auto')}
+                                                    className="text-[11px] bg-amber-500 hover:bg-amber-600 text-white px-2 py-1 rounded font-bold flex items-center gap-1 disabled:opacity-50"
+                                                    title={o.deposit_due_at && new Date(o.deposit_due_at) < new Date() ? 'Termin minął — wyślij PILNE przypomnienie' : 'Wyślij przypomnienie o zaliczce'}>
+                                                    <Bell size={11} /> Przypomnij
                                                 </button>
                                             )}
                                             {o.status !== 'cancelled' && (
