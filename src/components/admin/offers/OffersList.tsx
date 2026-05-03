@@ -109,6 +109,28 @@ export default function OffersList() {
         setTimeout(() => setCopySuccess(null), 2000);
     };
 
+    const sendReminder = async (offerId: number, type: 'unread' | 'deposit') => {
+        const label = type === 'deposit' ? 'przypomnienie o zaliczce' : 'przypomnienie o niezatwierdzonej ofercie';
+        if (!confirm(`Wysłać do klienta ${label}?`)) return;
+        try {
+            const token = localStorage.getItem('admin_token');
+            if (!token) { router.push('/admin/login'); return; }
+            const r = await fetch(`/api/admin/offers/${offerId}/remind?type=${type}`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+            });
+            const j = await r.json();
+            if (r.ok) {
+                alert(`Wysłano przypomnienie do: ${j.sent_to}`);
+            } else {
+                alert(`Błąd: ${j.error || 'Nie udało się wysłać'}`);
+            }
+        } catch (e) {
+            console.error('Reminder error', e);
+            alert('Błąd sieci podczas wysyłki przypomnienia.');
+        }
+    };
+
     const getStatusBadge = (status: string) => {
         const statusMap: Record<string, { bg: string; text: string; label: string; icon: string }> = {
             draft: { bg: 'bg-zinc-100', text: 'text-zinc-700', label: 'Szkic', icon: '📝' },
@@ -343,6 +365,27 @@ export default function OffersList() {
                                                 >
                                                     {copySuccess === offer.id ? '✅' : '🔗'}
                                                 </button>
+
+                                                {/* Przypomnij o ofercie (gdy jeszcze nie zaakceptowana) */}
+                                                {['sent', 'pending', 'negotiating'].includes(offer.status) && (
+                                                    <button
+                                                        onClick={() => sendReminder(offer.id, 'unread')}
+                                                        className="p-2 text-slate-400 hover:text-amber-400 hover:bg-slate-800 rounded-lg transition-all"
+                                                        title="Przypomnij klientowi o ofercie (mail)"
+                                                    >
+                                                        📩
+                                                    </button>
+                                                )}
+                                                {/* Przypomnij o zaliczce (po akceptacji) */}
+                                                {offer.status === 'accepted' && (
+                                                    <button
+                                                        onClick={() => sendReminder(offer.id, 'deposit')}
+                                                        className="p-2 text-slate-400 hover:text-emerald-400 hover:bg-slate-800 rounded-lg transition-all"
+                                                        title="Przypomnij o wpłacie zaliczki (mail)"
+                                                    >
+                                                        💰
+                                                    </button>
+                                                )}
 
                                                 {/* Edit */}
                                                 <Link href={`/admin/offers/${offer.id}`}>

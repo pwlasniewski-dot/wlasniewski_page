@@ -21,7 +21,10 @@ interface ContractData {
     clientEmail: string;
     clientPhone: string;
     eventDate: string;
+    eventTime: string;
     eventLocation: string;
+    eventCount: string;
+    eventTeam: string;
     offerTitle: string;
     packageDetails: string;
     totalPrice: string;
@@ -65,7 +68,10 @@ export default function ContractBuilder() {
         clientEmail: '',
         clientPhone: '',
         eventDate: '',
+        eventTime: '',
         eventLocation: '',
+        eventCount: '',
+        eventTeam: '',
         offerTitle: '',
         packageDetails: '',
         totalPrice: '0',
@@ -95,13 +101,60 @@ export default function ContractBuilder() {
     useEffect(() => {
         if (offerId) {
             fetchOfferAndGenerateNumber(offerId);
+        } else if (clientId) {
+            fetchClientAndPickOffer(clientId);
         } else {
             // Check if we should initialize as new blank contract
             if (data.contractNumber === 'Ładowanie...') {
                 setData(prev => ({ ...prev, contractNumber: 'NOWA-UMOWA' }));
             }
         }
-    }, [offerId]);
+    }, [offerId, clientId]);
+
+    const fetchClientAndPickOffer = async (cid: string) => {
+        try {
+            const token = localStorage.getItem('admin_token');
+            const res = await fetch(`/api/admin/clients/${cid}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!res.ok) throw new Error('Klient nie znaleziony');
+            const json = await res.json();
+            const client = json.client;
+            const offers: any[] = client.offers || [];
+            // Wybierz najlepszą ofertę: accepted > negotiating > pending > sent > najnowsza
+            const order = ['accepted', 'negotiating', 'pending', 'sent'];
+            const sorted = [...offers].sort((a, b) => {
+                const ai = order.indexOf(a.status); const bi = order.indexOf(b.status);
+                const an = ai === -1 ? 99 : ai; const bn = bi === -1 ? 99 : bi;
+                if (an !== bn) return an - bn;
+                return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+            });
+            const bestOffer = sorted[0];
+            if (bestOffer) {
+                // Mamy ofertę — załaduj ją normalną ścieżką (z pełnymi sekcjami)
+                await fetchOfferAndGenerateNumber(String(bestOffer.id));
+                toast.success(`Wczytano dane z oferty: ${bestOffer.title}`);
+                return;
+            }
+            // Brak oferty — wypełnij tylko dane klienta
+            const draftNum = `UMW-B2C-${new Date().getFullYear()}-XXX`;
+            const suggested = suggestTemplateForCategory(null);
+            setTemplateKey(suggested);
+            setData(prev => ({
+                ...prev,
+                contractNumber: draftNum,
+                clientName: client.name || client.email || '',
+                clientEmail: client.email || '',
+                clientPhone: client.phone || '',
+                content: getContractTemplate(suggested),
+            }));
+            toast('Klient nie ma jeszcze ofert — wypełniono dane klienta. Pozostałe pola uzupełnij ręcznie.', { icon: 'ℹ️' });
+        } catch (e) {
+            console.error('[fetchClientAndPickOffer]', e);
+            toast.error('Nie udało się wczytać danych klienta.');
+            setData(prev => ({ ...prev, contractNumber: 'NOWA-UMOWA' }));
+        }
+    };
 
     const fetchOfferAndGenerateNumber = async (id: string) => {
         try {
@@ -163,6 +216,16 @@ export default function ContractBuilder() {
                 const eventLoc = offer.session_location
                     || offer.template_data?.eventLocation
                     || 'Do ustalenia';
+                // Godzina sesji: HH:MM lub HH:MM-HH:MM (od-do)
+                const eventTimeStr = offer.session_time
+                    ? (offer.session_end_time ? `${offer.session_time}–${offer.session_end_time}` : offer.session_time)
+                    : (offer.template_data?.eventTime || '');
+                // Liczba osób/dzieci: z client_selection lub template_data
+                let eventCountStr = '';
+                if (offer.client_selection?.childCount) eventCountStr = String(offer.client_selection.childCount);
+                else if (offer.template_data?.eventCount) eventCountStr = String(offer.template_data.eventCount);
+                else if (offer.template_data?.children_count) eventCountStr = String(offer.template_data.children_count);
+                const eventTeamStr = offer.template_data?.eventTeam || '';
                 setData(prev => ({
                     ...prev,
                     contractNumber: draftNum,
@@ -170,7 +233,10 @@ export default function ContractBuilder() {
                     clientEmail: offer.user?.email || offer.client_email,
                     clientPhone: offer.user?.phone || '',
                     eventDate: eventDateStr,
+                    eventTime: eventTimeStr,
                     eventLocation: eventLoc,
+                    eventCount: eventCountStr,
+                    eventTeam: eventTeamStr,
                     offerTitle: offer.title,
                     packageDetails: packageDetails,
                     totalPrice: finalPrice.toString(),
@@ -273,10 +339,10 @@ export default function ContractBuilder() {
         .replace(/{{offerTitle}}/g, data.offerTitle || '[uzupełnij: offerTitle]')
         .replace(/{{packageDetails}}/g, data.packageDetails || '')
         .replace(/{{eventDate}}/g, data.eventDate || '[uzupełnij: eventDate]')
-        .replace(/{{eventTime}}/g, '[uzupełnij: eventTime]')
+        .replace(/{{eventTime}}/g, data.eventTime || '[uzupełnij: eventTime]')
         .replace(/{{eventLocation}}/g, data.eventLocation || '[uzupełnij: eventLocation]')
-        .replace(/{{eventCount}}/g, '[uzupełnij: eventCount]')
-        .replace(/{{eventTeam}}/g, '[uzupełnij: eventTeam]')
+        .replace(/{{eventCount}}/g, data.eventCount || '[uzupełnij: eventCount]')
+        .replace(/{{eventTeam}}/g, data.eventTeam || '[uzupełnij: eventTeam]')
         .replace(/{{workshopPlan}}/g, '[uzupełnij plan zajęć: dzień 1 / dzień 2 / dzień 3]')
         .replace(/{{deliveryDays}}/g, '21')
         .replace(/{{totalPrice}}/g, data.totalPrice)
