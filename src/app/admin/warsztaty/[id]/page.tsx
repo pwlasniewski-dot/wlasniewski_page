@@ -2,7 +2,8 @@
 
 import { use, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Plus, Printer, Trash2, KeyRound, Edit2, Save, X, Send, Calendar as CalendarIcon, Bell, Upload, Image as ImageIcon, BookOpen, Star } from 'lucide-react';
+import { ArrowLeft, Plus, Printer, Trash2, KeyRound, Edit2, Save, X, Send, Calendar as CalendarIcon, Bell, Upload, Image as ImageIcon, BookOpen, Star, Download, ExternalLink } from 'lucide-react';
+import { buildICS, downloadICS } from '@/utils/ics';
 
 interface Participant {
     id: number;
@@ -412,6 +413,161 @@ function InfoTab({ workshop, editing, form, setForm }: any) {
                     Wyłącz jeśli chcesz przyjmować zapisy tylko bezpośrednio (np. gdy to Ty tworzysz konta uczestników).
                 </p>
             </div>
+            <WorkshopDaysSummary workshop={workshop} />
+        </div>
+    );
+}
+
+// Sekcja z dniami warsztatu + integracja z kalendarzem
+function WorkshopDaysSummary({ workshop }: { workshop: Workshop }) {
+    const days = Array.isArray(workshop.schedule)
+        ? workshop.schedule
+            .filter((d: any) => d && d.date)
+            .map((d: any) => ({
+                date: String(d.date),
+                start: d.start || '',
+                end: d.end || '',
+                topic: d.topic || '',
+                plan: d.plan || '',
+            }))
+            .sort((a: any, b: any) => a.date.localeCompare(b.date))
+        : [];
+
+    if (days.length === 0) {
+        return (
+            <div className="border-t border-zinc-200 pt-4">
+                <label className="text-xs font-bold text-zinc-600 uppercase block mb-2">Dni warsztatu</label>
+                <p className="text-sm text-zinc-500">
+                    Brak harmonogramu. Dodaj dni warsztatu w zakładce <strong>📅 Program</strong> — pojawi się tu lista konkretnych dat z możliwością eksportu do kalendarza.
+                </p>
+            </div>
+        );
+    }
+
+    function googleCalUrl(d: { date: string; start?: string; end?: string; topic: string; plan?: string }) {
+        const dateNoDash = d.date.replaceAll('-', '');
+        let dates: string;
+        if (d.start && d.end) {
+            const s = d.start.replace(':', '') + '00';
+            const e = d.end.replace(':', '') + '00';
+            dates = `${dateNoDash}T${s}/${dateNoDash}T${e}`;
+        } else {
+            const next = new Date(d.date + 'T00:00:00');
+            next.setDate(next.getDate() + 1);
+            const yyyy = next.getFullYear();
+            const mm = String(next.getMonth() + 1).padStart(2, '0');
+            const dd = String(next.getDate()).padStart(2, '0');
+            dates = `${dateNoDash}/${yyyy}${mm}${dd}`;
+        }
+        const params = new URLSearchParams({
+            action: 'TEMPLATE',
+            text: `${workshop.title}${d.topic ? ' — ' + d.topic : ''}`,
+            dates,
+            details: d.plan || workshop.description || '',
+            location: workshop.location || '',
+        });
+        return `https://calendar.google.com/calendar/render?${params.toString()}`;
+    }
+
+    function downloadDayIcs(d: { date: string; start?: string; end?: string; topic: string; plan?: string }) {
+        const ics = buildICS({
+            uid: `workshop-${workshop.id}-${d.date}@wlasniewski.pl`,
+            title: `${workshop.title}${d.topic ? ' — ' + d.topic : ''}`,
+            description: d.plan || workshop.description || '',
+            date: d.date,
+            start: d.start || undefined,
+            end: d.end || undefined,
+            location: workshop.location || '',
+        });
+        downloadICS(`warsztat-${workshop.slug}-${d.date}.ics`, ics);
+    }
+
+    function downloadAllIcs() {
+        // Składamy multi-event ICS
+        const CRLF = '\r\n';
+        const events = days.map((d) => {
+            const single = buildICS({
+                uid: `workshop-${workshop.id}-${d.date}@wlasniewski.pl`,
+                title: `${workshop.title}${d.topic ? ' — ' + d.topic : ''}`,
+                description: d.plan || workshop.description || '',
+                date: d.date,
+                start: d.start || undefined,
+                end: d.end || undefined,
+                location: workshop.location || '',
+            });
+            // Wyciągamy tylko VEVENT
+            const m = single.match(/BEGIN:VEVENT[\s\S]*?END:VEVENT/);
+            return m ? m[0] : '';
+        }).filter(Boolean);
+
+        const ics = [
+            'BEGIN:VCALENDAR',
+            'VERSION:2.0',
+            'PRODID:-//Wlasniewski//Booking//PL',
+            'CALSCALE:GREGORIAN',
+            'METHOD:PUBLISH',
+            ...events,
+            'END:VCALENDAR',
+            '',
+        ].join(CRLF);
+
+        downloadICS(`warsztat-${workshop.slug}-wszystkie-dni.ics`, ics);
+    }
+
+    return (
+        <div className="border-t border-zinc-200 pt-4">
+            <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
+                <label className="text-xs font-bold text-zinc-600 uppercase">
+                    Dni warsztatu ({days.length})
+                </label>
+                {days.length > 1 && (
+                    <button
+                        onClick={downloadAllIcs}
+                        className="text-xs bg-rose-100 hover:bg-rose-200 text-rose-700 font-semibold px-3 py-1.5 rounded flex items-center gap-1"
+                        title="Pobierz wszystkie dni jako jeden plik .ics"
+                    >
+                        <Download size={12} /> Pobierz cały plan (.ics)
+                    </button>
+                )}
+            </div>
+            <div className="space-y-2">
+                {days.map((d, i) => {
+                    const dt = new Date(d.date + 'T00:00:00');
+                    const label = dt.toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+                    return (
+                        <div key={i} className="flex items-center gap-3 flex-wrap bg-zinc-50 border border-zinc-200 rounded-lg px-3 py-2">
+                            <div className="flex-1 min-w-0">
+                                <div className="font-bold text-zinc-900 text-sm capitalize">{label}</div>
+                                <div className="text-xs text-zinc-600">
+                                    {d.start && d.end ? `${d.start} – ${d.end}` : 'cały dzień'}
+                                    {d.topic && <> · <span className="text-zinc-700">{d.topic}</span></>}
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-1">
+                                <button
+                                    onClick={() => downloadDayIcs(d)}
+                                    className="text-xs bg-white hover:bg-zinc-100 text-zinc-700 border border-zinc-300 px-2 py-1 rounded flex items-center gap-1"
+                                    title="Pobierz .ics (Apple Calendar, Outlook)"
+                                >
+                                    <Download size={11} /> .ics
+                                </button>
+                                <a
+                                    href={googleCalUrl(d)}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="text-xs bg-white hover:bg-blue-50 text-blue-700 border border-blue-300 px-2 py-1 rounded flex items-center gap-1"
+                                    title="Dodaj do Google Calendar"
+                                >
+                                    <ExternalLink size={11} /> Google
+                                </a>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+            <p className="text-xs text-zinc-500 mt-2">
+                💡 Edytuj konkretne dni i godziny w zakładce <strong>📅 Program</strong>.
+            </p>
         </div>
     );
 }
