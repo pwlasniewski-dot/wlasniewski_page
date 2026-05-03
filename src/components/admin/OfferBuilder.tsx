@@ -99,11 +99,11 @@ const INITIAL_DATA: OfferData = {
     title: "Oferta Pierwsza Komunia Święta - Toruń",
     subtitle: "Pierwsza Komunia Święta 2026",
     contactName: "Przemysław Właśniewski",
-    contactLocation: "Toruń",
+    contactLocation: "Płużnica",
     contactPhone: "530788694",
     contactEmail: "pwlasniewski@gmail.com / www.wlasniewski.pl",
-    contactZip: "87-100",
-    contactAddress: "ul. Szeroka 1",
+    contactZip: "87-214",
+    contactAddress: "Płużnica",
 
     eventLocation: "Parafia w Toruniu",
     eventDate: "30 maja 2026 r.",
@@ -189,11 +189,11 @@ const BIRTHDAY_DATA: OfferData = {
     title: "Oferta Urodzinowa - Toruń",
     subtitle: "Urodziny 2026",
     contactName: "Przemysław Właśniewski",
-    contactLocation: "Toruń",
+    contactLocation: "Płużnica",
     contactPhone: "530788694",
     contactEmail: "pwlasniewski@gmail.com / www.wlasniewski.pl",
-    contactZip: "87-100",
-    contactAddress: "ul. Szeroka 1",
+    contactZip: "87-214",
+    contactAddress: "Płużnica",
 
     eventLocation: "Do uzupełnienia",
     eventDate: new Date().toISOString().split('T')[0],
@@ -247,7 +247,7 @@ const BIRTHDAY_DATA: OfferData = {
         t3: "Dojazd: Pierwszy 10km gratis, każdy dalszy 1.5zł/km. Podane ceny są kwotami brutto."
     },
 
-    footerCompany: "FOTO-DRON Przemysław Właśniewski NIP: 8781430365 • Toruń 2026",
+    footerCompany: "FOTO-DRON Przemysław Właśniewski NIP: 8781430365 • Płużnica 2026",
 
     sectionTitles: {
         preparations: "Proces Realizacji Imprezy",

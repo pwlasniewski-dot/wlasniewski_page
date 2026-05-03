@@ -56,7 +56,7 @@ const HEADER = (title: string) => `# ${title}
 **Data zawarcia:** {{currentDate}}
 
 ## STRONY UMOWY
-**Wykonawca:** FOTO-DRON Przemysław Właśniewski, ul. Szeroka 1, 87-100 Toruń, NIP: 8781430365
+**Wykonawca:** FOTO-DRON Przemysław Właśniewski, Płużnica, 87-214 Płużnica, NIP: 8781430365
 Numer konta ({{bankName}}): **{{bankAccount}}** — odbiorca: {{bankHolder}}
 **Zleceniodawca:** {{clientName}}
 E-mail: {{clientEmail}} · Tel.: {{clientPhone}}
