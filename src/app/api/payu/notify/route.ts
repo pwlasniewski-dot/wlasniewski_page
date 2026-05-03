@@ -609,6 +609,99 @@ export async function POST(request: NextRequest) {
                 handled = true;
             }
 
+            // ============================================================
+            // WORKSHOP Payment Handling
+            // ============================================================
+            if (!handled && typeOrId === 'WORKSHOP' && !isNaN(resourceId)) {
+                // Parse payment type from extOrderId: WORKSHOP_{offerId}_{type}_{timestamp}
+                const paymentType = parts.length > 2 ? parts[2] : 'full';
+                
+                const offer = await prisma.workshopOffer.findUnique({
+                    where: { id: resourceId },
+                    include: { workshop: true }
+                }).catch(() => null);
+
+                if (offer) {
+                    let updateData: any = {
+                        updated_at: new Date()
+                    };
+
+                    if (paymentType === 'deposit') {
+                        // Mark deposit as paid
+                        updateData.deposit_paid_at = new Date();
+                        updateData.status = 'deposit_paid';
+                        updateData.notes = `${offer.notes || ''}\n[PayU] Zaliczka opłacona (${orderId})`.trim();
+                    } else {
+                        // Mark as fully paid
+                        updateData.status = 'paid';
+                        updateData.notes = `${offer.notes || ''}\n[PayU] Opłacono całość (${orderId})`.trim();
+                    }
+
+                    await prisma.workshopOffer.update({
+                        where: { id: resourceId },
+                        data: updateData
+                    }).catch((e) => { console.error('[PayU] Workshop offer update failed:', e); });
+
+                    console.log(`Workshop Offer #${resourceId} → ${updateData.status} via PayU`);
+
+                    // Send confirmation email to client
+                    try {
+                        const { sendEmail } = await import('@/lib/email/sender');
+                        const amountPLN = (Number(order.totalAmount || 0) / 100).toFixed(2);
+                        
+                        await sendEmail({
+                            to: offer.recipient_email,
+                            subject: paymentType === 'deposit' 
+                                ? '✅ Zaliczka za warsztat opłacona' 
+                                : '✅ Płatność za warsztat potwierdzona',
+                            html: `
+                                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                                    <h2 style="color: #d4af37;">Potwierdzenie płatności</h2>
+                                    <p>Cześć ${offer.recipient_name || 'Kliencie'},</p>
+                                    <p>Twoja płatność za warsztat <strong>${offer.workshop.title}</strong> została potwierdzona!</p>
+                                    <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                                        <p><strong>Kwota:</strong> ${amountPLN} PLN</p>
+                                        <p><strong>Typ płatności:</strong> ${paymentType === 'deposit' ? 'Zaliczka' : 'Pełna kwota'}</p>
+                                        <p><strong>Numer transakcji:</strong> ${orderId}</p>
+                                    </div>
+                                    ${paymentType === 'deposit' && offer.price && offer.deposit_amount ? `
+                                        <p>Pozostała kwota do zapłaty: <strong>${((offer.price - offer.deposit_amount) / 100).toFixed(2)} PLN</strong></p>
+                                    ` : ''}
+                                    <p>Możesz sprawdzić szczegóły warsztatu w swoim <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://wlasniewski.pl'}/konto?tab=warsztaty">panelu klienta</a>.</p>
+                                    <p>Do zobaczenia na warsztatach!</p>
+                                </div>
+                            `
+                        }).catch((e: any) => console.error('[PayU] Workshop client email fail', e));
+
+                        // Send notification to admin
+                        const { getAdminEmail } = await import('@/lib/email/sender');
+                        const adminEmail = await getAdminEmail();
+                        if (adminEmail) {
+                            await sendEmail({
+                                to: adminEmail,
+                                subject: `💰 [WARSZTAT] Nowa płatność - ${offer.workshop.title}`,
+                                html: `
+                                    <div style="font-family: Arial, sans-serif;">
+                                        <h3>Nowa płatność za warsztat</h3>
+                                        <p><strong>Warsztat:</strong> ${offer.workshop.title}</p>
+                                        <p><strong>Klient:</strong> ${offer.recipient_name || offer.recipient_email}</p>
+                                        <p><strong>Uczestnik:</strong> ${offer.participant_name || '-'}</p>
+                                        <p><strong>Typ:</strong> ${paymentType === 'deposit' ? 'Zaliczka' : 'Pełna kwota'}</p>
+                                        <p><strong>Kwota:</strong> ${amountPLN} PLN</p>
+                                        <p><strong>PayU ID:</strong> ${orderId}</p>
+                                        <p><a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://wlasniewski.pl'}/admin/workshops/${offer.workshop.id}">Zobacz w panelu</a></p>
+                                    </div>
+                                `
+                            }).catch((e: any) => console.error('[PayU] Workshop admin email fail', e));
+                        }
+                    } catch (e) {
+                        console.error('[PayU] Workshop email dispatch failed:', e);
+                    }
+
+                    handled = true;
+                }
+            }
+
             if (!handled) {
                 console.warn(`[PayU] Unhandled extOrderId=${extOrderId}`);
             }

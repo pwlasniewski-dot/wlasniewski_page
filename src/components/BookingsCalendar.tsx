@@ -15,7 +15,7 @@ export type CalendarBooking = {
     venue_place?: string | null;
     status: string;
     photographer_id?: number | null;
-    source?: 'booking' | 'offer' | 'challenge' | 'contract';
+    source?: 'booking' | 'offer' | 'challenge' | 'contract' | 'workshop';
     detail_url?: string;
     deposit_amount?: number | null;
     deposit_status?: 'paid' | 'overdue' | 'due_soon' | 'pending' | null;
@@ -41,6 +41,7 @@ const SOURCE_BADGE: Record<string, string> = {
     offer: 'bg-amber-500 text-white',
     challenge: 'bg-violet-500 text-white',
     contract: 'bg-emerald-600 text-white',
+    workshop: 'bg-indigo-600 text-white',
 };
 
 const SOURCE_LABEL: Record<string, string> = {
@@ -48,6 +49,7 @@ const SOURCE_LABEL: Record<string, string> = {
     offer: 'O',
     challenge: 'W',
     contract: 'U',
+    workshop: '🎓',
 };
 
 const STATUS_LABELS: Record<string, string> = {

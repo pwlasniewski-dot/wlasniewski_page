@@ -155,11 +155,11 @@ export default function AccountPage() {
                 <div className="absolute top-1/2 left-1/3 w-[400px] h-[400px] bg-gradient-radial from-rose-500/8 to-transparent rounded-full blur-3xl animate-float" style={{ animationDelay: '2s' }} />
             </div>
             {/* Header / Hero */}
-            <div className="relative pt-32 pb-16 px-4 overflow-hidden z-10">
+            <div className="relative pt-24 md:pt-32 pb-8 md:pb-16 px-4 overflow-hidden z-10">
                 <div className="absolute top-0 left-0 w-full h-[500px] bg-gradient-to-b from-gold-900/10 to-transparent opacity-30 pointer-events-none" />
 
                 <div className="max-w-6xl mx-auto relative z-10">
-                    <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+                    <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 md:gap-6">
                         <div className="space-y-2">
                             <motion.p
                                 initial={{ opacity: 0, y: 10 }}
@@ -172,7 +172,7 @@ export default function AccountPage() {
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.1 }}
-                                className="text-4xl md:text-6xl font-display font-bold text-white tracking-tight"
+                                className="text-3xl md:text-4xl lg:text-6xl font-display font-bold text-white tracking-tight"
                             >
                                 Witaj, {user?.name?.split(' ')[0]}!
                             </motion.h1>
@@ -182,7 +182,7 @@ export default function AccountPage() {
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             onClick={logout}
-                            className="flex items-center gap-2 text-zinc-500 hover:text-white transition-colors py-2 group bg-zinc-900/30 backdrop-blur-xl px-4 rounded-xl"
+                            className="flex items-center justify-center gap-2 text-zinc-500 hover:text-white transition-colors py-2 group bg-zinc-900/30 backdrop-blur-xl px-4 rounded-xl w-full md:w-auto"
                         >
                             <LogOut className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
                             <span>Wyloguj się</span>
@@ -190,7 +190,7 @@ export default function AccountPage() {
                     </div>
 
                     {/* Tab Navigation — filtered by permissions */}
-                    <div className="flex bg-zinc-900/50 p-2 rounded-[2.5rem] border border-zinc-800 backdrop-blur-xl overflow-x-auto no-scrollbar">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:flex md:flex-wrap gap-2 bg-zinc-900/50 p-2 rounded-2xl border border-zinc-800 backdrop-blur-xl">
                         <TabButton id="overview" label="Przegląd" active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} icon={<Star className="w-4 h-4" />} />
 
                         {userPermissions?.galleries !== false && (
@@ -219,9 +219,9 @@ export default function AccountPage() {
                         {(user?.role === 'PHOTOGRAPHER' || user?.role === 'ADMIN') && (
                             <Link
                                 href="/panel-fotografa"
-                                className="flex items-center gap-2 px-6 py-3 rounded-2xl whitespace-nowrap transition-all bg-gradient-to-r from-rose-500 to-amber-500 text-white font-bold shadow-lg hover:shadow-xl"
+                                className="flex items-center justify-center gap-2 px-4 md:px-6 py-3 rounded-xl transition-all bg-gradient-to-r from-rose-500 to-amber-500 text-white font-bold shadow-lg hover:shadow-xl col-span-2 sm:col-span-1"
                             >
-                                <Calendar className="w-4 h-4" /> Mój kalendarz
+                                <Calendar className="w-4 h-4" /> <span className="hidden sm:inline">Mój kalendarz</span><span className="sm:hidden">Kalendarz</span>
                             </Link>
                         )}
                     </div>
@@ -257,12 +257,12 @@ export default function AccountPage() {
         return (
             <button
                 onClick={onClick}
-                className={`flex items-center gap-2 px-6 py-3 rounded-2xl whitespace-nowrap transition-all ${active ? 'bg-gold-600 text-black font-bold' : 'bg-zinc-900/30 backdrop-blur-xl text-zinc-400 hover:text-white hover:bg-zinc-800'}`}
+                className={`flex items-center justify-center gap-2 px-3 md:px-6 py-3 rounded-xl transition-all text-sm ${active ? 'bg-gold-600 text-black font-bold' : 'bg-zinc-900/30 backdrop-blur-xl text-zinc-400 hover:text-white hover:bg-zinc-800'}`}
             >
                 {icon}
-                <span>{label}</span>
+                <span className="hidden sm:inline">{label}</span>
                 {count !== undefined && count > 0 && (
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] ${active ? 'bg-black/20 text-black' : 'bg-zinc-800 text-zinc-500'}`}>
+                    <span className={`hidden sm:inline px-2 py-0.5 rounded-full text-[10px] ${active ? 'bg-black/20 text-black' : 'bg-zinc-800 text-zinc-500'}`}>
                         {count}
                     </span>
                 )}
@@ -382,15 +382,15 @@ export default function AccountPage() {
                     )}
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-12">
                     <div className="lg:col-span-4 space-y-6">
-                        <div className="bg-zinc-900/50 backdrop-blur-xl border border-zinc-800 rounded-3xl p-8 space-y-6">
+                        <div className="bg-zinc-900/50 backdrop-blur-xl border border-zinc-800 rounded-3xl p-4 md:p-8 space-y-6">
                             <div className="flex items-center gap-4">
-                                <div className="w-16 h-16 bg-gradient-to-br from-gold-600 to-gold-400 rounded-2xl flex items-center justify-center text-black font-bold text-2xl">
+                                <div className="w-12 h-12 md:w-16 md:h-16 bg-gradient-to-br from-gold-600 to-gold-400 rounded-2xl flex items-center justify-center text-black font-bold text-xl md:text-2xl">
                                     {user?.name?.[0]}
                                 </div>
                                 <div>
-                                    <h3 className="font-bold text-xl">{user?.name}</h3>
+                                    <h3 className="font-bold text-lg md:text-xl">{user?.name}</h3>
                                     <p className="text-zinc-500 text-sm">{user?.email}</p>
                                 </div>
                             </div>
@@ -408,7 +408,7 @@ export default function AccountPage() {
                         </div>
 
                         {userPermissions?.gift_cards !== false && (
-                            <div className="bg-zinc-900/30 backdrop-blur-xl border border-zinc-800/50 rounded-3xl p-6 hover:border-gold-500/30 transition-all hover:shadow-lg hover:shadow-gold-500/10">
+                            <div className="bg-zinc-900/30 backdrop-blur-xl border border-zinc-800/50 rounded-3xl p-4 md:p-6 hover:border-gold-500/30 transition-all hover:shadow-lg hover:shadow-gold-500/10">
                                 <h4 className="font-bold mb-3 flex items-center gap-2 text-gold-500">
                                     <Gift className="w-4 h-4 text-gold-500" />
                                     Prezent dla Ciebie
@@ -423,7 +423,7 @@ export default function AccountPage() {
                         )}
                     </div>
 
-                    <div className="lg:col-span-8 space-y-12">
+                    <div className="lg:col-span-8 space-y-6 md:space-y-12">
                         {(() => {
                             // Wyzwania, które czekają na decyzję zaproszonego — powinny się świecić i mrugać.
                             const pending = challenges.filter((c: any) =>
@@ -434,16 +434,16 @@ export default function AccountPage() {
                             return (
                                 <Link
                                     href={`/foto-wyzwanie/invite/${c.unique_link}`}
-                                    className="relative block overflow-hidden rounded-3xl p-6 border-2 border-gold-500/60 bg-gradient-to-br from-gold-500/10 via-pink-500/10 to-amber-500/10 shadow-[0_0_40px_rgba(212,175,55,0.25)] hover:shadow-[0_0_60px_rgba(212,175,55,0.45)] transition-all animate-pulse-slow"
+                                    className="relative block overflow-hidden rounded-3xl p-4 md:p-6 border-2 border-gold-500/60 bg-gradient-to-br from-gold-500/10 via-pink-500/10 to-amber-500/10 shadow-[0_0_40px_rgba(212,175,55,0.25)] hover:shadow-[0_0_60px_rgba(212,175,55,0.45)] transition-all animate-pulse-slow"
                                 >
                                     <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-gold-400/20 blur-3xl animate-pulse" />
-                                    <div className="relative flex items-center gap-4">
-                                        <div className="w-14 h-14 rounded-2xl bg-gold-500 text-black flex items-center justify-center text-3xl shadow-lg shadow-gold-500/40">
+                                    <div className="relative flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                                        <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-gold-500 text-black flex items-center justify-center text-2xl md:text-3xl shadow-lg shadow-gold-500/40">
                                             🎁
                                         </div>
                                         <div className="flex-1">
                                             <div className="text-[10px] uppercase tracking-widest text-gold-300 font-black">Czeka na Twoją decyzję</div>
-                                            <h3 className="text-xl font-bold text-white">{c.inviter_name} zaprasza Cię na sesję</h3>
+                                            <h3 className="text-lg md:text-xl font-bold text-white">{c.inviter_name} zaprasza Cię na sesję</h3>
                                             <p className="text-sm text-zinc-300">{c.package?.name} • {c.location?.name || c.custom_location || 'Lokalizacja TBD'}</p>
                                         </div>
                                         <div className="hidden sm:flex items-center justify-center px-5 py-3 rounded-xl bg-gold-500 text-black font-bold text-sm whitespace-nowrap">
@@ -1109,6 +1109,31 @@ export default function AccountPage() {
 
     function renderWorkshopsTab() {
         const hasAny = workshops.length > 0;
+
+        const handlePayment = async (offerId: number, paymentType: 'deposit' | 'full', email: string) => {
+            try {
+                const res = await fetch('/api/workshops/pay', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        workshop_offer_id: offerId,
+                        payment_type: paymentType,
+                        email
+                    })
+                });
+
+                const data = await res.json();
+                if (data.success && data.redirectUrl) {
+                    window.location.href = data.redirectUrl;
+                } else {
+                    alert('Błąd inicjalizacji płatności: ' + (data.error || 'Nieznany błąd'));
+                }
+            } catch (err) {
+                console.error('Payment error:', err);
+                alert('Błąd połączenia z systemem płatności');
+            }
+        };
+
         return (
             <section className="space-y-6">
                 <div className="flex items-center justify-between">
@@ -1135,53 +1160,183 @@ export default function AccountPage() {
                         </a>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {workshops.map((w: any) => (
-                            <div key={w.offer_id} className="bg-zinc-900/60 border border-zinc-800 rounded-xl p-5 hover:border-rose-500/40 transition">
-                                <div className="flex items-start justify-between gap-2 mb-3">
-                                    <h3 className="font-bold text-white text-lg">{w.workshop.title}</h3>
-                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${
-                                        w.status === 'confirmed' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' :
-                                            w.status === 'paid' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40' :
+                    <div className="grid grid-cols-1 gap-6">
+                        {workshops.map((w: any) => {
+                            const schedule = Array.isArray(w.workshop.schedule) ? w.workshop.schedule : [];
+                            const isDepositOverdue = w.deposit_due_at && !w.deposit_paid_at && new Date(w.deposit_due_at) < new Date();
+                            const canPayDeposit = w.deposit_amount && !w.deposit_paid_at;
+                            const canPayFull = w.price && w.deposit_paid_at && w.status !== 'paid' && w.status !== 'confirmed';
+
+                            return (
+                                <div key={w.offer_id} className="bg-zinc-900/60 border border-zinc-800 rounded-xl overflow-hidden hover:border-rose-500/40 transition">
+                                    {/* Header */}
+                                    <div className="bg-gradient-to-r from-rose-500/10 to-amber-500/10 border-b border-zinc-800 p-3 md:p-5">
+                                        <div className="flex flex-col sm:flex-row items-start justify-between gap-3">
+                                            <div className="flex-1">
+                                                <h3 className="font-bold text-white text-lg md:text-xl mb-1">{w.workshop.title}</h3>
+                                                {w.workshop.location && (
+                                                    <div className="flex items-center gap-2 text-sm text-zinc-300">
+                                                        <MapPin className="w-4 h-4 text-rose-400" /> 
+                                                        {w.workshop.location}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <span className={`text-[10px] font-bold px-3 py-1 rounded uppercase whitespace-nowrap ${
+                                                w.status === 'confirmed' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' :
+                                                w.status === 'paid' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40' :
                                                 w.status === 'cancelled' ? 'bg-zinc-700 text-zinc-400' :
-                                                    'bg-rose-500/20 text-rose-300 border border-rose-500/40'
-                                    }`}>
-                                        {w.status === 'confirmed' ? 'Potwierdzono' : w.status === 'paid' ? 'Zaliczka opłacona' : w.status === 'cancelled' ? 'Anulowano' : 'Oferta wysłana'}
-                                    </span>
-                                </div>
-                                {w.workshop.location && (
-                                    <div className="flex items-center gap-2 text-xs text-zinc-400"><MapPin className="w-3.5 h-3.5" /> {w.workshop.location}</div>
-                                )}
-                                {w.workshop.starts_at && (
-                                    <div className="flex items-center gap-2 text-xs text-zinc-400 mt-1"><Calendar className="w-3.5 h-3.5" /> {new Date(w.workshop.starts_at).toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
-                                )}
-                                {w.participant_name && (
-                                    <div className="text-xs text-rose-300 mt-2">👤 Uczestnik: <strong>{w.participant_name}</strong></div>
-                                )}
-                                {(w.deposit_amount || w.price) && (
-                                    <div className="mt-3 pt-3 border-t border-zinc-800 text-xs text-zinc-400 space-y-0.5">
-                                        {w.price && <div>Cena: <span className="text-white font-bold">{w.price.toLocaleString('pl-PL')} PLN</span></div>}
-                                        {w.deposit_amount && (
-                                            <div>
-                                                Zaliczka: <span className={w.deposit_paid_at ? 'text-emerald-400 font-bold' : 'text-amber-300 font-bold'}>
-                                                    {w.deposit_amount.toLocaleString('pl-PL')} PLN {w.deposit_paid_at ? '✓ opłacona' : ''}
-                                                </span>
-                                                {!w.deposit_paid_at && w.deposit_due_at && <span className="text-zinc-500"> · do {new Date(w.deposit_due_at).toLocaleDateString('pl-PL')}</span>}
+                                                'bg-rose-500/20 text-rose-300 border border-rose-500/40'
+                                            }`}>
+                                                {w.status === 'confirmed' ? 'Potwierdzono' : 
+                                                 w.status === 'paid' ? 'Opłacono' : 
+                                                 w.status === 'deposit_paid' ? 'Zaliczka' :
+                                                 w.status === 'cancelled' ? 'Anulowano' : 
+                                                 'Oferta wysłana'}
+                                            </span>
+                                        </div>
+                                        
+                                        {/* Dates */}
+                                        {(w.workshop.starts_at || w.workshop.ends_at) && (
+                                            <div className="flex items-center gap-2 text-sm text-zinc-400 mt-3">
+                                                <Calendar className="w-4 h-4 text-amber-400" />
+                                                {w.workshop.starts_at && new Date(w.workshop.starts_at).toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                                {w.workshop.ends_at && ` – ${new Date(w.workshop.ends_at).toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' })}`}
+                                            </div>
+                                        )}
+
+                                        {/* Participant */}
+                                        {w.participant_name && (
+                                            <div className="text-sm text-rose-300 mt-2 flex items-center gap-2">
+                                                <span className="text-lg">👤</span>
+                                                <span>Uczestnik: <strong>{w.participant_name}</strong></span>
                                             </div>
                                         )}
                                     </div>
-                                )}
-                                {w.panel_url ? (
-                                    <Link href={w.panel_url} className="mt-4 inline-flex items-center gap-2 bg-gradient-to-r from-rose-500 to-amber-500 hover:from-rose-600 hover:to-amber-600 text-white px-4 py-2 rounded-lg font-bold text-sm w-full justify-center">
-                                        Wejdź do panelu uczestnika <ChevronRight className="w-4 h-4" />
-                                    </Link>
-                                ) : (
-                                    <div className="mt-4 text-xs text-zinc-500 italic text-center">
-                                        Panel uczestnika otworzy się po opłaceniu zaliczki i potwierdzeniu zapisu.
+
+                                    {/* Content */}
+                                    <div className="p-3 md:p-5 space-y-4 md:space-y-5">
+                                        {/* Description */}
+                                        {w.workshop.description && (
+                                            <div>
+                                                <h4 className="text-xs font-bold text-amber-400 uppercase tracking-wider mb-2">O warsztatach</h4>
+                                                <p className="text-sm text-zinc-300 leading-relaxed">{w.workshop.description}</p>
+                                            </div>
+                                        )}
+
+                                        {/* Schedule */}
+                                        {schedule.length > 0 && (
+                                            <div>
+                                                <h4 className="text-xs font-bold text-amber-400 uppercase tracking-wider mb-3">Program zajęć</h4>
+                                                <div className="space-y-2">
+                                                    {schedule.map((day: any, idx: number) => (
+                                                        <div key={idx} className="bg-zinc-800/50 border border-zinc-700/50 rounded-lg p-2 md:p-3">
+                                                            <div className="flex items-start gap-2 md:gap-3">
+                                                                <div className="flex-shrink-0 w-12 h-12 md:w-16 md:h-16 rounded-lg bg-gradient-to-br from-rose-500/20 to-amber-500/20 border border-amber-500/30 flex flex-col items-center justify-center">
+                                                                    <div className="text-[9px] md:text-[10px] text-zinc-400 uppercase">Dzień</div>
+                                                                    <div className="text-lg md:text-xl font-bold text-white">{idx + 1}</div>
+                                                                </div>
+                                                                <div className="flex-1 min-w-0">
+                                                                    {day.date && (
+                                                                        <div className="text-xs text-zinc-400 mb-1">
+                                                                            📅 {new Date(day.date).toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit' })}
+                                                                            {day.start && day.end && ` · ${day.start}–${day.end}`}
+                                                                        </div>
+                                                                    )}
+                                                                    {day.topic && (
+                                                                        <div className="text-sm font-semibold text-white mb-1">{day.topic}</div>
+                                                                    )}
+                                                                    {day.plan && (
+                                                                        <div className="text-xs text-zinc-400 leading-relaxed">{day.plan}</div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Payment Section */}
+                                        {(w.deposit_amount || w.price) && (
+                                            <div className="bg-zinc-800/50 border border-zinc-700 rounded-lg p-4">
+                                                <h4 className="text-xs font-bold text-amber-400 uppercase tracking-wider mb-3">Płatność</h4>
+                                                <div className="space-y-3">
+                                                    {/* Price */}
+                                                    {w.price && (
+                                                        <div className="flex justify-between items-center text-sm">
+                                                            <span className="text-zinc-400">Cena:</span>
+                                                            <span className="text-white font-bold text-lg">{(w.price / 100).toFixed(2)} PLN</span>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Deposit */}
+                                                    {w.deposit_amount && (
+                                                        <div className="flex justify-between items-center text-sm">
+                                                            <span className="text-zinc-400">Zaliczka:</span>
+                                                            <div className="text-right">
+                                                                <span className={`font-bold ${w.deposit_paid_at ? 'text-emerald-400' : 'text-amber-300'}`}>
+                                                                    {(w.deposit_amount / 100).toFixed(2)} PLN
+                                                                </span>
+                                                                {w.deposit_paid_at && <span className="ml-2 text-emerald-400">✓</span>}
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Deadline warning */}
+                                                    {w.deposit_due_at && !w.deposit_paid_at && (
+                                                        <div className={`text-xs p-2 rounded ${
+                                                            isDepositOverdue 
+                                                                ? 'bg-red-500/20 text-red-300 border border-red-500/30' 
+                                                                : 'bg-amber-500/10 text-amber-300 border border-amber-500/20'
+                                                        }`}>
+                                                            {isDepositOverdue ? '⚠️' : '⏰'} Termin wpłaty: {new Date(w.deposit_due_at).toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                                            {isDepositOverdue && ' (minął!)'}
+                                                        </div>
+                                                    )}
+
+                                                    {/* Payment Buttons */}
+                                                    {canPayDeposit && (
+                                                        <button
+                                                            onClick={() => handlePayment(w.offer_id, 'deposit', w.recipient_email)}
+                                                            className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white px-3 md:px-4 py-3 rounded-lg font-bold text-xs md:text-sm flex items-center justify-center gap-2 transition"
+                                                        >
+                                                            <span>💳</span>
+                                                            <span className="hidden sm:inline">Opłać zaliczkę online ({(w.deposit_amount / 100).toFixed(2)} PLN)</span>
+                                                            <span className="sm:hidden">Zaliczka {(w.deposit_amount / 100).toFixed(2)} PLN</span>
+                                                        </button>
+                                                    )}
+
+                                                    {canPayFull && (
+                                                        <button
+                                                            onClick={() => handlePayment(w.offer_id, 'full', w.recipient_email)}
+                                                            className="w-full bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white px-3 md:px-4 py-3 rounded-lg font-bold text-xs md:text-sm flex items-center justify-center gap-2 transition"
+                                                        >
+                                                            <span>💳</span>
+                                                            <span className="hidden sm:inline">Opłać całość online ({((w.price - w.deposit_amount) / 100).toFixed(2)} PLN)</span>
+                                                            <span className="sm:hidden">Całość {((w.price - w.deposit_amount) / 100).toFixed(2)} PLN</span>
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Panel Button */}
+                                        {w.panel_url ? (
+                                            <Link 
+                                                href={w.panel_url} 
+                                                className="block bg-gradient-to-r from-rose-500 to-amber-500 hover:from-rose-600 hover:to-amber-600 text-white px-4 py-3 rounded-lg font-bold text-sm text-center transition"
+                                            >
+                                                🚀 Wejdź do panelu uczestnika →
+                                            </Link>
+                                        ) : (
+                                            <div className="text-xs text-zinc-500 italic text-center py-2 bg-zinc-800/30 rounded-lg">
+                                                Panel uczestnika otworzy się po opłaceniu zaliczki i potwierdzeniu zapisu.
+                                            </div>
+                                        )}
                                     </div>
-                                )}
-                            </div>
-                        ))}
+                                </div>
+                            );
+                        })}
                     </div>
                 )}
             </section>

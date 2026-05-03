@@ -17,7 +17,7 @@ export const dynamic = 'force-dynamic';
 
 type CalendarEvent = {
     id: string;
-    source: 'booking' | 'offer' | 'challenge' | 'contract';
+    source: 'booking' | 'offer' | 'challenge' | 'contract' | 'workshop';
     source_id: number;
     date: string;            // ISO date YYYY-MM-DD
     start_time: string | null;
@@ -292,6 +292,114 @@ export async function GET(request: NextRequest) {
         console.warn('[calendar-events] Contracts skipped:', (e as Error).message);
     }
 
+    // ── 5) WORKSHOPS (każdy dzień z harmonogramu jako osobny event) ─────────
+    try {
+        const workshops = await prisma.workshop.findMany({
+            where: {
+                status: { notIn: ['draft', 'archived'] },
+            },
+            select: {
+                id: true,
+                slug: true,
+                title: true,
+                location: true,
+                starts_at: true,
+                ends_at: true,
+                schedule: true,
+                status: true,
+                _count: { select: { participants: true } },
+            },
+        });
+
+        for (const w of workshops) {
+            const schedule = Array.isArray(w.schedule) ? w.schedule : [];
+            
+            if (schedule.length > 0) {
+                // Każdy dzień z harmonogramu jako osobny event
+                for (let i = 0; i < schedule.length; i++) {
+                    const day = schedule[i];
+                    if (!day.date) continue;
+
+                    const eventDate = new Date(day.date);
+                    if (isNaN(eventDate.getTime())) continue;
+
+                    // Filtr zakresu dat
+                    if (dateFilter.gte && eventDate < dateFilter.gte) continue;
+                    if (dateFilter.lte && eventDate > dateFilter.lte) continue;
+
+                    const dayNum = i + 1;
+                    const topic = day.topic ? ` — ${day.topic}` : '';
+
+                    events.push({
+                        id: `workshop-${w.id}-day${dayNum}`,
+                        source: 'workshop' as any, // Rozszerzenie typu
+                        source_id: w.id,
+                        date: eventDate.toISOString().slice(0, 10),
+                        start_time: day.start || null,
+                        end_time: day.end || null,
+                        title: `🎓 ${w.title} (Dzień ${dayNum}${topic})`,
+                        client_name: `Warsztat (${w._count.participants} uczestników)`,
+                        email: null,
+                        phone: null,
+                        status: w.status === 'active' ? 'confirmed' : 'pending',
+                        price: null,
+                        venue: w.location || null,
+                        notes: day.plan || null,
+                        photographer_id: null,
+                        detail_url: `/admin/warsztaty/${w.id}`,
+                        deposit_amount: null,
+                        deposit_paid_at: null,
+                        deposit_due_at: null,
+                        deposit_status: null,
+                    });
+                }
+            } else if (w.starts_at && w.ends_at) {
+                // Fallback: jeśli brak harmonogramu, pokaż zakres dat jako jeden blok
+                const start = new Date(w.starts_at);
+                const end = new Date(w.ends_at);
+
+                // Filtr zakresu dat
+                if (dateFilter.gte && end < dateFilter.gte) continue;
+                if (dateFilter.lte && start > dateFilter.lte) continue;
+
+                // Dla każdego dnia w zakresie start-end dodaj event
+                const current = new Date(start);
+                let dayNum = 1;
+                while (current <= end) {
+                    if ((!dateFilter.gte || current >= dateFilter.gte) && 
+                        (!dateFilter.lte || current <= dateFilter.lte)) {
+                        events.push({
+                            id: `workshop-${w.id}-day${dayNum}`,
+                            source: 'workshop' as any,
+                            source_id: w.id,
+                            date: current.toISOString().slice(0, 10),
+                            start_time: null,
+                            end_time: null,
+                            title: `🎓 ${w.title}`,
+                            client_name: `Warsztat (${w._count.participants} uczestników)`,
+                            email: null,
+                            phone: null,
+                            status: w.status === 'active' ? 'confirmed' : 'pending',
+                            price: null,
+                            venue: w.location || null,
+                            notes: null,
+                            photographer_id: null,
+                            detail_url: `/admin/warsztaty/${w.id}`,
+                            deposit_amount: null,
+                            deposit_paid_at: null,
+                            deposit_due_at: null,
+                            deposit_status: null,
+                        });
+                    }
+                    current.setDate(current.getDate() + 1);
+                    dayNum++;
+                }
+            }
+        }
+    } catch (e) {
+        console.warn('[calendar-events] Workshops skipped:', (e as Error).message);
+    }
+
     events.sort((a, b) => a.date.localeCompare(b.date) || (a.start_time || '').localeCompare(b.start_time || ''));
 
     return NextResponse.json({
@@ -301,6 +409,7 @@ export async function GET(request: NextRequest) {
             offers: events.filter(e => e.source === 'offer').length,
             challenges: events.filter(e => e.source === 'challenge').length,
             contracts: events.filter(e => e.source === 'contract').length,
+            workshops: events.filter(e => e.source === 'workshop').length,
             total: events.length,
         },
     });

@@ -1680,6 +1680,7 @@ model Workshop {
   // Klient CRM który organizuje grupę (np. opiekun ze szkoły, fundacja unijna)
   organizer_client_id Int?
   organizer_client    User? @relation("WorkshopOrganizer", fields: [organizer_client_id], references: [id])
+  public_signup_enabled Boolean @default(true) // czy pokazywać publiczny formularz zapisu
   status          String    @default("draft") @db.VarChar(20) // draft | active | finished | archived
   starts_at       DateTime?
   ends_at         DateTime?

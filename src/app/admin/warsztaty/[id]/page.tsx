@@ -25,6 +25,7 @@ interface Workshop {
     status: string;
     starts_at: string | null;
     ends_at: string | null;
+    public_signup_enabled: boolean;
     participants: Participant[];
 }
 
@@ -37,7 +38,17 @@ export default function WorkshopDetailPage({ params }: { params: Promise<{ id: s
     const [recentlyCreated, setRecentlyCreated] = useState<Participant[] | null>(null);
     const [activeTab, setActiveTab] = useState<'info' | 'schedule' | 'materials' | 'gallery' | 'participants' | 'offers'>('info');
     const [editing, setEditing] = useState(false);
-    const [form, setForm] = useState({ title: '', location: '', description: '', status: '', starts_at: '', ends_at: '' });
+    const [form, setForm] = useState({ 
+        title: '', 
+        location: '', 
+        description: '', 
+        status: '', 
+        starts_at: '', 
+        starts_time: '',
+        ends_at: '', 
+        ends_time: '',
+        public_signup_enabled: true 
+    });
     const [showOfferModal, setShowOfferModal] = useState(false);
 
     function token() { return localStorage.getItem('admin_token') || ''; }
@@ -48,13 +59,33 @@ export default function WorkshopDetailPage({ params }: { params: Promise<{ id: s
         const j = await r.json();
         setW(j.workshop);
         if (j.workshop) {
+            // Rozdziel DateTime na datę i czas
+            let startsDate = '';
+            let startsTime = '';
+            let endsDate = '';
+            let endsTime = '';
+            
+            if (j.workshop.starts_at) {
+                const dt = new Date(j.workshop.starts_at);
+                startsDate = dt.toISOString().slice(0, 10);
+                startsTime = dt.toISOString().slice(11, 16);
+            }
+            if (j.workshop.ends_at) {
+                const dt = new Date(j.workshop.ends_at);
+                endsDate = dt.toISOString().slice(0, 10);
+                endsTime = dt.toISOString().slice(11, 16);
+            }
+            
             setForm({
                 title: j.workshop.title || '',
                 location: j.workshop.location || '',
                 description: j.workshop.description || '',
                 status: j.workshop.status || 'draft',
-                starts_at: j.workshop.starts_at ? j.workshop.starts_at.slice(0, 10) : '',
-                ends_at: j.workshop.ends_at ? j.workshop.ends_at.slice(0, 10) : '',
+                starts_at: startsDate,
+                starts_time: startsTime,
+                ends_at: endsDate,
+                ends_time: endsTime,
+                public_signup_enabled: j.workshop.public_signup_enabled ?? true,
             });
         }
         setLoading(false);
@@ -62,10 +93,29 @@ export default function WorkshopDetailPage({ params }: { params: Promise<{ id: s
     useEffect(() => { load(); }, [id]);
 
     async function saveEdit() {
+        // Połącz datę + czas przed wysłaniem
+        let startsAtISO = form.starts_at || null;
+        let endsAtISO = form.ends_at || null;
+        
+        if (form.starts_at && form.starts_time) {
+            startsAtISO = `${form.starts_at}T${form.starts_time}:00`;
+        }
+        if (form.ends_at && form.ends_time) {
+            endsAtISO = `${form.ends_at}T${form.ends_time}:00`;
+        }
+        
         await fetch(`/api/admin/workshops/${id}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token()}` },
-            body: JSON.stringify(form),
+            body: JSON.stringify({
+                title: form.title,
+                location: form.location,
+                description: form.description,
+                status: form.status,
+                starts_at: startsAtISO,
+                ends_at: endsAtISO,
+                public_signup_enabled: form.public_signup_enabled,
+            }),
         });
         setEditing(false);
         load();
@@ -263,21 +313,57 @@ function InfoTab({ workshop, editing, form, setForm }: any) {
                     )}
                 </div>
                 <div>
-                    <label className="text-xs font-bold text-zinc-600 uppercase">Data rozpoczęcia</label>
+                    <label className="text-xs font-bold text-zinc-600 uppercase">Data i godzina rozpoczęcia</label>
                     {!editing ? (
-                        <div className="text-zinc-900 mt-1">{workshop.starts_at ? new Date(workshop.starts_at).toLocaleDateString('pl-PL') : '—'}</div>
+                        <div className="text-zinc-900 mt-1">
+                            {workshop.starts_at ? new Date(workshop.starts_at).toLocaleString('pl-PL', { 
+                                dateStyle: 'medium', 
+                                timeStyle: 'short' 
+                            }) : '—'}
+                        </div>
                     ) : (
-                        <input type="date" value={form.starts_at} onChange={e => setForm({ ...form, starts_at: e.target.value })}
-                            className="w-full border border-zinc-300 rounded px-3 py-2 text-zinc-900 mt-1" />
+                        <div className="grid grid-cols-2 gap-2 mt-1">
+                            <input 
+                                type="date" 
+                                value={form.starts_at} 
+                                onChange={e => setForm({ ...form, starts_at: e.target.value })}
+                                className="w-full border border-zinc-300 rounded px-3 py-2 text-zinc-900" 
+                            />
+                            <input 
+                                type="time" 
+                                value={form.starts_time} 
+                                onChange={e => setForm({ ...form, starts_time: e.target.value })}
+                                placeholder="--:--"
+                                className="w-full border border-zinc-300 rounded px-3 py-2 text-zinc-900" 
+                            />
+                        </div>
                     )}
                 </div>
                 <div>
-                    <label className="text-xs font-bold text-zinc-600 uppercase">Data zakończenia</label>
+                    <label className="text-xs font-bold text-zinc-600 uppercase">Data i godzina zakończenia</label>
                     {!editing ? (
-                        <div className="text-zinc-900 mt-1">{workshop.ends_at ? new Date(workshop.ends_at).toLocaleDateString('pl-PL') : '—'}</div>
+                        <div className="text-zinc-900 mt-1">
+                            {workshop.ends_at ? new Date(workshop.ends_at).toLocaleString('pl-PL', { 
+                                dateStyle: 'medium', 
+                                timeStyle: 'short' 
+                            }) : '—'}
+                        </div>
                     ) : (
-                        <input type="date" value={form.ends_at} onChange={e => setForm({ ...form, ends_at: e.target.value })}
-                            className="w-full border border-zinc-300 rounded px-3 py-2 text-zinc-900 mt-1" />
+                        <div className="grid grid-cols-2 gap-2 mt-1">
+                            <input 
+                                type="date" 
+                                value={form.ends_at} 
+                                onChange={e => setForm({ ...form, ends_at: e.target.value })}
+                                className="w-full border border-zinc-300 rounded px-3 py-2 text-zinc-900" 
+                            />
+                            <input 
+                                type="time" 
+                                value={form.ends_time} 
+                                onChange={e => setForm({ ...form, ends_time: e.target.value })}
+                                placeholder="--:--"
+                                className="w-full border border-zinc-300 rounded px-3 py-2 text-zinc-900" 
+                            />
+                        </div>
                     )}
                 </div>
             </div>
@@ -290,6 +376,41 @@ function InfoTab({ workshop, editing, form, setForm }: any) {
                         placeholder="Krótki opis warsztatów"
                         rows={4} className="w-full border border-zinc-300 rounded px-3 py-2 text-zinc-900 mt-1" />
                 )}
+            </div>
+            <div className="border-t border-zinc-200 pt-4">
+                <label className="text-xs font-bold text-zinc-600 uppercase block mb-2">Publiczny formularz zapisu</label>
+                {!editing ? (
+                    <div className="text-zinc-700">
+                        {workshop.public_signup_enabled ? (
+                            <span className="text-emerald-600 font-semibold">✓ Włączony — formularz widoczny na /warsztaty/{workshop.slug}</span>
+                        ) : (
+                            <span className="text-amber-600 font-semibold">✗ Wyłączony — zapisy tylko przez admina</span>
+                        )}
+                    </div>
+                ) : (
+                    <label className="flex items-center gap-3 cursor-pointer">
+                        <div
+                            onClick={() => setForm({ ...form, public_signup_enabled: !form.public_signup_enabled })}
+                            className={`w-12 h-6 rounded-full transition-colors relative ${
+                                form.public_signup_enabled ? 'bg-emerald-500' : 'bg-zinc-400'
+                            }`}
+                        >
+                            <span
+                                className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
+                                    form.public_signup_enabled ? 'translate-x-6' : 'translate-x-0.5'
+                                }`}
+                            />
+                        </div>
+                        <span className="text-sm text-zinc-700">
+                            {form.public_signup_enabled
+                                ? 'Formularz zapisu widoczny publicznie'
+                                : 'Formularz ukryty — tylko zapisy przez admina'}
+                        </span>
+                    </label>
+                )}
+                <p className="text-xs text-zinc-500 mt-2">
+                    Wyłącz jeśli chcesz przyjmować zapisy tylko bezpośrednio (np. gdy to Ty tworzysz konta uczestników).
+                </p>
             </div>
         </div>
     );

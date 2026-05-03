@@ -13,6 +13,7 @@ type Workshop = {
     schedule: any;
     starts_at: string | null;
     ends_at: string | null;
+    public_signup_enabled: boolean;
     _count: { participants: number };
 };
 
@@ -140,71 +141,90 @@ export default function WorkshopLandingPage({ params }: { params: Promise<{ slug
             </section>
 
             {/* FORMULARZ ZAPISU */}
-            <section id="zapis" className="max-w-2xl mx-auto px-6 py-12">
-                <div className="bg-white rounded-2xl border border-amber-200 shadow-xl overflow-hidden">
-                    <div className="bg-gradient-to-r from-rose-500 to-amber-500 text-white p-6">
-                        <h2 className="text-2xl font-bold">Zapisz się na warsztaty</h2>
-                        <p className="text-sm opacity-90 mt-1">Wyślę Ci szczegóły, cenę i dane do zaliczki w ciągu 24h.</p>
+            {w.public_signup_enabled ? (
+                <section id="zapis" className="max-w-2xl mx-auto px-6 py-12">
+                    <div className="bg-white rounded-2xl border border-amber-200 shadow-xl overflow-hidden">
+                        <div className="bg-gradient-to-r from-rose-500 to-amber-500 text-white p-6">
+                            <h2 className="text-2xl font-bold">Zapisz się na warsztaty</h2>
+                            <p className="text-sm opacity-90 mt-1">Wyślę Ci szczegóły, cenę i dane do zaliczki w ciągu 24h.</p>
+                        </div>
+                        <div className="p-6">
+                            {sent ? (
+                                <div className="text-center py-8">
+                                    <div className="text-5xl mb-3">🎉</div>
+                                    <p className="text-emerald-600 font-bold text-lg">Dzięki za zgłoszenie!</p>
+                                    <p className="text-zinc-500 text-sm mt-1">Odezwę się w ciągu 24h z propozycją terminu i kwotą zaliczki.</p>
+                                </div>
+                            ) : (
+                                <form onSubmit={submit} className="space-y-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="text-xs font-bold text-zinc-600 uppercase">Twój e-mail *</label>
+                                            <input required type="email" value={form.recipient_email}
+                                                onChange={e => setForm({ ...form, recipient_email: e.target.value })}
+                                                placeholder="rodzic@example.pl"
+                                                className="w-full border border-zinc-300 rounded px-3 py-2 text-zinc-900 mt-1 focus:border-rose-500 focus:outline-none" />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs font-bold text-zinc-600 uppercase">Imię (Twoje)</label>
+                                            <input value={form.recipient_name}
+                                                onChange={e => setForm({ ...form, recipient_name: e.target.value })}
+                                                placeholder="Anna"
+                                                className="w-full border border-zinc-300 rounded px-3 py-2 text-zinc-900 mt-1 focus:border-rose-500 focus:outline-none" />
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="text-xs font-bold text-zinc-600 uppercase">Imię uczestnika</label>
+                                            <input value={form.participant_name}
+                                                onChange={e => setForm({ ...form, participant_name: e.target.value })}
+                                                placeholder="Kuba"
+                                                className="w-full border border-zinc-300 rounded px-3 py-2 text-zinc-900 mt-1 focus:border-rose-500 focus:outline-none" />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs font-bold text-zinc-600 uppercase">Telefon</label>
+                                            <input value={form.recipient_phone}
+                                                onChange={e => setForm({ ...form, recipient_phone: e.target.value })}
+                                                placeholder="+48..."
+                                                className="w-full border border-zinc-300 rounded px-3 py-2 text-zinc-900 mt-1 focus:border-rose-500 focus:outline-none" />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-bold text-zinc-600 uppercase">Wiadomość (opcjonalnie)</label>
+                                        <textarea value={form.custom_message}
+                                            onChange={e => setForm({ ...form, custom_message: e.target.value })}
+                                            rows={3} placeholder="Doświadczenie, oczekiwania, pytania..."
+                                            className="w-full border border-zinc-300 rounded px-3 py-2 text-zinc-900 mt-1 focus:border-rose-500 focus:outline-none" />
+                                    </div>
+                                    {error && <div className="bg-rose-50 border border-rose-200 text-rose-700 rounded p-3 text-sm">{error}</div>}
+                                    <button disabled={sending} type="submit"
+                                        className="w-full bg-gradient-to-r from-rose-500 to-amber-500 hover:from-rose-600 hover:to-amber-600 text-white py-3 rounded-lg font-bold disabled:opacity-50">
+                                        {sending ? 'Wysyłam...' : 'Wyślij zgłoszenie'}
+                                    </button>
+                                    <p className="text-[11px] text-zinc-400 text-center">Bez zobowiązań. Wysłanie formularza nie jest rezerwacją — odezwę się indywidualnie.</p>
+                                </form>
+                            )}
+                        </div>
                     </div>
-                    <div className="p-6">
-                        {sent ? (
-                            <div className="text-center py-8">
-                                <div className="text-5xl mb-3">🎉</div>
-                                <p className="text-emerald-600 font-bold text-lg">Dzięki za zgłoszenie!</p>
-                                <p className="text-zinc-500 text-sm mt-1">Odezwę się w ciągu 24h z propozycją terminu i kwotą zaliczki.</p>
-                            </div>
-                        ) : (
-                            <form onSubmit={submit} className="space-y-4">
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    <div>
-                                        <label className="text-xs font-bold text-zinc-600 uppercase">Twój e-mail *</label>
-                                        <input required type="email" value={form.recipient_email}
-                                            onChange={e => setForm({ ...form, recipient_email: e.target.value })}
-                                            placeholder="rodzic@example.pl"
-                                            className="w-full border border-zinc-300 rounded px-3 py-2 text-zinc-900 mt-1 focus:border-rose-500 focus:outline-none" />
-                                    </div>
-                                    <div>
-                                        <label className="text-xs font-bold text-zinc-600 uppercase">Imię (Twoje)</label>
-                                        <input value={form.recipient_name}
-                                            onChange={e => setForm({ ...form, recipient_name: e.target.value })}
-                                            placeholder="Anna"
-                                            className="w-full border border-zinc-300 rounded px-3 py-2 text-zinc-900 mt-1 focus:border-rose-500 focus:outline-none" />
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    <div>
-                                        <label className="text-xs font-bold text-zinc-600 uppercase">Imię uczestnika</label>
-                                        <input value={form.participant_name}
-                                            onChange={e => setForm({ ...form, participant_name: e.target.value })}
-                                            placeholder="Kuba"
-                                            className="w-full border border-zinc-300 rounded px-3 py-2 text-zinc-900 mt-1 focus:border-rose-500 focus:outline-none" />
-                                    </div>
-                                    <div>
-                                        <label className="text-xs font-bold text-zinc-600 uppercase">Telefon</label>
-                                        <input value={form.recipient_phone}
-                                            onChange={e => setForm({ ...form, recipient_phone: e.target.value })}
-                                            placeholder="+48..."
-                                            className="w-full border border-zinc-300 rounded px-3 py-2 text-zinc-900 mt-1 focus:border-rose-500 focus:outline-none" />
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className="text-xs font-bold text-zinc-600 uppercase">Wiadomość (opcjonalnie)</label>
-                                    <textarea value={form.custom_message}
-                                        onChange={e => setForm({ ...form, custom_message: e.target.value })}
-                                        rows={3} placeholder="Doświadczenie, oczekiwania, pytania..."
-                                        className="w-full border border-zinc-300 rounded px-3 py-2 text-zinc-900 mt-1 focus:border-rose-500 focus:outline-none" />
-                                </div>
-                                {error && <div className="bg-rose-50 border border-rose-200 text-rose-700 rounded p-3 text-sm">{error}</div>}
-                                <button disabled={sending} type="submit"
-                                    className="w-full bg-gradient-to-r from-rose-500 to-amber-500 hover:from-rose-600 hover:to-amber-600 text-white py-3 rounded-lg font-bold disabled:opacity-50">
-                                    {sending ? 'Wysyłam...' : 'Wyślij zgłoszenie'}
-                                </button>
-                                <p className="text-[11px] text-zinc-400 text-center">Bez zobowiązań. Wysłanie formularza nie jest rezerwacją — odezwę się indywidualnie.</p>
-                            </form>
-                        )}
+                </section>
+            ) : (
+                <section id="zapis" className="max-w-2xl mx-auto px-6 py-12">
+                    <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden text-center p-8">
+                        <div className="text-5xl mb-3">📧</div>
+                        <h2 className="text-2xl font-bold text-zinc-900 mb-2">Zapisy zamknięte</h2>
+                        <p className="text-zinc-600 max-w-md mx-auto">
+                            Zapisów na ten warsztat można dokonać tylko poprzez bezpośredni kontakt. 
+                            Skontaktuj się ze mną, jeśli jesteś zainteresowany.
+                        </p>
+                        <a 
+                            href="mailto:kontakt@wlasniewski.pl" 
+                            className="inline-flex items-center gap-2 bg-gradient-to-r from-rose-500 to-amber-500 hover:from-rose-600 hover:to-amber-600 text-white px-6 py-3 rounded-lg font-bold shadow-lg mt-6"
+                        >
+                            Napisz do mnie <ArrowRight size={18} />
+                        </a>
                     </div>
-                </div>
-            </section>
+                </section>
+            )}
 
             <footer className="text-center text-xs text-zinc-400 py-6">
                 © {new Date().getFullYear()} Studio Właśniewski · <Link href="/" className="hover:text-rose-500">wlasniewski.pl</Link> · Już zapisany? <Link href={`/warsztaty/${slug}/login`} className="text-rose-500 hover:underline">Zaloguj się do panelu</Link>

@@ -38,6 +38,7 @@ export async function PATCH(request: NextRequest, ctx: { params: Promise<{ id: s
         for (const k of ['title', 'location', 'description', 'status'] as const) {
             if (body[k] !== undefined) updateData[k] = body[k];
         }
+        if (body.public_signup_enabled !== undefined) updateData.public_signup_enabled = body.public_signup_enabled;
         if (body.schedule !== undefined) updateData.schedule = body.schedule;
         if (body.materials !== undefined) updateData.materials = body.materials;
         if (body.starts_at !== undefined) updateData.starts_at = body.starts_at ? new Date(body.starts_at) : null;

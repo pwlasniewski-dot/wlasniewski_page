@@ -19,7 +19,15 @@ export default function WorkshopsListPage() {
     const [items, setItems] = useState<WorkshopRow[]>([]);
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
-    const [form, setForm] = useState({ slug: '', title: '', location: '', starts_at: '', ends_at: '' });
+    const [form, setForm] = useState({ 
+        slug: '', 
+        title: '', 
+        location: '', 
+        starts_at: '', 
+        starts_time: '', 
+        ends_at: '', 
+        ends_time: '' 
+    });
     const [error, setError] = useState<string | null>(null);
 
     async function load() {
@@ -36,17 +44,35 @@ export default function WorkshopsListPage() {
         e.preventDefault();
         setError(null);
         const token = localStorage.getItem('admin_token') || '';
+        
+        // Połącz datę + czas w ISO DateTime
+        let startsAtISO = form.starts_at || null;
+        let endsAtISO = form.ends_at || null;
+        
+        if (form.starts_at && form.starts_time) {
+            startsAtISO = `${form.starts_at}T${form.starts_time}:00`;
+        }
+        if (form.ends_at && form.ends_time) {
+            endsAtISO = `${form.ends_at}T${form.ends_time}:00`;
+        }
+        
         const r = await fetch('/api/admin/workshops', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-            body: JSON.stringify(form),
+            body: JSON.stringify({
+                slug: form.slug,
+                title: form.title,
+                location: form.location,
+                starts_at: startsAtISO,
+                ends_at: endsAtISO,
+            }),
         });
         if (!r.ok) {
             const j = await r.json().catch(() => ({}));
             setError(j.error || 'Blad');
             return;
         }
-        setForm({ slug: '', title: '', location: '', starts_at: '', ends_at: '' });
+        setForm({ slug: '', title: '', location: '', starts_at: '', starts_time: '', ends_at: '', ends_time: '' });
         setShowForm(false);
         load();
     }
@@ -81,14 +107,40 @@ export default function WorkshopsListPage() {
                             <label className="text-xs font-bold text-zinc-600">Lokalizacja</label>
                             <input value={form.location} onChange={e => setForm({ ...form, location: e.target.value })} placeholder="Wieldządz, Pomorska 1" className="w-full border rounded p-2 text-zinc-900" />
                         </div>
-                        <div className="grid grid-cols-2 gap-2">
-                            <div>
-                                <label className="text-xs font-bold text-zinc-600">Start</label>
-                                <input type="date" value={form.starts_at} onChange={e => setForm({ ...form, starts_at: e.target.value })} className="w-full border rounded p-2 text-zinc-900" />
+                        <div>
+                            <label className="text-xs font-bold text-zinc-600">Data rozpoczęcia</label>
+                            <div className="grid grid-cols-2 gap-2">
+                                <input 
+                                    type="date" 
+                                    value={form.starts_at} 
+                                    onChange={e => setForm({ ...form, starts_at: e.target.value })} 
+                                    className="w-full border rounded p-2 text-zinc-900" 
+                                />
+                                <input 
+                                    type="time" 
+                                    value={form.starts_time} 
+                                    onChange={e => setForm({ ...form, starts_time: e.target.value })} 
+                                    placeholder="--:--"
+                                    className="w-full border rounded p-2 text-zinc-900" 
+                                />
                             </div>
-                            <div>
-                                <label className="text-xs font-bold text-zinc-600">Koniec</label>
-                                <input type="date" value={form.ends_at} onChange={e => setForm({ ...form, ends_at: e.target.value })} className="w-full border rounded p-2 text-zinc-900" />
+                        </div>
+                        <div>
+                            <label className="text-xs font-bold text-zinc-600">Data zakończenia</label>
+                            <div className="grid grid-cols-2 gap-2">
+                                <input 
+                                    type="date" 
+                                    value={form.ends_at} 
+                                    onChange={e => setForm({ ...form, ends_at: e.target.value })} 
+                                    className="w-full border rounded p-2 text-zinc-900" 
+                                />
+                                <input 
+                                    type="time" 
+                                    value={form.ends_time} 
+                                    onChange={e => setForm({ ...form, ends_time: e.target.value })} 
+                                    placeholder="--:--"
+                                    className="w-full border rounded p-2 text-zinc-900" 
+                                />
                             </div>
                         </div>
                         {error && <div className="md:col-span-2 text-rose-600 text-sm">{error}</div>}
