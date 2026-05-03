@@ -41,6 +41,7 @@ interface ClientDetails {
     baskets: any[];
     challenges?: any[];
     permissions?: Record<string, boolean> | null;
+    workshops_enabled?: boolean;
 }
 
 function ClientDetailsContent({ id }: { id: string }) {
@@ -114,6 +115,7 @@ function ClientDetailsContent({ id }: { id: string }) {
             const token = localStorage.getItem('admin_token');
             const formData = new FormData();
             formData.append('pdf', file);
+            if (!client) throw new Error('Brak danych klienta');
             if (type === 'offer') {
                 formData.append('client_id', String(client.id));
                 formData.append('client_email', client.email);
@@ -224,7 +226,7 @@ function ClientDetailsContent({ id }: { id: string }) {
             });
             const data = await res.json();
             if (data.success) {
-                setClient(data.client);
+                setClient({ ...data.client, workshops_enabled: data.client.workshops_enabled ?? false });
                 setEditForm({
                     name: data.client.name || '',
                     email: data.client.email || '',
@@ -1724,7 +1726,7 @@ function ClientDetailsContent({ id }: { id: string }) {
                         </div>
 
                         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl divide-y divide-zinc-800 mb-6">
-                            {([
+                            {[
                                 { key: 'galleries', label: 'Galerie i Zdjęcia', desc: 'Dostęp do galerii i wyzwań fotograficznych' },
                                 { key: 'offers', label: 'Oferty', desc: 'Przeglądanie i akceptowanie ofert' },
                                 { key: 'contracts', label: 'Umowy', desc: 'Podgląd i podpisywanie umów' },
@@ -1754,7 +1756,7 @@ function ClientDetailsContent({ id }: { id: string }) {
                                     onClick={async () => {
                                         if (!client) return;
                                         const token = localStorage.getItem('admin_token');
-                                        const newVal = !client.workshops_enabled;
+                                        const newVal = !(client.workshops_enabled ?? false);
                                         try {
                                             const res = await fetch(`/api/admin/clients/${client.id}`, {
                                                 method: 'PATCH',
@@ -1763,7 +1765,7 @@ function ClientDetailsContent({ id }: { id: string }) {
                                             });
                                             if (res.ok) {
                                                 toast.success(newVal ? 'Warsztaty włączone' : 'Warsztaty wyłączone');
-                                                setClient({ ...client, workshops_enabled: newVal });
+                                                setClient(prev => prev ? { ...prev, workshops_enabled: newVal } : prev);
                                             } else {
                                                 toast.error('Błąd zapisu warsztatów');
                                             }
@@ -1771,9 +1773,9 @@ function ClientDetailsContent({ id }: { id: string }) {
                                             toast.error('Błąd połączenia');
                                         }
                                     }}
-                                    className={`w-12 h-6 rounded-full transition-colors relative flex-shrink-0 ${client?.workshops_enabled ? 'bg-emerald-500' : 'bg-zinc-700'}`}
+                                    className={`w-12 h-6 rounded-full transition-colors relative flex-shrink-0 ${(client?.workshops_enabled ?? false) ? 'bg-emerald-500' : 'bg-zinc-700'}`}
                                 >
-                                    <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${client?.workshops_enabled ? 'translate-x-6' : 'translate-x-0.5'}`} />
+                                    <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${(client?.workshops_enabled ?? false) ? 'translate-x-6' : 'translate-x-0.5'}`} />
                                 </button>
                             </div>
                         </div>
