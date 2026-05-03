@@ -234,16 +234,36 @@ export async function GET(request: NextRequest) {
         });
         for (const c of contracts) {
             if (!c.session_date) continue;
-            // jesli jest offer_id i ofertę juz mamy w events -- aktualizujemy zaliczke i pomijamy duplikat
-            if (c.offer_id) {
-                const existing = events.find(e => e.source === 'offer' && e.source_id === c.offer_id);
-                if (existing) {
-                    existing.deposit_amount = c.deposit_amount ?? existing.deposit_amount;
-                    existing.deposit_paid_at = c.deposit_paid_at ? c.deposit_paid_at.toISOString() : existing.deposit_paid_at;
-                    existing.deposit_due_at = c.deposit_due_at ? c.deposit_due_at.toISOString() : existing.deposit_due_at;
-                    existing.deposit_status = calcDepositStatus(c.deposit_amount, c.deposit_paid_at, c.deposit_due_at, c.session_date);
-                    continue;
-                }
+            const cDateKey = c.session_date.toISOString().slice(0, 10);
+            const cEmail = c.user?.email?.toLowerCase() || null;
+
+            // Helper: znajdź istniejącą ofertę powiązaną z tą umową
+            // 1) po offer_id (jawne powiązanie)
+            // 2) po email klienta + data sesji (umowa standalone wygenerowana z oferty bez powiązania)
+            const existingOffer = events.find(e => {
+                if (e.source !== 'offer') return false;
+                if (c.offer_id && e.source_id === c.offer_id) return true;
+                if (e.date !== cDateKey) return false;
+                if (cEmail && e.email && e.email.toLowerCase() === cEmail) return true;
+                return false;
+            });
+
+            if (existingOffer) {
+                // Wzbogać istniejący wpis o dane z umowy i zamień źródło na contract
+                // (umowa jest bardziej autorytatywna niż oferta)
+                existingOffer.id = `contract-${c.id}`;
+                existingOffer.source = 'contract';
+                existingOffer.source_id = c.id;
+                existingOffer.detail_url = `/admin/umowy/${c.id}`;
+                existingOffer.notes = c.contract_number;
+                existingOffer.status = c.status === 'signed' ? 'confirmed' : existingOffer.status;
+                existingOffer.start_time = c.session_time || existingOffer.start_time;
+                existingOffer.venue = c.session_location || existingOffer.venue;
+                existingOffer.deposit_amount = c.deposit_amount ?? existingOffer.deposit_amount;
+                existingOffer.deposit_paid_at = c.deposit_paid_at ? c.deposit_paid_at.toISOString() : existingOffer.deposit_paid_at;
+                existingOffer.deposit_due_at = c.deposit_due_at ? c.deposit_due_at.toISOString() : existingOffer.deposit_due_at;
+                existingOffer.deposit_status = calcDepositStatus(c.deposit_amount, c.deposit_paid_at, c.deposit_due_at, c.session_date);
+                continue;
             }
             events.push({
                 id: `contract-${c.id}`,
