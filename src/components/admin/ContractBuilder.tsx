@@ -8,6 +8,12 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useSearchParams, useRouter } from 'next/navigation';
+import {
+    CONTRACT_TEMPLATES_META,
+    getContractTemplate,
+    suggestTemplateForCategory,
+    type ContractTemplateKey,
+} from '@/lib/contracts/templates';
 
 interface ContractData {
     contractNumber: string;
@@ -71,6 +77,18 @@ export default function ContractBuilder() {
     const [isSaving, setIsSaving] = useState(false);
     const [lastSavedId, setLastSavedId] = useState<number | null>(null);
     const [showPreview, setShowPreview] = useState(true);
+    const [templateKey, setTemplateKey] = useState<ContractTemplateKey>('standard');
+    const [templateLocked, setTemplateLocked] = useState(false); // true gdy user ręcznie edytował treść
+
+    const applyTemplate = (key: ContractTemplateKey, force: boolean = false) => {
+        if (!force && templateLocked) {
+            const ok = window.confirm('Masz już zmiany w treści umowy. Załadowanie szablonu nadpisze treść. Kontynuować?');
+            if (!ok) return;
+        }
+        setTemplateKey(key);
+        setData(prev => ({ ...prev, content: getContractTemplate(key) }));
+        setTemplateLocked(false);
+    };
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const componentRef = useRef<HTMLDivElement>(null);
 
@@ -136,17 +154,27 @@ export default function ContractBuilder() {
                     }
                 }
 
+                // Wybór szablonu wg kategorii oferty (komunia/urodziny/slub/...).
+                const suggested = suggestTemplateForCategory(offer.category);
+                setTemplateKey(suggested);
+                const eventDateStr = offer.session_date
+                    ? new Date(offer.session_date).toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' })
+                    : (offer.valid_until ? new Date(offer.valid_until).toLocaleDateString('pl-PL') : 'Brak daty');
+                const eventLoc = offer.session_location
+                    || offer.template_data?.eventLocation
+                    || 'Do ustalenia';
                 setData(prev => ({
                     ...prev,
                     contractNumber: draftNum,
                     clientName: offer.user?.name || offer.client_email,
                     clientEmail: offer.user?.email || offer.client_email,
                     clientPhone: offer.user?.phone || '',
-                    eventDate: offer.valid_until ? new Date(offer.valid_until).toLocaleDateString() : 'Brak daty',
-                    eventLocation: 'Do ustalenia',
+                    eventDate: eventDateStr,
+                    eventLocation: eventLoc,
                     offerTitle: offer.title,
                     packageDetails: packageDetails,
-                    totalPrice: finalPrice.toString()
+                    totalPrice: finalPrice.toString(),
+                    content: getContractTemplate(suggested),
                 }));
             }
         } catch (error) {
@@ -239,15 +267,20 @@ export default function ContractBuilder() {
 
     const replacedContent = data.content
         .replace(/{{contractNumber}}/g, data.contractNumber)
-        .replace(/{{clientName}}/g, data.clientName)
-        .replace(/{{clientEmail}}/g, data.clientEmail)
-        .replace(/{{clientPhone}}/g, data.clientPhone)
-        .replace(/{{offerTitle}}/g, data.offerTitle)
-        .replace(/{{packageDetails}}/g, data.packageDetails)
-        .replace(/{{eventDate}}/g, data.eventDate)
-        .replace(/{{eventLocation}}/g, data.eventLocation)
+        .replace(/{{clientName}}/g, data.clientName || '[uzupełnij: clientName]')
+        .replace(/{{clientEmail}}/g, data.clientEmail || '[uzupełnij: clientEmail]')
+        .replace(/{{clientPhone}}/g, data.clientPhone || '[uzupełnij: clientPhone]')
+        .replace(/{{offerTitle}}/g, data.offerTitle || '[uzupełnij: offerTitle]')
+        .replace(/{{packageDetails}}/g, data.packageDetails || '')
+        .replace(/{{eventDate}}/g, data.eventDate || '[uzupełnij: eventDate]')
+        .replace(/{{eventTime}}/g, '[uzupełnij: eventTime]')
+        .replace(/{{eventLocation}}/g, data.eventLocation || '[uzupełnij: eventLocation]')
+        .replace(/{{eventCount}}/g, '[uzupełnij: eventCount]')
+        .replace(/{{eventTeam}}/g, '[uzupełnij: eventTeam]')
+        .replace(/{{workshopPlan}}/g, '[uzupełnij plan zajęć: dzień 1 / dzień 2 / dzień 3]')
+        .replace(/{{deliveryDays}}/g, '21')
         .replace(/{{totalPrice}}/g, data.totalPrice)
-        .replace(/{{currentDate}}/g, new Date().toLocaleDateString());
+        .replace(/{{currentDate}}/g, new Date().toLocaleDateString('pl-PL'));
 
     return (
         <div className="flex h-screen bg-zinc-950 overflow-hidden text-white font-sans">
@@ -290,6 +323,18 @@ export default function ContractBuilder() {
 
                 {/* Formatting Toolbar */}
                 <div className="border-b border-zinc-800 p-2 flex flex-wrap items-center gap-1 bg-zinc-800/50">
+                    {/* Template selector */}
+                    <select
+                        value={templateKey}
+                        onChange={e => applyTemplate(e.target.value as ContractTemplateKey)}
+                        className="bg-zinc-800 border border-zinc-700 text-white text-xs rounded px-2 py-1.5 mr-2"
+                        title="Wybierz szablon umowy"
+                    >
+                        {CONTRACT_TEMPLATES_META.map(t => (
+                            <option key={t.key} value={t.key}>Szablon: {t.label}</option>
+                        ))}
+                    </select>
+                    <div className="h-4 w-px bg-zinc-700 mx-1" />
                     <button onClick={() => insertText('**', '**')} className="p-2 hover:bg-zinc-700 rounded text-zinc-400 hover:text-white" title="Pogrubienie"><Bold size={16} /></button>
                     <button onClick={() => insertText('*', '*')} className="p-2 hover:bg-zinc-700 rounded text-zinc-400 hover:text-white" title="Kursywa"><Italic size={16} /></button>
                     <div className="h-4 w-px bg-zinc-700 mx-1" />
@@ -320,7 +365,7 @@ export default function ContractBuilder() {
                     <textarea
                         ref={textareaRef}
                         value={data.content}
-                        onChange={e => setData(prev => ({ ...prev, content: e.target.value }))}
+                        onChange={e => { setData(prev => ({ ...prev, content: e.target.value })); setTemplateLocked(true); }}
                         className="w-full h-full bg-zinc-900 text-zinc-200 p-8 resize-none outline-none font-mono text-sm leading-relaxed"
                         placeholder="Zacznij pisać treść umowy..."
                     />

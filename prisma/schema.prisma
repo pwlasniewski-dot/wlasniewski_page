@@ -584,6 +584,7 @@ model Offer {
   // Data sesji (kanoniczna, indeksowana — uzupełnia/zastępuje template_data.eventDate)
   session_date         DateTime?
   session_time         String?       // "HH:MM"
+  session_end_time     String?       // "HH:MM" (godzina zakończenia)
   session_duration_min Int?
   session_location     String?
   photographer_id      Int?
