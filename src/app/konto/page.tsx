@@ -25,11 +25,12 @@ import {
     MessageSquare,
     Sparkles,
     Heart,
+    GraduationCap,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ClientOfferRecommendedAlbums from '@/components/client/ClientOfferRecommendedAlbums';
 
-type Tab = 'overview' | 'sessions' | 'bookings' | 'documents' | 'gift_cards' | 'settings' | 'partner';
+type Tab = 'overview' | 'sessions' | 'bookings' | 'documents' | 'gift_cards' | 'workshops' | 'settings' | 'partner';
 
 export default function AccountPage() {
     const router = useRouter();
@@ -43,6 +44,7 @@ export default function AccountPage() {
     const [offers, setOffers] = useState<any[]>([]);
     const [contracts, setContracts] = useState<any[]>([]);
     const [photoOrders, setPhotoOrders] = useState<any[]>([]);
+    const [workshops, setWorkshops] = useState<any[]>([]);
     const [userPermissions, setUserPermissions] = useState<Record<string, boolean> | null>(null);
     const [fotoMatchProfile, setFotoMatchProfile] = useState<{ id: number; status: string; display_name: string } | null>(null);
     const [fotoMatchEnabled, setFotoMatchEnabled] = useState<boolean>(false);
@@ -77,6 +79,12 @@ export default function AccountPage() {
                         fetch('/api/foto-match/profile/me', { headers: { 'Authorization': `Bearer ${token}` } }),
                         fetch('/api/foto-match/settings/public')
                     ]);
+
+                    // Warsztaty (cicho ignorujemy jesli endpoint padnie)
+                    fetch('/api/user/workshops', { headers: { Authorization: `Bearer ${token}` } })
+                        .then(r => r.ok ? r.json() : { workshops: [] })
+                        .then(d => setWorkshops(d.workshops || []))
+                        .catch(() => {});
 
                     if (userRes.ok) {
                         const data = await userRes.json();
@@ -201,6 +209,9 @@ export default function AccountPage() {
                             <TabButton id="gift_cards" label="Karty Podarunkowe" active={activeTab === 'gift_cards'} onClick={() => setActiveTab('gift_cards')} icon={<Gift className="w-4 h-4" />} count={giftCards.length} />
                         )}
 
+                        {/* Warsztaty — zawsze widoczna jako bajer; jesli brak dostepu -> zablokowany widok */}
+                        <TabButton id="workshops" label="Warsztaty" active={activeTab === 'workshops'} onClick={() => setActiveTab('workshops')} icon={<GraduationCap className="w-4 h-4" />} count={workshops.length || undefined} />
+
                         <TabButton id="settings" label="Ustawienia" active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} icon={<UserIcon className="w-4 h-4" />} />
                         {user?.role === 'PHOTOGRAPHER' && (
                             <TabButton id="partner" label="Strefa Partnera" active={activeTab === 'partner'} onClick={() => setActiveTab('partner')} icon={<Star className="w-4 h-4 text-gold-500" />} />
@@ -231,6 +242,7 @@ export default function AccountPage() {
                         {activeTab === 'bookings' && renderBookingsTab()}
                         {activeTab === 'documents' && renderDocumentsTab()}
                         {activeTab === 'gift_cards' && renderGiftCards()}
+                        {activeTab === 'workshops' && renderWorkshopsTab()}
                         {activeTab === 'settings' && renderSettingsTab()}
                         {activeTab === 'partner' && renderPartnerTab()}
                     </motion.div>
@@ -1092,6 +1104,87 @@ export default function AccountPage() {
                 <span className="text-zinc-500 group-hover:text-gold-500 transition-colors">{icon}</span>
                 {label}
             </button>
+        );
+    }
+
+    function renderWorkshopsTab() {
+        const hasAny = workshops.length > 0;
+        return (
+            <section className="space-y-6">
+                <div className="flex items-center justify-between">
+                    <h2 className="text-xl font-bold flex items-center gap-3">
+                        <GraduationCap className="w-5 h-5 text-rose-400" />
+                        <span>Warsztaty fotograficzne</span>
+                        {hasAny && <span className="text-sm font-normal text-zinc-500">({workshops.length})</span>}
+                    </h2>
+                    <Link href="/" className="text-xs text-zinc-500 hover:text-rose-400 inline-flex items-center gap-1">
+                        Oferta warsztatów <ChevronRight className="w-3 h-3" />
+                    </Link>
+                </div>
+
+                {!hasAny ? (
+                    <div className="bg-gradient-to-br from-rose-500/10 via-amber-500/10 to-zinc-900/40 border border-rose-500/20 rounded-2xl p-8 text-center">
+                        <div className="text-5xl mb-3">📸</div>
+                        <h3 className="text-lg font-bold text-white mb-2">Warsztaty fotograficzne tylko dla wybranych</h3>
+                        <p className="text-zinc-400 text-sm max-w-md mx-auto">
+                            Dostęp do panelu uczestnika, materiałów edukacyjnych i przesyłania prac otrzymasz po zapisie i opłaceniu zaliczki.
+                        </p>
+                        <p className="text-zinc-500 text-xs mt-3">Skontaktuj się ze mną żeby otrzymać ofertę warsztatów dopasowanych do Ciebie.</p>
+                        <a href="mailto:kontakt@wlasniewski.pl" className="inline-block mt-4 bg-gradient-to-r from-rose-500 to-amber-500 hover:from-rose-600 hover:to-amber-600 text-white px-5 py-2 rounded-lg font-bold text-sm">
+                            Napisz do mnie
+                        </a>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {workshops.map((w: any) => (
+                            <div key={w.offer_id} className="bg-zinc-900/60 border border-zinc-800 rounded-xl p-5 hover:border-rose-500/40 transition">
+                                <div className="flex items-start justify-between gap-2 mb-3">
+                                    <h3 className="font-bold text-white text-lg">{w.workshop.title}</h3>
+                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${
+                                        w.status === 'confirmed' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' :
+                                            w.status === 'paid' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40' :
+                                                w.status === 'cancelled' ? 'bg-zinc-700 text-zinc-400' :
+                                                    'bg-rose-500/20 text-rose-300 border border-rose-500/40'
+                                    }`}>
+                                        {w.status === 'confirmed' ? 'Potwierdzono' : w.status === 'paid' ? 'Zaliczka opłacona' : w.status === 'cancelled' ? 'Anulowano' : 'Oferta wysłana'}
+                                    </span>
+                                </div>
+                                {w.workshop.location && (
+                                    <div className="flex items-center gap-2 text-xs text-zinc-400"><MapPin className="w-3.5 h-3.5" /> {w.workshop.location}</div>
+                                )}
+                                {w.workshop.starts_at && (
+                                    <div className="flex items-center gap-2 text-xs text-zinc-400 mt-1"><Calendar className="w-3.5 h-3.5" /> {new Date(w.workshop.starts_at).toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
+                                )}
+                                {w.participant_name && (
+                                    <div className="text-xs text-rose-300 mt-2">👤 Uczestnik: <strong>{w.participant_name}</strong></div>
+                                )}
+                                {(w.deposit_amount || w.price) && (
+                                    <div className="mt-3 pt-3 border-t border-zinc-800 text-xs text-zinc-400 space-y-0.5">
+                                        {w.price && <div>Cena: <span className="text-white font-bold">{w.price.toLocaleString('pl-PL')} PLN</span></div>}
+                                        {w.deposit_amount && (
+                                            <div>
+                                                Zaliczka: <span className={w.deposit_paid_at ? 'text-emerald-400 font-bold' : 'text-amber-300 font-bold'}>
+                                                    {w.deposit_amount.toLocaleString('pl-PL')} PLN {w.deposit_paid_at ? '✓ opłacona' : ''}
+                                                </span>
+                                                {!w.deposit_paid_at && w.deposit_due_at && <span className="text-zinc-500"> · do {new Date(w.deposit_due_at).toLocaleDateString('pl-PL')}</span>}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                                {w.panel_url ? (
+                                    <Link href={w.panel_url} className="mt-4 inline-flex items-center gap-2 bg-gradient-to-r from-rose-500 to-amber-500 hover:from-rose-600 hover:to-amber-600 text-white px-4 py-2 rounded-lg font-bold text-sm w-full justify-center">
+                                        Wejdź do panelu uczestnika <ChevronRight className="w-4 h-4" />
+                                    </Link>
+                                ) : (
+                                    <div className="mt-4 text-xs text-zinc-500 italic text-center">
+                                        Panel uczestnika otworzy się po opłaceniu zaliczki i potwierdzeniu zapisu.
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </section>
         );
     }
 

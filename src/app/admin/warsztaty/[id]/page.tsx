@@ -35,7 +35,7 @@ export default function WorkshopDetailPage({ params }: { params: Promise<{ id: s
     const [loading, setLoading] = useState(true);
     const [generating, setGenerating] = useState(false);
     const [recentlyCreated, setRecentlyCreated] = useState<Participant[] | null>(null);
-    const [activeTab, setActiveTab] = useState<'info' | 'schedule' | 'participants'>('info');
+    const [activeTab, setActiveTab] = useState<'info' | 'schedule' | 'participants' | 'offers'>('info');
     const [editing, setEditing] = useState(false);
     const [form, setForm] = useState({ title: '', location: '', description: '', status: '', starts_at: '', ends_at: '' });
     const [showOfferModal, setShowOfferModal] = useState(false);
@@ -163,12 +163,13 @@ export default function WorkshopDetailPage({ params }: { params: Promise<{ id: s
                 </div>
 
                 {/* Tabs */}
-                <div className="flex gap-2 mb-6 border-b border-zinc-200">
-                    {(['info', 'schedule', 'participants'] as const).map(tab => (
+                <div className="flex gap-2 mb-6 border-b border-zinc-200 overflow-x-auto">
+                    {(['info', 'schedule', 'offers', 'participants'] as const).map(tab => (
                         <button key={tab} onClick={() => setActiveTab(tab)}
-                            className={`px-4 py-2 font-bold text-sm transition ${activeTab === tab ? 'border-b-2 border-rose-500 text-zinc-900' : 'text-zinc-500 hover:text-zinc-700'}`}>
+                            className={`px-4 py-2 font-bold text-sm transition whitespace-nowrap ${activeTab === tab ? 'border-b-2 border-rose-500 text-zinc-900' : 'text-zinc-500 hover:text-zinc-700'}`}>
                             {tab === 'info' && '📋 Informacje'}
                             {tab === 'schedule' && '📅 Program'}
+                            {tab === 'offers' && '✉️ Oferty / Zapisy'}
                             {tab === 'participants' && `👥 Uczestnicy (${w.participants.length})`}
                         </button>
                     ))}
@@ -177,6 +178,7 @@ export default function WorkshopDetailPage({ params }: { params: Promise<{ id: s
                 {/* Content */}
                 {activeTab === 'info' && <InfoTab workshop={w} editing={editing} form={form} setForm={setForm} />}
                 {activeTab === 'schedule' && <ScheduleTab workshop={w} reload={load} />}
+                {activeTab === 'offers' && <OffersTab workshopId={w.id} onSendOffer={() => setShowOfferModal(true)} reloadParent={load} />}
                 {activeTab === 'participants' && (
                     <ParticipantsTab
                         workshop={w}
@@ -553,6 +555,205 @@ function SendOfferModal({ workshopId, workshop, onClose }: { workshopId: number;
                     </div>
                 )}
             </div>
+        </div>
+    );
+}
+
+// === OFERTY ===
+
+type OfferRow = {
+    id: number;
+    recipient_email: string;
+    recipient_name: string | null;
+    recipient_phone: string | null;
+    participant_name: string | null;
+    price: number | null;
+    deposit_amount: number | null;
+    deposit_due_at: string | null;
+    deposit_paid_at: string | null;
+    custom_message: string | null;
+    status: string;
+    source: string;
+    notes: string | null;
+    participant_id: number | null;
+    sent_at: string;
+};
+
+const STATUS_BADGE: Record<string, string> = {
+    sent: 'bg-amber-100 text-amber-800 border-amber-300',
+    paid: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+    confirmed: 'bg-rose-100 text-rose-800 border-rose-300',
+    cancelled: 'bg-zinc-100 text-zinc-500 border-zinc-300',
+};
+const STATUS_LABEL: Record<string, string> = {
+    sent: 'Wysłano',
+    paid: 'Zaliczka opłacona',
+    confirmed: 'Potwierdzono (uczestnik)',
+    cancelled: 'Anulowano',
+};
+
+function OffersTab({ workshopId, onSendOffer, reloadParent }: { workshopId: number; onSendOffer: () => void; reloadParent: () => void }) {
+    const [items, setItems] = useState<OfferRow[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [busy, setBusy] = useState<number | null>(null);
+
+    const load = async () => {
+        setLoading(true);
+        try {
+            const token = localStorage.getItem('admin_token') || '';
+            const r = await fetch(`/api/admin/workshops/${workshopId}/offers`, { headers: { Authorization: `Bearer ${token}` } });
+            if (r.ok) { const d = await r.json(); setItems(d.offers || []); }
+        } finally { setLoading(false); }
+    };
+    useEffect(() => { load(); }, [workshopId]);
+
+    async function patch(id: number, data: any) {
+        setBusy(id);
+        try {
+            const token = localStorage.getItem('admin_token') || '';
+            await fetch(`/api/admin/workshops/${workshopId}/offers/${id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify(data),
+            });
+            await load();
+        } finally { setBusy(null); }
+    }
+
+    async function markPaid(id: number) {
+        await patch(id, { deposit_paid_at: new Date().toISOString() });
+    }
+
+    async function convert(id: number) {
+        if (!confirm('Utworzyć konto uczestnika i wysłać dane logowania mailem?')) return;
+        setBusy(id);
+        try {
+            const token = localStorage.getItem('admin_token') || '';
+            const r = await fetch(`/api/admin/workshops/${workshopId}/offers/${id}/convert`, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            if (r.ok) {
+                const d = await r.json();
+                alert(`Konto utworzone:\nLogin: ${d.participant.login}\nPIN: ${d.participant.pin}\n\nDane wysłano e-mailem.`);
+                await load();
+                reloadParent();
+            } else {
+                const j = await r.json().catch(() => ({}));
+                alert(j.error || 'Błąd konwersji');
+            }
+        } finally { setBusy(null); }
+    }
+
+    async function cancel(id: number) {
+        if (!confirm('Anulować ofertę?')) return;
+        await patch(id, { status: 'cancelled' });
+    }
+
+    async function remove(id: number) {
+        if (!confirm('Usunąć ofertę całkowicie?')) return;
+        setBusy(id);
+        try {
+            const token = localStorage.getItem('admin_token') || '';
+            await fetch(`/api/admin/workshops/${workshopId}/offers/${id}`, {
+                method: 'DELETE', headers: { Authorization: `Bearer ${token}` },
+            });
+            await load();
+        } finally { setBusy(null); }
+    }
+
+    return (
+        <div className="bg-white border border-zinc-200 rounded-xl shadow-sm">
+            <div className="flex items-center justify-between p-4 border-b border-zinc-200">
+                <div>
+                    <h3 className="font-bold text-zinc-900">Oferty wysłane / zapisy publiczne</h3>
+                    <p className="text-xs text-zinc-500 mt-0.5">Lead → Wysłano → Zaliczka opłacona → Konto uczestnika</p>
+                </div>
+                <button onClick={onSendOffer} className="bg-gradient-to-r from-rose-500 to-amber-500 hover:from-rose-600 hover:to-amber-600 text-white px-4 py-2 rounded-lg font-bold flex items-center gap-2 text-sm">
+                    <Send size={14} /> Wyślij nową ofertę
+                </button>
+            </div>
+
+            {loading ? (
+                <div className="p-8 text-center text-zinc-400">Ładowanie...</div>
+            ) : items.length === 0 ? (
+                <div className="p-8 text-center text-zinc-400">
+                    Brak ofert. Wyślij pierwszą lub udostępnij publiczny link <code className="text-rose-600">/warsztaty/[slug]</code>.
+                </div>
+            ) : (
+                <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                        <thead>
+                            <tr className="bg-zinc-50 text-zinc-600 text-xs uppercase">
+                                <th className="text-left p-3">Status</th>
+                                <th className="text-left p-3">Odbiorca / Uczestnik</th>
+                                <th className="text-left p-3">Cena / Zaliczka</th>
+                                <th className="text-left p-3">Data wysłania</th>
+                                <th className="text-right p-3">Akcje</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {items.map(o => (
+                                <tr key={o.id} className="border-t border-zinc-100 hover:bg-amber-50/30">
+                                    <td className="p-3">
+                                        <span className={`inline-block text-[11px] font-bold px-2 py-0.5 rounded border ${STATUS_BADGE[o.status] || 'bg-zinc-100 text-zinc-700'}`}>
+                                            {STATUS_LABEL[o.status] || o.status}
+                                        </span>
+                                        {o.source === 'public' && <span className="ml-1 text-[10px] bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded font-bold">PUBLIC</span>}
+                                    </td>
+                                    <td className="p-3">
+                                        <div className="font-bold text-zinc-900">{o.recipient_name || o.recipient_email}</div>
+                                        <div className="text-xs text-zinc-500">{o.recipient_email}{o.recipient_phone ? ` · ${o.recipient_phone}` : ''}</div>
+                                        {o.participant_name && <div className="text-xs text-rose-600 mt-0.5">👤 {o.participant_name}</div>}
+                                        {o.custom_message && <div className="text-xs text-zinc-400 italic mt-0.5 max-w-xs truncate" title={o.custom_message}>„{o.custom_message}"</div>}
+                                    </td>
+                                    <td className="p-3 text-zinc-700">
+                                        {o.price ? <div>{o.price.toLocaleString('pl-PL')} PLN</div> : <span className="text-zinc-400">—</span>}
+                                        {o.deposit_amount ? (
+                                            <div className={`text-xs mt-0.5 ${o.deposit_paid_at ? 'text-emerald-600 font-bold' : 'text-amber-700'}`}>
+                                                Zaliczka: {o.deposit_amount.toLocaleString('pl-PL')} PLN
+                                                {o.deposit_paid_at && ' ✓'}
+                                            </div>
+                                        ) : null}
+                                        {o.deposit_due_at && !o.deposit_paid_at && (
+                                            <div className="text-[10px] text-zinc-500">do {new Date(o.deposit_due_at).toLocaleDateString('pl-PL')}</div>
+                                        )}
+                                    </td>
+                                    <td className="p-3 text-zinc-500 text-xs">
+                                        {new Date(o.sent_at).toLocaleString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                    </td>
+                                    <td className="p-3 text-right">
+                                        <div className="flex justify-end gap-1.5 flex-wrap">
+                                            {o.status !== 'confirmed' && o.status !== 'cancelled' && !o.deposit_paid_at && (
+                                                <button disabled={busy === o.id} onClick={() => markPaid(o.id)}
+                                                    className="text-[11px] bg-emerald-600 hover:bg-emerald-500 text-white px-2 py-1 rounded font-bold disabled:opacity-50">
+                                                    ✓ Zaliczka opłacona
+                                                </button>
+                                            )}
+                                            {o.status !== 'confirmed' && o.status !== 'cancelled' && o.deposit_paid_at && !o.participant_id && (
+                                                <button disabled={busy === o.id} onClick={() => convert(o.id)}
+                                                    className="text-[11px] bg-rose-600 hover:bg-rose-500 text-white px-2 py-1 rounded font-bold disabled:opacity-50">
+                                                    Utwórz konto
+                                                </button>
+                                            )}
+                                            {o.status !== 'cancelled' && (
+                                                <button disabled={busy === o.id} onClick={() => cancel(o.id)}
+                                                    className="text-[11px] bg-zinc-100 hover:bg-zinc-200 text-zinc-700 px-2 py-1 rounded">
+                                                    Anuluj
+                                                </button>
+                                            )}
+                                            <button disabled={busy === o.id} onClick={() => remove(o.id)}
+                                                className="text-rose-500 hover:text-rose-700 p-1">
+                                                <Trash2 size={14} />
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            )}
         </div>
     );
 }

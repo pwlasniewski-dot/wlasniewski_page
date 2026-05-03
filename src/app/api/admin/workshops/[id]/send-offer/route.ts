@@ -159,7 +159,23 @@ export async function POST(request: NextRequest, ctx: { params: Promise<{ id: st
                 html,
             });
 
-            return NextResponse.json({ ok: true, sent_to: recipient_email });
+            // Zapisz oferte w DB do trackingu
+            const saved = await prisma.workshopOffer.create({
+                data: {
+                    workshop_id: wid,
+                    recipient_email,
+                    recipient_name: recipient_name || null,
+                    participant_name: participant_name || null,
+                    price: price ? parseInt(String(price), 10) : null,
+                    deposit_amount: deposit_amount ? parseInt(String(deposit_amount), 10) : null,
+                    deposit_due_at: deposit_due_at ? new Date(deposit_due_at) : null,
+                    custom_message: custom_message || null,
+                    status: 'sent',
+                    source: 'admin',
+                },
+            });
+
+            return NextResponse.json({ ok: true, sent_to: recipient_email, offer_id: saved.id });
         } catch (e: any) {
             console.error('[send-offer]', e);
             return NextResponse.json({ error: e?.message || 'Błąd wysyłki' }, { status: 500 });

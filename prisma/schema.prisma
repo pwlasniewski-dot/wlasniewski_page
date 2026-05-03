@@ -1680,6 +1680,7 @@ model Workshop {
   updated_at      DateTime  @updatedAt
   participants    WorkshopParticipant[]
   uploads         WorkshopUpload[]
+  offers          WorkshopOffer[]
 
   @@index([status])
   @@index([starts_at])
@@ -1724,4 +1725,32 @@ model WorkshopUpload {
   @@index([workshop_id])
   @@index([participant_id])
   @@map("workshop_uploads")
+}
+
+// Oferta/zapis na warsztat. Tworzona przez admina ("Wyslij oferte") lub publicznie z landing page.
+// Sledzi cykl: sent -> deposit_paid -> confirmed (utworzono uczestnika) -> completed | cancelled
+model WorkshopOffer {
+  id                Int       @id @default(autoincrement())
+  workshop_id       Int
+  workshop          Workshop  @relation(fields: [workshop_id], references: [id], onDelete: Cascade)
+  recipient_email   String    @db.VarChar(160)
+  recipient_name    String?   @db.VarChar(120)
+  recipient_phone   String?   @db.VarChar(40)
+  participant_name  String?   @db.VarChar(120) // imie dziecka/uczestnika
+  price             Int?      // PLN
+  deposit_amount    Int?      // PLN
+  deposit_due_at    DateTime?
+  deposit_paid_at   DateTime?
+  custom_message    String?
+  status            String    @default("sent") @db.VarChar(20) // sent | paid | confirmed | cancelled
+  source            String    @default("admin") @db.VarChar(20) // admin | public
+  notes             String?   // wewnetrzne notatki admina
+  participant_id    Int?      // gdy juz utworzono konto uczestnika
+  sent_at           DateTime  @default(now())
+  updated_at        DateTime  @updatedAt
+
+  @@index([workshop_id])
+  @@index([recipient_email])
+  @@index([status])
+  @@map("workshop_offers")
 }
