@@ -1387,7 +1387,7 @@ export default function AccountPage() {
                                                     {/* Payment Buttons */}
                                                     {canPayDeposit && (
                                                         <button
-                                                            onClick={() => handlePayment(w.offer_id, 'deposit', w.recipient_email)}
+                                                            onClick={() => handlePayment(w.offer_id, 'deposit', user?.email || '')}
                                                             className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white px-3 md:px-4 py-3 rounded-lg font-bold text-xs md:text-sm flex items-center justify-center gap-2 transition"
                                                         >
                                                             <span>💳</span>
@@ -1398,7 +1398,7 @@ export default function AccountPage() {
 
                                                     {canPayFull && (
                                                         <button
-                                                            onClick={() => handlePayment(w.offer_id, 'full', w.recipient_email)}
+                                                            onClick={() => handlePayment(w.offer_id, 'full', user?.email || '')}
                                                             className="w-full bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white px-3 md:px-4 py-3 rounded-lg font-bold text-xs md:text-sm flex items-center justify-center gap-2 transition"
                                                         >
                                                             <span>💳</span>
