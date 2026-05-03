@@ -174,14 +174,25 @@ function PlanTab({ schedule }: { schedule: ScheduleDay[] }) {
                                 <img src={d.image_url} alt={d.topic || ''} className="w-full max-h-64 object-cover" />
                             </a>
                         )}
-                        <div className="p-5">
-                            <div className="flex items-baseline gap-3 flex-wrap mb-2">
-                                <span className="bg-gradient-to-r from-rose-500 to-amber-500 text-white text-xs font-bold px-3 py-1 rounded-full">DZIEŃ {i + 1}</span>
-                                <span className="text-zinc-600 text-sm font-medium capitalize">{dateStr}</span>
-                                {(d.start || d.end) && <span className="text-zinc-500 text-xs font-mono">{d.start} – {d.end}</span>}
+                        <div className="p-4 sm:p-5">
+                            <div className="flex items-baseline gap-2 sm:gap-3 flex-wrap mb-3">
+                                <span className="bg-gradient-to-r from-rose-500 to-amber-500 text-white text-xs font-bold px-3 py-1 rounded-full whitespace-nowrap">DZIEŃ {i + 1}</span>
+                                {dateStr && <span className="text-zinc-600 text-sm font-medium capitalize">{dateStr}</span>}
+                                {(d.start || d.end) && <span className="text-zinc-500 text-xs font-mono whitespace-nowrap">{d.start} – {d.end}</span>}
                             </div>
-                            <h3 className="font-bold text-zinc-900 text-lg mb-2">{d.topic}</h3>
-                            {d.plan && <p className="text-zinc-700 text-sm leading-relaxed whitespace-pre-wrap">{d.plan}</p>}
+                            {d.topic && <h3 className="font-bold text-zinc-900 text-lg sm:text-xl mb-3 leading-snug">{d.topic}</h3>}
+                            {d.plan && (
+                                <div
+                                    className="text-zinc-700 leading-relaxed text-sm sm:text-base
+                                               [&_p]:mb-3 [&_p]:break-words
+                                               [&_strong]:text-rose-700 [&_strong]:font-bold
+                                               [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:my-3 [&_ul]:space-y-1.5
+                                               [&_li]:break-words [&_li]:leading-relaxed
+                                               [&_blockquote]:border-l-4 [&_blockquote]:border-amber-400 [&_blockquote]:bg-amber-50 [&_blockquote]:px-3 [&_blockquote]:py-2 [&_blockquote]:my-3 [&_blockquote]:italic
+                                               [&_br]:block [&_br]:mb-2"
+                                    dangerouslySetInnerHTML={renderMd(d.plan)}
+                                />
+                            )}
                         </div>
                     </article>
                 );
