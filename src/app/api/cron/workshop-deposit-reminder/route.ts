@@ -46,6 +46,10 @@ async function handle(request: NextRequest) {
 
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL || 'https://wlasniewski.pl';
 
+    const formatPrice = (amount: number) => {
+        return amount.toLocaleString('pl-PL', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).replace(',00', '');
+    };
+
     let sent = 0, skipped = 0, failed = 0;
 
     for (const o of offers) {
@@ -85,7 +89,7 @@ async function handle(request: NextRequest) {
                 <div style="font-family:'Courier New',monospace;font-size:14px;margin:6px 0;padding:8px;background:#fff;border:1px dashed #94a3b8;border-radius:4px;letter-spacing:1px;">${settings.bank_account_number}</div>
                 ${settings.bank_name ? `<div><span style="color:#64748b;">Bank:</span> ${settings.bank_name}</div>` : ''}
                 <div style="margin-top:6px;"><span style="color:#64748b;">Tytuł:</span> <strong>Zaliczka warsztaty ${ws.title}${o.participant_name ? ` — ${o.participant_name}` : ''}</strong></div>
-                ${o.deposit_amount ? `<div style="margin-top:6px;"><span style="color:#64748b;">Kwota:</span> <strong>${o.deposit_amount.toLocaleString('pl-PL')} PLN</strong></div>` : ''}
+                ${o.deposit_amount ? `<div style="margin-top:6px;"><span style="color:#64748b;">Kwota:</span> <strong>${formatPrice(o.deposit_amount)} PLN</strong></div>` : ''}
             </div>` : '';
 
         const html = `<!DOCTYPE html>
@@ -99,8 +103,8 @@ async function handle(request: NextRequest) {
             <strong>Warsztaty:</strong> ${ws.title}<br>
             ${startStr ? `<strong>Termin:</strong> ${startStr}<br>` : ''}
             ${ws.location ? `<strong>Miejsce:</strong> ${ws.location}<br>` : ''}
-            ${o.price ? `<strong>Cena:</strong> ${o.price.toLocaleString('pl-PL')} PLN<br>` : ''}
-            ${o.deposit_amount ? `<strong>Zaliczka:</strong> ${o.deposit_amount.toLocaleString('pl-PL')} PLN<br>` : ''}
+            ${o.price ? `<strong>Cena:</strong> ${formatPrice(o.price)} PLN<br>` : ''}
+            ${o.deposit_amount ? `<strong>Zaliczka:</strong> ${formatPrice(o.deposit_amount)} PLN<br>` : ''}
             <strong>Termin wpłaty:</strong> ${dueStr}${type === 'overdue' ? ' <span style="color:#dc2626;">(MINĄŁ)</span>' : ''}
         </div>
         ${bankBlock}

@@ -56,45 +56,58 @@ export async function POST(request: NextRequest, ctx: { params: Promise<{ id: st
         const scheduleHtml = schedule.length > 0
             ? `
                 <h3 style="color:#9f1239;margin-top:24px;margin-bottom:12px;font-size:18px;">📅 Program warsztatów</h3>
-                <table style="width:100%;border-collapse:collapse;font-size:14px;">
-                    <tr style="background:#fef3c7;">
-                        <th style="padding:8px;text-align:left;border:1px solid #fde68a;">Data</th>
-                        <th style="padding:8px;text-align:left;border:1px solid #fde68a;">Godziny</th>
-                        <th style="padding:8px;text-align:left;border:1px solid #fde68a;">Temat</th>
-                    </tr>
-                    ${schedule.map((s: any) => `
-                        <tr>
-                            <td style="padding:8px;border:1px solid #fde68a;">${s.date || '—'}</td>
-                            <td style="padding:8px;border:1px solid #fde68a;">${s.start || ''} – ${s.end || ''}</td>
-                            <td style="padding:8px;border:1px solid #fde68a;"><strong>${s.topic || ''}</strong>${s.plan ? `<br><span style="color:#6b7280;font-size:12px;">${s.plan}</span>` : ''}</td>
+                <table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:16px;">
+                    <thead>
+                        <tr style="background:#fef3c7;">
+                            <th style="padding:10px 8px;text-align:left;border:1px solid #fde68a;font-weight:600;">Data</th>
+                            <th style="padding:10px 8px;text-align:left;border:1px solid #fde68a;font-weight:600;">Godziny</th>
+                            <th style="padding:10px 8px;text-align:left;border:1px solid #fde68a;font-weight:600;">Temat</th>
                         </tr>
-                    `).join('')}
+                    </thead>
+                    <tbody>
+                        ${schedule.map((s: any) => `
+                            <tr style="background:#fff;">
+                                <td style="padding:10px 8px;border:1px solid #fde68a;white-space:nowrap;">${s.date || '—'}</td>
+                                <td style="padding:10px 8px;border:1px solid #fde68a;white-space:nowrap;">${s.start || ''} – ${s.end || ''}</td>
+                                <td style="padding:10px 8px;border:1px solid #fde68a;">
+                                    <strong style="color:#1f2937;">${s.topic || ''}</strong>
+                                    ${s.plan ? `<div style="color:#6b7280;font-size:13px;margin-top:4px;line-height:1.4;">${s.plan}</div>` : ''}
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
                 </table>
             `
             : '';
 
+        const formatPrice = (amount: number) => {
+            return amount.toLocaleString('pl-PL', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).replace(',00', '');
+        };
+
         const priceBlock = price && price > 0
             ? `
-                <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin:16px 0;">
-                    <div style="font-size:12px;color:#6b7280;text-transform:uppercase;letter-spacing:1px;font-weight:bold;">Cena warsztatów</div>
-                    <div style="font-size:28px;font-weight:bold;color:#0f172a;margin-top:4px;">${price.toLocaleString('pl-PL')} PLN</div>
+                <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:20px;margin:20px 0;text-align:center;">
+                    <div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:1.5px;font-weight:bold;margin-bottom:8px;">Cena warsztatów</div>
+                    <div style="font-size:32px;font-weight:bold;color:#0f172a;">${formatPrice(price)} PLN</div>
                 </div>
             `
             : '';
 
         const depositBlock = deposit_amount && deposit_amount > 0
             ? `
-                <div style="background:#fff7ed;border:2px solid #fb923c;border-radius:8px;padding:16px;margin:16px 0;">
-                    <div style="font-size:12px;color:#c2410c;text-transform:uppercase;letter-spacing:1px;font-weight:bold;">💰 Zaliczka rezerwująca miejsce</div>
-                    <div style="font-size:24px;font-weight:bold;color:#9a3412;margin-top:4px;">${deposit_amount.toLocaleString('pl-PL')} PLN</div>
-                    ${deposit_due_at ? `<div style="font-size:13px;color:#7c2d12;margin-top:4px;">Termin wpłaty: <strong>${new Date(deposit_due_at).toLocaleDateString('pl-PL')}</strong></div>` : ''}
+                <div style="background:#fff7ed;border:2px solid #fb923c;border-radius:8px;padding:20px;margin:20px 0;">
+                    <div style="text-align:center;margin-bottom:16px;">
+                        <div style="font-size:11px;color:#c2410c;text-transform:uppercase;letter-spacing:1.5px;font-weight:bold;margin-bottom:8px;">💰 Zaliczka rezerwująca miejsce</div>
+                        <div style="font-size:36px;font-weight:bold;color:#9a3412;">${formatPrice(deposit_amount)} PLN</div>
+                        ${deposit_due_at ? `<div style="font-size:14px;color:#7c2d12;margin-top:8px;">Termin wpłaty: <strong>${new Date(deposit_due_at).toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric' })}</strong></div>` : ''}
+                    </div>
                     ${settings?.bank_account_number ? `
-                        <div style="margin-top:12px;padding:12px;background:#fff;border-radius:6px;font-size:13px;">
-                            <div style="color:#6b7280;font-size:11px;text-transform:uppercase;font-weight:bold;margin-bottom:4px;">Dane do przelewu</div>
-                            <div><strong>Numer konta:</strong> <code style="font-family:monospace;">${settings.bank_account_number}</code></div>
-                            ${settings.bank_account_holder ? `<div><strong>Odbiorca:</strong> ${settings.bank_account_holder}</div>` : ''}
-                            ${settings.bank_name ? `<div><strong>Bank:</strong> ${settings.bank_name}</div>` : ''}
-                            <div><strong>Tytuł przelewu:</strong> Zaliczka warsztaty ${workshop.title}${participant_name ? ` - ${participant_name}` : ''}</div>
+                        <div style="margin-top:16px;padding:16px;background:#fff;border-radius:6px;font-size:14px;border:1px solid #fed7aa;">
+                            <div style="color:#9a3412;font-size:12px;text-transform:uppercase;font-weight:bold;margin-bottom:12px;">📋 Dane do przelewu</div>
+                            <div style="margin:6px 0;line-height:1.6;"><strong style="color:#7c2d12;">Numer konta:</strong><br><code style="font-family:monospace;background:#fef3c7;padding:4px 8px;border-radius:4px;font-size:13px;display:inline-block;margin-top:4px;">${settings.bank_account_number}</code></div>
+                            ${settings.bank_account_holder ? `<div style="margin:6px 0;line-height:1.6;"><strong style="color:#7c2d12;">Odbiorca:</strong> ${settings.bank_account_holder}</div>` : ''}
+                            ${settings.bank_name ? `<div style="margin:6px 0;line-height:1.6;"><strong style="color:#7c2d12;">Bank:</strong> ${settings.bank_name}</div>` : ''}
+                            <div style="margin:6px 0;line-height:1.6;"><strong style="color:#7c2d12;">Tytuł przelewu:</strong><br><span style="background:#fef3c7;padding:4px 8px;border-radius:4px;font-size:13px;display:inline-block;margin-top:4px;">Zaliczka warsztaty ${workshop.title}${participant_name ? ` - ${participant_name}` : ''}</span></div>
                         </div>
                     ` : ''}
                 </div>
@@ -166,8 +179,8 @@ export async function POST(request: NextRequest, ctx: { params: Promise<{ id: st
                     recipient_email,
                     recipient_name: recipient_name || null,
                     participant_name: participant_name || null,
-                    price: price ? parseInt(String(price), 10) : null,
-                    deposit_amount: deposit_amount ? parseInt(String(deposit_amount), 10) : null,
+                    price: price ? parseFloat(String(price)) : null,
+                    deposit_amount: deposit_amount ? parseFloat(String(deposit_amount)) : null,
                     deposit_due_at: deposit_due_at ? new Date(deposit_due_at) : null,
                     custom_message: custom_message || null,
                     status: 'sent',

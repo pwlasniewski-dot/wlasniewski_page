@@ -65,6 +65,10 @@ export async function POST(
                 ? new Date(workshop.start_date).toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' })
                 : null;
 
+            const formatPrice = (amount: number) => {
+                return amount.toLocaleString('pl-PL', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).replace(',00', '');
+            };
+
             const recipientName = offer.recipient_name || offer.recipient_email.split('@')[0];
             const subject = type === 'overdue'
                 ? `[PILNE] Termin zaliczki minął — miejsce na warsztatach zagrożone: ${workshop.title}`
@@ -83,7 +87,7 @@ export async function POST(
                     </div>
                     ${settings.bank_name ? `<div><span style="color:#64748b;">Bank:</span> ${settings.bank_name}</div>` : ''}
                     <div style="margin-top:6px;"><span style="color:#64748b;">Tytuł:</span> <strong>Zaliczka warsztaty ${workshop.title}${offer.participant_name ? ` — ${offer.participant_name}` : ''}</strong></div>
-                    ${offer.deposit_amount ? `<div style="margin-top:6px;"><span style="color:#64748b;">Kwota:</span> <strong>${offer.deposit_amount.toLocaleString('pl-PL')} PLN</strong></div>` : ''}
+                    ${offer.deposit_amount ? `<div style="margin-top:6px;"><span style="color:#64748b;">Kwota:</span> <strong>${formatPrice(offer.deposit_amount)} PLN</strong></div>` : ''}
                 </div>` : '';
 
             const html = `<!DOCTYPE html>
@@ -97,8 +101,8 @@ export async function POST(
             <strong>Warsztaty:</strong> ${workshop.title}<br>
             ${startStr ? `<strong>Termin:</strong> ${startStr}<br>` : ''}
             ${workshop.location ? `<strong>Miejsce:</strong> ${workshop.location}<br>` : ''}
-            ${offer.price ? `<strong>Cena:</strong> ${offer.price.toLocaleString('pl-PL')} PLN<br>` : ''}
-            ${offer.deposit_amount ? `<strong>Zaliczka:</strong> ${offer.deposit_amount.toLocaleString('pl-PL')} PLN<br>` : ''}
+            ${offer.price ? `<strong>Cena:</strong> ${formatPrice(offer.price)} PLN<br>` : ''}
+            ${offer.deposit_amount ? `<strong>Zaliczka:</strong> ${formatPrice(offer.deposit_amount)} PLN<br>` : ''}
             ${dueStr ? `<strong>Termin wpłaty:</strong> ${dueStr}${type === 'overdue' ? ' <span style="color:#dc2626;">(MINĄŁ)</span>' : ''}` : ''}
         </div>
         ${bankBlock}

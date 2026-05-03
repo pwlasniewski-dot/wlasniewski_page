@@ -1,4 +1,15 @@
 {
+  "adminUser": [
+    {
+      "id": 2,
+      "email": "pwlasniewski@gmail.com",
+      "password_hash": "$2b$10$69RUm18ULbWjSUwiAhLrC.pyBsaXGEkDUum0OQc9NgxtYybS7OdXa",
+      "name": "Przemysław Właśniewski",
+      "role": "ADMIN",
+      "created_at": "2026-01-04T12:23:00.835Z",
+      "last_login": null
+    }
+  ],
   "user": [
     {
       "id": 1,
@@ -21,6 +32,7 @@
       "permissions": null,
       "welcome_email_sent_at": null,
       "welcome_email_count": 0,
+      "workshops_enabled": false,
       "terms_accepted_at": null,
       "gdpr_consent_at": null,
       "marketing_consent_at": null,
@@ -56,6 +68,7 @@
       },
       "welcome_email_sent_at": null,
       "welcome_email_count": 0,
+      "workshops_enabled": false,
       "terms_accepted_at": null,
       "gdpr_consent_at": null,
       "marketing_consent_at": null,
@@ -85,6 +98,7 @@
       "permissions": null,
       "welcome_email_sent_at": null,
       "welcome_email_count": 0,
+      "workshops_enabled": false,
       "terms_accepted_at": null,
       "gdpr_consent_at": null,
       "marketing_consent_at": null,
@@ -120,6 +134,7 @@
       },
       "welcome_email_sent_at": null,
       "welcome_email_count": 0,
+      "workshops_enabled": false,
       "terms_accepted_at": null,
       "gdpr_consent_at": null,
       "marketing_consent_at": null,
@@ -155,6 +170,7 @@
       },
       "welcome_email_sent_at": null,
       "welcome_email_count": 0,
+      "workshops_enabled": false,
       "terms_accepted_at": null,
       "gdpr_consent_at": null,
       "marketing_consent_at": null,
@@ -190,6 +206,7 @@
       },
       "welcome_email_sent_at": null,
       "welcome_email_count": 0,
+      "workshops_enabled": false,
       "terms_accepted_at": null,
       "gdpr_consent_at": null,
       "marketing_consent_at": null,
@@ -225,6 +242,7 @@
       },
       "welcome_email_sent_at": null,
       "welcome_email_count": 0,
+      "workshops_enabled": false,
       "terms_accepted_at": null,
       "gdpr_consent_at": null,
       "marketing_consent_at": null,
@@ -260,6 +278,7 @@
       },
       "welcome_email_sent_at": null,
       "welcome_email_count": 0,
+      "workshops_enabled": false,
       "terms_accepted_at": null,
       "gdpr_consent_at": null,
       "marketing_consent_at": null,
@@ -295,6 +314,7 @@
       },
       "welcome_email_sent_at": null,
       "welcome_email_count": 0,
+      "workshops_enabled": false,
       "terms_accepted_at": null,
       "gdpr_consent_at": null,
       "marketing_consent_at": null,
@@ -324,6 +344,7 @@
       "permissions": null,
       "welcome_email_sent_at": null,
       "welcome_email_count": 0,
+      "workshops_enabled": false,
       "terms_accepted_at": null,
       "gdpr_consent_at": null,
       "marketing_consent_at": null,
@@ -353,6 +374,7 @@
       "permissions": null,
       "welcome_email_sent_at": null,
       "welcome_email_count": 0,
+      "workshops_enabled": false,
       "terms_accepted_at": "2026-05-02T04:37:01.738Z",
       "gdpr_consent_at": "2026-05-02T04:37:01.738Z",
       "marketing_consent_at": null,
@@ -382,6 +404,7 @@
       "permissions": null,
       "welcome_email_sent_at": null,
       "welcome_email_count": 0,
+      "workshops_enabled": false,
       "terms_accepted_at": "2026-05-02T04:37:01.738Z",
       "gdpr_consent_at": "2026-05-02T04:37:01.738Z",
       "marketing_consent_at": null,
@@ -417,6 +440,7 @@
       },
       "welcome_email_sent_at": null,
       "welcome_email_count": 0,
+      "workshops_enabled": false,
       "terms_accepted_at": null,
       "gdpr_consent_at": null,
       "marketing_consent_at": null,
@@ -446,6 +470,7 @@
       "permissions": null,
       "welcome_email_sent_at": null,
       "welcome_email_count": 0,
+      "workshops_enabled": false,
       "terms_accepted_at": "2026-05-02T04:37:01.738Z",
       "gdpr_consent_at": "2026-05-02T04:37:01.738Z",
       "marketing_consent_at": null,
@@ -475,6 +500,7 @@
       "permissions": null,
       "welcome_email_sent_at": null,
       "welcome_email_count": 0,
+      "workshops_enabled": false,
       "terms_accepted_at": "2026-05-02T04:37:01.738Z",
       "gdpr_consent_at": "2026-05-02T04:37:01.738Z",
       "marketing_consent_at": null,
@@ -504,6 +530,7 @@
       "permissions": null,
       "welcome_email_sent_at": null,
       "welcome_email_count": 0,
+      "workshops_enabled": false,
       "terms_accepted_at": "2026-05-02T04:37:01.738Z",
       "gdpr_consent_at": "2026-05-02T04:37:01.738Z",
       "marketing_consent_at": null,
@@ -533,6 +560,7 @@
       "permissions": null,
       "welcome_email_sent_at": null,
       "welcome_email_count": 0,
+      "workshops_enabled": false,
       "terms_accepted_at": "2026-05-02T04:37:01.738Z",
       "gdpr_consent_at": "2026-05-02T04:37:01.738Z",
       "marketing_consent_at": null,
@@ -562,6 +590,7 @@
       "permissions": null,
       "welcome_email_sent_at": null,
       "welcome_email_count": 0,
+      "workshops_enabled": false,
       "terms_accepted_at": "2026-05-02T04:37:01.738Z",
       "gdpr_consent_at": "2026-05-02T04:37:01.738Z",
       "marketing_consent_at": null,
@@ -591,6 +620,7 @@
       "permissions": null,
       "welcome_email_sent_at": null,
       "welcome_email_count": 0,
+      "workshops_enabled": false,
       "terms_accepted_at": "2026-05-02T04:37:01.738Z",
       "gdpr_consent_at": "2026-05-02T04:37:01.738Z",
       "marketing_consent_at": null,
@@ -620,6 +650,7 @@
       "permissions": null,
       "welcome_email_sent_at": null,
       "welcome_email_count": 0,
+      "workshops_enabled": false,
       "terms_accepted_at": "2026-05-02T04:37:01.738Z",
       "gdpr_consent_at": "2026-05-02T04:37:01.738Z",
       "marketing_consent_at": null,
@@ -649,6 +680,7 @@
       "permissions": null,
       "welcome_email_sent_at": null,
       "welcome_email_count": 0,
+      "workshops_enabled": false,
       "terms_accepted_at": "2026-05-02T04:37:01.738Z",
       "gdpr_consent_at": "2026-05-02T04:37:01.738Z",
       "marketing_consent_at": null,
@@ -678,6 +710,7 @@
       "permissions": null,
       "welcome_email_sent_at": null,
       "welcome_email_count": 0,
+      "workshops_enabled": false,
       "terms_accepted_at": "2026-05-02T04:37:01.738Z",
       "gdpr_consent_at": "2026-05-02T04:37:01.738Z",
       "marketing_consent_at": null,
@@ -707,6 +740,7 @@
       "permissions": null,
       "welcome_email_sent_at": null,
       "welcome_email_count": 0,
+      "workshops_enabled": false,
       "terms_accepted_at": "2026-05-02T04:37:01.738Z",
       "gdpr_consent_at": "2026-05-02T04:37:01.738Z",
       "marketing_consent_at": null,
@@ -722,7 +756,7 @@
       "name": "Agata Hogata",
       "phone": "dsasd",
       "created_at": "2026-04-26T07:35:16.400Z",
-      "updated_at": "2026-05-02T06:00:19.719Z",
+      "updated_at": "2026-05-03T11:54:48.549Z",
       "is_active": true,
       "photographer_profile_id": null,
       "role": "CLIENT",
@@ -742,6 +776,43 @@
       },
       "welcome_email_sent_at": null,
       "welcome_email_count": 0,
+      "workshops_enabled": true,
+      "terms_accepted_at": null,
+      "gdpr_consent_at": null,
+      "marketing_consent_at": null,
+      "consent_ip": null,
+      "consent_user_agent": null,
+      "deleted_at": null,
+      "deletion_requested_at": null
+    },
+    {
+      "id": 110,
+      "email": "pwlasniewska@gmail.com",
+      "password_hash": "$2b$10$ALvAnQhfpzYJipabvX7z/ugeVuxyTEaMswFws/VPuqFopeNDI1CtW",
+      "name": "Paulina Właśniewska",
+      "phone": "",
+      "created_at": "2026-05-03T09:06:26.747Z",
+      "updated_at": "2026-05-03T09:38:13.950Z",
+      "is_active": true,
+      "photographer_profile_id": null,
+      "role": "CLIENT",
+      "last_failed_login": null,
+      "last_login": null,
+      "address": null,
+      "city": null,
+      "postal_code": null,
+      "reset_token": "1cab7b2a25e8a79f070647c7bfd9b63adcea42eac8b7c612b076317b57dfac22",
+      "reset_token_expires": "2026-05-06T09:06:26.320Z",
+      "permissions": {
+        "offers": true,
+        "bookings": true,
+        "contracts": true,
+        "galleries": true,
+        "gift_cards": true
+      },
+      "welcome_email_sent_at": null,
+      "welcome_email_count": 0,
+      "workshops_enabled": true,
       "terms_accepted_at": null,
       "gdpr_consent_at": null,
       "marketing_consent_at": null,
@@ -837,7 +908,11 @@
       "cancellation_partial_pct": 50,
       "split_payment_enabled": false,
       "split_payment_deposit_percent": 50,
-      "split_payment_remaining_due_days": 7
+      "split_payment_remaining_due_days": 7,
+      "bank_account_number": null,
+      "bank_account_holder": null,
+      "bank_name": null,
+      "bank_swift": null
     },
     {
       "id": 130,
@@ -924,7 +999,11 @@
       "cancellation_partial_pct": 50,
       "split_payment_enabled": false,
       "split_payment_deposit_percent": 50,
-      "split_payment_remaining_due_days": 7
+      "split_payment_remaining_due_days": 7,
+      "bank_account_number": null,
+      "bank_account_holder": null,
+      "bank_name": null,
+      "bank_swift": null
     },
     {
       "id": 3,
@@ -1011,7 +1090,11 @@
       "cancellation_partial_pct": 50,
       "split_payment_enabled": false,
       "split_payment_deposit_percent": 50,
-      "split_payment_remaining_due_days": 7
+      "split_payment_remaining_due_days": 7,
+      "bank_account_number": null,
+      "bank_account_holder": null,
+      "bank_name": null,
+      "bank_swift": null
     },
     {
       "id": 591,
@@ -1098,7 +1181,11 @@
       "cancellation_partial_pct": 50,
       "split_payment_enabled": false,
       "split_payment_deposit_percent": 50,
-      "split_payment_remaining_due_days": 7
+      "split_payment_remaining_due_days": 7,
+      "bank_account_number": null,
+      "bank_account_holder": null,
+      "bank_name": null,
+      "bank_swift": null
     },
     {
       "id": 6,
@@ -1185,7 +1272,11 @@
       "cancellation_partial_pct": 50,
       "split_payment_enabled": false,
       "split_payment_deposit_percent": 50,
-      "split_payment_remaining_due_days": 7
+      "split_payment_remaining_due_days": 7,
+      "bank_account_number": null,
+      "bank_account_holder": null,
+      "bank_name": null,
+      "bank_swift": null
     },
     {
       "id": 7,
@@ -1272,7 +1363,11 @@
       "cancellation_partial_pct": 50,
       "split_payment_enabled": false,
       "split_payment_deposit_percent": 50,
-      "split_payment_remaining_due_days": 7
+      "split_payment_remaining_due_days": 7,
+      "bank_account_number": null,
+      "bank_account_holder": null,
+      "bank_name": null,
+      "bank_swift": null
     },
     {
       "id": 8,
@@ -1359,7 +1454,11 @@
       "cancellation_partial_pct": 50,
       "split_payment_enabled": false,
       "split_payment_deposit_percent": 50,
-      "split_payment_remaining_due_days": 7
+      "split_payment_remaining_due_days": 7,
+      "bank_account_number": null,
+      "bank_account_holder": null,
+      "bank_name": null,
+      "bank_swift": null
     },
     {
       "id": 9,
@@ -1446,7 +1545,11 @@
       "cancellation_partial_pct": 50,
       "split_payment_enabled": false,
       "split_payment_deposit_percent": 50,
-      "split_payment_remaining_due_days": 7
+      "split_payment_remaining_due_days": 7,
+      "bank_account_number": null,
+      "bank_account_holder": null,
+      "bank_name": null,
+      "bank_swift": null
     },
     {
       "id": 189,
@@ -1533,7 +1636,11 @@
       "cancellation_partial_pct": 50,
       "split_payment_enabled": false,
       "split_payment_deposit_percent": 50,
-      "split_payment_remaining_due_days": 7
+      "split_payment_remaining_due_days": 7,
+      "bank_account_number": null,
+      "bank_account_holder": null,
+      "bank_name": null,
+      "bank_swift": null
     },
     {
       "id": 55,
@@ -1620,7 +1727,11 @@
       "cancellation_partial_pct": 50,
       "split_payment_enabled": false,
       "split_payment_deposit_percent": 50,
-      "split_payment_remaining_due_days": 7
+      "split_payment_remaining_due_days": 7,
+      "bank_account_number": null,
+      "bank_account_holder": null,
+      "bank_name": null,
+      "bank_swift": null
     },
     {
       "id": 5,
@@ -1707,7 +1818,11 @@
       "cancellation_partial_pct": 50,
       "split_payment_enabled": false,
       "split_payment_deposit_percent": 50,
-      "split_payment_remaining_due_days": 7
+      "split_payment_remaining_due_days": 7,
+      "bank_account_number": null,
+      "bank_account_holder": null,
+      "bank_name": null,
+      "bank_swift": null
     },
     {
       "id": 15,
@@ -1794,7 +1909,11 @@
       "cancellation_partial_pct": 50,
       "split_payment_enabled": false,
       "split_payment_deposit_percent": 50,
-      "split_payment_remaining_due_days": 7
+      "split_payment_remaining_due_days": 7,
+      "bank_account_number": null,
+      "bank_account_holder": null,
+      "bank_name": null,
+      "bank_swift": null
     },
     {
       "id": 16,
@@ -1881,7 +2000,11 @@
       "cancellation_partial_pct": 50,
       "split_payment_enabled": false,
       "split_payment_deposit_percent": 50,
-      "split_payment_remaining_due_days": 7
+      "split_payment_remaining_due_days": 7,
+      "bank_account_number": null,
+      "bank_account_holder": null,
+      "bank_name": null,
+      "bank_swift": null
     },
     {
       "id": 17,
@@ -1968,7 +2091,11 @@
       "cancellation_partial_pct": 50,
       "split_payment_enabled": false,
       "split_payment_deposit_percent": 50,
-      "split_payment_remaining_due_days": 7
+      "split_payment_remaining_due_days": 7,
+      "bank_account_number": null,
+      "bank_account_holder": null,
+      "bank_name": null,
+      "bank_swift": null
     },
     {
       "id": 18,
@@ -2055,7 +2182,11 @@
       "cancellation_partial_pct": 50,
       "split_payment_enabled": false,
       "split_payment_deposit_percent": 50,
-      "split_payment_remaining_due_days": 7
+      "split_payment_remaining_due_days": 7,
+      "bank_account_number": null,
+      "bank_account_holder": null,
+      "bank_name": null,
+      "bank_swift": null
     },
     {
       "id": 198,
@@ -2142,7 +2273,11 @@
       "cancellation_partial_pct": 50,
       "split_payment_enabled": false,
       "split_payment_deposit_percent": 50,
-      "split_payment_remaining_due_days": 7
+      "split_payment_remaining_due_days": 7,
+      "bank_account_number": null,
+      "bank_account_holder": null,
+      "bank_name": null,
+      "bank_swift": null
     },
     {
       "id": 274,
@@ -2229,7 +2364,11 @@
       "cancellation_partial_pct": 50,
       "split_payment_enabled": false,
       "split_payment_deposit_percent": 50,
-      "split_payment_remaining_due_days": 7
+      "split_payment_remaining_due_days": 7,
+      "bank_account_number": null,
+      "bank_account_holder": null,
+      "bank_name": null,
+      "bank_swift": null
     },
     {
       "id": 141,
@@ -2316,7 +2455,11 @@
       "cancellation_partial_pct": 50,
       "split_payment_enabled": false,
       "split_payment_deposit_percent": 50,
-      "split_payment_remaining_due_days": 7
+      "split_payment_remaining_due_days": 7,
+      "bank_account_number": null,
+      "bank_account_holder": null,
+      "bank_name": null,
+      "bank_swift": null
     },
     {
       "id": 142,
@@ -2403,7 +2546,11 @@
       "cancellation_partial_pct": 50,
       "split_payment_enabled": false,
       "split_payment_deposit_percent": 50,
-      "split_payment_remaining_due_days": 7
+      "split_payment_remaining_due_days": 7,
+      "bank_account_number": null,
+      "bank_account_holder": null,
+      "bank_name": null,
+      "bank_swift": null
     },
     {
       "id": 4,
@@ -2490,7 +2637,11 @@
       "cancellation_partial_pct": 50,
       "split_payment_enabled": false,
       "split_payment_deposit_percent": 50,
-      "split_payment_remaining_due_days": 7
+      "split_payment_remaining_due_days": 7,
+      "bank_account_number": null,
+      "bank_account_holder": null,
+      "bank_name": null,
+      "bank_swift": null
     },
     {
       "id": 1,
@@ -2577,7 +2728,11 @@
       "cancellation_partial_pct": 50,
       "split_payment_enabled": false,
       "split_payment_deposit_percent": 50,
-      "split_payment_remaining_due_days": 7
+      "split_payment_remaining_due_days": 7,
+      "bank_account_number": null,
+      "bank_account_holder": null,
+      "bank_name": null,
+      "bank_swift": null
     },
     {
       "id": 76,
@@ -2664,7 +2819,11 @@
       "cancellation_partial_pct": 50,
       "split_payment_enabled": false,
       "split_payment_deposit_percent": 50,
-      "split_payment_remaining_due_days": 7
+      "split_payment_remaining_due_days": 7,
+      "bank_account_number": null,
+      "bank_account_holder": null,
+      "bank_name": null,
+      "bank_swift": null
     },
     {
       "id": 143,
@@ -2751,7 +2910,11 @@
       "cancellation_partial_pct": 50,
       "split_payment_enabled": false,
       "split_payment_deposit_percent": 50,
-      "split_payment_remaining_due_days": 7
+      "split_payment_remaining_due_days": 7,
+      "bank_account_number": null,
+      "bank_account_holder": null,
+      "bank_name": null,
+      "bank_swift": null
     },
     {
       "id": 393,
@@ -2838,7 +3001,11 @@
       "cancellation_partial_pct": 50,
       "split_payment_enabled": false,
       "split_payment_deposit_percent": 50,
-      "split_payment_remaining_due_days": 7
+      "split_payment_remaining_due_days": 7,
+      "bank_account_number": null,
+      "bank_account_holder": null,
+      "bank_name": null,
+      "bank_swift": null
     },
     {
       "id": 2,
@@ -2925,7 +3092,11 @@
       "cancellation_partial_pct": 50,
       "split_payment_enabled": false,
       "split_payment_deposit_percent": 50,
-      "split_payment_remaining_due_days": 7
+      "split_payment_remaining_due_days": 7,
+      "bank_account_number": null,
+      "bank_account_holder": null,
+      "bank_name": null,
+      "bank_swift": null
     },
     {
       "id": 19,
@@ -3012,7 +3183,11 @@
       "cancellation_partial_pct": 50,
       "split_payment_enabled": false,
       "split_payment_deposit_percent": 50,
-      "split_payment_remaining_due_days": 7
+      "split_payment_remaining_due_days": 7,
+      "bank_account_number": null,
+      "bank_account_holder": null,
+      "bank_name": null,
+      "bank_swift": null
     },
     {
       "id": 21,
@@ -3099,7 +3274,11 @@
       "cancellation_partial_pct": 50,
       "split_payment_enabled": false,
       "split_payment_deposit_percent": 50,
-      "split_payment_remaining_due_days": 7
+      "split_payment_remaining_due_days": 7,
+      "bank_account_number": null,
+      "bank_account_holder": null,
+      "bank_name": null,
+      "bank_swift": null
     },
     {
       "id": 22,
@@ -3186,7 +3365,11 @@
       "cancellation_partial_pct": 50,
       "split_payment_enabled": false,
       "split_payment_deposit_percent": 50,
-      "split_payment_remaining_due_days": 7
+      "split_payment_remaining_due_days": 7,
+      "bank_account_number": null,
+      "bank_account_holder": null,
+      "bank_name": null,
+      "bank_swift": null
     },
     {
       "id": 23,
@@ -3273,7 +3456,11 @@
       "cancellation_partial_pct": 50,
       "split_payment_enabled": false,
       "split_payment_deposit_percent": 50,
-      "split_payment_remaining_due_days": 7
+      "split_payment_remaining_due_days": 7,
+      "bank_account_number": null,
+      "bank_account_holder": null,
+      "bank_name": null,
+      "bank_swift": null
     },
     {
       "id": 24,
@@ -3360,7 +3547,11 @@
       "cancellation_partial_pct": 50,
       "split_payment_enabled": false,
       "split_payment_deposit_percent": 50,
-      "split_payment_remaining_due_days": 7
+      "split_payment_remaining_due_days": 7,
+      "bank_account_number": null,
+      "bank_account_holder": null,
+      "bank_name": null,
+      "bank_swift": null
     },
     {
       "id": 201,
@@ -3447,7 +3638,11 @@
       "cancellation_partial_pct": 50,
       "split_payment_enabled": false,
       "split_payment_deposit_percent": 50,
-      "split_payment_remaining_due_days": 7
+      "split_payment_remaining_due_days": 7,
+      "bank_account_number": null,
+      "bank_account_holder": null,
+      "bank_name": null,
+      "bank_swift": null
     },
     {
       "id": 138,
@@ -3534,7 +3729,11 @@
       "cancellation_partial_pct": 50,
       "split_payment_enabled": false,
       "split_payment_deposit_percent": 50,
-      "split_payment_remaining_due_days": 7
+      "split_payment_remaining_due_days": 7,
+      "bank_account_number": null,
+      "bank_account_holder": null,
+      "bank_name": null,
+      "bank_swift": null
     }
   ],
   "systemSettings": [],
