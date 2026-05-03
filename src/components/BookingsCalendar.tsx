@@ -44,15 +44,15 @@ const SOURCE_LABEL: Record<string, string> = {
 const STATUS_LABELS: Record<string, string> = {
     pending: 'Oczekuje',
     confirmed: 'Potwierdzona',
-    paid: 'Op\u0142acona',
-    completed: 'Zako\u0144czona',
+    paid: 'Opłacona',
+    completed: 'Zakończona',
     cancelled: 'Anulowana',
 };
 
-const DAYS_PL = ['Pn', 'Wt', '\u015ar', 'Cz', 'Pt', 'So', 'Nd'];
+const DAYS_PL = ['Pn', 'Wt', 'Śr', 'Cz', 'Pt', 'So', 'Nd'];
 const MONTHS_PL = [
-    'Stycze\u0144', 'Luty', 'Marzec', 'Kwiecie\u0144', 'Maj', 'Czerwiec',
-    'Lipiec', 'Sierpie\u0144', 'Wrzesie\u0144', 'Pa\u017adziernik', 'Listopad', 'Grudzie\u0144',
+    'Styczeń', 'Luty', 'Marzec', 'Kwiecień', 'Maj', 'Czerwiec',
+    'Lipiec', 'Sierpień', 'Wrzesień', 'Październik', 'Listopad', 'Grudzień',
 ];
 
 function ymd(d: Date) {
@@ -160,13 +160,13 @@ export default function BookingsCalendar({
                 <div className="flex items-center gap-1 bg-white rounded-lg border border-zinc-200 p-1 self-start sm:self-auto">
                     <button
                         onClick={() => setView('month')}
-                        className={`px-3 py-1.5 text-sm font-medium rounded ${view === 'month' ? 'bg-zinc-900 text-white' : 'text-zinc-600'}`}
+                        className={`px-3 py-1.5 text-sm font-medium rounded ${view === 'month' ? 'bg-amber-600 text-white' : 'text-zinc-700'}`}
                     >
-                        Miesi\u0105c
+                        Miesiąc
                     </button>
                     <button
                         onClick={() => setView('list')}
-                        className={`px-3 py-1.5 text-sm font-medium rounded ${view === 'list' ? 'bg-zinc-900 text-white' : 'text-zinc-600'}`}
+                        className={`px-3 py-1.5 text-sm font-medium rounded ${view === 'list' ? 'bg-amber-600 text-white' : 'text-zinc-700'}`}
                     >
                         Lista
                     </button>
