@@ -131,19 +131,19 @@ export default function BookingsCalendar({
                     <button
                         onClick={() => setCursor(c => new Date(c.getFullYear(), c.getMonth() - 1, 1))}
                         className="p-2 rounded-lg hover:bg-white/60 transition"
-                        aria-label="Poprzedni miesi\u0105c"
+                        aria-label="Poprzedni miesiąc"
                     >
-                        <ChevronLeft className="w-5 h-5" />
+                        <ChevronLeft className="w-5 h-5 text-zinc-700" />
                     </button>
-                    <h2 className="text-lg sm:text-xl font-bold text-zinc-900 min-w-[10rem] text-center">
+                    <h2 className="text-lg sm:text-xl font-bold min-w-[10rem] text-center text-zinc-900">
                         {MONTHS_PL[cursor.getMonth()]} {cursor.getFullYear()}
                     </h2>
                     <button
                         onClick={() => setCursor(c => new Date(c.getFullYear(), c.getMonth() + 1, 1))}
                         className="p-2 rounded-lg hover:bg-white/60 transition"
-                        aria-label="Nast\u0119pny miesi\u0105c"
+                        aria-label="Następny miesiąc"
                     >
-                        <ChevronRight className="w-5 h-5" />
+                        <ChevronRight className="w-5 h-5 text-zinc-700" />
                     </button>
                     <button
                         onClick={() => {
@@ -154,7 +154,7 @@ export default function BookingsCalendar({
                         }}
                         className="ml-2 px-3 py-1.5 rounded-lg bg-white border border-zinc-200 text-sm font-medium text-zinc-700 hover:border-amber-400"
                     >
-                        Dzi\u015b
+                        Dziś
                     </button>
                 </div>
                 <div className="flex items-center gap-1 bg-white rounded-lg border border-zinc-200 p-1 self-start sm:self-auto">
