@@ -92,8 +92,16 @@ export async function POST(request: NextRequest, ctx: { params: Promise<{ slug: 
         });
         return NextResponse.json({ upload: row }, { status: 201 });
     } catch (e: any) {
-        console.error('[POST workshops/uploads]', e);
-        return NextResponse.json({ error: e.message || 'Internal' }, { status: 500 });
+        console.error('[POST workshops/uploads] ERROR:', {
+            message: e.message,
+            stack: e.stack,
+            code: e.code,
+            name: e.name,
+        });
+        return NextResponse.json({ 
+            error: e.message || 'Internal server error',
+            code: e.code || 'UNKNOWN',
+        }, { status: 500 });
     }
 }
 

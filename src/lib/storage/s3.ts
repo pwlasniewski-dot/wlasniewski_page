@@ -31,16 +31,23 @@ export async function uploadToS3(fileBuffer: Buffer, fileName: string, mimeType:
             MY_AWS_KEY: !!process.env.MY_AWS_ACCESS_KEY_ID,
             AWS_KEY: !!process.env.AWS_ACCESS_KEY_ID,
             BUCKET: !!bucketName,
+            REGION: region,
         };
         console.log("[UPLOAD_START]", { fileName, fileSize: fileBuffer.length, mimeType, debugEnv });
 
         if (!bucketName) {
-            console.error("[S3_UPLOAD] ERROR: Missing S3_BUCKET env var");
-            throw new Error("Missing S3_BUCKET environment variable");
+            const msg = "Missing S3_BUCKET environment variable";
+            console.error("[S3_UPLOAD] ERROR:", msg);
+            throw new Error(msg);
         }
         if (!accessKeyId || !secretAccessKey) {
-            console.error("[S3_UPLOAD] ERROR: Missing AWS Credentials", { hasKey: !!accessKeyId, hasSecret: !!secretAccessKey });
-            throw new Error("Missing AWS Credentials (checked MY_AWS_... and AWS_...)");
+            const msg = "Missing AWS Credentials. Set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY in environment.";
+            console.error("[S3_UPLOAD] ERROR:", msg, { 
+                hasKey: !!accessKeyId, 
+                hasSecret: !!secretAccessKey,
+                checkedVars: ['MY_AWS_ACCESS_KEY_ID', 'AWS_ACCESS_KEY_ID']
+            });
+            throw new Error(msg);
         }
 
         const upload = new Upload({
@@ -65,7 +72,9 @@ export async function uploadToS3(fileBuffer: Buffer, fileName: string, mimeType:
             message: error.message,
             code: error.code,
             requestId: error.$metadata?.requestId,
-            stack: error.stack
+            fileName,
+            bucketName,
+            region,
         });
         throw new Error(`S3 Upload failed: ${error.message}`);
     }
