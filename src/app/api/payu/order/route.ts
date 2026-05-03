@@ -7,18 +7,13 @@ export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
         const {
-            amount, // in PLN (full units), or passed as grosze? Let's expect PLN for simplicity or handle consistent. 
-            // Better expect grosze (integers) to avoid float issues, but frontend creates challenge with logic. 
-            // challenge_price is Int (usually PLN in this DB? schema says Int. If 200 PLN is 200, then it's PLN units. If 20000, it's grosze.)
-            // Looking at `PhotoChallenge` model: `challenge_price Int`. `ClientGallery` has `price_per_premium Int @default (2000)` = 20PLN.
-            // So DB uses GRAOSZE (cents). 
-            // But `ChallengePackage` might store PLN?
-            // "challenge_price: 200" on frontend usually means 200 PLN.
-            // Let's assume input body `amount` is in GROSZE (cents) to be safe.
+            amount, // in grosze
             description,
             email,
-            challengeId, // Optional, if related to a challenge
-            bookingId, // Optional, if related to booking
+            challengeId,
+            bookingId,
+            contractId,  // NEW: for contract payments
+            paymentType, // NEW: 'deposit' | 'remaining' | 'full'
             redirectUrl
         } = body;
 
@@ -34,7 +29,9 @@ export async function POST(request: NextRequest) {
         // Generate unique extOrderId
         // Format: TYPE_ID_TIMESTAMP to allow parsing in Notify
         let extOrderId = `ORDER_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
-        if (challengeId) {
+        if (contractId) {
+            extOrderId = `CONTRACT_${contractId}_${paymentType || 'full'}_${Date.now()}`;
+        } else if (challengeId) {
             // We need to fetch the challenge unique_link or use ID. unique_link is safer public ID but ID is internal.
             // If we use ID, we parse it back. 
             extOrderId = `CHALLENGE_${challengeId}_${Date.now()}`;

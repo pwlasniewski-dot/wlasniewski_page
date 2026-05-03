@@ -702,6 +702,89 @@ export async function POST(request: NextRequest) {
                 }
             }
 
+            if (!handled && typeOrId === 'CONTRACT' && !isNaN(resourceId)) {
+                // extOrderId: CONTRACT_{contractId}_{paymentType}_{timestamp}
+                // paymentType: 'deposit' | 'remaining' | 'full'
+                const paymentType = parts.length > 2 ? parts[2] : 'full';
+
+                const contract = await prisma.contract.findUnique({
+                    where: { id: resourceId },
+                    include: {
+                        offer: { select: { title: true, total_price: true } },
+                        user: { select: { name: true, email: true } },
+                    },
+                }).catch(() => null);
+
+                if (contract) {
+                    const amountPLN = (Number(order.totalAmount || 0) / 100).toFixed(2);
+                    let updateData: any = { updated_at: new Date() };
+
+                    if (paymentType === 'deposit') {
+                        updateData.deposit_paid_at = new Date();
+                        updateData.deposit_note = `[PayU] Zaliczka opłacona (${orderId}) ${amountPLN} PLN`;
+                    } else {
+                        // full or remaining — mark deposit as paid too (covers everything)
+                        if (!contract.deposit_paid_at) {
+                            updateData.deposit_paid_at = new Date();
+                        }
+                        updateData.deposit_note = `[PayU] ${paymentType === 'remaining' ? 'Dopłata' : 'Pełna kwota'} opłacona (${orderId}) ${amountPLN} PLN`;
+                    }
+
+                    await prisma.contract.update({ where: { id: resourceId }, data: updateData })
+                        .catch((e) => console.error('[PayU] Contract update failed:', e));
+
+                    console.log(`[PayU] Contract #${resourceId} payment: type=${paymentType} amount=${amountPLN} PLN`);
+
+                    // Send confirmation emails
+                    try {
+                        const { sendEmail, getAdminEmail } = await import('@/lib/email/sender');
+                        const clientEmail = contract.user?.email;
+                        const clientName = contract.user?.name || 'Kliencie';
+
+                        if (clientEmail) {
+                            await sendEmail({
+                                to: clientEmail,
+                                subject: paymentType === 'deposit'
+                                    ? `✅ Zaliczka opłacona — ${contract.contract_number}`
+                                    : `✅ Płatność potwierdzona — ${contract.contract_number}`,
+                                html: `
+                                    <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#0a0a0a;color:#fff;padding:40px;border-radius:12px;">
+                                        <h2 style="color:#c5a059;">Potwierdzenie płatności</h2>
+                                        <p>Cześć ${clientName},</p>
+                                        <p>Twoja płatność za umowę <strong>${contract.contract_number}</strong> została potwierdzona.</p>
+                                        <div style="background:#1a1a1a;border-radius:8px;padding:20px;margin:20px 0;">
+                                            <p><strong>Kwota:</strong> ${amountPLN} PLN</p>
+                                            <p><strong>Typ:</strong> ${paymentType === 'deposit' ? 'Zaliczka' : paymentType === 'remaining' ? 'Dopłata (pozostała kwota)' : 'Pełna kwota'}</p>
+                                            <p><strong>Nr transakcji:</strong> ${orderId}</p>
+                                        </div>
+                                        <p>Dziękujemy!</p>
+                                    </div>
+                                `
+                            }).catch((e: any) => console.error('[PayU] Contract client email fail', e));
+                        }
+
+                        const adminEmail = await getAdminEmail();
+                        if (adminEmail) {
+                            await sendEmail({
+                                to: adminEmail,
+                                subject: `💰 [UMOWA] ${paymentType === 'deposit' ? 'Zaliczka' : 'Płatność'} ${amountPLN} PLN — ${contract.contract_number}`,
+                                html: `
+                                    <p><strong>Umowa:</strong> ${contract.contract_number}</p>
+                                    <p><strong>Klient:</strong> ${clientName} (${clientEmail || '—'})</p>
+                                    <p><strong>Typ:</strong> ${paymentType}</p>
+                                    <p><strong>Kwota:</strong> ${amountPLN} PLN</p>
+                                    <p><strong>PayU ID:</strong> ${orderId}</p>
+                                `
+                            }).catch(() => {});
+                        }
+                    } catch (e) {
+                        console.error('[PayU] Contract email dispatch failed:', e);
+                    }
+
+                    handled = true;
+                }
+            }
+
             if (!handled) {
                 console.warn(`[PayU] Unhandled extOrderId=${extOrderId}`);
             }

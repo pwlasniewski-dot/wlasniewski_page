@@ -329,12 +329,15 @@ export default function ContractSigningPage({ params }: { params: Promise<{ id: 
 
 function ClientDepositPanel({ contract, bank }: { contract: any; bank: any }) {
     const [copied, setCopied] = useState<string | null>(null);
+    const [payingType, setPayingType] = useState<string | null>(null);
     const isPaid = !!contract.deposit_paid_at;
     const due = contract.deposit_due_at ? new Date(contract.deposit_due_at) : null;
     const now = new Date();
     const overdue = !isPaid && due && due < now;
     const dueSoon = !isPaid && due && !overdue && (due.getTime() - now.getTime() < 7 * 86400000);
-    const amount = contract.deposit_amount || 0;
+    const depositAmount = contract.deposit_amount || 0;
+    const totalPrice = contract.offer?.total_price || 0;
+    const remainingAmount = totalPrice > depositAmount ? totalPrice - depositAmount : 0;
 
     const copy = async (text: string, key: string) => {
         try {
@@ -342,6 +345,44 @@ function ClientDepositPanel({ contract, bank }: { contract: any; bank: any }) {
             setCopied(key);
             setTimeout(() => setCopied(null), 1800);
         } catch { /* noop */ }
+    };
+
+    const handlePayU = async (type: 'deposit' | 'remaining' | 'full') => {
+        const amountPLN = type === 'deposit' ? depositAmount
+            : type === 'remaining' ? remainingAmount
+            : totalPrice || depositAmount;
+        if (!amountPLN) return;
+
+        const token = localStorage.getItem('client_token') || localStorage.getItem('user_token');
+        setPayingType(type);
+        try {
+            const res = await fetch('/api/payu/order', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify({
+                    contractId: contract.id,
+                    paymentType: type,
+                    amount: amountPLN * 100, // grosze
+                    description: type === 'deposit'
+                        ? `Zaliczka — ${contract.contract_number}`
+                        : type === 'remaining'
+                        ? `Dopłata — ${contract.contract_number}`
+                        : `Pełna kwota — ${contract.contract_number}`,
+                    email: contract.user?.email || '',
+                    redirectUrl: `${window.location.origin}/strefa-klienta/umowy/${contract.id}?payment=ok`,
+                }),
+            });
+            const data = await res.json();
+            if (data.redirectUrl) {
+                window.location.href = data.redirectUrl;
+            } else {
+                alert('Błąd inicjowania płatności. Spróbuj ponownie.');
+            }
+        } catch {
+            alert('Błąd połączenia. Spróbuj ponownie.');
+        } finally {
+            setPayingType(null);
+        }
     };
 
     const banner = isPaid
@@ -362,14 +403,50 @@ function ClientDepositPanel({ contract, bank }: { contract: any; bank: any }) {
                 <div className="text-right">
                     <div className="text-[11px] uppercase tracking-widest text-gray-500 font-bold">Kwota zaliczki</div>
                     <div className={`text-2xl font-bold ${isPaid ? 'text-emerald-700' : overdue ? 'text-rose-700' : 'text-gray-900'}`}>
-                        {amount.toLocaleString('pl-PL')} PLN
+                        {depositAmount.toLocaleString('pl-PL')} PLN
                     </div>
+                    {totalPrice > 0 && (
+                        <div className="text-xs text-gray-500 mt-1">
+                            Łącznie: {totalPrice.toLocaleString('pl-PL')} PLN
+                        </div>
+                    )}
                 </div>
+            </div>
+
+            {/* PayU payment buttons */}
+            <div className="mt-4 flex flex-wrap gap-3">
+                {!isPaid && (
+                    <button
+                        onClick={() => handlePayU('deposit')}
+                        disabled={!!payingType}
+                        className="flex items-center gap-2 px-5 py-2.5 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white rounded-lg font-semibold text-sm transition-colors shadow"
+                    >
+                        {payingType === 'deposit' ? '⏳ Przekierowanie...' : `💳 Zapłać zaliczkę (${depositAmount.toLocaleString('pl-PL')} PLN)`}
+                    </button>
+                )}
+                {isPaid && remainingAmount > 0 && (
+                    <button
+                        onClick={() => handlePayU('remaining')}
+                        disabled={!!payingType}
+                        className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg font-semibold text-sm transition-colors shadow"
+                    >
+                        {payingType === 'remaining' ? '⏳ Przekierowanie...' : `💳 Zapłać resztę (${remainingAmount.toLocaleString('pl-PL')} PLN)`}
+                    </button>
+                )}
+                {!isPaid && totalPrice > 0 && (
+                    <button
+                        onClick={() => handlePayU('full')}
+                        disabled={!!payingType}
+                        className="flex items-center gap-2 px-5 py-2.5 bg-slate-700 hover:bg-slate-800 disabled:bg-gray-400 text-white rounded-lg font-semibold text-sm transition-colors shadow"
+                    >
+                        {payingType === 'full' ? '⏳ Przekierowanie...' : `💳 Zapłać całość (${totalPrice.toLocaleString('pl-PL')} PLN)`}
+                    </button>
+                )}
             </div>
 
             {!isPaid && bank?.bank_account_number && (
                 <div className="mt-4 bg-white border border-gray-200 rounded-lg p-4">
-                    <div className="text-xs uppercase tracking-widest text-gray-500 font-bold mb-3">Dane do przelewu</div>
+                    <div className="text-xs uppercase tracking-widest text-gray-500 font-bold mb-3">Lub przelew tradycyjny</div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                         <div>
                             <div className="text-[10px] uppercase text-gray-500">Numer konta</div>
