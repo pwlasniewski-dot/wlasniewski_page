@@ -28,11 +28,12 @@ export async function verifyPin(pin: string, hash: string): Promise<boolean> {
     return bcrypt.compare(pin, hash);
 }
 
-/** Zestaw emoji-awatarów dla dzieci. */
+/** Zestaw emoji-awatarów dla nastolatków (workshop participants 13–18). */
 export const KIDS_AVATARS = [
-    '🦊', '🐼', '🐨', '🦁', '🐯', '🐸', '🐙', '🦄',
-    '🐢', '🦉', '🦅', '🐝', '🐞', '🦋', '🐬', '🐳',
-    '🦖', '🦕', '🐲', '🐔', '🐧', '🦔', '🐶', '🐱',
+    '📸', '🎞️', '🎬', '🎥', '🖤', '🤍', '⚡', '🔥',
+    '🌙', '☀️', '⭐', '✨', '🌈', '🎧', '🎸', '🎹',
+    '🛹', '🏀', '⚽', '🎮', '🕹️', '🎯', '🚀', '🛰️',
+    '🌊', '🏔️', '🌋', '🌵', '🍕', '🍔', '🧋', '☕',
 ];
 
 export function pickRandomAvatar(seed?: number): string {

@@ -471,7 +471,7 @@ function MaterialsTab({ workshop, reload }: { workshop: Workshop; reload: () => 
                 headers: { Authorization: `Bearer ${token}` }, body: fd,
             });
             const j = await r.json();
-            if (!r.ok) { alert(j.error || 'B\u0142\u0105d uploadu'); return; }
+            if (!r.ok) { alert(j.error || 'Błąd uploadu'); return; }
             if (target === 'new') setNewItem({ ...newItem, image_url: j.url });
             else { const next = [...items]; next[target] = { ...next[target], image_url: j.url }; setItems(next); }
         } finally { setUploading(null); }
@@ -487,29 +487,29 @@ function MaterialsTab({ workshop, reload }: { workshop: Workshop; reload: () => 
         <div className="bg-white border border-zinc-200 rounded-xl p-6 space-y-4 shadow-sm">
             <div className="flex items-center justify-between">
                 <div>
-                    <h3 className="font-bold text-lg text-zinc-900 flex items-center gap-2"><BookOpen size={18} /> Materia\u0142y edukacyjne / powt\u00f3rki</h3>
-                    <p className="text-xs text-zinc-500 mt-0.5">Te materia\u0142y zobacz\u0105 dzieciaki w panelu w zak\u0142adce \u201ePowt\u00f3rki\u201d \u2014 mo\u017cesz wgra\u0107 grafik\u0119 (skan z ksi\u0105\u017cki, infografik\u0119, schemat).</p>
+                    <h3 className="font-bold text-lg text-zinc-900 flex items-center gap-2"><BookOpen size={18} /> Materiały edukacyjne / powtórki</h3>
+                    <p className="text-xs text-zinc-500 mt-0.5">Te materiały zobaczą dzieciaki w panelu w zakładce „Powtórki” — możesz wgrać grafikę (skan z książki, infografikę, schemat).</p>
                 </div>
                 <button onClick={() => setAdding(!adding)} className="text-rose-600 hover:text-rose-700 flex items-center gap-2 font-bold">
-                    <Plus size={16} /> Dodaj materia\u0142
+                    <Plus size={16} /> Dodaj materiał
                 </button>
             </div>
 
             {adding && (
                 <div className="space-y-2 p-4 bg-zinc-50 rounded-lg border border-zinc-200">
                     <input value={newItem.title} onChange={e => setNewItem({ ...newItem, title: e.target.value })}
-                        placeholder="Tytu\u0142 (np. Tr\u00f3jk\u0105t ekspozycji)" className="w-full border border-zinc-300 rounded px-3 py-2 text-zinc-900 font-bold" />
+                        placeholder="Tytuł (np. Trójkąt ekspozycji)" className="w-full border border-zinc-300 rounded px-3 py-2 text-zinc-900 font-bold" />
                     <textarea value={newItem.body_md} onChange={e => setNewItem({ ...newItem, body_md: e.target.value })}
-                        placeholder="Tre\u015b\u0107 (Markdown). U\u017cywaj **pogrubienia**, list 1./2./3., cytat\u00f3w >."
+                        placeholder="Treść (Markdown). Używaj **pogrubienia**, list 1./2./3., cytatów >."
                         rows={6} className="w-full border border-zinc-300 rounded px-3 py-2 text-zinc-900 text-sm font-mono" />
                     <div className="flex items-center gap-3 flex-wrap">
                         <label className="text-xs bg-amber-100 hover:bg-amber-200 text-amber-900 px-3 py-1.5 rounded font-bold cursor-pointer flex items-center gap-1">
-                            <Upload size={12} /> {newItem.image_url ? 'Zmie\u0144 grafik\u0119' : 'Wgraj grafik\u0119 (np. skan z ksi\u0105\u017cki)'}
+                            <Upload size={12} /> {newItem.image_url ? 'Zmień grafikę' : 'Wgraj grafikę (np. skan z książki)'}
                             <input type="file" accept="image/*,application/pdf" hidden
                                 onChange={e => { const f = e.target.files?.[0]; if (f) uploadImage(f, 'new'); e.target.value = ''; }} />
                         </label>
-                        {uploading === -1 && <span className="text-xs text-zinc-500">wgrywam\u2026</span>}
-                        {newItem.image_url && <a href={newItem.image_url} target="_blank" rel="noreferrer" className="text-xs text-rose-600 underline"><ImageIcon size={12} className="inline" /> podgl\u0105d</a>}
+                        {uploading === -1 && <span className="text-xs text-zinc-500">wgrywam…</span>}
+                        {newItem.image_url && <a href={newItem.image_url} target="_blank" rel="noreferrer" className="text-xs text-rose-600 underline"><ImageIcon size={12} className="inline" /> podgląd</a>}
                         <div className="ml-auto flex gap-2">
                             <button onClick={add} className="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded text-sm font-bold">Dodaj</button>
                             <button onClick={() => setAdding(false)} className="text-zinc-600 px-2">Anuluj</button>
@@ -519,26 +519,26 @@ function MaterialsTab({ workshop, reload }: { workshop: Workshop; reload: () => 
             )}
 
             {items.length === 0 ? (
-                <div className="text-zinc-500 text-center py-8">Brak materia\u0142\u00f3w. Dodaj pierwszy powy\u017cej.</div>
+                <div className="text-zinc-500 text-center py-8">Brak materiałów. Dodaj pierwszy powyżej.</div>
             ) : (
                 <div className="space-y-3">
                     {items.map((m, idx) => (
                         <div key={idx} className="bg-zinc-50 border border-zinc-200 rounded-lg p-3">
                             {editIdx === idx ? (
                                 <div className="space-y-2">
-                                    <input value={m.title || ''} onChange={e => updateField(idx, 'title', e.target.value)} className="w-full border border-zinc-300 rounded px-2 py-1.5 font-bold" />
-                                    <textarea value={m.body_md || ''} onChange={e => updateField(idx, 'body_md', e.target.value)} rows={8} className="w-full border border-zinc-300 rounded px-2 py-1.5 text-sm font-mono" />
+                                    <input value={m.title || ''} onChange={e => updateField(idx, 'title', e.target.value)} className="w-full border border-zinc-300 rounded px-2 py-1.5 font-bold text-zinc-900" />
+                                    <textarea value={m.body_md || ''} onChange={e => updateField(idx, 'body_md', e.target.value)} rows={8} className="w-full border border-zinc-300 rounded px-2 py-1.5 text-sm font-mono text-zinc-900" />
                                     <div className="flex items-center gap-3 flex-wrap">
                                         <label className="text-xs bg-amber-100 hover:bg-amber-200 text-amber-900 px-3 py-1.5 rounded font-bold cursor-pointer flex items-center gap-1">
-                                            <Upload size={12} /> {m.image_url ? 'Zmie\u0144 grafik\u0119' : 'Wgraj grafik\u0119'}
+                                            <Upload size={12} /> {m.image_url ? 'Zmień grafikę' : 'Wgraj grafikę'}
                                             <input type="file" accept="image/*,application/pdf" hidden
                                                 onChange={e => { const f = e.target.files?.[0]; if (f) uploadImage(f, idx); e.target.value = ''; }} />
                                         </label>
-                                        {uploading === idx && <span className="text-xs text-zinc-500">wgrywam\u2026</span>}
+                                        {uploading === idx && <span className="text-xs text-zinc-500">wgrywam…</span>}
                                         {m.image_url && (
                                             <>
-                                                <a href={m.image_url} target="_blank" rel="noreferrer" className="text-xs text-rose-600 underline"><ImageIcon size={12} className="inline" /> podgl\u0105d</a>
-                                                <button onClick={() => updateField(idx, 'image_url', '')} className="text-xs text-zinc-500 hover:text-rose-600">usu\u0144 grafik\u0119</button>
+                                                <a href={m.image_url} target="_blank" rel="noreferrer" className="text-xs text-rose-600 underline"><ImageIcon size={12} className="inline" /> podgląd</a>
+                                                <button onClick={() => updateField(idx, 'image_url', '')} className="text-xs text-zinc-500 hover:text-rose-600">usuń grafikę</button>
                                             </>
                                         )}
                                         <button onClick={save} className="ml-auto bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded text-sm font-bold">Zapisz</button>
@@ -558,7 +558,7 @@ function MaterialsTab({ workshop, reload }: { workshop: Workshop; reload: () => 
                                     </div>
                                     <div className="flex flex-col gap-1">
                                         <button onClick={() => setEditIdx(idx)} className="text-zinc-500 hover:text-zinc-900 p-1" title="Edytuj"><Edit2 size={14} /></button>
-                                        <button onClick={() => { if (confirm('Usun\u0105\u0107 materia\u0142?')) setItems(items.filter((_, i) => i !== idx)); }} className="text-rose-500 hover:text-rose-700 p-1" title="Usu\u0144"><Trash2 size={14} /></button>
+                                        <button onClick={() => { if (confirm('Usunąć materiał?')) setItems(items.filter((_, i) => i !== idx)); }} className="text-rose-500 hover:text-rose-700 p-1" title="Usuń"><Trash2 size={14} /></button>
                                     </div>
                                 </div>
                             )}
@@ -569,14 +569,14 @@ function MaterialsTab({ workshop, reload }: { workshop: Workshop; reload: () => 
 
             {items.length > 0 && editIdx === null && (
                 <button onClick={save} className="bg-gradient-to-r from-rose-500 to-amber-500 hover:from-rose-600 hover:to-amber-600 text-white font-bold px-4 py-2 rounded-lg flex items-center gap-2">
-                    <Save size={16} /> Zapisz materia\u0142y
+                    <Save size={16} /> Zapisz materiały
                 </button>
             )}
         </div>
     );
 }
 
-// === GALERIA ZDJ\u0118\u0106 (UCZESTNIK\u00d3W) ===
+// === GALERIA ZDJĘĆ (UCZESTNIKÓW) ===
 
 type GalleryUpload = {
     id: number; file_url: string; caption: string | null; feedback: string | null; rating: number | null; created_at: string;
@@ -618,7 +618,7 @@ function GalleryTab({ workshopId }: { workshopId: number }) {
     }
 
     async function removeUpload(id: number) {
-        if (!confirm('Usun\u0105\u0107 zdj\u0119cie uczestnika?')) return;
+        if (!confirm('Usunąć zdjęcie uczestnika?')) return;
         const token = localStorage.getItem('admin_token') || '';
         await fetch(`/api/admin/workshops/${workshopId}/uploads/${id}`, {
             method: 'DELETE', headers: { Authorization: `Bearer ${token}` },
@@ -632,7 +632,7 @@ function GalleryTab({ workshopId }: { workshopId: number }) {
     return (
         <div className="bg-white border border-zinc-200 rounded-xl p-6 shadow-sm">
             <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
-                <h3 className="font-bold text-lg text-zinc-900 flex items-center gap-2"><ImageIcon size={18} /> Galeria zdj\u0119\u0107 uczestnik\u00f3w ({items.length})</h3>
+                <h3 className="font-bold text-lg text-zinc-900 flex items-center gap-2"><ImageIcon size={18} /> Galeria zdjęć uczestników ({items.length})</h3>
                 <select value={filter} onChange={e => setFilter(e.target.value === 'all' ? 'all' : parseInt(e.target.value, 10))}
                     className="border border-zinc-300 rounded px-3 py-2 text-sm">
                     <option value="all">Wszyscy uczestnicy</option>
@@ -641,10 +641,10 @@ function GalleryTab({ workshopId }: { workshopId: number }) {
             </div>
 
             {loading ? (
-                <div className="text-center text-zinc-500 py-8">\u0141adowanie\u2026</div>
+                <div className="text-center text-zinc-500 py-8">Ładowanie…</div>
             ) : filtered.length === 0 ? (
                 <div className="text-center text-zinc-500 py-8">
-                    {items.length === 0 ? 'Uczestnicy jeszcze nie wgrali \u017cadnych zdj\u0119\u0107.' : 'Brak zdj\u0119\u0107 dla wybranego uczestnika.'}
+                    {items.length === 0 ? 'Uczestnicy jeszcze nie wgrali żadnych zdjęć.' : 'Brak zdjęć dla wybranego uczestnika.'}
                 </div>
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -658,19 +658,19 @@ function GalleryTab({ workshopId }: { workshopId: number }) {
                                     <span className="text-zinc-600">{u.participant.avatar} {u.participant.display_name || u.participant.login}</span>
                                     <span className="text-zinc-400">{new Date(u.created_at).toLocaleDateString('pl-PL')}</span>
                                 </div>
-                                {u.caption && <div className="text-sm text-zinc-700 italic">\u201e{u.caption}\u201d</div>}
+                                {u.caption && <div className="text-sm text-zinc-700 italic">„{u.caption}”</div>}
                                 {editing === u.id ? (
                                     <div className="space-y-2">
                                         <div className="flex items-center gap-1">
                                             {[1, 2, 3, 4, 5].map(n => (
                                                 <button key={n} onClick={() => setDraftRating(n)} type="button"
-                                                    className={`text-lg ${(draftRating || 0) >= n ? 'text-amber-500' : 'text-zinc-300'}`}>\u2605</button>
+                                                    className={`text-lg ${(draftRating || 0) >= n ? 'text-amber-500' : 'text-zinc-300'}`}>★</button>
                                             ))}
-                                            {draftRating !== null && <button onClick={() => setDraftRating(null)} className="text-xs text-zinc-500 ml-1">wyczy\u015b\u0107</button>}
+                                            {draftRating !== null && <button onClick={() => setDraftRating(null)} className="text-xs text-zinc-500 ml-1">wyczyść</button>}
                                         </div>
                                         <textarea value={draftFeedback} onChange={e => setDraftFeedback(e.target.value)}
-                                            placeholder="Konkretna wskaz\u00f3wka dla dzieciaka\u2026" rows={3}
-                                            className="w-full border border-zinc-300 rounded px-2 py-1.5 text-sm" />
+                                            placeholder="Konkretna wskazówka dla dzieciaka…" rows={3}
+                                            className="w-full border border-zinc-300 rounded px-2 py-1.5 text-sm text-zinc-900" />
                                         <div className="flex gap-2">
                                             <button onClick={() => saveFeedback(u.id)} className="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1 rounded text-xs font-bold">Zapisz</button>
                                             <button onClick={() => setEditing(null)} className="text-zinc-500 text-xs">Anuluj</button>
