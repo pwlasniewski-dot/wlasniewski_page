@@ -127,21 +127,14 @@ export default function AdminContractViewPage({ params }: { params: Promise<{ id
 
                     <div className="bg-white rounded-2xl shadow-sm border border-zinc-200 p-5">
                         <h2 className="font-bold text-zinc-900 mb-3 flex items-center gap-2"><Calendar className="w-4 h-4" /> Sesja</h2>
-                        {sessionDate ? (
-                            <div className="space-y-1.5 text-sm">
-                                <div className="font-semibold text-zinc-900">
-                                    {new Date(sessionDate).toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-                                </div>
-                                {sessionTime && <div className="flex items-center gap-2 text-zinc-700"><Clock className="w-3.5 h-3.5" /> {sessionTime}</div>}
-                                {sessionLocation && <div className="flex items-center gap-2 text-zinc-700"><MapPin className="w-3.5 h-3.5" /> {sessionLocation}</div>}
-                            </div>
-                        ) : (
-                            <div className="text-sm text-zinc-500">
-                                Brak daty sesji.{' '}
-                                <span className="text-amber-700">Uzupełnij ją żeby umowa pojawiła się w kalendarzu.</span>
-                                <SetSessionDateForm contractId={contract.id} token={token} onSaved={() => window.location.reload()} />
-                            </div>
-                        )}
+                        <SessionEditor
+                            contractId={contract.id}
+                            token={token}
+                            initialDate={sessionDate}
+                            initialTime={sessionTime}
+                            initialLocation={sessionLocation}
+                            onSaved={() => window.location.reload()}
+                        />
                     </div>
                 </div>
 
@@ -201,6 +194,85 @@ function SetSessionDateForm({ contractId, token, onSaved }: { contractId: number
                 className="sm:col-span-3 px-3 py-1.5 bg-amber-600 text-white text-sm font-semibold rounded disabled:opacity-50">
                 {saving ? 'Zapisywanie...' : 'Zapisz datę sesji'}
             </button>
+        </div>
+    );
+}
+
+function SessionEditor({ contractId, token, initialDate, initialTime, initialLocation, onSaved }: {
+    contractId: number; token: string;
+    initialDate: string | null; initialTime: string | null; initialLocation: string | null;
+    onSaved: () => void;
+}) {
+    const [editing, setEditing] = useState(false);
+    const [date, setDate] = useState(initialDate ? initialDate.slice(0, 10) : '');
+    const [time, setTime] = useState(initialTime || '');
+    const [location, setLocation] = useState(initialLocation || '');
+    const [saving, setSaving] = useState(false);
+
+    const save = async () => {
+        setSaving(true);
+        try {
+            const res = await fetch(`/api/admin/contracts/${contractId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify({
+                    session_date: date || null,
+                    session_time: time || null,
+                    session_location: location || null,
+                }),
+            });
+            if (res.ok) { setEditing(false); onSaved(); }
+            else alert('Błąd zapisu');
+        } finally { setSaving(false); }
+    };
+
+    if (!editing) {
+        return (
+            <div>
+                {initialDate ? (
+                    <div className="space-y-1.5 text-sm">
+                        <div className="font-semibold text-zinc-900">
+                            {new Date(initialDate).toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                        </div>
+                        {initialTime && <div className="flex items-center gap-2 text-zinc-700"><Clock className="w-3.5 h-3.5" /> {initialTime}</div>}
+                        {initialLocation && <div className="flex items-center gap-2 text-zinc-700"><MapPin className="w-3.5 h-3.5" /> {initialLocation}</div>}
+                    </div>
+                ) : (
+                    <div className="text-sm text-zinc-500 mb-2">
+                        Brak daty sesji. <span className="text-amber-700">Uzupełnij ją żeby umowa pojawiła się w kalendarzu.</span>
+                    </div>
+                )}
+                <button onClick={() => setEditing(true)}
+                    className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-xs font-semibold rounded border border-zinc-300">
+                    {initialDate ? '✎ Edytuj datę / godzinę / miejsce' : '+ Ustaw datę sesji'}
+                </button>
+            </div>
+        );
+    }
+
+    return (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <input type="date" value={date} onChange={e => setDate(e.target.value)}
+                className="px-2 py-1.5 border border-amber-300 rounded text-sm text-zinc-900 bg-white" />
+            <input type="time" value={time} onChange={e => setTime(e.target.value)}
+                className="px-2 py-1.5 border border-amber-300 rounded text-sm text-zinc-900 bg-white" />
+            <input type="text" placeholder="Lokalizacja" value={location} onChange={e => setLocation(e.target.value)}
+                className="px-2 py-1.5 border border-amber-300 rounded text-sm text-zinc-900 bg-white placeholder:text-zinc-400" />
+            <div className="sm:col-span-3 flex gap-2">
+                <button disabled={saving} onClick={save}
+                    className="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white text-sm font-semibold rounded disabled:opacity-50">
+                    {saving ? 'Zapisywanie...' : 'Zapisz'}
+                </button>
+                <button disabled={saving} onClick={() => {
+                    setEditing(false);
+                    setDate(initialDate ? initialDate.slice(0, 10) : '');
+                    setTime(initialTime || '');
+                    setLocation(initialLocation || '');
+                }}
+                    className="px-3 py-1.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-sm font-semibold rounded border border-zinc-300">
+                    Anuluj
+                </button>
+            </div>
         </div>
     );
 }
