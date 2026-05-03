@@ -89,6 +89,8 @@ export default function ContractBuilder() {
     const [showPreview, setShowPreview] = useState(true);
     const [templateKey, setTemplateKey] = useState<ContractTemplateKey>('standard');
     const [templateLocked, setTemplateLocked] = useState(false); // true gdy user ręcznie edytował treść
+    // Rozwiązany offer_id (może pojść z URL ?offer_id albo z best-offer wybranego po client_id)
+    const [resolvedOfferId, setResolvedOfferId] = useState<number | null>(offerId ? parseInt(offerId) : null);
 
     const applyTemplate = (key: ContractTemplateKey, force: boolean = false) => {
         if (!force && templateLocked) {
@@ -169,6 +171,7 @@ export default function ContractBuilder() {
             if (res.ok) {
                 const offerData = await res.json();
                 const offer = offerData.offer;
+                setResolvedOfferId(offer.id);
 
                 // Generate a draft contract number (calling our numbering service via helper endpoint if needed or client-side prediction)
                 const prefix = offer.type === 'b2b' ? 'UMW-B2B' : 'UMW-B2C';
@@ -287,11 +290,23 @@ export default function ContractBuilder() {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    offer_id: offerId ? parseInt(offerId) : null,
+                    offer_id: resolvedOfferId ?? (offerId ? parseInt(offerId) : null),
                     client_id: clientId ? parseInt(clientId) : null,
                     content: data.content,
                     deposit_amount: data.depositAmount ? parseInt(data.depositAmount, 10) : null,
                     deposit_due_at: data.depositDueDate || null,
+                    fields: {
+                        clientPhone: data.clientPhone,
+                        eventDate: data.eventDate,
+                        eventTime: data.eventTime,
+                        eventLocation: data.eventLocation,
+                        eventCount: data.eventCount,
+                        eventTeam: data.eventTeam,
+                        totalPrice: data.totalPrice,
+                        depositAmount: data.depositAmount,
+                        depositDueDate: data.depositDueDate,
+                        packageDetails: data.packageDetails,
+                    },
                 })
             });
             const result = await res.json();

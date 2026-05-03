@@ -13,6 +13,7 @@ type Contract = {
     signed_at: string | null;
     created_at: string;
     client_note: string | null;
+    content: string | null;
     session_date: string | null;
     session_time: string | null;
     session_location: string | null;
@@ -147,13 +148,18 @@ export default function AdminContractViewPage({ params }: { params: Promise<{ id
 
                 <DepositPanel contract={contract} token={token} onChanged={() => window.location.reload()} />
 
+                <ContentEditor contract={contract} token={token} onSaved={() => window.location.reload()} />
+
                 <div className="bg-white rounded-2xl shadow-sm border border-zinc-200 p-5">
                     <div className="flex items-center justify-between mb-3">
                         <h2 className="font-bold text-zinc-900">Dokument PDF</h2>
-                        <a href={pdfUrl} target="_blank" rel="noopener" download
-                            className="inline-flex items-center gap-2 px-3 py-1.5 bg-zinc-900 text-white text-sm font-semibold rounded-lg hover:bg-zinc-800">
-                            <Download className="w-4 h-4" /> Pobierz
-                        </a>
+                        <div className="flex items-center gap-2">
+                            <RegenerateButton contractId={contract.id} token={token} />
+                            <a href={pdfUrl} target="_blank" rel="noopener" download
+                                className="inline-flex items-center gap-2 px-3 py-1.5 bg-zinc-900 text-white text-sm font-semibold rounded-lg hover:bg-zinc-800">
+                                <Download className="w-4 h-4" /> Pobierz
+                            </a>
+                        </div>
                     </div>
                     <iframe src={pdfUrl} className="w-full h-[80vh] border border-zinc-200 rounded-lg" title="Umowa PDF" />
                 </div>
@@ -418,5 +424,77 @@ function DepositPanel({ contract, token, onChanged }: { contract: Contract; toke
                 )}
             </div>
         </div>
+    );
+}
+
+
+function ContentEditor({ contract, token, onSaved }: { contract: Contract; token: string; onSaved: () => void }) {
+    const [editing, setEditing] = useState(false);
+    const [text, setText] = useState(contract.content || '');
+    const [busy, setBusy] = useState(false);
+    const [msg, setMsg] = useState<string | null>(null);
+
+    const saveAndRegen = async () => {
+        setBusy(true); setMsg(null);
+        try {
+            const r1 = await fetch(`/api/admin/contracts/${contract.id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify({ content: text }),
+            });
+            if (!r1.ok) throw new Error('Zapis treści nie powiódł się');
+            setMsg('Treść zapisana, regeneruję PDF...');
+            const r2 = await fetch(`/api/admin/contracts/${contract.id}/save-s3`, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            if (!r2.ok) throw new Error('Regeneracja PDF nie powiodła się');
+            setMsg('PDF zregenerowany. Odświeżam...');
+            setTimeout(onSaved, 600);
+        } catch (e: any) { setMsg('Błąd: ' + e.message); }
+        finally { setBusy(false); }
+    };
+
+    return (
+        <div className="bg-white rounded-2xl shadow-sm border border-zinc-200 p-5 mb-4">
+            <div className="flex items-center justify-between mb-3">
+                <h2 className="font-bold text-zinc-900">Treść umowy (Markdown)</h2>
+                {!editing ? (
+                    <button onClick={() => setEditing(true)} className="px-3 py-1.5 bg-rose-600 text-white text-sm font-semibold rounded hover:bg-rose-700">✎ Edytuj treść umowy</button>
+                ) : (
+                    <div className="flex gap-2">
+                        <button disabled={busy} onClick={saveAndRegen} className="px-3 py-1.5 bg-emerald-600 text-white text-sm font-semibold rounded hover:bg-emerald-700 disabled:opacity-50">{busy ? 'Pracuję...' : '💾 Zapisz i zregeneruj PDF'}</button>
+                        <button disabled={busy} onClick={() => { setEditing(false); setText(contract.content || ''); setMsg(null); }} className="px-3 py-1.5 bg-zinc-100 text-zinc-700 text-sm font-semibold rounded hover:bg-zinc-200">Anuluj</button>
+                    </div>
+                )}
+            </div>
+            {msg && <div className="mb-2 text-sm text-zinc-700">{msg}</div>}
+            {editing ? (
+                <textarea value={text} onChange={e => setText(e.target.value)} className="w-full h-[60vh] px-3 py-2 border border-zinc-300 rounded font-mono text-xs text-zinc-900 bg-white" />
+            ) : (
+                <pre className="max-h-64 overflow-auto text-xs text-zinc-700 bg-zinc-50 border border-zinc-200 rounded p-3 whitespace-pre-wrap">{contract.content || '(brak treści)'}</pre>
+            )}
+            <p className="text-xs text-zinc-500 mt-2">Po zapisaniu treści PDF zostanie wygenerowany ponownie z Twoich zmian.</p>
+        </div>
+    );
+}
+
+
+function RegenerateButton({ contractId, token }: { contractId: number; token: string }) {
+    const [busy, setBusy] = useState(false);
+    const onClick = async () => {
+        if (!confirm('Zregenerować PDF z aktualnej treści umowy?')) return;
+        setBusy(true);
+        try {
+            const r = await fetch(`/api/admin/contracts/${contractId}/save-s3`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
+            if (!r.ok) { const j = await r.json().catch(()=>({})); throw new Error(j.details || j.error || 'Błąd'); }
+            window.location.reload();
+        } catch (e: any) { alert('Błąd: ' + e.message); }
+        finally { setBusy(false); }
+    };
+    return (
+        <button disabled={busy} onClick={onClick} className="inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-lg disabled:opacity-50">
+            {busy ? 'Generuję...' : '🔄 Zregeneruj PDF'}
+        </button>
     );
 }

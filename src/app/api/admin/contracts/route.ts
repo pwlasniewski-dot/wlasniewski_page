@@ -47,22 +47,82 @@ export async function POST(request: NextRequest) {
       // Generate final contract number
       const contract_number = await generateContractNumber(content?.includes('B2B') ? 'B2B' : 'B2C');
 
-      // --- PLACEHOLDER REPLACEMENT LOGIC ---
-      const replacePlaceholders = (text: string, context: any) => {
-        if (!text) return text;
-        return text
-          .replace(/\{\{contractNumber\}\}/g, context.contract_number || '')
-          .replace(/\{\{currentDate\}\}/g, new Date().toLocaleDateString('pl-PL'))
-          .replace(/\{\{clientName\}\}/g, context.clientName || '')
-          .replace(/\{\{clientEmail\}\}/g, context.clientEmail || '')
-          .replace(/\{\{offerTitle\}\}/g, context.offerTitle || 'Umowa Samodzielna');
-      };
+      // --- PLACEHOLDER REPLACEMENT LOGIC (FULL) ---
+      // Pull bank info from settings (single row) for transfer details
+      let settings: any = null;
+      try { settings = await (prisma as any).setting.findFirst({ where: { bank_account_number: { not: null } } }); } catch { /* ignore */ }
 
-      const replacementContext = {
-        contract_number,
+      // Build context: prefer values explicitly sent by ContractBuilder body, fallback to offer/template_data
+      const td: any = (currentOffer as any)?.template_data || {};
+      const sel: any = (currentOffer as any)?.client_selection || {};
+      const fmtDate = (v: any) => {
+        if (!v) return '';
+        const d = new Date(v);
+        if (isNaN(d.getTime())) return String(v);
+        return d.toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' });
+      };
+      const fields: Record<string, string> = body.fields || {};
+      const eventDateRaw = fields.eventDate || (currentOffer as any)?.session_date || td.eventDate;
+      const eventDate = fields.eventDate || fmtDate(eventDateRaw);
+      const eventTime = fields.eventTime
+        || (currentOffer as any)?.session_time
+        || td.eventTime
+        || td.sessionTime
+        || '';
+      const eventLocation = fields.eventLocation
+        || (currentOffer as any)?.session_location
+        || td.eventLocation
+        || td.location
+        || '';
+      const eventCount = fields.eventCount
+        || (sel.childCount ? String(sel.childCount) : '')
+        || (td.eventCount ? String(td.eventCount) : '')
+        || '';
+      const eventTeam = fields.eventTeam || td.eventTeam || '';
+      const totalPrice = fields.totalPrice
+        || (sel.totalPrice ? String(sel.totalPrice) : '')
+        || (currentOffer as any)?.total_price?.toString()
+        || '0';
+      const depositAmountStr = (depositAmount != null && !isNaN(depositAmount as number))
+        ? String(depositAmount)
+        : (fields.depositAmount || '0');
+      const depositDueDate = depositDueAt
+        ? new Date(depositDueAt).toLocaleDateString('pl-PL')
+        : (fields.depositDueDate ? fmtDate(fields.depositDueDate) : '');
+      const packageDetails = fields.packageDetails || '';
+      const workshopPlan = fields.workshopPlan || '';
+
+      const replacementContext: Record<string, string> = {
+        contractNumber: contract_number,
+        currentDate: new Date().toLocaleDateString('pl-PL'),
         clientName: targetUser?.name || currentOffer?.client_email || 'Kliencie',
         clientEmail: targetUser?.email || currentOffer?.client_email || '',
-        offerTitle: currentOffer?.title || 'Umowa Samodzielna'
+        clientPhone: (targetUser as any)?.phone || fields.clientPhone || '',
+        clientAddress: fields.clientAddress || '',
+        offerTitle: currentOffer?.title || 'Umowa Samodzielna',
+        eventDate: eventDate || '',
+        eventTime: eventTime || '',
+        eventLocation: eventLocation || '',
+        eventCount: eventCount || '',
+        eventTeam: eventTeam || '',
+        totalPrice: totalPrice,
+        depositAmount: depositAmountStr,
+        depositDueDate: depositDueDate,
+        deliveryDays: fields.deliveryDays || '21',
+        packageDetails: packageDetails,
+        workshopPlan: workshopPlan,
+        bankAccount: settings?.bank_account_number || '',
+        bankHolder: settings?.bank_account_holder || 'FOTO-DRON Przemysław Właśniewski',
+        bankName: settings?.bank_name || '',
+      };
+
+      const replacePlaceholders = (text: string, ctx: Record<string, string>) => {
+        if (!text) return text;
+        return text.replace(/\{\{(\w+)\}\}/g, (_m, k) => {
+          const v = ctx[k];
+          if (v === undefined || v === null || v === '') return '';
+          return String(v);
+        });
       };
 
       const finalContent = replacePlaceholders(content, replacementContext);

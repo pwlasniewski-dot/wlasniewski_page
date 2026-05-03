@@ -46,9 +46,10 @@ export async function PATCH(
             const contractId = parseInt(params.id);
             const body = await req.json();
             const { session_date, session_time, session_location, photographer_id, status, client_note,
-                deposit_amount, deposit_due_at, deposit_paid_at, deposit_note } = body;
+                deposit_amount, deposit_due_at, deposit_paid_at, deposit_note, content } = body;
 
             const data: Record<string, unknown> = {};
+            if (content !== undefined) data.content = content;
             if (session_date !== undefined) data.session_date = session_date ? new Date(session_date) : null;
             if (session_time !== undefined) data.session_time = session_time;
             if (session_location !== undefined) data.session_location = session_location;

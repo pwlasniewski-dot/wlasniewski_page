@@ -7,8 +7,10 @@
  *   {{clientName}}, {{clientEmail}}, {{clientPhone}}, {{clientAddress}}
  *   {{eventDate}}, {{eventTime}}, {{eventLocation}}, {{eventCount}}, {{eventTeam}}
  *   {{offerTitle}}, {{packageDetails}}, {{totalPrice}}
+ *   {{depositAmount}}, {{depositDueDate}}
  *   {{workshopPlan}}  (tylko warsztaty)
  *   {{deliveryDays}}  (np. ile dni na oddanie)
+ *   {{bankAccount}}, {{bankHolder}}, {{bankName}} (dane do przelewu z ustawień)
  */
 
 export type ContractTemplateKey =
@@ -55,6 +57,7 @@ const HEADER = (title: string) => `# ${title}
 
 ## STRONY UMOWY
 **Wykonawca:** FOTO-DRON Przemysław Właśniewski, ul. Szeroka 1, 87-100 Toruń, NIP: 8781430365
+Numer konta ({{bankName}}): **{{bankAccount}}** — odbiorca: {{bankHolder}}
 **Zleceniodawca:** {{clientName}}
 E-mail: {{clientEmail}} · Tel.: {{clientPhone}}
 `;
