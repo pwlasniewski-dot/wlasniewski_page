@@ -177,6 +177,23 @@ export default function ContractSigningPage({ params }: { params: Promise<{ id: 
                     <ClientDepositPanel contract={contract} bank={bank} />
                 )}
 
+                {/* Sticky sign action — na samej górze, żeby klient nie musiał scrollować */}
+                {contract.status !== 'signed' && (
+                    <div className="bg-amber-50 border-b-2 border-amber-300 px-6 py-4 flex flex-wrap items-center justify-between gap-3">
+                        <div className="flex items-center gap-2">
+                            <span className="text-amber-700 text-lg">✍️</span>
+                            <p className="text-sm text-amber-900 font-semibold">Umowa oczekuje na Twój podpis</p>
+                        </div>
+                        <button
+                            onClick={handleSign}
+                            disabled={signing}
+                            className="px-6 py-2.5 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-bold rounded-lg text-sm transition-colors shadow"
+                        >
+                            {signing ? 'Przetwarzanie...' : '✓ PODPISZ UMOWĘ'}
+                        </button>
+                    </div>
+                )}
+
                 <div className="p-8">
                     <div className="prose max-w-none mb-8 font-serif whitespace-pre-wrap text-black">
                         {contract.content}
@@ -192,21 +209,9 @@ export default function ContractSigningPage({ params }: { params: Promise<{ id: 
                                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-black placeholder-gray-500 mb-6 font-sans text-sm"
                                 rows={4}
                             />
-                            <p className="text-xs text-gray-500 mb-6">Twoja notatka będzie widoczna dla fotografa po podpisaniu umowy.</p>
+                            <p className="text-xs text-gray-500 mb-6">Twoja notatka będzie widoczna dla fotografa po podpisaniu umowy. Pamiętaj, aby zapisać notatkę PRZED kliknięciem &quot;Podpisz umowę&quot; na górze strony.</p>
 
-                            <h3 className="text-lg font-bold mb-4 text-black">Podpis</h3>
-                            <p className="text-sm text-gray-600 mb-4">
-                                Klikając &quot;Podpisz umowę&quot;, potwierdzasz przeczytanie i akceptację powyższych warunków.
-                            </p>
-                            <button
-                                onClick={handleSign}
-                                disabled={signing}
-                                className="w-full sm:w-auto px-8 py-4 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 disabled:bg-gray-400 transition-colors"
-                            >
-                                {signing ? 'Przetwarzanie...' : '✍️ PODPISZ UMOWĘ'}
-                            </button>
-
-                            <div className="mt-6 pt-6 border-t border-gray-200">
+                            <div className="pt-6 border-t border-gray-200">
                                 <h3 className="text-lg font-bold mb-3 text-black">Lub wgraj podpisany dokument</h3>
                                 <p className="text-sm text-gray-600 mb-4">
                                     Wydrukuj umowę, podpisz odręcznie, zeskanuj lub zrób zdjęcie i wgraj poniżej (PDF, JPEG lub PNG, max 20MB).
@@ -424,7 +429,7 @@ function ClientDepositPanel({ contract, bank }: { contract: any; bank: any }) {
             </div>
 
             {/* PayU payment buttons */}
-            <div className="mt-4 flex flex-wrap gap-3">
+            <div className="mt-4 flex flex-wrap gap-3 items-center">
                 {!isPaid && (
                     <button
                         onClick={() => handlePayU('deposit')}
@@ -440,19 +445,31 @@ function ClientDepositPanel({ contract, bank }: { contract: any; bank: any }) {
                         disabled={!!payingType}
                         className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg font-semibold text-sm transition-colors shadow"
                     >
-                        {payingType === 'remaining' ? '⏳ Przekierowanie...' : `💳 Zapłać resztę (${remainingAmount.toLocaleString('pl-PL')} PLN)`}
+                        {payingType === 'remaining' ? '⏳ Przekierowanie...' : `💳 Zapłać pozostałą kwotę (${remainingAmount.toLocaleString('pl-PL')} PLN)`}
                     </button>
                 )}
                 {!isPaid && totalPrice > 0 && (
                     <button
                         onClick={() => handlePayU('full')}
                         disabled={!!payingType}
-                        className="flex items-center gap-2 px-5 py-2.5 bg-slate-700 hover:bg-slate-800 disabled:bg-gray-400 text-white rounded-lg font-semibold text-sm transition-colors shadow"
+                        className="text-xs text-gray-600 hover:text-gray-900 underline underline-offset-2 disabled:text-gray-400"
+                        title="Opłać całą kwotę jednorazowo zamiast zaliczki + dopłaty"
                     >
-                        {payingType === 'full' ? '⏳ Przekierowanie...' : `💳 Zapłać całość (${totalPrice.toLocaleString('pl-PL')} PLN)`}
+                        {payingType === 'full' ? 'Przekierowanie...' : `lub zapłać całość (${totalPrice.toLocaleString('pl-PL')} PLN)`}
                     </button>
                 )}
             </div>
+
+            {/* Pozostało do zapłaty po wpłacie zaliczki */}
+            {isPaid && remainingAmount > 0 && (
+                <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center justify-between">
+                    <div>
+                        <div className="text-[10px] uppercase tracking-widest text-blue-700 font-bold">Pozostało do zapłaty</div>
+                        <div className="text-xs text-blue-900 mt-1">Płatne w dniu wydarzenia lub po wydaniu materiałów</div>
+                    </div>
+                    <div className="text-2xl font-bold text-blue-900">{remainingAmount.toLocaleString('pl-PL')} PLN</div>
+                </div>
+            )}
 
             {!isPaid && bank?.bank_account_number && (
                 <div className="mt-4 bg-white border border-gray-200 rounded-lg p-4">

@@ -15,6 +15,6 @@ p.contract.findUnique({
   console.log('deposit_due_at:', c.deposit_due_at);
   console.log('deposit_paid_at:', c.deposit_paid_at);
   console.log('created_at:', c.created_at);
-  console.log('--- CONTENT (first 1500 chars) ---');
-  console.log((c.content || '').slice(0, 1500));
+  console.log('--- CONTENT (last 2000 chars) ---');
+  console.log((c.content || '').slice(-2000));
 }).finally(() => p.$disconnect());

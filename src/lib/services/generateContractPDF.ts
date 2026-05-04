@@ -100,10 +100,19 @@ export async function generateContractPDFBuffer(
                         continue;
                     }
 
-                    // Detect two-column signature: "Wykonawca: ..." followed by "Zleceniodawca: ..."
+                    // Detect two-column SIGNATURE row only: both lines must look like
+                    // signature placeholders (contain dot-fillers "....." or underscores).
+                    // This prevents false positives in "STRONY UMOWY" section.
                     const plain = stripBold(trimmed);
                     const nextPlain = i + 1 < lines.length ? stripBold(lines[i + 1].trim()) : '';
-                    if (plain.startsWith('Wykonawca:') && nextPlain.startsWith('Zleceniodawca:')) {
+                    const looksLikeSignatureLine = (s: string) =>
+                        /\.{5,}|_{5,}/.test(s) || /\(podpis\)/i.test(s);
+                    if (
+                        plain.startsWith('Wykonawca:') &&
+                        nextPlain.startsWith('Zleceniodawca:') &&
+                        looksLikeSignatureLine(plain) &&
+                        looksLikeSignatureLine(nextPlain)
+                    ) {
                         doc.moveDown(0.5);
                         const y = doc.y;
                         doc.font('Montserrat', 10).fillColor('#1F2937');
