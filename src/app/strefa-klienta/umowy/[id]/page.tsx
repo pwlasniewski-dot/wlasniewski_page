@@ -32,6 +32,15 @@ export default function ContractSigningPage({ params }: { params: Promise<{ id: 
         }
     }, [contractId]);
 
+    // Auto-refresh: pick up payment confirmation from PayU webhook without manual reload
+    useEffect(() => {
+        if (!contractId) return;
+        const iv = setInterval(() => {
+            if (document.visibilityState === 'visible') fetchContract();
+        }, 15000);
+        return () => clearInterval(iv);
+    }, [contractId]);
+
     const fetchContract = async () => {
         try {
             const token = localStorage.getItem('client_token') || localStorage.getItem('user_token') || localStorage.getItem('admin_token');

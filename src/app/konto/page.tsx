@@ -70,7 +70,7 @@ export default function AccountPage() {
         }
 
         if (token) {
-            async function fetchData() {
+            const fetchData = async (silent: boolean = false) => {
                 try {
                     const [userRes, challengeRes, galleriesRes, fmRes, fmSettingsRes] = await Promise.all([
                         fetch('/api/user/me', { headers: { 'Authorization': `Bearer ${token}` } }),
@@ -125,12 +125,18 @@ export default function AccountPage() {
                         setFotoMatchEnabled(!!data.enabled);
                     }
                 } catch (e) {
-                    console.error(e);
+                    if (!silent) console.error(e);
                 } finally {
-                    setLoading(false);
+                    if (!silent) setLoading(false);
                 }
-            }
+            };
             fetchData();
+
+            // Live refresh — wykrywa nowe umowy/oferty i zmiany statusu zaliczki bez F5
+            const iv = setInterval(() => {
+                if (document.visibilityState === 'visible') fetchData(true);
+            }, 30000);
+            return () => clearInterval(iv);
         }
     }, [token, authLoading, router]);
 

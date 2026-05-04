@@ -217,9 +217,17 @@ function ClientDetailsContent({ id }: { id: string }) {
         fetchClientDetails();
     }, [id]);
 
-    const fetchClientDetails = async () => {
+    // Live refresh: poll every 30s to pick up automatic status updates (e.g. PayU webhook marking deposit as paid)
+    useEffect(() => {
+        const iv = setInterval(() => {
+            if (document.visibilityState === 'visible') fetchClientDetails(true);
+        }, 30000);
+        return () => clearInterval(iv);
+    }, [id]);
+
+    const fetchClientDetails = async (silent: boolean = false) => {
         try {
-            setLoading(true);
+            if (!silent) setLoading(true);
             const token = localStorage.getItem('admin_token');
             const res = await fetch(`/api/admin/clients/${id}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
