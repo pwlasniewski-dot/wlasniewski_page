@@ -45,6 +45,13 @@ export async function GET(
                         client_email: true,
                         type: true,
                     }
+                },
+                user: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                    }
                 }
             }
         });

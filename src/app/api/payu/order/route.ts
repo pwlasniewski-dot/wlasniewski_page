@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
         const {
             amount, // in grosze
             description,
-            email,
+            email: emailFromBody,
             challengeId,
             bookingId,
             contractId,  // NEW: for contract payments
@@ -17,8 +17,24 @@ export async function POST(request: NextRequest) {
             redirectUrl
         } = body;
 
+        // Resolve email: body → contract.user → contract.offer.client_email
+        let email = emailFromBody;
+        if (!email && contractId) {
+            const c = await prisma.contract.findUnique({
+                where: { id: Number(contractId) },
+                include: {
+                    user: { select: { email: true } },
+                    offer: { select: { client_email: true } },
+                },
+            }).catch(() => null);
+            email = c?.user?.email || c?.offer?.client_email || '';
+        }
+
         if (!amount || !email) {
-            return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+            return NextResponse.json(
+                { error: "Missing required fields", missing: { amount: !amount, email: !email } },
+                { status: 400 }
+            );
         }
 
         // Get Client IP

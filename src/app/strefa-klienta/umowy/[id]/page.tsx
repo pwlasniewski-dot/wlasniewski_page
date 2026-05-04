@@ -368,7 +368,7 @@ function ClientDepositPanel({ contract, bank }: { contract: any; bank: any }) {
                         : type === 'remaining'
                         ? `Dopłata — ${contract.contract_number}`
                         : `Pełna kwota — ${contract.contract_number}`,
-                    email: contract.user?.email || '',
+                    email: contract.user?.email || contract.offer?.client_email || '',
                     redirectUrl: `${window.location.origin}/strefa-klienta/umowy/${contract.id}?payment=ok`,
                 }),
             });
@@ -376,7 +376,8 @@ function ClientDepositPanel({ contract, bank }: { contract: any; bank: any }) {
             if (data.redirectUrl) {
                 window.location.href = data.redirectUrl;
             } else {
-                alert('Błąd inicjowania płatności. Spróbuj ponownie.');
+                console.error('[PayU] Init failed:', data);
+                alert(`Błąd inicjowania płatności: ${data.error || 'Nieznany błąd'}. Spróbuj ponownie lub skontaktuj się z fotografem.`);
             }
         } catch {
             alert('Błąd połączenia. Spróbuj ponownie.');
