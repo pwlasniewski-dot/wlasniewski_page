@@ -119,11 +119,23 @@ export async function POST(request: Request) {
                 // Frontend wysyła m.in. `hours`, `originalPrice`, `photographer_name`,
                 // `pricing_mode` itp. — one nie istnieją w schemacie i wywalały całe checkout (500).
                 const md = (item.metadata || {}) as Record<string, any>;
+                // Date musi być ISO-8601 DateTime — frontend często wysyła "2026-05-01" (samo YYYY-MM-DD)
+                let bookingDate: Date | undefined;
+                if (md.date) {
+                    const raw = String(md.date);
+                    // doklejamy czas startu sesji albo północ, żeby Prisma przyjęła
+                    const isoCandidate = raw.includes('T') ? raw : `${raw}T${md.start_time || '00:00'}:00`;
+                    const d = new Date(isoCandidate);
+                    if (!isNaN(d.getTime())) bookingDate = d;
+                }
+                if (!bookingDate) {
+                    return NextResponse.json({ ok: false, message: "Brak lub nieprawidłowa data rezerwacji." }, { status: 400 });
+                }
                 const allowedBookingFields: Record<string, any> = {
                     service: md.service,
                     package: md.package,
                     price: md.price ?? item.price,
-                    date: md.date,
+                    date: bookingDate,
                     start_time: md.start_time ?? null,
                     end_time: md.end_time ?? null,
                     venue_city: md.venue_city ?? null,
