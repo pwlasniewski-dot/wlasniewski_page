@@ -18,6 +18,13 @@ export const brandColors = {
   green: '#4ade80',
 };
 
+// Formatuje kwotę (złote, może być float) na polski format „500,00 zł”
+function formatPLN(value: number | string | null | undefined): string {
+  const n = typeof value === 'number' ? value : parseFloat(String(value ?? 0));
+  if (!isFinite(n)) return '0,00 zł';
+  return n.toLocaleString('pl-PL', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' zł';
+}
+
 // baseStyles eksportowane dla sender.ts (challenge templates)
 export const baseStyles = `
     body { margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; background-color: #0a0a0a; }
@@ -386,8 +393,8 @@ export function generateClientEmail(data: BookingEmailData): string {
           ${data.giftCardCode ? detailRow('🎁 Karta podarunkowa', data.giftCardCode) : ''}
         </table>
         <div style="margin-top:16px;padding-top:16px;border-top:1px solid #2a2a2a;text-align:right;">
-          ${hasDiscount ? `<span style="color:#555;text-decoration:line-through;font-size:14px;margin-right:12px;">${data.originalPrice} zł</span>` : ''}
-          <span style="color:#c5a059;font-size:28px;font-weight:700;">${data.price} zł</span>
+          ${hasDiscount ? `<span style="color:#555;text-decoration:line-through;font-size:14px;margin-right:12px;">${formatPLN(data.originalPrice)}</span>` : ''}
+          <span style="color:#c5a059;font-size:28px;font-weight:700;">${formatPLN(data.price)}</span>
         </div>
       `)}
 
@@ -476,15 +483,15 @@ export function generateAdminEmail(data: BookingEmailData): string {
       ${(hasDiscount || data.promoCode || data.giftCardCode) ? infoBox(`
         <div style="color:#fbbf24;font-size:11px;text-transform:uppercase;letter-spacing:2px;margin-bottom:16px;">💰 Płatność</div>
         <table width="100%" cellpadding="0" cellspacing="0">
-          ${data.originalPrice ? detailRow('Cena bazowa', `${data.originalPrice} zł`) : ''}
+          ${data.originalPrice ? detailRow('Cena bazowa', formatPLN(data.originalPrice)) : ''}
           ${data.promoCode ? detailRow('🏷️ Kod rabatowy', data.promoCode) : ''}
           ${data.giftCardCode ? detailRow('🎁 Karta podarunkowa', data.giftCardCode) : ''}
-          ${detailRow('SUMA', `<span style="color:#4ade80;font-size:20px;font-weight:700;">${data.price} zł</span>`)}
+          ${detailRow('SUMA', `<span style="color:#4ade80;font-size:20px;font-weight:700;">${formatPLN(data.price)}</span>`)}
         </table>
       `, 'rgba(251,191,36,0.25)') : `
         <div style="text-align:center;padding:20px;background:#1a1a1a;border-radius:10px;margin:24px 0;">
           <div style="color:#888;font-size:11px;text-transform:uppercase;letter-spacing:2px;">Kwota do zapłaty</div>
-          <div style="color:#4ade80;font-size:36px;font-weight:700;margin-top:6px;">${data.price} zł</div>
+          <div style="color:#4ade80;font-size:36px;font-weight:700;margin-top:6px;">${formatPLN(data.price)}</div>
         </div>
       `}
 

@@ -10,6 +10,12 @@ export async function sendBookingConfirmationEmail(booking: Booking) {
         day: 'numeric'
     });
 
+    // booking.price jest w groszach — mail musi pokazać złote
+    const priceZl = Number(booking.price) / 100;
+    // techniczne notatki webhooka („Paid via PayU …”) nie są dla klienta
+    const internalNote = booking.notes && /^Paid via PayU/i.test(booking.notes);
+    const clientNotes = internalNote ? undefined : (booking.notes || undefined);
+
     const emailData = {
         clientName: booking.client_name,
         service: booking.service,
@@ -17,10 +23,10 @@ export async function sendBookingConfirmationEmail(booking: Booking) {
         date: formattedDate,
         time: booking.start_time ? (booking.end_time ? `${booking.start_time} - ${booking.end_time}` : booking.start_time) : undefined,
         location: booking.venue_city ? (booking.venue_place ? `${booking.venue_city}, ${booking.venue_place}` : booking.venue_city) : undefined,
-        price: Number(booking.price),
+        price: priceZl,
         promoCode: booking.promo_code || undefined,
         giftCardCode: booking.gift_card_code || undefined,
-        notes: booking.notes || undefined,
+        notes: clientNotes,
         phone: booking.phone || undefined,
         email: booking.email,
     };
