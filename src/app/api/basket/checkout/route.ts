@@ -115,9 +115,32 @@ export async function POST(request: Request) {
                 if (voucherRef) {
                     extraBookingFields.fm_voucher_code = String(fm_voucher_code).trim().toUpperCase();
                 }
+                // Whitelist tylko pól które naprawdę istnieją w modelu Booking.
+                // Frontend wysyła m.in. `hours`, `originalPrice`, `photographer_name`,
+                // `pricing_mode` itp. — one nie istnieją w schemacie i wywalały całe checkout (500).
+                const md = (item.metadata || {}) as Record<string, any>;
+                const allowedBookingFields: Record<string, any> = {
+                    service: md.service,
+                    package: md.package,
+                    price: md.price ?? item.price,
+                    date: md.date,
+                    start_time: md.start_time ?? null,
+                    end_time: md.end_time ?? null,
+                    venue_city: md.venue_city ?? null,
+                    venue_place: md.venue_place ?? null,
+                    notes: md.notes ?? null,
+                    promo_code: md.promo_code ?? null,
+                    gift_card_code: md.gift_card_code ?? null,
+                    challenge_id: md.challenge_id ?? null,
+                    photographer_id: md.photographer_id ?? null,
+                };
+                // usuń undefined żeby Prisma nie nadpisała defaultów
+                Object.keys(allowedBookingFields).forEach(k => {
+                    if (allowedBookingFields[k] === undefined) delete allowedBookingFields[k];
+                });
                 const booking = await prisma.booking.create({
                     data: {
-                        ...item.metadata,
+                        ...allowedBookingFields,
                         ...extraBookingFields,
                         status: 'pending',
                         email: customer.email,
