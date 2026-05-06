@@ -33,6 +33,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         };
     }
 
+    // City landing pages use rich metadata from the CityLandingPage component
+    if (page.page_type === 'city_landing') {
+        return cityGenerateMetadata({ params: Promise.resolve({ city: slug.replace('fotograf-', '') }) });
+    }
+
     return {
         title: page.meta_title || page.title,
         description: page.meta_description,
@@ -62,9 +67,14 @@ export default async function DynamicPage({ params }: PageProps) {
         notFound();
     }
 
+    // Delegate city landing pages to the rich CityLandingPage component
+    if (page!.page_type === 'city_landing') {
+        return CityLandingPage({ params: Promise.resolve({ city: slug.replace('fotograf-', '') }) });
+    }
+
     // Redirect B2B pages to their proper path
-    if (page.page_type === 'b2b') {
-        redirect(`/b2b/${page.slug.toLowerCase()}`);
+    if (page!.page_type === 'b2b') {
+        redirect(`/b2b/${page!.slug.toLowerCase()}`);
     }
 
     // Intelligent Content Merging Strategy (Zero Loss Protocol)
