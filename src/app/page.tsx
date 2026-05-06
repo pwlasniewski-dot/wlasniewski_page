@@ -134,14 +134,24 @@ export default async function HomePage() {
     }
     const heroSliderInterval = intervalSetting?.setting_value ? parseInt(intervalSetting.setting_value) : 6000;
 
+    // SEO: deterministic SSR <h1> — guarantees Google sees the primary heading
+    // even when first section uses h2 (magazine_layout, narrative_text, etc.)
+    const heroSection = orderedSections.find((s: any) => s?.type === 'hero' && (s.image || s.data?.image));
+    const seoH1 = (heroSection?.title || heroSection?.data?.title) ||
+                  'Fotograf Toruń — Przemysław Właśniewski. Sesje rodzinne, ślubne i komunijne';
+
     return (
-        <HomeContent
-            heroSlides={heroSlides}
-            sections={sections}
-            homeData={homeData}
-            orderedSections={orderedSections}
-            testimonials={testimonials}
-            heroSliderInterval={heroSliderInterval}
-        />
+        <>
+            {/* Visually hidden but indexed by search engines */}
+            <h1 className="sr-only">{seoH1}</h1>
+            <HomeContent
+                heroSlides={heroSlides}
+                sections={sections}
+                homeData={homeData}
+                orderedSections={orderedSections}
+                testimonials={testimonials}
+                heroSliderInterval={heroSliderInterval}
+            />
+        </>
     );
 }

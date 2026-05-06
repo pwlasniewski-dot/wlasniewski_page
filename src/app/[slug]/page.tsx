@@ -86,6 +86,11 @@ export default async function DynamicPage({ params }: PageProps) {
 
     return (
         <main className="min-h-screen bg-zinc-950 text-white selection:bg-gold-400 selection:text-black">
+            {/* SEO: deterministic SSR <h1> — PageRenderer renders h1 only for 'hero' sections.
+                Pages built from magazine/image_text/rich_text would otherwise have no h1. */}
+            {!sections.some((s: any) => s?.type === 'hero' || s?.type === 'hero_slider') && (
+                <h1 className="sr-only">{page.title}</h1>
+            )}
             <PageRenderer sections={sections} />
         </main>
     );
