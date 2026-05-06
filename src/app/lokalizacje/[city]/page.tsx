@@ -1,8 +1,7 @@
-"use client";
-
 import React from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { Metadata } from "next";
+import { notFound } from "next/navigation";
 
 const cityData: Record<string, { title: string; subtitle: string; tag: string; content: string[] }> = {
     torun: {
@@ -85,22 +84,27 @@ const cityData: Record<string, { title: string; subtitle: string; tag: string; c
     }
 };
 
-export default function CityPage() {
-    const params = useParams();
-    const city = params.city as string;
+interface PageProps {
+    params: Promise<{ city: string }>;
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+    const { city } = await params;
+    const data = cityData[city];
+    if (!data) return { title: 'Strona nie znaleziona' };
+    return {
+        title: `${data.title} | Przemysław Właśniewski — Fotograf`,
+        description: data.content[0]?.slice(0, 160) || '',
+        alternates: { canonical: `https://wlasniewski.pl/lokalizacje/${city}` },
+    };
+}
+
+export default async function CityPage({ params }: PageProps) {
+    const { city } = await params;
     const data = cityData[city];
 
     if (!data) {
-        return (
-            <main className="min-h-screen bg-white flex items-center justify-center">
-                <div className="text-center">
-                    <h1 className="text-4xl font-bold text-zinc-900 mb-4">Miasto nie znalezione</h1>
-                    <Link href="/" className="text-amber-500 hover:text-amber-600">
-                        ← Powrót na stronę główną
-                    </Link>
-                </div>
-            </main>
-        );
+        notFound();
     }
 
     return (

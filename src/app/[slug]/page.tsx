@@ -3,6 +3,7 @@ import prisma from '@/lib/db/prisma';
 import PageRenderer from '@/components/PageRenderer';
 import { Metadata } from 'next';
 import { PageSection } from '@/components/admin/PageBuilder';
+import CityLandingPage, { generateMetadata as cityGenerateMetadata } from '@/app/fotograf-[city]/page';
 
 interface PageProps {
     params: Promise<{ slug: string }>;
@@ -23,6 +24,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     const page = await getPage(slug);
 
     if (!page) {
+        // Delegate to city landing metadata if this is a fotograf-{city} URL
+        if (slug.startsWith('fotograf-')) {
+            return cityGenerateMetadata({ params: Promise.resolve({ city: slug.replace('fotograf-', '') }) });
+        }
         return {
             title: 'Strona nie znaleziona',
         };
@@ -50,6 +55,10 @@ export default async function DynamicPage({ params }: PageProps) {
     const page = await getPage(slug);
 
     if (!page) {
+        // Delegate to city landing page if this is a fotograf-{city} URL
+        if (slug.startsWith('fotograf-')) {
+            return CityLandingPage({ params: Promise.resolve({ city: slug.replace('fotograf-', '') }) });
+        }
         notFound();
     }
 
@@ -104,7 +113,7 @@ export default async function DynamicPage({ params }: PageProps) {
                             '@type': 'LocalBusiness',
                             name: 'Przemysław Właśniewski — Fotografia',
                             url: 'https://wlasniewski.pl',
-                            telephone: '+48 663 928 666',
+                            telephone: '+48530788694',
                             address: {
                                 '@type': 'PostalAddress',
                                 addressLocality: 'Toruń',

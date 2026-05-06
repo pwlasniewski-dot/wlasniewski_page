@@ -256,7 +256,15 @@ export default async function RootLayout({
                                             { "@type": "City", "name": "Bydgoszcz" },
                                             { "@type": "City", "name": "Świecie" },
                                             { "@type": "City", "name": "Lisewo" },
-                                            { "@type": "City", "name": "Płużnica" }
+                                            { "@type": "City", "name": "Płużnica" },
+                                            { "@type": "City", "name": "Brodnica" },
+                                            { "@type": "City", "name": "Inowrocław" },
+                                            { "@type": "City", "name": "Mogilno" },
+                                            { "@type": "City", "name": "Nakło nad Notecią" },
+                                            { "@type": "City", "name": "Golub-Dobrzyń" },
+                                            { "@type": "City", "name": "Kowalewo Pomorskie" },
+                                            { "@type": "City", "name": "Rypin" },
+                                            { "@type": "AdministrativeArea", "name": "województwo kujawsko-pomorskie" }
                                         ],
                                         "openingHoursSpecification": {
                                             "@type": "OpeningHoursSpecification",
