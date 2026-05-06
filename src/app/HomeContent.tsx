@@ -999,6 +999,38 @@ export default function HomeContent({ heroSlides, sections, homeData, orderedSec
             {/* Dynamic Sections */}
             {sections.map(section => renderSection(section))}
 
+            {/* SEO: internal links to landing pages — descriptive anchor text helps Google
+                map keywords ("fotograf toruń", "sesja rodzinna") to dedicated pages. */}
+            <section className="py-16 px-6 bg-zinc-950 border-t border-white/5">
+                <div className="container mx-auto max-w-5xl">
+                    <h2 className="text-2xl md:text-3xl font-bold text-white mb-8 text-center font-display">
+                        Sprawdź ofertę dla Ciebie
+                    </h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <Link href="/fotograf-torun" className="group block p-5 bg-zinc-900/50 hover:bg-zinc-900 border border-white/5 hover:border-gold-500/30 rounded-lg transition-all">
+                            <div className="text-gold-400 text-xs font-bold tracking-widest uppercase mb-2">Lokalnie</div>
+                            <div className="text-white font-semibold mb-1 group-hover:text-gold-300 transition-colors">Fotograf Toruń</div>
+                            <p className="text-sm text-zinc-400">Profesjonalne sesje zdjęciowe w Toruniu i okolicach.</p>
+                        </Link>
+                        <Link href="/sesja-rodzinna" className="group block p-5 bg-zinc-900/50 hover:bg-zinc-900 border border-white/5 hover:border-gold-500/30 rounded-lg transition-all">
+                            <div className="text-gold-400 text-xs font-bold tracking-widest uppercase mb-2">Rodzina</div>
+                            <div className="text-white font-semibold mb-1 group-hover:text-gold-300 transition-colors">Sesje rodzinne Toruń</div>
+                            <p className="text-sm text-zinc-400">Naturalne zdjęcia rodzinne — plener, dom, studio.</p>
+                        </Link>
+                        <Link href="/slub" className="group block p-5 bg-zinc-900/50 hover:bg-zinc-900 border border-white/5 hover:border-gold-500/30 rounded-lg transition-all">
+                            <div className="text-gold-400 text-xs font-bold tracking-widest uppercase mb-2">Ślub</div>
+                            <div className="text-white font-semibold mb-1 group-hover:text-gold-300 transition-colors">Fotograf ślubny</div>
+                            <p className="text-sm text-zinc-400">Reportaż ślubny pełen emocji, bez sztywnego pozowania.</p>
+                        </Link>
+                        <Link href="/portfolio" className="group block p-5 bg-zinc-900/50 hover:bg-zinc-900 border border-white/5 hover:border-gold-500/30 rounded-lg transition-all">
+                            <div className="text-gold-400 text-xs font-bold tracking-widest uppercase mb-2">Praca</div>
+                            <div className="text-white font-semibold mb-1 group-hover:text-gold-300 transition-colors">Portfolio</div>
+                            <p className="text-sm text-zinc-400">Wybrane realizacje — sesje, śluby, reportaże.</p>
+                        </Link>
+                    </div>
+                </div>
+            </section>
+
             {/* CTA Section and Contact Form */}
             <section className="py-24 px-6 bg-gradient-to-br from-zinc-900 via-black to-zinc-900 border-t border-white/5 relative overflow-hidden group">
                 <div className="absolute inset-0 bg-[url('/noise.png')] opacity-20 mix-blend-overlay" />

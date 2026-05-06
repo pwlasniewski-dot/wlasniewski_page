@@ -91,6 +91,40 @@ export default async function DynamicPage({ params }: PageProps) {
             {!sections.some((s: any) => s?.type === 'hero' || s?.type === 'hero_slider') && (
                 <h1 className="sr-only">{page.title}</h1>
             )}
+            {/* Schema.org Service — gives Google explicit understanding that this is a service page
+                offered locally in Toruń, increasing relevance for "fotograf [usługa] toruń" queries. */}
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{
+                    __html: JSON.stringify({
+                        '@context': 'https://schema.org',
+                        '@type': 'Service',
+                        name: page.meta_title || page.title,
+                        description: page.meta_description || undefined,
+                        url: `https://wlasniewski.pl/${slug}`,
+                        provider: {
+                            '@type': 'LocalBusiness',
+                            name: 'Przemysław Właśniewski — Fotografia',
+                            url: 'https://wlasniewski.pl',
+                            telephone: '+48 663 928 666',
+                            address: {
+                                '@type': 'PostalAddress',
+                                addressLocality: 'Toruń',
+                                addressRegion: 'kujawsko-pomorskie',
+                                addressCountry: 'PL',
+                            },
+                        },
+                        areaServed: [
+                            { '@type': 'City', name: 'Toruń' },
+                            { '@type': 'City', name: 'Grudziądz' },
+                            { '@type': 'City', name: 'Bydgoszcz' },
+                            { '@type': 'City', name: 'Chełmno' },
+                            { '@type': 'AdministrativeArea', name: 'województwo kujawsko-pomorskie' },
+                        ],
+                        image: page.hero_image || undefined,
+                    }),
+                }}
+            />
             <PageRenderer sections={sections} />
         </main>
     );
