@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // PREMIUM EMAIL TEMPLATES — Przemysław Właśniewski Fotografia
 // Wszystkie szablony z polskimi znakami, ciemny motyw premium
 // ============================================================
@@ -597,4 +597,44 @@ export function generatePasswordResetEmail(data: { name: string; resetLink: stri
     `;
 
   return emailShell(content, `Reset hasła dla ${data.name}`);
+}
+
+// ─── 8. GOOGLE REVIEW REQUEST — po sesji ───────────────────────────
+// Lokalne SEO: każda recenzja na GBP = pozycja wyżej w Google Maps.
+// Wysyłane automatycznie 2 dni po oznaczeniu booking.status = "completed".
+// Link prowadzi bezpośrednio do formularza recenzji GBP (place_id w settings.google_place_id).
+
+export function generateGoogleReviewRequestEmail(data: {
+  clientName: string;
+  service: string;
+  reviewLink: string;
+}): string {
+  const content = `
+      <div style="text-align:center;margin-bottom:24px;">
+        <div style="display:inline-block;background:rgba(255,193,7,0.1);border:2px solid rgba(255,193,7,0.4);border-radius:50%;width:64px;height:64px;line-height:64px;font-size:28px;">⭐</div>
+      </div>
+
+      ${heading(`${data.clientName}, mam do Ciebie małą prośbę`)}
+      ${subtext(`Mam nadzieję, że jesteś zadowolony${data.clientName.endsWith('a') ? 'a' : ''} z naszej sesji "${data.service}". Jeśli tak — bardzo pomoże mi Twoja krótka opinia w Google.`)}
+
+      ${infoBox(`
+        <p style="color:#aaa;font-size:14px;line-height:1.7;margin:0 0 12px;">
+          Każda recenzja od prawdziwego klienta sprawia, że więcej rodzin może mnie znaleźć w Google. To dla małej, jednoosobowej firmy jak moja — bezcenne.
+        </p>
+        <p style="color:#888;font-size:13px;line-height:1.6;margin:0;">
+          Wystarczy <strong style="color:#ffc107;">30 sekund</strong>. Klikasz przycisk → wybierasz gwiazdki → opcjonalnie kilka słów. Bez logowania jeśli masz konto Google.
+        </p>
+      `, 'rgba(255,193,7,0.3)')}
+
+      ${ctaButton('⭐ Dodaj opinię w Google', data.reviewLink)}
+
+      ${goldDivider()}
+
+      <p style="color:#666;font-size:12px;text-align:center;margin:0;line-height:1.7;">
+        Jeśli coś było nie tak — odpisz proszę wprost na ten mail.<br>
+        Naprawimy, zanim cokolwiek pojawi się publicznie.
+      </p>
+    `;
+
+  return emailShell(content, `${data.clientName}, dziękuję za zaufanie — Przemysław Właśniewski`);
 }

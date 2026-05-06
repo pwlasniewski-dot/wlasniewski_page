@@ -30,7 +30,8 @@ import {
     Box,
     Cake,
     TrendingUp,
-    GraduationCap
+    GraduationCap,
+    MapPin
 } from 'lucide-react';
 
 const navigation = [
@@ -108,6 +109,7 @@ const navigation = [
     { name: 'Analityka', href: '/admin/analytics', icon: BarChart3 },
     { name: 'Marketing & UTM', href: '/admin/marketing', icon: TrendingUp },
     { name: 'SEO Ops', href: '/admin/seo', icon: Search },
+    { name: 'Local SEO / Maps', href: '/admin/local-seo', icon: MapPin },
     { name: 'Logi', href: '/admin/logs', icon: List },
     { name: 'Stopka', href: '/admin/footer', icon: FileText },
     {

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import { sendEmail } from "@/lib/email/sender";
-import { generateClientEmail, generateAdminEmail, generateBookingConfirmedEmail } from "@/lib/email-templates";
+import { generateClientEmail, generateAdminEmail, generateBookingConfirmedEmail, generateGoogleReviewRequestEmail } from "@/lib/email-templates";
 import { logSystem } from "@/lib/logger";
 import { requireAuth } from "@/lib/auth/middleware";
 
@@ -427,6 +427,35 @@ export async function PATCH(request: Request) {
             } catch (emailError) {
                 console.error("Failed to send status update email:", emailError);
                 await logSystem('ERROR', 'EMAIL', `Failed to send client status update email`, { bookingId: id, error: String(emailError) });
+            }
+        }
+
+        // [LOCAL SEO] When booking is marked as completed, send Google Review request.
+        // Each Google review boosts visibility in Google Maps for "fotograf [city]" queries.
+        if (updateData.status === "completed") {
+            try {
+                const placeIdSetting = await prisma.setting.findFirst({
+                    where: { setting_key: 'google_place_id' },
+                });
+                const placeId = placeIdSetting?.setting_value;
+                const reviewLink = placeId
+                    ? `https://search.google.com/local/writereview?placeid=${placeId}`
+                    : 'https://g.page/r/wlasniewski-fotograf/review';
+
+                await sendEmail({
+                    to: booking.email,
+                    subject: `${booking.client_name}, dziękuję za zaufanie ⭐`,
+                    html: generateGoogleReviewRequestEmail({
+                        clientName: booking.client_name,
+                        service: booking.service,
+                        reviewLink,
+                    }),
+                });
+
+                await logSystem('INFO', 'LOCAL_SEO', `Google review request sent to client`, { bookingId: id, email: booking.email });
+            } catch (reviewError) {
+                console.error("Failed to send Google review request:", reviewError);
+                await logSystem('ERROR', 'LOCAL_SEO', `Failed to send Google review request`, { bookingId: id, error: String(reviewError) });
             }
         }
 
