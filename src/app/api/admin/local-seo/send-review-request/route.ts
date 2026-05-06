@@ -26,15 +26,21 @@ export async function POST(request: NextRequest) {
         const placeIdSetting = await prisma.setting.findFirst({
             where: { setting_key: 'google_place_id' },
         });
-        const placeId = placeIdSetting?.setting_value;
-        if (!placeId) {
+        const reviewLinkSetting = await prisma.setting.findFirst({
+            where: { setting_key: 'gbp_review_link' },
+        });
+
+        const reviewLink = reviewLinkSetting?.setting_value
+            || (placeIdSetting?.setting_value
+                ? `https://search.google.com/local/writereview?placeid=${placeIdSetting.setting_value}`
+                : null);
+
+        if (!reviewLink) {
             return NextResponse.json(
-                { ok: false, message: 'Brak Google Place ID — skonfiguruj w panelu Local SEO' },
+                { ok: false, message: 'Brak linku do recenzji — skonfiguruj w panelu Local SEO' },
                 { status: 400 }
             );
         }
-
-        const reviewLink = `https://search.google.com/local/writereview?placeid=${placeId}`;
 
         await sendEmail({
             to: booking.email,

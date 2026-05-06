@@ -78,9 +78,10 @@ export default function LocalSeoClient({ initialSettings, completedBookings, ini
     const [sendingReview, setSendingReview] = useState<number | null>(null);
 
     const placeId = settings.google_place_id || '';
-    const reviewLink = placeId
+    const directReviewLink = settings.gbp_review_link || '';
+    const reviewLink = directReviewLink || (placeId
         ? `https://search.google.com/local/writereview?placeid=${placeId}`
-        : '';
+        : '');
 
     const saveSetting = async (key: string, value: string) => {
         const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null;
@@ -113,8 +114,8 @@ export default function LocalSeoClient({ initialSettings, completedBookings, ini
     };
 
     const sendReviewRequest = async (bookingId: number) => {
-        if (!placeId) {
-            toast.error('Najpierw ustaw Google Place ID powyżej');
+        if (!reviewLink) {
+            toast.error('Najpierw wklej link do recenzji Google (sekcja 1)');
             return;
         }
         setSendingReview(bookingId);
@@ -176,33 +177,25 @@ export default function LocalSeoClient({ initialSettings, completedBookings, ini
                     </div>
                 </div>
 
-                {/* Step 1: Google Place ID */}
+                {/* Step 1: Google Review Link */}
                 <section className="bg-zinc-900 border border-zinc-800 rounded-lg p-6">
-                    <h2 className="text-xl font-bold mb-3">1. Google Place ID</h2>
+                    <h2 className="text-xl font-bold mb-3">1. Link do recenzji Google</h2>
                     <p className="text-sm text-zinc-400 mb-4">
-                        Identyfikator Twojej wizytówki Google. Bez niego nie wyślę linku do recenzji.{' '}
-                        <a
-                            href="https://developers.google.com/maps/documentation/javascript/examples/places-placeid-finder"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-amber-400 underline"
-                        >
-                            Znajdź swój Place ID tutaj
-                        </a>{' '}
-                        — wpisz nazwę firmy, skopiuj ID.
+                        W GBP kliknij <strong className="text-white">„Poproś o opinię"</strong> → skopiuj link z pola <em>„Link opinii"</em>.
+                        Ten link będzie wysyłany automatycznie klientom po sesji.
                     </p>
                     <div className="flex gap-2">
                         <input
                             type="text"
-                            placeholder="ChIJN1t_tDeuEmsRUsoyG83frY4"
-                            defaultValue={placeId}
-                            id="placeIdInput"
+                            placeholder="https://g.page/r/CfCcE7G30MsVEBM/review"
+                            defaultValue={directReviewLink}
+                            id="reviewLinkInput"
                             className="flex-1 bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm font-mono"
                         />
                         <button
                             onClick={() => {
-                                const v = (document.getElementById('placeIdInput') as HTMLInputElement).value.trim();
-                                saveSetting('google_place_id', v);
+                                const v = (document.getElementById('reviewLinkInput') as HTMLInputElement).value.trim();
+                                saveSetting('gbp_review_link', v);
                             }}
                             className="bg-amber-500 hover:bg-amber-400 text-black px-4 py-2 rounded font-semibold text-sm"
                         >
@@ -210,11 +203,16 @@ export default function LocalSeoClient({ initialSettings, completedBookings, ini
                         </button>
                     </div>
                     {reviewLink && (
-                        <div className="mt-4 p-3 bg-zinc-800/50 border border-amber-500/30 rounded text-sm">
-                            <div className="text-zinc-400 text-xs mb-1">Twój link do recenzji (kopiuj i daj klientowi):</div>
-                            <a href={reviewLink} target="_blank" rel="noopener noreferrer" className="text-amber-400 break-all hover:underline">
+                        <div className="mt-4 p-3 bg-zinc-800/50 border border-amber-500/30 rounded text-sm flex items-center justify-between gap-3">
+                            <a href={reviewLink} target="_blank" rel="noopener noreferrer" className="text-amber-400 break-all hover:underline text-xs">
                                 {reviewLink}
                             </a>
+                            <button
+                                onClick={() => { navigator.clipboard.writeText(reviewLink); toast.success('Skopiowano'); }}
+                                className="text-xs bg-zinc-700 hover:bg-zinc-600 px-3 py-1 rounded shrink-0"
+                            >
+                                Kopiuj
+                            </button>
                         </div>
                     )}
                 </section>
@@ -303,7 +301,7 @@ export default function LocalSeoClient({ initialSettings, completedBookings, ini
                                     ) : (
                                         <button
                                             onClick={() => sendReviewRequest(b.id)}
-                                            disabled={sendingReview === b.id || !placeId}
+                                            disabled={sendingReview === b.id || !reviewLink}
                                             className="bg-amber-500 hover:bg-amber-400 disabled:bg-zinc-700 disabled:text-zinc-500 text-black px-3 py-1.5 rounded text-xs font-semibold"
                                         >
                                             {sendingReview === b.id ? 'Wysyłanie...' : 'Wyślij prośbę'}

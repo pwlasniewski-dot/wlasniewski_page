@@ -434,25 +434,27 @@ export async function PATCH(request: Request) {
         // Each Google review boosts visibility in Google Maps for "fotograf [city]" queries.
         if (updateData.status === "completed") {
             try {
-                const placeIdSetting = await prisma.setting.findFirst({
-                    where: { setting_key: 'google_place_id' },
-                });
-                const placeId = placeIdSetting?.setting_value;
-                const reviewLink = placeId
-                    ? `https://search.google.com/local/writereview?placeid=${placeId}`
-                    : 'https://g.page/r/wlasniewski-fotograf/review';
+                const [placeIdSetting, reviewLinkSetting] = await Promise.all([
+                    prisma.setting.findFirst({ where: { setting_key: 'google_place_id' } }),
+                    prisma.setting.findFirst({ where: { setting_key: 'gbp_review_link' } }),
+                ]);
+                const reviewLink = reviewLinkSetting?.setting_value
+                    || (placeIdSetting?.setting_value
+                        ? `https://search.google.com/local/writereview?placeid=${placeIdSetting.setting_value}`
+                        : null);
 
-                await sendEmail({
-                    to: booking.email,
-                    subject: `${booking.client_name}, dziękuję za zaufanie ⭐`,
-                    html: generateGoogleReviewRequestEmail({
-                        clientName: booking.client_name,
-                        service: booking.service,
-                        reviewLink,
-                    }),
-                });
-
-                await logSystem('INFO', 'LOCAL_SEO', `Google review request sent to client`, { bookingId: id, email: booking.email });
+                if (reviewLink) {
+                    await sendEmail({
+                        to: booking.email,
+                        subject: `${booking.client_name}, dziękuję za zaufanie ⭐`,
+                        html: generateGoogleReviewRequestEmail({
+                            clientName: booking.client_name,
+                            service: booking.service,
+                            reviewLink,
+                        }),
+                    });
+                    await logSystem('INFO', 'LOCAL_SEO', `Google review request sent to client`, { bookingId: id, email: booking.email });
+                }
             } catch (reviewError) {
                 console.error("Failed to send Google review request:", reviewError);
                 await logSystem('ERROR', 'LOCAL_SEO', `Failed to send Google review request`, { bookingId: id, error: String(reviewError) });

@@ -4,6 +4,7 @@ import prisma from '@/lib/db/prisma';
 
 const ALLOWED_KEYS = new Set([
     'google_place_id',
+    'gbp_review_link',
     'gbp_profile_url',
     'gbp_categories',
     'gbp_last_post_at',
