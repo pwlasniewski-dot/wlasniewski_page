@@ -38,6 +38,9 @@ yarn-error.log*
 next-env.d.ts
 
 # prisma
+
+# backups (must never be tracked)
+backups/
 prisma/migrations/
 
 # IDE

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
-import { withAuth } from '@/lib/auth/middleware';
+import { withAuth, requireAuth } from '@/lib/auth/middleware';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -8,10 +8,19 @@ export const revalidate = 0;
 // GET settings
 // Keys that should NEVER be exposed to non-admin users
 const SENSITIVE_KEYS = [
+    'smtp_host',
+    'smtp_port',
+    'smtp_user',
     'smtp_password',
+    'smtp_from',
+    'admin_email',
     'p24_api_key',
+    'p24_pos_id',
+    'p24_merchant_id',
     'p24_crc_key',
+    'payu_client_id',
     'payu_client_secret',
+    'payu_merchant_pos_id',
     'payu_md5_key',
     'stripe_secret_key',
     'stripe_webhook_secret'
@@ -19,10 +28,13 @@ const SENSITIVE_KEYS = [
 
 export async function GET(request: NextRequest) {
     try {
-        // Simple auth check for internal/admin access
-        // Note: we can't use withAuth directly here because we WANT to return some data to public users
-        const authHeader = request.headers.get('Authorization');
-        const isAdmin = authHeader?.includes('Bearer'); // Simple check, could be more robust
+        // Public GET is allowed, but admin-only fields require real token validation.
+        let isAdmin = false;
+        const authHeader = request.headers.get('authorization') || request.headers.get('Authorization');
+        if (authHeader?.startsWith('Bearer ')) {
+            const authError = await requireAuth(request);
+            isAdmin = !authError;
+        }
 
         // Ensure we always fetch the SAME 'first' record
         const settings = await prisma.setting.findMany({
@@ -32,6 +44,9 @@ export async function GET(request: NextRequest) {
         // 1. Start with Key/Value pairs
         const settingsMap = settings.reduce((acc, curr) => {
             if (curr.setting_key) {
+                if (!isAdmin && SENSITIVE_KEYS.includes(curr.setting_key)) {
+                    return acc;
+                }
                 acc[curr.setting_key] = curr.setting_value;
             }
             return acc;
