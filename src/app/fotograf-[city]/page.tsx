@@ -2,6 +2,7 @@ import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
+import CityLeadSection from '@/components/CityLeadSection';
 
 // ─── City Data with FAQs ─────────────────────────────────────────
 interface CityInfo {
@@ -28,9 +29,9 @@ const CITIES: Record<string, CityInfo> = {
         city: 'Toruń',
         region: 'kujawsko-pomorskie',
         h1: 'Fotograf Toruń — naturalne sesje rodzinne i plenerowe',
-        metaTitle: 'Fotograf Toruń – sesje rodzinne, ślubne, portretowe | Przemysław Właśniewski',
-        metaDescription: 'Szukasz fotografa w Toruniu? Naturalne sesje rodzinne, ślubne i portretowe na starówce, bulwarze i w plenerze. Galeria online, odbitki premium. Zarezerwuj termin!',
-        keywords: ['fotograf toruń', 'fotograf ślubny toruń', 'sesja rodzinna toruń', 'fotografia portretowa toruń', 'zdjęcia plenerowe toruń', 'fotograf toruń starówka', 'fotografia wizerunkowa toruń', 'sesja narzeczeńska toruń', 'fotograf komunijny toruń', 'sesja zdjęciowa toruń'],
+        metaTitle: 'Fotograf Toruń ⭐ Wizerunek, Biznes, Starówka, Ślub',
+        metaDescription: '★ Fotograf Toruń ★ Sesje wizerunkowe i biznesowe od 450 zł, śluby plenerowe, sesje na starówce. Naturalne portrety, galeria online. ☎ 530 788 694',
+        keywords: ['fotograf toruń', 'fotografia wizerunkowa toruń', 'fotograf portretowy toruń', 'fotograf toruń starówka', 'profesjonalna fotografia toruń', 'fotograf ślubny toruń', 'fotografia ślubna toruń', 'sesja zdjęciowa toruń', 'fotografia biznesowa toruń', 'sesja narzeczeńska toruń', 'sesja rodzinna toruń', 'plener ślubny toruń', 'zdjęcia biznesowe toruń', 'sesja w mieście toruń', 'fotograf bulwar filadelfijski'],
         heroImage: '/assets/portfolio/Rodzinnie/Sesja%20w%20mie%C5%9Bcie%20Toru%C5%84/sesja-rodzinna-torun-bulwar-filadelfijski-kadr-szeroki-2025-06.webp',
         lat: 53.0138,
         lng: 18.5984,
@@ -104,8 +105,8 @@ const CITIES: Record<string, CityInfo> = {
         city: 'Grudziądz',
         region: 'kujawsko-pomorskie',
         h1: 'Fotograf Grudziądz — sesje rodzinne, ślubne i biznesowe',
-        metaTitle: 'Fotograf Grudziądz – sesje rodzinne, ślubne, portretowe | Przemysław Właśniewski',
-        metaDescription: 'Fotograf Grudziądz — naturalne sesje rodzinne, ślubne i biznesowe. Spichrze, bulwary nad Wisłą, Góra Zamkowa. Galeria online, odbitki premium. Umów się!',
+        metaTitle: 'Fotograf Grudziądz ⭐ Sesje rodzinne, ślubne, biznesowe',
+        metaDescription: '★ Fotograf Grudziądz ★ Sesje rodzinne od 450 zł, śluby, portrety. Spichrze, bulwary nad Wisłą, Góra Zamkowa. ✓ Galeria online ✓ Dojazd w cenie ☎ 530 788 694',
         keywords: ['fotograf grudziądz', 'fotograf ślubny grudziądz', 'sesja rodzinna grudziądz', 'fotografia portretowa grudziądz', 'zdjęcia plenerowe grudziądz', 'sesja narzeczeńska grudziądz'],
         heroImage: '/assets/portfolio/Rodzinnie/Sesja%20w%20mie%C5%9Bcie%20Toru%C5%84/sesja-rodzinna-torun-bulwar-filadelfijski-kadr-szeroki-2025-06.webp',
         lat: 53.4837,
@@ -166,8 +167,8 @@ const CITIES: Record<string, CityInfo> = {
         city: 'Chełmno',
         region: 'kujawsko-pomorskie',
         h1: 'Fotograf Chełmno — Miasto Zakochanych w kadrze',
-        metaTitle: 'Fotograf Chełmno – sesje ślubne, narzeczeńskie, rodzinne | Przemysław Właśniewski',
-        metaDescription: 'Fotograf Chełmno — sesje w Mieście Zakochanych. Fotografia ślubna, narzeczeńska i rodzinna. Rynek, mury obronne, panorama Wisły. Zarezerwuj termin!',
+        metaTitle: 'Fotograf Chełmno ⭐ Śluby plenerowe, narzeczeńskie, rodzinne',
+        metaDescription: '★ Fotograf Chełmno ★ Śluby w plenerze, sesje narzeczeńskie w Mieście Zakochanych, biznesowe i rodzinne. Rynek, mury, Wisła. ☎ 530 788 694',
         keywords: ['fotograf chełmno', 'fotograf ślubny chełmno', 'sesja narzeczeńska chełmno', 'sesja rodzinna chełmno', 'miasto zakochanych zdjęcia', 'fotografia chełmno'],
         heroImage: '/assets/portfolio/Rodzinnie/Sesja%20w%20mie%C5%9Bcie%20Toru%C5%84/sesja-rodzinna-torun-bulwar-filadelfijski-kadr-szeroki-2025-06.webp',
         lat: 53.3490,
@@ -227,8 +228,8 @@ const CITIES: Record<string, CityInfo> = {
         city: 'Wąbrzeźno',
         region: 'kujawsko-pomorskie',
         h1: 'Fotograf Wąbrzeźno — rodzinna, ślubna i portretowa',
-        metaTitle: 'Fotograf Wąbrzeźno – naturalne sesje rodzinne, ślubne i portretowe | Przemysław Właśniewski',
-        metaDescription: 'Fotograf Wąbrzeźno — naturalne sesje rodzinne, ślubne i portretowe. Jezioro Zamkowe, Frydek, okoliczne lasy. Galeria online i odbitki premium.',
+        metaTitle: 'Fotograf Wąbrzeźno ⭐ Śluby, wizerunek, sesje plenerowe',
+        metaDescription: '★ Fotograf Wąbrzeźno ★ Śluby plenerowe, sesje wizerunkowe i biznesowe, rodzinne nad Jeziorem Zamkowym. Lokalny fotograf, dojazd gratis. ☎ 530 788 694',
         keywords: ['fotograf wąbrzeźno', 'fotograf wabrzeźno', 'sesja rodzinna wąbrzeźno', 'fotografia ślubna wąbrzeźno', 'sesja narzeczeńska wąbrzeźno', 'zdjęcia wąbrzeźno'],
         heroImage: '/assets/portfolio/Rodzinnie/Sesja%20w%20mie%C5%9Bcie%20Toru%C5%84/sesja-rodzinna-torun-bulwar-filadelfijski-kadr-szeroki-2025-06.webp',
         lat: 53.2860,
@@ -288,8 +289,8 @@ const CITIES: Record<string, CityInfo> = {
         city: 'Lisewo',
         region: 'kujawsko-pomorskie',
         h1: 'Fotograf Lisewo — naturalne sesje rodzinne i ślubne',
-        metaTitle: 'Fotograf Lisewo – sesje rodzinne, ślubne i portretowe | Przemysław Właśniewski',
-        metaDescription: 'Fotograf Lisewo — spokojne, naturalne sesje z dala od miejskiego zgiełku. Rodzina, ślub, portret. Galeria online i odbitki premium.',
+        metaTitle: 'Fotograf Lisewo ⭐ Śluby plenerowe, sesje rodzinne',
+        metaDescription: '★ Fotograf Lisewo ★ Śluby w plenerze, sesje rodzinne i wizerunkowe z dala od miejskiego zgiełku. Naturalna fotografia. ☎ 530 788 694',
         keywords: ['fotograf lisewo', 'sesja rodzinna lisewo', 'fotografia ślubna lisewo', 'zdjęcia lisewo'],
         heroImage: '/assets/portfolio/Rodzinnie/Sesja%20w%20mie%C5%9Bcie%20Toru%C5%84/sesja-rodzinna-torun-bulwar-filadelfijski-kadr-szeroki-2025-06.webp',
         lat: 53.3147,
@@ -338,8 +339,8 @@ const CITIES: Record<string, CityInfo> = {
         city: 'Płużnica',
         region: 'kujawsko-pomorskie',
         h1: 'Fotograf Płużnica — sesje rodzinne i komunijne',
-        metaTitle: 'Fotograf Płużnica – sesje rodzinne, komunijne, ślubne | Przemysław Właśniewski',
-        metaDescription: 'Fotograf Płużnica — moja baza wypadowa. Sesje rodzinne, komunijne i ślubne w gminie Płużnica. Galeria online, odbitki premium.',
+        metaTitle: 'Fotograf Płużnica ⭐ Śluby plenerowe, sesje rodzinne',
+        metaDescription: '★ Fotograf Płużnica ★ Śluby w plenerze, sesje rodzinne, biznesowe. Lokalny fotograf — dojazd w cenie. Galeria online. ☎ 530 788 694',
         keywords: ['fotograf płużnica', 'sesja rodzinna płużnica', 'fotografia komunijna płużnica', 'zdjęcia płużnica'],
         heroImage: '/assets/portfolio/Rodzinnie/Sesja%20w%20mie%C5%9Bcie%20Toru%C5%84/sesja-rodzinna-torun-bulwar-filadelfijski-kadr-szeroki-2025-06.webp',
         lat: 53.3543,
@@ -379,8 +380,8 @@ const CITIES: Record<string, CityInfo> = {
         city: 'Świecie',
         region: 'kujawsko-pomorskie',
         h1: 'Fotograf Świecie — sesje rodzinne, ślubne i portretowe',
-        metaTitle: 'Fotograf Świecie – sesje rodzinne, ślubne, portretowe | Przemysław Właśniewski',
-        metaDescription: 'Fotograf Świecie — naturalne sesje przy Zamku Krzyżackim, nad Wdą i Wisłą. Rodzinne, ślubne, portretowe. Galeria online. Umów się!',
+        metaTitle: 'Fotograf Świecie ⭐ Śluby, wizerunek, sesje miejskie',
+        metaDescription: '★ Fotograf Świecie ★ Śluby plenerowe przy Zamku Krzyżackim, sesje wizerunkowe, biznesowe i rodzinne nad Wdą. ☎ 530 788 694',
         keywords: ['fotograf świecie', 'sesja rodzinna świecie', 'fotografia ślubna świecie', 'zdjęcia świecie', 'fotograf świecie nad wisłą'],
         heroImage: '/assets/portfolio/Rodzinnie/Sesja%20w%20mie%C5%9Bcie%20Toru%C5%84/sesja-rodzinna-torun-bulwar-filadelfijski-kadr-szeroki-2025-06.webp',
         lat: 53.4100,
@@ -420,8 +421,8 @@ const CITIES: Record<string, CityInfo> = {
         city: 'Bydgoszcz',
         region: 'kujawsko-pomorskie',
         h1: 'Fotograf Bydgoszcz — sesje rodzinne, ślubne i biznesowe',
-        metaTitle: 'Fotograf Bydgoszcz – sesje rodzinne, ślubne, biznesowe | Przemysław Właśniewski',
-        metaDescription: 'Fotograf Bydgoszcz — sesje na Wyspie Młyńskiej, przy kanałach i w centrum. Rodzinne, ślubne, wizerunkowe. Galeria online, odbitki premium.',
+        metaTitle: 'Fotograf Bydgoszcz ⭐ Biznes, wizerunek, śluby, miasto',
+        metaDescription: '★ Fotograf Bydgoszcz ★ Sesje wizerunkowe i biznesowe od 450 zł, śluby plenerowe, sesje na Wyspie Młyńskiej i kanałach. ☎ 530 788 694',
         keywords: ['fotograf bydgoszcz', 'fotograf ślubny bydgoszcz', 'sesja rodzinna bydgoszcz', 'fotografia wizerunkowa bydgoszcz', 'zdjęcia bydgoszcz', 'sesja narzeczeńska bydgoszcz'],
         heroImage: '/assets/portfolio/Rodzinnie/Sesja%20w%20mie%C5%9Bcie%20Toru%C5%84/sesja-rodzinna-torun-bulwar-filadelfijski-kadr-szeroki-2025-06.webp',
         lat: 53.1235,
@@ -642,9 +643,12 @@ export default async function CityLandingPage({ params }: PageProps) {
                         Profesjonalna fotografia rodzinna, ślubna i portretowa w {data.city === 'Płużnica' ? 'Płużnicy' : data.city === 'Bydgoszcz' ? 'Bydgoszczy' : data.city === 'Lisewo' ? 'Lisewie' : data.city === 'Wąbrzeźno' ? 'Wąbrzeźnie' : data.city === 'Chełmno' ? 'Chełmnie' : data.city === 'Świecie' ? 'Świeciu' : data.city === 'Grudziądz' ? 'Grudziądzu' : `${data.city}u`} i okolicach
                     </p>
                     <div className="flex flex-wrap gap-4 mt-8">
-                        <Link href="/rezerwacja" className="bg-amber-500 hover:bg-amber-400 text-black font-bold py-3 px-8 rounded-lg transition-colors text-lg">
-                            Zarezerwuj termin
-                        </Link>
+                        <a href="#szybki-kontakt" className="bg-amber-500 hover:bg-amber-400 text-black font-bold py-3 px-8 rounded-lg transition-colors text-lg shadow-lg shadow-amber-500/20">
+                            Sprawdź wolne terminy
+                        </a>
+                        <a href="tel:+48530788694" className="border border-amber-400/40 hover:border-amber-400 text-amber-100 font-medium py-3 px-8 rounded-lg transition-colors text-lg inline-flex items-center gap-2">
+                            <span>📞</span> 530 788 694
+                        </a>
                         <Link href="/portfolio" className="border border-white/30 hover:border-white/60 text-white font-medium py-3 px-8 rounded-lg transition-colors text-lg">
                             Zobacz portfolio
                         </Link>
@@ -725,6 +729,9 @@ export default async function CityLandingPage({ params }: PageProps) {
                     </div>
                 </div>
             </section>
+
+            {/* Lead Form — najważniejsza sekcja konwersyjna z REALNYM social proof */}
+            <CityLeadSection city={data.city} citySlug={data.slug.replace('fotograf-', '')} />
 
             {/* CTA */}
             <section className="py-20 px-6 bg-gradient-to-br from-zinc-900 via-black to-zinc-900 border-t border-white/5">
