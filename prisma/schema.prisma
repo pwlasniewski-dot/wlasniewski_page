@@ -892,43 +892,76 @@ model ChallengePhoto {
 }
 
 model ClientGallery {
-  id                Int              @id @default(autoincrement())
-  booking_id        Int?             @unique
+  id                Int                    @id @default(autoincrement())
+  booking_id        Int?                   @unique
   client_email      String
   client_name       String
   description       String?
-  access_code       String           @unique
+  access_code       String                 @unique
   expires_at        DateTime?
-  standard_count    Int              @default(0)
-  price_per_premium Int              @default(2000)
-  is_active         Boolean          @default(true)
-  created_at        DateTime         @default(now())
-  updated_at        DateTime         @updatedAt
+  standard_count    Int                    @default(0)
+  price_per_premium Int                    @default(2000)
+  is_active         Boolean                @default(true)
+  created_at        DateTime               @default(now())
+  updated_at        DateTime               @updatedAt
   photographer_id   Int?
   client_id         Int?
-  client            User?            @relation("ClientGalleries", fields: [client_id], references: [id])
-  photographer      User?            @relation("PhotographerGalleries", fields: [photographer_id], references: [id])
+  client            User?                  @relation("ClientGalleries", fields: [client_id], references: [id])
+  photographer      User?                  @relation("PhotographerGalleries", fields: [photographer_id], references: [id])
   photos            GalleryPhoto[]
   products          GalleryProduct[]
   orders            PhotoOrder[]
+  participants      GalleryParticipant[]
 
   @@map("client_galleries")
 }
 
 model GalleryPhoto {
-  id            Int           @id @default(autoincrement())
+  id            Int              @id @default(autoincrement())
   gallery_id    Int
   file_url      String
   thumbnail_url String?
   file_size     Int
   width         Int?
   height        Int?
-  is_standard   Boolean       @default(false)
-  order_index   Int           @default(0)
-  created_at    DateTime      @default(now())
-  gallery       ClientGallery @relation(fields: [gallery_id], references: [id], onDelete: Cascade)
+  is_standard   Boolean          @default(false)
+  order_index   Int              @default(0)
+  created_at    DateTime         @default(now())
+  gallery       ClientGallery    @relation(fields: [gallery_id], references: [id], onDelete: Cascade)
+  selections    PhotoSelection[]
 
   @@map("gallery_photos")
+}
+
+// Uczestnik galerii grupowej (np. dziecko w komunii)
+model GalleryParticipant {
+  id                   Int              @id @default(autoincrement())
+  gallery_id           Int
+  participant_code     String           @unique // Unikalny kod dostępu dla rodzica
+  name                 String // Nazwa uczestnika (np. "Dziecko 1", "Jan Kowalski")
+  max_selections       Int              @default(5) // Limit zdjęć do wyboru
+  publication_consent  Boolean          @default(false) // Zgoda na publikację
+  consent_given_at     DateTime?
+  notes                String? // Notatki admina (opcjonalne)
+  created_at           DateTime         @default(now())
+  updated_at           DateTime         @updatedAt
+  gallery              ClientGallery    @relation(fields: [gallery_id], references: [id], onDelete: Cascade)
+  selections           PhotoSelection[]
+
+  @@map("gallery_participants")
+}
+
+// Wybór zdjęcia przez uczestnika
+model PhotoSelection {
+  id             Int                  @id @default(autoincrement())
+  participant_id Int
+  photo_id       Int
+  selected_at    DateTime             @default(now())
+  participant    GalleryParticipant   @relation(fields: [participant_id], references: [id], onDelete: Cascade)
+  photo          GalleryPhoto         @relation(fields: [photo_id], references: [id], onDelete: Cascade)
+
+  @@unique([participant_id, photo_id])
+  @@map("photo_selections")
 }
 
 model GalleryProduct {
