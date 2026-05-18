@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import Image from 'next/image';
+import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Play, Pause, LayoutGrid, BookOpen } from 'lucide-react';
 
 export interface HeroPhoto {
@@ -70,7 +71,7 @@ export default function PremiumGalleryHero({
   return (
     <section
       className="relative w-full overflow-hidden bg-black"
-      style={{ height: 'min(60vh, 500px)' }}
+      style={{ height: '90vh', minHeight: '600px' }}
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
@@ -78,30 +79,35 @@ export default function PremiumGalleryHero({
       {slides.map((p, i) => {
         const active = i === idx;
         return (
-          <div
+          <motion.div
             key={p.id}
-            className={`absolute inset-0 transition-opacity duration-[1500ms] ease-in-out ${
-              active ? 'opacity-100' : 'opacity-0'
-            }`}
-            aria-hidden={!active}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: active ? 1 : 0 }}
+            transition={{ duration: 1.5, ease: "easeInOut" }}
+            className="absolute inset-0 w-full h-full overflow-hidden"
           >
-            <Image
-              src={p.file_url}
-              alt={`${title} – slajd ${i + 1}`}
-              fill
-              priority={i === 0}
-              sizes="100vw"
-              className={`object-cover object-top transition-transform duration-[10000ms] ease-linear ${
-                active ? 'scale-[1.03]' : 'scale-100'
-              }`}
+            <motion.div
+              className="w-full h-full bg-cover bg-no-repeat"
+              initial={{ scale: 1 }}
+              animate={active ? { scale: 1.02 } : { scale: 1 }}
+              transition={{
+                duration: 15,
+                ease: "linear",
+                repeat: 0
+              }}
+              style={{
+                backgroundImage: `url("${p.file_url}")`,
+                backgroundPosition: 'center 30%',
+                transformOrigin: 'center 30%'
+              }}
             />
-          </div>
+          </motion.div>
         );
       })}
 
       {/* Gradient overlay dla kontrastu tekstu */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-black/50 pointer-events-none" />
-      <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-transparent to-transparent pointer-events-none" />
+      <div className="absolute inset-0 bg-black/20 z-10" />
+      <div className="absolute bottom-0 left-0 w-full h-[60vh] bg-gradient-to-t from-black via-black/80 to-transparent z-10" />
 
       {/* Treść */}
       <div className="relative h-full max-w-7xl mx-auto px-6 md:px-10 flex flex-col justify-end pb-16 md:pb-24">
