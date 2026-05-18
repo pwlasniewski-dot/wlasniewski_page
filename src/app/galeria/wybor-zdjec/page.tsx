@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { Heart, Download, Check, X, Info } from 'lucide-react';
+import { Heart, Download, Check, X, Info, User } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface Photo {
@@ -19,6 +19,8 @@ interface Participant {
     max_selections: number;
     selected_count: number;
     publication_consent: boolean;
+    needs_parent_data: boolean;
+    parent_name: string | null;
 }
 
 interface Gallery {
@@ -34,6 +36,11 @@ export default function ParticipantGalleryPage() {
     const [participant, setParticipant] = useState<Participant | null>(null);
     const [gallery, setGallery] = useState<Gallery | null>(null);
     const [photos, setPhotos] = useState<Photo[]>([]);
+    
+    const [showParentDataModal, setShowParentDataModal] = useState(false);
+    const [parentName, setParentName] = useState('');
+    const [parentEmail, setParentEmail] = useState('');
+    const [parentPhone, setParentPhone] = useState('');
     
     const [consent, setConsent] = useState(false);
     const [showConsentModal, setShowConsentModal] = useState(false);
@@ -59,12 +66,52 @@ export default function ParticipantGalleryPage() {
 
             toast.success(`Witaj, ${data.participant.name}!`);
             setAuthenticated(true);
-            fetchPhotos(code.trim().toUpperCase());
+
+            // Check if parent data is needed
+            if (data.participant.needs_parent_data) {
+                setShowParentDataModal(true);
+            } else {
+                fetchPhotos(code.trim().toUpperCase());
+            }
 
         } catch (error) {
             toast.error('Błąd połączenia');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleParentDataSubmit = async () => {
+        if (!parentName.trim()) {
+            toast.error('Imię i nazwisko jest wymagane');
+            return;
+        }
+
+        try {
+            const res = await fetch('/api/galleries/participant/auth', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    code: code.trim().toUpperCase(),
+                    parent_name: parentName.trim(),
+                    parent_email: parentEmail.trim() || null,
+                    parent_phone: parentPhone.trim() || null,
+                })
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                toast.error(data.error);
+                return;
+            }
+
+            toast.success('Dane zapisane');
+            setShowParentDataModal(false);
+            fetchPhotos(code.trim().toUpperCase());
+
+        } catch (error) {
+            toast.error('Błąd zapisywania danych');
         }
     };
 
@@ -306,27 +353,140 @@ export default function ParticipantGalleryPage() {
                 </div>
             )}
 
+            {/* Parent Data Modal (first login) */}
+            {showParentDataModal && (
+                <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                    <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 max-w-md w-full">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="w-12 h-12 bg-gold-500/10 rounded-full flex items-center justify-center">
+                                <User className="w-6 h-6 text-gold-500" />
+                            </div>
+                            <div>
+                                <h2 className="text-xl font-bold text-white">Twoje dane</h2>
+                                <p className="text-sm text-zinc-400">Wymagane do wyrażenia zgody</p>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4 mb-6">
+                            <div>
+                                <label className="block text-sm font-medium text-zinc-300 mb-2">
+                                    Imię i nazwisko <span className="text-red-400">*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    value={parentName}
+                                    onChange={e => setParentName(e.target.value)}
+                                    placeholder="Jan Kowalski"
+                                    className="w-full bg-black border border-zinc-700 rounded-lg px-4 py-3 text-white focus:border-gold-500 focus:outline-none"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-zinc-300 mb-2">
+                                    Email <span className="text-zinc-500">(opcjonalnie)</span>
+                                </label>
+                                <input
+                                    type="email"
+                                    value={parentEmail}
+                                    onChange={e => setParentEmail(e.target.value)}
+                                    placeholder="jan.kowalski@example.com"
+                                    className="w-full bg-black border border-zinc-700 rounded-lg px-4 py-3 text-white focus:border-gold-500 focus:outline-none"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-zinc-300 mb-2">
+                                    Telefon <span className="text-zinc-500">(opcjonalnie)</span>
+                                </label>
+                                <input
+                                    type="tel"
+                                    value={parentPhone}
+                                    onChange={e => setParentPhone(e.target.value)}
+                                    placeholder="123-456-789"
+                                    className="w-full bg-black border border-zinc-700 rounded-lg px-4 py-3 text-white focus:border-gold-500 focus:outline-none"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 mb-6">
+                            <div className="flex items-start gap-3">
+                                <Info className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+                                <p className="text-xs text-blue-300">
+                                    Twoje dane są przechowywane bezpiecznie i wykorzystywane wyłącznie do realizacji zgody na publikację zdjęć. Podanie emaila i telefonu jest dobrowolne.
+                                </p>
+                            </div>
+                        </div>
+
+                        <button
+                            onClick={handleParentDataSubmit}
+                            disabled={!parentName.trim()}
+                            className="w-full bg-gold-500 text-black font-bold py-4 rounded-lg hover:bg-gold-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            Zapisz i kontynuuj
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* Consent Modal */}
             {showConsentModal && (
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                    <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 max-w-md w-full">
-                        <h2 className="text-2xl font-bold text-white mb-4">Zgoda na publikację</h2>
-                        <p className="text-zinc-300 mb-6">
-                            Wyrażam zgodę na publikację wybranych {participant?.max_selections} zdjęć 
-                            na stronie internetowej fotografa oraz w mediach społecznościowych w celach promocyjnych.
-                        </p>
+                    <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                        <h2 className="text-2xl font-bold text-white mb-6">Oświadczenie o wyrażeniu zgody na publikację wizerunku</h2>
+                        
+                        <div className="bg-zinc-800 border border-zinc-700 rounded-lg p-6 mb-6 space-y-4 text-sm text-zinc-300">
+                            <p>
+                                Ja, <strong className="text-white">{participant?.parent_name}</strong>, wyrażam zgodę na nieodpłatne wykorzystanie wizerunku 
+                                dziecka <strong className="text-white">{participant?.name}</strong> uwiecznionego na wybranych {participant?.max_selections} fotografiach, 
+                                w szczególności na:
+                            </p>
+                            
+                            <ul className="list-disc list-inside space-y-2 pl-4">
+                                <li>publikację na stronie internetowej fotografa (wlasniewski.pl)</li>
+                                <li>publikację w mediach społecznościowych fotografa (Facebook, Instagram)</li>
+                                <li>wykorzystanie w materiałach promocyjnych i reklamowych</li>
+                                <li>prezentację w portfolio fotografa</li>
+                            </ul>
+
+                            <p>
+                                Zgoda jest udzielana na czas nieokreślony. Oświadczam, że zostałem/am poinformowany/a o prawie do cofnięcia zgody 
+                                w dowolnym momencie poprzez kontakt z fotografem.
+                            </p>
+
+                            <div className="border-t border-zinc-700 pt-4 mt-4">
+                                <p className="text-xs text-zinc-400">
+                                    <strong>Data i godzina wyrażenia zgody:</strong> {new Date().toLocaleString('pl-PL')}
+                                </p>
+                                <p className="text-xs text-zinc-400">
+                                    <strong>Wyrażona przez:</strong> {participant?.parent_name}
+                                </p>
+                                <p className="text-xs text-zinc-400">
+                                    <strong>Forma zgody:</strong> Elektroniczna (zgodnie z art. 78 ust. 1 Kodeksu Cywilnego)
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 mb-6">
+                            <div className="flex items-start gap-3">
+                                <Info className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+                                <p className="text-sm text-amber-200">
+                                    Wyrażenie zgody jest dobrowolne. Zdjęcia zostaną wywołane niezależnie od wyrażenia zgody na publikację.
+                                </p>
+                            </div>
+                        </div>
+
                         <div className="flex gap-3">
                             <button
                                 onClick={() => setShowConsentModal(false)}
-                                className="flex-1 bg-zinc-800 text-white py-3 rounded-lg hover:bg-zinc-700 transition-colors"
+                                className="flex-1 bg-zinc-800 text-white py-4 rounded-lg hover:bg-zinc-700 transition-colors font-medium"
                             >
                                 Anuluj
                             </button>
                             <button
                                 onClick={handleConsentSubmit}
-                                className="flex-1 bg-gold-500 text-black font-bold py-3 rounded-lg hover:bg-gold-400 transition-colors"
+                                className="flex-1 bg-gold-500 text-black font-bold py-4 rounded-lg hover:bg-gold-400 transition-colors"
                             >
-                                Zgadzam się
+                                Wyrażam zgodę
                             </button>
                         </div>
                     </div>

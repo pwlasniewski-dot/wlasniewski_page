@@ -943,6 +943,13 @@ model GalleryParticipant {
   publication_consent  Boolean          @default(false) // Zgoda na publikację
   consent_given_at     DateTime?
   notes                String? // Notatki admina (opcjonalne)
+  
+  // Dane rodzica (wypełniane przy pierwszym logowaniu)
+  parent_name          String? // Imię i nazwisko rodzica (dla zgody elektronicznej)
+  parent_email         String? // Email rodzica (opcjonalny)
+  parent_phone         String? // Telefon rodzica (opcjonalny)
+  first_login_at       DateTime? // Kiedy rodzic się pierwszy raz zalogował
+  
   created_at           DateTime         @default(now())
   updated_at           DateTime         @updatedAt
   gallery              ClientGallery    @relation(fields: [gallery_id], references: [id], onDelete: Cascade)

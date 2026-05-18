@@ -1,5 +1,5 @@
 // API Route: POST /api/galleries/participant/[code]/consent
-// Submit publication consent for selected photos
+// Submit publication consent for selected photos (electronic signature with parent data)
 
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
@@ -31,6 +31,14 @@ export async function POST(
             );
         }
 
+        // Verify parent data exists (required for consent)
+        if (consent && !participant.parent_name) {
+            return NextResponse.json(
+                { error: 'Dane rodzica są wymagane przed wyrażeniem zgody' },
+                { status: 400 }
+            );
+        }
+
         // Update consent
         await prisma.galleryParticipant.update({
             where: { participant_code: code },
@@ -43,9 +51,11 @@ export async function POST(
         return NextResponse.json({
             success: true,
             message: consent 
-                ? 'Zgoda na publikację została zapisana' 
+                ? `Zgoda na publikację została zapisana. Wyrażona przez: ${participant.parent_name}` 
                 : 'Zgoda na publikację została cofnięta',
             publication_consent: consent,
+            consent_given_by: participant.parent_name,
+            consent_given_at: consent ? new Date().toISOString() : null,
         });
 
     } catch (error) {

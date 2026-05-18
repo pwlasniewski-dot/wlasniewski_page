@@ -1,12 +1,12 @@
 // API Route: POST /api/galleries/participant/auth
-// Verify participant access code and return participant data
+// Verify participant access code and optionally save parent data on first login
 
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 
 export async function POST(request: NextRequest) {
     try {
-        const { code } = await request.json();
+        const { code, parent_name, parent_email, parent_phone } = await request.json();
 
         if (!code) {
             return NextResponse.json(
@@ -60,6 +60,19 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        // If parent data provided (first login), save it
+        if (parent_name && !participant.parent_name) {
+            await prisma.galleryParticipant.update({
+                where: { id: participant.id },
+                data: {
+                    parent_name,
+                    parent_email: parent_email || null,
+                    parent_phone: parent_phone || null,
+                    first_login_at: new Date(),
+                }
+            });
+        }
+
         return NextResponse.json({
             success: true,
             participant: {
@@ -71,6 +84,8 @@ export async function POST(request: NextRequest) {
                 gallery_description: participant.gallery.description,
                 selected_count: participant.selections.length,
                 selected_photo_ids: participant.selections.map(s => s.photo_id),
+                needs_parent_data: !participant.parent_name, // Frontend should ask for parent data
+                parent_name: participant.parent_name,
             }
         });
 
