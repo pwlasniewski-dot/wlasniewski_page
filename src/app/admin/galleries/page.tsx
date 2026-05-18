@@ -213,7 +213,7 @@ export default function GalleriesAdminPage() {
                                 <div className="flex items-center gap-2 text-sm">
                                     <DollarSign className="w-4 h-4 text-green-400" />
                                     <span className="text-green-400 font-semibold">
-                                        {(gallery.total_revenue / 100).toFixed(2)} zł przychodu
+                                        {gallery.total_revenue.toFixed(2)} zł przychodu
                                     </span>
                                 </div>
                             )}

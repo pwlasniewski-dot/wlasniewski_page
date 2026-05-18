@@ -1036,7 +1036,7 @@ function ClientDetailsContent({ id }: { id: string }) {
                                                         </div>
                                                         <div className="bg-zinc-950 p-2 rounded text-center">
                                                             <p className="text-zinc-500 text-xs">Cena/szt</p>
-                                                            <p className="font-bold text-white">{gallery.price_per_premium} PLN</p>
+                                                            <p className="font-bold text-white">{(gallery.price_per_premium / 100).toFixed(2)} PLN</p>
                                                         </div>
                                                     </div>
 

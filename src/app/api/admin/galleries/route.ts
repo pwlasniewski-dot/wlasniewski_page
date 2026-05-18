@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
                 const premium_photos_count = gallery.photos.filter(p => !p.is_standard).length;
                 const total_revenue = gallery.orders
                     .filter(o => o.payment_status === 'paid')
-                    .reduce((sum, o) => sum + o.total_amount, 0);
+                    .reduce((sum, o) => sum + o.total_amount, 0) / 100; // grosze → PLN
 
                 return {
                     ...gallery,
