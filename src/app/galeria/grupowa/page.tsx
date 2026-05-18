@@ -22,6 +22,7 @@ interface ParticipantInfo {
   participant_id: number;
   parent_identifier: string;
   max_selections: number;
+  token: string;
 }
 
 export default function GroupGalleryPage() {
@@ -41,6 +42,7 @@ export default function GroupGalleryPage() {
   const [parentEmail, setParentEmail] = useState('');
   const [parentPhone, setParentPhone] = useState('');
   const [participantInfo, setParticipantInfo] = useState<ParticipantInfo | null>(null);
+  const [authToken, setAuthToken] = useState<string | null>(null);
 
   // Photos state
   const [photos, setPhotos] = useState<Photo[]>([]);
@@ -60,8 +62,9 @@ export default function GroupGalleryPage() {
         try {
           const parsed = JSON.parse(stored);
           setParticipantInfo(parsed);
-          loadPhotos(galleryInfo.gallery_id);
-          loadSelections(parsed.participant_id);
+          setAuthToken(parsed.token);
+          loadPhotos(galleryInfo.gallery_id, parsed.token);
+          loadSelections(parsed.participant_id, parsed.token);
         } catch (e) {
           console.error('Failed to parse stored participant:', e);
         }
@@ -130,6 +133,7 @@ export default function GroupGalleryPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           gallery_id: galleryInfo.gallery_id,
+          access_code: code.trim(), // Required for security verification
           parent_name: parentName.trim(),
           parent_email: parentEmail.trim() || undefined,
           parent_phone: parentPhone.trim() || undefined,
@@ -144,6 +148,7 @@ export default function GroupGalleryPage() {
       }
 
       setParticipantInfo(data);
+      setAuthToken(data.token);
       localStorage.setItem(
         `group_participant_${galleryInfo.gallery_id}`,
         JSON.stringify(data)
@@ -152,8 +157,8 @@ export default function GroupGalleryPage() {
       toast.success(`Witaj! Twój identyfikator: ${data.parent_identifier}`);
 
       // Load photos and selections
-      loadPhotos(galleryInfo.gallery_id);
-      loadSelections(data.participant_id);
+      loadPhotos(galleryInfo.gallery_id, data.token);
+      loadSelections(data.participant_id, data.token);
 
     } catch (error) {
       console.error('Registration error:', error);
@@ -163,28 +168,46 @@ export default function GroupGalleryPage() {
     }
   };
 
-  const loadPhotos = async (galleryId: number) => {
+  const loadPhotos = async (galleryId: number, token: string) => {
     try {
-      const response = await fetch(`/api/galleries/group/${galleryId}/photos`);
+      const response = await fetch(`/api/galleries/group/${galleryId}/photos`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
       const data = await response.json();
 
       if (response.ok) {
         setPhotos(data.photos || []);
+      } else if (response.status === 401) {
+        toast.error('Sesja wygasła. Zaloguj się ponownie.');
+        setIsAuthenticated(false);
+        setAuthToken(null);
+        setParticipantInfo(null);
       }
     } catch (error) {
       console.error('Load photos error:', error);
     }
   };
 
-  const loadSelections = async (participantId: number) => {
+  const loadSelections = async (participantId: number, token: string) => {
     try {
-      const response = await fetch(`/api/galleries/group/participant/${participantId}/select`);
+      const response = await fetch(`/api/galleries/group/participant/${participantId}/select`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
       const data = await response.json();
 
       if (response.ok) {
         setSelectedPhotos(data.selected_photos.map((p: any) => p.photo_id));
         setConsentGiven(data.publication_consent || false);
         setConsentScope(data.consent_scope || 'SELECTED');
+      } else if (response.status === 401) {
+        toast.error('Sesja wygasła. Zaloguj się ponownie.');
+        setIsAuthenticated(false);
+        setAuthToken(null);
+        setParticipantInfo(null);
       }
     } catch (error) {
       console.error('Load selections error:', error);
@@ -192,19 +215,29 @@ export default function GroupGalleryPage() {
   };
 
   const handlePhotoClick = async (photoId: number) => {
-    if (!participantInfo) return;
+    if (!participantInfo || !authToken) return;
 
     try {
       const response = await fetch(`/api/galleries/group/participant/${participantInfo.participant_id}/select`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`,
+        },
         body: JSON.stringify({ photo_id: photoId }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        toast.error(data.error || 'Nie udało się zapisać wyboru');
+        if (response.status === 401) {
+          toast.error('Sesja wygasła. Zaloguj się ponownie.');
+          setIsAuthenticated(false);
+          setAuthToken(null);
+          setParticipantInfo(null);
+        } else {
+          toast.error(data.error || 'Nie udało się zapisać wyboru');
+        }
         return;
       }
 
@@ -223,13 +256,16 @@ export default function GroupGalleryPage() {
   };
 
   const handleConsentSubmit = async () => {
-    if (!participantInfo) return;
+    if (!participantInfo || !authToken) return;
 
     setLoading(true);
     try {
       const response = await fetch(`/api/galleries/group/participant/${participantInfo.participant_id}/consent`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`,
+        },
         body: JSON.stringify({
           consent: true,
           scope: consentScope,
@@ -239,7 +275,14 @@ export default function GroupGalleryPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        toast.error(data.error || 'Nie udało się zapisać zgody');
+        if (response.status === 401) {
+          toast.error('Sesja wygasła. Zaloguj się ponownie.');
+          setIsAuthenticated(false);
+          setAuthToken(null);
+          setParticipantInfo(null);
+        } else {
+          toast.error(data.error || 'Nie udało się zapisać zgody');
+        }
         return;
       }
 

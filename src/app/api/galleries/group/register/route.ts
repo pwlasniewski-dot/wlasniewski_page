@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import crypto from 'crypto';
+import { generateParentToken } from '@/lib/auth/parent-jwt';
 
 /**
  * Generate initials from full name
@@ -59,31 +60,33 @@ async function generateParentIdentifier(
  */
 export async function POST(request: NextRequest) {
   try {
-    const { gallery_id, parent_name, parent_email, parent_phone } = await request.json();
+    const { gallery_id, access_code, parent_name, parent_email, parent_phone } = await request.json();
 
-    if (!gallery_id || !parent_name) {
+    if (!gallery_id || !access_code || !parent_name) {
       return NextResponse.json(
-        { error: 'ID galerii i imię rodzica są wymagane' },
+        { error: 'ID galerii, kod dostępu i imię rodzica są wymagane' },
         { status: 400 }
       );
     }
 
-    // Verify gallery exists and is in GROUP mode
+    // Verify gallery exists, is in GROUP mode, and access_code matches
     const gallery = await prisma.clientGallery.findFirst({
       where: {
         id: gallery_id,
+        group_access_code: access_code.trim().toUpperCase(),
         gallery_mode: 'GROUP',
         is_active: true,
       },
       select: {
         id: true,
         max_photos_for_print: true,
+        group_password: true,
       },
     });
 
     if (!gallery) {
       return NextResponse.json(
-        { error: 'Galeria nie istnieje lub nie jest w trybie grupowym' },
+        { error: 'Nieprawidłowy kod dostępu lub galeria nie istnieje' },
         { status: 404 }
       );
     }
@@ -106,10 +109,18 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // Generate JWT token for parent authorization
+    const token = await generateParentToken({
+      participant_id: participant.id,
+      gallery_id: gallery_id,
+      parent_identifier: parentIdentifier,
+    });
+
     return NextResponse.json({
       participant_id: participant.id,
       parent_identifier: parentIdentifier,
       max_selections: participant.max_selections,
+      token: token, // JWT token for future requests
     });
 
   } catch (error) {

@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
+import { verifyParentToken, extractTokenFromHeader } from '@/lib/auth/parent-jwt';
 
 /**
  * POST /api/galleries/group/participant/[id]/select
  * Toggle photo selection for a participant
+ * REQUIRES: Valid parent JWT token with matching participant_id
  */
 export async function POST(
   request: NextRequest,
@@ -17,6 +19,34 @@ export async function POST(
       return NextResponse.json(
         { error: 'Nieprawidłowe dane' },
         { status: 400 }
+      );
+    }
+
+    // SECURITY: Verify parent JWT token
+    const authHeader = request.headers.get('Authorization');
+    const token = extractTokenFromHeader(authHeader);
+    
+    if (!token) {
+      return NextResponse.json(
+        { error: 'Brak autoryzacji' },
+        { status: 401 }
+      );
+    }
+
+    const payload = await verifyParentToken(token);
+    
+    if (!payload) {
+      return NextResponse.json(
+        { error: 'Nieprawidłowy token autoryzacyjny' },
+        { status: 401 }
+      );
+    }
+
+    // SECURITY: Verify token participant_id matches requested participant_id
+    if (payload.participant_id !== participantId) {
+      return NextResponse.json(
+        { error: 'Brak dostępu do tego uczestnika' },
+        { status: 403 }
       );
     }
 
@@ -45,6 +75,21 @@ export async function POST(
       return NextResponse.json(
         { error: 'Galeria jest nieaktywna' },
         { status: 403 }
+      );
+    }
+
+    // SECURITY: Verify photo belongs to this gallery
+    const photo = await prisma.galleryPhoto.findFirst({
+      where: {
+        id: photo_id,
+        gallery_id: participant.gallery_id,
+      },
+    });
+
+    if (!photo) {
+      return NextResponse.json(
+        { error: 'Zdjęcie nie istnieje w tej galerii' },
+        { status: 404 }
       );
     }
 
@@ -109,6 +154,7 @@ export async function POST(
 /**
  * GET /api/galleries/group/participant/[id]/select
  * Get all selected photos for a participant
+ * REQUIRES: Valid parent JWT token with matching participant_id
  */
 export async function GET(
   request: NextRequest,
@@ -121,6 +167,34 @@ export async function GET(
       return NextResponse.json(
         { error: 'Nieprawidłowe ID uczestnika' },
         { status: 400 }
+      );
+    }
+
+    // SECURITY: Verify parent JWT token
+    const authHeader = request.headers.get('Authorization');
+    const token = extractTokenFromHeader(authHeader);
+    
+    if (!token) {
+      return NextResponse.json(
+        { error: 'Brak autoryzacji' },
+        { status: 401 }
+      );
+    }
+
+    const payload = await verifyParentToken(token);
+    
+    if (!payload) {
+      return NextResponse.json(
+        { error: 'Nieprawidłowy token autoryzacyjny' },
+        { status: 401 }
+      );
+    }
+
+    // SECURITY: Verify token participant_id matches requested participant_id
+    if (payload.participant_id !== participantId) {
+      return NextResponse.json(
+        { error: 'Brak dostępu do tego uczestnika' },
+        { status: 403 }
       );
     }
 
