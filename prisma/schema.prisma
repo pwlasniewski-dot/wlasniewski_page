@@ -906,6 +906,13 @@ model ClientGallery {
   updated_at        DateTime               @updatedAt
   photographer_id   Int?
   client_id         Int?
+  
+  // Tryb grupowy (komunia, impreza firmowa)
+  gallery_mode         String  @default("INDIVIDUAL") // "INDIVIDUAL" | "GROUP"
+  group_access_code    String? @unique // Kod dla trybu grupowego (np. KOMUNIA2026)
+  group_password       String? // Hasło dla trybu grupowego (opcjonalne)
+  max_photos_for_print Int?    // Limit zdjęć do druku (ustawiane przez admina)
+  
   client            User?                  @relation("ClientGalleries", fields: [client_id], references: [id])
   photographer      User?                  @relation("PhotographerGalleries", fields: [photographer_id], references: [id])
   photos            GalleryPhoto[]
@@ -937,10 +944,17 @@ model GalleryPhoto {
 model GalleryParticipant {
   id                   Int              @id @default(autoincrement())
   gallery_id           Int
-  participant_code     String           @unique // Unikalny kod dostępu dla rodzica
+  
+  // Tryb INDYWIDUALNY - każdy uczestnik ma osobny kod
+  participant_code     String?          @unique // Null dla trybu grupowego
+  
+  // Tryb GRUPOWY - rodzice dzielą 1 kod galerii
+  parent_identifier    String? // Inicjały + 4 cyfry (np. JK-4729)
+  
   name                 String // Nazwa uczestnika (np. "Dziecko 1", "Jan Kowalski")
   max_selections       Int              @default(5) // Limit zdjęć do wyboru
   publication_consent  Boolean          @default(false) // Zgoda na publikację
+  consent_scope        String?          // "ALL" - wszystkie zdjęcia | "SELECTED" - tylko wybrane
   consent_given_at     DateTime?
   notes                String? // Notatki admina (opcjonalne)
   
@@ -954,7 +968,8 @@ model GalleryParticipant {
   updated_at           DateTime         @updatedAt
   gallery              ClientGallery    @relation(fields: [gallery_id], references: [id], onDelete: Cascade)
   selections           PhotoSelection[]
-
+  
+  @@unique([gallery_id, parent_identifier])
   @@map("gallery_participants")
 }
 

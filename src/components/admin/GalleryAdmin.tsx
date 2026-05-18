@@ -5,6 +5,7 @@ import { getApiUrl } from '@/lib/api-config';
 import { Upload, Trash2, Check, X, Eye, ImageIcon, Plus, ArrowLeft, Calendar, Save, ShoppingBag } from 'lucide-react';
 import Image from 'next/image';
 import toast from 'react-hot-toast';
+import GalleryParticipantsManager from './GalleryParticipantsManager';
 
 interface GalleryPhoto {
     id: number;
@@ -659,6 +660,9 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
                     </div>
                 </div>
             </div>
+
+            {/* Participants Manager */}
+            <GalleryParticipantsManager galleryId={gallery.id} />
 
             {/* Upload Area */}
             <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-8">
