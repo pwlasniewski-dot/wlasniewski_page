@@ -8,6 +8,8 @@ export interface HeroPhoto {
   id: number;
   file_url: string;
   thumbnail_url?: string | null;
+  width?: number | null;
+  height?: number | null;
 }
 
 interface PremiumGalleryHeroProps {
@@ -268,15 +270,33 @@ export function PremiumGalleryStory({
                   isLight ? 'border-zinc-200' : 'border-zinc-800'
                 }`}
               >
-                <div className="relative w-full min-h-[400px] md:min-h-[600px] flex items-center justify-center bg-zinc-950">
-                  <Image
-                    src={photo.file_url}
-                    alt={`Kadr ${index + 1}`}
-                    width={1200}
-                    height={1200}
-                    className="w-auto h-auto max-w-full max-h-[600px] md:max-h-[800px] object-contain transition-transform duration-700 group-hover:scale-[1.03]"
-                  />
-                </div>
+                {(() => {
+                  const isPortrait = photo.width && photo.height && photo.height > photo.width;
+                  if (isPortrait) {
+                    return (
+                      <div className="relative w-full flex items-center justify-center py-8">
+                        <Image
+                          src={photo.file_url}
+                          alt={`Kadr ${index + 1}`}
+                          width={photo.width || 800}
+                          height={photo.height || 1200}
+                          className="w-auto max-w-full h-auto max-h-[70vh] object-contain transition-transform duration-700 group-hover:scale-[1.03]"
+                        />
+                      </div>
+                    );
+                  }
+                  return (
+                    <div className="relative w-full aspect-[3/2]">
+                      <Image
+                        src={photo.file_url}
+                        alt={`Kadr ${index + 1}`}
+                        fill
+                        sizes="(max-width: 1024px) 100vw, 1024px"
+                        className="object-contain transition-transform duration-700 group-hover:scale-[1.03]"
+                      />
+                    </div>
+                  );
+                })()}
               </button>
 
               <div className="flex justify-end">

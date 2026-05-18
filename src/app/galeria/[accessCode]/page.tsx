@@ -252,6 +252,8 @@ export default function ClientGalleryPage() {
                         id: p.id,
                         file_url: p.file_url,
                         thumbnail_url: p.thumbnail_url,
+                        width: p.width,
+                        height: p.height,
                     }))}
                     title={`Witaj, ${gallery.client_name}!`}
                     subtitle={gallery.description || 'Twoje profesjonalne zdjęcia są gotowe do przejrzenia'}
@@ -377,6 +379,8 @@ export default function ClientGalleryPage() {
                                 id: p.id,
                                 file_url: p.file_url,
                                 thumbnail_url: p.thumbnail_url,
+                                width: p.width,
+                                height: p.height,
                             }))}
                             onPhotoClick={(p) => {
                                 const idx = gallery.standard_photos.findIndex(ph => ph.id === p.id);
