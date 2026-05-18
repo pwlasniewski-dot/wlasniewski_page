@@ -75,9 +75,14 @@ export default function PremiumGalleryHero({
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
-      {/* Slides z crossfade i sprawdzonym kadrowaniem */}
+      {/* Slides z crossfade i smart orientation-aware framing */}
       {slides.map((p, i) => {
         const active = i === idx;
+        // Detect portrait orientation to prevent head cropping
+        const isPortrait = p.width && p.height && p.height > p.width;
+        const bgPosition = isPortrait ? 'center top' : 'center 30%';
+        const transformOrigin = isPortrait ? 'center top' : 'center 30%';
+        
         return (
           <motion.div
             key={p.id}
@@ -97,8 +102,8 @@ export default function PremiumGalleryHero({
               }}
               style={{
                 backgroundImage: `url("${p.file_url}")`,
-                backgroundPosition: 'center 30%',
-                transformOrigin: 'center 30%'
+                backgroundPosition: bgPosition,
+                transformOrigin: transformOrigin
               }}
             />
           </motion.div>
