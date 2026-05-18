@@ -3,11 +3,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Download, ShoppingCart, Check, X, ArrowLeft, Calendar, ImageIcon, Plus, Minus, ChevronLeft, ChevronRight, Maximize2 } from 'lucide-react';
+import { Download, ShoppingCart, Check, X, ArrowLeft, Calendar, ImageIcon, Plus, Minus, ChevronLeft, ChevronRight, Maximize2, Layers } from 'lucide-react';
 import Image from 'next/image';
 import { useAuth } from '@/context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import PremiumGalleryHero from '@/components/galleries/PremiumGalleryHero';
+import PremiumGalleryHero, { PremiumGalleryStory } from '@/components/galleries/PremiumGalleryHero';
 import PostGalleryUpsell, { TopReviewNudge } from '@/components/galleries/PostGalleryUpsell';
 
 interface GalleryPhoto {
@@ -51,7 +51,9 @@ export default function ClientGalleryPage() {
     const [gallery, setGallery] = useState<Gallery | null>(null);
     const [loading, setLoading] = useState(true);
     const [selectedPremium, setSelectedPremium] = useState<Set<number>>(new Set());
+    const [selectedStandard, setSelectedStandard] = useState<Set<number>>(new Set());
     const [downloadingAll, setDownloadingAll] = useState(false);
+    const [viewMode, setViewMode] = useState<'grid' | 'story'>('grid');
 
     // Advanced Lightbox State
     const [lightbox, _setLightbox] = useState({
@@ -314,27 +316,50 @@ export default function ClientGalleryPage() {
                                 <h2 className="text-3xl font-black uppercase tracking-tight mb-2">Pobierz swoją paczkę</h2>
                                 <p className="text-zinc-500 font-medium">To są zdjęcia zawarte w Twoim pakiecie sesji.</p>
                             </div>
-                            <button
-                                onClick={downloadAllFree}
-                                disabled={downloadingAll}
-                                className="h-16 px-10 bg-white text-black font-black uppercase tracking-widest text-xs rounded-2xl hover:bg-gold-500 transition-all shadow-xl shadow-white/5 disabled:opacity-50 flex items-center gap-3"
-                            >
-                                <Download className="w-5 h-5" />
-                                {downloadingAll ? 'Pobieranie...' : 'Pobierz Wszystkie'}
-                            </button>
+                            <div className="flex items-center gap-4">
+                                <div className="flex gap-2 p-1 bg-black/40 border border-zinc-800 rounded-xl">
+                                    <button
+                                        onClick={() => setViewMode('grid')}
+                                        className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-gold-500 text-black' : 'text-zinc-400 hover:text-white'}`}
+                                    >
+                                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M3 3h7v7H3V3zm11 0h7v7h-7V3zM3 14h7v7H3v-7zm11 0h7v7h-7v-7z"/>
+                                        </svg>
+                                        Siatka
+                                    </button>
+                                    <button
+                                        onClick={() => setViewMode('story')}
+                                        className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${viewMode === 'story' ? 'bg-gold-500 text-black' : 'text-zinc-400 hover:text-white'}`}
+                                    >
+                                        <Layers className="w-4 h-4" />
+                                        Historia
+                                    </button>
+                                </div>
+                                <button
+                                    onClick={downloadAllFree}
+                                    disabled={downloadingAll}
+                                    className="h-16 px-10 bg-white text-black font-black uppercase tracking-widest text-xs rounded-2xl hover:bg-gold-500 transition-all shadow-xl shadow-white/5 disabled:opacity-50 flex items-center gap-3"
+                                >
+                                    <Download className="w-5 h-5" />
+                                    {downloadingAll ? 'Pobieranie...' : 'Pobierz Wszystkie'}
+                                </button>
+                            </div>
                         </div>
+
+                        {/* GRID MODE */}
+                        {viewMode === 'grid' ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                             {gallery.standard_photos.map((photo, idx) => (
                                 <div
                                     key={photo.id}
-                                    className="group relative aspect-[3/2] bg-zinc-900 overflow-hidden cursor-pointer border border-white/5 hover:border-white/20 transition-all shadow-2xl"
-                                    onClick={() => setLightbox(idx, 'standard')}
+                                    className="group relative aspect-[3/2] bg-zinc-900 overflow-hidden border border-white/5 hover:border-white/20 transition-all shadow-2xl"
                                 >
                                     <Image
                                         src={photo.thumbnail_url || photo.file_url}
                                         alt={`Photo ${photo.id}`}
                                         fill
-                                        className="object-cover transition-transform duration-1000 group-hover:scale-110"
+                                        className="object-cover transition-transform duration-1000 group-hover:scale-110 cursor-pointer"
+                                        onClick={() => setLightbox(idx, 'standard')}
                                     />
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                                     <div className="absolute top-8 right-8">
@@ -343,7 +368,28 @@ export default function ClientGalleryPage() {
                                         </div>
                                     </div>
                                     <div className="absolute bottom-8 left-8 right-8 flex justify-between items-center translate-y-4 group-hover:translate-y-0 transition-transform duration-500 opacity-0 group-hover:opacity-100">
-                                        <div className="px-5 py-2 bg-white/10 backdrop-blur-md rounded-full text-[10px] font-black text-white uppercase tracking-tighter">Otrzymujesz to zdjęcie</div>
+                                        <div className="flex items-center gap-3">
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    const newSet = new Set(selectedStandard);
+                                                    if (newSet.has(photo.id)) {
+                                                        newSet.delete(photo.id);
+                                                    } else {
+                                                        newSet.add(photo.id);
+                                                    }
+                                                    setSelectedStandard(newSet);
+                                                }}
+                                                className={`p-3 rounded-xl border-2 transition-all ${selectedStandard.has(photo.id) ? 'bg-green-500 border-green-500' : 'bg-white/10 border-white/20 hover:border-white/40'}`}
+                                            >
+                                                {selectedStandard.has(photo.id) ? (
+                                                    <Check className="w-4 h-4 text-white" />
+                                                ) : (
+                                                    <div className="w-4 h-4" />
+                                                )}
+                                            </button>
+                                            <div className="px-4 py-2 bg-white/10 backdrop-blur-md rounded-full text-[10px] font-black text-white uppercase tracking-tighter">Otrzymujesz to</div>
+                                        </div>
                                         <button
                                             onClick={(e) => { e.stopPropagation(); downloadPhoto(photo.id); }}
                                             className="p-4 bg-white text-black rounded-2xl hover:bg-gold-500 transition-colors shadow-xl"
@@ -354,6 +400,15 @@ export default function ClientGalleryPage() {
                                 </div>
                             ))}
                         </div>
+                        ) : (
+                        <PremiumGalleryStory
+                            photos={gallery.standard_photos}
+                            onPhotoClick={(p) => {
+                                const idx = gallery.standard_photos.findIndex(ph => ph.id === p.id);
+                                if (idx !== -1) setLightbox(idx, 'standard');
+                            }}
+                        />
+                        )}
                     </div>
                 )}
 
@@ -492,6 +547,48 @@ export default function ClientGalleryPage() {
                     </div>
                 )}
             </div>
+
+            {/* Sticky Selection Bar */}
+            {(selectedStandard.size > 0 || selectedPremium.size > 0) && (
+                <div className="fixed bottom-0 left-0 right-0 bg-zinc-950/95 backdrop-blur-3xl border-t border-gold-500/20 p-6 z-40">
+                    <div className="max-w-7xl mx-auto flex items-center justify-between">
+                        <div className="flex items-center gap-12">
+                            {selectedStandard.size > 0 && (
+                                <div className="flex items-center gap-4">
+                                    <Check className="w-5 h-5 text-green-500" />
+                                    <div>
+                                        <div className="text-[10px] font-black uppercase text-zinc-500">Bezpłatne zdjęcia</div>
+                                        <div className="text-2xl font-black text-white">{selectedStandard.size}</div>
+                                    </div>
+                                </div>
+                            )}
+                            {selectedPremium.size > 0 && (
+                                <div className="flex items-center gap-4">
+                                    <Check className="w-5 h-5 text-gold-500" />
+                                    <div>
+                                        <div className="text-[10px] font-black uppercase text-zinc-500">Dodatkowe zdjęcia</div>
+                                        <div className="text-2xl font-black text-gold-500">{selectedPremium.size} × {(gallery.price_per_premium / 100).toFixed(2)} zł</div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                        <div className="flex items-center gap-8">
+                            <div className="text-right">
+                                <div className="text-[10px] font-black uppercase text-zinc-500">Do zapłaty</div>
+                                <div className="text-4xl font-black text-gold-500">{(totalPrice / 100).toFixed(2)} zł</div>
+                            </div>
+                            {selectedPremium.size > 0 && (
+                                <button
+                                    onClick={handleCheckout}
+                                    className="h-16 px-12 bg-gold-500 hover:bg-gold-400 text-black font-black uppercase tracking-widest text-sm rounded-2xl transition-all flex items-center gap-3 shadow-2xl shadow-gold-500/30"
+                                >
+                                    <ShoppingCart className="w-5 h-5" /> Zamów ({selectedPremium.size})
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* UPSELL + PROŚBA O OPINIĘ — boost SEO */}
             {(gallery.standard_photos.length + gallery.premium_photos.length) > 0 && (

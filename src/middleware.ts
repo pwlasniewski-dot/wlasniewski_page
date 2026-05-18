@@ -35,9 +35,11 @@ export default async function middleware(req: NextRequest) {
         // Rewrite traffic to /b2b folder
         // Prevent double stacking if the path already starts with /b2b 
         // Also skip admin/api routes (they are global/internal)
+        // SKIP /galeria routes - they are B2C only
         if (url.pathname.startsWith('/b2b') ||
             url.pathname.startsWith('/admin') ||
-            url.pathname.startsWith('/api')) {
+            url.pathname.startsWith('/api') ||
+            url.pathname.startsWith('/galeria')) {
             return NextResponse.next();
         }
 
