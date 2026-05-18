@@ -27,8 +27,8 @@ interface PremiumGalleryHeroProps {
 }
 
 /**
- * PREMIUM hero slider: pełnoekranowy, autoplay, efekt Ken Burns, crossfade,
- * elegancki overlay z tytułem. Dla widoku galerii klienta i rodzica.
+ * PREMIUM hero slider: pełnoekranowy, autoplay, crossfade,
+ * bez zniekształceń zdjęć (object-contain + subtelne tło).
  */
 export default function PremiumGalleryHero({
   photos,
@@ -72,7 +72,7 @@ export default function PremiumGalleryHero({
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
-      {/* Slides z crossfade + Ken Burns */}
+      {/* Slides z crossfade i bez zniekształceń proporcji */}
       {slides.map((p, i) => {
         const active = i === idx;
         return (
@@ -83,17 +83,27 @@ export default function PremiumGalleryHero({
             }`}
             aria-hidden={!active}
           >
-            <div
-              className={`absolute inset-0 ${active ? 'animate-kenburns' : ''}`}
-              style={{ willChange: 'transform' }}
-            >
+            {/* Warstwa tła dla klimatu */}
+            <div className="absolute inset-0">
+              <Image
+                src={p.file_url}
+                alt=""
+                fill
+                sizes="100vw"
+                className="object-cover scale-110 blur-2xl opacity-35"
+                aria-hidden
+              />
+            </div>
+
+            {/* Główne zdjęcie bez rozciągania */}
+            <div className="absolute inset-0 p-4 md:p-8 lg:p-12">
               <Image
                 src={p.file_url}
                 alt={`${title} – slajd ${i + 1}`}
                 fill
                 priority={i === 0}
                 sizes="100vw"
-                className="object-cover"
+                className={`object-contain transition-transform duration-[6000ms] ease-out ${active ? 'scale-[1.02]' : 'scale-100'}`}
               />
             </div>
           </div>
@@ -219,13 +229,6 @@ export default function PremiumGalleryHero({
       )}
 
       <style jsx>{`
-        @keyframes kenburns {
-          0% { transform: scale(1) translate(0, 0); }
-          100% { transform: scale(1.12) translate(-1.5%, -1.5%); }
-        }
-        .animate-kenburns {
-          animation: kenburns ${intervalMs * 2}ms ease-out forwards;
-        }
         @keyframes progress {
           0% { width: 0%; }
           100% { width: 100%; }
@@ -239,83 +242,67 @@ export default function PremiumGalleryHero({
 }
 
 /**
- * Story (kolumnowa opowieść) – chronologiczna historia w jednej kolumnie,
- * naprzemiennie białe/czarne sekcje z rozdziałami.
+ * Story (kolumnowa opowieść) – pionowo od góry do dołu, kadr po kadrze,
+ * naprzemiennie białe/czarne tło dla wyraźnego rytmu.
  */
 export function PremiumGalleryStory({
   photos,
   onPhotoClick,
-  chapterSize = 4,
 }: {
   photos: HeroPhoto[];
   onPhotoClick?: (photo: HeroPhoto) => void;
-  chapterSize?: number;
 }) {
   if (photos.length === 0) return null;
 
-  const chapters: HeroPhoto[][] = [];
-  for (let i = 0; i < photos.length; i += chapterSize) {
-    chapters.push(photos.slice(i, i + chapterSize));
-  }
-
   return (
     <div className="w-full">
-      {chapters.map((chunk, ci) => {
-        const isLight = ci % 2 === 0;
-        const hero = chunk[0];
-        const rest = chunk.slice(1);
+      {photos.map((photo, index) => {
+        const isLight = index % 2 === 0;
         return (
           <section
-            key={ci}
-            className={`py-16 md:py-24 ${isLight ? 'bg-white text-black' : 'bg-black text-white'}`}
+            key={photo.id}
+            className={`py-14 md:py-20 ${isLight ? 'bg-white text-black' : 'bg-black text-white'}`}
           >
-            <div className="max-w-5xl mx-auto px-6">
-              <div className="flex items-center gap-4 mb-8">
+            <div className="max-w-5xl mx-auto px-6 flex flex-col gap-6">
+              <div className="flex items-center gap-4">
                 <span
                   className={`font-mono text-xs tracking-[0.4em] uppercase ${
                     isLight ? 'text-zinc-500' : 'text-zinc-400'
                   }`}
                 >
-                  Rozdział {String(ci + 1).padStart(2, '0')}
+                  Kadr {String(index + 1).padStart(2, '0')}
                 </span>
                 <div className={`h-px flex-1 ${isLight ? 'bg-zinc-300' : 'bg-zinc-700'}`} />
               </div>
 
-              {hero && (
-                <button
-                  onClick={() => onPhotoClick?.(hero)}
-                  className="block w-full group relative overflow-hidden rounded-lg shadow-2xl"
-                  style={{ aspectRatio: '3 / 2' }}
-                >
+              <button
+                onClick={() => onPhotoClick?.(photo)}
+                className={`group relative w-full rounded-xl overflow-hidden border ${
+                  isLight ? 'border-zinc-200' : 'border-zinc-800'
+                }`}
+              >
+                <div className={`absolute inset-0 ${isLight ? 'bg-zinc-100' : 'bg-zinc-900'}`} />
+                <div className="relative w-full h-[45vh] md:h-[65vh]">
                   <Image
-                    src={hero.file_url}
-                    alt={`Rozdział ${ci + 1} – zdjęcie główne`}
+                    src={photo.file_url}
+                    alt={`Kadr ${index + 1}`}
                     fill
                     sizes="(max-width: 1024px) 100vw, 1024px"
-                    className="object-cover transition-transform duration-700 group-hover:scale-[1.03]"
+                    className="object-contain transition-transform duration-700 group-hover:scale-[1.01]"
                   />
-                </button>
-              )}
-
-              {rest.length > 0 && (
-                <div className="mt-6 grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {rest.map((p) => (
-                    <button
-                      key={p.id}
-                      onClick={() => onPhotoClick?.(p)}
-                      className="relative aspect-[4/3] overflow-hidden rounded-lg group"
-                    >
-                      <Image
-                        src={p.thumbnail_url || p.file_url}
-                        alt="Zdjęcie z rozdziału"
-                        fill
-                        sizes="(max-width: 768px) 50vw, 33vw"
-                        className="object-cover transition-transform duration-500 group-hover:scale-110"
-                      />
-                    </button>
-                  ))}
                 </div>
-              )}
+              </button>
+
+              <div className="flex justify-end">
+                <button
+                  onClick={() => onPhotoClick?.(photo)}
+                  className={`px-4 py-2 rounded-full text-xs font-semibold ${
+                    isLight ? 'bg-zinc-900 text-white hover:bg-black' : 'bg-white text-black hover:bg-zinc-100'
+                  }`}
+                >
+                  Otwórz podgląd
+                </button>
+              </div>
             </div>
           </section>
         );

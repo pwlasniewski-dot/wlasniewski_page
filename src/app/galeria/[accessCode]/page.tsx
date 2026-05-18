@@ -501,7 +501,8 @@ export default function ClientGalleryPage() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-black/98 z-[100] flex items-center justify-center backdrop-blur-3xl px-4 select-none"
+                        className="fixed inset-0 bg-black/98 z-[300] flex items-center justify-center backdrop-blur-3xl px-4 select-none"
+                        onClick={() => setLightbox(0, 'standard', false)}
                     >
                         {/* Lightbox Header */}
                         <div className="absolute top-0 left-0 right-0 h-28 px-8 flex items-center justify-between z-[110] bg-gradient-to-b from-black/80 via-black/40 to-transparent">
@@ -573,6 +574,7 @@ export default function ClientGalleryPage() {
                         {/* Main Viewport */}
                         <div
                             className="relative w-full h-full flex items-center justify-center overflow-hidden"
+                            onClick={(e) => e.stopPropagation()}
                             onWheel={handleWheel}
                             onMouseDownCapture={handleDragStart}
                             onMouseMoveCapture={handleDragMove}

@@ -940,7 +940,7 @@ export default function GroupGalleryPage() {
       {/* LIGHTBOX PRO — nawigacja, licznik, akcje */}
       {lightboxPhoto && (
         <div
-          className="fixed inset-0 bg-black/95 flex items-center justify-center z-[60]"
+          className="fixed inset-0 bg-black/95 flex items-center justify-center z-[220]"
           onClick={() => setLightboxPhoto(null)}
         >
           {/* Top bar: licznik + zamknij */}
@@ -1058,6 +1058,13 @@ export default function GroupGalleryPage() {
             <p className="mt-4 text-xs text-zinc-500 text-center">
               Użyj strzałek ← → na klawiaturze, aby przeglądać. ESC zamyka.
             </p>
+
+            <button
+              onClick={() => setLightboxPhoto(null)}
+              className="mt-3 px-5 py-2 rounded-full text-xs font-semibold bg-white text-black hover:bg-zinc-200"
+            >
+              Zamknij podgląd
+            </button>
           </div>
         </div>
       )}
