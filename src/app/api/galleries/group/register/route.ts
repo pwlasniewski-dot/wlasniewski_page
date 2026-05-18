@@ -175,6 +175,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       participant_id: participant.id,
       parent_identifier: parentIdentifier,
+      parent_name: participant.parent_name,
       avatar: avatar,
       max_selections: participant.max_selections,
       token: token,

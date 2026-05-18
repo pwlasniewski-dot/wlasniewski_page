@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Users, Copy, Check, Trash2, Eye, EyeOff } from 'lucide-react';
+import { Users, Copy, Check, Trash2, Eye, EyeOff, ChevronDown, ChevronUp, Image as ImageIcon, Download, Package } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface Participant {
@@ -35,6 +35,39 @@ export default function GalleryParticipantsManager({ galleryId }: GalleryPartici
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [loading, setLoading] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [selectionsMap, setSelectionsMap] = useState<Record<number, { loading: boolean; photos: Array<{ photo_id: number; file_url: string; thumbnail_url: string | null; selected_at: string }> }>>({});
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+
+  const toggleExpand = async (participantId: number) => {
+    if (expandedId === participantId) {
+      setExpandedId(null);
+      return;
+    }
+    setExpandedId(participantId);
+    if (!selectionsMap[participantId]) {
+      setSelectionsMap(prev => ({ ...prev, [participantId]: { loading: true, photos: [] } }));
+      try {
+        const token = localStorage.getItem('admin_token');
+        const response = await fetch(`/api/admin/galleries/${galleryId}/participants/${participantId}/selections`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setSelectionsMap(prev => ({
+            ...prev,
+            [participantId]: { loading: false, photos: data.selections || [] },
+          }));
+        } else {
+          setSelectionsMap(prev => ({ ...prev, [participantId]: { loading: false, photos: [] } }));
+          toast.error('Nie udało się pobrać wyborów');
+        }
+      } catch (error) {
+        console.error('Load selections error:', error);
+        setSelectionsMap(prev => ({ ...prev, [participantId]: { loading: false, photos: [] } }));
+      }
+    }
+  };
 
   useEffect(() => {
     fetchGalleryInfo();
@@ -86,6 +119,34 @@ export default function GalleryParticipantsManager({ galleryId }: GalleryPartici
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
     toast.success(`${label} skopiowano`);
+  };
+
+  const downloadWithAuth = async (url: string, fallbackName: string) => {
+    const toastId = toast.loading('Przygotowywanie pliku...');
+    try {
+      const token = localStorage.getItem('admin_token');
+      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) {
+        toast.error('Nie udało się pobrać pliku', { id: toastId });
+        return;
+      }
+      const cd = res.headers.get('Content-Disposition') || '';
+      const m = cd.match(/filename="([^"]+)"/);
+      const name = m?.[1] || fallbackName;
+      const blob = await res.blob();
+      const objUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = objUrl;
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(objUrl);
+      toast.success('Pobrano', { id: toastId });
+    } catch (err) {
+      console.error('Download error:', err);
+      toast.error('Błąd pobierania', { id: toastId });
+    }
   };
 
   const handleDeleteParticipant = async (participantId: number) => {
@@ -210,10 +271,17 @@ export default function GalleryParticipantsManager({ galleryId }: GalleryPartici
               </div>
             ) : (
               <div className="grid grid-cols-1 gap-3">
-                {participants.map(participant => (
-                  <div key={participant.id} className="bg-black/50 border border-zinc-800 rounded-xl p-4 hover:border-zinc-700 transition-colors">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1 flex items-center gap-3">
+                {participants.map(participant => {
+                  const isExpanded = expandedId === participant.id;
+                  const sel = selectionsMap[participant.id];
+                  return (
+                  <div key={participant.id} className="bg-black/50 border border-zinc-800 rounded-xl overflow-hidden hover:border-zinc-700 transition-colors">
+                    <div className="flex items-center justify-between p-4">
+                      <button
+                        type="button"
+                        onClick={() => toggleExpand(participant.id)}
+                        className="flex-1 flex items-center gap-3 text-left"
+                      >
                         {participant.avatar && (
                           <div className="w-12 h-12 bg-gold-500/10 border border-gold-500/30 rounded-full flex items-center justify-center text-2xl flex-shrink-0">
                             {participant.avatar}
@@ -242,16 +310,88 @@ export default function GalleryParticipantsManager({ galleryId }: GalleryPartici
                             )}
                           </div>
                         </div>
-                      </div>
+                        <div className="flex items-center gap-2 text-zinc-500">
+                          <ImageIcon className="w-4 h-4" />
+                          {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                        </div>
+                      </button>
                       <button
                         onClick={() => handleDeleteParticipant(participant.id)}
-                        className="p-2 hover:bg-red-500/10 rounded-lg text-zinc-500 hover:text-red-400 transition-colors"
+                        className="ml-2 p-2 hover:bg-red-500/10 rounded-lg text-zinc-500 hover:text-red-400 transition-colors"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
+                    {isExpanded && (
+                      <div className="border-t border-zinc-800 bg-zinc-950/50 p-4">
+                        {sel?.loading ? (
+                          <p className="text-xs text-zinc-500">Ładowanie wybranych zdjęć...</p>
+                        ) : sel && sel.photos.length === 0 ? (
+                          <p className="text-xs text-zinc-500">Ten rodzic nie wybrał jeszcze żadnych zdjęć.</p>
+                        ) : sel ? (
+                          <div>
+                            <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
+                              <p className="text-xs text-zinc-400">
+                                Wybrane zdjęcia do druku ({sel.photos.length}):
+                              </p>
+                              <button
+                                type="button"
+                                onClick={() => downloadWithAuth(
+                                  `/api/admin/galleries/${galleryId}/participants/${participant.id}/download-all`,
+                                  `${participant.parent_identifier || 'rodzic'}_wybory.zip`
+                                )}
+                                className="flex items-center gap-2 px-3 py-1.5 bg-gold-500 hover:bg-gold-400 text-black text-xs font-bold rounded-lg transition-colors"
+                              >
+                                <Package className="w-3.5 h-3.5" />
+                                Pobierz wszystkie (ZIP)
+                              </button>
+                            </div>
+                            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
+                              {sel.photos.map((p, idx) => (
+                                <div
+                                  key={p.photo_id}
+                                  className="relative aspect-square rounded-lg overflow-hidden border border-zinc-800 hover:border-gold-500 transition-colors group"
+                                >
+                                  <button
+                                    type="button"
+                                    onClick={() => setLightboxUrl(p.file_url)}
+                                    className="absolute inset-0"
+                                    title={`Podgląd zdjęcia #${p.photo_id}`}
+                                  >
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img
+                                      src={p.thumbnail_url || p.file_url}
+                                      alt={`Wybór ${idx + 1}`}
+                                      className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                                    />
+                                  </button>
+                                  <span className="absolute top-1 left-1 bg-gold-500 text-black text-[10px] font-bold px-1.5 py-0.5 rounded pointer-events-none">
+                                    {idx + 1}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      downloadWithAuth(
+                                        `/api/admin/galleries/${galleryId}/participants/${participant.id}/download/${p.photo_id}?index=${idx + 1}`,
+                                        `${participant.parent_identifier || 'rodzic'}_${String(idx + 1).padStart(2, '0')}.jpg`
+                                      );
+                                    }}
+                                    className="absolute bottom-1 right-1 p-1.5 bg-black/80 hover:bg-gold-500 hover:text-black text-white rounded transition-colors opacity-0 group-hover:opacity-100"
+                                    title="Pobierz w pełnej rozdzielczości"
+                                  >
+                                    <Download className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ) : null}
+                      </div>
+                    )}
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -293,6 +433,29 @@ export default function GalleryParticipantsManager({ galleryId }: GalleryPartici
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Lightbox podgląd zdjęcia */}
+      {lightboxUrl && (
+        <div
+          className="fixed inset-0 bg-black/95 flex items-center justify-center p-4 z-[60]"
+          onClick={() => setLightboxUrl(null)}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={lightboxUrl}
+            alt="Podgląd"
+            className="max-w-full max-h-full object-contain rounded-lg"
+            onClick={(e) => e.stopPropagation()}
+          />
+          <button
+            onClick={() => setLightboxUrl(null)}
+            className="absolute top-4 right-4 w-12 h-12 bg-zinc-900/80 hover:bg-zinc-800 text-white rounded-full flex items-center justify-center"
+            aria-label="Zamknij"
+          >
+            ✕
+          </button>
         </div>
       )}
     </div>

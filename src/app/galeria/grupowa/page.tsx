@@ -23,6 +23,7 @@ interface GalleryInfo {
 interface ParticipantInfo {
   participant_id: number;
   parent_identifier: string;
+  parent_name?: string;
   avatar: string;
   max_selections: number;
   token: string;
@@ -262,6 +263,23 @@ export default function GroupGalleryPage() {
         setSelectedPhotos(data.selected_photos.map((p: any) => p.photo_id));
         setConsentGiven(data.publication_consent || false);
         setConsentScope(data.consent_scope || 'SELECTED');
+        // Hydrate parent_name for existing participants whose localStorage was saved before this field
+        if (data.parent_name) {
+          setParticipantInfo(prev => {
+            if (!prev) return prev;
+            if (prev.parent_name === data.parent_name) return prev;
+            const next = { ...prev, parent_name: data.parent_name };
+            if (galleryInfo) {
+              try {
+                localStorage.setItem(
+                  `group_participant_${galleryInfo.gallery_id}`,
+                  JSON.stringify(next)
+                );
+              } catch {}
+            }
+            return next;
+          });
+        }
       } else if (response.status === 401) {
         toast.error('Sesja wygasła. Zaloguj się ponownie.');
         setIsAuthenticated(false);
@@ -543,10 +561,15 @@ export default function GroupGalleryPage() {
                 </div>
               )}
               <div>
-                <h1 className="text-2xl font-bold">{galleryInfo?.gallery_name}</h1>
+                <h1 className="text-2xl font-bold">
+                  {participantInfo?.parent_name || galleryInfo?.gallery_name}
+                </h1>
                 {participantInfo && (
                   <p className="text-sm text-zinc-400">
-                    Twoje ID: <span className="text-gold-500 font-mono">{participantInfo.parent_identifier}</span>
+                    {galleryInfo?.gallery_name && (
+                      <span className="text-zinc-500">{galleryInfo.gallery_name} • </span>
+                    )}
+                    ID: <span className="text-gold-500 font-mono">{participantInfo.parent_identifier}</span>
                   </p>
                 )}
               </div>

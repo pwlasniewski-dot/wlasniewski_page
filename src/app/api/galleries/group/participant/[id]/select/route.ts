@@ -223,6 +223,9 @@ export async function GET(
     }
 
     return NextResponse.json({
+      parent_name: participant.parent_name,
+      parent_identifier: participant.parent_identifier,
+      avatar: participant.avatar,
       selected_photos: participant.selections.map(s => ({
         photo_id: s.photo_id,
         file_url: s.photo.file_url,
