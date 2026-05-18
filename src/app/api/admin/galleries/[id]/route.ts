@@ -59,7 +59,10 @@ export async function PUT(
             const galleryId = Number(id);
             const body = await request.json();
 
-            const { standard_count, price_per_premium, expires_at, is_active, description } = body;
+            const {
+                standard_count, price_per_premium, expires_at, is_active, description,
+                gallery_mode, group_access_code, group_password, max_photos_for_print,
+            } = body;
 
             const updateData: any = {};
             if (standard_count !== undefined) updateData.standard_count = standard_count;
@@ -67,6 +70,49 @@ export async function PUT(
             if (expires_at !== undefined) updateData.expires_at = expires_at ? new Date(expires_at) : null;
             if (is_active !== undefined) updateData.is_active = is_active;
             if (description !== undefined) updateData.description = description;
+
+            // GROUP mode settings
+            if (gallery_mode !== undefined) {
+                const mode = gallery_mode === 'GROUP' ? 'GROUP' : 'INDIVIDUAL';
+                updateData.gallery_mode = mode;
+                if (mode === 'INDIVIDUAL') {
+                    // Clear group fields when switching back
+                    updateData.group_access_code = null;
+                    updateData.group_password = null;
+                }
+            }
+            if (group_access_code !== undefined) {
+                const normalized = group_access_code
+                    ? String(group_access_code).toUpperCase().replace(/[^A-Z0-9]/g, '')
+                    : null;
+                if (normalized && normalized.length < 4) {
+                    return NextResponse.json(
+                        { success: false, error: 'Kod grupowy musi mieć min. 4 znaki (A-Z/0-9)' },
+                        { status: 400 }
+                    );
+                }
+                if (normalized) {
+                    const conflict = await prisma.clientGallery.findFirst({
+                        where: { group_access_code: normalized, id: { not: galleryId } },
+                        select: { id: true }
+                    });
+                    if (conflict) {
+                        return NextResponse.json(
+                            { success: false, error: `Kod grupowy "${normalized}" jest już zajęty` },
+                            { status: 409 }
+                        );
+                    }
+                }
+                updateData.group_access_code = normalized;
+            }
+            if (group_password !== undefined) {
+                updateData.group_password = group_password ? String(group_password) : null;
+            }
+            if (max_photos_for_print !== undefined) {
+                updateData.max_photos_for_print = max_photos_for_print === null || max_photos_for_print === ''
+                    ? null
+                    : Number(max_photos_for_print);
+            }
 
             const gallery = await prisma.clientGallery.update({
                 where: { id: galleryId },

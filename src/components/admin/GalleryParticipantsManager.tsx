@@ -51,12 +51,13 @@ export default function GalleryParticipantsManager({ galleryId }: GalleryPartici
 
       if (response.ok) {
         const data = await response.json();
+        const g = data.gallery || data; // backward-compat
         setGalleryInfo({
-          id: data.id,
-          gallery_mode: data.gallery_mode || 'INDIVIDUAL',
-          group_access_code: data.group_access_code,
-          group_password: data.group_password,
-          max_photos_for_print: data.max_photos_for_print,
+          id: g.id,
+          gallery_mode: g.gallery_mode || 'INDIVIDUAL',
+          group_access_code: g.group_access_code,
+          group_password: g.group_password,
+          max_photos_for_print: g.max_photos_for_print,
         });
       }
     } catch (error) {

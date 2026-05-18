@@ -36,6 +36,10 @@ interface Gallery {
     is_active: boolean;
     expires_at: string | null;
     photos: GalleryPhoto[];
+    gallery_mode?: string;
+    group_access_code?: string | null;
+    group_password?: string | null;
+    max_photos_for_print?: number | null;
 }
 
 interface GalleryAdminProps {
@@ -61,7 +65,11 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
         price_per_premium: 0,
         expires_at: '',
         is_active: true,
-        description: ''
+        description: '',
+        gallery_mode: 'INDIVIDUAL' as 'INDIVIDUAL' | 'GROUP',
+        group_access_code: '',
+        group_password: '',
+        max_photos_for_print: '' as string | number,
     });
 
     // Create state
@@ -71,6 +79,10 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
         standard_count: 10,
         price_per_premium: 2000,
         expires_days: 30,
+        gallery_mode: 'INDIVIDUAL' as 'INDIVIDUAL' | 'GROUP',
+        group_access_code: '',
+        group_password: '',
+        max_photos_for_print: '' as string | number,
     });
     const [creating, setCreating] = useState(false);
 
@@ -100,7 +112,11 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
                 price_per_premium: gallery.price_per_premium,
                 expires_at: gallery.expires_at ? gallery.expires_at.split('T')[0] : '',
                 is_active: gallery.is_active,
-                description: gallery.description || ''
+                description: gallery.description || '',
+                gallery_mode: (gallery.gallery_mode === 'GROUP' ? 'GROUP' : 'INDIVIDUAL'),
+                group_access_code: gallery.group_access_code || '',
+                group_password: gallery.group_password || '',
+                max_photos_for_print: gallery.max_photos_for_print ?? '',
             });
         }
     }, [gallery]);
@@ -141,13 +157,26 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
         e.preventDefault();
         try {
             const token = localStorage.getItem('admin_token');
+            const payload: any = {
+                standard_count: editData.standard_count,
+                price_per_premium: editData.price_per_premium,
+                expires_at: editData.expires_at,
+                is_active: editData.is_active,
+                description: editData.description,
+                gallery_mode: editData.gallery_mode,
+            };
+            if (editData.gallery_mode === 'GROUP') {
+                payload.group_access_code = editData.group_access_code || null;
+                payload.group_password = editData.group_password || null;
+                payload.max_photos_for_print = editData.max_photos_for_print === '' ? null : Number(editData.max_photos_for_print);
+            }
             const res = await fetch(getApiUrl(`admin/galleries/${galleryId}`), {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify(editData),
+                body: JSON.stringify(payload),
             });
 
             const data = await res.json();
@@ -180,6 +209,9 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
                 body: JSON.stringify({
                     ...newGallery,
                     expires_at: expiresAt.toISOString(),
+                    group_access_code: newGallery.gallery_mode === 'GROUP' ? newGallery.group_access_code : undefined,
+                    group_password: newGallery.gallery_mode === 'GROUP' && newGallery.group_password ? newGallery.group_password : undefined,
+                    max_photos_for_print: newGallery.gallery_mode === 'GROUP' && newGallery.max_photos_for_print ? Number(newGallery.max_photos_for_print) : undefined,
                 })
             });
 
@@ -416,6 +448,74 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
                             className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:border-gold-500 outline-none transition-colors"
                         />
                     </div>
+
+                    {/* Tryb galerii */}
+                    <div className="space-y-3 pt-4 border-t border-zinc-800">
+                        <label className="block text-xs uppercase font-bold text-zinc-500 ml-1">Tryb galerii</label>
+                        <div className="grid grid-cols-2 gap-3">
+                            <button
+                                type="button"
+                                onClick={() => setNewGallery({ ...newGallery, gallery_mode: 'INDIVIDUAL' })}
+                                className={`p-4 rounded-xl border-2 text-left transition-all ${newGallery.gallery_mode === 'INDIVIDUAL'
+                                    ? 'border-gold-500 bg-gold-500/10'
+                                    : 'border-zinc-800 bg-black hover:border-zinc-700'
+                                    }`}
+                            >
+                                <div className="font-bold text-white text-sm mb-1">👤 Indywidualna</div>
+                                <div className="text-xs text-zinc-500">1 klient = 1 kod</div>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setNewGallery({ ...newGallery, gallery_mode: 'GROUP' })}
+                                className={`p-4 rounded-xl border-2 text-left transition-all ${newGallery.gallery_mode === 'GROUP'
+                                    ? 'border-purple-500 bg-purple-500/10'
+                                    : 'border-zinc-800 bg-black hover:border-zinc-700'
+                                    }`}
+                            >
+                                <div className="font-bold text-white text-sm mb-1">🌐 Grupowa</div>
+                                <div className="text-xs text-zinc-500">Komunia, klasa, event</div>
+                            </button>
+                        </div>
+                    </div>
+
+                    {newGallery.gallery_mode === 'GROUP' && (
+                        <div className="space-y-4 p-4 bg-purple-500/5 border border-purple-500/20 rounded-xl">
+                            <div className="space-y-2">
+                                <label className="block text-xs uppercase font-bold text-zinc-500 ml-1">Kod grupowy *</label>
+                                <input
+                                    type="text"
+                                    required={newGallery.gallery_mode === 'GROUP'}
+                                    value={newGallery.group_access_code}
+                                    onChange={e => setNewGallery({ ...newGallery, group_access_code: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '') })}
+                                    placeholder="KOMUNIA2026"
+                                    maxLength={20}
+                                    className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white font-mono uppercase tracking-wider focus:border-purple-500 outline-none transition-colors"
+                                />
+                                <p className="text-[11px] text-zinc-500">Min. 4 znaki A-Z/0-9. Rozdaj wszystkim rodzicom.</p>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="block text-xs uppercase font-bold text-zinc-500 ml-1">Hasło grupowe (opcjonalne)</label>
+                                <input
+                                    type="text"
+                                    value={newGallery.group_password}
+                                    onChange={e => setNewGallery({ ...newGallery, group_password: e.target.value })}
+                                    placeholder="np. parafia2026"
+                                    className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:border-purple-500 outline-none transition-colors"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="block text-xs uppercase font-bold text-zinc-500 ml-1">Limit zdjęć do druku / rodzic (opcjonalne)</label>
+                                <input
+                                    type="number"
+                                    min={1}
+                                    value={newGallery.max_photos_for_print}
+                                    onChange={e => setNewGallery({ ...newGallery, max_photos_for_print: e.target.value })}
+                                    placeholder="np. 5"
+                                    className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:border-purple-500 outline-none transition-colors"
+                                />
+                            </div>
+                        </div>
+                    )}
                     <button
                         type="submit"
                         disabled={creating}
@@ -528,6 +628,72 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
                                 <Save className="w-4 h-4" /> Zapisz
                             </button>
                         </div>
+
+                        {/* Tryb galerii - edycja */}
+                        <div className="col-span-1 md:col-span-4 space-y-3 pt-6 border-t border-zinc-800">
+                            <label className="block text-xs font-bold text-zinc-500 uppercase ml-1 tracking-widest">Tryb galerii</label>
+                            <div className="grid grid-cols-2 gap-3 max-w-md">
+                                <button
+                                    type="button"
+                                    onClick={() => setEditData({ ...editData, gallery_mode: 'INDIVIDUAL' })}
+                                    className={`p-3 rounded-xl border-2 text-left transition-all ${editData.gallery_mode === 'INDIVIDUAL'
+                                        ? 'border-gold-500 bg-gold-500/10'
+                                        : 'border-zinc-800 bg-black hover:border-zinc-700'
+                                        }`}
+                                >
+                                    <div className="font-bold text-white text-sm">👤 Indywidualna</div>
+                                    <div className="text-[11px] text-zinc-500">1 klient = 1 kod</div>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setEditData({ ...editData, gallery_mode: 'GROUP' })}
+                                    className={`p-3 rounded-xl border-2 text-left transition-all ${editData.gallery_mode === 'GROUP'
+                                        ? 'border-purple-500 bg-purple-500/10'
+                                        : 'border-zinc-800 bg-black hover:border-zinc-700'
+                                        }`}
+                                >
+                                    <div className="font-bold text-white text-sm">🌐 Grupowa</div>
+                                    <div className="text-[11px] text-zinc-500">Komunia, klasa, event</div>
+                                </button>
+                            </div>
+                        </div>
+
+                        {editData.gallery_mode === 'GROUP' && (
+                            <div className="col-span-1 md:col-span-4 grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-purple-500/5 border border-purple-500/20 rounded-xl">
+                                <div className="space-y-2">
+                                    <label className="block text-xs font-bold text-zinc-500 uppercase ml-1 tracking-widest">Kod grupowy</label>
+                                    <input
+                                        type="text"
+                                        value={editData.group_access_code}
+                                        onChange={(e) => setEditData({ ...editData, group_access_code: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '') })}
+                                        maxLength={20}
+                                        placeholder="KOMUNIA2026"
+                                        className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white font-mono uppercase tracking-wider focus:border-purple-500 outline-none transition-all"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="block text-xs font-bold text-zinc-500 uppercase ml-1 tracking-widest">Hasło (opcjonalne)</label>
+                                    <input
+                                        type="text"
+                                        value={editData.group_password}
+                                        onChange={(e) => setEditData({ ...editData, group_password: e.target.value })}
+                                        placeholder="np. parafia2026"
+                                        className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:border-purple-500 outline-none transition-all"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="block text-xs font-bold text-zinc-500 uppercase ml-1 tracking-widest">Limit druku / rodzic</label>
+                                    <input
+                                        type="number"
+                                        min={1}
+                                        value={editData.max_photos_for_print}
+                                        onChange={(e) => setEditData({ ...editData, max_photos_for_print: e.target.value })}
+                                        placeholder="np. 5"
+                                        className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:border-purple-500 outline-none transition-all"
+                                    />
+                                </div>
+                            </div>
+                        )}
                     </form>
                 </div>
             )}

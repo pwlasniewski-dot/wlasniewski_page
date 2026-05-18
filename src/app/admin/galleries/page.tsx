@@ -21,6 +21,10 @@ interface Gallery {
     standard_photos_count: number;
     premium_photos_count: number;
     total_revenue: number;
+    gallery_mode?: string;
+    group_access_code?: string | null;
+    group_password?: string | null;
+    max_photos_for_print?: number | null;
 }
 
 export default function GalleriesAdminPage() {
@@ -36,6 +40,10 @@ export default function GalleriesAdminPage() {
         standard_count: 10,
         price_per_premium: 2000, // 20 zł
         expires_days: 30,
+        gallery_mode: 'INDIVIDUAL' as 'INDIVIDUAL' | 'GROUP',
+        group_access_code: '',
+        group_password: '',
+        max_photos_for_print: '' as string | number,
     });
 
     useEffect(() => {
@@ -105,6 +113,10 @@ export default function GalleriesAdminPage() {
                     standard_count: newGallery.standard_count,
                     price_per_premium: newGallery.price_per_premium,
                     expires_at: expiresAt.toISOString(),
+                    gallery_mode: newGallery.gallery_mode,
+                    group_access_code: newGallery.gallery_mode === 'GROUP' ? newGallery.group_access_code : undefined,
+                    group_password: newGallery.gallery_mode === 'GROUP' && newGallery.group_password ? newGallery.group_password : undefined,
+                    max_photos_for_print: newGallery.gallery_mode === 'GROUP' && newGallery.max_photos_for_print ? Number(newGallery.max_photos_for_print) : undefined,
                 })
             });
 
@@ -118,6 +130,10 @@ export default function GalleriesAdminPage() {
                     standard_count: 10,
                     price_per_premium: 2000,
                     expires_days: 30,
+                    gallery_mode: 'INDIVIDUAL',
+                    group_access_code: '',
+                    group_password: '',
+                    max_photos_for_print: '',
                 });
                 fetchGalleries();
             } else {
@@ -192,6 +208,18 @@ export default function GalleriesAdminPage() {
                                     {gallery.client_name}
                                 </h3>
                                 <p className="text-sm text-zinc-500">{gallery.client_email}</p>
+                                {gallery.gallery_mode === 'GROUP' && (
+                                    <div className="mt-2 flex items-center gap-2">
+                                        <span className="px-2 py-0.5 bg-purple-500/20 text-purple-300 text-[10px] font-bold uppercase tracking-wider rounded">
+                                            🌐 Grupowa
+                                        </span>
+                                        {gallery.group_access_code && (
+                                            <code className="text-xs font-mono text-gold-400 bg-zinc-800 px-2 py-0.5 rounded">
+                                                {gallery.group_access_code}
+                                            </code>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                             {!gallery.is_active && (
                                 <span className="px-2 py-1 bg-red-500/20 text-red-400 text-xs rounded-full">
@@ -323,6 +351,86 @@ export default function GalleriesAdminPage() {
                                     className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-lg text-white"
                                 />
                             </div>
+
+                            {/* Tryb galerii */}
+                            <div className="pt-4 border-t border-zinc-800">
+                                <label className="block text-sm font-medium text-zinc-300 mb-3">
+                                    Tryb galerii
+                                </label>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => setNewGallery({ ...newGallery, gallery_mode: 'INDIVIDUAL' })}
+                                        className={`p-4 rounded-lg border-2 text-left transition-all ${newGallery.gallery_mode === 'INDIVIDUAL'
+                                            ? 'border-gold-500 bg-gold-500/10'
+                                            : 'border-zinc-700 bg-zinc-800/40 hover:border-zinc-600'
+                                            }`}
+                                    >
+                                        <div className="font-bold text-white text-sm mb-1">👤 Indywidualna</div>
+                                        <div className="text-xs text-zinc-400">1 klient = 1 kod</div>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setNewGallery({ ...newGallery, gallery_mode: 'GROUP' })}
+                                        className={`p-4 rounded-lg border-2 text-left transition-all ${newGallery.gallery_mode === 'GROUP'
+                                            ? 'border-purple-500 bg-purple-500/10'
+                                            : 'border-zinc-700 bg-zinc-800/40 hover:border-zinc-600'
+                                            }`}
+                                    >
+                                        <div className="font-bold text-white text-sm mb-1">🌐 Grupowa</div>
+                                        <div className="text-xs text-zinc-400">Komunia, klasa, event</div>
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Pola dla trybu GROUP */}
+                            {newGallery.gallery_mode === 'GROUP' && (
+                                <div className="space-y-4 p-4 bg-purple-500/5 border border-purple-500/20 rounded-lg">
+                                    <div>
+                                        <label className="block text-sm font-medium text-zinc-300 mb-2">
+                                            Kod grupowy *
+                                        </label>
+                                        <input
+                                            type="text"
+                                            required
+                                            value={newGallery.group_access_code}
+                                            onChange={(e) => setNewGallery({ ...newGallery, group_access_code: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '') })}
+                                            className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-lg text-white font-mono uppercase tracking-wider"
+                                            placeholder="KOMUNIA2026"
+                                            maxLength={20}
+                                        />
+                                        <p className="text-xs text-zinc-500 mt-1">Min. 4 znaki A-Z/0-9. Rozdaj wszystkim rodzicom.</p>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-zinc-300 mb-2">
+                                            Hasło grupowe (opcjonalne)
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={newGallery.group_password}
+                                            onChange={(e) => setNewGallery({ ...newGallery, group_password: e.target.value })}
+                                            className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-lg text-white"
+                                            placeholder="np. parafia2026"
+                                        />
+                                        <p className="text-xs text-zinc-500 mt-1">Dodatkowe zabezpieczenie. Przekaż osobno (RODO).</p>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-zinc-300 mb-2">
+                                            Limit zdjęć do druku per rodzic (opcjonalne)
+                                        </label>
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            value={newGallery.max_photos_for_print}
+                                            onChange={(e) => setNewGallery({ ...newGallery, max_photos_for_print: e.target.value })}
+                                            className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-lg text-white"
+                                            placeholder="np. 5"
+                                        />
+                                    </div>
+                                </div>
+                            )}
 
                             <div className="pt-4 flex gap-3">
                                 <button

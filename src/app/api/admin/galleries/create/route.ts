@@ -19,7 +19,12 @@ export async function POST(request: NextRequest) {
                 expires_at,
                 booking_id,
                 challenge_id,
-                send_email: shouldSendEmail = true
+                send_email: shouldSendEmail = true,
+                // Tryb grupowy
+                gallery_mode = 'INDIVIDUAL',
+                group_access_code: rawGroupCode,
+                group_password,
+                max_photos_for_print,
             } = body;
 
             if (!client_name || !client_email) {
@@ -29,7 +34,27 @@ export async function POST(request: NextRequest) {
                 );
             }
 
-            // Generate unique access code
+            const mode = gallery_mode === 'GROUP' ? 'GROUP' : 'INDIVIDUAL';
+            let group_access_code: string | null = null;
+            if (mode === 'GROUP') {
+                const normalized = String(rawGroupCode || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+                if (!normalized || normalized.length < 4) {
+                    return NextResponse.json(
+                        { success: false, error: 'Dla trybu GROUP wymagany jest kod grupowy (min. 4 znaki, A-Z/0-9)' },
+                        { status: 400 }
+                    );
+                }
+                const existing = await prisma.clientGallery.findUnique({ where: { group_access_code: normalized } });
+                if (existing) {
+                    return NextResponse.json(
+                        { success: false, error: `Kod grupowy "${normalized}" jest już zajęty` },
+                        { status: 409 }
+                    );
+                }
+                group_access_code = normalized;
+            }
+
+            // Generate unique access code (zawsze - rodzice indywidualni / fallback admina)
             const access_code = generateAccessCode();
 
             // Calculate expiration date (default: +30 days)
@@ -48,6 +73,10 @@ export async function POST(request: NextRequest) {
                     expires_at: expiresAt,
                     is_active: true,
                     booking_id: booking_id ? Number(booking_id) : undefined,
+                    gallery_mode: mode,
+                    group_access_code,
+                    group_password: mode === 'GROUP' && group_password ? String(group_password) : null,
+                    max_photos_for_print: max_photos_for_print ? Number(max_photos_for_print) : null,
                 }
             });
 
@@ -64,7 +93,14 @@ export async function POST(request: NextRequest) {
             // Send access email to client
             if (shouldSendEmail) {
                 const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://wlasniewski.pl';
-                const galleryUrl = `${appUrl}/galeria/${access_code}`;
+                const galleryUrl = mode === 'GROUP'
+                    ? `${appUrl}/galeria/grupowa`
+                    : `${appUrl}/galeria/${access_code}`;
+                const displayCode = mode === 'GROUP' ? group_access_code! : access_code;
+                const codeLabel = mode === 'GROUP' ? 'Kod grupowy (rozdaj rodzicom)' : 'Kod dostępu';
+                const introText = mode === 'GROUP'
+                    ? `Twoja galeria grupowa jest gotowa! Rozdaj poniższy kod uczestnikom (np. rodzicom). Każdy z nich wchodzi na <strong>${galleryUrl}</strong>, wpisuje ten sam kod i wybiera unikalny awatar, aby przeglądać oraz wybrać swoje zdjęcia.`
+                    : 'Twoja galeria zdjęć jest gotowa! Możesz teraz przeglądać swoje zdjęcia i wybrać te, które chcesz zachować.';
                 const expiresFormatted = expiresAt.toLocaleDateString('pl-PL', {
                     day: 'numeric', month: 'long', year: 'numeric'
                 });
@@ -87,17 +123,17 @@ export async function POST(request: NextRequest) {
     <div style="background:#111;border:1px solid #222;border-radius:12px;padding:40px;margin-bottom:24px;">
       <h2 style="color:#fff;font-size:24px;margin:0 0 16px;">Cześć, ${client_name}! 👋</h2>
       <p style="color:#ccc;font-size:16px;line-height:1.6;margin:0 0 24px;">
-        Twoja galeria zdjęć jest gotowa! Możesz teraz przeglądać swoje zdjęcia i wybrać te, które chcesz zachować.
+        ${introText}
       </p>
       
       <div style="background:#1a1a1a;border:1px solid #c5a059;border-radius:8px;padding:24px;margin:24px 0;text-align:center;">
-        <p style="color:#888;font-size:12px;margin:0 0 8px;text-transform:uppercase;letter-spacing:2px;">Kod dostępu</p>
-        <p style="color:#c5a059;font-size:32px;font-weight:bold;margin:0;font-family:monospace;letter-spacing:4px;">${access_code}</p>
+        <p style="color:#888;font-size:12px;margin:0 0 8px;text-transform:uppercase;letter-spacing:2px;">${codeLabel}</p>
+        <p style="color:#c5a059;font-size:32px;font-weight:bold;margin:0;font-family:monospace;letter-spacing:4px;">${displayCode}</p>
       </div>
       
       <div style="text-align:center;margin:32px 0;">
         <a href="${galleryUrl}" style="display:inline-block;background:#c5a059;color:#000;text-decoration:none;padding:16px 40px;border-radius:8px;font-weight:bold;font-size:16px;letter-spacing:1px;">
-          🖼️ Otwórz Galerię
+          🖼️ ${mode === 'GROUP' ? 'Otwórz Galerię Grupową' : 'Otwórz Galerię'}
         </a>
       </div>
       
@@ -151,6 +187,8 @@ export async function POST(request: NextRequest) {
                     id: gallery.id,
                     client_name: gallery.client_name,
                     access_code: gallery.access_code,
+                    gallery_mode: gallery.gallery_mode,
+                    group_access_code: gallery.group_access_code,
                 },
                 message: shouldSendEmail ? 'Galeria utworzona i email wysłany do klienta' : 'Galeria utworzona'
             });
