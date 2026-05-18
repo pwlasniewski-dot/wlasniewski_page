@@ -950,6 +950,7 @@ model GalleryParticipant {
   
   // Tryb GRUPOWY - rodzice dzielą 1 kod galerii
   parent_identifier    String? // Inicjały + 4 cyfry (np. JK-4729)
+  avatar               String? // Emoji awatar (np. "🦊") - unikalny w obrębie galerii
   
   name                 String // Nazwa uczestnika (np. "Dziecko 1", "Jan Kowalski")
   max_selections       Int              @default(5) // Limit zdjęć do wyboru
@@ -970,6 +971,7 @@ model GalleryParticipant {
   selections           PhotoSelection[]
   
   @@unique([gallery_id, parent_identifier])
+  @@unique([gallery_id, avatar])
   @@map("gallery_participants")
 }
 

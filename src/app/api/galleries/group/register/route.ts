@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import crypto from 'crypto';
 import { generateParentToken } from '@/lib/auth/parent-jwt';
+import { AVAILABLE_AVATARS } from '@/lib/gallery/avatars';
 
 /**
  * Generate initials from full name
@@ -60,13 +61,51 @@ async function generateParentIdentifier(
  */
 export async function POST(request: NextRequest) {
   try {
-    const { gallery_id, access_code, parent_name, parent_email, parent_phone } = await request.json();
+    const { gallery_id, access_code, parent_name, avatar, parent_email, parent_phone } = await request.json();
 
-    if (!gallery_id || !access_code || !parent_name) {
+    if (!gallery_id || !access_code || !parent_name || !avatar) {
       return NextResponse.json(
-        { error: 'ID galerii, kod dostępu i imię rodzica są wymagane' },
+        { error: 'ID galerii, kod dostępu, imię rodzica i awatar są wymagane' },
         { status: 400 }
       );
+    }
+
+    // SECURITY: Validate avatar is in allowed list (prevents XSS via emoji injection)
+    if (!AVAILABLE_AVATARS.includes(avatar)) {
+      return NextResponse.json(
+        { error: 'Nieprawidłowy awatar' },
+        { status: 400 }
+      );
+    }
+
+    // SECURITY: Validate input lengths to prevent DoS
+    if (parent_name.length > 100) {
+      return NextResponse.json(
+        { error: 'Imię jest za długie (max 100 znaków)' },
+        { status: 400 }
+      );
+    }
+
+    // SECURITY: Validate email format if provided
+    if (parent_email && parent_email.trim()) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(parent_email.trim()) || parent_email.length > 200) {
+        return NextResponse.json(
+          { error: 'Nieprawidłowy format email' },
+          { status: 400 }
+        );
+      }
+    }
+
+    // SECURITY: Validate phone format if provided (digits, spaces, +, -)
+    if (parent_phone && parent_phone.trim()) {
+      const phoneRegex = /^[\d\s\-+()]{6,20}$/;
+      if (!phoneRegex.test(parent_phone.trim())) {
+        return NextResponse.json(
+          { error: 'Nieprawidłowy format numeru telefonu' },
+          { status: 400 }
+        );
+      }
     }
 
     // Verify gallery exists, is in GROUP mode, and access_code matches
@@ -91,6 +130,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // SECURITY: Check if avatar is still available (race condition protection)
+    const avatarTaken = await prisma.galleryParticipant.findFirst({
+      where: {
+        gallery_id: gallery_id,
+        avatar: avatar,
+      },
+      select: { id: true },
+    });
+
+    if (avatarTaken) {
+      return NextResponse.json(
+        { error: 'Ten awatar został już wybrany przez innego rodzica. Wybierz inny.' },
+        { status: 409 }
+      );
+    }
+
     // Generate unique parent identifier
     const parentIdentifier = await generateParentIdentifier(gallery_id, parent_name);
 
@@ -99,11 +154,12 @@ export async function POST(request: NextRequest) {
       data: {
         gallery_id: gallery_id,
         parent_identifier: parentIdentifier,
+        avatar: avatar,
         parent_name: parent_name.trim(),
         parent_email: parent_email?.trim() || null,
         parent_phone: parent_phone?.trim() || null,
         first_login_at: new Date(),
-        name: parent_name.trim(), // Use parent name as participant name
+        name: parent_name.trim(), // Pole wymagane przez schemę - używamy imienia rodzica
         max_selections: gallery.max_photos_for_print || 5,
         publication_consent: false,
       },
@@ -119,8 +175,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       participant_id: participant.id,
       parent_identifier: parentIdentifier,
+      avatar: avatar,
       max_selections: participant.max_selections,
-      token: token, // JWT token for future requests
+      token: token,
     });
 
   } catch (error) {

@@ -39,6 +39,7 @@ export async function GET(
                     participant_code: p.participant_code,
                     parent_identifier: p.parent_identifier,
                     parent_name: p.parent_name,
+                    avatar: p.avatar,
                     max_selections: p.max_selections,
                     selections_count: p._count.selections,
                     publication_consent: p.publication_consent,

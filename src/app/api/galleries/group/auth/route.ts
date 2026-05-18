@@ -1,17 +1,38 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
+import { checkRateLimit, getClientIp } from '@/lib/auth/rate-limit';
 
 /**
  * POST /api/galleries/group/auth
  * Authenticate access to a GROUP mode gallery using shared access code and optional password
+ * RATE LIMITED: 10 attempts per 15 minutes per IP
  */
 export async function POST(request: NextRequest) {
   try {
+    // SECURITY: Rate limiting to prevent brute-force attacks
+    const clientIp = getClientIp(request);
+    const rateLimit = checkRateLimit(`auth:${clientIp}`, 10, 15 * 60 * 1000);
+    
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { error: 'Zbyt wiele prób logowania. Spróbuj ponownie za 15 minut.' },
+        { status: 429 }
+      );
+    }
+
     const { access_code, password } = await request.json();
 
     if (!access_code) {
       return NextResponse.json(
         { error: 'Kod dostępu jest wymagany' },
+        { status: 400 }
+      );
+    }
+
+    // SECURITY: Validate input length
+    if (access_code.length > 50 || (password && password.length > 200)) {
+      return NextResponse.json(
+        { error: 'Nieprawidłowe dane' },
         { status: 400 }
       );
     }

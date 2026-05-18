@@ -9,6 +9,7 @@ interface Participant {
   participant_code: string | null;
   parent_identifier: string | null;
   parent_name: string | null;
+  avatar: string | null;
   name: string;
   max_selections: number;
   publication_consent: boolean;
@@ -174,13 +175,14 @@ export default function GalleryParticipantsManager({ galleryId }: GalleryPartici
 
             <div className="md:col-span-2">
               <label className="block text-xs font-bold text-zinc-500 uppercase mb-2">Link dla rodziców</label>
+              <p className="text-xs text-amber-400/80 mb-2">⚠️ Hasło NIE jest dołączane do linku (RODO) - przekaż je osobno</p>
               <div className="flex items-center gap-2">
                 <code className="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-blue-400 font-mono text-sm">
-                  {typeof window !== 'undefined' && `${window.location.origin}/galeria/grupowa?code=${galleryInfo.group_access_code}${galleryInfo.group_password ? '&password=' + galleryInfo.group_password : ''}`}
+                  {typeof window !== 'undefined' && `${window.location.origin}/galeria/grupowa?code=${galleryInfo.group_access_code}`}
                 </code>
                 <button
                   onClick={() => {
-                    const link = `${window.location.origin}/galeria/grupowa?code=${galleryInfo.group_access_code}${galleryInfo.group_password ? '&password=' + galleryInfo.group_password : ''}`;
+                    const link = `${window.location.origin}/galeria/grupowa?code=${galleryInfo.group_access_code}`;
                     copyToClipboard(link, 'Link');
                   }}
                   className="p-3 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors"
@@ -210,27 +212,34 @@ export default function GalleryParticipantsManager({ galleryId }: GalleryPartici
                 {participants.map(participant => (
                   <div key={participant.id} className="bg-black/50 border border-zinc-800 rounded-xl p-4 hover:border-zinc-700 transition-colors">
                     <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <span className="font-mono text-gold-500 font-bold">
-                            {participant.parent_identifier}
-                          </span>
-                          <span className="text-white font-medium">
-                            {participant.parent_name}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-4 text-xs text-zinc-400">
-                          <span>
-                            Wybrano: <strong className="text-white">{participant.selections_count}/{participant.max_selections}</strong>
-                          </span>
-                          {participant.publication_consent ? (
-                            <span className="text-green-400 flex items-center gap-1">
-                              <Check className="w-3 h-3" />
-                              Zgoda: {participant.consent_scope === 'ALL' ? 'wszystkie' : 'wybrane'}
+                      <div className="flex-1 flex items-center gap-3">
+                        {participant.avatar && (
+                          <div className="w-12 h-12 bg-gold-500/10 border border-gold-500/30 rounded-full flex items-center justify-center text-2xl flex-shrink-0">
+                            {participant.avatar}
+                          </div>
+                        )}
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <span className="font-mono text-gold-500 font-bold">
+                              {participant.parent_identifier}
                             </span>
-                          ) : (
-                            <span className="text-amber-400">Brak zgody</span>
-                          )}
+                            <span className="text-white font-medium">
+                              {participant.parent_name}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-4 text-xs text-zinc-400">
+                            <span>
+                              Wybrano: <strong className="text-white">{participant.selections_count}/{participant.max_selections}</strong>
+                            </span>
+                            {participant.publication_consent ? (
+                              <span className="text-green-400 flex items-center gap-1">
+                                <Check className="w-3 h-3" />
+                                Zgoda: {participant.consent_scope === 'ALL' ? 'wszystkie' : 'wybrane'}
+                              </span>
+                            ) : (
+                              <span className="text-amber-400">Brak zgody</span>
+                            )}
+                          </div>
                         </div>
                       </div>
                       <button

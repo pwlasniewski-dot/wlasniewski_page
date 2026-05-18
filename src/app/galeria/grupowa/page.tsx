@@ -4,12 +4,14 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import toast from 'react-hot-toast';
-import { Check, Lock, User, Info, Heart } from 'lucide-react';
+import { Check, Lock, User, Info, Heart, LogOut, X, ZoomIn } from 'lucide-react';
 
 interface Photo {
   id: number;
   file_url: string;
   thumbnail_url: string | null;
+  width?: number;
+  height?: number;
 }
 
 interface GalleryInfo {
@@ -21,18 +23,24 @@ interface GalleryInfo {
 interface ParticipantInfo {
   participant_id: number;
   parent_identifier: string;
+  avatar: string;
   max_selections: number;
   token: string;
+}
+
+interface AvatarOption {
+  emoji: string;
+  available: boolean;
 }
 
 export default function GroupGalleryPage() {
   const searchParams = useSearchParams();
   const codeParam = searchParams.get('code');
-  const passwordParam = searchParams.get('password');
+  // SECURITY: We no longer accept password in URL params
 
   // Auth state
   const [code, setCode] = useState(codeParam || '');
-  const [password, setPassword] = useState(passwordParam || '');
+  const [password, setPassword] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [galleryInfo, setGalleryInfo] = useState<GalleryInfo | null>(null);
 
@@ -41,6 +49,8 @@ export default function GroupGalleryPage() {
   const [parentName, setParentName] = useState('');
   const [parentEmail, setParentEmail] = useState('');
   const [parentPhone, setParentPhone] = useState('');
+  const [selectedAvatar, setSelectedAvatar] = useState<string>('');
+  const [availableAvatars, setAvailableAvatars] = useState<AvatarOption[]>([]);
   const [participantInfo, setParticipantInfo] = useState<ParticipantInfo | null>(null);
   const [authToken, setAuthToken] = useState<string | null>(null);
 
@@ -48,11 +58,13 @@ export default function GroupGalleryPage() {
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [selectedPhotos, setSelectedPhotos] = useState<number[]>([]);
   const [loading, setLoading] = useState(false);
+  const [lightboxPhoto, setLightboxPhoto] = useState<Photo | null>(null);
 
   // Consent state
   const [showConsentModal, setShowConsentModal] = useState(false);
   const [consentGiven, setConsentGiven] = useState(false);
   const [consentScope, setConsentScope] = useState<'ALL' | 'SELECTED'>('SELECTED');
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   // Load participant from localStorage
   useEffect(() => {
@@ -70,17 +82,53 @@ export default function GroupGalleryPage() {
         }
       } else {
         setShowRegistrationModal(true);
+        loadAvailableAvatars(galleryInfo.gallery_id);
       }
     }
   }, [isAuthenticated, galleryInfo]);
 
-  // Auto-authenticate if code in URL
+  // Load list of available avatars for the gallery
+  const loadAvailableAvatars = async (galleryId: number) => {
+    try {
+      const response = await fetch(`/api/galleries/group/${galleryId}/avatars`);
+      const data = await response.json();
+      if (response.ok) {
+        setAvailableAvatars(data.avatars || []);
+      }
+    } catch (error) {
+      console.error('Load avatars error:', error);
+    }
+  };
+
+  // Auto-authenticate if code in URL (without password - password requires manual entry)
   useEffect(() => {
     if (codeParam && !isAuthenticated && !loading) {
       handleAuth();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Handle logout - clear all data
+  const handleLogout = () => {
+    if (!confirm('Czy na pewno chcesz się wylogować? Twój postęp jest zapisany.')) return;
+    if (galleryInfo) {
+      localStorage.removeItem(`group_participant_${galleryInfo.gallery_id}`);
+    }
+    setIsAuthenticated(false);
+    setGalleryInfo(null);
+    setParticipantInfo(null);
+    setAuthToken(null);
+    setSelectedPhotos([]);
+    setPhotos([]);
+    setCode('');
+    setPassword('');
+    setParentName('');
+    setParentEmail('');
+    setParentPhone('');
+    setSelectedAvatar('');
+    setConsentGiven(false);
+    toast.success('Wylogowano pomyślnie');
+  };
 
   const handleAuth = async () => {
     if (!code.trim()) {
@@ -124,6 +172,11 @@ export default function GroupGalleryPage() {
       return;
     }
 
+    if (!selectedAvatar) {
+      toast.error('Wybierz swój awatar');
+      return;
+    }
+
     if (!galleryInfo) return;
 
     setLoading(true);
@@ -133,8 +186,9 @@ export default function GroupGalleryPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           gallery_id: galleryInfo.gallery_id,
-          access_code: code.trim(), // Required for security verification
+          access_code: code.trim(),
           parent_name: parentName.trim(),
+          avatar: selectedAvatar,
           parent_email: parentEmail.trim() || undefined,
           parent_phone: parentPhone.trim() || undefined,
         }),
@@ -144,6 +198,11 @@ export default function GroupGalleryPage() {
 
       if (!response.ok) {
         toast.error(data.error || 'Nie udało się zarejestrować');
+        // Refresh avatars list if avatar was taken (race condition)
+        if (response.status === 409) {
+          loadAvailableAvatars(galleryInfo.gallery_id);
+          setSelectedAvatar('');
+        }
         return;
       }
 
@@ -154,7 +213,7 @@ export default function GroupGalleryPage() {
         JSON.stringify(data)
       );
       setShowRegistrationModal(false);
-      toast.success(`Witaj! Twój identyfikator: ${data.parent_identifier}`);
+      toast.success(`Witaj! Twój awatar: ${data.avatar}`);
 
       // Load photos and selections
       loadPhotos(galleryInfo.gallery_id, data.token);
@@ -288,6 +347,7 @@ export default function GroupGalleryPage() {
 
       setConsentGiven(true);
       setShowConsentModal(false);
+      setShowSuccessModal(true);
       toast.success('Zgoda została zapisana');
 
     } catch (error) {
@@ -384,6 +444,43 @@ export default function GroupGalleryPage() {
               />
             </div>
 
+            {/* AWATAR - wybór unikalnej ikonki */}
+            <div>
+              <label className="block text-sm font-medium text-zinc-300 mb-2">
+                Wybierz swój awatar <span className="text-red-400">*</span>
+              </label>
+              <p className="text-xs text-zinc-500 mb-3">
+                Awatar pomoże szybko rozpoznać Twoje zdjęcia. Każdy rodzic ma swój unikalny.
+              </p>
+              <div className="grid grid-cols-8 gap-2 max-h-48 overflow-y-auto p-2 bg-black/50 border border-zinc-800 rounded-lg">
+                {availableAvatars.map((av) => (
+                  <button
+                    key={av.emoji}
+                    type="button"
+                    disabled={!av.available}
+                    onClick={() => setSelectedAvatar(av.emoji)}
+                    className={`
+                      aspect-square flex items-center justify-center text-2xl rounded-lg transition-all
+                      ${selectedAvatar === av.emoji
+                        ? 'bg-gold-500 ring-2 ring-gold-400 scale-110'
+                        : av.available
+                          ? 'bg-zinc-800 hover:bg-zinc-700 hover:scale-105'
+                          : 'bg-zinc-900 opacity-30 cursor-not-allowed grayscale'
+                      }
+                    `}
+                    title={av.available ? 'Wybierz' : 'Zajęty przez innego rodzica'}
+                  >
+                    {av.emoji}
+                  </button>
+                ))}
+              </div>
+              {selectedAvatar && (
+                <p className="text-xs text-gold-400 mt-2">
+                  Wybrany awatar: <span className="text-2xl">{selectedAvatar}</span>
+                </p>
+              )}
+            </div>
+
             <div>
               <label className="block text-sm font-medium text-zinc-300 mb-2">
                 Email <span className="text-zinc-500">(opcjonalnie)</span>
@@ -422,7 +519,7 @@ export default function GroupGalleryPage() {
 
           <button
             onClick={handleRegistration}
-            disabled={loading || !parentName.trim()}
+            disabled={loading || !parentName.trim() || !selectedAvatar}
             className="w-full bg-gold-500 text-black font-bold py-4 rounded-lg hover:bg-gold-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? 'Rejestracja...' : 'Zapisz i kontynuuj'}
@@ -439,21 +536,38 @@ export default function GroupGalleryPage() {
       <div className="border-b border-zinc-800 bg-zinc-900/50 backdrop-blur-sm sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold">{galleryInfo?.gallery_name}</h1>
-              {participantInfo && (
-                <p className="text-sm text-zinc-400">
-                  Twój identyfikator: <span className="text-gold-500 font-mono">{participantInfo.parent_identifier}</span>
-                </p>
+            <div className="flex items-center gap-3">
+              {participantInfo?.avatar && (
+                <div className="w-12 h-12 bg-gold-500/10 border-2 border-gold-500/30 rounded-full flex items-center justify-center text-3xl flex-shrink-0">
+                  {participantInfo.avatar}
+                </div>
               )}
+              <div>
+                <h1 className="text-2xl font-bold">{galleryInfo?.gallery_name}</h1>
+                {participantInfo && (
+                  <p className="text-sm text-zinc-400">
+                    Twoje ID: <span className="text-gold-500 font-mono">{participantInfo.parent_identifier}</span>
+                  </p>
+                )}
+              </div>
             </div>
-            <div className="text-right">
-              <p className="text-sm text-zinc-400">
-                Wybrano: <span className="text-white font-bold">{selectedPhotos.length}/{participantInfo?.max_selections}</span>
-              </p>
-              {consentGiven && (
-                <p className="text-xs text-green-400">✓ Zgoda wyrażona ({consentScope === 'ALL' ? 'wszystkie' : 'wybrane'})</p>
-              )}
+            <div className="flex items-center gap-4">
+              <div className="text-right">
+                <p className="text-sm text-zinc-400">
+                  Wybrano: <span className="text-white font-bold">{selectedPhotos.length}/{participantInfo?.max_selections}</span>
+                </p>
+                {consentGiven && (
+                  <p className="text-xs text-green-400">✓ Zgoda wyrażona ({consentScope === 'ALL' ? 'wszystkie' : 'wybrane'})</p>
+                )}
+              </div>
+              <button
+                onClick={handleLogout}
+                className="p-2 text-zinc-400 hover:text-red-400 hover:bg-zinc-800 rounded-lg transition-colors"
+                title="Wyloguj się"
+                aria-label="Wyloguj"
+              >
+                <LogOut className="w-5 h-5" />
+              </button>
             </div>
           </div>
         </div>
@@ -472,7 +586,7 @@ export default function GroupGalleryPage() {
               return (
                 <div
                   key={photo.id}
-                  onClick={() => handlePhotoClick(photo.id)}
+                  onClick={() => setLightboxPhoto(photo)}
                   className={`relative aspect-square cursor-pointer rounded-lg overflow-hidden group ${
                     isSelected ? 'ring-4 ring-gold-500' : 'ring-1 ring-zinc-800'
                   }`}
@@ -483,11 +597,13 @@ export default function GroupGalleryPage() {
                     fill
                     className="object-cover group-hover:scale-105 transition-transform"
                   />
+                  {/* Hover overlay - zoom hint */}
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                    <ZoomIn className="w-8 h-8 text-white" />
+                  </div>
                   {isSelected && (
-                    <div className="absolute inset-0 bg-gold-500/20 flex items-center justify-center">
-                      <div className="w-12 h-12 bg-gold-500 rounded-full flex items-center justify-center">
-                        <Check className="w-6 h-6 text-black" />
-                      </div>
+                    <div className="absolute top-2 right-2 w-10 h-10 bg-gold-500 rounded-full flex items-center justify-center shadow-lg">
+                      <Check className="w-6 h-6 text-black" />
                     </div>
                   )}
                 </div>
@@ -589,6 +705,108 @@ export default function GroupGalleryPage() {
                 {loading ? 'Zapisywanie...' : 'Wyrażam zgodę'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* LIGHTBOX - podgląd zdjęcia + akcja Zaznacz */}
+      {lightboxPhoto && (
+        <div
+          className="fixed inset-0 bg-black/95 flex items-center justify-center p-4 z-[60]"
+          onClick={() => setLightboxPhoto(null)}
+        >
+          <button
+            onClick={(e) => { e.stopPropagation(); setLightboxPhoto(null); }}
+            className="absolute top-4 right-4 w-12 h-12 bg-zinc-900/80 hover:bg-zinc-800 text-white rounded-full flex items-center justify-center z-10"
+            aria-label="Zamknij podgląd"
+          >
+            <X className="w-6 h-6" />
+          </button>
+
+          <div
+            className="relative max-w-5xl w-full max-h-[90vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="relative flex-1 min-h-0">
+              <img
+                src={lightboxPhoto.file_url}
+                alt="Podgląd zdjęcia"
+                className="w-full h-full object-contain max-h-[75vh] rounded-lg"
+              />
+            </div>
+
+            {/* Action bar */}
+            <div className="mt-4 flex items-center justify-center gap-3">
+              {(() => {
+                const isSelected = selectedPhotos.includes(lightboxPhoto.id);
+                const limitReached = !isSelected && participantInfo
+                  && selectedPhotos.length >= participantInfo.max_selections;
+                return (
+                  <button
+                    onClick={async () => {
+                      if (limitReached) {
+                        toast.error(`Możesz wybrać maksymalnie ${participantInfo?.max_selections} zdjęć`);
+                        return;
+                      }
+                      await handlePhotoClick(lightboxPhoto.id);
+                    }}
+                    disabled={!!limitReached}
+                    className={`px-8 py-4 rounded-full font-bold flex items-center gap-2 transition-all ${
+                      isSelected
+                        ? 'bg-zinc-800 text-white hover:bg-zinc-700'
+                        : limitReached
+                          ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
+                          : 'bg-gold-500 text-black hover:bg-gold-400'
+                    }`}
+                  >
+                    {isSelected ? (
+                      <>
+                        <X className="w-5 h-5" />
+                        Odznacz
+                      </>
+                    ) : (
+                      <>
+                        <Check className="w-5 h-5" />
+                        {limitReached ? 'Limit osiągnięty' : 'Zaznacz to zdjęcie'}
+                      </>
+                    )}
+                  </button>
+                );
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SUCCESS MODAL - po wyrażeniu zgody */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 z-[70]">
+          <div className="bg-zinc-900 border border-green-500/30 rounded-2xl p-8 max-w-md w-full text-center">
+            <div className="w-20 h-20 bg-green-500/10 border-2 border-green-500 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Check className="w-10 h-10 text-green-500" />
+            </div>
+            <h2 className="text-2xl font-bold text-white mb-3">Dziękujemy!</h2>
+            <p className="text-zinc-300 mb-2">
+              Twoje wybory i zgoda zostały zapisane.
+            </p>
+            {participantInfo?.avatar && (
+              <p className="text-zinc-400 text-sm mb-6">
+                Twój awatar: <span className="text-3xl">{participantInfo.avatar}</span>
+                <br />
+                ID: <span className="font-mono text-gold-500">{participantInfo.parent_identifier}</span>
+              </p>
+            )}
+            <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 mb-6 text-left">
+              <p className="text-xs text-blue-300">
+                Możesz bezpiecznie zamknąć tę stronę. Możesz też wrócić później i zmienić wybory aż do zakończenia galerii.
+              </p>
+            </div>
+            <button
+              onClick={() => setShowSuccessModal(false)}
+              className="w-full bg-gold-500 text-black font-bold py-3 rounded-lg hover:bg-gold-400 transition-colors"
+            >
+              Wróć do galerii
+            </button>
           </div>
         </div>
       )}
