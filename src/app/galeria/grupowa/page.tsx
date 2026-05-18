@@ -6,7 +6,7 @@ import Image from 'next/image';
 import toast from 'react-hot-toast';
 import { Check, Lock, User, Info, Heart, LogOut, X, ZoomIn, ChevronLeft, ChevronRight, Download, Package, CheckSquare, Square } from 'lucide-react';
 import PremiumGalleryHero, { PremiumGalleryStory } from '@/components/galleries/PremiumGalleryHero';
-import PostGalleryUpsell from '@/components/galleries/PostGalleryUpsell';
+import PostGalleryUpsell, { TopReviewNudge } from '@/components/galleries/PostGalleryUpsell';
 
 interface Photo {
   id: number;
@@ -66,7 +66,7 @@ export default function GroupGalleryPage() {
   // PRO Hero + view mode
   const [heroIndex, setHeroIndex] = useState(0);
   const [heroPaused, setHeroPaused] = useState(false);
-  const [viewMode, setViewMode] = useState<'grid' | 'story'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'story'>('story');
 
   // Consent state
   const [showConsentModal, setShowConsentModal] = useState(false);
@@ -698,6 +698,13 @@ export default function GroupGalleryPage() {
           mode={viewMode}
           onModeChange={setViewMode}
           onPhotoClick={(p) => setLightboxPhoto(p as Photo)}
+        />
+      )}
+
+      {photos.length > 0 && (
+        <TopReviewNudge
+          discountCode="KOMUNIA15"
+          theme="dark"
         />
       )}
 

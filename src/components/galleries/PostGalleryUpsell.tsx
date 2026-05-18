@@ -25,6 +25,68 @@ const DEFAULT_FB = process.env.NEXT_PUBLIC_FB_REVIEW_URL
   || 'https://www.facebook.com/przemyslaw.wlasniewski.fotografia/reviews';
 const DEFAULT_BOOKING = '/rezerwacja';
 
+export function TopReviewNudge({
+  discountCode = 'WRACAM15',
+  googleReviewUrl = DEFAULT_GOOGLE,
+  facebookReviewUrl = DEFAULT_FB,
+  theme = 'dark',
+}: {
+  discountCode?: string;
+  googleReviewUrl?: string;
+  facebookReviewUrl?: string;
+  theme?: 'dark' | 'light';
+}) {
+  const isDark = theme === 'dark';
+
+  return (
+    <div className={`w-full border-y ${isDark ? 'border-zinc-800 bg-zinc-950/90' : 'border-zinc-200 bg-white/95'}`}>
+      <div className="max-w-7xl mx-auto px-4 py-2.5 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2 text-xs md:text-sm">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gold-500 text-black font-bold">
+            <Gift className="w-3.5 h-3.5" />
+            Opinia = rabat
+          </span>
+          <span className={isDark ? 'text-zinc-300' : 'text-zinc-700'}>
+            Wystaw opinię i odbierz kod:
+          </span>
+          <span className={`font-mono font-bold ${isDark ? 'text-gold-400' : 'text-gold-600'}`}>
+            {discountCode}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <a
+            href={googleReviewUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white text-zinc-900 text-xs font-semibold hover:bg-zinc-100"
+            title="Wystaw opinię na Google"
+          >
+            <span className="w-4 h-4 rounded-full bg-gradient-to-br from-blue-500 via-red-500 to-yellow-500 text-white text-[10px] font-black inline-flex items-center justify-center">G</span>
+            Google
+            <Star className="w-3.5 h-3.5 fill-gold-500 text-gold-500" />
+          </a>
+
+          <a
+            href={facebookReviewUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#1877F2] text-white text-xs font-semibold hover:bg-[#1669d9]"
+            title="Oceń na Facebooku"
+          >
+            <span className="w-4 h-4 rounded-full bg-white text-[#1877F2] text-[11px] font-black inline-flex items-center justify-center">f</span>
+            Facebook
+          </a>
+
+          <span className={`hidden sm:inline text-[11px] ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>
+            30 sek i gotowe
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /**
  * Sekcja "Co dalej?" — upsell na kolejne sesje + prośba o opinię (boost SEO/social proof).
  * Pokazywana na dole galerii (klienta i rodzica).

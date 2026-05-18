@@ -8,7 +8,7 @@ import Image from 'next/image';
 import { useAuth } from '@/context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import PremiumGalleryHero from '@/components/galleries/PremiumGalleryHero';
-import PostGalleryUpsell from '@/components/galleries/PostGalleryUpsell';
+import PostGalleryUpsell, { TopReviewNudge } from '@/components/galleries/PostGalleryUpsell';
 
 interface GalleryPhoto {
     id: number;
@@ -262,6 +262,14 @@ export default function ClientGalleryPage() {
                     }}
                 />
             )}
+
+            {(gallery.standard_photos.length + gallery.premium_photos.length) > 0 && (
+                <TopReviewNudge
+                    discountCode="WRACAM15"
+                    theme="dark"
+                />
+            )}
+
             <div className="max-w-7xl mx-auto py-12 px-4">
                 {/* Header */}
                 <div className="mb-16 relative">
