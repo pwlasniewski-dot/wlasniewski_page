@@ -37,8 +37,16 @@ async function forcePasswordReset() {
                 }
             });
         } else {
-            // Force reset for ALL clients (excluding admins)
+            // Force reset for ALL clients (excluding admins and users who already reset today)
+            const excludeArg = args.find(arg => arg.startsWith('--exclude-emails='));
+            const excludeEmails = excludeArg 
+                ? excludeArg.split('=')[1].split(',').map(e => e.trim())
+                : [];
+            
             console.log('🔒 Forcing password reset for ALL clients...');
+            if (excludeEmails.length > 0) {
+                console.log(`   Excluding ${excludeEmails.length} users: ${excludeEmails.join(', ')}`);
+            }
             console.log('⚠️  WARNING: This will require ALL client users to reset their passwords!');
             console.log('⚠️  Press Ctrl+C to cancel, or wait 5 seconds to continue...');
             
@@ -48,6 +56,9 @@ async function forcePasswordReset() {
                 where: {
                     role: {
                         in: ['CLIENT', 'PHOTOGRAPHER']
+                    },
+                    email: {
+                        notIn: excludeEmails
                     }
                 },
                 data: {
