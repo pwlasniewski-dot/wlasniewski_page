@@ -20,13 +20,13 @@ export async function GET(
                     orderBy: { order_index: 'asc' },
                     select: {
                         id: true,
+                        file_url: true,
                         thumbnail_url: true,
                         is_standard: true,
                         file_size: true,
                         width: true,
                         height: true,
                         order_index: true,
-                        // Don't expose file_url for premium photos yet
                     }
                 },
                 products: {
