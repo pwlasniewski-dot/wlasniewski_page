@@ -530,6 +530,7 @@ model User {
   postal_code             String?
   reset_token             String?                 @unique
   reset_token_expires     DateTime?
+  password_reset_required Boolean                 @default(false) // Flaga wymuszająca reset hasła (np. po ataku na SMTP)
   permissions             Json?
   welcome_email_sent_at   DateTime?
   welcome_email_count     Int                     @default(0)

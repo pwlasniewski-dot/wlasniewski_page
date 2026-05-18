@@ -11,10 +11,12 @@ export default function LoginPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const [passwordExpired, setPasswordExpired] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
+        setPasswordExpired(false);
 
         try {
             const res = await fetch('/api/auth/login', {
@@ -28,7 +30,13 @@ export default function LoginPage() {
                 login(data.token, data.user);
                 router.push('/konto');
             } else {
-                setError(data.error || 'Błąd logowania');
+                // Check if password reset is required
+                if (data.error === 'PASSWORD_RESET_REQUIRED') {
+                    setPasswordExpired(true);
+                    setError(data.message || 'Twoje hasło wygasło. Musisz ustawić nowe hasło.');
+                } else {
+                    setError(data.error || 'Błąd logowania');
+                }
             }
         } catch (err) {
             setError('Wystąpił błąd');
@@ -45,7 +53,27 @@ export default function LoginPage() {
                     <strong className="text-emerald-300">Pierwszy raz?</strong> Jeśli dostałeś maila z foto-wyzwania, kliknij <Link href="/logowanie/przypomnij-haslo" className="text-gold-400 hover:text-gold-300 font-medium">„Nie pamiętasz hasła?"</Link> — wyślemy link do ustawienia hasła.
                 </div>
 
-                {error && <div className="bg-red-900/20 text-red-400 p-3 rounded mb-4 text-sm">{error}</div>}
+                {passwordExpired && (
+                    <div className="bg-amber-500/10 border-2 border-amber-500/50 rounded-lg p-4 mb-5">
+                        <div className="flex items-start gap-3">
+                            <div className="text-amber-500 text-2xl">⚠️</div>
+                            <div className="flex-1">
+                                <h3 className="text-amber-400 font-bold mb-2">Hasło wygasło</h3>
+                                <p className="text-zinc-300 text-sm mb-3">
+                                    Ze względów bezpieczeństwa Twoje hasło zostało zresetowane. Aby kontynuować, musisz ustawić nowe hasło.
+                                </p>
+                                <Link 
+                                    href={`/logowanie/przypomnij-haslo${email ? `?email=${encodeURIComponent(email)}` : ''}`}
+                                    className="inline-block bg-amber-500 text-black font-bold px-4 py-2 rounded text-sm hover:bg-amber-400 transition-colors"
+                                >
+                                    Resetuj hasło →
+                                </Link>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {error && !passwordExpired && <div className="bg-red-900/20 text-red-400 p-3 rounded mb-4 text-sm">{error}</div>}
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>

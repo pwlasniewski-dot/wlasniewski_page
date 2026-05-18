@@ -49,6 +49,15 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
         }
 
+        // Check if password reset is required (e.g., after security incident)
+        if ((user as any).password_reset_required) {
+            await logSystem('INFO', 'AUTH', 'LOGIN_BLOCKED_PASSWORD_RESET_REQUIRED', { ip, email, ua, userId: user.id });
+            return NextResponse.json({ 
+                error: 'PASSWORD_RESET_REQUIRED',
+                message: 'Twoje hasło wygasło ze względów bezpieczeństwa. Musisz ustawić nowe hasło.'
+            }, { status: 403 });
+        }
+
         // Record successful login attempt
         await prisma.user.update({
             where: { id: user.id },

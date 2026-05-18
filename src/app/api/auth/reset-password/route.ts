@@ -34,7 +34,8 @@ export async function POST(req: NextRequest) {
             data: {
                 password_hash,
                 reset_token: null,
-                reset_token_expires: null
+                reset_token_expires: null,
+                password_reset_required: false // Clear forced reset flag after successful password change
             }
         });
 
