@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import toast from 'react-hot-toast';
-import { Check, Lock, User, Info, Heart, LogOut, X, ZoomIn } from 'lucide-react';
+import { Check, Lock, User, Info, Heart, LogOut, X, ZoomIn, ChevronLeft, ChevronRight, Download, Package, CheckSquare, Square } from 'lucide-react';
 
 interface Photo {
   id: number;
@@ -376,6 +376,90 @@ export default function GroupGalleryPage() {
     }
   };
 
+  // PRO: pobieranie pliku z autoryzacją (z S3 → blob → trigger download)
+  const downloadWithAuth = useCallback(async (url: string, fallbackName: string) => {
+    if (!authToken) return;
+    const tid = toast.loading('Pobieranie...');
+    try {
+      const res = await fetch(url, { headers: { Authorization: `Bearer ${authToken}` } });
+      if (!res.ok) {
+        toast.error('Nie udało się pobrać pliku', { id: tid });
+        return;
+      }
+      const cd = res.headers.get('Content-Disposition') || '';
+      const m = cd.match(/filename="([^"]+)"/);
+      const name = m?.[1] || fallbackName;
+      const blob = await res.blob();
+      const objUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = objUrl;
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(objUrl);
+      toast.success('Pobrano', { id: tid });
+    } catch (err) {
+      console.error('Download error:', err);
+      toast.error('Błąd pobierania', { id: tid });
+    }
+  }, [authToken]);
+
+  const handleDownloadSingle = (photoId: number) => {
+    if (!galleryInfo) return;
+    downloadWithAuth(
+      `/api/galleries/group/${galleryInfo.gallery_id}/download/${photoId}`,
+      `zdjecie-${photoId}.jpg`
+    );
+  };
+
+  const handleDownloadAll = () => {
+    if (!galleryInfo) return;
+    if (photos.length === 0) {
+      toast.error('Brak zdjęć do pobrania');
+      return;
+    }
+    toast('Generowanie ZIP może chwilę potrwać...', { icon: '⏳' });
+    downloadWithAuth(
+      `/api/galleries/group/${galleryInfo.gallery_id}/download-all`,
+      `galeria.zip`
+    );
+  };
+
+  // PRO: nawigacja po zdjęciach w lightboxie
+  const navigateLightbox = useCallback((dir: 1 | -1) => {
+    if (!lightboxPhoto || photos.length === 0) return;
+    const idx = photos.findIndex(p => p.id === lightboxPhoto.id);
+    if (idx === -1) return;
+    const nextIdx = (idx + dir + photos.length) % photos.length;
+    setLightboxPhoto(photos[nextIdx]);
+  }, [lightboxPhoto, photos]);
+
+  // PRO: obsługa klawiatury w lightboxie (←, →, Esc)
+  useEffect(() => {
+    if (!lightboxPhoto) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft') navigateLightbox(-1);
+      else if (e.key === 'ArrowRight') navigateLightbox(1);
+      else if (e.key === 'Escape') setLightboxPhoto(null);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [lightboxPhoto, navigateLightbox]);
+
+  // PRO: toggle wyboru z grida (bez otwierania lightboxa)
+  const handleSelectToggle = async (photoId: number, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (!participantInfo) return;
+    const isSelected = selectedPhotos.includes(photoId);
+    const limitReached = !isSelected && selectedPhotos.length >= participantInfo.max_selections;
+    if (limitReached) {
+      toast.error(`Limit: maksymalnie ${participantInfo.max_selections} zdjęć do druku`);
+      return;
+    }
+    await handlePhotoClick(photoId);
+  };
+
   // Login screen
   if (!isAuthenticated) {
     return (
@@ -596,8 +680,29 @@ export default function GroupGalleryPage() {
         </div>
       </div>
 
+      {/* Action Bar pod headerem */}
+      <div className="border-b border-zinc-800 bg-zinc-900/30">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2 text-sm text-zinc-300">
+            <Info className="w-4 h-4 text-gold-500" />
+            <span>
+              Kliknij zdjęcie, aby je powiększyć. Zaznacz <strong className="text-white">do {participantInfo?.max_selections || 5}</strong> zdjęć do druku odbitek.
+            </span>
+          </div>
+          <button
+            onClick={handleDownloadAll}
+            disabled={photos.length === 0}
+            className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
+            title="Pobierz wszystkie zdjęcia w pełnej rozdzielczości jako ZIP"
+          >
+            <Package className="w-4 h-4" />
+            Pobierz całą galerię (ZIP)
+          </button>
+        </div>
+      </div>
+
       {/* Gallery Grid */}
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-4 py-8 pb-32">
         {photos.length === 0 ? (
           <div className="text-center py-20">
             <p className="text-zinc-400">Brak zdjęć w galerii</p>
@@ -606,12 +711,13 @@ export default function GroupGalleryPage() {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {photos.map(photo => {
               const isSelected = selectedPhotos.includes(photo.id);
+              const selectionIdx = isSelected ? selectedPhotos.indexOf(photo.id) + 1 : null;
               return (
                 <div
                   key={photo.id}
                   onClick={() => setLightboxPhoto(photo)}
-                  className={`relative aspect-square cursor-pointer rounded-lg overflow-hidden group ${
-                    isSelected ? 'ring-4 ring-gold-500' : 'ring-1 ring-zinc-800'
+                  className={`relative aspect-square cursor-pointer rounded-lg overflow-hidden group transition-all ${
+                    isSelected ? 'ring-4 ring-gold-500 shadow-lg shadow-gold-500/20' : 'ring-1 ring-zinc-800 hover:ring-zinc-600'
                   }`}
                 >
                   <Image
@@ -621,33 +727,97 @@ export default function GroupGalleryPage() {
                     className="object-cover group-hover:scale-105 transition-transform"
                   />
                   {/* Hover overlay - zoom hint */}
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-                    <ZoomIn className="w-8 h-8 text-white" />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100 pointer-events-none">
+                    <ZoomIn className="w-8 h-8 text-white drop-shadow-lg" />
                   </div>
-                  {isSelected && (
-                    <div className="absolute top-2 right-2 w-10 h-10 bg-gold-500 rounded-full flex items-center justify-center shadow-lg">
-                      <Check className="w-6 h-6 text-black" />
-                    </div>
-                  )}
+
+                  {/* Checkbox "Do druku" — top-left */}
+                  <button
+                    type="button"
+                    onClick={(e) => handleSelectToggle(photo.id, e)}
+                    className={`absolute top-2 left-2 flex items-center gap-1.5 px-2.5 py-1.5 rounded-full font-bold text-xs shadow-lg transition-all ${
+                      isSelected
+                        ? 'bg-gold-500 text-black'
+                        : 'bg-black/70 text-white hover:bg-black/90 opacity-0 group-hover:opacity-100'
+                    }`}
+                    title={isSelected ? 'Kliknij, aby odznaczyć' : 'Zaznacz do druku'}
+                  >
+                    {isSelected ? (
+                      <>
+                        <CheckSquare className="w-3.5 h-3.5" />
+                        {selectionIdx}/{participantInfo?.max_selections}
+                      </>
+                    ) : (
+                      <>
+                        <Square className="w-3.5 h-3.5" />
+                        Do druku
+                      </>
+                    )}
+                  </button>
+
+                  {/* Download single button — top-right (na hover) */}
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); handleDownloadSingle(photo.id); }}
+                    className="absolute top-2 right-2 p-2 bg-black/70 hover:bg-gold-500 hover:text-black text-white rounded-full transition-all opacity-0 group-hover:opacity-100 shadow-lg"
+                    title="Pobierz to zdjęcie"
+                  >
+                    <Download className="w-4 h-4" />
+                  </button>
                 </div>
               );
             })}
           </div>
         )}
-
-        {/* Action Buttons */}
-        {selectedPhotos.length > 0 && !consentGiven && (
-          <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50">
-            <button
-              onClick={() => setShowConsentModal(true)}
-              className="bg-gold-500 text-black font-bold px-8 py-4 rounded-full shadow-2xl hover:bg-gold-400 transition-all flex items-center gap-2"
-            >
-              <Heart className="w-5 h-5" />
-              Wyślij zgodę na publikację
-            </button>
-          </div>
-        )}
       </div>
+
+      {/* PRO Sticky Bottom Bar — zawsze widoczny gdy są zdjęcia */}
+      {photos.length > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 z-40 bg-zinc-900/95 backdrop-blur-md border-t border-zinc-800 shadow-2xl">
+          <div className="max-w-7xl mx-auto px-4 py-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-4 flex-1 min-w-0">
+                <div className="flex flex-col gap-1 flex-1 max-w-xs">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-zinc-400">Zaznaczone do druku</span>
+                    <span className="text-white font-bold">
+                      {selectedPhotos.length}/{participantInfo?.max_selections || 5}
+                    </span>
+                  </div>
+                  <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-gold-500 to-gold-400 transition-all"
+                      style={{
+                        width: `${Math.min(100, (selectedPhotos.length / (participantInfo?.max_selections || 5)) * 100)}%`
+                      }}
+                    />
+                  </div>
+                </div>
+                {consentGiven && (
+                  <div className="hidden sm:flex items-center gap-1.5 text-xs text-green-400 px-3 py-1.5 bg-green-500/10 border border-green-500/20 rounded-full">
+                    <Check className="w-3.5 h-3.5" />
+                    Zgoda RODO: {consentScope === 'ALL' ? 'wszystkie' : 'wybrane'}
+                  </div>
+                )}
+              </div>
+              <button
+                onClick={() => setShowConsentModal(true)}
+                disabled={selectedPhotos.length === 0 && !consentGiven}
+                className={`flex items-center gap-2 px-6 py-3 rounded-full font-bold transition-all shadow-lg ${
+                  consentGiven
+                    ? 'bg-zinc-700 text-white hover:bg-zinc-600'
+                    : selectedPhotos.length > 0
+                      ? 'bg-gold-500 text-black hover:bg-gold-400 hover:scale-105'
+                      : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
+                }`}
+              >
+                <Heart className="w-4 h-4" />
+                {consentGiven ? 'Zaktualizuj zgodę RODO' : 'Zatwierdź wybory + zgoda RODO'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Consent Modal */}
       {showConsentModal && (
@@ -732,71 +902,127 @@ export default function GroupGalleryPage() {
         </div>
       )}
 
-      {/* LIGHTBOX - podgląd zdjęcia + akcja Zaznacz */}
+      {/* LIGHTBOX PRO — nawigacja, licznik, akcje */}
       {lightboxPhoto && (
         <div
-          className="fixed inset-0 bg-black/95 flex items-center justify-center p-4 z-[60]"
+          className="fixed inset-0 bg-black/95 flex items-center justify-center z-[60]"
           onClick={() => setLightboxPhoto(null)}
         >
-          <button
-            onClick={(e) => { e.stopPropagation(); setLightboxPhoto(null); }}
-            className="absolute top-4 right-4 w-12 h-12 bg-zinc-900/80 hover:bg-zinc-800 text-white rounded-full flex items-center justify-center z-10"
-            aria-label="Zamknij podgląd"
-          >
-            <X className="w-6 h-6" />
-          </button>
+          {/* Top bar: licznik + zamknij */}
+          <div className="absolute top-0 left-0 right-0 flex items-center justify-between p-4 z-10 bg-gradient-to-b from-black/80 to-transparent">
+            <div className="flex items-center gap-3">
+              {(() => {
+                const idx = photos.findIndex(p => p.id === lightboxPhoto.id);
+                const isSelected = selectedPhotos.includes(lightboxPhoto.id);
+                return (
+                  <>
+                    <span className="text-white text-sm font-mono bg-black/50 px-3 py-1.5 rounded-full">
+                      {idx + 1} / {photos.length}
+                    </span>
+                    {isSelected && (
+                      <span className="flex items-center gap-1.5 text-black font-bold text-xs bg-gold-500 px-3 py-1.5 rounded-full">
+                        <CheckSquare className="w-3.5 h-3.5" />
+                        Wybrane do druku ({selectedPhotos.indexOf(lightboxPhoto.id) + 1}/{participantInfo?.max_selections})
+                      </span>
+                    )}
+                  </>
+                );
+              })()}
+            </div>
+            <button
+              onClick={(e) => { e.stopPropagation(); setLightboxPhoto(null); }}
+              className="w-12 h-12 bg-zinc-900/80 hover:bg-zinc-800 text-white rounded-full flex items-center justify-center"
+              aria-label="Zamknij podgląd"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+
+          {/* Strzałka w lewo */}
+          {photos.length > 1 && (
+            <button
+              onClick={(e) => { e.stopPropagation(); navigateLightbox(-1); }}
+              className="absolute left-4 top-1/2 -translate-y-1/2 w-14 h-14 bg-zinc-900/80 hover:bg-gold-500 hover:text-black text-white rounded-full flex items-center justify-center z-10 transition-colors shadow-lg"
+              aria-label="Poprzednie zdjęcie"
+            >
+              <ChevronLeft className="w-8 h-8" />
+            </button>
+          )}
+
+          {/* Strzałka w prawo */}
+          {photos.length > 1 && (
+            <button
+              onClick={(e) => { e.stopPropagation(); navigateLightbox(1); }}
+              className="absolute right-4 top-1/2 -translate-y-1/2 w-14 h-14 bg-zinc-900/80 hover:bg-gold-500 hover:text-black text-white rounded-full flex items-center justify-center z-10 transition-colors shadow-lg"
+              aria-label="Następne zdjęcie"
+            >
+              <ChevronRight className="w-8 h-8" />
+            </button>
+          )}
 
           <div
-            className="relative max-w-5xl w-full max-h-[90vh] flex flex-col"
+            className="relative max-w-6xl w-full px-20 py-20 flex flex-col items-center"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="relative flex-1 min-h-0">
-              <img
-                src={lightboxPhoto.file_url}
-                alt="Podgląd zdjęcia"
-                className="w-full h-full object-contain max-h-[75vh] rounded-lg"
-              />
-            </div>
+            <img
+              src={lightboxPhoto.file_url}
+              alt="Podgląd zdjęcia"
+              className="max-w-full max-h-[75vh] object-contain rounded-lg shadow-2xl"
+            />
 
-            {/* Action bar */}
-            <div className="mt-4 flex items-center justify-center gap-3">
+            {/* Bottom action bar */}
+            <div className="mt-6 flex items-center justify-center gap-3 flex-wrap">
               {(() => {
                 const isSelected = selectedPhotos.includes(lightboxPhoto.id);
                 const limitReached = !isSelected && participantInfo
                   && selectedPhotos.length >= participantInfo.max_selections;
                 return (
-                  <button
-                    onClick={async () => {
-                      if (limitReached) {
-                        toast.error(`Możesz wybrać maksymalnie ${participantInfo?.max_selections} zdjęć`);
-                        return;
-                      }
-                      await handlePhotoClick(lightboxPhoto.id);
-                    }}
-                    disabled={!!limitReached}
-                    className={`px-8 py-4 rounded-full font-bold flex items-center gap-2 transition-all ${
-                      isSelected
-                        ? 'bg-zinc-800 text-white hover:bg-zinc-700'
-                        : limitReached
-                          ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
-                          : 'bg-gold-500 text-black hover:bg-gold-400'
-                    }`}
-                  >
-                    {isSelected ? (
-                      <>
-                        <X className="w-5 h-5" />
-                        Odznacz
-                      </>
-                    ) : (
-                      <>
-                        <Check className="w-5 h-5" />
-                        {limitReached ? 'Limit osiągnięty' : 'Zaznacz to zdjęcie'}
-                      </>
-                    )}
-                  </button>
+                  <>
+                    <button
+                      onClick={async () => {
+                        if (limitReached) {
+                          toast.error(`Możesz wybrać maksymalnie ${participantInfo?.max_selections} zdjęć`);
+                          return;
+                        }
+                        await handlePhotoClick(lightboxPhoto.id);
+                      }}
+                      disabled={!!limitReached}
+                      className={`px-6 py-3 rounded-full font-bold flex items-center gap-2 transition-all shadow-lg ${
+                        isSelected
+                          ? 'bg-zinc-800 text-white hover:bg-zinc-700'
+                          : limitReached
+                            ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
+                            : 'bg-gold-500 text-black hover:bg-gold-400'
+                      }`}
+                    >
+                      {isSelected ? (
+                        <>
+                          <X className="w-5 h-5" />
+                          Odznacz (zdjęcie do druku)
+                        </>
+                      ) : (
+                        <>
+                          <CheckSquare className="w-5 h-5" />
+                          {limitReached ? 'Limit osiągnięty' : 'Zaznacz do druku'}
+                        </>
+                      )}
+                    </button>
+                    <button
+                      onClick={() => handleDownloadSingle(lightboxPhoto.id)}
+                      className="px-6 py-3 rounded-full font-bold flex items-center gap-2 bg-zinc-800 text-white hover:bg-zinc-700 transition-all shadow-lg"
+                      title="Pobierz to zdjęcie w pełnej rozdzielczości"
+                    >
+                      <Download className="w-5 h-5" />
+                      Pobierz zdjęcie
+                    </button>
+                  </>
                 );
               })()}
             </div>
+
+            <p className="mt-4 text-xs text-zinc-500 text-center">
+              Użyj strzałek ← → na klawiaturze, aby przeglądać. ESC zamyka.
+            </p>
           </div>
         </div>
       )}
