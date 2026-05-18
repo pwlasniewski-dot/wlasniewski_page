@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '@/lib/db/prisma';
 
 /**
  * POST /api/galleries/group/participant/[id]/select
@@ -159,6 +157,8 @@ export async function GET(
       })),
       selected_count: participant.selections.length,
       max_selections: participant.max_selections,
+      publication_consent: participant.publication_consent,
+      consent_scope: participant.consent_scope,
     });
 
   } catch (error) {

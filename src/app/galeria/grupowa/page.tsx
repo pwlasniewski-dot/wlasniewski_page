@@ -4,22 +4,18 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import toast from 'react-hot-toast';
-import { Check, Lock, User, Info, Download, Heart } from 'lucide-react';
+import { Check, Lock, User, Info, Heart } from 'lucide-react';
 
 interface Photo {
   id: number;
   file_url: string;
   thumbnail_url: string | null;
-  width: number | null;
-  height: number | null;
 }
 
 interface GalleryInfo {
   gallery_id: number;
   gallery_name: string;
-  description: string | null;
   max_photos_for_print: number;
-  expires_at: string | null;
 }
 
 interface ParticipantInfo {
@@ -75,12 +71,13 @@ export default function GroupGalleryPage() {
     }
   }, [isAuthenticated, galleryInfo]);
 
-  // Auto-authenticate if code and password in URL
+  // Auto-authenticate if code in URL
   useEffect(() => {
-    if (codeParam && !isAuthenticated) {
+    if (codeParam && !isAuthenticated && !loading) {
       handleAuth();
     }
-  }, [codeParam]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleAuth = async () => {
     if (!code.trim()) {
@@ -273,7 +270,7 @@ export default function GroupGalleryPage() {
             </div>
           </div>
 
-          <div className="space-y-4">
+          <form onSubmit={(e) => { e.preventDefault(); handleAuth(); }} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-zinc-300 mb-2">
                 Kod dostępu <span className="text-red-400">*</span>
@@ -284,6 +281,7 @@ export default function GroupGalleryPage() {
                 onChange={e => setCode(e.target.value.toUpperCase())}
                 placeholder="np. KOMUNIA2026"
                 className="w-full bg-black border border-zinc-700 rounded-lg px-4 py-3 text-white focus:border-gold-500 focus:outline-none uppercase"
+                autoFocus
               />
             </div>
 
@@ -301,13 +299,13 @@ export default function GroupGalleryPage() {
             </div>
 
             <button
-              onClick={handleAuth}
+              type="submit"
               disabled={loading || !code.trim()}
               className="w-full bg-gold-500 text-black font-bold py-4 rounded-lg hover:bg-gold-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Logowanie...' : 'Zaloguj się'}
             </button>
-          </div>
+          </form>
         </div>
       </div>
     );
@@ -328,7 +326,7 @@ export default function GroupGalleryPage() {
             </div>
           </div>
 
-          <div className="space-y-4 mb-6">
+          <form onSubmit={(e) => { e.preventDefault(); handleRegistration(); }} className="space-y-4 mb-6">
             <div>
               <label className="block text-sm font-medium text-zinc-300 mb-2">
                 Imię i nazwisko <span className="text-red-400">*</span>
@@ -339,6 +337,7 @@ export default function GroupGalleryPage() {
                 onChange={e => setParentName(e.target.value)}
                 placeholder="Jan Kowalski"
                 className="w-full bg-black border border-zinc-700 rounded-lg px-4 py-3 text-white focus:border-gold-500 focus:outline-none"
+                autoFocus
               />
             </div>
 
@@ -367,7 +366,7 @@ export default function GroupGalleryPage() {
                 className="w-full bg-black border border-zinc-700 rounded-lg px-4 py-3 text-white focus:border-gold-500 focus:outline-none"
               />
             </div>
-          </div>
+          </form>
 
           <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 mb-6">
             <div className="flex items-start gap-3">

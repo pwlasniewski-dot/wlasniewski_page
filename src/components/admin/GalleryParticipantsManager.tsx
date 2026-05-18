@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Users, Copy, Check, Plus, Trash2, Eye, EyeOff } from 'lucide-react';
+import { Users, Copy, Check, Trash2, Eye, EyeOff } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface Participant {
@@ -38,6 +38,7 @@ export default function GalleryParticipantsManager({ galleryId }: GalleryPartici
   useEffect(() => {
     fetchGalleryInfo();
     fetchParticipants();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [galleryId]);
 
   const fetchGalleryInfo = async () => {
