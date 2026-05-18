@@ -373,11 +373,6 @@ export default function ClientGalleryPage() {
                                 </div>
                             ))}
                         </div>
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
                         ) : (
                         <PremiumGalleryStory
                             photos={gallery.standard_photos.map(p => ({
