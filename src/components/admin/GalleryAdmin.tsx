@@ -50,6 +50,7 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
     const [loading, setLoading] = useState(!!galleryId);
     const [uploading, setUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
+    const [uploadStats, setUploadStats] = useState({ current: 0, total: 0 });
     const [skipOptimization, setSkipOptimization] = useState(false);
 
     // Settings logic
@@ -276,29 +277,68 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
         setUploading(true);
         setUploadProgress(0);
 
-        const formData = new FormData();
-        Array.from(files).forEach(file => formData.append('photos', file));
-        formData.append('is_standard', isStandard.toString());
-        formData.append('skip_optimization', skipOptimization.toString());
+        const fileArray = Array.from(files);
+        const totalFiles = fileArray.length;
+        let uploadedCount = 0;
+        let failedCount = 0;
+
+        setUploadStats({ current: 0, total: totalFiles });
 
         try {
             const token = localStorage.getItem('admin_token');
-            const res = await fetch(getApiUrl(`admin/galleries/${galleryId}/upload`), {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` },
-                body: formData,
-            });
 
-            if (res.ok) {
-                setUploadProgress(100);
-                setTimeout(() => {
-                    fetchGallery();
-                    setUploading(false);
-                }, 500);
+            // Upload each file individually to show real progress
+            for (const file of fileArray) {
+                try {
+                    const formData = new FormData();
+                    formData.append('photos', file);
+                    formData.append('is_standard', isStandard.toString());
+                    formData.append('skip_optimization', skipOptimization.toString());
+
+                    const res = await fetch(getApiUrl(`admin/galleries/${galleryId}/upload`), {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${token}` },
+                        body: formData,
+                    });
+
+                    if (res.ok) {
+                        uploadedCount++;
+                    } else {
+                        failedCount++;
+                        console.error(`Failed to upload ${file.name}:`, await res.text());
+                    }
+                } catch (fileError) {
+                    failedCount++;
+                    console.error(`Error uploading ${file.name}:`, fileError);
+                }
+
+                // Update progress bar and stats
+                const completed = uploadedCount + failedCount;
+                const progress = Math.round((completed / totalFiles) * 100);
+                setUploadProgress(progress);
+                setUploadStats({ current: completed, total: totalFiles });
             }
+
+            // Show results
+            if (failedCount === 0) {
+                toast.success(`✅ Wgrano ${uploadedCount} zdjęć`);
+            } else if (uploadedCount > 0) {
+                toast.warning(`⚠️ Wgrano ${uploadedCount} zdjęć, ${failedCount} nieudanych`);
+            } else {
+                toast.error(`❌ Wszystkie ${failedCount} zdjęć nie zostały wgrane`);
+            }
+
+            // Refresh gallery
+            fetchGallery();
         } catch (error) {
-            toast.error('Upload nieudany');
+            console.error('Upload error:', error);
+            toast.error('Błąd podczas uploadu');
+        } finally {
             setUploading(false);
+            setTimeout(() => {
+                setUploadProgress(0);
+                setUploadStats({ current: 0, total: 0 });
+            }, 1000);
         }
     };
 
@@ -646,7 +686,7 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
                 {uploading && (
                     <div className="mt-8 space-y-2">
                         <div className="flex justify-between text-[10px] font-black uppercase text-zinc-500 tracking-tighter">
-                            <span>Proces przesyłania...</span>
+                            <span>Przesyłanie zdjęć {uploadStats.current}/{uploadStats.total}</span>
                             <span>{uploadProgress}%</span>
                         </div>
                         <div className="bg-black/50 rounded-full h-1.5 overflow-hidden border border-zinc-900">
