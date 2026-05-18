@@ -53,7 +53,7 @@ export default function ClientGalleryPage() {
     const [selectedPremium, setSelectedPremium] = useState<Set<number>>(new Set());
     const [selectedStandard, setSelectedStandard] = useState<Set<number>>(new Set());
     const [downloadingAll, setDownloadingAll] = useState(false);
-    const [viewMode, setViewMode] = useState<'grid' | 'story'>('grid');
+    const [viewMode, setViewMode] = useState<'grid' | 'story'>('story');
 
     // Advanced Lightbox State
     const [lightbox, _setLightbox] = useState({
