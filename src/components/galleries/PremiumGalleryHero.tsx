@@ -70,7 +70,7 @@ export default function PremiumGalleryHero({
   return (
     <section
       className="relative w-full overflow-hidden bg-black"
-      style={{ height: 'min(80vh, 720px)' }}
+      style={{ height: 'min(60vh, 500px)' }}
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
@@ -91,7 +91,7 @@ export default function PremiumGalleryHero({
               fill
               priority={i === 0}
               sizes="100vw"
-              className={`object-cover object-center md:object-[center_30%] transition-transform duration-[10000ms] ease-linear ${
+              className={`object-cover object-top transition-transform duration-[10000ms] ease-linear ${
                 active ? 'scale-[1.03]' : 'scale-100'
               }`}
             />
