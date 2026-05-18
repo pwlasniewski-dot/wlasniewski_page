@@ -7,6 +7,8 @@ import { Download, ShoppingCart, Check, X, ArrowLeft, Calendar, ImageIcon, Plus,
 import Image from 'next/image';
 import { useAuth } from '@/context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
+import PremiumGalleryHero from '@/components/galleries/PremiumGalleryHero';
+import PostGalleryUpsell from '@/components/galleries/PostGalleryUpsell';
 
 interface GalleryPhoto {
     id: number;
@@ -240,8 +242,27 @@ export default function ClientGalleryPage() {
     const totalPrice = premiumTotal + productsTotal;
 
     return (
-        <div className="min-h-screen bg-black text-white py-12 px-4 pb-40 selection:bg-gold-500/30">
-            <div className="max-w-7xl mx-auto">
+        <div className="min-h-screen bg-black text-white pb-40 selection:bg-gold-500/30">
+            {/* HERO SLIDER — wow factor */}
+            {(gallery.standard_photos.length + gallery.premium_photos.length) > 0 && (
+                <PremiumGalleryHero
+                    photos={[...gallery.standard_photos, ...gallery.premium_photos].map(p => ({
+                        id: p.id,
+                        file_url: p.file_url,
+                        thumbnail_url: p.thumbnail_url,
+                    }))}
+                    title={`Witaj, ${gallery.client_name}!`}
+                    subtitle={gallery.description || 'Twoje profesjonalne zdjęcia są gotowe do przejrzenia'}
+                    badge="Twoja galeria"
+                    onPhotoClick={(p) => {
+                        const sIdx = gallery.standard_photos.findIndex(s => s.id === p.id);
+                        if (sIdx !== -1) { setLightbox(sIdx, 'standard'); return; }
+                        const pIdx = gallery.premium_photos.findIndex(pp => pp.id === p.id);
+                        if (pIdx !== -1) setLightbox(pIdx, 'premium');
+                    }}
+                />
+            )}
+            <div className="max-w-7xl mx-auto py-12 px-4">
                 {/* Header */}
                 <div className="mb-16 relative">
                     {isAuthenticated && (
@@ -463,6 +484,15 @@ export default function ClientGalleryPage() {
                     </div>
                 )}
             </div>
+
+            {/* UPSELL + PROŚBA O OPINIĘ — boost SEO */}
+            {(gallery.standard_photos.length + gallery.premium_photos.length) > 0 && (
+                <PostGalleryUpsell
+                    clientName={gallery.client_name}
+                    discountCode="WRACAM15"
+                    theme="dark"
+                />
+            )}
 
             {/* Professional Zoomable Lightbox */}
             <AnimatePresence>

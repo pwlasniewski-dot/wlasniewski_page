@@ -5,6 +5,8 @@ import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import toast from 'react-hot-toast';
 import { Check, Lock, User, Info, Heart, LogOut, X, ZoomIn, ChevronLeft, ChevronRight, Download, Package, CheckSquare, Square } from 'lucide-react';
+import PremiumGalleryHero, { PremiumGalleryStory } from '@/components/galleries/PremiumGalleryHero';
+import PostGalleryUpsell from '@/components/galleries/PostGalleryUpsell';
 
 interface Photo {
   id: number;
@@ -60,6 +62,11 @@ export default function GroupGalleryPage() {
   const [selectedPhotos, setSelectedPhotos] = useState<number[]>([]);
   const [loading, setLoading] = useState(false);
   const [lightboxPhoto, setLightboxPhoto] = useState<Photo | null>(null);
+
+  // PRO Hero + view mode
+  const [heroIndex, setHeroIndex] = useState(0);
+  const [heroPaused, setHeroPaused] = useState(false);
+  const [viewMode, setViewMode] = useState<'grid' | 'story'>('grid');
 
   // Consent state
   const [showConsentModal, setShowConsentModal] = useState(false);
@@ -680,6 +687,20 @@ export default function GroupGalleryPage() {
         </div>
       </div>
 
+      {/* HERO SLIDER — wow-factor */}
+      {photos.length > 0 && (
+        <PremiumGalleryHero
+          photos={photos}
+          title={participantInfo?.parent_name ? `Witaj, ${participantInfo.parent_name}` : (galleryInfo?.gallery_name || 'Twoja galeria')}
+          subtitle={galleryInfo?.gallery_name ? `${galleryInfo.gallery_name} — wybierz zdjęcia do druku odbitek` : undefined}
+          badge="Twoja prywatna galeria"
+          showModeToggle
+          mode={viewMode}
+          onModeChange={setViewMode}
+          onPhotoClick={(p) => setLightboxPhoto(p as Photo)}
+        />
+      )}
+
       {/* Action Bar pod headerem */}
       <div className="border-b border-zinc-800 bg-zinc-900/30">
         <div className="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
@@ -701,12 +722,17 @@ export default function GroupGalleryPage() {
         </div>
       </div>
 
-      {/* Gallery Grid */}
-      <div className="max-w-7xl mx-auto px-4 py-8 pb-32">
+      {/* Galeria — Siatka lub Opowieść */}
+      <div className={viewMode === 'story' ? 'pb-32' : 'max-w-7xl mx-auto px-4 py-8 pb-32'}>
         {photos.length === 0 ? (
           <div className="text-center py-20">
             <p className="text-zinc-400">Brak zdjęć w galerii</p>
           </div>
+        ) : viewMode === 'story' ? (
+          <PremiumGalleryStory
+            photos={photos}
+            onPhotoClick={(p) => setLightboxPhoto(p as Photo)}
+          />
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {photos.map(photo => {
@@ -770,6 +796,15 @@ export default function GroupGalleryPage() {
           </div>
         )}
       </div>
+
+      {/* UPSELL + PROŚBA O OPINIĘ — boost SEO */}
+      {photos.length > 0 && (
+        <PostGalleryUpsell
+          clientName={participantInfo?.parent_name}
+          discountCode="KOMUNIA15"
+          theme="dark"
+        />
+      )}
 
       {/* PRO Sticky Bottom Bar — zawsze widoczny gdy są zdjęcia */}
       {photos.length > 0 && (
