@@ -273,41 +273,6 @@ export default function ClientGalleryPage() {
             )}
 
             <div className="max-w-7xl mx-auto py-12 px-4">
-                {/* Header */}
-                <div className="mb-16 relative">
-                    {isAuthenticated && (
-                        <Link
-                            href="/konto"
-                            className="absolute left-0 -top-4 flex items-center gap-2 text-zinc-500 hover:text-white transition-all py-2.5 px-5 bg-zinc-900/40 rounded-2xl border border-zinc-800/50 backdrop-blur-md"
-                        >
-                            <ArrowLeft className="w-4 h-4" />
-                            <span className="text-sm font-bold uppercase tracking-wider">Panel Klienta</span>
-                        </Link>
-                    )}
-
-                    <div className="text-center">
-                        <h1 className="text-5xl md:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-zinc-500 mb-6 uppercase tracking-tighter">
-                            Witaj, {gallery.client_name}!
-                        </h1>
-                        <p className="text-xl text-zinc-400 font-medium tracking-wide">
-                            Twoje profesjonalne zdjęcia są gotowe do przejrzenia
-                        </p>
-                        {gallery.description && (
-                            <div className="mt-8 p-6 bg-zinc-900/50 border border-zinc-800/50 rounded-2xl max-w-3xl mx-auto text-left backdrop-blur-sm">
-                                <p className="text-zinc-300 whitespace-pre-wrap text-sm leading-relaxed font-medium">
-                                    {gallery.description}
-                                </p>
-                            </div>
-                        )}
-                        {gallery.expires_at && (
-                            <div className="inline-flex items-center gap-2 bg-red-500/10 text-red-400 px-4 py-1.5 rounded-full text-xs font-bold uppercase mt-6 border border-red-500/20">
-                                <Calendar className="w-3.5 h-3.5" />
-                                Galeria wygasa: {new Date(gallery.expires_at).toLocaleDateString('pl-PL')}
-                            </div>
-                        )}
-                    </div>
-                </div>
-
                 {/* Standard Photos Section */}
                 {gallery.standard_photos.length > 0 && (
                     <div className="mb-24">
@@ -315,6 +280,12 @@ export default function ClientGalleryPage() {
                             <div>
                                 <h2 className="text-3xl font-black uppercase tracking-tight mb-2">Pobierz swoją paczkę</h2>
                                 <p className="text-zinc-500 font-medium">To są zdjęcia zawarte w Twoim pakiecie sesji.</p>
+                                {gallery.expires_at && (
+                                    <div className="inline-flex items-center gap-2 bg-red-500/10 text-red-400 px-3 py-1.5 rounded-full text-xs font-bold uppercase mt-3 border border-red-500/20">
+                                        <Calendar className="w-3.5 h-3.5" />
+                                        Galeria wygasa: {new Date(gallery.expires_at).toLocaleDateString('pl-PL')}
+                                    </div>
+                                )}
                             </div>
                             <div className="flex items-center gap-4">
                                 <div className="flex gap-2 p-1 bg-black/40 border border-zinc-800 rounded-xl">
@@ -402,7 +373,11 @@ export default function ClientGalleryPage() {
                         </div>
                         ) : (
                         <PremiumGalleryStory
-                            photos={gallery.standard_photos}
+                            photos={gallery.standard_photos.map(p => ({
+                                id: p.id,
+                                file_url: p.file_url,
+                                thumbnail_url: p.thumbnail_url,
+                            }))}
                             onPhotoClick={(p) => {
                                 const idx = gallery.standard_photos.findIndex(ph => ph.id === p.id);
                                 if (idx !== -1) setLightbox(idx, 'standard');
