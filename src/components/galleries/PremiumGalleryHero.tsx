@@ -268,13 +268,13 @@ export function PremiumGalleryStory({
                   isLight ? 'border-zinc-200' : 'border-zinc-800'
                 }`}
               >
-                <div className="relative w-full aspect-[4/3] md:aspect-[3/2]">
+                <div className="relative w-full min-h-[400px] md:min-h-[600px] flex items-center justify-center bg-zinc-950">
                   <Image
                     src={photo.file_url}
                     alt={`Kadr ${index + 1}`}
-                    fill
-                    sizes="(max-width: 1024px) 100vw, 1024px"
-                    className="object-contain transition-transform duration-700 group-hover:scale-[1.03]"
+                    width={1200}
+                    height={1200}
+                    className="w-auto h-auto max-w-full max-h-[600px] md:max-h-[800px] object-contain transition-transform duration-700 group-hover:scale-[1.03]"
                   />
                 </div>
               </button>
