@@ -325,17 +325,17 @@ export default function ClientGalleryPage() {
                             {gallery.standard_photos.map((photo, idx) => (
                                 <div
                                     key={photo.id}
-                                    className="group relative aspect-[3/2] bg-zinc-900 overflow-hidden border border-white/5 hover:border-white/20 transition-all shadow-2xl"
+                                    className="group relative aspect-[3/2] bg-zinc-900 overflow-hidden border border-white/5 hover:border-white/20 transition-all shadow-2xl cursor-pointer"
+                                    onClick={() => setLightbox(idx, 'standard')}
                                 >
                                     <Image
                                         src={photo.thumbnail_url || photo.file_url}
                                         alt={`Photo ${photo.id}`}
                                         fill
-                                        className="object-cover transition-transform duration-1000 group-hover:scale-110 cursor-pointer"
-                                        onClick={() => setLightbox(idx, 'standard')}
+                                        className="object-cover transition-transform duration-1000 group-hover:scale-110"
                                     />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                                    <div className="absolute top-8 right-8">
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+                                    <div className="absolute top-8 right-8 pointer-events-none">
                                         <div className="p-4 bg-white/10 backdrop-blur-xl border border-white/10 rounded-2xl text-white opacity-0 group-hover:opacity-100 transition-all duration-500">
                                             <Maximize2 className="w-5 h-5" />
                                         </div>
@@ -361,13 +361,18 @@ export default function ClientGalleryPage() {
                                                     <div className="w-4 h-4" />
                                                 )}
                                             </button>
-                                            <div className="px-4 py-2 bg-white/10 backdrop-blur-md rounded-full text-[10px] font-black text-white uppercase tracking-tighter">Otrzymujesz to</div>
+                                            <div className="px-4 py-2 bg-white/10 backdrop-blur-md rounded-full text-[10px] font-black text-white uppercase tracking-tighter pointer-events-none">Otrzymujesz to</div>
                                         </div>
                                         <button
                                             onClick={(e) => { e.stopPropagation(); downloadPhoto(photo.id); }}
                                             className="p-4 bg-white text-black rounded-2xl hover:bg-gold-500 transition-colors shadow-xl"
                                         >
                                             <Download className="w-5 h-5" />
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                                         </button>
                                     </div>
                                 </div>
