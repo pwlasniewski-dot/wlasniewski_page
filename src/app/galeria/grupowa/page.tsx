@@ -74,26 +74,14 @@ export default function GroupGalleryPage() {
   const [consentScope, setConsentScope] = useState<'ALL' | 'SELECTED'>('SELECTED');
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
-  // Load participant from localStorage
+  // Always show registration modal when authenticated - each parent registers separately (not from localStorage)
+  // This allows multiple family members to create their own profiles under the same gallery code
   useEffect(() => {
-    if (isAuthenticated && galleryInfo) {
-      const stored = localStorage.getItem(`group_participant_${galleryInfo.gallery_id}`);
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored);
-          setParticipantInfo(parsed);
-          setAuthToken(parsed.token);
-          loadPhotos(galleryInfo.gallery_id, parsed.token);
-          loadSelections(parsed.participant_id, parsed.token);
-        } catch (e) {
-          console.error('Failed to parse stored participant:', e);
-        }
-      } else {
-        setShowRegistrationModal(true);
-        loadAvailableAvatars(galleryInfo.gallery_id);
-      }
+    if (isAuthenticated && galleryInfo && !participantInfo) {
+      setShowRegistrationModal(true);
+      loadAvailableAvatars(galleryInfo.gallery_id);
     }
-  }, [isAuthenticated, galleryInfo]);
+  }, [isAuthenticated, galleryInfo, participantInfo]);
 
   // Load list of available avatars for the gallery
   const loadAvailableAvatars = async (galleryId: number) => {
@@ -119,9 +107,12 @@ export default function GroupGalleryPage() {
   // Handle logout - clear all data
   const handleLogout = () => {
     if (!confirm('Czy na pewno chcesz się wylogować? Twój postęp jest zapisany.')) return;
-    if (galleryInfo) {
-      localStorage.removeItem(`group_participant_${galleryInfo.gallery_id}`);
+    
+    // Usuń token dla tego konkretnego uczestnika
+    if (participantInfo) {
+      localStorage.removeItem(`group_participant_${participantInfo.participant_id}`);
     }
+    
     setIsAuthenticated(false);
     setGalleryInfo(null);
     setParticipantInfo(null);
@@ -165,6 +156,11 @@ export default function GroupGalleryPage() {
       setGalleryInfo(data);
       setIsAuthenticated(true);
       toast.success(`Witaj w galerii: ${data.gallery_name}`);
+
+      // ZAWSZE pokazuj registration modal - nie przywracaj z localStorage
+      // Każdy członek rodziny loguje się niezależnie na tym samym kodzie
+      setShowRegistrationModal(true);
+      loadAvailableAvatars(data.gallery_id);
 
     } catch (error) {
       console.error('Auth error:', error);
@@ -216,8 +212,10 @@ export default function GroupGalleryPage() {
 
       setParticipantInfo(data);
       setAuthToken(data.token);
+      // Zapisz token dla każdego uczestnika indywidualnie (nie per galerię!)
+      // Każdy rodzic ma swój participant_id i własny klucz w localStorage
       localStorage.setItem(
-        `group_participant_${galleryInfo.gallery_id}`,
+        `group_participant_${data.participant_id}`,
         JSON.stringify(data)
       );
       setShowRegistrationModal(false);
@@ -525,9 +523,56 @@ export default function GroupGalleryPage() {
 
   // Registration modal
   if (showRegistrationModal) {
+    // Check if there's a saved participant from this device in this gallery
+    const getSavedParticipant = () => {
+      try {
+        const participants: (ParticipantInfo & { participant_id: number })[] = [];
+        Object.keys(localStorage).forEach(key => {
+          if (key.startsWith('group_participant_')) {
+            const saved = JSON.parse(localStorage.getItem(key) || '');
+            if (saved.gallery_id === galleryInfo?.gallery_id) {
+              participants.push(saved);
+            }
+          }
+        });
+        return participants.length > 0 ? participants[0] : null;
+      } catch (e) {
+        return null;
+      }
+    };
+
+    const savedParticipant = getSavedParticipant();
+
     return (
       <div className="min-h-screen bg-black/90 backdrop-blur-sm flex items-center justify-center p-4">
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 max-w-md w-full">
+          {/* Alert: Restore saved profile */}
+          {savedParticipant && (
+            <div className="bg-gold-500/20 border border-gold-500/50 rounded-lg p-4 mb-6">
+              <div className="flex items-start gap-3">
+                <User className="w-5 h-5 text-gold-500 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-white mb-2">
+                    Witaj ponownie, <span className="text-gold-300">{savedParticipant.parent_name}</span>!
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setParticipantInfo(savedParticipant);
+                      setAuthToken(savedParticipant.token);
+                      setShowRegistrationModal(false);
+                      loadPhotos(galleryInfo?.gallery_id || 0, savedParticipant.token);
+                      loadSelections(savedParticipant.participant_id, savedParticipant.token);
+                    }}
+                    className="w-full bg-gold-500 text-black text-xs font-bold py-2 rounded hover:bg-gold-400 transition-all"
+                  >
+                    Przywróć mój profil
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="flex items-center gap-3 mb-6">
             <div className="w-12 h-12 bg-gold-500/10 rounded-full flex items-center justify-center">
               <User className="w-6 h-6 text-gold-500" />
@@ -629,9 +674,31 @@ export default function GroupGalleryPage() {
           <button
             onClick={handleRegistration}
             disabled={loading || !parentName.trim() || !selectedAvatar}
-            className="w-full bg-gold-500 text-black font-bold py-4 rounded-lg hover:bg-gold-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-gold-500 text-black font-bold py-4 rounded-lg hover:bg-gold-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed mb-3"
           >
             {loading ? 'Rejestracja...' : 'Zapisz i kontynuuj'}
+          </button>
+
+          {/* Przycisk dla innego rodzica - zmiana konta */}
+          <button
+            onClick={() => {
+              setParticipantInfo(null);
+              setAuthToken(null);
+              setParentName('');
+              setParentEmail('');
+              setParentPhone('');
+              setSelectedAvatar('');
+              // Czyszcz też localStorage, żeby registration modal pozwolił się zarejestrować od nowa
+              Object.keys(localStorage).forEach(key => {
+                if (key.startsWith('group_participant_')) {
+                  localStorage.removeItem(key);
+                }
+              });
+              loadAvailableAvatars(galleryInfo?.gallery_id || 0);
+            }}
+            className="w-full bg-zinc-800 text-white font-semibold py-3 rounded-lg hover:bg-zinc-700 transition-all text-sm"
+          >
+            Zaloguj się jako inny rodzic
           </button>
         </div>
       </div>
