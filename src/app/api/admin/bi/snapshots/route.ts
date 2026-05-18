@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
         });
 
         // Calculate metrics
-        const totalRevenue = bookings.reduce((sum, b) => sum + (b.price || 0), 0);
+        const totalRevenue = bookings.reduce((sum, b) => sum + (b.price || 0), 0) / 100; // grosze → PLN
         const bookingsCount = bookings.length;
         const droneLeads = droneOrders.length;
         const conversionRate = bookingsCount > 0 ? ((bookingsCount / (bookingsCount + droneLeads + 100)) * 100).toFixed(1) : '0';
@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
             select: { price: true }
         });
 
-        const totalRevenue = bookings.reduce((sum, b) => sum + (b.price || 0), 0);
+        const totalRevenue = bookings.reduce((sum, b) => sum + (b.price || 0), 0) / 100; // grosze → PLN
 
         const snapshot = await prisma.analyticsSnapshot.create({
             data: {

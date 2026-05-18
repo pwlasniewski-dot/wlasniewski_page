@@ -284,7 +284,7 @@ export default function AdminBookingsPage() {
                                             )}
                                         </td>
                                         <td className="px-6 py-4 font-medium text-zinc-900">
-                                            {booking.price} zł
+                                            {(booking.price / 100).toFixed(2)} zł
                                         </td>
                                         <td className="px-6 py-4">
                                             <span
@@ -511,7 +511,7 @@ export default function AdminBookingsPage() {
                                                     className="w-full text-sm p-2 rounded border border-zinc-300"
                                                 />
                                             ) : (
-                                                <div className="font-medium text-zinc-900">{selectedBooking.price} zł</div>
+                                                <div className="font-medium text-zinc-900">{(selectedBooking.price / 100).toFixed(2)} zł</div>
                                             )}
                                         </div>
                                     </div>

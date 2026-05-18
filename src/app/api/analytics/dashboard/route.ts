@@ -175,9 +175,9 @@ export async function GET(request: NextRequest) {
             conversionRate: totalPageViews > 0
                 ? Math.min(100, Math.round((bookings.length / totalPageViews) * 100 * 10) / 10)
                 : 0,
-            totalRevenue: bookings.reduce((sum, b) => sum + (b.price || 0), 0),
+            totalRevenue: bookings.reduce((sum, b) => sum + (b.price || 0), 0) / 100, // grosze → PLN
             avgOrderValue: bookings.length > 0
-                ? Math.round(bookings.reduce((sum, b) => sum + (b.price || 0), 0) / bookings.length)
+                ? Math.round(bookings.reduce((sum, b) => sum + (b.price || 0), 0) / 100 / bookings.length) // średnia w PLN
                 : 0
         };
 

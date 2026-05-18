@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
             select: { price: true, created_at: true }
         });
 
-        const totalRevenue = bookings.reduce((sum, b) => sum + b.price, 0);
+        const totalRevenue = bookings.reduce((sum, b) => sum + b.price, 0) / 100; // grosze → PLN
 
         // Get revenue from gift cards
         const giftCardOrders = await prisma.giftCardOrder.findMany({
@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
             const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0);
 
             const monthBookings = bookings.filter(b => b.created_at >= monthStart && b.created_at <= monthEnd);
-            const monthRevenue = monthBookings.reduce((sum, b) => sum + b.price, 0);
+            const monthRevenue = monthBookings.reduce((sum, b) => sum + b.price, 0) / 100; // grosze → PLN
 
             // Add other revenue sources to chart if needed, or keep separate. 
             // For now let's sum them up for a "Total Revenue" chart.

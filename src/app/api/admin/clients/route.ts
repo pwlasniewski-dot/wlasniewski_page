@@ -156,9 +156,10 @@ export async function GET(request: NextRequest) {
                 const clientContracts = contractsMap.get(client.id) || [];
 
                 const giftCardRevenue = clientOrders.reduce((sum, o) => sum + o.amount_paid, 0);
+                // BUG FIX: booking.price jest w groszach (centy), musimy podzielić przez 100
                 const bookingRevenue = clientBookings
                     .filter(b => b.status === 'confirmed' || b.status === 'completed')
-                    .reduce((sum, b) => sum + (b.price || 0), 0);
+                    .reduce((sum, b) => sum + (b.price || 0), 0) / 100; // Konwersja groszy → PLN
 
                 const totalSpent = giftCardRevenue + bookingRevenue;
                 const lastOrder = clientOrders.length > 0 ? clientOrders[0].created_at : null;
