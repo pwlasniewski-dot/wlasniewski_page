@@ -28,7 +28,7 @@ interface PremiumGalleryHeroProps {
 
 /**
  * PREMIUM hero slider: pełnoekranowy, autoplay, crossfade,
- * bez zniekształceń zdjęć (object-contain + subtelne tło).
+ * ze sprawdzonym kadrowaniem jak na stronie głównej (cover + center 30%).
  */
 export default function PremiumGalleryHero({
   photos,
@@ -72,7 +72,7 @@ export default function PremiumGalleryHero({
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
-      {/* Slides z crossfade i bez zniekształceń proporcji */}
+      {/* Slides z crossfade i sprawdzonym kadrowaniem */}
       {slides.map((p, i) => {
         const active = i === idx;
         return (
@@ -83,29 +83,16 @@ export default function PremiumGalleryHero({
             }`}
             aria-hidden={!active}
           >
-            {/* Warstwa tła dla klimatu */}
-            <div className="absolute inset-0">
-              <Image
-                src={p.file_url}
-                alt=""
-                fill
-                sizes="100vw"
-                className="object-cover scale-110 blur-2xl opacity-35"
-                aria-hidden
-              />
-            </div>
-
-            {/* Główne zdjęcie bez rozciągania */}
-            <div className="absolute inset-0 p-4 md:p-8 lg:p-12">
-              <Image
-                src={p.file_url}
-                alt={`${title} – slajd ${i + 1}`}
-                fill
-                priority={i === 0}
-                sizes="100vw"
-                className={`object-contain transition-transform duration-[6000ms] ease-out ${active ? 'scale-[1.02]' : 'scale-100'}`}
-              />
-            </div>
+            <Image
+              src={p.file_url}
+              alt={`${title} – slajd ${i + 1}`}
+              fill
+              priority={i === 0}
+              sizes="100vw"
+              className={`object-cover object-center md:object-[center_30%] transition-transform duration-[10000ms] ease-linear ${
+                active ? 'scale-[1.03]' : 'scale-100'
+              }`}
+            />
           </div>
         );
       })}
@@ -281,14 +268,13 @@ export function PremiumGalleryStory({
                   isLight ? 'border-zinc-200' : 'border-zinc-800'
                 }`}
               >
-                <div className={`absolute inset-0 ${isLight ? 'bg-zinc-100' : 'bg-zinc-900'}`} />
-                <div className="relative w-full h-[45vh] md:h-[65vh]">
+                <div className="relative w-full aspect-[4/3] md:aspect-[16/10]">
                   <Image
                     src={photo.file_url}
                     alt={`Kadr ${index + 1}`}
                     fill
                     sizes="(max-width: 1024px) 100vw, 1024px"
-                    className="object-contain transition-transform duration-700 group-hover:scale-[1.01]"
+                    className="object-cover object-center transition-transform duration-700 group-hover:scale-[1.03]"
                   />
                 </div>
               </button>
