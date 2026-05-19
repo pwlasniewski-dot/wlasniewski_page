@@ -322,10 +322,15 @@ export default function ClientGalleryPage() {
                         {/* GRID MODE */}
                         {viewMode === 'grid' ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                            {gallery.standard_photos.map((photo, idx) => (
+                            {gallery.standard_photos.map((photo, idx) => {
+                                // Smart orientation detection to prevent head cropping
+                                const isPortrait = photo.width && photo.height && photo.height > photo.width;
+                                const aspectClass = isPortrait ? 'aspect-[2/3]' : 'aspect-[3/2]';
+                                
+                                return (
                                 <div
                                     key={photo.id}
-                                    className="group relative aspect-[3/2] bg-zinc-900 overflow-hidden border border-white/5 hover:border-white/20 transition-all shadow-2xl cursor-pointer"
+                                    className={`group relative ${aspectClass} bg-zinc-900 overflow-hidden border border-white/5 hover:border-white/20 transition-all shadow-2xl cursor-pointer`}
                                     onClick={() => setLightbox(idx, 'standard')}
                                 >
                                     <Image
@@ -371,7 +376,8 @@ export default function ClientGalleryPage() {
                                         </button>
                                     </div>
                                 </div>
-                            ))}
+                                );
+                            })}
                         </div>
                         ) : (
                         <PremiumGalleryStory
