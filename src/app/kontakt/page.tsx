@@ -8,7 +8,6 @@ import { Metadata } from 'next';
 import Script from 'next/script';
 
 const ContactForm = dynamic(() => import('@/components/ContactForm'), { 
-    ssr: false,
     loading: () => (
         <div className="max-w-4xl mx-auto text-center py-20">
             <div className="animate-pulse">
