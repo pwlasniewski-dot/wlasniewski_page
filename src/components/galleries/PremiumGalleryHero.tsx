@@ -32,6 +32,7 @@ interface PremiumGalleryHeroProps {
 /**
  * PREMIUM hero slider: pełnoekranowy, autoplay, crossfade,
  * ze sprawdzonym kadrowaniem jak na stronie głównej (cover + center 30%).
+ * Na PC filtrujemy zdjęcia pionowe z hero.
  */
 export default function PremiumGalleryHero({
   photos,
@@ -45,7 +46,27 @@ export default function PremiumGalleryHero({
   onModeChange,
   onPhotoClick,
 }: PremiumGalleryHeroProps) {
-  const slides = photos.slice(0, maxSlides);
+  // Detect desktop vs mobile
+  const [isDesktop, setIsDesktop] = useState(false);
+  
+  useEffect(() => {
+    const checkDesktop = () => setIsDesktop(window.innerWidth >= 768);
+    checkDesktop();
+    window.addEventListener('resize', checkDesktop);
+    return () => window.removeEventListener('resize', checkDesktop);
+  }, []);
+  
+  // Na PC: filtruj pionowe zdjęcia (portrait = height > width)
+  // Na mobile: pokaż wszystkie
+  const filteredPhotos = isDesktop
+    ? photos.filter(p => {
+        if (!p.width || !p.height) return true; // brak danych = include
+        return p.width >= p.height; // tylko landscape lub square
+      })
+    : photos;
+  
+  // Fallback: jeśli po filtracji nie ma nic, użyj oryginalnych
+  const slides = (filteredPhotos.length > 0 ? filteredPhotos : photos).slice(0, maxSlides);
   const [idx, setIdx] = useState(0);
   const [paused, setPaused] = useState(false);
 
