@@ -319,66 +319,26 @@ export default function ClientGalleryPage() {
                             </div>
                         </div>
 
-                        {/* GRID MODE - Masonry Layout (jak w portfolio) */}
+                        {/* GRID MODE - Masonry Layout (portfolio style) */}
                         {viewMode === 'grid' ? (
                         <div className="columns-1 sm:columns-2 md:columns-3 gap-4 space-y-4 p-4">
                             {gallery.standard_photos.map((photo, idx) => (
                                 <div key={photo.id} className="break-inside-avoid mb-4">
-                                    <div
-                                        className="group relative w-full cursor-pointer overflow-hidden rounded-xl bg-zinc-900 border border-white/5 hover:border-white/20 transition-all shadow-lg hover:shadow-2xl hover:scale-[1.02] duration-300"
+                                    <button
+                                        type="button"
                                         onClick={() => setLightbox(idx, 'standard')}
+                                        className="group relative w-full text-left"
                                     >
-                                        <img
-                                            src={photo.file_url}
-                                            alt={`Photo ${photo.id}`}
-                                            loading="lazy"
-                                            className="block w-full h-auto object-contain"
-                                        />
-                                        
-                                        {/* Hover overlay */}
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-                                        
-                                        {/* Zoom icon */}
-                                        <div className="absolute top-4 right-4 pointer-events-none">
-                                            <div className="p-3 bg-white/10 backdrop-blur-xl border border-white/10 rounded-xl text-white opacity-0 group-hover:opacity-100 transition-all duration-300">
-                                                <Maximize2 className="w-4 h-4" />
-                                            </div>
-                                        </div>
-                                        
-                                        {/* Bottom controls */}
-                                        <div className="absolute bottom-4 left-4 right-4 flex justify-between items-center translate-y-2 group-hover:translate-y-0 transition-transform duration-300 opacity-0 group-hover:opacity-100">
-                                            <div className="flex items-center gap-2">
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        const newSet = new Set(selectedStandard);
-                                                        if (newSet.has(photo.id)) {
-                                                            newSet.delete(photo.id);
-                                                        } else {
-                                                            newSet.add(photo.id);
-                                                        }
-                                                        setSelectedStandard(newSet);
-                                                    }}
-                                                    className={`p-2.5 rounded-xl border-2 transition-all ${selectedStandard.has(photo.id) ? 'bg-green-500 border-green-500' : 'bg-white/10 border-white/20 hover:border-white/40'}`}
-                                                >
-                                                    {selectedStandard.has(photo.id) ? (
-                                                        <Check className="w-4 h-4 text-white" />
-                                                    ) : (
-                                                        <div className="w-4 h-4" />
-                                                    )}
-                                                </button>
-                                                <div className="px-3 py-1.5 bg-white/10 backdrop-blur-md rounded-full text-[9px] font-bold text-white uppercase tracking-wide pointer-events-none">
-                                                    Otrzymujesz to
-                                                </div>
-                                            </div>
-                                            <button
-                                                onClick={(e) => { e.stopPropagation(); downloadPhoto(photo.id); }}
-                                                className="p-3 bg-white text-black rounded-xl hover:bg-gold-500 transition-colors shadow-lg"
-                                            >
-                                                <Download className="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                    </div>
+                                        <figure className="relative w-full overflow-hidden rounded-xl bg-zinc-900 shadow-md hover:shadow-xl transition-all duration-300 hover:scale-[1.02]">
+                                            <img
+                                                src={photo.file_url}
+                                                alt={`Photo ${photo.id}`}
+                                                loading="lazy"
+                                                className="block w-full h-auto object-contain"
+                                            />
+                                            <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition-colors duration-300 pointer-events-none" />
+                                        </figure>
+                                    </button>
                                 </div>
                             ))}
                         </div>
