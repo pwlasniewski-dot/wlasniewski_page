@@ -12,6 +12,13 @@ async function getB2BPage() {
                 slug: { in: ['b2b', 'strona-b2b', 'oferta-b2b'] },
                 is_published: true
             },
+            select: {
+                slug: true,
+                title: true,
+                meta_title: true,
+                meta_description: true,
+                sections: true
+            },
             orderBy: { updated_at: 'desc' },
             // Add a short timeout to prevent long hangs if DB is unreachable
             // Note: Prisma doesn't have a direct query timeout in findFirst without middleware, 

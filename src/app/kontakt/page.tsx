@@ -3,15 +3,31 @@ import prisma from '@/lib/db/prisma';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import PageRenderer from '@/components/PageRenderer';
-import ContactForm from '@/components/ContactForm';
+import dynamic from 'next/dynamic';
 import { Metadata } from 'next';
 import Script from 'next/script';
+
+const ContactForm = dynamic(() => import('@/components/ContactForm'), { 
+    ssr: false,
+    loading: () => (
+        <div className="max-w-4xl mx-auto text-center py-20">
+            <div className="animate-pulse">
+                <div className="h-8 bg-zinc-800 rounded w-1/3 mx-auto mb-4"></div>
+                <div className="h-4 bg-zinc-800 rounded w-1/2 mx-auto"></div>
+            </div>
+        </div>
+    )
+});
 
 export const revalidate = 3600; // Cache for 1 hour
 
 export async function generateMetadata(): Promise<Metadata> {
     const page = await prisma.page.findUnique({
-        where: { slug: 'kontakt' }
+        where: { slug: 'kontakt' },
+        select: {
+            meta_title: true,
+            meta_description: true
+        }
     });
 
     return {
@@ -22,7 +38,10 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function ContactPage() {
     const page = await prisma.page.findUnique({
-        where: { slug: 'kontakt' }
+        where: { slug: 'kontakt' },
+        select: {
+            sections: true
+        }
     });
 
     // Parse sections

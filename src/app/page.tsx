@@ -5,11 +5,26 @@ import { Metadata } from "next";
 export const revalidate = 3600; // Cache for 1 hour
 
 import prisma from "@/lib/db/prisma";
+import { unstable_cache } from 'next/cache';
+
+// Cached function for homepage metadata
+const getCachedHomeMetadata = unstable_cache(
+    async () => {
+        return await prisma.page.findUnique({
+            where: { slug: 'strona-glowna' },
+            select: {
+                meta_title: true,
+                meta_description: true,
+                meta_keywords: true
+            }
+        });
+    },
+    ['home-metadata'],
+    { revalidate: 3600, tags: ['pages', 'home'] }
+);
 
 export async function generateMetadata(): Promise<Metadata> {
-    const page = await prisma.page.findUnique({
-        where: { slug: 'strona-glowna' }
-    });
+    const page = await getCachedHomeMetadata();
 
     const defaultTitle = "Przemysław Właśniewski — Fotograf Toruń | Sesje rodzinne, ślubne, portretowe i komunijne";
     const defaultDescription = "Profesjonalny fotograf z Torunia. Naturalne sesje rodzinne, ślubne, portretowe i komunijne w Toruniu, Grudziądzu, Chełmnie, Wąbrzeźnie i okolicach. Reportaże pełne emocji i ujęcia z drona.";
@@ -30,17 +45,63 @@ export async function generateMetadata(): Promise<Metadata> {
 
 async function getHomePageData() {
     const page = await prisma.page.findUnique({
-        where: { slug: 'strona-glowna' }
+        where: { slug: 'strona-glowna' },
+        select: {
+            home_sections: true,
+            sections: true
+        }
     });
 
-    // Testimonials
+    // Testimonials - optimized query with select instead of include
     const testimonials = await prisma.testimonial.findMany({
-        include: { client_photo: true },
-        orderBy: { created_at: 'desc' }
+        where: {
+            is_featured: true // Only get featured testimonials
+        },
+        select: {
+            id: true,
+            client_name: true,
+            text: true,
+            rating: true,
+            location: true,
+            is_featured: true,
+            display_order: true,
+            created_at: true,
+            client_photo: {
+                select: {
+                    id: true,
+                    file_path: true,
+                    alt_text: true
+                }
+            }
+        },
+        orderBy: { display_order: 'asc' },
+        take: 10 // Limit to max 10 testimonials
     });
 
-    const featuredTestimonials = testimonials.filter(t => t.is_featured);
-    const finalTestimonials = featuredTestimonials.length > 0 ? featuredTestimonials : testimonials.slice(0, 5);
+    // If no featured testimonials, get the latest 5
+    const finalTestimonials = testimonials.length > 0 
+        ? testimonials 
+        : await prisma.testimonial.findMany({
+            select: {
+                id: true,
+                client_name: true,
+                text: true,
+                rating: true,
+                location: true,
+                is_featured: true,
+                display_order: true,
+                created_at: true,
+                client_photo: {
+                    select: {
+                        id: true,
+                        file_path: true,
+                        alt_text: true
+                    }
+                }
+            },
+            orderBy: { created_at: 'desc' },
+            take: 5
+        });
 
     return { page, testimonials: finalTestimonials };
 }

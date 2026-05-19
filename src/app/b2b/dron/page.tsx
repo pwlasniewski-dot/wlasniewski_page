@@ -22,7 +22,12 @@ export const revalidate = 0;
 
 export async function generateMetadata(): Promise<Metadata> {
     const page = await prisma.page.findFirst({
-        where: { slug: { in: ['b2b-dron', 'dron', 'b2b/dron'] } }
+        where: { slug: { in: ['b2b-dron', 'dron', 'b2b/dron'] } },
+        select: {
+            meta_title: true,
+            meta_description: true,
+            meta_keywords: true
+        }
     });
 
     return {
@@ -47,7 +52,10 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function DronePage() {
     const pageData = await prisma.page.findUnique({
-        where: { slug: 'dron' }
+        where: { slug: 'dron' },
+        select: {
+            sections: true
+        }
     });
 
     let sections = [];

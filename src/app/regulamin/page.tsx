@@ -8,7 +8,11 @@ export const revalidate = 3600; // Cache for 1 hour
 
 export async function generateMetadata(): Promise<Metadata> {
     const page = await prisma.page.findUnique({
-        where: { slug: 'regulamin' }
+        where: { slug: 'regulamin' },
+        select: {
+            meta_title: true,
+            meta_description: true
+        }
     });
 
     return {
@@ -19,7 +23,10 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function TermsPage() {
     const page = await prisma.page.findUnique({
-        where: { slug: 'regulamin' }
+        where: { slug: 'regulamin' },
+        select: {
+            sections: true
+        }
     });
 
     // Parse sections

@@ -22,7 +22,16 @@ export async function generateMetadata({ params }: Props) {
         const prisma = (await import('@/lib/db/prisma')).default;
         const session = await prisma.portfolioSession.findUnique({
             where: { slug },
-            include: { cover_image: true },
+            select: {
+                title: true,
+                description: true,
+                category: true,
+                cover_image: {
+                    select: {
+                        file_path: true
+                    }
+                }
+            }
         });
 
         if (!session) {

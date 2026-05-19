@@ -8,7 +8,11 @@ export const revalidate = 3600; // Cache for 1 hour
 
 export async function generateMetadata(): Promise<Metadata> {
     const page = await prisma.page.findUnique({
-        where: { slug: 'polityka-prywatnosci' }
+        where: { slug: 'polityka-prywatnosci' },
+        select: {
+            meta_title: true,
+            meta_description: true
+        }
     });
 
     return {
@@ -19,7 +23,10 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function PolitykaPrywatnosciPage() {
     const page = await prisma.page.findUnique({
-        where: { slug: 'polityka-prywatnosci' }
+        where: { slug: 'polityka-prywatnosci' },
+        select: {
+            sections: true
+        }
     });
 
     // Parse sections

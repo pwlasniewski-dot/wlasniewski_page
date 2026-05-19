@@ -17,6 +17,13 @@ async function getB2BPage(slug: string) {
                 is_published: true,
                 page_type: 'b2b'
             },
+            select: {
+                slug: true,
+                title: true,
+                meta_title: true,
+                meta_description: true,
+                sections: true
+            }
         });
 
         return page;

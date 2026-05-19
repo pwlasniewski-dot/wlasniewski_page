@@ -7,7 +7,11 @@ import PortfolioContent from "./PortfolioContent";
 export async function generateMetadata(): Promise<Metadata> {
     const prisma = (await import("@/lib/db/prisma")).default;
     const page = await prisma.page.findUnique({
-        where: { slug: 'portfolio' }
+        where: { slug: 'portfolio' },
+        select: {
+            meta_title: true,
+            meta_description: true
+        }
     });
 
     return {
@@ -49,12 +53,19 @@ export default async function PortfolioHome() {
 
     // Fetch Portfolio Page Data
     const portfolioPage = await prisma.page.findUnique({
-        where: { slug: 'portfolio' }
+        where: { slug: 'portfolio' },
+        select: {
+            sections: true,
+            content_images: true
+        }
     });
 
     // Fetch Homepage Data (for fallback Hero Slider)
     const homePage = await prisma.page.findUnique({
-        where: { slug: 'strona-glowna' } // or id: 1
+        where: { slug: 'strona-glowna' },
+        select: {
+            home_sections: true
+        }
     });
 
     // Parse Portfolio Dynamic Sections

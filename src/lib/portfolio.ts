@@ -1,4 +1,5 @@
 import { portfolioCategories, PortfolioCategory } from "@/data/portfolioData";
+import { unstable_cache } from 'next/cache';
 
 export type PortfolioImage = {
     src: string;
@@ -110,40 +111,49 @@ function groupSessionsByCategory(sessions: any[]): DynamicCategory[] {
 /**
  * Fetches the portfolio structure directly from the database (Server-Side).
  * IMPORTANT: Uses lazy import to prevent DB access during build-time module analysis
+ * CACHED: Results are cached for 1 hour to improve performance
  */
-async function fetchLocalPortfolio(): Promise<DynamicCategory[]> {
-    try {
-        // LAZY IMPORT - prevents DB connection during build-time module analysis
-        const prisma = (await import("@/lib/db/prisma")).default;
+const fetchLocalPortfolio = unstable_cache(
+    async (): Promise<DynamicCategory[]> => {
+        try {
+            // LAZY IMPORT - prevents DB connection during build-time module analysis
+            const prisma = (await import("@/lib/db/prisma")).default;
 
-        const sessions = await prisma.portfolioSession.findMany({
-            include: {
-                cover_image: {
-                    select: { file_path: true }
-                }
-                // We need to fetch ALL media to find the highlighted ones by ID, 
-                // but doing that for all sessions might be heavy.
-                // Better approach: MediaLibrary is a separate table, but we only store IDs in JSON.
-                // We can't join easily on JSON IDs.
-                // We should fetch all relevant media in a separate query or just fetch all media.
-                // Given the scale, fetching all MediaLibrary items might be okay or we filter by IDs on JS side if we fetch them.
-                // ACTUALLY, we can't easily JOIN. 
-                // Let's rely on the fact that `media_ids` relates to `MediaLibrary`.
-            },
-            orderBy: { session_date: 'desc' },
-        });
+            const sessions = await prisma.portfolioSession.findMany({
+                where: {
+                    is_published: true
+                },
+                select: {
+                    id: true,
+                    slug: true,
+                    title: true,
+                    category: true,
+                    description: true,
+                    location: true,
+                    session_date: true,
+                    highlighted_media_ids: true,
+                    media_ids: true,
+                    is_category_hero: true,
+                    cover_image: {
+                        select: { 
+                            file_path: true 
+                        }
+                    }
+                },
+                orderBy: { session_date: 'desc' },
+            });
 
-        // To get highlighted URLs, we need to query MediaLibrary where ID IN (all highlighted IDs).
-        const allHighlightedIds = sessions.flatMap(s =>
-            (s as any).highlighted_media_ids ? JSON.parse((s as any).highlighted_media_ids) as number[] : []
-        );
+            // To get highlighted URLs, we need to query MediaLibrary where ID IN (all highlighted IDs).
+            const allHighlightedIds = sessions.flatMap(s =>
+                (s as any).highlighted_media_ids ? JSON.parse((s as any).highlighted_media_ids) as number[] : []
+            );
 
-        const highlightedMedia = await prisma.mediaLibrary.findMany({
-            where: { id: { in: allHighlightedIds } },
-            select: { id: true, file_path: true }
-        });
+            const highlightedMedia = await prisma.mediaLibrary.findMany({
+                where: { id: { in: allHighlightedIds } },
+                select: { id: true, file_path: true }
+            });
 
-        const mediaMap = new Map(highlightedMedia.map(m => [m.id, m.file_path]));
+            const mediaMap = new Map(highlightedMedia.map(m => [m.id, m.file_path]));
 
         const mappedSessions = sessions.map(s => {
             const hIds = (s as any).highlighted_media_ids ? JSON.parse((s as any).highlighted_media_ids) as number[] : [];
@@ -164,7 +174,13 @@ async function fetchLocalPortfolio(): Promise<DynamicCategory[]> {
         console.error("[Portfolio] Error fetching portfolio from DB:", error);
         return [];
     }
-}
+},
+    ['portfolio-categories'],
+    { 
+        revalidate: 3600, // Cache for 1 hour
+        tags: ['portfolio', 'portfolio-sessions'] 
+    }
+);
 
 /**
  * Returns a list of all portfolio categories.
