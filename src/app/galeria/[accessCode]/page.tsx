@@ -329,7 +329,7 @@ export default function ClientGalleryPage() {
                                         onClick={() => setLightbox(idx, 'standard')}
                                     >
                                         <img
-                                            src={photo.thumbnail_url || photo.file_url}
+                                            src={photo.file_url}
                                             alt={`Photo ${photo.id}`}
                                             loading="lazy"
                                             className="block w-full h-auto object-contain"
