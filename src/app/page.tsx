@@ -60,17 +60,15 @@ async function getHomePageData() {
         select: {
             id: true,
             client_name: true,
-            text: true,
+            testimonial_text: true,
             rating: true,
-            location: true,
             is_featured: true,
             display_order: true,
             created_at: true,
             client_photo: {
                 select: {
                     id: true,
-                    file_path: true,
-                    alt_text: true
+                    file_path: true
                 }
             }
         },
@@ -85,17 +83,15 @@ async function getHomePageData() {
             select: {
                 id: true,
                 client_name: true,
-                text: true,
+                testimonial_text: true,
                 rating: true,
-                location: true,
                 is_featured: true,
                 display_order: true,
                 created_at: true,
                 client_photo: {
                     select: {
                         id: true,
-                        file_path: true,
-                        alt_text: true
+                        file_path: true
                     }
                 }
             },
