@@ -1144,7 +1144,7 @@ function ClientDetailsContent({ id }: { id: string }) {
 
                                                     {offer.status === 'accepted' ? (
                                                         <>
-                                                            <p className="text-2xl font-bold text-white">{offer.total_price?.toLocaleString() || 0} PLN</p>
+                                                            <p className="text-2xl font-bold text-white">{offer.total_price?.toLocaleString('pl-PL') || 0} PLN</p>
                                                             <p className="text-xs uppercase font-bold text-zinc-600 tracking-wider">Wartość końcowa</p>
                                                         </>
                                                     ) : (

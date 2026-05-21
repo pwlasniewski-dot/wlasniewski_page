@@ -8,23 +8,23 @@ export async function GET(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        // Extract and verify token for custom JWT system
-        let token = extractToken(request.headers.get('authorization'));
+        // Try token sources in order and accept the first valid one.
+        // This prevents stale cookies from overriding a valid `token` query param.
+        const url = new URL(request.url);
+        const tokenCandidates = [
+            extractToken(request.headers.get('authorization')),
+            extractToken(request.headers.get('Authorization')),
+            url.searchParams.get('token'),
+            request.cookies.get('client_token')?.value || null,
+            request.cookies.get('admin_token')?.value || null,
+            request.cookies.get('user_token')?.value || null,
+        ].filter((value): value is string => Boolean(value));
 
-        // Fallback: Check cookies if header missing (for browser downloads)
-        if (!token) {
-            const clientTokenCookie = request.cookies.get('client_token');
-            const adminTokenCookie = request.cookies.get('admin_token');
-            token = clientTokenCookie?.value || adminTokenCookie?.value || null;
+        let payload: { id: number; email: string } | null = null;
+        for (const candidate of tokenCandidates) {
+            payload = await verifyToken(candidate);
+            if (payload) break;
         }
-
-        // Fallback: Check query param (last resort)
-        if (!token) {
-            const url = new URL(request.url);
-            token = url.searchParams.get('token');
-        }
-
-        const payload = token ? await verifyToken(token) : null;
 
         if (!payload) {
             console.warn('[PDF API] Unauthorized access attempt to offer PDF');

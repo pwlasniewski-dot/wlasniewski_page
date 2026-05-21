@@ -182,7 +182,7 @@ export const OfferDocument: React.FC<OfferDocumentProps> = ({ offer }) => {
                         <View style={styles.totalRow}>
                             <Text style={styles.totalLabel}>SUMA:</Text>
                             <Text style={styles.totalValue}>
-                                {offer.total_price.toLocaleString()} PLN
+                                {offer.total_price.toLocaleString('pl-PL')} PLN
                             </Text>
                         </View>
                     </View>

@@ -8,23 +8,21 @@ export async function GET(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        // Extract and verify token
-        let token = extractToken(request.headers.get('authorization'));
+        const url = new URL(request.url);
+        const tokenCandidates = [
+            extractToken(request.headers.get('authorization')),
+            extractToken(request.headers.get('Authorization')),
+            url.searchParams.get('token'),
+            request.cookies.get('client_token')?.value || null,
+            request.cookies.get('admin_token')?.value || null,
+            request.cookies.get('user_token')?.value || null,
+        ].filter((value): value is string => Boolean(value));
 
-        // Fallback: Check cookies for browser downloads
-        if (!token) {
-            const clientTokenCookie = request.cookies.get('client_token');
-            const adminTokenCookie = request.cookies.get('admin_token');
-            token = clientTokenCookie?.value || adminTokenCookie?.value || null;
+        let payload: { id: number; email: string } | null = null;
+        for (const candidate of tokenCandidates) {
+            payload = await verifyToken(candidate);
+            if (payload) break;
         }
-
-        // Fallback: Check query param
-        if (!token) {
-            const url = new URL(request.url);
-            token = url.searchParams.get('token');
-        }
-
-        const payload = token ? await verifyToken(token) : null;
 
         if (!payload) {
             console.warn('[CONTRACT PDF API] Unauthorized access attempt');

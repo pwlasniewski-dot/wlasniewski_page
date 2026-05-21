@@ -86,7 +86,7 @@ export const ContractDocument: React.FC<ContractDocumentProps> = ({
     const interpolate = (text: string) => {
         return text
             .replace(/{{ClientName}}/g, clientName || contract.offer.client_email || '[KLIENT]')
-            .replace(/{{TotalPrice}}/g, contract.offer.total_price.toLocaleString())
+            .replace(/{{TotalPrice}}/g, contract.offer.total_price.toLocaleString('pl-PL'))
             .replace(/{{EventDate}}/g, eventDate || '[DATA]')
             .replace(/{{OfferTitle}}/g, contract.offer.title)
             .replace(/{{TodayDate}}/g, today);

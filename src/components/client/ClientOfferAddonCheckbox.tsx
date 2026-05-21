@@ -288,20 +288,20 @@ function AlbumRow({
                                     type="button"
                                     onClick={() => updateSpreads(spreads + 1)}
                                     disabled={busy}
+                                    className="w-8 h-8 rounded-lg bg-zinc-800 hover:bg-emerald-500 hover:text-zinc-950 text-white font-bold disabled:opacity-40">+</button>
                                 <span className="text-[11px] text-emerald-800">= {pages} stron</span>
-                                <span className="text-[11px] text-zinc-500">= {pages} stron</span>
                                 {spreads !== baseSpreads && (
-                                    <span className={`text-[11px] font-semibold ${spreads > baseSpreads ? 'text-amber-400' : 'text-emerald-400'}`}>
+                                    <span className={`text-[11px] font-semibold ${spreads > baseSpreads ? 'text-amber-600' : 'text-emerald-700'}`}>
                                         ({spreads > baseSpreads ? '+' : ''}{spreads - baseSpreads} rozkł. = {spreads > baseSpreads ? '+' : ''}{((spreads - baseSpreads) * pricePerSpread).toLocaleString('pl-PL')} PLN)
                                     </span>
                                 )}
+                                {spreads <= minSpreads && (
                                     <span className="text-[10px] text-emerald-800 italic">min. {minSpreads} rozkł. ({basePages} str.)</span>
-                                    <span className="text-[10px] text-zinc-500 italic">min. {minSpreads} rozkł. ({basePages} str.)</span>
                                 )}
                             </div>
 
+                            <div className="mt-2 flex items-center gap-2 flex-wrap">
                                 <span className="text-xs text-emerald-900 font-semibold">Format:</span>
-                                <span className="text-xs text-zinc-400">Format:</span>
                                 {formatOptions.length > 0 ? (
                                     <select
                                         value={selectedFormat}
