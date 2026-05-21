@@ -46,7 +46,7 @@ function findFormatOption(album: any, customFormat: string | null): FormatOption
 
 /**
  * 1 rozkładówka = 2 strony.
- * Minimalna liczba rozkładówek: 10 (= 20 stron).
+ * Minimalna liczba rozkładówek = baza albumu (nie mniej niż 10 = 20 stron).
  * Cena = base + (custom_spreads - base_spreads) * price_per_spread.
  * Jeśli klient wybrał wariant formatu z `format_options` → −discount_pct%.
  */
@@ -61,7 +61,7 @@ function calcFinal(
     let price = basePrice;
     if (basePages && customPages && customPages !== basePages) {
         const baseSpreads = Math.round(basePages / 2);
-        const customSpreads = Math.max(10, Math.round(customPages / 2));
+        const customSpreads = Math.max(baseSpreads, Math.round(customPages / 2));
         const diffSpreads = customSpreads - baseSpreads;
         price = price + diffSpreads * pricePerSpread;
     }
@@ -96,10 +96,17 @@ export async function POST(request: NextRequest) {
         }
 
         const pricePerSpread = album.price_per_spread || 40;
+        const basePages = album.pages_count || null;
+        const baseSpreads = Math.max(10, Math.round((basePages || 20) / 2));
+        const requestedPages = custom_pages != null ? Number(custom_pages) : null;
+        const requestedSpreads = requestedPages != null ? Math.round(requestedPages / 2) : baseSpreads;
+        const normalizedSpreads = Math.max(baseSpreads, requestedSpreads);
+        const normalizedCustomPages = normalizedSpreads * 2;
+
         const finalPrice = calcFinal(
             album.price || 0,
-            album.pages_count || null,
-            custom_pages != null ? Number(custom_pages) : null,
+            basePages,
+            normalizedCustomPages,
             pricePerSpread,
             custom_format_request || null,
             album,
@@ -110,9 +117,9 @@ export async function POST(request: NextRequest) {
             album_id: album.id,
             album_title: album.title,
             base_price: album.price || 0,
-            base_pages: album.pages_count || null,
+            base_pages: basePages,
             base_format: album.format || null,
-            custom_pages: custom_pages != null ? Number(custom_pages) : null,
+            custom_pages: basePages && normalizedCustomPages === basePages ? null : normalizedCustomPages,
             custom_format_request: custom_format_request || null,
             price_per_spread: pricePerSpread,
             final_price: finalPrice,

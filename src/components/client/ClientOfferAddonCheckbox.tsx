@@ -8,7 +8,7 @@
  * Logika cen:
  *  - `pages_count` w bazie = liczba STRON (np. 30 stron = 15 rozkladowek).
  *  - 1 rozkladowka = 2 strony.
- *  - Minimalna liczba rozkladowek: 10 (= 20 stron).
+ *  - Minimalna liczba rozkladowek = baza albumu (nigdy mniej niz 10 = 20 stron).
  *  - Cena za rozkladowke: `price_per_spread` (domyslnie 40 PLN).
  *  - Cena finalna = base_price + (custom_spreads - base_spreads) * price_per_spread.
  *  - Format 25x25 cm => -10% od ceny.
@@ -51,7 +51,7 @@ export type OfferAddon = {
     status: 'pending';
 };
 
-const MIN_SPREADS = 10;
+const GLOBAL_MIN_SPREADS = 10;
 
 export default function ClientOfferAddonCheckbox({
     offerId,
@@ -152,12 +152,13 @@ function AlbumRow({
     onChange: (next: OfferAddon[]) => void;
 }) {
     const basePages = album.pages_count || 0;
-    const baseSpreads = Math.max(MIN_SPREADS, Math.round(basePages / 2));
+    const baseSpreads = Math.max(GLOBAL_MIN_SPREADS, Math.round(basePages / 2));
+    const minSpreads = baseSpreads;
     const pricePerSpread = album.price_per_spread || 40;
     const basePrice = album.price || 0;
     const formatOptions = Array.isArray(album.format_options) ? album.format_options : [];
 
-    const initialSpreads = addon?.custom_pages ? Math.round(addon.custom_pages / 2) : baseSpreads;
+    const initialSpreads = Math.max(minSpreads, addon?.custom_pages ? Math.round(addon.custom_pages / 2) : baseSpreads);
     const [spreads, setSpreads] = useState<number>(initialSpreads);
     const [selectedFormat, setSelectedFormat] = useState<string>(addon?.custom_format_request || '');
     const [busy, setBusy] = useState(false);
@@ -215,7 +216,7 @@ function AlbumRow({
     }
 
     async function updateSpreads(newSpreads: number) {
-        const clamped = Math.max(MIN_SPREADS, newSpreads);
+        const clamped = Math.max(minSpreads, newSpreads);
         setSpreads(clamped);
         if (!isAdded || isLocked) return;
         setBusy(true);
@@ -278,7 +279,7 @@ function AlbumRow({
                                 <button
                                     type="button"
                                     onClick={() => updateSpreads(spreads - 1)}
-                                    disabled={busy || spreads <= MIN_SPREADS}
+                                    disabled={busy || spreads <= minSpreads}
                                     className="w-8 h-8 rounded-lg bg-zinc-800 hover:bg-emerald-500 hover:text-zinc-950 text-white font-bold disabled:opacity-40 disabled:cursor-not-allowed">−</button>
                                 <span className="bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-1.5 text-white font-bold text-sm min-w-[60px] text-center">
                                     {spreads}
@@ -294,8 +295,8 @@ function AlbumRow({
                                         ({spreads > baseSpreads ? '+' : ''}{spreads - baseSpreads} rozkł. = {spreads > baseSpreads ? '+' : ''}{((spreads - baseSpreads) * pricePerSpread).toLocaleString('pl-PL')} PLN)
                                     </span>
                                 )}
-                                {spreads <= MIN_SPREADS && (
-                                    <span className="text-[10px] text-zinc-500 italic">min. {MIN_SPREADS} rozkł.</span>
+                                {spreads <= minSpreads && (
+                                    <span className="text-[10px] text-zinc-500 italic">min. {minSpreads} rozkł. ({basePages} str.)</span>
                                 )}
                             </div>
 
