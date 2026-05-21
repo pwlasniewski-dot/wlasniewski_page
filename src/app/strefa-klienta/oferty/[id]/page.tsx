@@ -30,7 +30,7 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
     const [selectedPackageIndex, setSelectedPackageIndex] = useState<number | null>(null);
     const [adultCount, setAdultCount] = useState<number>(0);
     const [familyChildCount, setFamilyChildCount] = useState<number>(0);
-    const [familyVoucherEnabled, setFamilyVoucherEnabled] = useState(false);
+    const [familyVoucherEnabled, setFamilyVoucherEnabled] = useState(true);
     const [voucherSenderName, setVoucherSenderName] = useState('');
     const [voucherRecipientName, setVoucherRecipientName] = useState('Rodzice');
     const [voucherPackageName, setVoucherPackageName] = useState('');
@@ -94,7 +94,7 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
                         setFamilyChildCount(Number(cs.groupBreakdown.children) || 0);
                     }
                     if (cs.familyVoucher) {
-                        setFamilyVoucherEnabled(!!cs.familyVoucher.enabled);
+                        setFamilyVoucherEnabled(true);
                         setVoucherSenderName(cs.familyVoucher.senderName || '');
                         setVoucherRecipientName(cs.familyVoucher.recipientName || 'Rodzice');
                         setVoucherPackageName(cs.familyVoucher.packageName || '');
@@ -1004,17 +1004,9 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
                                                     Opcja tylko dla sesji rodzinnych. Po wyborze pakietu voucher aktualizuje się automatycznie i możesz go wydrukować jako prezent.
                                                 </p>
                                             </div>
-                                            <label className="shrink-0">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={familyVoucherEnabled}
-                                                    onChange={(e) => setFamilyVoucherEnabled(e.target.checked)}
-                                                    className="sr-only peer"
-                                                />
-                                                <span className="inline-flex items-center gap-2 rounded-xl border-2 border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-800 shadow-sm transition-all cursor-pointer peer-checked:border-emerald-600 peer-checked:bg-emerald-600 peer-checked:text-white peer-checked:shadow-md">
-                                                    {familyVoucherEnabled ? 'Voucher włączony' : 'Włącz voucher'}
-                                                </span>
-                                            </label>
+                                            <span className="shrink-0 inline-flex items-center gap-2 rounded-xl border-2 border-emerald-600 bg-emerald-600 px-4 py-2 text-sm font-bold text-white shadow-md">
+                                                Voucher włączony
+                                            </span>
                                         </div>
 
                                         {familyVoucherEnabled && (
