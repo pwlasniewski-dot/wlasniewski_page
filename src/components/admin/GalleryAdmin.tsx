@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { getApiUrl } from '@/lib/api-config';
-import { Upload, Trash2, Check, X, Eye, ImageIcon, Plus, ArrowLeft, Calendar, Save, ShoppingBag } from 'lucide-react';
+import { Upload, Trash2, Check, X, Eye, ImageIcon, Plus, ArrowLeft, Calendar, Save, ShoppingBag, Mail } from 'lucide-react';
 import Image from 'next/image';
 import toast from 'react-hot-toast';
 import GalleryParticipantsManager from './GalleryParticipantsManager';
@@ -57,6 +57,7 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
     const [uploadProgress, setUploadProgress] = useState(0);
     const [uploadStats, setUploadStats] = useState({ current: 0, total: 0 });
     const [skipOptimization, setSkipOptimization] = useState(false);
+    const [sendingAccessEmail, setSendingAccessEmail] = useState(false);
 
     // Settings logic
     const [isEditingSettings, setIsEditingSettings] = useState(false);
@@ -79,6 +80,7 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
         standard_count: 10,
         price_per_premium: 2000,
         expires_days: 30,
+        send_email: false,
         gallery_mode: 'INDIVIDUAL' as 'INDIVIDUAL' | 'GROUP',
         group_access_code: '',
         group_password: '',
@@ -209,6 +211,7 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
                 body: JSON.stringify({
                     ...newGallery,
                     expires_at: expiresAt.toISOString(),
+                    send_email: newGallery.send_email,
                     group_access_code: newGallery.gallery_mode === 'GROUP' ? newGallery.group_access_code : undefined,
                     group_password: newGallery.gallery_mode === 'GROUP' && newGallery.group_password ? newGallery.group_password : undefined,
                     max_photos_for_print: newGallery.gallery_mode === 'GROUP' && newGallery.max_photos_for_print ? Number(newGallery.max_photos_for_print) : undefined,
@@ -404,6 +407,28 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
         } catch (error) { }
     };
 
+    const handleSendAccessEmail = async () => {
+        if (!galleryId) return;
+        setSendingAccessEmail(true);
+        try {
+            const token = localStorage.getItem('admin_token');
+            const res = await fetch(getApiUrl(`admin/galleries/${galleryId}/send-access-email`), {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            if (data.success) {
+                toast.success(data.message || 'Email z dostępem został wysłany');
+            } else {
+                toast.error(data.error || 'Nie udało się wysłać maila');
+            }
+        } catch (error) {
+            toast.error('Błąd wysyłki maila');
+        } finally {
+            setSendingAccessEmail(false);
+        }
+    };
+
     if (loading) return <div className="p-12 text-center text-zinc-400 flex items-center justify-center gap-3"><ImageIcon className="animate-pulse" /> Wczytywanie galerii...</div>;
 
     if (!galleryId) {
@@ -448,6 +473,16 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
                             className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:border-gold-500 outline-none transition-colors"
                         />
                     </div>
+
+                    <label className="flex items-center gap-3 bg-black border border-zinc-800 rounded-xl px-4 py-3 cursor-pointer hover:border-zinc-700 transition-colors">
+                        <input
+                            type="checkbox"
+                            checked={newGallery.send_email}
+                            onChange={(e) => setNewGallery({ ...newGallery, send_email: e.target.checked })}
+                            className="w-4 h-4 accent-gold-500"
+                        />
+                        <span className="text-sm text-zinc-200">Wyślij mail z dostępem od razu po utworzeniu galerii</span>
+                    </label>
 
                     {/* Tryb galerii */}
                     <div className="space-y-3 pt-4 border-t border-zinc-800">
@@ -549,6 +584,14 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
                     </div>
                 </div>
                 <div className="flex items-center gap-3">
+                    <button
+                        onClick={handleSendAccessEmail}
+                        disabled={sendingAccessEmail}
+                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl border bg-zinc-800 border-zinc-700 text-zinc-300 hover:text-white hover:bg-zinc-700 transition-all text-sm font-bold disabled:opacity-50"
+                    >
+                        <Mail className="w-4 h-4" />
+                        {sendingAccessEmail ? 'Wysyłanie...' : 'Wyślij mail'}
+                    </button>
                     <button
                         onClick={() => setIsEditingSettings(!isEditingSettings)}
                         className={`flex items-center gap-2 px-5 py-2.5 rounded-xl border transition-all text-sm font-bold ${isEditingSettings ? 'bg-gold-500 border-gold-500 text-black shadow-lg shadow-gold-500/20' : 'bg-zinc-800 border-zinc-700 text-zinc-300 hover:text-white hover:bg-zinc-700'}`}

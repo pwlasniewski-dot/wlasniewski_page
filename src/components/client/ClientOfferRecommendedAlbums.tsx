@@ -50,6 +50,12 @@ export type OfferAddon = {
     status: 'pending';
 };
 
+function asMediaUrl(value: unknown): string | null {
+    if (typeof value !== 'string') return null;
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : null;
+}
+
 export default function ClientOfferRecommendedAlbums({
     offerId,
     onAddonsChange,
@@ -93,6 +99,11 @@ export default function ClientOfferRecommendedAlbums({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [offerId]);
 
+    useEffect(() => {
+        if (albums.length === 0) return;
+        setActiveIdx((idx) => Math.min(idx, albums.length - 1));
+    }, [albums.length]);
+
     function updateAddons(next: OfferAddon[]) {
         setAddons(next);
         onAddonsChange?.(next);
@@ -102,7 +113,9 @@ export default function ClientOfferRecommendedAlbums({
     // Oferta zatwierdzona bez dodatkow - nic nie pokazuj (zachowaj stary widok)
     if (isLocked && addons.length === 0) return null;
 
-    const active = albums[activeIdx];
+    const active = albums[activeIdx] ?? albums[0];
+    if (!active) return null;
+
     const activeAddon = addons.find(a => a.album_id === active.id);
 
     return (
@@ -209,18 +222,39 @@ export default function ClientOfferRecommendedAlbums({
 function AlbumShowcase({ album, offerId, isAdded, onAdded }: { album: Album; offerId: number; isAdded: boolean; onAdded: (addon: OfferAddon) => void }) {
     const gallery = useMemo(() => {
         const out: { type: 'image' | 'video'; url: string; thumb?: string; label?: string }[] = [];
-        if (album.video_url) {
-            out.push({ type: 'video', url: album.video_url, thumb: album.video_thumbnail || album.cover_image_url, label: 'Prezentacja albumu' });
+        const primaryVideoUrl = asMediaUrl(album.video_url);
+        if (primaryVideoUrl) {
+            out.push({
+                type: 'video',
+                url: primaryVideoUrl,
+                thumb: asMediaUrl(album.video_thumbnail) || asMediaUrl(album.cover_image_url) || undefined,
+                label: 'Prezentacja albumu'
+            });
         }
         const extras = Array.isArray(album.additional_videos) ? album.additional_videos : [];
         extras.forEach((v: any) => {
-            if (v?.url) out.push({ type: 'video', url: v.url, thumb: v.thumbnail || album.cover_image_url, label: v.label || 'Film' });
+            const url = asMediaUrl(v?.url);
+            if (url) {
+                out.push({
+                    type: 'video',
+                    url,
+                    thumb: asMediaUrl(v?.thumbnail) || asMediaUrl(album.cover_image_url) || undefined,
+                    label: v.label || 'Film'
+                });
+            }
         });
-        if (album.cover_image_url) out.push({ type: 'image', url: album.cover_image_url });
+        const coverUrl = asMediaUrl(album.cover_image_url);
+        if (coverUrl) out.push({ type: 'image', url: coverUrl });
         const previews = Array.isArray(album.preview_images) ? album.preview_images : [];
-        previews.forEach((u: string) => { if (u && u !== album.cover_image_url) out.push({ type: 'image', url: u }); });
+        previews.forEach((u: string) => {
+            const url = asMediaUrl(u);
+            if (url && url !== coverUrl) out.push({ type: 'image', url });
+        });
         const samples = Array.isArray(album.sample_pages) ? album.sample_pages : [];
-        samples.forEach((u: string) => { if (u) out.push({ type: 'image', url: u }); });
+        samples.forEach((u: string) => {
+            const url = asMediaUrl(u);
+            if (url) out.push({ type: 'image', url });
+        });
         return out;
     }, [album]);
 
@@ -228,14 +262,42 @@ function AlbumShowcase({ album, offerId, isAdded, onAdded }: { album: Album; off
     const [videoPlaying, setVideoPlaying] = useState(false);
     const [showConfigurator, setShowConfigurator] = useState(false);
 
+    useEffect(() => {
+        setIdx(0);
+        setVideoPlaying(false);
+    }, [album.id]);
+
+    useEffect(() => {
+        if (gallery.length === 0) {
+            if (idx !== 0) setIdx(0);
+            setVideoPlaying(false);
+            return;
+        }
+        if (idx >= gallery.length) {
+            setIdx(0);
+        }
+    }, [gallery.length, idx]);
+
     const current = gallery[idx];
     const isVideoSlide = current?.type === 'video';
 
-    function next() { setVideoPlaying(false); setIdx(i => (i + 1) % gallery.length); }
-    function prev() { setVideoPlaying(false); setIdx(i => (i - 1 + gallery.length) % gallery.length); }
+    const slideImage = isVideoSlide ? asMediaUrl(current?.thumb) : asMediaUrl(current?.url);
+    const fallbackImage = asMediaUrl(album.cover_image_url);
+    const displayImage = slideImage || fallbackImage;
 
-    const ytMatch = isVideoSlide ? current.url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/) : null;
-    const vimeoMatch = isVideoSlide ? current.url.match(/vimeo\.com\/(\d+)/) : null;
+    function next() {
+        if (gallery.length < 2) return;
+        setVideoPlaying(false);
+        setIdx(i => (i + 1) % gallery.length);
+    }
+    function prev() {
+        if (gallery.length < 2) return;
+        setVideoPlaying(false);
+        setIdx(i => (i - 1 + gallery.length) % gallery.length);
+    }
+
+    const ytMatch = isVideoSlide && current?.url ? current.url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/) : null;
+    const vimeoMatch = isVideoSlide && current?.url ? current.url.match(/vimeo\.com\/(\d+)/) : null;
     const embedUrl = ytMatch
         ? `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1&rel=0&modestbranding=1`
         : vimeoMatch
@@ -256,16 +318,24 @@ function AlbumShowcase({ album, offerId, isAdded, onAdded }: { album: Album; off
                                 allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
                                 allowFullScreen
                             />
-                        ) : isVideoSlide && videoPlaying && !embedUrl ? (
+                        ) : isVideoSlide && videoPlaying && !embedUrl && current?.url ? (
                             <video src={current.url} autoPlay controls className="absolute inset-0 w-full h-full object-contain bg-black" />
                         ) : (
                             <>
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img
-                                    src={(isVideoSlide ? current.thumb : current?.url) || album.cover_image_url || ''}
-                                    alt={album.title}
-                                    className="absolute inset-0 w-full h-full object-cover"
-                                />
+                                {displayImage ? (
+                                    <>
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                        <img
+                                            src={displayImage}
+                                            alt={album.title}
+                                            className="absolute inset-0 w-full h-full object-cover"
+                                        />
+                                    </>
+                                ) : (
+                                    <div className="absolute inset-0 flex items-center justify-center bg-zinc-900 text-zinc-500 text-sm">
+                                        Brak podglądu albumu
+                                    </div>
+                                )}
                                 {isVideoSlide && (
                                     <button
                                         onClick={() => setVideoPlaying(true)}
@@ -275,7 +345,7 @@ function AlbumShowcase({ album, offerId, isAdded, onAdded }: { album: Album; off
                                         </div>
                                         <div className="absolute bottom-4 left-4 right-4 text-center">
                                             <span className="inline-flex items-center gap-2 bg-black/60 backdrop-blur px-4 py-2 rounded-full text-white text-sm font-semibold">
-                                                ▶ {current.label || 'Zobacz prezentację albumu'}
+                                                ▶ {current?.label || 'Zobacz prezentację albumu'}
                                             </span>
                                         </div>
                                     </button>
@@ -408,8 +478,14 @@ function AlbumShowcase({ album, offerId, isAdded, onAdded }: { album: Album; off
                             <button key={i} onClick={() => { setVideoPlaying(false); setIdx(i); }}
                                 title={g.label || `Element ${i + 1}`}
                                 className={`relative w-20 h-14 rounded-md overflow-hidden shrink-0 transition border-2 ${i === idx ? 'border-gold-500 ring-2 ring-gold-500/40 scale-105' : 'border-zinc-700 opacity-70 hover:opacity-100 hover:border-gold-500/50'}`}>
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img src={(g.type === 'video' ? g.thumb : g.url) || ''} alt="" className="w-full h-full object-cover" />
+                                {asMediaUrl(g.type === 'video' ? g.thumb : g.url) ? (
+                                    <>
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                        <img src={asMediaUrl(g.type === 'video' ? g.thumb : g.url) || undefined} alt="" className="w-full h-full object-cover" />
+                                    </>
+                                ) : (
+                                    <div className="w-full h-full bg-zinc-800" />
+                                )}
                                 {g.type === 'video' && (
                                     <div className="absolute inset-0 flex items-center justify-center bg-black/50">
                                         <Play className="w-5 h-5 text-gold-400 fill-current" />

@@ -1,5 +1,5 @@
 // API Route: POST /api/admin/galleries/create
-// Create new gallery and send access email to client
+// Create new gallery and optionally send access email to client
 
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
                 expires_at,
                 booking_id,
                 challenge_id,
-                send_email: shouldSendEmail = true,
+                send_email: shouldSendEmail = false,
                 // Tryb grupowy
                 gallery_mode = 'INDIVIDUAL',
                 group_access_code: rawGroupCode,

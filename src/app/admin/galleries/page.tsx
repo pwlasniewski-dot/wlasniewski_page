@@ -40,6 +40,7 @@ export default function GalleriesAdminPage() {
         standard_count: 10,
         price_per_premium: 2000, // 20 zł
         expires_days: 30,
+        send_email: false,
         gallery_mode: 'INDIVIDUAL' as 'INDIVIDUAL' | 'GROUP',
         group_access_code: '',
         group_password: '',
@@ -113,6 +114,7 @@ export default function GalleriesAdminPage() {
                     standard_count: newGallery.standard_count,
                     price_per_premium: newGallery.price_per_premium,
                     expires_at: expiresAt.toISOString(),
+                    send_email: newGallery.send_email,
                     gallery_mode: newGallery.gallery_mode,
                     group_access_code: newGallery.gallery_mode === 'GROUP' ? newGallery.group_access_code : undefined,
                     group_password: newGallery.gallery_mode === 'GROUP' && newGallery.group_password ? newGallery.group_password : undefined,
@@ -130,6 +132,7 @@ export default function GalleriesAdminPage() {
                     standard_count: 10,
                     price_per_premium: 2000,
                     expires_days: 30,
+                    send_email: false,
                     gallery_mode: 'INDIVIDUAL',
                     group_access_code: '',
                     group_password: '',
@@ -351,6 +354,16 @@ export default function GalleriesAdminPage() {
                                     className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-lg text-white"
                                 />
                             </div>
+
+                            <label className="flex items-center gap-3 bg-zinc-800/60 border border-zinc-700 rounded-lg px-4 py-3 cursor-pointer hover:border-zinc-600 transition-colors">
+                                <input
+                                    type="checkbox"
+                                    checked={newGallery.send_email}
+                                    onChange={(e) => setNewGallery({ ...newGallery, send_email: e.target.checked })}
+                                    className="w-4 h-4 accent-gold-500"
+                                />
+                                <span className="text-sm text-zinc-200">Wyślij mail z dostępem od razu po utworzeniu galerii</span>
+                            </label>
 
                             {/* Tryb galerii */}
                             <div className="pt-4 border-t border-zinc-800">
