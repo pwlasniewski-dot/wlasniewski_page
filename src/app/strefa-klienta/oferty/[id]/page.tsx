@@ -1383,8 +1383,8 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
                                 href={offer.pdf_url && offer.pdf_url.includes('_zatwierdzona')
                                     ? offer.pdf_url
                                     : offer.pdf_url
-                                    : `/api/offers/${offerId}/pdf?token=${getPreferredToken()}&accepted=true`
-                                        : `/api/offers/${offerId}/pdf?token=${typeof window !== 'undefined' ? (localStorage.getItem('client_token') || localStorage.getItem('user_token') || '') : ''}&accepted=true`
+                                        ? offer.pdf_url.replace(/\.pdf$/, '_zatwierdzona.pdf')
+                                        : `/api/offers/${offerId}/pdf?token=${getPreferredToken()}&accepted=true`
                                 }
                                 target="_blank"
                                 rel="noopener noreferrer"
