@@ -317,6 +317,7 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
         const totalFiles = fileArray.length;
         let uploadedCount = 0;
         let failedCount = 0;
+        const failedDetails: string[] = [];
 
         setUploadStats({ current: 0, total: totalFiles });
 
@@ -341,10 +342,21 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
                         uploadedCount++;
                     } else {
                         failedCount++;
-                        console.error(`Failed to upload ${file.name}:`, await res.text());
+                        const rawError = await res.text();
+                        let parsedError = '';
+                        try {
+                            const payload = JSON.parse(rawError);
+                            parsedError = payload?.error || payload?.details || '';
+                        } catch {
+                            parsedError = rawError || '';
+                        }
+                        const shortError = parsedError ? `${file.name}: ${parsedError}` : `${file.name}: Upload nieudany`;
+                        failedDetails.push(shortError);
+                        console.error(`Failed to upload ${file.name}:`, parsedError || rawError);
                     }
                 } catch (fileError) {
                     failedCount++;
+                    failedDetails.push(`${file.name}: ${String(fileError)}`);
                     console.error(`Error uploading ${file.name}:`, fileError);
                 }
 
@@ -359,9 +371,15 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
             if (failedCount === 0) {
                 toast.success(`✅ Wgrano ${uploadedCount} zdjęć`);
             } else if (uploadedCount > 0) {
-                toast.warning(`⚠️ Wgrano ${uploadedCount} zdjęć, ${failedCount} nieudanych`);
+                toast(`⚠️ Wgrano ${uploadedCount} zdjęć, ${failedCount} nieudanych`, { icon: '⚠️' });
+                if (failedDetails.length > 0) {
+                    toast.error(`Szczegóły: ${failedDetails[0]}`);
+                }
             } else {
                 toast.error(`❌ Wszystkie ${failedCount} zdjęć nie zostały wgrane`);
+                if (failedDetails.length > 0) {
+                    toast.error(`Szczegóły: ${failedDetails[0]}`);
+                }
             }
 
             // Refresh gallery

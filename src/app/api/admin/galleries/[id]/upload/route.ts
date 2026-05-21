@@ -11,6 +11,7 @@ export async function POST(
     { params }: { params: Promise<{ id: string }> }
 ) {
     return withAuth(request, async () => {
+        const uploadErrorId = `GAL-UP-${Date.now().toString(36).toUpperCase()}`;
         try {
             const { id } = await params;
             const galleryId = Number(id);
@@ -40,6 +41,22 @@ export async function POST(
                     { success: false, error: 'Brak plików do uploadu' },
                     { status: 400 }
                 );
+            }
+
+            const MAX_FILE_SIZE = 30 * 1024 * 1024; // 30MB
+            for (const file of files) {
+                if (!file?.type?.startsWith('image/')) {
+                    return NextResponse.json(
+                        { success: false, error: `Nieobsługiwany typ pliku: ${file?.name || 'plik'}` },
+                        { status: 400 }
+                    );
+                }
+                if (file.size > MAX_FILE_SIZE) {
+                    return NextResponse.json(
+                        { success: false, error: `Plik ${file.name} jest za duży (max 30MB)` },
+                        { status: 400 }
+                    );
+                }
             }
 
             // Get current max order_index
@@ -81,10 +98,17 @@ export async function POST(
                 message: `Uploaded ${uploadedPhotos.length} photo(s)`,
                 photos: uploadedPhotos,
             });
-        } catch (error) {
-            console.error('Error uploading photos:', error);
+        } catch (error: any) {
+            console.error(`[GALLERY_UPLOAD:${uploadErrorId}] Error uploading photos:`, {
+                message: error?.message,
+                stack: error?.stack,
+            });
             return NextResponse.json(
-                { success: false, error: 'Nie udało się wgrać zdjęć' },
+                {
+                    success: false,
+                    error: `Nie udało się wgrać zdjęć. ID: ${uploadErrorId}`,
+                    details: error?.message || 'Internal upload error',
+                },
                 { status: 500 }
             );
         }
