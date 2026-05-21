@@ -255,8 +255,8 @@ function AlbumRow({
                             className="mt-1 w-5 h-5 rounded accent-emerald-500 shrink-0 cursor-pointer disabled:cursor-not-allowed"
                         />
                         <div className="flex-1 min-w-0">
-                            <p className="text-sm sm:text-base font-bold text-white truncate">{album.title}</p>
-                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-[11px] sm:text-xs text-zinc-400">
+                            <p className={`text-sm sm:text-base font-bold truncate ${isAdded ? 'text-emerald-950' : 'text-white'}`}>{album.title}</p>
+                            <div className={`flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-[11px] sm:text-xs ${isAdded ? 'text-emerald-900' : 'text-zinc-400'}`}>
                                 {effectiveFormat && (
                                     <span className="flex items-center gap-1"><Ruler className="w-3 h-3" />{effectiveFormat}</span>
                                 )}
@@ -264,9 +264,9 @@ function AlbumRow({
                                     <BookOpen className="w-3 h-3" />
                                     {isAdded ? 'wybrano' : 'bazowo'}: {effectiveSpreads} rozkł. ({effectivePages} str.)
                                 </span>
-                                <span className="text-zinc-500">cena za rozkł.: {pricePerSpread} PLN</span>
+                                <span className={isAdded ? 'text-emerald-800' : 'text-zinc-500'}>cena za rozkł.: {pricePerSpread} PLN</span>
                                 {isAdded && (
-                                    <span className="text-zinc-500">bazowo: {baseSpreads} rozkł. ({basePages} str.)</span>
+                                    <span className="text-emerald-800">bazowo: {baseSpreads} rozkł. ({basePages} str.)</span>
                                 )}
                             </div>
                         </div>
@@ -275,7 +275,7 @@ function AlbumRow({
                     {isAdded && !isLocked && (
                         <div className="mt-3 pl-7">
                             <div className="flex items-center gap-2 flex-wrap">
-                                <span className="text-xs text-zinc-400">Rozkładówki:</span>
+                                <span className="text-xs text-emerald-900 font-semibold">Rozkładówki:</span>
                                 <button
                                     type="button"
                                     onClick={() => updateSpreads(spreads - 1)}
@@ -288,19 +288,19 @@ function AlbumRow({
                                     type="button"
                                     onClick={() => updateSpreads(spreads + 1)}
                                     disabled={busy}
-                                    className="w-8 h-8 rounded-lg bg-zinc-800 hover:bg-emerald-500 hover:text-zinc-950 text-white font-bold disabled:opacity-40">+</button>
+                                <span className="text-[11px] text-emerald-800">= {pages} stron</span>
                                 <span className="text-[11px] text-zinc-500">= {pages} stron</span>
                                 {spreads !== baseSpreads && (
                                     <span className={`text-[11px] font-semibold ${spreads > baseSpreads ? 'text-amber-400' : 'text-emerald-400'}`}>
                                         ({spreads > baseSpreads ? '+' : ''}{spreads - baseSpreads} rozkł. = {spreads > baseSpreads ? '+' : ''}{((spreads - baseSpreads) * pricePerSpread).toLocaleString('pl-PL')} PLN)
                                     </span>
                                 )}
-                                {spreads <= minSpreads && (
+                                    <span className="text-[10px] text-emerald-800 italic">min. {minSpreads} rozkł. ({basePages} str.)</span>
                                     <span className="text-[10px] text-zinc-500 italic">min. {minSpreads} rozkł. ({basePages} str.)</span>
                                 )}
                             </div>
 
-                            <div className="mt-2 flex items-center gap-2 flex-wrap">
+                                <span className="text-xs text-emerald-900 font-semibold">Format:</span>
                                 <span className="text-xs text-zinc-400">Format:</span>
                                 {formatOptions.length > 0 ? (
                                     <select
@@ -317,10 +317,10 @@ function AlbumRow({
                                         ))}
                                     </select>
                                 ) : (
-                                    <span className="text-[11px] text-zinc-500">{album.format || '—'}</span>
+                                    <span className="text-[11px] text-emerald-800">{album.format || '—'}</span>
                                 )}
                                 {selectedFormat && formatDiscountPct > 0 && (
-                                    <span className="text-[11px] text-emerald-400 font-semibold">rabat −{formatDiscountPct}%</span>
+                                    <span className="text-[11px] text-emerald-700 font-semibold">rabat −{formatDiscountPct}%</span>
                                 )}
                             </div>
                         </div>
@@ -337,8 +337,8 @@ function AlbumRow({
                 <div className="text-right shrink-0">
                     {isAdded ? (
                         <>
-                            <p className="text-lg sm:text-xl font-bold text-emerald-300">+{finalPrice.toLocaleString('pl-PL')}</p>
-                            <p className="text-[10px] text-emerald-200/70 uppercase">{album.currency || 'PLN'}</p>
+                            <p className="text-lg sm:text-xl font-bold text-emerald-800">+{finalPrice.toLocaleString('pl-PL')}</p>
+                            <p className="text-[10px] text-emerald-700 uppercase">{album.currency || 'PLN'}</p>
                         </>
                     ) : (
                         <>

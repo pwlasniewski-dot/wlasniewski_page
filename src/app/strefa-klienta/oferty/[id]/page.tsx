@@ -1004,14 +1004,16 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
                                                     Opcja tylko dla sesji rodzinnych. Po wyborze pakietu voucher aktualizuje się automatycznie i możesz go wydrukować jako prezent.
                                                 </p>
                                             </div>
-                                            <label className="inline-flex items-center gap-3 text-sm font-semibold text-slate-800">
+                                            <label className="shrink-0">
                                                 <input
                                                     type="checkbox"
                                                     checked={familyVoucherEnabled}
                                                     onChange={(e) => setFamilyVoucherEnabled(e.target.checked)}
-                                                    className="h-5 w-5 rounded border-slate-300 text-gold-600 focus:ring-gold-500"
+                                                    className="sr-only peer"
                                                 />
-                                                Włącz voucher
+                                                <span className="inline-flex items-center gap-2 rounded-xl border-2 border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-800 shadow-sm transition-all cursor-pointer peer-checked:border-emerald-600 peer-checked:bg-emerald-600 peer-checked:text-white peer-checked:shadow-md">
+                                                    {familyVoucherEnabled ? 'Voucher włączony' : 'Włącz voucher'}
+                                                </span>
                                             </label>
                                         </div>
 
