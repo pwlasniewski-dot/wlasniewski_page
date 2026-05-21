@@ -245,6 +245,22 @@ export default function ClientGalleryPage() {
 
     return (
         <div className="min-h-screen bg-black text-white pb-40 selection:bg-gold-500/30">
+            <div className="fixed top-4 left-4 z-[70] flex items-center gap-2">
+                <Link
+                    href="/konto"
+                    className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-black/70 px-3 py-2 text-xs font-bold uppercase tracking-wide text-white backdrop-blur hover:border-gold-400 hover:text-gold-300 transition"
+                >
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    Wróć do panelu
+                </Link>
+                <Link
+                    href="/galeria/login"
+                    className="inline-flex items-center gap-2 rounded-xl border border-zinc-700 bg-zinc-900/80 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-zinc-300 backdrop-blur hover:border-zinc-500 hover:text-white transition"
+                >
+                    Zmień galerię
+                </Link>
+            </div>
+
             {/* HERO SLIDER — wow factor */}
             {(gallery.standard_photos.length + gallery.premium_photos.length) > 0 && (
                 <PremiumGalleryHero
