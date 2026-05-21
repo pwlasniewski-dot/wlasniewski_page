@@ -174,6 +174,9 @@ function AlbumRow({
 
     const isAdded = !!addon;
     const pages = spreads * 2;
+    const effectiveFormat = isAdded ? (selectedFormat || album.format || null) : (album.format || null);
+    const effectiveSpreads = isAdded ? spreads : baseSpreads;
+    const effectivePages = effectiveSpreads * 2;
 
     async function postAddon(spreadsToSend: number, formatLabel: string) {
         const pagesToSend = spreadsToSend * 2;
@@ -253,14 +256,17 @@ function AlbumRow({
                         <div className="flex-1 min-w-0">
                             <p className="text-sm sm:text-base font-bold text-white truncate">{album.title}</p>
                             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-[11px] sm:text-xs text-zinc-400">
-                                {album.format && (
-                                    <span className="flex items-center gap-1"><Ruler className="w-3 h-3" />{album.format}</span>
+                                {effectiveFormat && (
+                                    <span className="flex items-center gap-1"><Ruler className="w-3 h-3" />{effectiveFormat}</span>
                                 )}
                                 <span className="flex items-center gap-1">
                                     <BookOpen className="w-3 h-3" />
-                                    bazowo: {baseSpreads} rozkł. ({basePages} str.)
+                                    {isAdded ? 'wybrano' : 'bazowo'}: {effectiveSpreads} rozkł. ({effectivePages} str.)
                                 </span>
                                 <span className="text-zinc-500">cena za rozkł.: {pricePerSpread} PLN</span>
+                                {isAdded && (
+                                    <span className="text-zinc-500">bazowo: {baseSpreads} rozkł. ({basePages} str.)</span>
+                                )}
                             </div>
                         </div>
                     </label>
