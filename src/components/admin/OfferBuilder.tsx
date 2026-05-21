@@ -414,6 +414,9 @@ export default function OfferBuilder({ offerId, templateId, templateName, initia
     const [savingTemplate, setSavingTemplate] = useState(false);
     const [loadedTemplateId, setLoadedTemplateId] = useState<number | null>(templateId ?? null);
     const [loadedTemplateName, setLoadedTemplateName] = useState<string | null>(templateName ?? null);
+    const [showSaveTemplateDialog, setShowSaveTemplateDialog] = useState(false);
+    const [saveTemplateMode, setSaveTemplateMode] = useState<'new' | 'overwrite'>('new');
+    const [saveTemplateDraftName, setSaveTemplateDraftName] = useState('');
 
     // Auto-fill client data if clientId is present
     useEffect(() => {
@@ -587,22 +590,17 @@ export default function OfferBuilder({ offerId, templateId, templateName, initia
     };
 
     const handleSaveAsTemplate = async () => {
-        let updateExisting = false;
-        let templateName: string | null = null;
-        const existingTemplateName = loadedTemplateName || data.title || (loadedTemplateId ? `Szablon #${loadedTemplateId}` : null);
+        setSaveTemplateMode(loadedTemplateId ? 'overwrite' : 'new');
+        setSaveTemplateDraftName(data.title || 'Nowy szablon');
+        setShowSaveTemplateDialog(true);
+    };
 
-        if (loadedTemplateId) {
-            const choice = confirm(`Czy chcesz zaktualizować istniejący szablon "${existingTemplateName}"?\n\nOK = Zaktualizuj istniejący\nAnuluj = Zapisz jako nowy`);
-            if (choice) {
-                updateExisting = true;
-                templateName = existingTemplateName;
-            } else {
-                templateName = prompt('Podaj nazwę nowego szablonu:', data.title || 'Nowy szablon');
-                if (!templateName) return;
-            }
-        } else {
-            templateName = prompt('Podaj nazwę szablonu:', data.title || 'Nowy szablon');
-            if (!templateName) return;
+    const confirmSaveTemplate = async () => {
+        const updateExisting = saveTemplateMode === 'overwrite' && !!loadedTemplateId;
+        const templateName = saveTemplateDraftName.trim();
+        if (!templateName) {
+            toast.error('Podaj nazwę szablonu');
+            return;
         }
 
         setSavingTemplate(true);
@@ -645,8 +643,9 @@ export default function OfferBuilder({ offerId, templateId, templateName, initia
                 } else if (updateExisting) {
                     setLoadedTemplateName(templateName);
                 }
+                setShowSaveTemplateDialog(false);
                 toast.success(updateExisting
-                    ? `Szablon "${templateName}" zaktualizowany!`
+                    ? `Szablon nadpisany.`
                     : `Szablon "${templateName}" zapisany!`
                 );
             } else {
@@ -1078,6 +1077,80 @@ export default function OfferBuilder({ offerId, templateId, templateName, initia
                         <button onClick={() => handleAction('all')} className="flex items-center gap-1.5 bg-orange-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-orange-700 transition shadow-lg">
                             <FileCheck size={14} /> Wyślij Wszystko
                         </button>
+                    </div>
+                )}
+
+                {showSaveTemplateDialog && (
+                    <div className="fixed inset-0 z-[70] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+                        <div className="w-full max-w-lg rounded-2xl border border-zinc-700 bg-zinc-900 shadow-2xl p-6">
+                            <div className="flex items-start justify-between gap-4 mb-4">
+                                <div>
+                                    <h3 className="text-xl font-bold text-white">Zapisz szablon</h3>
+                                    <p className="text-sm text-zinc-400 mt-1">
+                                        {loadedTemplateId
+                                            ? `Aktualnie załadowany szablon: #${loadedTemplateId}${loadedTemplateName ? ` — ${loadedTemplateName}` : ''}`
+                                            : 'To będzie nowy szablon.'}
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={() => setShowSaveTemplateDialog(false)}
+                                    className="text-zinc-400 hover:text-white transition"
+                                    disabled={savingTemplate}
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            {loadedTemplateId && (
+                                <div className="flex gap-2 mb-4">
+                                    <button
+                                        type="button"
+                                        onClick={() => setSaveTemplateMode('overwrite')}
+                                        className={`flex-1 rounded-lg px-4 py-3 text-sm font-bold border transition ${saveTemplateMode === 'overwrite' ? 'bg-amber-600 text-white border-amber-500' : 'bg-zinc-800 text-zinc-300 border-zinc-700 hover:bg-zinc-700'}`}
+                                    >
+                                        Nadpisz ten szablon
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setSaveTemplateMode('new')}
+                                        className={`flex-1 rounded-lg px-4 py-3 text-sm font-bold border transition ${saveTemplateMode === 'new' ? 'bg-cyan-600 text-white border-cyan-500' : 'bg-zinc-800 text-zinc-300 border-zinc-700 hover:bg-zinc-700'}`}
+                                    >
+                                        Zapisz jako nowy
+                                    </button>
+                                </div>
+                            )}
+
+                            <div className="mb-5">
+                                <label className="block text-xs font-bold uppercase tracking-wider text-zinc-500 mb-2">Nazwa szablonu</label>
+                                <input
+                                    type="text"
+                                    value={saveTemplateDraftName}
+                                    onChange={(e) => setSaveTemplateDraftName(e.target.value)}
+                                    className="w-full rounded-xl border border-zinc-700 bg-black px-4 py-3 text-white outline-none focus:border-gold-500"
+                                    placeholder="Np. Sesja rodzinna - Noc Świętojańska"
+                                    disabled={savingTemplate}
+                                />
+                            </div>
+
+                            <div className="flex gap-3 justify-end">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowSaveTemplateDialog(false)}
+                                    className="px-4 py-2 rounded-lg bg-zinc-800 text-zinc-300 hover:bg-zinc-700 transition font-semibold"
+                                    disabled={savingTemplate}
+                                >
+                                    Anuluj
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={confirmSaveTemplate}
+                                    disabled={savingTemplate}
+                                    className="px-4 py-2 rounded-lg bg-gold-600 text-black hover:bg-gold-500 transition font-extrabold disabled:opacity-50"
+                                >
+                                    {savingTemplate ? 'Zapisywanie...' : 'Zapisz'}
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 )}
 

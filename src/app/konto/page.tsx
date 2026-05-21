@@ -345,6 +345,15 @@ export default function AccountPage() {
             return isDepositOverdue || canPayDeposit;
         });
         const offerNeedsAction = activeOffer && (activeOffer.status === 'pending' || activeOffer.status === 'sent' || activeOffer.status === 'draft' || activeOffer.status === 'unlock_requested');
+        const canShowOfferTile = userPermissions?.offers !== false && !offerNeedsAction;
+        const canShowContractTile = userPermissions?.contracts !== false;
+        const canShowGalleryTile = userPermissions?.galleries !== false;
+        const visibleStatusTileCount = [canShowOfferTile, canShowContractTile, canShowGalleryTile].filter(Boolean).length;
+        const statusGridClass = visibleStatusTileCount <= 1
+            ? 'grid-cols-1'
+            : visibleStatusTileCount === 2
+                ? 'grid-cols-1 sm:grid-cols-2'
+                : 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-3';
 
         return (
             <div className="space-y-10">
@@ -440,73 +449,6 @@ export default function AccountPage() {
                     <FotoMatchOverviewBlock profile={fotoMatchProfile} />
                 )}
 
-                {/* Hero Status Block */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    {userPermissions?.offers !== false && !offerNeedsAction && (
-                        activeOffer ? (
-                            <button onClick={() => setActiveTab('documents')} className="text-left rounded-2xl p-5 transition-all group bg-zinc-900/30 backdrop-blur-xl border border-zinc-800 hover:border-gold-500/30">
-                                <p className="text-xs text-zinc-500 uppercase tracking-widest mb-3">Aktualna Oferta</p>
-                                <p className="font-bold text-white text-sm mb-2 group-hover:text-gold-400 transition-colors line-clamp-1">{activeOffer?.title || 'Bez tytułu'}</p>
-                                <span className={`inline-block text-xs px-2 py-0.5 rounded-full border ${(offerStatusLabel[activeOffer?.status] || offerStatusLabel.draft).color}`}>
-                                    {(offerStatusLabel[activeOffer?.status] || offerStatusLabel.draft).label}
-                                </span>
-                            </button>
-                        ) : (
-                            <div className="bg-zinc-900/30 border border-dashed border-zinc-800 rounded-2xl p-5">
-                                <p className="text-xs text-zinc-600 uppercase tracking-widest mb-3">Aktualna Oferta</p>
-                                <p className="text-sm text-zinc-600">Brak oferty</p>
-                            </div>
-                        )
-                    )}
-
-                    {userPermissions?.contracts !== false && (
-                        activeContract ? (
-                            <div className="bg-zinc-900/20 backdrop-blur-xl border border-zinc-800 hover:border-gold-500/30 rounded-2xl p-5 transition-all group relative">
-                                <button onClick={() => setActiveTab('documents')} className="text-left w-full h-full">
-                                    <p className="text-xs text-zinc-600 uppercase tracking-widest mb-3">Umowa</p>
-                                    <p className="font-bold text-white text-sm mb-2 line-clamp-1">{activeContract?.offer?.title || activeContract?.contract_number || `Umowa #${activeContract?.id}`}</p>
-                                    <span className={`inline-block text-xs px-2 py-0.5 rounded-full border ${(contractStatusLabel[activeContract?.status] || contractStatusLabel.pending).color}`}>
-                                        {(contractStatusLabel[activeContract?.status] || contractStatusLabel.pending).label}
-                                    </span>
-                                </button>
-                                {activeContract.pdf_url && (
-                                    <a
-                                        href={`/api/contracts/${activeContract.id}/pdf?token=${token}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="absolute top-4 right-4 p-2 bg-zinc-800 hover:bg-gold-600 text-zinc-400 hover:text-black rounded-lg transition-all"
-                                        title="Pobierz PDF"
-                                    >
-                                        <Download className="w-4 h-4" />
-                                    </a>
-                                )}
-                            </div>
-                        ) : (
-                            <div className="bg-zinc-900/30 border border-dashed border-zinc-800 rounded-2xl p-5">
-                                <p className="text-xs text-zinc-600 uppercase tracking-widest mb-3">Umowa</p>
-                                <p className="text-sm text-zinc-600">Brak umowy</p>
-                            </div>
-                        )
-                    )}
-
-                    {userPermissions?.galleries !== false && (
-                        activeGallery ? (
-                            <button onClick={() => setActiveTab('sessions')} className="text-left bg-zinc-900/20 backdrop-blur-xl border border-zinc-800 hover:border-gold-500/30 rounded-2xl p-5 transition-all group">
-                                <p className="text-xs text-zinc-600 uppercase tracking-widest mb-3">Galeria Zdjęć</p>
-                                <p className="font-bold text-white text-sm mb-2 group-hover:text-gold-400 transition-colors line-clamp-1">{activeGallery?.client_name || 'Twoja sesja'}</p>
-                                <span className="inline-block text-xs px-2 py-0.5 rounded-full border text-green-400 bg-green-900/20 border-green-700/30">
-                                    ✓ Dostępna
-                                </span>
-                            </button>
-                        ) : (
-                            <div className="bg-zinc-900/30 border border-dashed border-zinc-800 rounded-2xl p-5">
-                                <p className="text-xs text-zinc-600 uppercase tracking-widest mb-3">Galeria Zdjęć</p>
-                                <p className="text-sm text-zinc-600">Brak galerii</p>
-                            </div>
-                        )
-                    )}
-                </div>
-
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-12">
                     <div className="lg:col-span-4 space-y-6">
                         <div className="bg-zinc-900/50 backdrop-blur-xl border border-zinc-800 rounded-3xl p-4 md:p-8 space-y-6">
@@ -549,6 +491,62 @@ export default function AccountPage() {
                     </div>
 
                     <div className="lg:col-span-8 space-y-6 md:space-y-12">
+                        <div className={`grid ${statusGridClass} gap-4`}>
+                            {canShowOfferTile && (
+                                activeOffer ? (
+                                    <OverviewStatusTile
+                                        title="Aktualna oferta"
+                                        value={activeOffer?.title || 'Bez tytułu'}
+                                        status={(offerStatusLabel[activeOffer?.status] || offerStatusLabel.draft).label}
+                                        statusClass={(offerStatusLabel[activeOffer?.status] || offerStatusLabel.draft).color}
+                                        onClick={() => setActiveTab('documents')}
+                                    />
+                                ) : (
+                                    <OverviewStatusTile
+                                        title="Aktualna oferta"
+                                        value="Brak oferty"
+                                        muted
+                                    />
+                                )
+                            )}
+
+                            {canShowContractTile && (
+                                activeContract ? (
+                                    <OverviewStatusTile
+                                        title="Umowa"
+                                        value={activeContract?.offer?.title || activeContract?.contract_number || `Umowa #${activeContract?.id}`}
+                                        status={(contractStatusLabel[activeContract?.status] || contractStatusLabel.pending).label}
+                                        statusClass={(contractStatusLabel[activeContract?.status] || contractStatusLabel.pending).color}
+                                        onClick={() => setActiveTab('documents')}
+                                    />
+                                ) : (
+                                    <OverviewStatusTile
+                                        title="Umowa"
+                                        value="Brak umowy"
+                                        muted
+                                    />
+                                )
+                            )}
+
+                            {canShowGalleryTile && (
+                                activeGallery ? (
+                                    <OverviewStatusTile
+                                        title="Galeria zdjęć"
+                                        value={activeGallery?.client_name || 'Twoja sesja'}
+                                        status="Dostępna"
+                                        statusClass="text-green-400 bg-green-900/20 border-green-700/30"
+                                        onClick={() => setActiveTab('sessions')}
+                                    />
+                                ) : (
+                                    <OverviewStatusTile
+                                        title="Galeria zdjęć"
+                                        value="Brak galerii"
+                                        muted
+                                    />
+                                )
+                            )}
+                        </div>
+
                         <div className="grid md:grid-cols-2 gap-6">
                             {userPermissions?.galleries !== false && (
                                 <QuickCard
@@ -588,6 +586,44 @@ export default function AccountPage() {
                 <h4 className="text-zinc-500 text-xs uppercase tracking-widest mb-1">{title}</h4>
                 <p className="font-bold text-lg text-white">{value}</p>
             </div>
+        );
+    }
+
+    function OverviewStatusTile({
+        title,
+        value,
+        status,
+        statusClass,
+        onClick,
+        muted = false,
+    }: {
+        title: string;
+        value: string;
+        status?: string;
+        statusClass?: string;
+        onClick?: () => void;
+        muted?: boolean;
+    }) {
+        const baseClass = muted
+            ? 'bg-zinc-900/20 border border-dashed border-zinc-800'
+            : 'bg-zinc-900/30 backdrop-blur-xl border border-zinc-800 hover:border-gold-500/30';
+
+        return (
+            <button
+                onClick={onClick}
+                disabled={!onClick}
+                className={`text-left rounded-2xl p-5 transition-all min-h-[132px] ${baseClass} ${onClick ? 'group' : 'cursor-default'}`}
+            >
+                <p className="text-xs text-zinc-500 uppercase tracking-widest mb-3">{title}</p>
+                <p className={`font-bold text-sm mb-2 line-clamp-2 ${muted ? 'text-zinc-600' : 'text-white group-hover:text-gold-400 transition-colors'}`}>
+                    {value}
+                </p>
+                {status && statusClass && (
+                    <span className={`inline-block text-xs px-2 py-0.5 rounded-full border ${statusClass}`}>
+                        {status}
+                    </span>
+                )}
+            </button>
         );
     }
 

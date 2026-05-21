@@ -179,11 +179,18 @@ export default function OffersList() {
                     <h1 className="text-4xl font-extrabold text-white mb-2">Oferty</h1>
                     <p className="text-slate-400">Zarządzaj ofertami dla klientów B2B i B2C</p>
                 </div>
-                <Link href="/admin/offers/create">
-                    <button className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-semibold shadow-lg shadow-blue-900/20 transition-all hover:scale-105 flex items-center gap-2">
-                        <span>+</span> Nowa oferta
-                    </button>
-                </Link>
+                <div className="flex items-center gap-3">
+                    <Link href="/admin/offers/create?template=family-ola-grudziadz">
+                        <button className="px-5 py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 font-semibold shadow-lg shadow-emerald-900/20 transition-all hover:scale-105">
+                            Szablon: Pani Ola (Grudziądz)
+                        </button>
+                    </Link>
+                    <Link href="/admin/offers/create">
+                        <button className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-semibold shadow-lg shadow-blue-900/20 transition-all hover:scale-105 flex items-center gap-2">
+                            <span>+</span> Nowa oferta
+                        </button>
+                    </Link>
+                </div>
             </div>
 
             {/* Filters */}

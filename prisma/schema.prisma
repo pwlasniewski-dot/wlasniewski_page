@@ -1825,3 +1825,94 @@ model WorkshopOffer {
   @@index([client_id])
   @@map("workshop_offers")
 }
+
+
+// ============================================================
+// STYLE GUIDE SYSTEM - "Jak się ubrać"
+// ============================================================
+
+model ColorPalette {
+  id             Int      @id @default(autoincrement())
+  name           String   @db.VarChar(255)
+  slug           String   @unique @db.VarChar(255)
+  description    String?
+  season         String?  @db.VarChar(50)
+  location_type  String?  @db.VarChar(50)
+  mood           String?  @db.VarChar(50)
+  colors         Json     // Array of {name, hex, description}
+  example_images Json?    // Array of image URLs
+  is_active      Boolean  @default(true)
+  display_order  Int      @default(0)
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+  outfit_sets    OutfitSet[]
+
+  @@index([slug])
+  @@index([location_type])
+  @@index([season])
+  @@index([is_active])
+  @@map("color_palettes")
+}
+
+model OutfitSet {
+  id              Int            @id @default(autoincrement())
+  title           String         @db.VarChar(255)
+  slug            String         @unique @db.VarChar(255)
+  description     String?
+  category        String?        @db.VarChar(50)
+  group_size      Int?
+  age_group       String?        @db.VarChar(50)
+  season          String?        @db.VarChar(50)
+  location_type   String?        @db.VarChar(50)
+  palette_id      Int?
+  palette         ColorPalette?  @relation(fields: [palette_id], references: [id], onDelete: SetNull)
+  outfit_details  Json           // Array of {person, items, notes, image}
+  dos_and_donts   Json?          // {dos: [], donts: []}
+  example_images  Json?          // Array of image URLs
+  is_featured     Boolean        @default(false)
+  is_active       Boolean        @default(true)
+  display_order   Int            @default(0)
+  created_at      DateTime       @default(now())
+  updated_at      DateTime       @updatedAt
+
+  @@index([slug])
+  @@index([category])
+  @@index([location_type])
+  @@index([is_active])
+  @@index([is_featured])
+  @@index([palette_id])
+  @@map("outfit_sets")
+}
+
+model StyleGuideTip {
+  id            Int      @id @default(autoincrement())
+  title         String   @db.VarChar(255)
+  slug          String   @unique @db.VarChar(255)
+  content       String
+  tip_type      String?  @db.VarChar(50)
+  category      String?  @db.VarChar(50)
+  icon          String?  @db.VarChar(100)
+  is_featured   Boolean  @default(false)
+  is_active     Boolean  @default(true)
+  display_order Int      @default(0)
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  @@index([slug])
+  @@index([is_active])
+  @@index([tip_type])
+  @@map("style_guide_tips")
+}
+
+model StyleGuideFaq {
+  id            Int      @id @default(autoincrement())
+  question      String
+  answer        String
+  category      String?  @db.VarChar(50)
+  display_order Int      @default(0)
+  is_active     Boolean  @default(true)
+  created_at    DateTime @default(now())
+
+  @@index([category])
+  @@map("style_guide_faqs")
+}

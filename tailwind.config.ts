@@ -17,8 +17,7 @@ const config: Config = {
         // Elegancka szeryfowa (Playfair)
         serif: ["var(--font-playfair)", "Playfair Display", "serif"],
         // Odręczna (Great Vibes)
-        handwriting: ["var(--font-great-vibes)", "Great Vibes", "cursive"],
-      },
+        handwriting: ["var(--font-great-vibes)", "Great Vibes", "cursive"],        'great-vibes': ["var(--font-great-vibes)", "Great Vibes", "cursive"],      },
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",

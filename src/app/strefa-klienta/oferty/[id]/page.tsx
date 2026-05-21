@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { FileText } from 'lucide-react';
 import SignaturePad from '@/components/SignaturePad';
 import ClientOfferAddonCheckbox, { type OfferAddon } from '@/components/client/ClientOfferAddonCheckbox';
+import ClientStyleGuidePanel from '@/components/StyleGuide/ClientStyleGuidePanel';
+import FamilyOfferVoucherPreview from '@/components/offers/FamilyOfferVoucherPreview';
 
 export default function OfferDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const router = useRouter();
@@ -26,11 +28,23 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
     const [childCount, setChildCount] = useState<number>(0);
 
     const [selectedPackageIndex, setSelectedPackageIndex] = useState<number | null>(null);
+    const [adultCount, setAdultCount] = useState<number>(0);
+    const [familyChildCount, setFamilyChildCount] = useState<number>(0);
+    const [familyVoucherEnabled, setFamilyVoucherEnabled] = useState(false);
+    const [voucherSenderName, setVoucherSenderName] = useState('');
+    const [voucherRecipientName, setVoucherRecipientName] = useState('Rodzice');
+    const [voucherPackageName, setVoucherPackageName] = useState('');
+    const [voucherPriceLabel, setVoucherPriceLabel] = useState('');
+    const [voucherSessionDate, setVoucherSessionDate] = useState('');
+    const [voucherSessionTime, setVoucherSessionTime] = useState('');
+    const [voucherLocation, setVoucherLocation] = useState('');
+    const [voucherHidePrice, setVoucherHidePrice] = useState(false);
     const [offerId, setOfferId] = useState<string | null>(null);
     const [pdfUrl, setPdfUrl] = useState<string>('#');
     const [selectedAddons, setSelectedAddons] = useState<OfferAddon[]>([]);
 
     const isCommunion = offer?.category?.toLowerCase() === 'komunia';
+    const isFamilySession = (offer?.category || '').toLowerCase().includes('rodzin') || (offer?.category || '').toLowerCase() === 'family';
 
     useEffect(() => {
         const unwrapParams = async () => {
@@ -70,10 +84,29 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
                     } else if (cs.childCount) {
                         setChildCount(cs.childCount);
                     }
+                    if (cs.groupBreakdown) {
+                        setAdultCount(Number(cs.groupBreakdown.adults) || 0);
+                        setFamilyChildCount(Number(cs.groupBreakdown.children) || 0);
+                    }
+                    if (cs.familyVoucher) {
+                        setFamilyVoucherEnabled(!!cs.familyVoucher.enabled);
+                        setVoucherSenderName(cs.familyVoucher.senderName || '');
+                        setVoucherRecipientName(cs.familyVoucher.recipientName || 'Rodzice');
+                        setVoucherPackageName(cs.familyVoucher.packageName || '');
+                        setVoucherPriceLabel(cs.familyVoucher.packagePriceLabel || '');
+                        setVoucherSessionDate(cs.familyVoucher.sessionDate || '');
+                        setVoucherSessionTime(cs.familyVoucher.sessionTime || '');
+                        setVoucherLocation(cs.familyVoucher.location || '');
+                        setVoucherHidePrice(!!cs.familyVoucher.hidePrice);
+                    }
                     // Restore selected package for standard offers
                     if (cs.selectedPackage?.index !== undefined) {
                         setSelectedPackageIndex(cs.selectedPackage.index);
                     }
+                }
+
+                if (!data.offer.client_selection?.familyVoucher) {
+                    setVoucherSenderName(data.offer?.template_data?.contactName || '');
                 }
 
                 // Prepare PDF URL with token
@@ -152,6 +185,56 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
         return Object.values(splitPackageCounts).reduce((a, b) => a + b, 0);
     }, [splitPackageCounts]);
 
+    const totalFamilyParticipants = useMemo(() => {
+        return Math.max(0, adultCount) + Math.max(0, familyChildCount);
+    }, [adultCount, familyChildCount]);
+
+    const selectedPackageName = useMemo(() => {
+        if (selectedPackageIndex === null || !templateData?.pricingHeaders) return '';
+        return templateData.pricingHeaders[selectedPackageIndex] || '';
+    }, [selectedPackageIndex, templateData]);
+
+    const selectedPackagePriceLabel = useMemo(() => {
+        if (selectedPackageIndex === null || !templateData?.footerPrices) return '';
+        return templateData.footerPrices[selectedPackageIndex] || '';
+    }, [selectedPackageIndex, templateData]);
+
+    const familyVoucherCode = useMemo(() => {
+        const raw = `${offer?.id || 'offer'}-${selectedPackageIndex || 0}-${voucherSenderName}-${voucherRecipientName}-${adultCount}-${familyChildCount}`;
+        let hash = 0;
+        for (let index = 0; index < raw.length; index += 1) {
+            hash = ((hash << 5) - hash) + raw.charCodeAt(index);
+            hash |= 0;
+        }
+        return Math.abs(hash).toString(36).toUpperCase().slice(0, 6).padEnd(6, 'X');
+    }, [adultCount, familyChildCount, offer?.id, selectedPackageIndex, voucherRecipientName, voucherSenderName]);
+
+    const resolvedVoucherPackageName = voucherPackageName || selectedPackageName || 'Do wyboru';
+    const resolvedVoucherPriceLabel = voucherPriceLabel || selectedPackagePriceLabel || 'Do ustalenia';
+    const resolvedVoucherSessionDate = voucherSessionDate || String(templateData?.eventDate || 'Termin do uzgodnienia');
+    const resolvedVoucherSessionTime = voucherSessionTime || String(templateData?.sessionTime || templateData?.eventTime || 'Godzina do uzgodnienia');
+    const resolvedVoucherLocation = voucherLocation || String(templateData?.eventLocation || 'Lokalizacja do uzgodnienia');
+
+    const familyVoucherPdfUrl = useMemo(() => {
+        if (!offerId || !familyVoucherEnabled || !selectedPackageName) return null;
+        const token = typeof window !== 'undefined'
+            ? (localStorage.getItem('client_token') || localStorage.getItem('user_token') || '')
+            : '';
+        const params = new URLSearchParams({
+            senderName: voucherSenderName || (templateData?.contactName || ''),
+            recipientName: voucherRecipientName || 'Rodzice',
+            packageName: resolvedVoucherPackageName,
+            packagePriceLabel: resolvedVoucherPriceLabel,
+            hidePrice: voucherHidePrice ? '1' : '0',
+            sessionDate: resolvedVoucherSessionDate,
+            sessionTime: resolvedVoucherSessionTime,
+            location: resolvedVoucherLocation,
+            verificationCode: familyVoucherCode,
+            ...(token ? { token } : {}),
+        });
+        return `/api/client/portal/offers/${offerId}/family-voucher?${params.toString()}`;
+    }, [familyVoucherCode, familyVoucherEnabled, offerId, resolvedVoucherLocation, resolvedVoucherPackageName, resolvedVoucherPriceLabel, resolvedVoucherSessionDate, resolvedVoucherSessionTime, templateData, voucherHidePrice, voucherRecipientName, voucherSenderName, selectedPackageName]);
+
     const updateSplitCount = (index: number, delta: number) => {
         setSplitPackageCounts(prev => {
             const current = prev[index] || 0;
@@ -209,6 +292,30 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
                 price: templateData.footerPrices[selectedPackageIndex]
             };
         }
+
+        if (isFamilySession && totalFamilyParticipants > 0) {
+            selection.groupBreakdown = {
+                adults: Math.max(0, adultCount),
+                children: Math.max(0, familyChildCount),
+                total: totalFamilyParticipants,
+            };
+        }
+
+        if (isFamilySession && familyVoucherEnabled && selectedPackageName) {
+            selection.familyVoucher = {
+                enabled: true,
+                senderName: voucherSenderName || (templateData?.contactName || ''),
+                recipientName: voucherRecipientName || 'Rodzice',
+                packageName: resolvedVoucherPackageName,
+                packagePriceLabel: resolvedVoucherPriceLabel,
+                sessionDate: resolvedVoucherSessionDate,
+                sessionTime: resolvedVoucherSessionTime,
+                location: resolvedVoucherLocation,
+                hidePrice: voucherHidePrice,
+                verificationCode: familyVoucherCode,
+            };
+        }
+
         return selection;
     };
 
@@ -229,6 +336,10 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
                         document.querySelector('.offer-table')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         return;
                     }
+                } else if (isFamilySession && totalFamilyParticipants === 0) {
+                    alert('Dla sesji rodzinnej podaj liczbę dorosłych i/lub dzieci.');
+                    document.querySelector('.group-composition-card')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    return;
                 } else if (templateData?.pricingHeaders?.length > 1 && selectedPackageIndex === null) {
                     alert('Proszę wybrać pakiet przed zaakceptowaniem oferty.');
                     document.querySelector('.offer-table')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -352,10 +463,12 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
     const isB2B = offer.type === 'b2b';
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+        <div className="min-h-screen bg-slate-100">
             {/* Immersive Hero Header */}
-            <header className={`${isB2B ? 'bg-gradient-to-r from-slate-900 via-blue-900 to-slate-900' : 'bg-gradient-to-r from-gold-600 via-amber-600 to-gold-600'} text-white relative overflow-hidden`}>
-                <div className="absolute inset-0 bg-black/20"></div>
+            <header className={`${isB2B ? 'bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900' : 'bg-gradient-to-r from-stone-900 via-amber-900 to-stone-900'} text-white relative overflow-hidden`}>
+                <div className="absolute inset-0 bg-black/30"></div>
+                <div className="absolute -top-16 -right-16 w-56 h-56 rounded-full bg-white/5 blur-xl"></div>
+                <div className="absolute top-24 right-40 w-24 h-24 rounded-full bg-amber-200/10 blur-lg"></div>
                 <div className="max-w-6xl mx-auto px-6 py-16 relative z-10">
                     <div className="flex justify-between items-start mb-6">
                         <Link href="/konto">
@@ -363,8 +476,8 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
                                 <span>←</span> Wróć do pulpitu ("Oferty i Umowy")
                             </button>
                         </Link>
-                        <span className={`px-4 py-2 rounded-full text-sm font-bold ${isPending ? 'bg-blue-500' :
-                            offer.status === 'accepted' ? 'bg-green-500' : 'bg-gray-500'
+                        <span className={`px-4 py-2 rounded-full text-sm font-bold border backdrop-blur-sm ${isPending ? 'bg-sky-500/20 border-sky-300/40 text-sky-100' :
+                            offer.status === 'accepted' ? 'bg-emerald-500/20 border-emerald-300/40 text-emerald-100' : 'bg-zinc-500/20 border-zinc-300/40 text-zinc-100'
                             }`}>
                             {isPending && '📨 Oczekuje na akcję'}
                             {offer.status === 'accepted' && '✅ Zaakceptowana'}
@@ -380,11 +493,11 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
                         </p>
                     </div>
 
-                    <div className="flex flex-wrap gap-4 mt-8">
+                    <div className="flex flex-wrap gap-3 mt-8">
                         <a
                             href={pdfUrl}
                             target="_blank"
-                            className="px-6 py-3 bg-white/10 backdrop-blur-sm text-white rounded-xl hover:bg-white/20 font-medium transition-all flex items-center gap-2 border border-white/20"
+                            className="px-5 py-2.5 bg-white/10 backdrop-blur-sm text-white rounded-full hover:bg-white/20 font-semibold transition-all flex items-center gap-2 border border-white/25"
                         >
                             📄 Pobierz PDF
                         </a>
@@ -398,14 +511,14 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
                                 }
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="px-6 py-3 bg-green-500 text-white rounded-xl hover:bg-green-600 font-bold transition-all flex items-center gap-2 border border-green-400 shadow-lg"
+                                className="px-5 py-2.5 bg-emerald-500/90 text-white rounded-full hover:bg-emerald-500 font-semibold transition-all flex items-center gap-2 border border-emerald-300/60"
                             >
                                 📥 Pobierz zatwierdzoną ofertę
                             </a>
                         )}
                         {offer.contract && (
                             <Link href={`/strefa-klienta/umowy/${offer.contract.id}`}>
-                                <button className="px-6 py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 font-bold transition-all shadow-lg">
+                                <button className="px-5 py-2.5 bg-amber-500/90 text-white rounded-full hover:bg-amber-500 font-semibold transition-all border border-amber-300/50">
                                     📝 Zobacz Umowę
                                 </button>
                             </Link>
@@ -417,7 +530,7 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
             <main className="max-w-6xl mx-auto px-6 py-12">
                 {/* Price Summary Card (Sticky) */}
                 <div className="sticky top-4 z-20 mb-8">
-                    <div className="bg-white rounded-2xl shadow-2xl p-8 border border-slate-200">
+                    <div className="bg-white rounded-3xl shadow-xl p-8 border border-slate-200">
                         <div className="flex justify-between items-center">
                             <div>
                                 <p className="text-sm text-slate-600 mb-1">
@@ -436,6 +549,15 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
                                         Wybrano łącznie: {totalChildren} dzieci
                                     </p>
                                 )}
+                                {isFamilySession && (
+                                    <p className="text-xs text-slate-500 mt-1 font-bold">
+                                        Skład grupy: {adultCount} dorosłych + {familyChildCount} dzieci (razem {totalFamilyParticipants})
+                                    </p>
+                                )}
+                            </div>
+
+                            <div className="hidden md:flex items-center justify-center w-28 h-28 rounded-full bg-slate-100 border border-slate-200">
+                                <span className="text-xs uppercase tracking-widest text-slate-500 font-semibold">Oferta</span>
                             </div>
 
                             {/* Communion: Helper Text */}
@@ -458,12 +580,44 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
                     </div>
                 </div>
 
+                {isFamilySession && (
+                    <div className="group-composition-card bg-white rounded-3xl shadow-xl p-6 border border-slate-200 mb-8">
+                        <h3 className="text-lg font-bold text-slate-900 mb-3">Skład grupy rodzinnej</h3>
+                        <p className="text-sm text-slate-600 mb-4">Podaj liczbę osób, np. 8 dorosłych i 5 dzieci.</p>
+                        <div className="grid md:grid-cols-2 gap-4">
+                            <label className="text-sm text-slate-700 font-semibold">
+                                Dorośli
+                                <input
+                                    type="number"
+                                    min="0"
+                                    value={adultCount}
+                                    onChange={(e) => setAdultCount(Math.max(0, parseInt(e.target.value) || 0))}
+                                    disabled={!isPending}
+                                    className={`mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 ${!isPending ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                />
+                            </label>
+                            <label className="text-sm text-slate-700 font-semibold">
+                                Dzieci
+                                <input
+                                    type="number"
+                                    min="0"
+                                    value={familyChildCount}
+                                    onChange={(e) => setFamilyChildCount(Math.max(0, parseInt(e.target.value) || 0))}
+                                    disabled={!isPending}
+                                    className={`mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 ${!isPending ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                />
+                            </label>
+                        </div>
+                    </div>
+                )}
+
                 {/* ACCEPTED OFFER SUMMARY CARD */}
                 {offer.status === 'accepted' && offer.client_selection && offer.template_data && (
-                    <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl shadow-lg border-2 border-green-400 p-8 mb-12 max-w-4xl mx-auto mt-8">
+                    <div className="bg-white rounded-3xl shadow-xl border border-slate-200 p-8 mb-12 max-w-4xl mx-auto mt-8">
                         <div className="flex items-start justify-between mb-6">
-                            <h2 className="text-3xl font-bold text-green-900 flex items-center gap-3">
-                                ✅ Podsumowanie zatwierdzonej oferty
+                            <h2 className="text-3xl font-bold text-slate-900 flex items-center gap-3">
+                                <span className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xl">✓</span>
+                                Podsumowanie zatwierdzonej oferty
                             </h2>
                         </div>
 
@@ -471,7 +625,7 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
                             {/* Event Info */}
                             <div>
                                 <p className="text-sm text-slate-600 mb-1">📅 Data wydarzenia:</p>
-                                <p className="text-2xl font-bold text-green-900">
+                                <p className="text-2xl font-bold text-slate-900">
                                     {offer.template_data.eventDate || 'Nie podano'}
                                 </p>
                             </div>
@@ -479,7 +633,7 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
                             {/* Total Price */}
                             <div>
                                 <p className="text-sm text-slate-600 mb-1">💰 Kwota oferty:</p>
-                                <p className="text-2xl font-bold text-green-600">
+                                <p className="text-2xl font-bold text-emerald-700">
                                     {calculatedTotal.toLocaleString('pl-PL')} PLN
                                 </p>
                                 {selectedAddons.length > 0 && (
@@ -495,7 +649,7 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
 
                         {/* Package Details */}
                         {!isCommunion && offer.client_selection.selectedPackage ? (
-                            <div className="bg-white rounded-xl p-6 mb-6 border border-green-200">
+                            <div className="bg-slate-50 rounded-2xl p-6 mb-6 border border-slate-200">
                                 <p className="text-xs text-slate-500 mb-2 font-bold uppercase">Wybrany pakiet</p>
                                 <h3 className="text-2xl font-bold text-slate-900 mb-3 flex items-center gap-2">
                                     📦 {offer.client_selection.selectedPackage.name}
@@ -506,7 +660,7 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
                                 
                                 {/* Package Features from Template */}
                                 {offer.template_data.pricingRows && offer.template_data.pricingRows.length > 0 && (
-                                    <div className="bg-slate-50 rounded-lg p-4 mt-4">
+                                    <div className="bg-white rounded-xl p-4 mt-4 border border-slate-200">
                                         <p className="text-xs font-bold text-slate-600 mb-3">Co zawiera ten pakiet:</p>
                                         <ul className="space-y-2 text-sm text-slate-700">
                                             {offer.template_data.pricingRows.map((row: any, rowIdx: number) => {
@@ -529,7 +683,7 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
                                 )}
                             </div>
                         ) : isCommunion && offer.client_selection.splitPackageCounts ? (
-                            <div className="bg-white rounded-xl p-6 mb-6 border border-blue-200">
+                            <div className="bg-slate-50 rounded-2xl p-6 mb-6 border border-slate-200">
                                 <p className="text-xs text-slate-500 mb-2 font-bold uppercase">Wybrane pakiety</p>
                                 <p className="text-sm text-slate-700 mb-4">Liczba dzieci w poszczególnych pakietach:</p>
                                 
@@ -542,7 +696,7 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
                                         const itemTotal = count > 0 ? count * (parseInt(packagePrice.replace(/[^0-9]/g, '')) || 0) : 0;
                                         
                                         return count > 0 ? (
-                                            <div key={idx} className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                                            <div key={idx} className="bg-white rounded-xl p-4 border border-slate-200">
                                                 <p className="font-bold text-slate-900">{packageName}</p>
                                                 <p className="text-sm text-slate-700 mt-1">
                                                     Dzieci: <strong>{count}</strong> × {packagePrice}
@@ -557,10 +711,25 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
                                     })}
                                 </div>
                             </div>
+                        ) : isFamilySession && offer.client_selection.groupBreakdown ? (
+                            <div className="bg-slate-50 rounded-2xl p-6 mb-6 border border-slate-200">
+                                <p className="text-xs text-slate-500 mb-2 font-bold uppercase">Skład grupy rodzinnej</p>
+                                <div className="grid md:grid-cols-3 gap-3 text-sm">
+                                    <div className="bg-white rounded-xl p-4 border border-slate-200">
+                                        Dorośli: <strong>{offer.client_selection.groupBreakdown.adults || 0}</strong>
+                                    </div>
+                                    <div className="bg-white rounded-xl p-4 border border-slate-200">
+                                        Dzieci: <strong>{offer.client_selection.groupBreakdown.children || 0}</strong>
+                                    </div>
+                                    <div className="bg-white rounded-xl p-4 border border-slate-200">
+                                        Razem: <strong>{offer.client_selection.groupBreakdown.total || 0}</strong>
+                                    </div>
+                                </div>
+                            </div>
                         ) : null}
 
                         {/* Legend */}
-                        <div className="bg-white rounded-lg p-4 border border-green-200 text-sm text-slate-600">
+                        <div className="bg-slate-50 rounded-xl p-4 border border-slate-200 text-sm text-slate-600">
                             <p className="font-semibold text-slate-900 mb-2">ℹ️ Zarządzanie ofertą</p>
                             <ul className="space-y-1 text-xs">
                                 <li>✓ Ta oferta została przyjęta i jest konfirmacją twoich wyborów</li>
@@ -823,6 +992,157 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
                                     <ClientOfferAddonCheckbox offerId={offer.id} onAddonsChange={setSelectedAddons} offerStatus={offer.status} />
                                 </div>
 
+                                {isFamilySession && (
+                                    <div className="mt-10 bg-white rounded-2xl border border-slate-200 p-6 space-y-6">
+                                        <div className="flex items-start justify-between gap-4">
+                                            <div>
+                                                <h3 className="text-xl font-bold text-slate-900 mb-2">Voucher dla rodziców do wydruku</h3>
+                                                <p className="text-sm text-slate-600">
+                                                    Opcja tylko dla sesji rodzinnych. Po wyborze pakietu voucher aktualizuje się automatycznie i możesz go wydrukować jako prezent.
+                                                </p>
+                                            </div>
+                                            <label className="inline-flex items-center gap-3 text-sm font-semibold text-slate-800">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={familyVoucherEnabled}
+                                                    onChange={(e) => setFamilyVoucherEnabled(e.target.checked)}
+                                                    className="h-5 w-5 rounded border-slate-300 text-gold-600 focus:ring-gold-500"
+                                                />
+                                                Włącz voucher
+                                            </label>
+                                        </div>
+
+                                        {familyVoucherEnabled && (
+                                            <>
+                                                {selectedPackageIndex === null ? (
+                                                    <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-5 py-4 text-sm text-slate-600">
+                                                        Najpierw wybierz pakiet w tabeli oferty. Wtedy voucher sam podstawi nazwę pakietu, cenę, termin i lokalizację.
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        <div className="grid md:grid-cols-2 gap-4">
+                                                            <label className="text-sm font-semibold text-slate-700">
+                                                                Od kogo
+                                                                <input
+                                                                    type="text"
+                                                                    value={voucherSenderName}
+                                                                    onChange={(e) => setVoucherSenderName(e.target.value)}
+                                                                    className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2"
+                                                                    placeholder="Np. Pani Ola"
+                                                                />
+                                                            </label>
+                                                            <label className="text-sm font-semibold text-slate-700">
+                                                                Dla kogo
+                                                                <input
+                                                                    type="text"
+                                                                    value={voucherRecipientName}
+                                                                    onChange={(e) => setVoucherRecipientName(e.target.value)}
+                                                                    className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2"
+                                                                    placeholder="Np. Rodzice"
+                                                                />
+                                                            </label>
+                                                            <label className="text-sm font-semibold text-slate-700">
+                                                                Nazwa pakietu na voucherze
+                                                                <input
+                                                                    type="text"
+                                                                    value={voucherPackageName}
+                                                                    onChange={(e) => setVoucherPackageName(e.target.value)}
+                                                                    className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2"
+                                                                    placeholder={selectedPackageName || 'Np. Pakiet rodzinny'}
+                                                                />
+                                                            </label>
+                                                            <label className="text-sm font-semibold text-slate-700">
+                                                                Cena na voucherze
+                                                                <input
+                                                                    type="text"
+                                                                    value={voucherPriceLabel}
+                                                                    onChange={(e) => setVoucherPriceLabel(e.target.value)}
+                                                                    disabled={voucherHidePrice}
+                                                                    className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 disabled:bg-slate-100 disabled:text-slate-400"
+                                                                    placeholder={selectedPackagePriceLabel || 'Np. 1350 zł'}
+                                                                />
+                                                            </label>
+                                                            <label className="text-sm font-semibold text-slate-700">
+                                                                Data sesji
+                                                                <input
+                                                                    type="text"
+                                                                    value={voucherSessionDate}
+                                                                    onChange={(e) => setVoucherSessionDate(e.target.value)}
+                                                                    className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2"
+                                                                    placeholder="Np. 24.05.2026"
+                                                                />
+                                                                <span className="mt-1 block text-xs font-normal text-slate-500">
+                                                                    Format: `DD.MM.RRRR`, np. `24.05.2026`
+                                                                </span>
+                                                            </label>
+                                                            <label className="text-sm font-semibold text-slate-700">
+                                                                Godzina sesji
+                                                                <input
+                                                                    type="text"
+                                                                    value={voucherSessionTime}
+                                                                    onChange={(e) => setVoucherSessionTime(e.target.value)}
+                                                                    className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2"
+                                                                    placeholder="Np. 17:30"
+                                                                />
+                                                                <span className="mt-1 block text-xs font-normal text-slate-500">
+                                                                    Format: `GG:MM`, np. `17:30`
+                                                                </span>
+                                                            </label>
+                                                            <label className="text-sm font-semibold text-slate-700 md:col-span-2">
+                                                                Lokalizacja
+                                                                <input
+                                                                    type="text"
+                                                                    value={voucherLocation}
+                                                                    onChange={(e) => setVoucherLocation(e.target.value)}
+                                                                    className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2"
+                                                                    placeholder={String(templateData?.eventLocation || 'Lokalizacja do uzgodnienia')}
+                                                                />
+                                                            </label>
+                                                            <label className="inline-flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-800 md:col-span-2">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={voucherHidePrice}
+                                                                    onChange={(e) => setVoucherHidePrice(e.target.checked)}
+                                                                    className="h-5 w-5 rounded border-slate-300 text-gold-600 focus:ring-gold-500"
+                                                                />
+                                                                Ukryj cenę na voucherze
+                                                            </label>
+                                                        </div>
+
+                                                        <FamilyOfferVoucherPreview
+                                                            senderName={voucherSenderName || (templateData?.contactName || 'Osoba zamawiająca')}
+                                                            recipientName={voucherRecipientName || 'Rodzice'}
+                                                            packageName={resolvedVoucherPackageName}
+                                                            packagePriceLabel={`${resolvedVoucherPriceLabel}${voucherHidePrice ? '' : ' · opłata zgodnie z wybranym pakietem'}`}
+                                                            hidePrice={voucherHidePrice}
+                                                            sessionDate={resolvedVoucherSessionDate}
+                                                            sessionTime={resolvedVoucherSessionTime}
+                                                            location={resolvedVoucherLocation}
+                                                            verificationCode={familyVoucherCode}
+                                                            qrTarget="https://wlasniewski.pl"
+                                                        />
+
+                                                        {familyVoucherPdfUrl && (
+                                                            <div className="flex flex-wrap items-center gap-3">
+                                                                <a
+                                                                    href={familyVoucherPdfUrl}
+                                                                    download={`voucher-rodzinny-${offerId}.pdf`}
+                                                                    className="px-5 py-2.5 rounded-xl bg-gold-500 text-black font-semibold hover:bg-gold-400 transition-colors"
+                                                                >
+                                                                    Pobierz voucher PDF
+                                                                </a>
+                                                                <p className="text-sm text-slate-500">
+                                                                    Podgląd vouchera widzisz powyżej na żywo. PDF służy tylko do pobrania i wydruku.
+                                                                </p>
+                                                            </div>
+                                                        )}
+                                                    </>
+                                                )}
+                                            </>
+                                        )}
+                                    </div>
+                                )}
+
                                 {sectionVisibility.delivery && (
                                     <>
                                         <h2 className="offer-h2">{offer.template_data.sectionTitles.delivery}</h2>
@@ -1043,13 +1363,13 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
 
                 {/* Download Buttons - Always Visible */}
                 {(offer.pdf_url || offer.status === 'accepted') && (
-                    <div className="bg-white rounded-lg shadow p-6 flex flex-wrap gap-3">
+                    <div className="bg-white rounded-2xl shadow p-6 flex flex-wrap gap-3 border border-slate-200">
                         {offer.pdf_url && (
                             <a
                                 href={offer.pdf_url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="px-6 py-3 bg-zinc-800 text-white rounded-lg hover:bg-zinc-700 font-semibold border border-zinc-700 flex items-center gap-2"
+                                className="px-5 py-2.5 bg-slate-900 text-white rounded-full hover:bg-slate-800 font-semibold border border-slate-800 flex items-center gap-2"
                             >
                                 <FileText className="w-5 h-5" />
                                 Pobierz ofertę
@@ -1065,7 +1385,7 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
                                 }
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold border border-green-700 flex items-center gap-2"
+                                className="px-5 py-2.5 bg-emerald-600 text-white rounded-full hover:bg-emerald-700 font-semibold border border-emerald-700 flex items-center gap-2"
                             >
                                 <FileText className="w-5 h-5" />
                                 📥 Pobierz zatwierdzoną ofertę
@@ -1099,6 +1419,18 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
                         </div>
                     )
                 }
+
+                {/* Style Guide Section - "Jak się ubrać?" */}
+                {(offer.status === 'accepted' || isPending) && (
+                    <div className="mt-16">
+                        <ClientStyleGuidePanel 
+                            offerId={offer.id}
+                            serviceType={offer.category || offer.template_data?.category}
+                            groupSize={totalFamilyParticipants > 0 ? totalFamilyParticipants : (offer.template_data?.eventCount ? parseInt(offer.template_data.eventCount) : undefined)}
+                            location={offer.template_data?.eventLocation}
+                        />
+                    </div>
+                )}
             </main >
         </div >
     );

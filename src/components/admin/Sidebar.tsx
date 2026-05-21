@@ -39,6 +39,7 @@ const navigation = [
     { name: 'Media', href: '/admin/media', icon: Image },
     { name: 'Portfolio', href: '/admin/portfolio', icon: Camera },
     { name: 'Strony', href: '/admin/pages', icon: FileText },
+    { name: 'Jak się ubrać', href: '/admin/style-guide/outfits', icon: Sparkles },
     {
         name: 'Rezerwacje',
         href: '/admin/bookings',
