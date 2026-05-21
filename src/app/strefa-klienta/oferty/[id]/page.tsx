@@ -43,6 +43,11 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
     const [pdfUrl, setPdfUrl] = useState<string>('#');
     const [selectedAddons, setSelectedAddons] = useState<OfferAddon[]>([]);
 
+    const getPreferredToken = () => {
+        if (typeof window === 'undefined') return '';
+        return localStorage.getItem('user_token') || localStorage.getItem('client_token') || '';
+    };
+
     const isCommunion = offer?.category?.toLowerCase() === 'komunia';
     const isFamilySession = (offer?.category || '').toLowerCase().includes('rodzin') || (offer?.category || '').toLowerCase() === 'family';
 
@@ -62,7 +67,7 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
 
     const fetchOffer = async (id: string) => {
         try {
-            const token = localStorage.getItem('client_token') || localStorage.getItem('user_token');
+            const token = getPreferredToken();
             if (!token) {
                 router.push('/logowanie');
                 return;
@@ -110,9 +115,9 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
                 }
 
                 // Prepare PDF URL with token
-                const token = localStorage.getItem('client_token') || localStorage.getItem('user_token');
-                if (token) {
-                    setPdfUrl(`/api/offers/${id}/pdf?token=${token}`);
+                const authToken = getPreferredToken();
+                if (authToken) {
+                    setPdfUrl(`/api/offers/${id}/pdf?token=${authToken}`);
                 }
             } else if (response.status === 401) {
                 router.push('/logowanie');
@@ -217,9 +222,7 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
 
     const familyVoucherPdfUrl = useMemo(() => {
         if (!offerId || !familyVoucherEnabled || !selectedPackageName) return null;
-        const token = typeof window !== 'undefined'
-            ? (localStorage.getItem('client_token') || localStorage.getItem('user_token') || '')
-            : '';
+        const token = getPreferredToken();
         const params = new URLSearchParams({
             senderName: voucherSenderName || (templateData?.contactName || ''),
             recipientName: voucherRecipientName || 'Rodzice',
@@ -321,7 +324,7 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
 
     const handleAction = async (action: string) => {
         try {
-            const token = localStorage.getItem('client_token') || localStorage.getItem('user_token');
+            const token = getPreferredToken();
             if (!token) {
                 router.push('/logowanie');
                 return;
@@ -403,7 +406,7 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
 
     const handleUnlockRequest = async () => {
         try {
-            const token = localStorage.getItem('client_token') || localStorage.getItem('user_token');
+            const token = getPreferredToken();
             if (!token) return;
 
             setSubmitting(true);
@@ -1380,7 +1383,7 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
                                 href={offer.pdf_url && offer.pdf_url.includes('_zatwierdzona')
                                     ? offer.pdf_url
                                     : offer.pdf_url
-                                        ? offer.pdf_url.replace(/\.pdf$/, '_zatwierdzona.pdf')
+                                    : `/api/offers/${offerId}/pdf?token=${getPreferredToken()}&accepted=true`
                                         : `/api/offers/${offerId}/pdf?token=${typeof window !== 'undefined' ? (localStorage.getItem('client_token') || localStorage.getItem('user_token') || '') : ''}&accepted=true`
                                 }
                                 target="_blank"

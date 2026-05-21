@@ -185,6 +185,7 @@ export default function ClientOfferRecommendedAlbums({
                     key={active.id}
                     album={active}
                     offerId={offerId}
+                    activeAddon={activeAddon}
                     isAdded={!!activeAddon}
                     onAdded={(addon) => updateAddons([...addons.filter(x => x.album_id !== addon.album_id), addon])}
                 />
@@ -219,7 +220,7 @@ export default function ClientOfferRecommendedAlbums({
 
 // ─── Album showcase ──────────────────────────────────────────────────────────
 
-function AlbumShowcase({ album, offerId, isAdded, onAdded }: { album: Album; offerId: number; isAdded: boolean; onAdded: (addon: OfferAddon) => void }) {
+function AlbumShowcase({ album, offerId, activeAddon, isAdded, onAdded }: { album: Album; offerId: number; activeAddon?: OfferAddon; isAdded: boolean; onAdded: (addon: OfferAddon) => void }) {
     const gallery = useMemo(() => {
         const out: { type: 'image' | 'video'; url: string; thumb?: string; label?: string }[] = [];
         const primaryVideoUrl = asMediaUrl(album.video_url);
@@ -303,6 +304,11 @@ function AlbumShowcase({ album, offerId, isAdded, onAdded }: { album: Album; off
         : vimeoMatch
             ? `https://player.vimeo.com/video/${vimeoMatch[1]}?autoplay=1`
             : null;
+
+    const displayFormat = activeAddon?.custom_format_request || activeAddon?.base_format || album.format;
+    const displayPages = activeAddon?.custom_pages ?? activeAddon?.base_pages ?? album.pages_count;
+    const displayPrice = isAdded ? (activeAddon?.final_price ?? album.price) : album.price;
+    const displayCurrency = activeAddon?.currency || album.currency;
 
     return (
         <div className={`relative rounded-2xl overflow-hidden border-2 ${album._is_highlighted ? 'border-gold-500 shadow-2xl shadow-gold-500/20' : 'border-zinc-800'} bg-gradient-to-br from-zinc-900 to-zinc-950`}>
@@ -410,19 +416,19 @@ function AlbumShowcase({ album, offerId, isAdded, onAdded }: { album: Album; off
 
                     {/* Specs grid */}
                     <div className="grid grid-cols-2 gap-2 mb-5">
-                        {album.format && <SpecBadge icon={<Ruler className="w-3.5 h-3.5" />} label="Format" value={album.format} />}
-                        {album.pages_count && <SpecBadge icon={<BookOpen className="w-3.5 h-3.5" />} label="Strony" value={`${album.pages_count}`} />}
+                        {displayFormat && <SpecBadge icon={<Ruler className="w-3.5 h-3.5" />} label="Format" value={displayFormat} />}
+                        {displayPages && <SpecBadge icon={<BookOpen className="w-3.5 h-3.5" />} label="Strony" value={`${displayPages}`} />}
                         {album.cover_type && <SpecBadge icon={<Award className="w-3.5 h-3.5" />} label="Okładka" value={album.cover_type} />}
                         {album.paper_type && <SpecBadge icon={<Layers className="w-3.5 h-3.5" />} label="Papier" value={album.paper_type} />}
                     </div>
 
                     {/* Price + CTA */}
                     <div className="mt-auto pt-4 border-t border-zinc-800">
-                        {album.price > 0 && (
+                        {displayPrice > 0 && (
                             <div className="flex items-baseline gap-2 mb-3">
-                                <span className="text-3xl font-bold text-gold-400">{album.price}</span>
-                                <span className="text-sm text-zinc-400">{album.currency}</span>
-                                <span className="text-xs text-zinc-500 ml-2">cena producenta</span>
+                                <span className="text-3xl font-bold text-gold-400">{displayPrice}</span>
+                                <span className="text-sm text-zinc-400">{displayCurrency}</span>
+                                <span className="text-xs text-zinc-500 ml-2">{isAdded ? 'cena dodatku w ofercie' : 'cena producenta'}</span>
                             </div>
                         )}
 
