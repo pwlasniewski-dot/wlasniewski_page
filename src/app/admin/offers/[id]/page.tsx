@@ -419,6 +419,8 @@ export default function EditOfferPage({ params }: { params: Promise<{ id: string
                 )}
                 <OfferBuilder
                     offerId={parseInt(id)}
+                    templateId={offer?.is_template ? parseInt(id) : null}
+                    templateName={offer?.is_template ? offer?.title : null}
                     initialData={initialBuilderData}
                     offerStatus={offer.status}
                 />

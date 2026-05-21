@@ -278,15 +278,108 @@ const BIRTHDAY_DATA: OfferData = {
     category: 'birthday'
 };
 
+const FAMILY_OLA_GRUDZIADZ_DATA: OfferData = {
+    title: "Sesja rodzinna - Pani Ola (Grudziądz)",
+    subtitle: "Rodzinna sesja plenerowa 2026",
+    contactName: "Przemysław Właśniewski",
+    contactLocation: "Płużnica",
+    contactPhone: "530788694",
+    contactEmail: "pwlasniewski@gmail.com / www.wlasniewski.pl",
+    contactZip: "87-214",
+    contactAddress: "Płużnica",
+
+    eventLocation: "Grudziądz - park miejski / okolice Wisły",
+    eventDate: "Do uzgodnienia",
+    eventCount: "13 osób (8 dorosłych + 5 dzieci)",
+    eventTeam: "1 fotograf + asysta organizacyjna",
+
+    preparations: {
+        before: "Konsultacja stylizacji dla całej rodziny: paleta kolorów, podział akcentów i checklista ubioru dla dorosłych i dzieci.",
+        dayOf: "Spotkanie 15 minut przed sesją, szybki plan kadrów grupowych i mini sesji rodzinnych w podgrupach."
+    },
+
+    features: [
+        "Kompozycja dużej grupy: prowadzenie ustawień tak, by każdy wyglądał naturalnie i korzystnie.",
+        "Kadry łączone: ujęcia całej rodziny, rodzice + dzieci, rodzeństwa oraz portrety indywidualne.",
+        "Poradnik stylizacji: w ofercie klient dostaje gotowe palety kolorów i przykładowe outfity."
+    ],
+
+    pricingHeaders: [
+        "ELEMENTY OFERTY",
+        "RODZINNY START",
+        "RODZINNY KOMFORT",
+        "RODZINNY PREMIUM"
+    ],
+
+    recommendationLabel: "Najczęściej wybierany",
+    recommendationColumnIndex: 2,
+
+    pricingRows: [
+        { values: ["Czas sesji", "90 min", "120 min", "150 min"] },
+        { values: ["Liczba finalnych zdjęć", "35", "55", "80"] },
+        { values: ["Zdjęcia grupowe (13 osób)", "TAK", "TAK", "TAK"] },
+        { values: ["Mini portrety podgrup", "—", "TAK", "TAK"], isHeader: true },
+        { values: ["Ujęcia storytellingowe", "—", "—", "TAK"], isHeader: true },
+        { values: ["Galeria online", "TAK", "TAK", "TAK"] }
+    ],
+
+    footerPrices: [
+        "Cena pakietu",
+        "1490 zł",
+        "1990 zł",
+        "2590 zł"
+    ],
+
+    albumDescription: "Możliwość rozszerzenia o fotoalbum rodzinny premium oraz zestaw odbitek dla dziadków.",
+
+    deliveryTerms: {
+        t1: "Do 5 dni: mini-zajawka (kilka zdjęć do udostępnienia rodzinie)",
+        t2: "Do 14 dni: pełna galeria online po autorskiej obróbce",
+        t3: "Dojazd w obrębie Grudziądza w cenie pakietu"
+    },
+
+    footerCompany: "FOTO-DRON Przemysław Właśniewski NIP: 8781430365 • Grudziądz 2026",
+
+    sectionTitles: {
+        preparations: "Plan i przebieg sesji rodzinnej",
+        standards: "Standard jakości i efekt końcowy",
+        delivery: "Terminy przekazania materiałów"
+    },
+
+    labels: {
+        location: "Lokalizacja",
+        date: "Termin",
+        count: "Liczba uczestników",
+        team: "Zespół",
+        prepBefore: "Przed sesją",
+        prepDay: "W dniu sesji",
+        albumAdvantage: "Dodatki i pamiątki",
+        footerDisclaimer: "Warunki współpracy",
+    },
+
+    sectionVisibility: {
+        eventInfo: true,
+        preparations: true,
+        features: true,
+        pricing: true,
+        album: true,
+        delivery: true
+    },
+    negotiation_enabled: true,
+    category: 'family'
+};
+
 interface OfferBuilderProps {
     offerId?: number; // Added for edit mode
+    templateId?: number | null;
+    templateName?: string | null;
     initialData?: Partial<OfferData>;
     onSave?: (data: OfferData) => Promise<void>;
     saveButtonText?: string;
     offerStatus?: string;
 }
 
-export default function OfferBuilder({ offerId, initialData, onSave, saveButtonText, offerStatus }: OfferBuilderProps = {}) {
+export default function OfferBuilder({ offerId, templateId, templateName, initialData, onSave, saveButtonText, offerStatus }: OfferBuilderProps = {}) {
     const searchParams = useSearchParams();
     const router = useRouter();
     const clientId = searchParams.get('client_id');
@@ -297,6 +390,8 @@ export default function OfferBuilder({ offerId, initialData, onSave, saveButtonT
     // Choose initial preset based on URL parameter
     const getInitialPreset = () => {
         if (templateParam === 'birthday') return BIRTHDAY_DATA;
+        if (templateParam === 'family') return FAMILY_OLA_GRUDZIADZ_DATA;
+        if (templateParam === 'family-ola-grudziadz') return FAMILY_OLA_GRUDZIADZ_DATA;
         return INITIAL_DATA; // Default: communion
     };
 
@@ -317,8 +412,8 @@ export default function OfferBuilder({ offerId, initialData, onSave, saveButtonT
     const [templates, setTemplates] = useState<any[]>([]);
     const [loadingTemplates, setLoadingTemplates] = useState(false);
     const [savingTemplate, setSavingTemplate] = useState(false);
-    const [loadedTemplateId, setLoadedTemplateId] = useState<number | null>(null);
-    const [loadedTemplateName, setLoadedTemplateName] = useState<string | null>(null);
+    const [loadedTemplateId, setLoadedTemplateId] = useState<number | null>(templateId ?? null);
+    const [loadedTemplateName, setLoadedTemplateName] = useState<string | null>(templateName ?? null);
 
     // Auto-fill client data if clientId is present
     useEffect(() => {
@@ -494,12 +589,13 @@ export default function OfferBuilder({ offerId, initialData, onSave, saveButtonT
     const handleSaveAsTemplate = async () => {
         let updateExisting = false;
         let templateName: string | null = null;
+        const existingTemplateName = loadedTemplateName || data.title || (loadedTemplateId ? `Szablon #${loadedTemplateId}` : null);
 
-        if (loadedTemplateId && loadedTemplateName) {
-            const choice = confirm(`Czy chcesz zaktualizować istniejący szablon "${loadedTemplateName}"?\n\nOK = Zaktualizuj istniejący\nAnuluj = Zapisz jako nowy`);
+        if (loadedTemplateId) {
+            const choice = confirm(`Czy chcesz zaktualizować istniejący szablon "${existingTemplateName}"?\n\nOK = Zaktualizuj istniejący\nAnuluj = Zapisz jako nowy`);
             if (choice) {
                 updateExisting = true;
-                templateName = loadedTemplateName;
+                templateName = existingTemplateName;
             } else {
                 templateName = prompt('Podaj nazwę nowego szablonu:', data.title || 'Nowy szablon');
                 if (!templateName) return;
@@ -545,6 +641,8 @@ export default function OfferBuilder({ offerId, initialData, onSave, saveButtonT
                 const result = await res.json();
                 if (!updateExisting && result.template?.id) {
                     setLoadedTemplateId(result.template.id);
+                    setLoadedTemplateName(templateName);
+                } else if (updateExisting) {
                     setLoadedTemplateName(templateName);
                 }
                 toast.success(updateExisting
@@ -717,6 +815,12 @@ export default function OfferBuilder({ offerId, initialData, onSave, saveButtonT
                 ...BIRTHDAY_DATA,
                 ...currentContact, // Preserve contact info
                 category: 'urodziny'
+            }));
+        } else if (category === 'family') {
+            setData(prev => ({
+                ...FAMILY_OLA_GRUDZIADZ_DATA,
+                ...currentContact, // Preserve contact info
+                category: 'family'
             }));
         } else if (category === 'komunia') {
             setData(prev => ({
@@ -1009,6 +1113,7 @@ export default function OfferBuilder({ offerId, initialData, onSave, saveButtonT
                             >
                                 <option value="standard">Standardowa</option>
                                 <option value="komunia">Komunia Święta</option>
+                                <option value="family">Sesja rodzinna</option>
                                 <option value="urodziny">Urodziny</option>
                                 <option value="slub">Ślub</option>
                                 <option value="b2b">B2B</option>
