@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Palette, Shirt, Lightbulb, Gift, Camera, Heart } from 'lucide-react';
+import { Palette, Shirt, Lightbulb, Heart } from 'lucide-react';
 import ColorPaletteCard from '@/components/StyleGuide/ColorPaletteCard';
 import OutfitCollageCard from '@/components/StyleGuide/OutfitCollageCard';
 import TipCard from '@/components/StyleGuide/TipCard';
@@ -174,30 +174,6 @@ export default function ClientStyleGuidePanel({
                     </div>
                 </section>
             )}
-
-            {/* Call to Action */}
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-                className="text-center p-8 bg-zinc-900/30 border border-white/10 rounded-2xl"
-            >
-                <Camera className="w-12 h-12 text-gold-400 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-white mb-2">
-                    Chcesz zobaczyć więcej inspiracji?
-                </h3>
-                <p className="text-zinc-400 mb-6">
-                    Odwiedź naszą pełną stronę z poradnikiem stylizacji
-                </p>
-                <a
-                    href="/jak-sie-ubrac"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 px-6 py-3 bg-gold-400 text-black font-semibold rounded-xl hover:bg-gold-500 transition-colors"
-                >
-                    Pełny Poradnik
-                </a>
-            </motion.div>
         </div>
     );
 }
