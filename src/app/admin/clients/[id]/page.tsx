@@ -87,7 +87,16 @@ function ClientDetailsContent({ id }: { id: string }) {
         setActivitiesLoading(true);
         try {
             const token = localStorage.getItem('admin_token');
-            const res = await fetch(`/api/admin/crm-activity?client_id=${id}&limit=200`, {
+            const params = new URLSearchParams({
+                client_id: String(id),
+                limit: '200',
+            });
+
+            if (client?.email) {
+                params.set('client_email', client.email);
+            }
+
+            const res = await fetch(`/api/admin/crm-activity?${params.toString()}`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
             if (res.ok) {
@@ -106,7 +115,7 @@ function ClientDetailsContent({ id }: { id: string }) {
         if (activeTab === 'activity' && activities.length === 0) {
             loadActivities();
         }
-    }, [activeTab]);
+    }, [activeTab, client?.email]);
 
     const handleStandaloneUpload = async (type: 'offer' | 'contract', file: File) => {
         const setUploading = type === 'offer' ? setUploadingStandaloneOffer : setUploadingStandaloneContract;

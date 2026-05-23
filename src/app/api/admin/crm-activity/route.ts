@@ -11,6 +11,7 @@ export async function GET(request: NextRequest) {
     try {
         const { searchParams } = new URL(request.url);
         const clientId = searchParams.get('client_id');
+        const clientEmail = searchParams.get('client_email');
         const action = searchParams.get('action');
         const entityType = searchParams.get('entity_type');
         const entityId = searchParams.get('entity_id');
@@ -21,7 +22,16 @@ export async function GET(request: NextRequest) {
 
         const where: any = {};
 
-        if (clientId) where.client_id = parseInt(clientId);
+        if (clientId && clientEmail) {
+            where.OR = [
+                { client_id: parseInt(clientId) },
+                { client_email: clientEmail },
+            ];
+        } else if (clientId) {
+            where.client_id = parseInt(clientId);
+        } else if (clientEmail) {
+            where.client_email = clientEmail;
+        }
         if (action) where.action = action;
         if (entityType) where.entity_type = entityType;
         if (entityId) where.entity_id = parseInt(entityId);
