@@ -47,6 +47,12 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        // Persist successful login time for admin analytics and client activity views.
+        await prisma.user.update({
+            where: { id: user.id },
+            data: { last_login: new Date() },
+        });
+
         // Generate JWT token using the same jose system
         const token = await generateToken({
             id: user.id,

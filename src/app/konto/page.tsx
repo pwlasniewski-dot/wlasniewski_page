@@ -50,6 +50,7 @@ export default function AccountPage() {
     const [fotoMatchEnabled, setFotoMatchEnabled] = useState<boolean>(false);
     const [savingNote, setSavingNote] = useState<{ type: string; id: number } | null>(null);
     const [noteStates, setNoteStates] = useState<Record<string, string>>({});
+    const [deletingAccount, setDeletingAccount] = useState(false);
 
     // Initialize note states when data is loaded
     useEffect(() => {
@@ -1113,10 +1114,10 @@ export default function AccountPage() {
                                         {new Date(booking.date).getDate()}
                                     </div>
                                     <div>
-                                        <h4 className="font-bold text-xl mb-1">{booking.service_type || 'Sesja Indywidualna'}</h4>
+                                        <h4 className="font-bold text-xl mb-1">{booking.service || booking.service_type || 'Sesja Indywidualna'}</h4>
                                         <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-zinc-500">
                                             <span className="flex items-center gap-2"><Calendar className="w-4 h-4" /> {new Date(booking.date).toLocaleDateString('pl-PL', { month: 'long', year: 'numeric' })}</span>
-                                            <span className="flex items-center gap-2"><MapPin className="w-4 h-4" /> Toruń, Polska</span>
+                                            <span className="flex items-center gap-2"><MapPin className="w-4 h-4" /> {[booking.venue_place, booking.venue_city].filter(Boolean).join(', ') || 'Lokalizacja do ustalenia'}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -1124,7 +1125,7 @@ export default function AccountPage() {
                                     <span className="px-4 py-1.5 bg-green-500/10 text-green-500 rounded-full text-[10px] uppercase font-black tracking-widest border border-green-500/20">
                                         {booking.status === 'confirmed' ? 'Potwierdzona' : 'Oczekuje'}
                                     </span>
-                                    <Link href={`/rezerwacja/${booking.id}`} className="p-3 bg-zinc-800 hover:bg-gold-500 text-zinc-400 hover:text-black rounded-2xl transition-all">
+                                    <Link href={`/rezerwacja/${booking.id}?from=konto`} className="p-3 bg-zinc-800 hover:bg-gold-500 text-zinc-400 hover:text-black rounded-2xl transition-all" aria-label={`Szczegóły rezerwacji ${booking.id}`}>
                                         <ChevronRight className="w-6 h-6" />
                                     </Link>
                                 </div>
@@ -1137,6 +1138,43 @@ export default function AccountPage() {
     }
 
     function renderSettingsTab() {
+        const handleDeleteAccount = async () => {
+            if (!token || deletingAccount) return;
+
+            const password = window.prompt('Aby usunąć konto, wpisz aktualne hasło:');
+            if (!password) return;
+
+            const confirmed = window.confirm('Ta operacja jest nieodwracalna. Czy na pewno chcesz usunąć konto?');
+            if (!confirmed) return;
+
+            setDeletingAccount(true);
+            try {
+                const response = await fetch('/api/account/delete', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ confirm: true, password })
+                });
+
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) {
+                    const message = data?.message || data?.error || 'Nie udało się usunąć konta.';
+                    alert(message);
+                    return;
+                }
+
+                alert('Konto zostało usunięte. Nastąpi wylogowanie.');
+                logout();
+                router.push('/');
+            } catch {
+                alert('Błąd połączenia. Spróbuj ponownie.');
+            } finally {
+                setDeletingAccount(false);
+            }
+        };
+
         // Embed the existing settings functionality or link to it
         return (
             <div className="space-y-12">
@@ -1160,7 +1198,13 @@ export default function AccountPage() {
                         <div className="space-y-6">
                             <h3 className="font-bold text-xl">Prywatność i RODO</h3>
                             <p className="text-zinc-500 text-sm">Twoje dane są bezpieczne i przetwarzane zgodnie z polityką prywatności. Masz prawo do ich wglądu, zmiany oraz usunięcia.</p>
-                            <button className="text-red-500 text-sm font-bold hover:underline">Usuń konto (nieodwracalne)</button>
+                            <button
+                                onClick={handleDeleteAccount}
+                                disabled={deletingAccount}
+                                className="text-red-500 text-sm font-bold hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {deletingAccount ? 'Usuwanie konta...' : 'Usuń konto (nieodwracalne)'}
+                            </button>
                         </div>
                     </div>
                 </div>

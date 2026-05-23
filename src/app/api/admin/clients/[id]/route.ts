@@ -32,7 +32,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
                 basket,
                 offersById,
                 offersByEmail,
-                contracts
+                contracts,
+                latestLoginActivity
             ] = await Promise.all([
                 prisma.giftCardOrder.findMany({
                     where: { user_id: userId },
@@ -88,7 +89,18 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
                     },
                     orderBy: { created_at: 'desc' },
                     include: { offer: true }
-                }).catch(() => [])
+                }).catch(() => []),
+                prisma.crmActivity.findFirst({
+                    where: {
+                        action: 'login',
+                        OR: [
+                            { client_id: userId },
+                            { client_email: clientEmail }
+                        ]
+                    },
+                    orderBy: { created_at: 'desc' },
+                    select: { created_at: true }
+                }).catch(() => null)
             ]);
 
             // Foto Wyzwania powi\u0105zane z klientem (jako zaproszony LUB zapraszaj\u0105cy po emailu)
@@ -126,6 +138,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
             const fullClient = {
                 ...client,
+                last_login: client.last_login || latestLoginActivity?.created_at || null,
                 orders,
                 assigned_bookings: bookings,
                 client_galleries: allGalleries,
