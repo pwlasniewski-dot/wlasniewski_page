@@ -59,6 +59,7 @@ export function logCrmActivity(params: LogActivityParams): void {
     if (request) {
         ipAddress = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
             request.headers.get('x-real-ip') ||
+            request.headers.get('cf-connecting-ip') ||
             null;
         userAgent = request.headers.get('user-agent') || null;
     }

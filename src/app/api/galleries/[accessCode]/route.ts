@@ -137,6 +137,10 @@ export async function GET(
         // Avoid spamming CRM activity on page refreshes: log at most once per 10 minutes per gallery/client.
         if (gallery.client_id || gallery.client_email) {
             const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+            const viewerIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+                || request.headers.get('x-real-ip')
+                || request.headers.get('cf-connecting-ip')
+                || 'unknown';
             const identityWhere = gallery.client_id && gallery.client_email
                 ? {
                     OR: [
@@ -153,6 +157,7 @@ export async function GET(
                     action: 'gallery_viewed',
                     entity_type: 'gallery',
                     entity_id: gallery.id,
+                    ip_address: viewerIp,
                     ...identityWhere,
                     created_at: {
                         gte: tenMinutesAgo,
