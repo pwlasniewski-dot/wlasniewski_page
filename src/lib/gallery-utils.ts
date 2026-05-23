@@ -22,7 +22,7 @@ export interface ProcessedPhoto {
 export async function processGalleryPhoto(
     file: Buffer,
     galleryId: number,
-    options: { skipOptimization?: boolean } = {}
+    options: { skipOptimization?: boolean; sourceMimeType?: string } = {}
 ): Promise<ProcessedPhoto> {
     // Generate unique filename
     const hash = crypto.randomBytes(8).toString('hex');
@@ -33,16 +33,25 @@ export async function processGalleryPhoto(
     let extension: string;
     let mimeType: string;
 
-    const originalImage = sharp(file);
-    const metadata = await originalImage.metadata();
-
     if (options.skipOptimization) {
         // Keep original
         processedBuffer = file;
-        // Detect extension from format or default to jpg
-        extension = metadata.format === 'png' ? 'png' : 'jpg';
-        mimeType = metadata.format === 'png' ? 'image/png' : 'image/jpeg';
+
+        // Avoid sharp for passthrough uploads (more robust on serverless runtimes).
+        const sourceMime = (options.sourceMimeType || '').toLowerCase();
+        if (sourceMime === 'image/png') {
+            extension = 'png';
+            mimeType = 'image/png';
+        } else if (sourceMime === 'image/webp') {
+            extension = 'webp';
+            mimeType = 'image/webp';
+        } else {
+            extension = 'jpg';
+            mimeType = 'image/jpeg';
+        }
     } else {
+        const originalImage = sharp(file);
+
         // Optimize to WebP, Max 2000px
         extension = 'webp';
         mimeType = 'image/webp';
@@ -65,32 +74,37 @@ export async function processGalleryPhoto(
     // Upload main image to S3
     const file_url = await uploadToS3(processedBuffer, `${folderPath}/${filename}`, mimeType);
 
-    // Create thumbnail (400px width) - Always WebP or JPEG? Let's stick to JPEG for thumbnails for max compatibility or WebP? 
-    // Let's use WebP for thumbnails too if main is optimized, or JPEG if not? 
-    // Actually, thumbnails should be small. WebP is good.
-    const thumbnailFilename = `thumb_${timestamp}-${hash}.webp`;
+    let thumbnail_url = file_url;
+    let width = 0;
+    let height = 0;
 
-    const thumbnailBuffer = await sharp(file)
-        .rotate() // Ensure rotation is correct
-        .resize(400, 400, {
-            fit: 'cover',
-            position: 'center'
-        })
-        .webp({ quality: 80 })
-        .toBuffer();
+    if (!options.skipOptimization) {
+        const thumbnailFilename = `thumb_${timestamp}-${hash}.webp`;
 
-    // Upload thumbnail to S3
-    const thumbnail_url = await uploadToS3(thumbnailBuffer, `${folderPath}/${thumbnailFilename}`, 'image/webp');
+        const thumbnailBuffer = await sharp(file)
+            .rotate() // Ensure rotation is correct
+            .resize(400, 400, {
+                fit: 'cover',
+                position: 'center'
+            })
+            .webp({ quality: 80 })
+            .toBuffer();
 
-    // Get dimensions of processed image
-    const processedMetadata = await sharp(processedBuffer).metadata();
+        // Upload thumbnail to S3
+        thumbnail_url = await uploadToS3(thumbnailBuffer, `${folderPath}/${thumbnailFilename}`, 'image/webp');
+
+        // Get dimensions of processed image
+        const processedMetadata = await sharp(processedBuffer).metadata();
+        width = processedMetadata.width || 0;
+        height = processedMetadata.height || 0;
+    }
 
     return {
         file_url,
         thumbnail_url,
         file_size,
-        width: processedMetadata.width || 0,
-        height: processedMetadata.height || 0,
+        width,
+        height,
     };
 }
 

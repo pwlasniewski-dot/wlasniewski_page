@@ -5,6 +5,7 @@ import { getApiUrl } from '@/lib/api-config';
 import { Upload, Trash2, Check, X, Eye, ImageIcon, Plus, ArrowLeft, Calendar, Save, ShoppingBag, Mail } from 'lucide-react';
 import Image from 'next/image';
 import toast from 'react-hot-toast';
+import imageCompression from 'browser-image-compression';
 import GalleryParticipantsManager from './GalleryParticipantsManager';
 
 interface GalleryPhoto {
@@ -51,6 +52,8 @@ interface GalleryAdminProps {
 }
 
 export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClose, onCreated }: GalleryAdminProps) {
+    const SAFE_UPLOAD_LIMIT_BYTES = 5 * 1024 * 1024; // Keep below common serverless request limits.
+
     const [gallery, setGallery] = useState<Gallery | null>(null);
     const [loading, setLoading] = useState(!!galleryId);
     const [uploading, setUploading] = useState(false);
@@ -324,11 +327,49 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
         try {
             const token = localStorage.getItem('admin_token');
 
+            const prepareFileForUpload = async (file: File): Promise<File> => {
+                if (!file.type.startsWith('image/')) {
+                    return file;
+                }
+
+                try {
+                    const compressed = await imageCompression(file, {
+                        maxSizeMB: 4.5,
+                        maxWidthOrHeight: 2560,
+                        useWebWorker: true,
+                        fileType: 'image/webp',
+                    });
+
+                    const baseName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+                    return new File([compressed], `${baseName}.webp`, { type: 'image/webp' });
+                } catch (compressionError) {
+                    console.warn(`Compression failed for ${file.name}, using original file`, compressionError);
+                    return file;
+                }
+            };
+
             // Upload each file individually to show real progress
             for (const file of fileArray) {
                 try {
+                    const fileToUpload = await prepareFileForUpload(file);
+
+                    if (fileToUpload.size > SAFE_UPLOAD_LIMIT_BYTES) {
+                        failedCount++;
+                        failedDetails.push(`${file.name}: plik jest za duży po kompresji (${(fileToUpload.size / 1024 / 1024).toFixed(1)}MB, limit 5MB)`);
+                        console.error(`File too large after compression: ${file.name}`, {
+                            originalSize: file.size,
+                            uploadSize: fileToUpload.size,
+                        });
+
+                        const completed = uploadedCount + failedCount;
+                        const progress = Math.round((completed / totalFiles) * 100);
+                        setUploadProgress(progress);
+                        setUploadStats({ current: completed, total: totalFiles });
+                        continue;
+                    }
+
                     const formData = new FormData();
-                    formData.append('photos', file);
+                    formData.append('photos', fileToUpload);
                     formData.append('is_standard', isStandard.toString());
                     formData.append('skip_optimization', skipOptimization.toString());
 

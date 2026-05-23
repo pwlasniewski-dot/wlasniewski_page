@@ -6,6 +6,9 @@ import prisma from '@/lib/db/prisma';
 import { withAuth } from '@/lib/auth/middleware';
 import { processGalleryPhoto } from '@/lib/gallery-utils';
 
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
 export async function POST(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
@@ -74,7 +77,10 @@ export async function POST(
                 const buffer = Buffer.from(await file.arrayBuffer());
 
                 // Process photo (resize + thumbnail)
-                const processed = await processGalleryPhoto(buffer, galleryId, { skipOptimization });
+                const processed = await processGalleryPhoto(buffer, galleryId, {
+                    skipOptimization,
+                    sourceMimeType: file.type,
+                });
 
                 // Save to database
                 const photo = await prisma.galleryPhoto.create({
