@@ -5,7 +5,6 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Download, ShoppingCart, Check, X, ArrowLeft, Calendar, ImageIcon, Plus, Minus, ChevronLeft, ChevronRight, Maximize2, Layers } from 'lucide-react';
 import Image from 'next/image';
-import { useAuth } from '@/context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import PremiumGalleryHero, { PremiumGalleryStory } from '@/components/galleries/PremiumGalleryHero';
 import PostGalleryUpsell, { TopReviewNudge } from '@/components/galleries/PostGalleryUpsell';
@@ -47,9 +46,12 @@ export default function ClientGalleryPage() {
     const router = useRouter();
     const accessCode = params?.accessCode as string;
 
-    const { isAuthenticated } = useAuth();
     const [gallery, setGallery] = useState<Gallery | null>(null);
     const [loading, setLoading] = useState(true);
+    const [accessError, setAccessError] = useState<string | null>(null);
+    const [requiresSharePassword, setRequiresSharePassword] = useState(false);
+    const [sharePassword, setSharePassword] = useState('');
+    const [authorizingShare, setAuthorizingShare] = useState(false);
     const [selectedPremium, setSelectedPremium] = useState<Set<number>>(new Set());
     const [selectedStandard, setSelectedStandard] = useState<Set<number>>(new Set());
     const [downloadingAll, setDownloadingAll] = useState(false);
@@ -66,6 +68,8 @@ export default function ClientGalleryPage() {
     const [position, setPosition] = useState({ x: 0, y: 0 });
     const [dragging, setDragging] = useState(false);
     const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+    const [touchStartX, setTouchStartX] = useState<number | null>(null);
+    const [touchCurrentX, setTouchCurrentX] = useState<number | null>(null);
 
     const setLightbox = (index: number, type: 'standard' | 'premium', open = true) => {
         _setLightbox({ isOpen: open, activeIndex: index, activeType: type });
@@ -83,22 +87,47 @@ export default function ClientGalleryPage() {
         }
     }, [accessCode]);
 
-    const fetchGallery = async () => {
+    const fetchGallery = async (passwordOverride?: string) => {
         try {
-            const res = await fetch(`/api/galleries/${accessCode}`);
+            const token = typeof window !== 'undefined' ? localStorage.getItem('user_token') : null;
+            const headers: HeadersInit = {};
+
+            if (token) {
+                headers.Authorization = `Bearer ${token}`;
+            }
+
+            const effectivePassword = (passwordOverride ?? sharePassword).trim();
+            if (effectivePassword) {
+                headers['x-gallery-password'] = effectivePassword;
+            }
+
+            const res = await fetch(`/api/galleries/${accessCode}`, { headers });
             const data = await res.json();
 
             if (data.success) {
                 setGallery(data.gallery);
+                setAccessError(null);
+                setRequiresSharePassword(false);
             } else {
-                router.push('/galeria/login');
+                setGallery(null);
+                setAccessError(data.error || 'Brak dostępu do galerii');
+                setRequiresSharePassword(data.code === 'PASSWORD_REQUIRED');
             }
         } catch (error) {
             console.error('Failed to fetch gallery');
-            router.push('/galeria/login');
+            setGallery(null);
+            setAccessError('Wystąpił błąd podczas ładowania galerii.');
         } finally {
             setLoading(false);
+            setAuthorizingShare(false);
         }
+    };
+
+    const handleSharePasswordSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!sharePassword.trim()) return;
+        setAuthorizingShare(true);
+        await fetchGallery(sharePassword.trim());
     };
 
     const downloadPhoto = async (photoId: number) => {
@@ -173,6 +202,43 @@ export default function ClientGalleryPage() {
         setDragging(false);
     };
 
+    const handleTouchStart = (e: React.TouchEvent) => {
+        if (zoom > 1) return;
+        const x = e.touches[0]?.clientX;
+        if (typeof x === 'number') {
+            setTouchStartX(x);
+            setTouchCurrentX(x);
+        }
+    };
+
+    const handleTouchMove = (e: React.TouchEvent) => {
+        if (zoom > 1 || touchStartX === null) return;
+        const x = e.touches[0]?.clientX;
+        if (typeof x === 'number') {
+            setTouchCurrentX(x);
+        }
+    };
+
+    const handleTouchEnd = () => {
+        if (zoom > 1 || touchStartX === null || touchCurrentX === null) {
+            setTouchStartX(null);
+            setTouchCurrentX(null);
+            return;
+        }
+
+        const deltaX = touchCurrentX - touchStartX;
+        const threshold = 55;
+
+        if (deltaX > threshold) {
+            navigateLightbox('prev');
+        } else if (deltaX < -threshold) {
+            navigateLightbox('next');
+        }
+
+        setTouchStartX(null);
+        setTouchCurrentX(null);
+    };
+
     const downloadAllFree = async () => {
         if (!gallery || downloadingAll) return;
         setDownloadingAll(true);
@@ -237,6 +303,53 @@ export default function ClientGalleryPage() {
         );
     }
 
+    if (!gallery && requiresSharePassword) {
+        return (
+            <div className="min-h-screen bg-black text-white flex items-center justify-center px-4">
+                <div className="w-full max-w-md bg-zinc-900/80 border border-zinc-800 rounded-2xl p-6">
+                    <h1 className="text-2xl font-black mb-2">Galeria chroniona hasłem</h1>
+                    <p className="text-zinc-400 mb-6 text-sm">Ta galeria została udostępniona rodzinie przez właściciela. Podaj hasło dostępu.</p>
+                    <form onSubmit={handleSharePasswordSubmit} className="space-y-4">
+                        <input
+                            type="password"
+                            value={sharePassword}
+                            onChange={(e) => setSharePassword(e.target.value)}
+                            placeholder="Hasło galerii"
+                            className="w-full bg-black border border-zinc-700 rounded-xl px-4 py-3 text-white focus:border-gold-500 outline-none"
+                        />
+                        {accessError && <p className="text-red-400 text-sm">{accessError}</p>}
+                        <button
+                            type="submit"
+                            disabled={authorizingShare || !sharePassword.trim()}
+                            className="w-full bg-gold-500 hover:bg-gold-400 text-black font-black uppercase tracking-wide py-3 rounded-xl disabled:opacity-60"
+                        >
+                            {authorizingShare ? 'Sprawdzanie...' : 'Wejdź do galerii'}
+                        </button>
+                    </form>
+                </div>
+            </div>
+        );
+    }
+
+    if (!gallery && accessError) {
+        return (
+            <div className="min-h-screen bg-black text-white flex items-center justify-center px-4">
+                <div className="w-full max-w-lg bg-zinc-900/70 border border-zinc-800 rounded-2xl p-6">
+                    <h1 className="text-2xl font-black mb-2">Brak dostępu</h1>
+                    <p className="text-zinc-300 mb-6">{accessError}</p>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                        <Link href="/logowanie" className="flex-1 text-center bg-gold-500 hover:bg-gold-400 text-black font-bold py-3 rounded-xl">
+                            Zaloguj jako właściciel
+                        </Link>
+                        <Link href="/galeria/login" className="flex-1 text-center bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-3 rounded-xl border border-zinc-700">
+                            Inna galeria
+                        </Link>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     if (!gallery) return null;
 
     const premiumTotal = selectedPremium.size * gallery.price_per_premium;
@@ -244,7 +357,7 @@ export default function ClientGalleryPage() {
     const totalPrice = premiumTotal + productsTotal;
 
     return (
-        <div className="min-h-screen bg-black text-white pb-40 selection:bg-gold-500/30">
+        <div className="min-h-screen bg-black text-white pb-40 selection:bg-gold-500/30 overflow-x-hidden">
             <div className="fixed top-4 left-4 z-[70] flex items-center gap-2">
                 <Link
                     href="/konto"
@@ -294,7 +407,7 @@ export default function ClientGalleryPage() {
                 {/* Standard Photos Section */}
                 {gallery.standard_photos.length > 0 && (
                     <div className="mb-24">
-                        <div className="flex justify-between items-center bg-zinc-900/40 p-10 rounded-[3rem] border border-zinc-800 mb-12">
+                        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-zinc-900/40 px-4 py-6 md:px-10 md:py-10 rounded-[2rem] md:rounded-[3rem] border border-zinc-800 mb-12">
                             <div>
                                 <h2 className="text-3xl font-black uppercase tracking-tight mb-2">Pobierz swoją paczkę</h2>
                                 <p className="text-zinc-500 font-medium">To są zdjęcia zawarte w Twoim pakiecie sesji.</p>
@@ -305,8 +418,8 @@ export default function ClientGalleryPage() {
                                     </div>
                                 )}
                             </div>
-                            <div className="flex items-center gap-4">
-                                <div className="flex gap-2 p-1 bg-black/40 border border-zinc-800 rounded-xl">
+                            <div className="w-full lg:w-auto flex flex-col sm:flex-row sm:items-center gap-3 md:gap-4">
+                                <div className="inline-flex flex-wrap gap-2 p-1 bg-black/40 border border-zinc-800 rounded-xl w-fit">
                                     <button
                                         onClick={() => setViewMode('grid')}
                                         className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-gold-500 text-black' : 'text-zinc-400 hover:text-white'}`}
@@ -327,11 +440,16 @@ export default function ClientGalleryPage() {
                                 <button
                                     onClick={downloadAllFree}
                                     disabled={downloadingAll}
-                                    className="h-16 px-10 bg-white text-black font-black uppercase tracking-widest text-xs rounded-2xl hover:bg-gold-500 transition-all shadow-xl shadow-white/5 disabled:opacity-50 flex items-center gap-3"
+                                    className="h-12 md:h-16 px-6 md:px-10 bg-white text-black font-black uppercase tracking-widest text-[10px] md:text-xs rounded-2xl hover:bg-gold-500 transition-all shadow-xl shadow-white/5 disabled:opacity-50 flex items-center justify-center gap-3 w-full sm:w-auto"
                                 >
                                     <Download className="w-5 h-5" />
                                     {downloadingAll ? 'Pobieranie...' : 'Pobierz Wszystkie'}
                                 </button>
+                                {viewMode === 'story' && (
+                                    <div className="text-xs text-zinc-500 sm:ml-2">
+                                        Tryb Historia: przewijaj pionowo. Otwórz podgląd, aby przesuwać kadry palcem.
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -359,19 +477,21 @@ export default function ClientGalleryPage() {
                             ))}
                         </div>
                         ) : (
-                        <PremiumGalleryStory
-                            photos={gallery.standard_photos.map(p => ({
-                                id: p.id,
-                                file_url: p.file_url,
-                                thumbnail_url: p.thumbnail_url,
-                                width: p.width,
-                                height: p.height,
-                            }))}
-                            onPhotoClick={(p) => {
-                                const idx = gallery.standard_photos.findIndex(ph => ph.id === p.id);
-                                if (idx !== -1) setLightbox(idx, 'standard');
-                            }}
-                        />
+                        <div className="overflow-x-hidden">
+                            <PremiumGalleryStory
+                                photos={gallery.standard_photos.map(p => ({
+                                    id: p.id,
+                                    file_url: p.file_url,
+                                    thumbnail_url: p.thumbnail_url,
+                                    width: p.width,
+                                    height: p.height,
+                                }))}
+                                onPhotoClick={(p) => {
+                                    const idx = gallery.standard_photos.findIndex(ph => ph.id === p.id);
+                                    if (idx !== -1) setLightbox(idx, 'standard');
+                                }}
+                            />
+                        </div>
                         )}
                     </div>
                 )}
@@ -574,14 +694,14 @@ export default function ClientGalleryPage() {
                         onClick={() => setLightbox(0, 'standard', false)}
                     >
                         {/* Lightbox Header */}
-                        <div className="absolute top-0 left-0 right-0 h-28 px-8 flex items-center justify-between z-[110] bg-gradient-to-b from-black/80 via-black/40 to-transparent">
+                        <div className="absolute top-0 left-0 right-0 h-16 md:h-28 px-3 md:px-8 flex items-center justify-between z-[110] bg-gradient-to-b from-black/80 via-black/40 to-transparent">
                             <div className="flex items-center gap-8">
                                 <div className="text-white">
                                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-1">Przeglądanie</p>
                                     <p className="text-xl font-black">{lightbox.activeIndex + 1} <span className="text-zinc-600 text-sm font-bold">/ {lightbox.activeType === 'standard' ? gallery.standard_photos.length : gallery.premium_photos.length}</span></p>
                                 </div>
-                                <div className="h-10 w-px bg-white/10" />
-                                <div className="flex items-center gap-3">
+                                <div className="h-10 w-px bg-white/10 hidden md:block" />
+                                <div className="hidden md:flex items-center gap-3">
                                     <button
                                         onClick={() => setZoom(prev => Math.min(prev + 0.5, 4))}
                                         className="p-4 bg-white/5 hover:bg-white/10 rounded-2xl text-white transition-all border border-white/5 hover:scale-110"
@@ -609,14 +729,14 @@ export default function ClientGalleryPage() {
                                         {isPaid(currentPhoto.id) ? (
                                             <button
                                                 onClick={() => downloadPhoto(currentPhoto.id)}
-                                                className="h-16 px-10 bg-white text-black text-[10px] font-black uppercase rounded-2xl tracking-widest flex items-center gap-3 shadow-2xl hover:bg-gold-500 transition-colors"
+                                                className="hidden md:flex h-16 px-10 bg-white text-black text-[10px] font-black uppercase rounded-2xl tracking-widest items-center gap-3 shadow-2xl hover:bg-gold-500 transition-colors"
                                             >
                                                 <Download className="w-5 h-5" /> Pobierz oryginał
                                             </button>
                                         ) : (
                                             <button
                                                 onClick={() => togglePremium(currentPhoto.id)}
-                                                className={`h-16 px-10 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-2xl ${selectedPremium.has(currentPhoto.id) ? 'bg-gold-500 text-black' : 'bg-white/5 text-white border border-white/10 hover:bg-gold-500 hover:text-black'}`}
+                                                className={`hidden md:flex h-16 px-10 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-2xl ${selectedPremium.has(currentPhoto.id) ? 'bg-gold-500 text-black' : 'bg-white/5 text-white border border-white/10 hover:bg-gold-500 hover:text-black'}`}
                                             >
                                                 {selectedPremium.has(currentPhoto.id) ? 'Zrezygnuj z wyboru' : 'Dodaj do zamówienia'}
                                             </button>
@@ -625,7 +745,7 @@ export default function ClientGalleryPage() {
                                 ) : (
                                     <button
                                         onClick={() => downloadPhoto(currentPhoto.id)}
-                                        className="h-16 px-12 bg-white text-black text-[10px] font-black uppercase rounded-2xl tracking-widest flex items-center gap-3 shadow-2xl hover:bg-gold-500 transition-colors"
+                                        className="hidden md:flex h-16 px-12 bg-white text-black text-[10px] font-black uppercase rounded-2xl tracking-widest items-center gap-3 shadow-2xl hover:bg-gold-500 transition-colors"
                                     >
                                         <Download className="w-5 h-5" /> Pobierz teraz
                                     </button>
@@ -649,6 +769,9 @@ export default function ClientGalleryPage() {
                             onMouseMoveCapture={handleDragMove}
                             onMouseUpCapture={handleDragEnd}
                             onMouseLeave={handleDragEnd}
+                            onTouchStart={handleTouchStart}
+                            onTouchMove={handleTouchMove}
+                            onTouchEnd={handleTouchEnd}
                         >
                             <motion.div
                                 animate={{
@@ -668,19 +791,23 @@ export default function ClientGalleryPage() {
                         </div>
 
                         {/* Arrows */}
-                        <div className="absolute inset-x-12 top-1/2 -translate-y-1/2 flex justify-between pointer-events-none">
+                        <div className="absolute inset-x-3 md:inset-x-12 top-1/2 -translate-y-1/2 hidden md:flex justify-between pointer-events-none">
                             <button
                                 onClick={(e) => { e.stopPropagation(); navigateLightbox('prev'); }}
-                                className="p-8 bg-black/40 hover:bg-white hover:text-black rounded-full text-white transition-all pointer-events-auto backdrop-blur-2xl border border-white/10 group active:scale-95"
+                                className="p-3 md:p-8 bg-black/40 hover:bg-white hover:text-black rounded-full text-white transition-all pointer-events-auto backdrop-blur-2xl border border-white/10 group active:scale-95"
                             >
-                                <ChevronLeft className="w-12 h-12 transition-transform group-hover:-translate-x-1" />
+                                <ChevronLeft className="w-6 h-6 md:w-12 md:h-12 transition-transform group-hover:-translate-x-1" />
                             </button>
                             <button
                                 onClick={(e) => { e.stopPropagation(); navigateLightbox('next'); }}
-                                className="p-8 bg-black/40 hover:bg-white hover:text-black rounded-full text-white transition-all pointer-events-auto backdrop-blur-2xl border border-white/10 group active:scale-95"
+                                className="p-3 md:p-8 bg-black/40 hover:bg-white hover:text-black rounded-full text-white transition-all pointer-events-auto backdrop-blur-2xl border border-white/10 group active:scale-95"
                             >
-                                <ChevronRight className="w-12 h-12 transition-transform group-hover:translate-x-1" />
+                                <ChevronRight className="w-6 h-6 md:w-12 md:h-12 transition-transform group-hover:translate-x-1" />
                             </button>
+                        </div>
+
+                        <div className="absolute bottom-32 left-1/2 -translate-x-1/2 md:hidden px-3 py-1.5 rounded-full bg-black/60 text-zinc-300 text-[11px] border border-white/10">
+                            Przesuń palcem, aby zmienić zdjęcie
                         </div>
 
                         {/* Thumbnails */}

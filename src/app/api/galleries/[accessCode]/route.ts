@@ -4,6 +4,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { withAuth } from '@/lib/auth/middleware';
+import { extractToken, verifyToken } from '@/lib/auth/jwt';
 import { logCrmActivity } from '@/lib/crm-activity';
 
 export async function GET(
@@ -41,6 +42,59 @@ export async function GET(
                 { success: false, error: 'Galeria nie znaleziona' },
                 { status: 404 }
             );
+        }
+
+        const authHeader = request.headers.get('authorization') || request.headers.get('Authorization');
+        const token = extractToken(authHeader);
+
+        let authUser: { id: number; email: string; role: string } | null = null;
+        if (token) {
+            const decoded = await verifyToken(token);
+            if (decoded) {
+                const user = await prisma.user.findUnique({
+                    where: { id: decoded.id },
+                    select: { id: true, email: true, role: true, is_active: true },
+                });
+                if (user?.is_active) {
+                    authUser = { id: user.id, email: user.email, role: user.role };
+                }
+            }
+        }
+
+        const ownerById = !!authUser && !!gallery.client_id && authUser.id === gallery.client_id;
+        const ownerByEmail = !!authUser && !!gallery.client_email && authUser.email.toLowerCase() === gallery.client_email.toLowerCase();
+        const privilegedRole = !!authUser && (authUser.role === 'ADMIN' || authUser.role === 'PHOTOGRAPHER');
+        const isOwner = ownerById || ownerByEmail || privilegedRole;
+
+        // INDIVIDUAL galleries are private by default.
+        // Access paths:
+        // 1) owner/admin/photographer via authenticated account,
+        // 2) family via admin-configured share password.
+        if (gallery.gallery_mode !== 'GROUP' && !isOwner) {
+            const configuredSharePassword = (gallery.group_password || '').trim();
+            const providedSharePassword = (request.headers.get('x-gallery-password') || '').trim();
+
+            if (!configuredSharePassword) {
+                return NextResponse.json(
+                    {
+                        success: false,
+                        code: 'OWNER_ONLY',
+                        error: 'Ta galeria jest prywatna. Właściciel musi wejść po zalogowaniu.',
+                    },
+                    { status: 403 }
+                );
+            }
+
+            if (providedSharePassword !== configuredSharePassword) {
+                return NextResponse.json(
+                    {
+                        success: false,
+                        code: 'PASSWORD_REQUIRED',
+                        error: 'Podaj hasło udostępniania galerii.',
+                    },
+                    { status: 401 }
+                );
+            }
         }
 
         // Check if gallery is active

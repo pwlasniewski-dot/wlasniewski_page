@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
                     booking_id: booking_id ? Number(booking_id) : undefined,
                     gallery_mode: mode,
                     group_access_code,
-                    group_password: mode === 'GROUP' && group_password ? String(group_password) : null,
+                    group_password: group_password ? String(group_password) : null,
                     max_photos_for_print: max_photos_for_print ? Number(max_photos_for_print) : null,
                 }
             });
@@ -101,6 +101,9 @@ export async function POST(request: NextRequest) {
                 const introText = mode === 'GROUP'
                     ? `Twoja galeria grupowa jest gotowa! Rozdaj poniższy kod uczestnikom (np. rodzicom). Każdy z nich wchodzi na <strong>${galleryUrl}</strong>, wpisuje ten sam kod i wybiera unikalny awatar, aby przeglądać oraz wybrać swoje zdjęcia.`
                     : 'Twoja galeria zdjęć jest gotowa! Możesz teraz przeglądać swoje zdjęcia i wybrać te, które chcesz zachować.';
+                const familyShareInfo = mode === 'INDIVIDUAL' && group_password
+                    ? `<p style="color:#ccc;font-size:14px;line-height:1.6;margin:16px 0 0;">Hasło do udostępnienia rodzinie: <strong style="color:#fff;">${String(group_password)}</strong></p>`
+                    : '';
                 const expiresFormatted = expiresAt.toLocaleDateString('pl-PL', {
                     day: 'numeric', month: 'long', year: 'numeric'
                 });
@@ -125,6 +128,7 @@ export async function POST(request: NextRequest) {
       <p style="color:#ccc;font-size:16px;line-height:1.6;margin:0 0 24px;">
         ${introText}
       </p>
+            ${familyShareInfo}
       
       <div style="background:#1a1a1a;border:1px solid #c5a059;border-radius:8px;padding:24px;margin:24px 0;text-align:center;">
         <p style="color:#888;font-size:12px;margin:0 0 8px;text-transform:uppercase;letter-spacing:2px;">${codeLabel}</p>

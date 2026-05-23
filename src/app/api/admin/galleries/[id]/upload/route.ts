@@ -4,7 +4,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { withAuth } from '@/lib/auth/middleware';
-import { processGalleryPhoto } from '@/lib/gallery-utils';
+import crypto from 'crypto';
+import { processGalleryPhoto, deleteGalleryPhoto } from '@/lib/gallery-utils';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -71,6 +72,33 @@ export async function POST(
 
             let currentIndex = (maxPhoto?.order_index || 0) + 1;
             const uploadedPhotos = [];
+            const duplicates: Array<{ name: string; reason: string }> = [];
+
+            const existingPhotos = await prisma.galleryPhoto.findMany({
+                where: { gallery_id: galleryId },
+                select: {
+                    id: true,
+                    file_url: true,
+                    thumbnail_url: true,
+                    file_size: true,
+                    width: true,
+                    height: true,
+                },
+            });
+
+            const existingHashes = new Map<number, string>();
+            const uploadedHashesInRequest = new Set<string>();
+
+            const hashRemoteImage = async (url: string): Promise<string | null> => {
+                try {
+                    const res = await fetch(url, { cache: 'no-store' });
+                    if (!res.ok) return null;
+                    const buffer = Buffer.from(await res.arrayBuffer());
+                    return crypto.createHash('sha256').update(buffer).digest('hex');
+                } catch {
+                    return null;
+                }
+            };
 
             // Process each file
             for (const file of files) {
@@ -81,6 +109,42 @@ export async function POST(
                     skipOptimization,
                     sourceMimeType: file.type,
                 });
+
+                // Exact duplicate within current request batch.
+                if (uploadedHashesInRequest.has(processed.content_hash)) {
+                    duplicates.push({ name: file.name, reason: 'duplikat w paczce uploadu' });
+                    await deleteGalleryPhoto(processed.file_url, processed.thumbnail_url);
+                    continue;
+                }
+
+                // Exact duplicate against existing gallery photos (hash check with metadata prefilter).
+                const sameMetadataCandidates = existingPhotos.filter((photo) => (
+                    photo.file_size === processed.file_size
+                    && (photo.width || 0) === processed.width
+                    && (photo.height || 0) === processed.height
+                ));
+
+                let isDuplicate = false;
+                for (const candidate of sameMetadataCandidates) {
+                    let candidateHash = existingHashes.get(candidate.id);
+                    if (!candidateHash) {
+                        candidateHash = await hashRemoteImage(candidate.file_url) || '';
+                        if (candidateHash) {
+                            existingHashes.set(candidate.id, candidateHash);
+                        }
+                    }
+
+                    if (candidateHash && candidateHash === processed.content_hash) {
+                        isDuplicate = true;
+                        break;
+                    }
+                }
+
+                if (isDuplicate) {
+                    duplicates.push({ name: file.name, reason: 'zdjęcie już istnieje w galerii' });
+                    await deleteGalleryPhoto(processed.file_url, processed.thumbnail_url);
+                    continue;
+                }
 
                 // Save to database
                 const photo = await prisma.galleryPhoto.create({
@@ -97,12 +161,15 @@ export async function POST(
                 });
 
                 uploadedPhotos.push(photo);
+                uploadedHashesInRequest.add(processed.content_hash);
             }
 
             return NextResponse.json({
                 success: true,
                 message: `Uploaded ${uploadedPhotos.length} photo(s)`,
                 photos: uploadedPhotos,
+                duplicate_count: duplicates.length,
+                duplicates,
             });
         } catch (error: any) {
             console.error(`[GALLERY_UPLOAD:${uploadErrorId}] Error uploading photos:`, {

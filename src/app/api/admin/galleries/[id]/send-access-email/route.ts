@@ -24,6 +24,7 @@ export async function POST(
                     access_code: true,
                     gallery_mode: true,
                     group_access_code: true,
+                    group_password: true,
                     expires_at: true,
                 },
             });
@@ -59,6 +60,9 @@ export async function POST(
             const introText = isGroupMode
                 ? `Twoja galeria grupowa jest gotowa. Rozdaj poniższy kod uczestnikom. Każdy z nich wchodzi na ${galleryUrl}, wpisuje ten sam kod i wybiera własny awatar.`
                 : 'Twoja galeria zdjęć jest gotowa. Możesz teraz przeglądać zdjęcia i wybrać te, które chcesz zachować.';
+            const familyShareInfo = !isGroupMode && gallery.group_password
+              ? `<p style="color:#ccc;font-size:14px;line-height:1.6;margin:16px 0 0;">Hasło do udostępnienia rodzinie: <strong style="color:#fff;">${gallery.group_password}</strong></p>`
+              : '';
 
             const expiresAt = gallery.expires_at
                 ? new Date(gallery.expires_at)
@@ -87,6 +91,7 @@ export async function POST(
     <div style="background:#111;border:1px solid #222;border-radius:12px;padding:40px;margin-bottom:24px;">
       <h2 style="color:#fff;font-size:24px;margin:0 0 16px;">Cześć, ${gallery.client_name}! 👋</h2>
       <p style="color:#ccc;font-size:16px;line-height:1.6;margin:0 0 24px;">${introText}</p>
+      ${familyShareInfo}
 
       <div style="background:#1a1a1a;border:1px solid #c5a059;border-radius:8px;padding:24px;margin:24px 0;text-align:center;">
         <p style="color:#888;font-size:12px;margin:0 0 8px;text-transform:uppercase;letter-spacing:2px;">${codeLabel}</p>

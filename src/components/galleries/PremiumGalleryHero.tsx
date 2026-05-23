@@ -276,7 +276,7 @@ export function PremiumGalleryStory({
   if (photos.length === 0) return null;
 
   return (
-    <div className="w-full">
+    <div className="w-full overflow-x-hidden">
       {photos.map((photo, index) => {
         const isLight = index % 2 === 0;
         return (

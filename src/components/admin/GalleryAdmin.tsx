@@ -170,9 +170,9 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
                 description: editData.description,
                 gallery_mode: editData.gallery_mode,
             };
+            payload.group_password = editData.group_password || null;
             if (editData.gallery_mode === 'GROUP') {
                 payload.group_access_code = editData.group_access_code || null;
-                payload.group_password = editData.group_password || null;
                 payload.max_photos_for_print = editData.max_photos_for_print === '' ? null : Number(editData.max_photos_for_print);
             }
             const res = await fetch(getApiUrl(`admin/galleries/${galleryId}`), {
@@ -216,7 +216,7 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
                     expires_at: expiresAt.toISOString(),
                     send_email: newGallery.send_email,
                     group_access_code: newGallery.gallery_mode === 'GROUP' ? newGallery.group_access_code : undefined,
-                    group_password: newGallery.gallery_mode === 'GROUP' && newGallery.group_password ? newGallery.group_password : undefined,
+                    group_password: newGallery.group_password ? newGallery.group_password : undefined,
                     max_photos_for_print: newGallery.gallery_mode === 'GROUP' && newGallery.max_photos_for_print ? Number(newGallery.max_photos_for_print) : undefined,
                 })
             });
@@ -379,21 +379,23 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
                         body: formData,
                     });
 
+                    const payload = await res.json().catch(() => null);
+
                     if (res.ok) {
-                        uploadedCount++;
+                        const duplicateCount = Number(payload?.duplicate_count || 0);
+                        if (duplicateCount > 0) {
+                            failedCount++;
+                            const duplicateName = payload?.duplicates?.[0]?.name || file.name;
+                            failedDetails.push(`${duplicateName}: duplikat (już istnieje w galerii)`);
+                        } else {
+                            uploadedCount++;
+                        }
                     } else {
                         failedCount++;
-                        const rawError = await res.text();
-                        let parsedError = '';
-                        try {
-                            const payload = JSON.parse(rawError);
-                            parsedError = payload?.error || payload?.details || '';
-                        } catch {
-                            parsedError = rawError || '';
-                        }
+                        const parsedError = payload?.error || payload?.details || '';
                         const shortError = parsedError ? `${file.name}: ${parsedError}` : `${file.name}: Upload nieudany`;
                         failedDetails.push(shortError);
-                        console.error(`Failed to upload ${file.name}:`, parsedError || rawError);
+                        console.error(`Failed to upload ${file.name}:`, parsedError || 'Upload failed');
                     }
                 } catch (fileError) {
                     failedCount++;
@@ -610,6 +612,20 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
                             </div>
                         </div>
                     )}
+
+                    {newGallery.gallery_mode === 'INDIVIDUAL' && (
+                        <div className="space-y-2 p-4 bg-zinc-900/70 border border-zinc-800 rounded-xl">
+                            <label className="block text-xs uppercase font-bold text-zinc-500 ml-1">Hasło udostępniania rodzinie (opcjonalne)</label>
+                            <input
+                                type="text"
+                                value={newGallery.group_password}
+                                onChange={e => setNewGallery({ ...newGallery, group_password: e.target.value })}
+                                placeholder="np. rodzina-nowak"
+                                className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:border-gold-500 outline-none transition-colors"
+                            />
+                            <p className="text-[11px] text-zinc-500">Właściciel galerii wejdzie po zalogowaniu. To hasło służy tylko do udostępnienia linku rodzinie.</p>
+                        </div>
+                    )}
                     <button
                         type="submit"
                         disabled={creating}
@@ -793,6 +809,25 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
                                         placeholder="np. 5"
                                         className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:border-purple-500 outline-none transition-all"
                                     />
+                                </div>
+                            </div>
+                        )}
+
+                        {editData.gallery_mode === 'INDIVIDUAL' && (
+                            <div className="col-span-1 md:col-span-4 grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-zinc-900/70 border border-zinc-800 rounded-xl">
+                                <div className="space-y-2">
+                                    <label className="block text-xs font-bold text-zinc-500 uppercase ml-1 tracking-widest">Hasło udostępniania rodzinie</label>
+                                    <input
+                                        type="text"
+                                        value={editData.group_password}
+                                        onChange={(e) => setEditData({ ...editData, group_password: e.target.value })}
+                                        placeholder="puste = tylko właściciel"
+                                        className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:border-gold-500 outline-none transition-all"
+                                    />
+                                </div>
+                                <div className="text-xs text-zinc-500 leading-relaxed self-center">
+                                    W tym trybie: właściciel galerii ma dostęp po zalogowaniu na swoje konto.
+                                    Dodatkowo może przekazać link rodzinie z tym hasłem.
                                 </div>
                             </div>
                         )}

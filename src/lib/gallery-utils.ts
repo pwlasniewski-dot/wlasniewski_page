@@ -11,6 +11,7 @@ export interface ProcessedPhoto {
     file_size: number;
     width: number;
     height: number;
+    content_hash: string;
 }
 
 /**
@@ -70,6 +71,7 @@ export async function processGalleryPhoto(
 
     // Get file size
     const file_size = processedBuffer.length;
+    const content_hash = crypto.createHash('sha256').update(processedBuffer).digest('hex');
 
     // Upload main image to S3
     const file_url = await uploadToS3(processedBuffer, `${folderPath}/${filename}`, mimeType);
@@ -105,6 +107,7 @@ export async function processGalleryPhoto(
         file_size,
         width,
         height,
+        content_hash,
     };
 }
 
