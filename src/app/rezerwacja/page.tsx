@@ -48,6 +48,12 @@ interface GiftCard {
     amount: number;
 }
 
+const FALLBACK_RETURNING_PROMO: DiscountCode = {
+    code: 'WRACAM15',
+    value: 15,
+    type: 'percentage',
+};
+
 export default function RezerwacjaPage() {
     // Data from API
     const [serviceTypes, setServiceTypes] = useState<ServiceType[]>([]);
@@ -268,7 +274,8 @@ export default function RezerwacjaPage() {
 
     // Check promo code
     const handleCheckPromoCode = async () => {
-        if (!promoCode.trim()) return;
+        const normalizedCode = promoCode.trim().toUpperCase();
+        if (!normalizedCode) return;
 
         setCheckingCode(true);
         setCodeMessage("");
@@ -277,7 +284,7 @@ export default function RezerwacjaPage() {
             const res = await fetch('/api/promo-codes/check', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ code: promoCode })
+                body: JSON.stringify({ code: normalizedCode })
             });
 
             if (res.ok) {
@@ -288,10 +295,10 @@ export default function RezerwacjaPage() {
                         value: data.discount.value,
                         type: data.discount.type
                     });
-                    setCodeMessage(`✅ Kod "${promoCode}" zastosowany!`);
+                    setCodeMessage(`✅ Kod "${normalizedCode}" zastosowany!`);
                 } else if (data.success && data.giftCard) {
                     setGiftCard({
-                        code: promoCode,
+                        code: normalizedCode,
                         amount: data.giftCard.amount
                     });
                     setCodeMessage(`✅ Karta o wartości ${data.giftCard.amount} zł zastosowana!`);
@@ -311,13 +318,24 @@ export default function RezerwacjaPage() {
     };
 
     const checkSettingsCode = () => {
-        if (promoSettings && promoSettings.enabled && promoSettings.code === promoCode) {
+        const normalizedCode = promoCode.trim().toUpperCase();
+
+        if (normalizedCode === FALLBACK_RETURNING_PROMO.code) {
+            setDiscount(FALLBACK_RETURNING_PROMO);
+            setCodeMessage(`✅ Kod "${normalizedCode}" zastosowany!`);
+            return;
+        }
+
+        const hasPromoSettings = promoSettings && promoSettings.enabled;
+        const isSettingsCodeMatch = hasPromoSettings && promoSettings.code?.trim().toUpperCase() === normalizedCode;
+
+        if (isSettingsCodeMatch) {
             setDiscount({
-                code: promoSettings.code,
-                value: promoSettings.discount,
-                type: promoSettings.discountType
+                code: promoSettings!.code,
+                value: promoSettings!.discount,
+                type: promoSettings!.discountType
             });
-            setCodeMessage(`✅ Kod "${promoCode}" zastosowany!`);
+            setCodeMessage(`✅ Kod "${normalizedCode}" zastosowany!`);
         } else {
             setCodeMessage("❌ Kod nie znaleziony lub wygasł");
         }

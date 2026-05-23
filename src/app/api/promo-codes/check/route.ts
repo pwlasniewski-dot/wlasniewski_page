@@ -4,8 +4,9 @@ import prisma from '@/lib/db/prisma';
 export async function POST(request: Request) {
     try {
         const { code } = await request.json();
+        const normalizedCode = String(code || '').trim().toUpperCase();
 
-        if (!code) {
+        if (!normalizedCode) {
             return NextResponse.json(
                 { success: false, message: 'Kod jest wymagany' },
                 { status: 400 }
@@ -15,7 +16,7 @@ export async function POST(request: Request) {
         const promoCode = await prisma.promoCode.findFirst({
             where: {
                 code: {
-                    equals: code,
+                    equals: normalizedCode,
                     mode: 'insensitive'
                 }
             },
@@ -65,7 +66,7 @@ export async function POST(request: Request) {
         const giftCard = await prisma.giftCard.findFirst({
             where: {
                 code: {
-                    equals: code,
+                    equals: normalizedCode,
                     mode: 'insensitive'
                 },
                 is_active: true,
@@ -88,6 +89,18 @@ export async function POST(request: Request) {
                     code: giftCard.code,
                     amount: giftCard.value, // value is in PLN
                 }
+            });
+        }
+
+        // Campaign fallback used in post-gallery upsell.
+        if (normalizedCode === 'WRACAM15') {
+            return NextResponse.json({
+                success: true,
+                discount: {
+                    code: 'WRACAM15',
+                    value: 15,
+                    type: 'percentage',
+                },
             });
         }
 
