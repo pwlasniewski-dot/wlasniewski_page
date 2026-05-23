@@ -7,7 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import {
     User, Calendar, Image as ImageIcon,
     FileText, Shield, Trash2, ExternalLink, RefreshCw, Cloud, Download,
-    ChevronLeft, Save, Mail, MapPin, Phone, Edit, Plus, Lock, CheckCircle2, AlertTriangle, Upload,
+    ChevronLeft, Save, Mail, MapPin, Phone, Edit, Plus, Lock, CheckCircle2, AlertTriangle, Upload, ShoppingCart,
     Activity, Eye, PenTool, MessageSquare, FileUp, Package, Clock
 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -1673,6 +1673,9 @@ function ClientDetailsContent({ id }: { id: string }) {
                                         contract_scan_uploaded: { icon: FileUp, color: 'text-emerald-400', label: 'Wgrał skan umowy' },
                                         contract_note_added: { icon: MessageSquare, color: 'text-yellow-400', label: 'Dodał notatkę' },
                                         contract_pdf_downloaded: { icon: Download, color: 'text-cyan-400', label: 'Pobrał PDF umowy' },
+                                        gallery_viewed: { icon: ImageIcon, color: 'text-indigo-400', label: 'Przeglądał galerię' },
+                                        gallery_photo_selected: { icon: CheckCircle2, color: 'text-indigo-300', label: 'Wybrał zdjęcia w galerii' },
+                                        gallery_order_placed: { icon: ShoppingCart, color: 'text-emerald-400', label: 'Złożył zamówienie z galerii' },
                                         login: { icon: User, color: 'text-zinc-400', label: 'Zalogował się' },
                                         error: { icon: AlertTriangle, color: 'text-red-500', label: 'Wystąpił błąd' },
                                     };

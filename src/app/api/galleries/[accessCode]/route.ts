@@ -4,6 +4,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { withAuth } from '@/lib/auth/middleware';
+import { logCrmActivity } from '@/lib/crm-activity';
 
 export async function GET(
     request: NextRequest,
@@ -78,6 +79,49 @@ export async function GET(
                 ids.forEach(id => paidPhotoIds.add(id));
             } catch (e) { }
         });
+
+        // Avoid spamming CRM activity on page refreshes: log at most once per 10 minutes per gallery/client.
+        if (gallery.client_id || gallery.client_email) {
+            const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+            const identityWhere = gallery.client_id && gallery.client_email
+                ? {
+                    OR: [
+                        { client_id: gallery.client_id },
+                        { client_email: gallery.client_email },
+                    ],
+                }
+                : gallery.client_id
+                    ? { client_id: gallery.client_id }
+                    : { client_email: gallery.client_email };
+
+            const recentView = await prisma.crmActivity.findFirst({
+                where: {
+                    action: 'gallery_viewed',
+                    entity_type: 'gallery',
+                    entity_id: gallery.id,
+                    ...identityWhere,
+                    created_at: {
+                        gte: tenMinutesAgo,
+                    },
+                },
+                select: { id: true },
+            });
+
+            if (!recentView) {
+                logCrmActivity({
+                    clientId: gallery.client_id,
+                    clientEmail: gallery.client_email,
+                    action: 'gallery_viewed',
+                    entityType: 'gallery',
+                    entityId: gallery.id,
+                    details: {
+                        client_name: gallery.client_name,
+                        access_code: gallery.access_code,
+                    },
+                    request,
+                });
+            }
+        }
 
         return NextResponse.json({
             success: true,
