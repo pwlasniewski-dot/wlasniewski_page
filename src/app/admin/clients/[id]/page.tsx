@@ -40,8 +40,109 @@ interface ClientDetails {
     contracts: any[];
     baskets: any[];
     challenges?: any[];
-    permissions?: Record<string, boolean> | null;
+    permissions?: Record<string, any> | null;
     workshops_enabled?: boolean;
+    session_plan?: {
+        date: string | null;
+        time: string | null;
+        location: string | null;
+    } | null;
+}
+
+function parsePriceFromText(input: unknown): number {
+    if (typeof input === 'number' && Number.isFinite(input)) return input;
+    if (typeof input !== 'string') return 0;
+    const normalized = input.replace(/\s/g, '').replace(',', '.');
+    const numeric = normalized.match(/\d+(?:\.\d+)?/);
+    if (!numeric) return 0;
+    const parsed = Number(numeric[0]);
+    return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function formatCurrency(value: number): string {
+    return `${value.toLocaleString('pl-PL')} PLN`;
+}
+
+function buildAcceptedOfferSummary(offer: any): Array<{ label: string; value: string }> {
+    const rows: Array<{ label: string; value: string }> = [];
+    const cs = offer?.client_selection || {};
+
+    if (cs.selectedPackage?.name) {
+        rows.push({
+            label: 'Pakiet',
+            value: cs.selectedPackage.price
+                ? `${cs.selectedPackage.name} (${cs.selectedPackage.price})`
+                : String(cs.selectedPackage.name),
+        });
+    }
+
+    if (typeof cs.childCount === 'number') {
+        rows.push({ label: 'Liczba dzieci', value: String(cs.childCount) });
+    }
+
+    if (cs.groupBreakdown) {
+        const adults = Number(cs.groupBreakdown.adults) || 0;
+        const children = Number(cs.groupBreakdown.children) || 0;
+        rows.push({ label: 'Skład grupy', value: `${adults} dorosłych + ${children} dzieci` });
+    }
+
+    const breakdown = Array.isArray(cs.packagesBreakdown) ? cs.packagesBreakdown : [];
+    breakdown.forEach((pkg: any) => {
+        const subtotal = Number(pkg?.subtotal) || 0;
+        const count = Number(pkg?.count) || 0;
+        const name = pkg?.name || 'Pakiet';
+        const unit = pkg?.price || '';
+        rows.push({
+            label: `Pozycja: ${name}`,
+            value: `${count} x ${unit}${subtotal > 0 ? ` = ${formatCurrency(subtotal)}` : ''}`,
+        });
+    });
+
+    let addons: any[] = [];
+    if (Array.isArray(offer?.selected_addons)) {
+        addons = offer.selected_addons;
+    } else if (typeof offer?.selected_addons === 'string') {
+        try {
+            const parsed = JSON.parse(offer.selected_addons);
+            if (Array.isArray(parsed)) addons = parsed;
+        } catch {
+            addons = [];
+        }
+    }
+    addons.forEach((addon: any) => {
+        const title = addon?.album_title || addon?.title || addon?.name || 'Album';
+        const format = addon?.format || addon?.size || addon?.variant || null;
+        const qty = Number(addon?.quantity) || 1;
+        const price = Number(addon?.final_price) || parsePriceFromText(addon?.price);
+        rows.push({
+            label: `Album: ${title}`,
+            value: `${format ? `${format} • ` : ''}${qty} szt.${price > 0 ? ` • ${formatCurrency(price)}` : ''}`,
+        });
+    });
+
+    const voucher = cs.familyVoucher;
+    if (voucher?.enabled) {
+        const voucherName = voucher.packageName || 'Voucher rodzinny';
+        const voucherPrice = voucher.packagePriceLabel || 'cena ukryta';
+        rows.push({
+            label: 'Voucher',
+            value: `${voucherName} (${voucherPrice})`,
+        });
+    }
+
+    if (Array.isArray(cs.selectedOptionalItems) && cs.selectedOptionalItems.length > 0) {
+        rows.push({
+            label: 'Dodatki',
+            value: `${cs.selectedOptionalItems.length} pozycji wybranych przez klienta`,
+        });
+    }
+
+    const total = Number(cs.totalPrice) || Number(offer?.total_price) || 0;
+    if (total > 0) {
+        rows.push({ label: 'Razem', value: formatCurrency(total) });
+    }
+
+    return rows;
 }
 
 function ClientDetailsContent({ id }: { id: string }) {
@@ -219,7 +320,10 @@ function ClientDetailsContent({ id }: { id: string }) {
         address: '',
         city: '',
         postal_code: '',
-        is_active: true
+        is_active: true,
+        session_plan_date: '',
+        session_plan_time: '',
+        session_plan_location: '',
     });
 
     useEffect(() => {
@@ -251,7 +355,10 @@ function ClientDetailsContent({ id }: { id: string }) {
                     address: data.client.address || '',
                     city: data.client.city || '',
                     postal_code: data.client.postal_code || '',
-                    is_active: data.client.is_active ?? true
+                    is_active: data.client.is_active ?? true,
+                    session_plan_date: data.client.session_plan?.date || '',
+                    session_plan_time: data.client.session_plan?.time || '',
+                    session_plan_location: data.client.session_plan?.location || '',
                 });
                 // Load persisted permissions or default all to true
                 if (data.client.permissions && typeof data.client.permissions === 'object') {
@@ -279,7 +386,20 @@ function ClientDetailsContent({ id }: { id: string }) {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(editForm)
+                body: JSON.stringify({
+                    name: editForm.name,
+                    email: editForm.email,
+                    phone: editForm.phone,
+                    address: editForm.address,
+                    city: editForm.city,
+                    postal_code: editForm.postal_code,
+                    is_active: editForm.is_active,
+                    session_plan: {
+                        date: editForm.session_plan_date || null,
+                        time: editForm.session_plan_time || null,
+                        location: editForm.session_plan_location || null,
+                    },
+                })
             });
 
             if (res.ok) {
@@ -1121,7 +1241,8 @@ function ClientDetailsContent({ id }: { id: string }) {
                             {client.offers?.length > 0 ? (
                                 client.offers.map((offer: any) => (
                                     <div key={offer.id} className="space-y-4">
-                                        <div className="bg-zinc-900 hover:bg-zinc-800/80 p-6 rounded-xl border border-zinc-800 transition-all group flex items-center justify-between">
+                                        <div className="bg-zinc-900 hover:bg-zinc-800/80 p-6 rounded-xl border border-zinc-800 transition-all group">
+                                            <div className="flex items-center justify-between gap-4">
                                             <div className="flex items-center gap-6">
                                                 <div className={`w-2 h-12 rounded-full ${offer.type === 'b2b' ? 'bg-indigo-500' : 'bg-rose-500'}`} />
                                                 <div>
@@ -1261,67 +1382,31 @@ function ClientDetailsContent({ id }: { id: string }) {
                                                 </div>
                                             </div>
 
+                                            </div>
+
                                             {/* Detailed breakdown for accepted offers */}
-                                            {offer.status === 'accepted' && offer.client_selection && (
-                                                <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-xl p-4 ml-14 animate-in fade-in slide-in-from-top-2 duration-300">
-                                                    <div className="flex flex-wrap gap-6 items-start">
-                                                        {offer.client_selection.childCount !== undefined && (
-                                                            <div>
-                                                                <p className="text-[10px] text-zinc-500 uppercase font-bold mb-1">Liczba dzieci</p>
-                                                                <p className="text-xl font-bold text-gold-400">{offer.client_selection.childCount}</p>
-                                                            </div>
-                                                        )}
-
-                                                        {offer.client_selection.selectedPackage && (
-                                                            <div>
-                                                                <p className="text-[10px] text-zinc-500 uppercase font-bold mb-1">Wybrany pakiet</p>
-                                                                <p className="text-sm font-bold text-white mb-1">{offer.client_selection.selectedPackage.name}</p>
-                                                                <p className="text-xs text-zinc-400">{offer.client_selection.selectedPackage.price}</p>
-                                                            </div>
-                                                        )}
-
-                                                        {offer.client_selection.packagesBreakdown && offer.client_selection.packagesBreakdown.length > 0 && (
-                                                            <div className="flex-1">
-                                                                <p className="text-[10px] text-zinc-500 uppercase font-bold mb-2">Rozliczenie pakietów</p>
-                                                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                                                                    {offer.client_selection.packagesBreakdown.map((pkg: any, idx: number) => (
-                                                                        <div key={idx} className="bg-zinc-950/50 p-2 rounded-lg border border-zinc-800">
-                                                                            <p className="text-xs font-bold text-zinc-300 truncate" title={pkg.name}>{pkg.name}</p>
-                                                                            <div className="flex justify-between items-end mt-1">
-                                                                                <p className="text-xs text-zinc-500">{pkg.count} x {pkg.price}</p>
-                                                                                <p className="font-bold text-white text-xs">{pkg.subtotal?.toLocaleString() || 0} PLN</p>
-                                                                            </div>
-                                                                        </div>
-                                                                    ))}
+                                            {offer.status === 'accepted' && (
+                                                <div className="mt-4 bg-zinc-900/40 border border-zinc-800/50 rounded-xl p-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                                                    <p className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider mb-3">Szczegóły akceptacji klienta</p>
+                                                    {buildAcceptedOfferSummary(offer).length > 0 ? (
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                            {buildAcceptedOfferSummary(offer).map((row, idx) => (
+                                                                <div key={idx} className="bg-zinc-950/50 p-3 rounded-lg border border-zinc-800">
+                                                                    <p className="text-[10px] text-zinc-500 uppercase font-bold mb-1">{row.label}</p>
+                                                                    <p className="text-sm text-zinc-200 whitespace-pre-wrap">{row.value}</p>
                                                                 </div>
-                                                            </div>
-                                                        )}
-
-                                                        {offer.client_selection.selectedOptionalItems && offer.client_selection.selectedOptionalItems.length > 0 && (
-                                                            <div>
-                                                                <p className="text-[10px] text-zinc-500 uppercase font-bold mb-1">Dodatki</p>
-                                                                <p className="text-xs text-zinc-400">{offer.client_selection.selectedOptionalItems.length} wybranych</p>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                            {/* Client note (notatka klienta) */}
-                                            {offer.client_note && (
-                                                <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-4 ml-14 mt-2">
-                                                    <p className="text-[10px] font-bold text-amber-500 uppercase tracking-widest mb-1 flex items-center gap-1.5">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" /></svg>
-                                                        Notatka od klienta
-                                                    </p>
-                                                    <p className="text-sm text-zinc-200 whitespace-pre-wrap">{offer.client_note}</p>
+                                                            ))}
+                                                        </div>
+                                                    ) : (
+                                                        <p className="text-sm text-zinc-400">Brak szczegółów wyboru zapisanych w tej ofercie.</p>
+                                                    )}
                                                 </div>
                                             )}
                                         </div>
 
                                         {/* Client note (notatka klienta) */}
                                         {offer.client_note && (
-                                            <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-4 ml-14 mt-2">
+                                            <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-4 mt-2">
                                                 <p className="text-[10px] font-bold text-amber-500 uppercase tracking-widest mb-1 flex items-center gap-1.5">
                                                     <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" /></svg>
                                                     Notatka od klienta
@@ -1593,6 +1678,41 @@ function ClientDetailsContent({ id }: { id: string }) {
                                             className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-3 text-white outline-none focus:border-gold-500 transition-colors"
                                         />
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="bg-zinc-900 p-8 rounded-xl border border-zinc-800 space-y-6 md:col-span-2">
+                            <h2 className="text-xl font-bold text-white mb-2">Plan Sesji (do umowy)</h2>
+                            <p className="text-sm text-zinc-500">Ta data i godzina będą użyte przy tworzeniu nowej umowy dla klienta, bez ponownej akceptacji oferty.</p>
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label className="text-xs text-zinc-500 block mb-2 font-bold uppercase tracking-wider">Data sesji</label>
+                                    <input
+                                        type="date"
+                                        value={editForm.session_plan_date}
+                                        onChange={e => setEditForm({ ...editForm, session_plan_date: e.target.value })}
+                                        className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-3 text-white outline-none focus:border-gold-500 transition-colors"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-xs text-zinc-500 block mb-2 font-bold uppercase tracking-wider">Godzina sesji</label>
+                                    <input
+                                        type="time"
+                                        value={editForm.session_plan_time}
+                                        onChange={e => setEditForm({ ...editForm, session_plan_time: e.target.value })}
+                                        className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-3 text-white outline-none focus:border-gold-500 transition-colors"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-xs text-zinc-500 block mb-2 font-bold uppercase tracking-wider">Miejsce sesji</label>
+                                    <input
+                                        value={editForm.session_plan_location}
+                                        onChange={e => setEditForm({ ...editForm, session_plan_location: e.target.value })}
+                                        placeholder="np. Grudziądz, park miejski"
+                                        className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-3 text-white outline-none focus:border-gold-500 transition-colors"
+                                    />
                                 </div>
                             </div>
                         </div>

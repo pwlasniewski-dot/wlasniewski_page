@@ -21,6 +21,7 @@ interface ContractData {
     clientEmail: string;
     clientPhone: string;
     eventDate: string;
+    eventDateIso: string;
     eventTime: string;
     eventLocation: string;
     eventCount: string;
@@ -70,6 +71,7 @@ export default function ContractBuilder() {
         clientEmail: '',
         clientPhone: '',
         eventDate: '',
+        eventDateIso: '',
         eventTime: '',
         eventLocation: '',
         eventCount: '',
@@ -117,6 +119,21 @@ export default function ContractBuilder() {
         }
     }, [offerId, clientId]);
 
+    const extractSessionPlan = (permissions: unknown) => {
+        if (!permissions || typeof permissions !== 'object' || Array.isArray(permissions)) {
+            return { date: '', time: '', location: '' };
+        }
+        const raw = (permissions as any).session_plan;
+        if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+            return { date: '', time: '', location: '' };
+        }
+        return {
+            date: typeof raw.date === 'string' ? raw.date : '',
+            time: typeof raw.time === 'string' ? raw.time : '',
+            location: typeof raw.location === 'string' ? raw.location : '',
+        };
+    };
+
     const fetchClientAndPickOffer = async (cid: string) => {
         try {
             const token = localStorage.getItem('admin_token');
@@ -126,6 +143,7 @@ export default function ContractBuilder() {
             if (!res.ok) throw new Error('Klient nie znaleziony');
             const json = await res.json();
             const client = json.client;
+            const sessionPlan = extractSessionPlan(client?.permissions || {});
             const offers: any[] = client.offers || [];
             // Wybierz najlepszą ofertę: accepted > negotiating > pending > sent > najnowsza
             const order = ['accepted', 'negotiating', 'pending', 'sent'];
@@ -152,6 +170,10 @@ export default function ContractBuilder() {
                 clientName: client.name || client.email || '',
                 clientEmail: client.email || '',
                 clientPhone: client.phone || '',
+                eventDateIso: sessionPlan.date || '',
+                eventDate: sessionPlan.date ? new Date(sessionPlan.date).toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' }) : '',
+                eventTime: sessionPlan.time || '',
+                eventLocation: sessionPlan.location || '',
                 content: getContractTemplate(suggested),
             }));
             toast('Klient nie ma jeszcze ofert — wypełniono dane klienta. Pozostałe pola uzupełnij ręcznie.', { icon: 'ℹ️' });
@@ -217,16 +239,20 @@ export default function ContractBuilder() {
                 // Wybór szablonu wg kategorii oferty (komunia/urodziny/slub/...).
                 const suggested = suggestTemplateForCategory(offer.category);
                 setTemplateKey(suggested);
-                const eventDateStr = offer.session_date
-                    ? new Date(offer.session_date).toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' })
+                const sessionPlan = extractSessionPlan(offer.user?.permissions || {});
+                const eventDateIso = sessionPlan.date || (offer.session_date ? new Date(offer.session_date).toISOString().slice(0, 10) : '');
+                const eventDateStr = eventDateIso
+                    ? new Date(eventDateIso).toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' })
                     : (offer.valid_until ? new Date(offer.valid_until).toLocaleDateString('pl-PL') : 'Brak daty');
-                const eventLoc = offer.session_location
+                const eventLoc = sessionPlan.location
+                    || offer.session_location
                     || offer.template_data?.eventLocation
                     || 'Do ustalenia';
                 // Godzina sesji: HH:MM lub HH:MM-HH:MM (od-do)
-                const eventTimeStr = offer.session_time
+                const eventTimeStr = sessionPlan.time
+                    || (offer.session_time
                     ? (offer.session_end_time ? `${offer.session_time}–${offer.session_end_time}` : offer.session_time)
-                    : (offer.template_data?.eventTime || '');
+                    : (offer.template_data?.eventTime || ''));
                 // Liczba osób/dzieci: z client_selection lub template_data
                 let eventCountStr = '';
                 if (offer.client_selection?.childCount) eventCountStr = String(offer.client_selection.childCount);
@@ -248,6 +274,7 @@ export default function ContractBuilder() {
                     clientName: offer.user?.name || offer.client_email,
                     clientEmail: offer.user?.email || offer.client_email,
                     clientPhone: offer.user?.phone || '',
+                    eventDateIso,
                     eventDate: eventDateStr,
                     eventTime: eventTimeStr,
                     eventLocation: eventLoc,
@@ -298,6 +325,7 @@ export default function ContractBuilder() {
                     fields: {
                         clientPhone: data.clientPhone,
                         eventDate: data.eventDate,
+                        eventDateIso: data.eventDateIso,
                         eventTime: data.eventTime,
                         eventLocation: data.eventLocation,
                         eventCount: data.eventCount,

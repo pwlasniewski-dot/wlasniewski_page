@@ -5,6 +5,57 @@ import { logSystem } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
+type SessionPlan = {
+    date: string | null;
+    time: string | null;
+    location: string | null;
+};
+
+function parsePermissions(input: unknown): Record<string, unknown> {
+    if (!input) return {};
+    if (typeof input === 'string') {
+        try {
+            const parsed = JSON.parse(input);
+            return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+        } catch {
+            return {};
+        }
+    }
+    if (typeof input === 'object' && !Array.isArray(input)) {
+        return input as Record<string, unknown>;
+    }
+    return {};
+}
+
+function extractSessionPlan(permissions: unknown): SessionPlan {
+    const parsed = parsePermissions(permissions);
+    const raw = parsed.session_plan;
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+        return { date: null, time: null, location: null };
+    }
+    const session = raw as Record<string, unknown>;
+    return {
+        date: typeof session.date === 'string' && session.date.trim() ? session.date : null,
+        time: typeof session.time === 'string' && session.time.trim() ? session.time : null,
+        location: typeof session.location === 'string' && session.location.trim() ? session.location : null,
+    };
+}
+
+function mergeSessionPlan(permissions: unknown, next: Partial<SessionPlan>): Record<string, unknown> {
+    const parsed = parsePermissions(permissions);
+    const current = extractSessionPlan(permissions);
+    const merged: SessionPlan = {
+        date: next.date !== undefined ? (next.date || null) : current.date,
+        time: next.time !== undefined ? (next.time || null) : current.time,
+        location: next.location !== undefined ? (next.location || null) : current.location,
+    };
+
+    return {
+        ...parsed,
+        session_plan: merged,
+    };
+}
+
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
     return withAuth(request, async (req) => {
@@ -138,6 +189,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
             const fullClient = {
                 ...client,
+                permissions: parsePermissions(client.permissions),
+                session_plan: extractSessionPlan(client.permissions),
                 last_login: client.last_login || latestLoginActivity?.created_at || null,
                 orders,
                 assigned_bookings: bookings,
@@ -170,8 +223,17 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
                 if (typeof body.permissions !== 'object' || Array.isArray(body.permissions)) {
                     return NextResponse.json({ error: 'Invalid permissions object' }, { status: 400 });
                 }
+                const current = await prisma.user.findUnique({
+                    where: { id: userId },
+                    select: { permissions: true },
+                });
+                const mergedPermissions = {
+                    ...parsePermissions(current?.permissions),
+                    ...body.permissions,
+                };
+                const withSession = mergeSessionPlan(mergedPermissions, {});
                 await prisma.$executeRaw`
-                    UPDATE users SET permissions = ${JSON.stringify(body.permissions)}::jsonb WHERE id = ${userId}
+                    UPDATE users SET permissions = ${JSON.stringify(withSession)}::jsonb WHERE id = ${userId}
                 `;
                 await logSystem('INFO', 'SYSTEM', `Updated permissions for client #${userId}`, { permissions: body.permissions });
                 return NextResponse.json({ success: true, permissions: body.permissions });
@@ -190,7 +252,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
             // --- Profile update ---
             const currentUser = await prisma.user.findUnique({
                 where: { id: userId },
-                select: { email: true }
+                select: { email: true, permissions: true }
             });
 
             if (!currentUser) {
@@ -198,6 +260,21 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
             }
 
             const emailChanged = body.email && body.email !== currentUser.email;
+            const sessionPlanPayload = body.session_plan && typeof body.session_plan === 'object'
+                ? {
+                    date: typeof body.session_plan.date === 'string' ? body.session_plan.date : null,
+                    time: typeof body.session_plan.time === 'string' ? body.session_plan.time : null,
+                    location: typeof body.session_plan.location === 'string' ? body.session_plan.location : null,
+                }
+                : null;
+
+            const nextPermissions = sessionPlanPayload
+                ? mergeSessionPlan(currentUser.permissions, {
+                    date: sessionPlanPayload.date,
+                    time: sessionPlanPayload.time,
+                    location: sessionPlanPayload.location,
+                })
+                : undefined;
 
             const updatedClient = await prisma.$transaction(async (tx) => {
                 const updated = await tx.user.update({
@@ -209,7 +286,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
                         address: body.address,
                         city: body.city,
                         postal_code: body.postal_code,
-                        is_active: body.is_active
+                        is_active: body.is_active,
+                        ...(nextPermissions ? { permissions: nextPermissions } : {}),
                     }
                 });
 

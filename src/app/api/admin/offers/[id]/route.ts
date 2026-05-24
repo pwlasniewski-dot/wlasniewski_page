@@ -29,7 +29,7 @@ export async function GET(
         }
 
         // Fetch related data independently to bypass Prisma include/validation crashes in production
-        const [sections, negotiations, contract] = await Promise.all([
+        const [sections, negotiations, contract, user] = await Promise.all([
             prisma.offerSection.findMany({
                 where: { offer_id: offerId },
                 include: { items: true },
@@ -41,12 +41,25 @@ export async function GET(
             }).catch(() => []),
             prisma.contract.findUnique({
                 where: { offer_id: offerId }
-            }).catch(() => null)
+            }).catch(() => null),
+            offer.client_id
+                ? prisma.user.findUnique({
+                    where: { id: offer.client_id },
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                        phone: true,
+                        permissions: true,
+                    }
+                }).catch(() => null)
+                : Promise.resolve(null)
         ]);
 
         return NextResponse.json({
             offer: {
                 ...offer,
+                user,
                 sections,
                 negotiations,
                 contract

@@ -33,6 +33,11 @@ export interface ContractTemplateMeta {
 
 const COMMON_FOOTER = `
 
+## ZMIANA TERMINU (POGODA / SIŁA WYŻSZA)
+1. Strony potwierdzają, że termin realizacji sesji na dzień zawarcia umowy to: **{{eventDate}}**, godz. **{{eventTime}}**.
+2. W przypadku niesprzyjających warunków atmosferycznych (np. ulewa, burza, silny wiatr) lub działania siły wyższej (w szczególności zdarzeń losowych, awarii, ograniczeń administracyjnych, nagłej niedyspozycji uniemożliwiającej wykonanie usługi), termin sesji ulega zmianie.
+3. Nowa data i godzina zostaną ustalone przez Strony niezwłocznie i potwierdzone w systemie administracyjnym oraz korespondencji Stron.
+
 ## POSTANOWIENIA KOŃCOWE
 1. Wszelkie zmiany niniejszej Umowy wymagają formy pisemnej pod rygorem nieważności.
 2. W sprawach nieuregulowanych zastosowanie mają przepisy Kodeksu Cywilnego.

@@ -6,6 +6,35 @@ import { sendEmail, getAdminEmail } from '@/lib/email/sender';
 
 export const dynamic = 'force-dynamic';
 
+function parsePermissions(input: unknown): Record<string, any> {
+  if (!input) return {};
+  if (typeof input === 'string') {
+    try {
+      const parsed = JSON.parse(input);
+      return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+    } catch {
+      return {};
+    }
+  }
+  if (typeof input === 'object' && !Array.isArray(input)) {
+    return input as Record<string, any>;
+  }
+  return {};
+}
+
+function extractSessionPlanFromUser(user: any): { date: string | null; time: string | null; location: string | null } {
+  const permissions = parsePermissions(user?.permissions);
+  const raw = permissions.session_plan;
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+    return { date: null, time: null, location: null };
+  }
+  return {
+    date: typeof raw.date === 'string' && raw.date.trim() ? raw.date : null,
+    time: typeof raw.time === 'string' && raw.time.trim() ? raw.time : null,
+    location: typeof raw.location === 'string' && raw.location.trim() ? raw.location : null,
+  };
+}
+
 export async function POST(request: NextRequest) {
   return withAuth(request, async (req) => {
     try {
@@ -43,6 +72,7 @@ export async function POST(request: NextRequest) {
       if (!targetUser && data.client_id) {
         targetUser = await prisma.user.findUnique({ where: { id: data.client_id } });
       }
+      const sessionPlan = extractSessionPlanFromUser(targetUser);
 
       // Generate final contract number
       const contract_number = await generateContractNumber(content?.includes('B2B') ? 'B2B' : 'B2C');
@@ -62,14 +92,16 @@ export async function POST(request: NextRequest) {
         return d.toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' });
       };
       const fields: Record<string, string> = body.fields || {};
-      const eventDateRaw = fields.eventDate || (currentOffer as any)?.session_date || td.eventDate;
+      const eventDateRaw = fields.eventDate || sessionPlan.date || (currentOffer as any)?.session_date || td.eventDate;
       const eventDate = fields.eventDate || fmtDate(eventDateRaw);
       const eventTime = fields.eventTime
+        || sessionPlan.time
         || (currentOffer as any)?.session_time
         || td.eventTime
         || td.sessionTime
         || '';
       const eventLocation = fields.eventLocation
+        || sessionPlan.location
         || (currentOffer as any)?.session_location
         || td.eventLocation
         || td.location
@@ -126,6 +158,14 @@ export async function POST(request: NextRequest) {
       };
 
       const finalContent = replacePlaceholders(content, replacementContext);
+
+      const dateCandidate = fields.eventDateIso || sessionPlan.date || null;
+      const resolvedSessionDate = dateCandidate ? new Date(dateCandidate) : null;
+      const sessionDateForContract = resolvedSessionDate && !isNaN(resolvedSessionDate.getTime())
+        ? resolvedSessionDate
+        : ((currentOffer as any)?.session_date || null);
+      const sessionTimeForContract = fields.eventTime || sessionPlan.time || (currentOffer as any)?.session_time || null;
+      const sessionLocationForContract = fields.eventLocation || sessionPlan.location || (currentOffer as any)?.session_location || null;
       // -------------------------------------
 
       let contract;
@@ -136,6 +176,9 @@ export async function POST(request: NextRequest) {
           update: {
             content: finalContent,
             client_id: data.client_id,
+            ...(sessionDateForContract ? { session_date: sessionDateForContract } : {}),
+            ...(sessionTimeForContract ? { session_time: sessionTimeForContract } : {}),
+            ...(sessionLocationForContract ? { session_location: sessionLocationForContract } : {}),
             ...(depositAmount != null && !isNaN(depositAmount) ? { deposit_amount: depositAmount } : {}),
             ...(depositDueAt ? { deposit_due_at: depositDueAt } : {}),
           },
@@ -145,6 +188,9 @@ export async function POST(request: NextRequest) {
             contract_number,
             content: finalContent,
             status: 'pending',
+            ...(sessionDateForContract ? { session_date: sessionDateForContract } : {}),
+            ...(sessionTimeForContract ? { session_time: sessionTimeForContract } : {}),
+            ...(sessionLocationForContract ? { session_location: sessionLocationForContract } : {}),
             ...(depositAmount != null && !isNaN(depositAmount) ? { deposit_amount: depositAmount } : {}),
             ...(depositDueAt ? { deposit_due_at: depositDueAt } : {}),
           }
@@ -157,6 +203,9 @@ export async function POST(request: NextRequest) {
             contract_number,
             content: finalContent,
             status: 'pending',
+            ...(sessionDateForContract ? { session_date: sessionDateForContract } : {}),
+            ...(sessionTimeForContract ? { session_time: sessionTimeForContract } : {}),
+            ...(sessionLocationForContract ? { session_location: sessionLocationForContract } : {}),
             ...(depositAmount != null && !isNaN(depositAmount) ? { deposit_amount: depositAmount } : {}),
             ...(depositDueAt ? { deposit_due_at: depositDueAt } : {}),
           }
