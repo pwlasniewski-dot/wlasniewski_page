@@ -5,6 +5,7 @@ import { sendEmail, getAdminEmail } from '@/lib/email/sender';
 import { generateContractPDF } from '@/lib/services/pdf';
 import { uploadToS3 } from '@/lib/storage/s3';
 import { logClientActivity } from '@/lib/crm-activity';
+import crypto from 'crypto';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,6 +28,18 @@ export async function POST(
 
         const body = await request.json().catch(() => ({}));
         const clientNote = body.client_note?.trim() || '';
+        const signatureData = typeof body.signature_data === 'string' ? body.signature_data : '';
+        const signatureMetadata = body.signature_metadata || {};
+
+        if (!signatureData || !signatureData.startsWith('data:image/png;base64,')) {
+            return NextResponse.json({ error: 'Podpis jest wymagany do zatwierdzenia umowy.' }, { status: 400 });
+        }
+
+        if (signatureData.length > 2_000_000) {
+            return NextResponse.json({ error: 'Podpis jest zbyt duży. Spróbuj ponownie.' }, { status: 400 });
+        }
+
+        const signatureHash = crypto.createHash('sha256').update(signatureData).digest('hex');
 
         const { id } = await params;
         const contractId = parseInt(id);
@@ -66,7 +79,13 @@ export async function POST(
         logClientActivity(decoded, 'contract_signed', {
             entityType: 'contract',
             entityId: contractId,
-            details: { contract_number: contract.contract_number, has_note: !!clientNote },
+            details: {
+                contract_number: contract.contract_number,
+                has_note: !!clientNote,
+                signature_hash: signatureHash,
+                signature_timestamp: signatureMetadata?.timestamp || null,
+                signature_user_agent: signatureMetadata?.userAgent || null,
+            },
             request,
         });
 

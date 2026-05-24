@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import SignatureCanvas from 'react-signature-canvas';
-import { useRouter } from 'next/navigation';
 
 interface SignaturePadProps {
     onSave: (signatureData: string, metadata: SignatureMetadata) => void;
@@ -18,7 +17,6 @@ interface SignatureMetadata {
 export default function SignaturePad({ onSave, onCancel }: SignaturePadProps) {
     const [signaturePad, setSignaturePad] = useState<SignatureCanvas | null>(null);
     const [agreed, setAgreed] = useState(false);
-    const router = useRouter();
 
     const handleSave = async () => {
         if (!signaturePad || signaturePad.isEmpty()) {

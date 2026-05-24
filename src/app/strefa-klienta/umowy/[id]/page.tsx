@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Download, CheckCircle2, FileText, Upload, RefreshCw } from 'lucide-react';
+import SignaturePad from '@/components/SignaturePad';
 
 export default function ContractSigningPage({ params }: { params: Promise<{ id: string }> }) {
     const router = useRouter();
@@ -15,6 +16,7 @@ export default function ContractSigningPage({ params }: { params: Promise<{ id: 
     const [clientNote, setClientNote] = useState<string>('');
     const [uploadingScan, setUploadingScan] = useState(false);
     const [uploadSuccess, setUploadSuccess] = useState(false);
+    const [showSignatureModal, setShowSignatureModal] = useState(false);
     const scanInputRef = useRef<HTMLInputElement>(null);
     const [contractId, setContractId] = useState<string | null>(null);
 
@@ -71,7 +73,7 @@ export default function ContractSigningPage({ params }: { params: Promise<{ id: 
         }
     };
 
-    const handleSign = async () => {
+    const handleSign = async (signatureData: string, signatureMetadata: { timestamp: string; userAgent: string; ip?: string }) => {
         const token = localStorage.getItem('client_token') || localStorage.getItem('user_token');
         setSigning(true);
         setSignError(null);
@@ -83,11 +85,14 @@ export default function ContractSigningPage({ params }: { params: Promise<{ id: 
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    client_note: clientNote.trim()
+                    client_note: clientNote.trim(),
+                    signature_data: signatureData,
+                    signature_metadata: signatureMetadata,
                 })
             });
 
             if (res.ok) {
+                setShowSignatureModal(false);
                 await fetchContract(); // Reload to show signed status
             } else {
                 const data = await res.json();
@@ -185,7 +190,7 @@ export default function ContractSigningPage({ params }: { params: Promise<{ id: 
                             <p className="text-sm text-amber-900 font-semibold">Umowa oczekuje na Twój podpis</p>
                         </div>
                         <button
-                            onClick={handleSign}
+                            onClick={() => setShowSignatureModal(true)}
                             disabled={signing}
                             className="px-6 py-2.5 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-bold rounded-lg text-sm transition-colors shadow"
                         >
@@ -337,6 +342,13 @@ export default function ContractSigningPage({ params }: { params: Promise<{ id: 
                     )}
                 </div>
             </div>
+
+            {showSignatureModal && contract.status !== 'signed' && (
+                <SignaturePad
+                    onSave={handleSign}
+                    onCancel={() => setShowSignatureModal(false)}
+                />
+            )}
         </div>
     );
 }
