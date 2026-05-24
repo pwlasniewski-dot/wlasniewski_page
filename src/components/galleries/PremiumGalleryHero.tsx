@@ -67,6 +67,10 @@ export default function PremiumGalleryHero({
   
   // Fallback: jeśli po filtracji nie ma nic, użyj oryginalnych
   const slides = (filteredPhotos.length > 0 ? filteredPhotos : photos).slice(0, maxSlides);
+  const desktopAllPortrait = isDesktop && slides.length > 0 && slides.every((p) => {
+    if (!p.width || !p.height) return false;
+    return p.height > p.width;
+  });
   const [idx, setIdx] = useState(0);
   const [paused, setPaused] = useState(false);
 
@@ -99,6 +103,7 @@ export default function PremiumGalleryHero({
       {/* Slides z crossfade i smart orientation-aware framing */}
       {slides.map((p, i) => {
         const active = i === idx;
+        const bgSource = slides[(i + 1) % slides.length] || p;
         // Detect portrait orientation to prevent head cropping
         const isPortrait = p.width && p.height && p.height > p.width;
         const bgPosition = isPortrait ? 'center top' : 'center 30%';
@@ -112,21 +117,54 @@ export default function PremiumGalleryHero({
             transition={{ duration: 1.5, ease: "easeInOut" }}
             className="absolute inset-0 w-full h-full overflow-hidden"
           >
-            <motion.div
-              className="w-full h-full bg-cover bg-no-repeat"
-              initial={{ scale: 1 }}
-              animate={active ? { scale: 1.02 } : { scale: 1 }}
-              transition={{
-                duration: 15,
-                ease: "linear",
-                repeat: 0
-              }}
-              style={{
-                backgroundImage: `url("${p.file_url}")`,
-                backgroundPosition: bgPosition,
-                transformOrigin: transformOrigin
-              }}
-            />
+            {desktopAllPortrait ? (
+              <>
+                <motion.div
+                  className="absolute inset-0 w-full h-full bg-cover bg-center"
+                  initial={{ scale: 1.08 }}
+                  animate={active ? { scale: 1.14 } : { scale: 1.08 }}
+                  transition={{ duration: 12, ease: 'linear', repeat: 0 }}
+                  style={{
+                    backgroundImage: `url("${bgSource.file_url}")`,
+                    filter: 'blur(20px) brightness(0.55) saturate(1.05)',
+                    transformOrigin: 'center center'
+                  }}
+                />
+                <div className="absolute inset-0 flex items-center justify-center p-6 md:p-10">
+                  <motion.div
+                    className="relative w-full h-full max-w-[720px]"
+                    initial={{ scale: 1 }}
+                    animate={active ? { scale: 1.015 } : { scale: 1 }}
+                    transition={{ duration: 10, ease: 'linear', repeat: 0 }}
+                  >
+                    <Image
+                      src={p.file_url}
+                      alt="Zdjęcie hero"
+                      fill
+                      priority={i === 0}
+                      className="object-contain drop-shadow-[0_16px_45px_rgba(0,0,0,0.6)]"
+                      sizes="(max-width: 768px) 100vw, 70vw"
+                    />
+                  </motion.div>
+                </div>
+              </>
+            ) : (
+              <motion.div
+                className="w-full h-full bg-cover bg-no-repeat"
+                initial={{ scale: 1 }}
+                animate={active ? { scale: 1.02 } : { scale: 1 }}
+                transition={{
+                  duration: 15,
+                  ease: "linear",
+                  repeat: 0
+                }}
+                style={{
+                  backgroundImage: `url("${p.file_url}")`,
+                  backgroundPosition: bgPosition,
+                  transformOrigin: transformOrigin
+                }}
+              />
+            )}
           </motion.div>
         );
       })}

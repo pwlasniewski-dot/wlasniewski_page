@@ -7,6 +7,7 @@ import prisma from '@/lib/db/prisma';
 import archiver from 'archiver';
 import { PassThrough } from 'stream';
 import { verifyParentToken, extractTokenFromHeader } from '@/lib/auth/parent-jwt';
+import sharp from 'sharp';
 
 export async function GET(
   request: NextRequest,
@@ -63,6 +64,18 @@ export async function GET(
 
     archive.pipe(passthrough);
 
+    const toJpegBuffer = async (input: Buffer) => {
+      try {
+        return await sharp(input)
+          .rotate()
+          .jpeg({ quality: 92, mozjpeg: true })
+          .toBuffer();
+      } catch {
+        // If conversion fails for a specific file, keep original bytes to avoid breaking full ZIP.
+        return input;
+      }
+    };
+
     (async () => {
       try {
         for (let i = 0; i < gallery.photos.length; i++) {
@@ -70,10 +83,10 @@ export async function GET(
           try {
             const response = await fetch(photo.file_url);
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            const buf = Buffer.from(await response.arrayBuffer());
-            const ext = (photo.file_url.split('.').pop() || 'jpg').split('?')[0].toLowerCase();
+            const srcBuf = Buffer.from(await response.arrayBuffer());
+            const jpegBuf = await toJpegBuffer(srcBuf);
             const idxStr = String(i + 1).padStart(3, '0');
-            archive.append(buf, { name: `zdjecie-${idxStr}.${ext}` });
+            archive.append(jpegBuf, { name: `zdjecie-${idxStr}.jpg` });
           } catch (err) {
             console.error(`Failed to add photo ${photo.id}:`, err);
           }

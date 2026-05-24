@@ -53,6 +53,8 @@ export default function GroupGalleryPage() {
   const [parentEmail, setParentEmail] = useState('');
   const [parentPhone, setParentPhone] = useState('');
   const [selectedAvatar, setSelectedAvatar] = useState<string>('');
+  const [existingIdentifier, setExistingIdentifier] = useState('');
+  const [existingName, setExistingName] = useState('');
   const [availableAvatars, setAvailableAvatars] = useState<AvatarOption[]>([]);
   const [participantInfo, setParticipantInfo] = useState<ParticipantInfo | null>(null);
   const [authToken, setAuthToken] = useState<string | null>(null);
@@ -233,6 +235,55 @@ export default function GroupGalleryPage() {
     }
   };
 
+  const handleExistingLogin = async () => {
+    if (!galleryInfo) return;
+    if (!existingIdentifier.trim()) {
+      toast.error('Podaj ID rodzica (np. JK-4729)');
+      return;
+    }
+    if (!existingName.trim()) {
+      toast.error('Podaj imię i nazwisko użyte przy pierwszej rejestracji');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await fetch('/api/galleries/group/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          gallery_id: galleryInfo.gallery_id,
+          access_code: code.trim(),
+          parent_identifier: existingIdentifier.trim().toUpperCase(),
+          parent_name: existingName.trim(),
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        toast.error(data.error || 'Nie udało się zalogować do istniejącego profilu');
+        return;
+      }
+
+      setParticipantInfo(data);
+      setAuthToken(data.token);
+      localStorage.setItem(
+        `group_participant_${data.participant_id}`,
+        JSON.stringify(data)
+      );
+      setShowRegistrationModal(false);
+      toast.success(`Witaj ponownie, ${data.parent_name || 'Rodzicu'}!`);
+
+      loadPhotos(galleryInfo.gallery_id, data.token);
+      loadSelections(data.participant_id, data.token);
+    } catch (error) {
+      console.error('Existing parent login error:', error);
+      toast.error('Wystąpił błąd podczas logowania');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const loadPhotos = async (galleryId: number, token: string) => {
     try {
       const response = await fetch(`/api/galleries/group/${galleryId}/photos`, {
@@ -274,14 +325,12 @@ export default function GroupGalleryPage() {
             if (!prev) return prev;
             if (prev.parent_name === data.parent_name) return prev;
             const next = { ...prev, parent_name: data.parent_name };
-            if (galleryInfo) {
-              try {
-                localStorage.setItem(
-                  `group_participant_${galleryInfo.gallery_id}`,
-                  JSON.stringify(next)
-                );
-              } catch {}
-            }
+                try {
+                  localStorage.setItem(
+                    `group_participant_${next.participant_id}`,
+                    JSON.stringify(next)
+                  );
+                } catch {}
             return next;
           });
         }
@@ -572,6 +621,35 @@ export default function GroupGalleryPage() {
               </div>
             </div>
           )}
+
+          <div className="bg-zinc-800/40 border border-zinc-700 rounded-lg p-4 mb-6">
+            <h3 className="text-sm font-semibold text-white mb-1">Masz już profil rodzica?</h3>
+            <p className="text-xs text-zinc-400 mb-3">Wejdź na to samo konto z innego komputera po ID rodzica.</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
+              <input
+                type="text"
+                value={existingIdentifier}
+                onChange={e => setExistingIdentifier(e.target.value.toUpperCase())}
+                placeholder="ID rodzica, np. JK-4729"
+                className="w-full bg-black border border-zinc-700 rounded-lg px-3 py-2 text-white focus:border-gold-500 focus:outline-none uppercase"
+              />
+              <input
+                type="text"
+                value={existingName}
+                onChange={e => setExistingName(e.target.value)}
+                placeholder="Imię i nazwisko"
+                className="w-full bg-black border border-zinc-700 rounded-lg px-3 py-2 text-white focus:border-gold-500 focus:outline-none"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={handleExistingLogin}
+              disabled={loading || !existingIdentifier.trim() || !existingName.trim()}
+              className="w-full bg-zinc-700 text-white text-sm font-semibold py-2.5 rounded-lg hover:bg-zinc-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Wejdź do mojego profilu
+            </button>
+          </div>
 
           <div className="flex items-center gap-3 mb-6">
             <div className="w-12 h-12 bg-gold-500/10 rounded-full flex items-center justify-center">
