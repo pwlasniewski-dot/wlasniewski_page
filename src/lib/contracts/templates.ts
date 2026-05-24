@@ -4,9 +4,10 @@
  * Placeholdery (zastępowane przez API /api/admin/contracts po zapisie i przez
  * ContractBuilder przy podglądzie/edycji):
  *   {{contractNumber}}, {{currentDate}}
+ *   {{offerNumber}}
  *   {{clientName}}, {{clientEmail}}, {{clientPhone}}, {{clientAddress}}
  *   {{eventDate}}, {{eventTime}}, {{eventLocation}}, {{eventCount}}, {{eventTeam}}
- *   {{offerTitle}}, {{packageDetails}}, {{totalPrice}}
+ *   {{offerTitle}}, {{packageDetails}}, {{albumDetails}}, {{totalPrice}}
  *   {{depositAmount}}, {{depositDueDate}}
  *   {{workshopPlan}}  (tylko warsztaty)
  *   {{deliveryDays}}  (np. ile dni na oddanie)
@@ -58,6 +59,7 @@ const COMMON_FOOTER = `
 
 const HEADER = (title: string) => `# ${title}
 **Numer umowy:** {{contractNumber}}
+**Numer oferty:** {{offerNumber}}
 **Data zawarcia:** {{currentDate}}
 
 ## STRONY UMOWY
@@ -75,6 +77,7 @@ const TEMPLATES: Record<ContractTemplateKey, string> = {
 Przedmiotem umowy jest wykonanie usługi fotograficznej zgodnie z ofertą **"{{offerTitle}}"** w dniu **{{eventDate}}** o godzinie **{{eventTime}}** w lokalizacji **{{eventLocation}}**.
 
 {{packageDetails}}
+{{albumDetails}}
 
 ## §2 WYNAGRODZENIE
 Strony ustalają wynagrodzenie w kwocie **{{totalPrice}} PLN** brutto. Płatność:
@@ -98,6 +101,7 @@ Przedmiotem umowy jest wykonanie profesjonalnego reportażu fotograficznego z ur
 - Liczba dzieci objętych umową: **{{eventCount}}**
 
 {{packageDetails}}
+{{albumDetails}}
 
 ## §2 ZAKRES USŁUGI
 1. Reportaż z Mszy Świętej — dokumentacja najważniejszych momentów liturgii i klimatu uroczystości.
@@ -130,6 +134,7 @@ Przedmiotem umowy jest wykonanie reportażu fotograficznego z **przyjęcia urodz
 - Liczba gości / charakter przyjęcia: **{{eventCount}}**
 
 {{packageDetails}}
+{{albumDetails}}
 
 ## §2 ZAKRES USŁUGI
 1. Reportaż z przyjęcia: powitanie gości, tort, animacje, wspólne zabawy.
@@ -158,6 +163,7 @@ Przedmiotem umowy jest wykonanie pełnego reportażu fotograficznego z uroczysto
 - Skład ekipy: **{{eventTeam}}**
 
 {{packageDetails}}
+{{albumDetails}}
 
 ## §2 ZAKRES USŁUGI
 1. Przygotowania Pary Młodej (do 60 minut przed wyjściem do kościoła).
@@ -192,6 +198,7 @@ Przedmiotem umowy jest wykonanie sesji fotograficznej zgodnie z ofertą **"{{off
 - Liczba osób / charakter sesji: **{{eventCount}}**
 
 {{packageDetails}}
+{{albumDetails}}
 
 ## §2 ZAKRES USŁUGI
 1. Przeprowadzenie sesji w uzgodnionym miejscu i czasie.
@@ -255,6 +262,7 @@ Przedmiotem umowy jest wykonanie sesji fotograficznej zespołu / chóru **"{{off
 - Liczba osób w zespole: **{{eventCount}}**
 
 {{packageDetails}}
+{{albumDetails}}
 
 ## §2 ZAKRES USŁUGI
 1. Sesja grupowa zespołu w uzgodnionej aranżacji (układ, tło, oświetlenie).
@@ -284,6 +292,7 @@ Przedmiotem umowy jest świadczenie przez Wykonawcę na rzecz Zleceniodawcy usł
 - Zakres ilościowy: **{{eventCount}}**
 
 {{packageDetails}}
+{{albumDetails}}
 
 ## §2 WYNAGRODZENIE I FAKTUROWANIE
 Strony ustalają wynagrodzenie w kwocie **{{totalPrice}} PLN** netto + VAT zgodnie z obowiązującymi przepisami.

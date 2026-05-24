@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useReactToPrint } from 'react-to-print';
 import {
-    Printer, Save, FileCheck, Cloud, Share2, Mail, X, ArrowLeft,
+    Printer, Save, FileCheck, Cloud, Share2, Mail, X, ArrowLeft, Calendar,
     Bold, Italic, List, Heading1, Heading2, Heading3, Type, Eye, EyeOff, Plus, FileEdit
 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -17,6 +17,7 @@ import {
 
 interface ContractData {
     contractNumber: string;
+    offerNumber: string;
     clientName: string;
     clientEmail: string;
     clientPhone: string;
@@ -28,6 +29,7 @@ interface ContractData {
     eventTeam: string;
     offerTitle: string;
     packageDetails: string;
+    albumDetails: string;
     totalPrice: string;
     depositAmount: string;        // PLN, jako string w UI (input)
     depositDueDate: string;       // YYYY-MM-DD, termin platnosci zaliczki
@@ -36,9 +38,16 @@ interface ContractData {
     signature: string; // Added signature field
 }
 
+type BankInfo = {
+    bankAccount: string;
+    bankHolder: string;
+    bankName: string;
+};
+
 const DEFAULT_CONTRACT_TEMPLATE = `
 # UMOWA ŚWIADCZENIA USŁUG FOTOGRAFICZNYCH
 **Numer umowy:** {{contractNumber}}
+**Numer oferty:** {{offerNumber}}
 **Data zawarcia:** {{currentDate}}
 
 ## 1. STRONY UMOWY
@@ -49,6 +58,7 @@ Zleceniodawca: **{{clientName}}** ({{clientEmail}}, tel: {{clientPhone}})
 Przedmiotem umowy jest wykonanie reportażu fotograficznego zgodnie z ofertą "{{offerTitle}}" w dniu **{{eventDate}}** w lokalizacji **{{eventLocation}}**.
 
 {{packageDetails}}
+{{albumDetails}}
 
 ## 3. WYNAGRODZENIE
 Strony ustalają wynagrodzenie w kwocie **{{totalPrice}} PLN**. Płatność nastąpi zgodnie z harmonogramem:
@@ -67,6 +77,7 @@ export default function ContractBuilder() {
 
     const [data, setData] = useState<ContractData>({
         contractNumber: 'Ładowanie...',
+        offerNumber: '',
         clientName: '',
         clientEmail: '',
         clientPhone: '',
@@ -78,6 +89,7 @@ export default function ContractBuilder() {
         eventTeam: '',
         offerTitle: '',
         packageDetails: '',
+        albumDetails: '',
         totalPrice: '0',
         depositAmount: '',
         depositDueDate: '',
@@ -93,6 +105,7 @@ export default function ContractBuilder() {
     const [templateLocked, setTemplateLocked] = useState(false); // true gdy user ręcznie edytował treść
     // Rozwiązany offer_id (może pojść z URL ?offer_id albo z best-offer wybranego po client_id)
     const [resolvedOfferId, setResolvedOfferId] = useState<number | null>(offerId ? parseInt(offerId) : null);
+    const [bankInfo, setBankInfo] = useState<BankInfo>({ bankAccount: '', bankHolder: '', bankName: '' });
 
     const applyTemplate = (key: ContractTemplateKey, force: boolean = false) => {
         if (!force && templateLocked) {
@@ -119,6 +132,30 @@ export default function ContractBuilder() {
         }
     }, [offerId, clientId]);
 
+    useEffect(() => {
+        const loadBankInfo = async () => {
+            try {
+                const token = localStorage.getItem('admin_token');
+                const headers: Record<string, string> = {};
+                if (token) headers.Authorization = `Bearer ${token}`;
+                const res = await fetch('/api/settings', { headers });
+                if (!res.ok) return;
+                const data = await res.json();
+                if (data?.settings) {
+                    setBankInfo({
+                        bankAccount: data.settings.bank_account_number || '',
+                        bankHolder: data.settings.bank_account_holder || '',
+                        bankName: data.settings.bank_name || '',
+                    });
+                }
+            } catch {
+                // keep defaults
+            }
+        };
+
+        loadBankInfo();
+    }, []);
+
     const extractSessionPlan = (permissions: unknown) => {
         if (!permissions || typeof permissions !== 'object' || Array.isArray(permissions)) {
             return { date: '', time: '', location: '' };
@@ -132,6 +169,48 @@ export default function ContractBuilder() {
             time: typeof raw.time === 'string' ? raw.time : '',
             location: typeof raw.location === 'string' ? raw.location : '',
         };
+    };
+
+    const buildAlbumDetails = (offer: any): string => {
+        const addons: any[] = Array.isArray(offer?.selected_addons)
+            ? offer.selected_addons
+            : typeof offer?.selected_addons === 'string'
+                ? (() => {
+                    try {
+                        const parsed = JSON.parse(offer.selected_addons);
+                        return Array.isArray(parsed) ? parsed : [];
+                    } catch {
+                        return [];
+                    }
+                })()
+                : [];
+
+        const albumRows: string[] = [];
+
+        addons.forEach((addon) => {
+            const title = addon?.album_title || addon?.title || addon?.name || 'Album';
+            const format = addon?.format || addon?.album_format || addon?.size || '';
+            const pages = addon?.page_count ?? addon?.pages ?? addon?.album_pages ?? addon?.spread_count ?? '';
+            const price = addon?.final_price ?? addon?.price ?? '';
+
+            const parts: string[] = [];
+            if (format) parts.push(`format: ${format}`);
+            if (pages) parts.push(`${pages} stron`);
+            if (price) parts.push(`${Number(price).toLocaleString('pl-PL')} PLN`);
+
+            albumRows.push(`- **Album:** ${title}${parts.length ? ` (${parts.join(', ')})` : ''}`);
+        });
+
+        if (albumRows.length > 0) {
+            return `**Szczegóły albumu:**\n${albumRows.join('\n')}`;
+        }
+
+        const description = offer?.template_data?.albumDescription || offer?.template_data?.album_description || '';
+        if (description) {
+            return `**Album:** ${description}`;
+        }
+
+        return '';
     };
 
     const fetchClientAndPickOffer = async (cid: string) => {
@@ -167,6 +246,7 @@ export default function ContractBuilder() {
             setData(prev => ({
                 ...prev,
                 contractNumber: draftNum,
+                offerNumber: '',
                 clientName: client.name || client.email || '',
                 clientEmail: client.email || '',
                 clientPhone: client.phone || '',
@@ -198,6 +278,7 @@ export default function ContractBuilder() {
                 // Generate a draft contract number (calling our numbering service via helper endpoint if needed or client-side prediction)
                 const prefix = offer.type === 'b2b' ? 'UMW-B2B' : 'UMW-B2C';
                 const draftNum = `${prefix}-${new Date().getFullYear()}-XXX`;
+                const offerNumber = offer.offerNumber || '';
 
                 // Calculate Package Details from Client Selection
                 let packageDetails = '';
@@ -259,6 +340,7 @@ export default function ContractBuilder() {
                 else if (offer.template_data?.eventCount) eventCountStr = String(offer.template_data.eventCount);
                 else if (offer.template_data?.children_count) eventCountStr = String(offer.template_data.children_count);
                 const eventTeamStr = offer.template_data?.eventTeam || '';
+                const albumDetails = buildAlbumDetails(offer);
                 // Domyslna zaliczka = 30% (lub dziedziczona z istniejacej umowy)
                 const existingContract = offer.contract || null;
                 const defaultDepositAmount = existingContract?.deposit_amount
@@ -271,6 +353,7 @@ export default function ContractBuilder() {
                 setData(prev => ({
                     ...prev,
                     contractNumber: draftNum,
+                    offerNumber,
                     clientName: offer.user?.name || offer.client_email,
                     clientEmail: offer.user?.email || offer.client_email,
                     clientPhone: offer.user?.phone || '',
@@ -282,6 +365,7 @@ export default function ContractBuilder() {
                     eventTeam: eventTeamStr,
                     offerTitle: offer.title,
                     packageDetails: packageDetails,
+                    albumDetails,
                     totalPrice: finalPrice.toString(),
                     depositAmount: defaultDepositAmount ? String(defaultDepositAmount) : '',
                     depositDueDate: defaultDepositDue,
@@ -323,6 +407,7 @@ export default function ContractBuilder() {
                     deposit_amount: data.depositAmount ? parseInt(data.depositAmount, 10) : null,
                     deposit_due_at: data.depositDueDate || null,
                     fields: {
+                        offerNumber: data.offerNumber,
                         clientPhone: data.clientPhone,
                         eventDate: data.eventDate,
                         eventDateIso: data.eventDateIso,
@@ -334,6 +419,7 @@ export default function ContractBuilder() {
                         depositAmount: data.depositAmount,
                         depositDueDate: data.depositDueDate,
                         packageDetails: data.packageDetails,
+                        albumDetails: data.albumDetails,
                     },
                 })
             });
@@ -385,19 +471,24 @@ export default function ContractBuilder() {
         { label: 'Klient', value: '{{clientName}}' },
         { label: 'Email', value: '{{clientEmail}}' },
         { label: 'Oferta', value: '{{offerTitle}}' },
+        { label: 'Nr oferty', value: '{{offerNumber}}' },
         { label: 'Data', value: '{{eventDate}}' },
+        { label: 'Godzina', value: '{{eventTime}}' },
         { label: 'Cena', value: '{{totalPrice}}' },
         { label: 'Pakiety', value: '{{packageDetails}}' },
+        { label: 'Album', value: '{{albumDetails}}' },
         { label: 'Nr Umowy', value: '{{contractNumber}}' },
     ];
 
     const replacedContent = data.content
         .replace(/{{contractNumber}}/g, data.contractNumber)
+        .replace(/{{offerNumber}}/g, data.offerNumber || '[uzupełnij: offerNumber]')
         .replace(/{{clientName}}/g, data.clientName || '[uzupełnij: clientName]')
         .replace(/{{clientEmail}}/g, data.clientEmail || '[uzupełnij: clientEmail]')
         .replace(/{{clientPhone}}/g, data.clientPhone || '[uzupełnij: clientPhone]')
         .replace(/{{offerTitle}}/g, data.offerTitle || '[uzupełnij: offerTitle]')
         .replace(/{{packageDetails}}/g, data.packageDetails || '')
+        .replace(/{{albumDetails}}/g, data.albumDetails || '')
         .replace(/{{eventDate}}/g, data.eventDate || '[uzupełnij: eventDate]')
         .replace(/{{eventTime}}/g, data.eventTime || '[uzupełnij: eventTime]')
         .replace(/{{eventLocation}}/g, data.eventLocation || '[uzupełnij: eventLocation]')
@@ -408,6 +499,9 @@ export default function ContractBuilder() {
         .replace(/{{depositAmount}}/g, data.depositAmount || '0')
         .replace(/{{depositDueDate}}/g, data.depositDueDate ? new Date(data.depositDueDate).toLocaleDateString('pl-PL') : '[brak terminu]')
         .replace(/{{totalPrice}}/g, data.totalPrice)
+        .replace(/{{bankAccount}}/g, bankInfo.bankAccount || '[uzupełnij: bankAccount]')
+        .replace(/{{bankHolder}}/g, bankInfo.bankHolder || '[uzupełnij: bankHolder]')
+        .replace(/{{bankName}}/g, bankInfo.bankName || '[uzupełnij: bankName]')
         .replace(/{{currentDate}}/g, new Date().toLocaleDateString('pl-PL'));
 
     return (
@@ -525,6 +619,45 @@ export default function ContractBuilder() {
                                     />
                                     <p className="text-[10px] text-zinc-600 mt-1">Termin wpłaty (domyślnie 14 dni przed sesją).</p>
                                 </div>
+                            </div>
+                        </div>
+                        <div>
+                            <label className="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-2">
+                                <Calendar className="w-3.5 h-3.5 text-amber-400" />
+                                Termin sesji
+                            </label>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                                <input
+                                    type="date"
+                                    value={data.eventDateIso}
+                                    onChange={e => setData(prev => ({ ...prev, eventDateIso: e.target.value, eventDate: e.target.value ? new Date(e.target.value).toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' }) : '' }))}
+                                    className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-2 text-white text-sm outline-none focus:border-amber-500"
+                                />
+                                <input
+                                    type="time"
+                                    value={data.eventTime}
+                                    onChange={e => setData(prev => ({ ...prev, eventTime: e.target.value }))}
+                                    className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-2 text-white text-sm outline-none focus:border-amber-500"
+                                />
+                                <input
+                                    type="text"
+                                    value={data.eventLocation}
+                                    onChange={e => setData(prev => ({ ...prev, eventLocation: e.target.value }))}
+                                    placeholder="Miejsce sesji"
+                                    className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-2 text-white text-sm outline-none focus:border-amber-500"
+                                />
+                            </div>
+                            <p className="text-[10px] text-zinc-600 mt-1">Data, godzina i miejsce będą wpisane automatycznie do umowy, ale możesz je tu poprawić przed zapisem.</p>
+                        </div>
+                        <div>
+                            <label className="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-2">
+                                <Mail size={14} className="text-yellow-500" />
+                                Dane bankowe
+                            </label>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                                <input value={bankInfo.bankName} readOnly className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-2 text-white text-sm opacity-80" />
+                                <input value={bankInfo.bankAccount} readOnly className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-2 text-white text-sm opacity-80 font-mono" />
+                                <input value={bankInfo.bankHolder} readOnly className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-2 text-white text-sm opacity-80" />
                             </div>
                         </div>
                         <div>

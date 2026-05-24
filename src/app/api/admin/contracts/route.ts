@@ -35,6 +35,40 @@ function extractSessionPlanFromUser(user: any): { date: string | null; time: str
   };
 }
 
+function buildAlbumDetails(offer: any): string {
+  const addons: any[] = Array.isArray(offer?.selected_addons)
+    ? offer.selected_addons
+    : typeof offer?.selected_addons === 'string'
+      ? (() => {
+          try {
+            const parsed = JSON.parse(offer.selected_addons);
+            return Array.isArray(parsed) ? parsed : [];
+          } catch {
+            return [];
+          }
+        })()
+      : [];
+
+  const rows: string[] = [];
+  for (const addon of addons) {
+    const title = addon?.album_title || addon?.title || addon?.name;
+    if (!title) continue;
+    const format = addon?.format || addon?.album_format || addon?.size || '';
+    const pages = addon?.page_count ?? addon?.pages ?? addon?.album_pages ?? addon?.spread_count ?? '';
+    const price = addon?.final_price ?? addon?.price ?? '';
+    const segments: string[] = [];
+    if (format) segments.push(`format: ${format}`);
+    if (pages) segments.push(`${pages} stron`);
+    if (price !== '') segments.push(`${String(price)} PLN`);
+    rows.push(`- Album: ${title}${segments.length ? ` (${segments.join(', ')})` : ''}`);
+  }
+
+  if (rows.length > 0) return `Album:\n${rows.join('\n')}`;
+
+  const description = offer?.template_data?.albumDescription || offer?.template_data?.album_description;
+  return description ? `Album: ${description}` : '';
+}
+
 export async function POST(request: NextRequest) {
   return withAuth(request, async (req) => {
     try {
@@ -92,6 +126,7 @@ export async function POST(request: NextRequest) {
         return d.toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' });
       };
       const fields: Record<string, string> = body.fields || {};
+      const offerNumber = fields.offerNumber || (currentOffer as any)?.offerNumber || '';
       const eventDateRaw = fields.eventDate || sessionPlan.date || (currentOffer as any)?.session_date || td.eventDate;
       const eventDate = fields.eventDate || fmtDate(eventDateRaw);
       const eventTime = fields.eventTime
@@ -122,10 +157,12 @@ export async function POST(request: NextRequest) {
         ? new Date(depositDueAt).toLocaleDateString('pl-PL')
         : (fields.depositDueDate ? fmtDate(fields.depositDueDate) : '');
       const packageDetails = fields.packageDetails || '';
+      const albumDetails = fields.albumDetails || buildAlbumDetails(currentOffer);
       const workshopPlan = fields.workshopPlan || '';
 
       const replacementContext: Record<string, string> = {
         contractNumber: contract_number,
+        offerNumber,
         currentDate: new Date().toLocaleDateString('pl-PL'),
         clientName: targetUser?.name || currentOffer?.client_email || 'Kliencie',
         clientEmail: targetUser?.email || currentOffer?.client_email || '',
@@ -142,6 +179,7 @@ export async function POST(request: NextRequest) {
         depositDueDate: depositDueDate,
         deliveryDays: fields.deliveryDays || '21',
         packageDetails: packageDetails,
+        albumDetails,
         workshopPlan: workshopPlan,
         bankAccount: settings?.bank_account_number || '',
         bankHolder: settings?.bank_account_holder || 'FOTO-DRON Przemysław Właśniewski',
