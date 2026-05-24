@@ -53,10 +53,7 @@ export default function GroupGalleryPage() {
   const [parentEmail, setParentEmail] = useState('');
   const [parentPhone, setParentPhone] = useState('');
   const [selectedAvatar, setSelectedAvatar] = useState<string>('');
-  const [existingIdentifier, setExistingIdentifier] = useState('');
-  const [existingName, setExistingName] = useState('');
   const [existingEmail, setExistingEmail] = useState('');
-  const [sendingReminder, setSendingReminder] = useState(false);
   const [availableAvatars, setAvailableAvatars] = useState<AvatarOption[]>([]);
   const [participantInfo, setParticipantInfo] = useState<ParticipantInfo | null>(null);
   const [authToken, setAuthToken] = useState<string | null>(null);
@@ -280,89 +277,6 @@ export default function GroupGalleryPage() {
       loadSelections(data.participant_id, data.token);
     } catch (error) {
       console.error('Existing parent email login error:', error);
-      toast.error('Wystąpił błąd podczas logowania');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleEmailReminder = async () => {
-    if (!galleryInfo) return;
-    if (!existingEmail.trim()) {
-      toast.error('Podaj email użyty przy rejestracji');
-      return;
-    }
-
-    setSendingReminder(true);
-    try {
-      const response = await fetch('/api/galleries/group/remind-identifier', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          gallery_id: galleryInfo.gallery_id,
-          access_code: code.trim(),
-          parent_email: existingEmail.trim().toLowerCase(),
-        }),
-      });
-
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        toast.error(data.error || 'Nie udało się wysłać przypomnienia');
-        return;
-      }
-
-      toast.success('Jeśli email istnieje w tej galerii, wysłaliśmy przypomnienie identyfikatora.');
-    } catch (error) {
-      console.error('Identifier reminder error:', error);
-      toast.error('Wystąpił błąd podczas wysyłania przypomnienia');
-    } finally {
-      setSendingReminder(false);
-    }
-  };
-
-  const handleExistingLogin = async () => {
-    if (!galleryInfo) return;
-    if (!existingIdentifier.trim()) {
-      toast.error('Podaj ID rodzica (np. JK-4729)');
-      return;
-    }
-    if (!existingName.trim()) {
-      toast.error('Podaj imię i nazwisko użyte przy pierwszej rejestracji');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const response = await fetch('/api/galleries/group/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          gallery_id: galleryInfo.gallery_id,
-          access_code: code.trim(),
-          parent_identifier: existingIdentifier.trim().toUpperCase(),
-          parent_name: existingName.trim(),
-        }),
-      });
-
-      const data = await response.json();
-      if (!response.ok) {
-        toast.error(data.error || 'Nie udało się zalogować do istniejącego profilu');
-        return;
-      }
-
-      setParticipantInfo(data);
-      setAuthToken(data.token);
-      localStorage.setItem(
-        `group_participant_${data.participant_id}`,
-        JSON.stringify(data)
-      );
-      setShowRegistrationModal(false);
-      toast.success(`Witaj ponownie, ${data.parent_name || 'Rodzicu'}!`);
-
-      loadPhotos(galleryInfo.gallery_id, data.token);
-      loadSelections(data.participant_id, data.token);
-    } catch (error) {
-      console.error('Existing parent login error:', error);
       toast.error('Wystąpił błąd podczas logowania');
     } finally {
       setLoading(false);
@@ -709,33 +623,7 @@ export default function GroupGalleryPage() {
 
           <div className="bg-zinc-800/40 border border-zinc-700 rounded-lg p-4 mb-6">
             <h3 className="text-sm font-semibold text-white mb-1">Masz już profil rodzica?</h3>
-            <p className="text-xs text-zinc-400 mb-3">Wejdź na to samo konto z innego komputera po ID rodzica.</p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
-              <input
-                type="text"
-                value={existingIdentifier}
-                onChange={e => setExistingIdentifier(e.target.value.toUpperCase())}
-                placeholder="ID rodzica, np. JK-4729"
-                className="w-full bg-black border border-zinc-700 rounded-lg px-3 py-2 text-white focus:border-gold-500 focus:outline-none uppercase"
-              />
-              <input
-                type="text"
-                value={existingName}
-                onChange={e => setExistingName(e.target.value)}
-                placeholder="Imię i nazwisko"
-                className="w-full bg-black border border-zinc-700 rounded-lg px-3 py-2 text-white focus:border-gold-500 focus:outline-none"
-              />
-            </div>
-            <button
-              type="button"
-              onClick={handleExistingLogin}
-              disabled={loading || !existingIdentifier.trim() || !existingName.trim()}
-              className="w-full bg-zinc-700 text-white text-sm font-semibold py-2.5 rounded-lg hover:bg-zinc-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Wejdź do mojego profilu
-            </button>
-            <div className="my-3 h-px bg-zinc-700" />
-            <p className="text-xs text-zinc-400 mb-2">Lub wejdź po emailu (polecane):</p>
+            <p className="text-xs text-zinc-400 mb-3">Wpisz email z rejestracji i od razu wejdziesz do galerii.</p>
             <div className="flex gap-2">
               <input
                 type="email"
@@ -743,6 +631,12 @@ export default function GroupGalleryPage() {
                 onChange={e => setExistingEmail(e.target.value)}
                 placeholder="Email z rejestracji"
                 className="flex-1 bg-black border border-zinc-700 rounded-lg px-3 py-2 text-white focus:border-gold-500 focus:outline-none"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && existingEmail.trim() && !loading) {
+                    e.preventDefault();
+                    handleEmailLogin();
+                  }
+                }}
               />
               <button
                 type="button"
@@ -751,14 +645,6 @@ export default function GroupGalleryPage() {
                 className="px-3 py-2 bg-gold-500 text-black text-xs font-bold rounded-lg hover:bg-gold-400 transition-all disabled:opacity-50"
               >
                 Wejdź
-              </button>
-              <button
-                type="button"
-                onClick={handleEmailReminder}
-                disabled={sendingReminder || !existingEmail.trim()}
-                className="px-3 py-2 bg-zinc-700 text-white text-xs font-semibold rounded-lg hover:bg-zinc-600 transition-all disabled:opacity-50"
-              >
-                {sendingReminder ? 'Wysyłanie...' : 'Wyślij ID'}
               </button>
             </div>
           </div>
