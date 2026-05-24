@@ -97,13 +97,8 @@ export default function GroupGalleryPage() {
     }
   };
 
-  // Auto-authenticate if code in URL (without password - password requires manual entry)
-  useEffect(() => {
-    if (codeParam && !isAuthenticated && !loading) {
-      handleAuth();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // Intentionally do not auto-auth on load.
+  // Some group galleries require password, so auto-calling auth with only ?code would produce 401 noise.
 
   // Handle logout - clear all data
   const handleLogout = () => {
