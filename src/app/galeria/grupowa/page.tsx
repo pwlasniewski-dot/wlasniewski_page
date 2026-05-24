@@ -55,6 +55,7 @@ export default function GroupGalleryPage() {
   const [selectedAvatar, setSelectedAvatar] = useState<string>('');
   const [existingIdentifier, setExistingIdentifier] = useState('');
   const [existingName, setExistingName] = useState('');
+  const [existingEmail, setExistingEmail] = useState('');
   const [availableAvatars, setAvailableAvatars] = useState<AvatarOption[]>([]);
   const [participantInfo, setParticipantInfo] = useState<ParticipantInfo | null>(null);
   const [authToken, setAuthToken] = useState<string | null>(null);
@@ -183,6 +184,11 @@ export default function GroupGalleryPage() {
       return;
     }
 
+    if (!parentEmail.trim()) {
+      toast.error('Podaj email - jest wymagany do odzyskania dostępu');
+      return;
+    }
+
     if (!galleryInfo) return;
 
     setLoading(true);
@@ -230,6 +236,50 @@ export default function GroupGalleryPage() {
     } catch (error) {
       console.error('Registration error:', error);
       toast.error('Wystąpił błąd podczas rejestracji');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEmailLogin = async () => {
+    if (!galleryInfo) return;
+    if (!existingEmail.trim()) {
+      toast.error('Podaj email użyty przy rejestracji');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await fetch('/api/galleries/group/login-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          gallery_id: galleryInfo.gallery_id,
+          access_code: code.trim(),
+          parent_email: existingEmail.trim().toLowerCase(),
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        toast.error(data.error || 'Nie udało się zalogować po emailu');
+        return;
+      }
+
+      setParticipantInfo(data);
+      setAuthToken(data.token);
+      localStorage.setItem(
+        `group_participant_${data.participant_id}`,
+        JSON.stringify(data)
+      );
+      setShowRegistrationModal(false);
+      toast.success(`Witaj ponownie, ${data.parent_name || 'Rodzicu'}!`);
+
+      loadPhotos(galleryInfo.gallery_id, data.token);
+      loadSelections(data.participant_id, data.token);
+    } catch (error) {
+      console.error('Existing parent email login error:', error);
+      toast.error('Wystąpił błąd podczas logowania');
     } finally {
       setLoading(false);
     }
@@ -649,6 +699,25 @@ export default function GroupGalleryPage() {
             >
               Wejdź do mojego profilu
             </button>
+            <div className="my-3 h-px bg-zinc-700" />
+            <p className="text-xs text-zinc-400 mb-2">Lub wejdź po emailu (polecane):</p>
+            <div className="flex gap-2">
+              <input
+                type="email"
+                value={existingEmail}
+                onChange={e => setExistingEmail(e.target.value)}
+                placeholder="Email z rejestracji"
+                className="flex-1 bg-black border border-zinc-700 rounded-lg px-3 py-2 text-white focus:border-gold-500 focus:outline-none"
+              />
+              <button
+                type="button"
+                onClick={handleEmailLogin}
+                disabled={loading || !existingEmail.trim()}
+                className="px-3 py-2 bg-gold-500 text-black text-xs font-bold rounded-lg hover:bg-gold-400 transition-all disabled:opacity-50"
+              >
+                Wejdź
+              </button>
+            </div>
           </div>
 
           <div className="flex items-center gap-3 mb-6">
@@ -715,7 +784,7 @@ export default function GroupGalleryPage() {
 
             <div>
               <label className="block text-sm font-medium text-zinc-300 mb-2">
-                Email <span className="text-zinc-500">(opcjonalnie)</span>
+                Email <span className="text-red-400">*</span>
               </label>
               <input
                 type="email"
@@ -723,6 +792,7 @@ export default function GroupGalleryPage() {
                 onChange={e => setParentEmail(e.target.value)}
                 placeholder="jan.kowalski@example.com"
                 className="w-full bg-black border border-zinc-700 rounded-lg px-4 py-3 text-white focus:border-gold-500 focus:outline-none"
+                required
               />
             </div>
 
@@ -751,7 +821,7 @@ export default function GroupGalleryPage() {
 
           <button
             onClick={handleRegistration}
-            disabled={loading || !parentName.trim() || !selectedAvatar}
+            disabled={loading || !parentName.trim() || !selectedAvatar || !parentEmail.trim()}
             className="w-full bg-gold-500 text-black font-bold py-4 rounded-lg hover:bg-gold-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed mb-3"
           >
             {loading ? 'Rejestracja...' : 'Zapisz i kontynuuj'}
