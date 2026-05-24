@@ -8,8 +8,9 @@ import { logSystem } from '@/lib/logger';
 export async function POST(req: NextRequest) {
     try {
         const { email, password } = await req.json();
+        const normalizedEmail = String(email || '').trim().toLowerCase();
 
-        if (!email || !password) {
+        if (!normalizedEmail || !password) {
             return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
         }
 
@@ -20,13 +21,23 @@ export async function POST(req: NextRequest) {
             await logSystem('WARN', 'AUTH', 'RATE_LIMIT_IP login', { ip, email, ua });
             return NextResponse.json({ error: 'RATE_LIMITED', message: 'Zbyt wiele prób z tego adresu IP. Spróbuj za 15 minut.' }, { status: 429 });
         }
-        const emailLimit = rateLimit(`login:email:${email.toLowerCase()}`, 5, 15 * 60_000);
+        const emailLimit = rateLimit(`login:email:${normalizedEmail}`, 5, 15 * 60_000);
         if (!emailLimit.ok) {
             await logSystem('WARN', 'AUTH', 'RATE_LIMIT_EMAIL login', { ip, email, ua });
             return NextResponse.json({ error: 'RATE_LIMITED', message: 'Zbyt wiele nieudanych prób logowania. Spróbuj za 15 minut.' }, { status: 429 });
         }
 
-        const user = await prisma.user.findUnique({ where: { email } });
+        const user = await prisma.user.findUnique({
+            where: { email: normalizedEmail },
+            select: {
+                id: true,
+                email: true,
+                name: true,
+                password_hash: true,
+                password_reset_required: true,
+                deleted_at: true,
+            },
+        });
         if (!user) {
             await logSystem('WARN', 'AUTH', 'LOGIN_FAIL_USER_NOT_FOUND', { ip, email, ua });
             return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });

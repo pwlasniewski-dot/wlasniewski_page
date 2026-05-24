@@ -37,12 +37,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Find gallery by group_access_code
-    const gallery = await prisma.clientGallery.findFirst({
+    const normalizedCode = access_code.trim().toUpperCase();
+
+    // group_access_code is unique - use findUnique for index-friendly lookup
+    const gallery = await prisma.clientGallery.findUnique({
       where: {
-        group_access_code: access_code.trim().toUpperCase(),
-        gallery_mode: 'GROUP',
-        is_active: true,
+        group_access_code: normalizedCode,
       },
       select: {
         id: true,
@@ -51,10 +51,12 @@ export async function POST(request: NextRequest) {
         group_password: true,
         max_photos_for_print: true,
         expires_at: true,
+        gallery_mode: true,
+        is_active: true,
       },
     });
 
-    if (!gallery) {
+    if (!gallery || gallery.gallery_mode !== 'GROUP' || !gallery.is_active) {
       return NextResponse.json(
         { error: 'Nieprawidłowy kod dostępu' },
         { status: 404 }

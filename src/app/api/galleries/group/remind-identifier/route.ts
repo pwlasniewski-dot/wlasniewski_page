@@ -36,21 +36,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Nieprawidłowy format email' }, { status: 400 });
     }
 
-    const gallery = await prisma.clientGallery.findFirst({
+    const normalizedCode = String(access_code).trim().toUpperCase();
+
+    const gallery = await prisma.clientGallery.findUnique({
       where: {
-        id: galleryId,
-        group_access_code: String(access_code).trim().toUpperCase(),
-        gallery_mode: 'GROUP',
-        is_active: true,
+        group_access_code: normalizedCode,
       },
       select: {
         id: true,
         client_name: true,
         expires_at: true,
+        gallery_mode: true,
+        is_active: true,
       },
     });
 
-    if (!gallery) {
+    if (!gallery || gallery.id !== galleryId || gallery.gallery_mode !== 'GROUP' || !gallery.is_active) {
       return NextResponse.json({ error: 'Nieprawidłowy kod dostępu' }, { status: 404 });
     }
 
@@ -58,16 +59,29 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Galeria wygasła' }, { status: 403 });
     }
 
-    const participant = await prisma.galleryParticipant.findFirst({
+    let participant = await prisma.galleryParticipant.findFirst({
       where: {
         gallery_id: galleryId,
-        parent_email: { equals: normalizedEmail, mode: 'insensitive' },
+        parent_email: normalizedEmail,
       },
       select: {
         parent_name: true,
         parent_identifier: true,
       },
     });
+
+    if (!participant) {
+      participant = await prisma.galleryParticipant.findFirst({
+        where: {
+          gallery_id: galleryId,
+          parent_email: { equals: normalizedEmail, mode: 'insensitive' },
+        },
+        select: {
+          parent_name: true,
+          parent_identifier: true,
+        },
+      });
+    }
 
     if (participant?.parent_identifier) {
       const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://wlasniewski.pl';

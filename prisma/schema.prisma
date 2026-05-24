@@ -972,6 +972,7 @@ model GalleryParticipant {
   
   @@unique([gallery_id, parent_identifier])
   @@unique([gallery_id, avatar])
+  @@index([gallery_id, parent_email])
   @@map("gallery_participants")
 }
 

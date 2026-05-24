@@ -151,13 +151,23 @@ export async function POST(request: NextRequest) {
     }
 
     // One parent profile per email in a gallery to simplify cross-device login.
-    const existingByEmail = await prisma.galleryParticipant.findFirst({
+    let existingByEmail = await prisma.galleryParticipant.findFirst({
       where: {
         gallery_id: gallery_id,
-        parent_email: { equals: normalizedEmail, mode: 'insensitive' },
+        parent_email: normalizedEmail,
       },
       select: { id: true, parent_identifier: true },
     });
+
+    if (!existingByEmail) {
+      existingByEmail = await prisma.galleryParticipant.findFirst({
+        where: {
+          gallery_id: gallery_id,
+          parent_email: { equals: normalizedEmail, mode: 'insensitive' },
+        },
+        select: { id: true, parent_identifier: true },
+      });
+    }
 
     if (existingByEmail) {
       return NextResponse.json(

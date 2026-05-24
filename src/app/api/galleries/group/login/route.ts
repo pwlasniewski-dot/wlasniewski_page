@@ -32,20 +32,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Nieprawidłowe ID galerii' }, { status: 400 });
     }
 
-    const gallery = await prisma.clientGallery.findFirst({
+    const normalizedCode = String(access_code).trim().toUpperCase();
+
+    const gallery = await prisma.clientGallery.findUnique({
       where: {
-        id: galleryId,
-        group_access_code: String(access_code).trim().toUpperCase(),
-        gallery_mode: 'GROUP',
-        is_active: true,
+        group_access_code: normalizedCode,
       },
       select: {
         id: true,
         expires_at: true,
+        gallery_mode: true,
+        is_active: true,
       },
     });
 
-    if (!gallery) {
+    if (!gallery || gallery.id !== galleryId || gallery.gallery_mode !== 'GROUP' || !gallery.is_active) {
       return NextResponse.json({ error: 'Nieprawidłowy kod dostępu' }, { status: 404 });
     }
 
