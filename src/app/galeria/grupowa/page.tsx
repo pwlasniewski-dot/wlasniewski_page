@@ -56,6 +56,7 @@ export default function GroupGalleryPage() {
   const [existingIdentifier, setExistingIdentifier] = useState('');
   const [existingName, setExistingName] = useState('');
   const [existingEmail, setExistingEmail] = useState('');
+  const [sendingReminder, setSendingReminder] = useState(false);
   const [availableAvatars, setAvailableAvatars] = useState<AvatarOption[]>([]);
   const [participantInfo, setParticipantInfo] = useState<ParticipantInfo | null>(null);
   const [authToken, setAuthToken] = useState<string | null>(null);
@@ -282,6 +283,40 @@ export default function GroupGalleryPage() {
       toast.error('Wystąpił błąd podczas logowania');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleEmailReminder = async () => {
+    if (!galleryInfo) return;
+    if (!existingEmail.trim()) {
+      toast.error('Podaj email użyty przy rejestracji');
+      return;
+    }
+
+    setSendingReminder(true);
+    try {
+      const response = await fetch('/api/galleries/group/remind-identifier', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          gallery_id: galleryInfo.gallery_id,
+          access_code: code.trim(),
+          parent_email: existingEmail.trim().toLowerCase(),
+        }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        toast.error(data.error || 'Nie udało się wysłać przypomnienia');
+        return;
+      }
+
+      toast.success('Jeśli email istnieje w tej galerii, wysłaliśmy przypomnienie identyfikatora.');
+    } catch (error) {
+      console.error('Identifier reminder error:', error);
+      toast.error('Wystąpił błąd podczas wysyłania przypomnienia');
+    } finally {
+      setSendingReminder(false);
     }
   };
 
@@ -716,6 +751,14 @@ export default function GroupGalleryPage() {
                 className="px-3 py-2 bg-gold-500 text-black text-xs font-bold rounded-lg hover:bg-gold-400 transition-all disabled:opacity-50"
               >
                 Wejdź
+              </button>
+              <button
+                type="button"
+                onClick={handleEmailReminder}
+                disabled={sendingReminder || !existingEmail.trim()}
+                className="px-3 py-2 bg-zinc-700 text-white text-xs font-semibold rounded-lg hover:bg-zinc-600 transition-all disabled:opacity-50"
+              >
+                {sendingReminder ? 'Wysyłanie...' : 'Wyślij ID'}
               </button>
             </div>
           </div>
