@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { getApiUrl } from '@/lib/api-config';
-import { Upload, Trash2, Check, X, Eye, ImageIcon, Plus, ArrowLeft, Calendar, Save, ShoppingBag, Mail } from 'lucide-react';
+import { Upload, Trash2, Check, X, Eye, ImageIcon, Plus, ArrowLeft, Calendar, Save, ShoppingBag, Mail, Move } from 'lucide-react';
 import Image from 'next/image';
 import toast from 'react-hot-toast';
 import imageCompression from 'browser-image-compression';
@@ -13,7 +13,18 @@ interface GalleryPhoto {
     file_url: string;
     thumbnail_url: string | null;
     is_standard: boolean;
+    order_index: number;
+    created_at: string;
 }
+
+type SortMode =
+    | 'manual'
+    | 'newest'
+    | 'oldest'
+    | 'filename_asc'
+    | 'filename_desc'
+    | 'number_asc'
+    | 'number_desc';
 
 interface GalleryProduct {
     id: number;
@@ -61,6 +72,10 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
     const [uploadStats, setUploadStats] = useState({ current: 0, total: 0 });
     const [skipOptimization, setSkipOptimization] = useState(false);
     const [sendingAccessEmail, setSendingAccessEmail] = useState(false);
+    const [standardSortMode, setStandardSortMode] = useState<SortMode>('manual');
+    const [premiumSortMode, setPremiumSortMode] = useState<SortMode>('manual');
+    const [draggedPhotoId, setDraggedPhotoId] = useState<number | null>(null);
+    const [savingOrder, setSavingOrder] = useState(false);
 
     // Settings logic
     const [isEditingSettings, setIsEditingSettings] = useState(false);
@@ -490,6 +505,111 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
         }
     };
 
+    const getFileNameFromUrl = (url: string) => {
+        try {
+            const withoutQuery = url.split('?')[0];
+            const parts = withoutQuery.split('/');
+            return decodeURIComponent(parts[parts.length - 1] || '').toLowerCase();
+        } catch {
+            return url.toLowerCase();
+        }
+    };
+
+    const getNumericToken = (url: string): number | null => {
+        const name = getFileNameFromUrl(url);
+        const match = name.match(/(\d+)/);
+        return match ? Number(match[1]) : null;
+    };
+
+    const sortPhotos = (photos: GalleryPhoto[], mode: SortMode) => {
+        const list = [...photos];
+        switch (mode) {
+            case 'manual':
+                return list.sort((a, b) => a.order_index - b.order_index);
+            case 'newest':
+                return list.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+            case 'oldest':
+                return list.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+            case 'filename_asc':
+                return list.sort((a, b) => getFileNameFromUrl(a.file_url).localeCompare(getFileNameFromUrl(b.file_url), 'pl'));
+            case 'filename_desc':
+                return list.sort((a, b) => getFileNameFromUrl(b.file_url).localeCompare(getFileNameFromUrl(a.file_url), 'pl'));
+            case 'number_asc':
+                return list.sort((a, b) => {
+                    const na = getNumericToken(a.file_url);
+                    const nb = getNumericToken(b.file_url);
+                    if (na === null && nb === null) return 0;
+                    if (na === null) return 1;
+                    if (nb === null) return -1;
+                    return na - nb;
+                });
+            case 'number_desc':
+                return list.sort((a, b) => {
+                    const na = getNumericToken(a.file_url);
+                    const nb = getNumericToken(b.file_url);
+                    if (na === null && nb === null) return 0;
+                    if (na === null) return 1;
+                    if (nb === null) return -1;
+                    return nb - na;
+                });
+            default:
+                return list;
+        }
+    };
+
+    const persistPhotoOrder = async (orderedIds: number[], isStandardGroup: boolean) => {
+        if (!galleryId || orderedIds.length === 0) return;
+        setSavingOrder(true);
+        try {
+            const token = localStorage.getItem('admin_token');
+            const base = isStandardGroup ? 0 : 100000;
+            await Promise.all(
+                orderedIds.map((photoId, idx) =>
+                    fetch(getApiUrl(`admin/galleries/${galleryId}/photos/${photoId}`), {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`,
+                        },
+                        body: JSON.stringify({ order_index: base + idx + 1 }),
+                    })
+                )
+            );
+
+            setGallery(prev => {
+                if (!prev) return prev;
+                const orderMap = new Map<number, number>();
+                orderedIds.forEach((id, idx) => orderMap.set(id, base + idx + 1));
+                return {
+                    ...prev,
+                    photos: prev.photos.map(p => orderMap.has(p.id) ? { ...p, order_index: orderMap.get(p.id)! } : p),
+                };
+            });
+            toast.success('Zapisano kolejność zdjęć');
+        } catch (error) {
+            toast.error('Nie udało się zapisać kolejności');
+        } finally {
+            setSavingOrder(false);
+        }
+    };
+
+    const movePhotoInGroup = async (targetId: number, isStandardGroup: boolean) => {
+        if (!gallery || draggedPhotoId === null || draggedPhotoId === targetId) return;
+        const currentGroup = sortPhotos(
+            (gallery.photos || []).filter(p => p.is_standard === isStandardGroup),
+            'manual'
+        );
+        const fromIndex = currentGroup.findIndex(p => p.id === draggedPhotoId);
+        const toIndex = currentGroup.findIndex(p => p.id === targetId);
+        if (fromIndex < 0 || toIndex < 0) return;
+
+        const reordered = [...currentGroup];
+        const [moved] = reordered.splice(fromIndex, 1);
+        reordered.splice(toIndex, 0, moved);
+        const ids = reordered.map(p => p.id);
+        await persistPhotoOrder(ids, isStandardGroup);
+    };
+
     if (loading) return <div className="p-12 text-center text-zinc-400 flex items-center justify-center gap-3"><ImageIcon className="animate-pulse" /> Wczytywanie galerii...</div>;
 
     if (!galleryId) {
@@ -640,8 +760,8 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
 
     if (!gallery) return <div className="p-12 text-center text-red-500 font-bold bg-red-500/10 rounded-2xl border border-red-500/20">Błąd krytyczny: Galeria nie istnieje.</div>;
 
-    const standardPhotos = (gallery.photos || []).filter(p => p.is_standard);
-    const premiumPhotos = (gallery.photos || []).filter(p => !p.is_standard);
+    const standardPhotos = sortPhotos((gallery.photos || []).filter(p => p.is_standard), standardSortMode);
+    const premiumPhotos = sortPhotos((gallery.photos || []).filter(p => !p.is_standard), premiumSortMode);
 
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-12">
@@ -1008,13 +1128,46 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
                 {/* Standard */}
                 {standardPhotos.length > 0 && (
                     <div className="space-y-6">
-                        <h3 className="text-sm font-black text-white uppercase tracking-[0.2em] flex items-center gap-3">
-                            <div className="w-2 h-2 rounded-full bg-green-500" />
-                            Zdjęcia Standard ({standardPhotos.length})
-                        </h3>
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                            <h3 className="text-sm font-black text-white uppercase tracking-[0.2em] flex items-center gap-3">
+                                <div className="w-2 h-2 rounded-full bg-green-500" />
+                                Zdjęcia Standard ({standardPhotos.length})
+                            </h3>
+                            <div className="flex items-center gap-2">
+                                <Move className="w-4 h-4 text-zinc-500" />
+                                <select
+                                    value={standardSortMode}
+                                    onChange={(e) => setStandardSortMode(e.target.value as SortMode)}
+                                    className="bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-xs text-zinc-200"
+                                >
+                                    <option value="manual">Ręcznie (złap i przesuń)</option>
+                                    <option value="newest">Data dodania: najnowsze</option>
+                                    <option value="oldest">Data dodania: najstarsze</option>
+                                    <option value="filename_asc">Nazwa pliku: A-Z</option>
+                                    <option value="filename_desc">Nazwa pliku: Z-A</option>
+                                    <option value="number_asc">Numer zdjęcia: rosnąco</option>
+                                    <option value="number_desc">Numer zdjęcia: malejąco</option>
+                                </select>
+                            </div>
+                        </div>
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                             {standardPhotos.map(photo => (
-                                <AdminPhotoCard key={photo.id} photo={photo} onToggle={() => togglePhotoType(photo.id, photo.is_standard)} onDelete={() => deletePhoto(photo.id)} />
+                                <AdminPhotoCard
+                                    key={photo.id}
+                                    photo={photo}
+                                    onToggle={() => togglePhotoType(photo.id, photo.is_standard)}
+                                    onDelete={() => deletePhoto(photo.id)}
+                                    isDraggable={standardSortMode === 'manual'}
+                                    isSavingOrder={savingOrder}
+                                    onDragStart={() => setDraggedPhotoId(photo.id)}
+                                    onDragOver={(e) => { if (standardSortMode === 'manual') e.preventDefault(); }}
+                                    onDrop={async () => {
+                                        if (standardSortMode !== 'manual') return;
+                                        await movePhotoInGroup(photo.id, true);
+                                        setDraggedPhotoId(null);
+                                    }}
+                                    onDragEnd={() => setDraggedPhotoId(null)}
+                                />
                             ))}
                         </div>
                     </div>
@@ -1023,13 +1176,46 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
                 {/* Premium */}
                 {premiumPhotos.length > 0 && (
                     <div className="space-y-6">
-                        <h3 className="text-sm font-black text-white uppercase tracking-[0.2em] flex items-center gap-3">
-                            <div className="w-2 h-2 rounded-full bg-gold-500 shadow-[0_0_8px_rgba(234,179,8,0.5)]" />
-                            Dodatkowe Premium ({premiumPhotos.length})
-                        </h3>
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                            <h3 className="text-sm font-black text-white uppercase tracking-[0.2em] flex items-center gap-3">
+                                <div className="w-2 h-2 rounded-full bg-gold-500 shadow-[0_0_8px_rgba(234,179,8,0.5)]" />
+                                Dodatkowe Premium ({premiumPhotos.length})
+                            </h3>
+                            <div className="flex items-center gap-2">
+                                <Move className="w-4 h-4 text-zinc-500" />
+                                <select
+                                    value={premiumSortMode}
+                                    onChange={(e) => setPremiumSortMode(e.target.value as SortMode)}
+                                    className="bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-xs text-zinc-200"
+                                >
+                                    <option value="manual">Ręcznie (złap i przesuń)</option>
+                                    <option value="newest">Data dodania: najnowsze</option>
+                                    <option value="oldest">Data dodania: najstarsze</option>
+                                    <option value="filename_asc">Nazwa pliku: A-Z</option>
+                                    <option value="filename_desc">Nazwa pliku: Z-A</option>
+                                    <option value="number_asc">Numer zdjęcia: rosnąco</option>
+                                    <option value="number_desc">Numer zdjęcia: malejąco</option>
+                                </select>
+                            </div>
+                        </div>
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                             {premiumPhotos.map(photo => (
-                                <AdminPhotoCard key={photo.id} photo={photo} onToggle={() => togglePhotoType(photo.id, photo.is_standard)} onDelete={() => deletePhoto(photo.id)} />
+                                <AdminPhotoCard
+                                    key={photo.id}
+                                    photo={photo}
+                                    onToggle={() => togglePhotoType(photo.id, photo.is_standard)}
+                                    onDelete={() => deletePhoto(photo.id)}
+                                    isDraggable={premiumSortMode === 'manual'}
+                                    isSavingOrder={savingOrder}
+                                    onDragStart={() => setDraggedPhotoId(photo.id)}
+                                    onDragOver={(e) => { if (premiumSortMode === 'manual') e.preventDefault(); }}
+                                    onDrop={async () => {
+                                        if (premiumSortMode !== 'manual') return;
+                                        await movePhotoInGroup(photo.id, false);
+                                        setDraggedPhotoId(null);
+                                    }}
+                                    onDragEnd={() => setDraggedPhotoId(null)}
+                                />
                             ))}
                         </div>
                     </div>
@@ -1046,9 +1232,36 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
     );
 }
 
-function AdminPhotoCard({ photo, onToggle, onDelete }: { photo: GalleryPhoto, onToggle: () => void, onDelete: () => void }) {
+function AdminPhotoCard({
+    photo,
+    onToggle,
+    onDelete,
+    isDraggable,
+    isSavingOrder,
+    onDragStart,
+    onDragOver,
+    onDrop,
+    onDragEnd,
+}: {
+    photo: GalleryPhoto,
+    onToggle: () => void,
+    onDelete: () => void,
+    isDraggable?: boolean,
+    isSavingOrder?: boolean,
+    onDragStart?: () => void,
+    onDragOver?: (e: React.DragEvent<HTMLDivElement>) => void,
+    onDrop?: () => void,
+    onDragEnd?: () => void,
+}) {
     return (
-        <div className="group relative aspect-square bg-zinc-900 rounded-2xl overflow-hidden border border-zinc-800 hover:border-zinc-700 transition-all shadow-lg hover:shadow-black/50">
+        <div
+            draggable={!!isDraggable && !isSavingOrder}
+            onDragStart={onDragStart}
+            onDragOver={onDragOver}
+            onDrop={onDrop}
+            onDragEnd={onDragEnd}
+            className={`group relative aspect-square bg-zinc-900 rounded-2xl overflow-hidden border border-zinc-800 hover:border-zinc-700 transition-all shadow-lg hover:shadow-black/50 ${isDraggable ? 'cursor-grab active:cursor-grabbing' : ''}`}
+        >
             <Image
                 src={photo.thumbnail_url || photo.file_url}
                 alt="Photo"
@@ -1075,6 +1288,11 @@ function AdminPhotoCard({ photo, onToggle, onDelete }: { photo: GalleryPhoto, on
             <div className={`absolute top-2.5 right-2.5 px-2 py-0.5 rounded-lg text-[10px] font-black tracking-tighter ${photo.is_standard ? 'bg-green-500 text-white' : 'bg-gold-500 text-black shadow-lg shadow-gold-500/20'}`}>
                 {photo.is_standard ? 'STD' : 'PRM'}
             </div>
+            {isDraggable && (
+                <div className="absolute bottom-2 left-2 px-2 py-1 rounded-lg bg-black/60 text-zinc-300 text-[10px] font-bold flex items-center gap-1 pointer-events-none">
+                    <Move className="w-3 h-3" /> przesuń
+                </div>
+            )}
         </div>
     );
 }

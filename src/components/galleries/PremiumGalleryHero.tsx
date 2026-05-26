@@ -364,24 +364,6 @@ export function PremiumGalleryStory({
                     <div className="relative w-full aspect-[3/2]">
                       <Image
                         src={photo.file_url}
-                      {onToggleSelect && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            onToggleSelect(photo);
-                          }}
-                          className={`absolute top-3 left-3 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all ${isSelected ? 'bg-gold-500 text-black' : (isLight ? 'bg-white/90 text-black hover:bg-white' : 'bg-black/80 text-white hover:bg-black')}`}
-                          title={isSelected ? 'Odznacz do druku' : 'Zaznacz do druku'}
-                        >
-                          {isSelected ? (
-                            <span className="inline-flex items-center gap-1"><Check className="w-3 h-3" /> Odznacz</span>
-                          ) : (
-                            'Do druku'
-                          )}
-                        </button>
-                      )}
                         alt={`Kadr ${index + 1}`}
                         fill
                         sizes="(max-width: 1024px) 100vw, 1024px"
@@ -390,6 +372,24 @@ export function PremiumGalleryStory({
                     </div>
                   );
                 })()}
+                {onToggleSelect && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onToggleSelect(photo);
+                    }}
+                    className={`absolute top-3 left-3 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all ${isSelected ? 'bg-gold-500 text-black' : (isLight ? 'bg-white/90 text-black hover:bg-white' : 'bg-black/80 text-white hover:bg-black')}`}
+                    title={isSelected ? 'Odznacz do druku' : 'Zaznacz do druku'}
+                  >
+                    {isSelected ? (
+                      <span className="inline-flex items-center gap-1"><Check className="w-3 h-3" /> Odznacz</span>
+                    ) : (
+                      'Do druku'
+                    )}
+                  </button>
+                )}
               </button>
 
               <div className="flex justify-end">
