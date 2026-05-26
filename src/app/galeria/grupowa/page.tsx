@@ -910,7 +910,7 @@ export default function GroupGalleryPage() {
                     className={`absolute top-2 left-2 flex items-center gap-1.5 px-2.5 py-1.5 rounded-full font-bold text-xs shadow-lg transition-all ${
                       isSelected
                         ? 'bg-gold-500 text-black'
-                        : 'bg-black/70 text-white hover:bg-black/90 opacity-0 group-hover:opacity-100'
+                        : 'bg-black/75 text-white hover:bg-black/90 opacity-100'
                     }`}
                     title={isSelected ? 'Kliknij, aby odznaczyć' : 'Zaznacz do druku'}
                   >
