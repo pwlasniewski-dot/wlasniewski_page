@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Download, ShoppingCart, Check, X, ArrowLeft, Calendar, ImageIcon, Plus, Minus, ChevronLeft, ChevronRight, Maximize2, Layers } from 'lucide-react';
+import { Download, ShoppingCart, Check, X, ArrowLeft, Calendar, ImageIcon, Plus, Minus, ChevronLeft, ChevronRight, Layers } from 'lucide-react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import PremiumGalleryHero, { PremiumGalleryStory } from '@/components/galleries/PremiumGalleryHero';
@@ -152,6 +152,16 @@ export default function ClientGalleryPage() {
             newSelected.add(photoId);
         }
         setSelectedPremium(newSelected);
+    };
+
+    const toggleStandard = (photoId: number) => {
+        const next = new Set(selectedStandard);
+        if (next.has(photoId)) {
+            next.delete(photoId);
+        } else {
+            next.add(photoId);
+        }
+        setSelectedStandard(next);
     };
 
     const navigateLightbox = useCallback((dir: 'next' | 'prev') => {
@@ -463,7 +473,7 @@ export default function ClientGalleryPage() {
                                         onClick={() => setLightbox(idx, 'standard')}
                                         className="group relative w-full text-left"
                                     >
-                                        <figure className="relative w-full overflow-hidden rounded-xl bg-zinc-900 shadow-md hover:shadow-xl transition-all duration-300 hover:scale-[1.02]">
+                                        <figure className={`relative w-full overflow-hidden rounded-xl bg-zinc-900 shadow-md hover:shadow-xl transition-all duration-300 hover:scale-[1.02] ${selectedStandard.has(photo.id) ? 'ring-4 ring-gold-500/80' : ''}`}>
                                             <img
                                                 src={photo.file_url}
                                                 alt={`Photo ${photo.id}`}
@@ -471,6 +481,18 @@ export default function ClientGalleryPage() {
                                                 className="block w-full h-auto object-contain"
                                             />
                                             <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition-colors duration-300 pointer-events-none" />
+                                            <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    toggleStandard(photo.id);
+                                                }}
+                                                className={`absolute top-3 left-3 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all ${selectedStandard.has(photo.id) ? 'bg-gold-500 text-black' : 'bg-black/75 text-white hover:bg-black/90'}`}
+                                                title={selectedStandard.has(photo.id) ? 'Odznacz do druku' : 'Zaznacz do druku'}
+                                            >
+                                                {selectedStandard.has(photo.id) ? 'Odznacz' : 'Do druku'}
+                                            </button>
                                         </figure>
                                     </button>
                                 </div>
@@ -486,6 +508,8 @@ export default function ClientGalleryPage() {
                                     width: p.width,
                                     height: p.height,
                                 }))}
+                                selectedPhotoIds={selectedStandard}
+                                onToggleSelect={(p) => toggleStandard(p.id)}
                                 onPhotoClick={(p) => {
                                     const idx = gallery.standard_photos.findIndex(ph => ph.id === p.id);
                                     if (idx !== -1) setLightbox(idx, 'standard');
@@ -743,12 +767,20 @@ export default function ClientGalleryPage() {
                                         )}
                                     </>
                                 ) : (
-                                    <button
-                                        onClick={() => downloadPhoto(currentPhoto.id)}
-                                        className="hidden md:flex h-16 px-12 bg-white text-black text-[10px] font-black uppercase rounded-2xl tracking-widest items-center gap-3 shadow-2xl hover:bg-gold-500 transition-colors"
-                                    >
-                                        <Download className="w-5 h-5" /> Pobierz teraz
-                                    </button>
+                                    <div className="hidden md:flex items-center gap-3">
+                                        <button
+                                            onClick={() => toggleStandard(currentPhoto.id)}
+                                            className={`h-16 px-8 text-[10px] font-black uppercase rounded-2xl tracking-widest items-center gap-3 shadow-2xl transition-colors ${selectedStandard.has(currentPhoto.id) ? 'bg-gold-500 text-black hover:bg-gold-400' : 'bg-white/10 text-white border border-white/15 hover:bg-white hover:text-black'}`}
+                                        >
+                                            {selectedStandard.has(currentPhoto.id) ? 'Odznacz do druku' : 'Zaznacz do druku'}
+                                        </button>
+                                        <button
+                                            onClick={() => downloadPhoto(currentPhoto.id)}
+                                            className="h-16 px-12 bg-white text-black text-[10px] font-black uppercase rounded-2xl tracking-widest items-center gap-3 shadow-2xl hover:bg-gold-500 transition-colors"
+                                        >
+                                            <Download className="w-5 h-5" /> Pobierz teraz
+                                        </button>
+                                    </div>
                                 )}
 
                                 <button

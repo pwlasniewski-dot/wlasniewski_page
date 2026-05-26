@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Play, Pause, LayoutGrid, BookOpen } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Play, Pause, LayoutGrid, BookOpen, Check } from 'lucide-react';
 
 export interface HeroPhoto {
   id: number;
@@ -306,9 +306,13 @@ export default function PremiumGalleryHero({
  */
 export function PremiumGalleryStory({
   photos,
+  selectedPhotoIds,
+  onToggleSelect,
   onPhotoClick,
 }: {
   photos: HeroPhoto[];
+  selectedPhotoIds?: Set<number>;
+  onToggleSelect?: (photo: HeroPhoto) => void;
   onPhotoClick?: (photo: HeroPhoto) => void;
 }) {
   if (photos.length === 0) return null;
@@ -317,6 +321,7 @@ export function PremiumGalleryStory({
     <div className="w-full overflow-x-hidden">
       {photos.map((photo, index) => {
         const isLight = index % 2 === 0;
+        const isSelected = selectedPhotoIds?.has(photo.id) || false;
         return (
           <section
             key={photo.id}
@@ -359,6 +364,24 @@ export function PremiumGalleryStory({
                     <div className="relative w-full aspect-[3/2]">
                       <Image
                         src={photo.file_url}
+                      {onToggleSelect && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            onToggleSelect(photo);
+                          }}
+                          className={`absolute top-3 left-3 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all ${isSelected ? 'bg-gold-500 text-black' : (isLight ? 'bg-white/90 text-black hover:bg-white' : 'bg-black/80 text-white hover:bg-black')}`}
+                          title={isSelected ? 'Odznacz do druku' : 'Zaznacz do druku'}
+                        >
+                          {isSelected ? (
+                            <span className="inline-flex items-center gap-1"><Check className="w-3 h-3" /> Odznacz</span>
+                          ) : (
+                            'Do druku'
+                          )}
+                        </button>
+                      )}
                         alt={`Kadr ${index + 1}`}
                         fill
                         sizes="(max-width: 1024px) 100vw, 1024px"
