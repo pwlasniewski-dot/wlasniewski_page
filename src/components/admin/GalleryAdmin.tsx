@@ -141,6 +141,45 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
         }
     }, [gallery]);
 
+    useEffect(() => {
+        if (draggedPhotoId === null) return;
+
+        const EDGE_THRESHOLD = 140;
+        const MAX_SCROLL_SPEED = 26;
+
+        const handleWindowDragOver = (event: DragEvent) => {
+            const y = event.clientY;
+            if (!Number.isFinite(y)) return;
+
+            const viewportHeight = window.innerHeight;
+            let delta = 0;
+
+            if (y < EDGE_THRESHOLD) {
+                const ratio = (EDGE_THRESHOLD - y) / EDGE_THRESHOLD;
+                delta = -Math.ceil(ratio * MAX_SCROLL_SPEED);
+            } else if (y > viewportHeight - EDGE_THRESHOLD) {
+                const ratio = (y - (viewportHeight - EDGE_THRESHOLD)) / EDGE_THRESHOLD;
+                delta = Math.ceil(ratio * MAX_SCROLL_SPEED);
+            }
+
+            if (delta !== 0) {
+                window.scrollBy({ top: delta, behavior: 'auto' });
+            }
+        };
+
+        const clearDragState = () => setDraggedPhotoId(null);
+
+        window.addEventListener('dragover', handleWindowDragOver);
+        window.addEventListener('drop', clearDragState);
+        window.addEventListener('dragend', clearDragState);
+
+        return () => {
+            window.removeEventListener('dragover', handleWindowDragOver);
+            window.removeEventListener('drop', clearDragState);
+            window.removeEventListener('dragend', clearDragState);
+        };
+    }, [draggedPhotoId]);
+
     const fetchGallery = async () => {
         try {
             const token = localStorage.getItem('admin_token');
@@ -1159,8 +1198,17 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
                                     onDelete={() => deletePhoto(photo.id)}
                                     isDraggable={standardSortMode === 'manual'}
                                     isSavingOrder={savingOrder}
-                                    onDragStart={() => setDraggedPhotoId(photo.id)}
-                                    onDragOver={(e) => { if (standardSortMode === 'manual') e.preventDefault(); }}
+                                    onDragStart={(e) => {
+                                        if (standardSortMode !== 'manual') return;
+                                        e.dataTransfer.setData('text/plain', String(photo.id));
+                                        e.dataTransfer.effectAllowed = 'move';
+                                        setDraggedPhotoId(photo.id);
+                                    }}
+                                    onDragOver={(e) => {
+                                        if (standardSortMode !== 'manual') return;
+                                        e.preventDefault();
+                                        e.dataTransfer.dropEffect = 'move';
+                                    }}
                                     onDrop={async () => {
                                         if (standardSortMode !== 'manual') return;
                                         await movePhotoInGroup(photo.id, true);
@@ -1207,8 +1255,17 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
                                     onDelete={() => deletePhoto(photo.id)}
                                     isDraggable={premiumSortMode === 'manual'}
                                     isSavingOrder={savingOrder}
-                                    onDragStart={() => setDraggedPhotoId(photo.id)}
-                                    onDragOver={(e) => { if (premiumSortMode === 'manual') e.preventDefault(); }}
+                                    onDragStart={(e) => {
+                                        if (premiumSortMode !== 'manual') return;
+                                        e.dataTransfer.setData('text/plain', String(photo.id));
+                                        e.dataTransfer.effectAllowed = 'move';
+                                        setDraggedPhotoId(photo.id);
+                                    }}
+                                    onDragOver={(e) => {
+                                        if (premiumSortMode !== 'manual') return;
+                                        e.preventDefault();
+                                        e.dataTransfer.dropEffect = 'move';
+                                    }}
                                     onDrop={async () => {
                                         if (premiumSortMode !== 'manual') return;
                                         await movePhotoInGroup(photo.id, false);
@@ -1248,7 +1305,7 @@ function AdminPhotoCard({
     onDelete: () => void,
     isDraggable?: boolean,
     isSavingOrder?: boolean,
-    onDragStart?: () => void,
+    onDragStart?: (e: React.DragEvent<HTMLDivElement>) => void,
     onDragOver?: (e: React.DragEvent<HTMLDivElement>) => void,
     onDrop?: () => void,
     onDragEnd?: () => void,
