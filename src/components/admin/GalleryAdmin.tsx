@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { getApiUrl } from '@/lib/api-config';
-import { Upload, Trash2, Check, X, Eye, ImageIcon, Plus, ArrowLeft, Calendar, Save, ShoppingBag, Mail, Move } from 'lucide-react';
+import { Upload, Trash2, Check, X, Eye, ImageIcon, Plus, ArrowLeft, Calendar, Save, ShoppingBag, Mail, Move, CheckSquare, Square } from 'lucide-react';
 import Image from 'next/image';
 import toast from 'react-hot-toast';
 import imageCompression from 'browser-image-compression';
@@ -76,6 +76,8 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
     const [premiumSortMode, setPremiumSortMode] = useState<SortMode>('manual');
     const [draggedPhotoId, setDraggedPhotoId] = useState<number | null>(null);
     const [savingOrder, setSavingOrder] = useState(false);
+    const [selectedPhotoIds, setSelectedPhotoIds] = useState<Set<number>>(new Set());
+    const [deletingBulk, setDeletingBulk] = useState(false);
 
     // Settings logic
     const [isEditingSettings, setIsEditingSettings] = useState(false);
@@ -632,6 +634,64 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
         }
     };
 
+    const togglePhotoSelection = (photoId: number) => {
+        setSelectedPhotoIds(prev => {
+            const next = new Set(prev);
+            if (next.has(photoId)) next.delete(photoId);
+            else next.add(photoId);
+            return next;
+        });
+    };
+
+    const selectAllInGroup = (photos: GalleryPhoto[]) => {
+        setSelectedPhotoIds(prev => {
+            const next = new Set(prev);
+            photos.forEach(p => next.add(p.id));
+            return next;
+        });
+    };
+
+    const deselectAllInGroup = (photos: GalleryPhoto[]) => {
+        setSelectedPhotoIds(prev => {
+            const next = new Set(prev);
+            photos.forEach(p => next.delete(p.id));
+            return next;
+        });
+    };
+
+    const bulkDeletePhotos = async () => {
+        if (selectedPhotoIds.size === 0) return;
+        if (!confirm(`Usunąć ${selectedPhotoIds.size} zaznaczonych zdjęć? Tej operacji nie można cofnąć.`)) return;
+        setDeletingBulk(true);
+        try {
+            const token = localStorage.getItem('admin_token');
+            const res = await fetch(getApiUrl(`admin/galleries/${galleryId}/photos/bulk-delete`), {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                },
+                body: JSON.stringify({ photoIds: Array.from(selectedPhotoIds) }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                toast.success(`Usunięto ${data.deleted} zdjęć`);
+                setSelectedPhotoIds(new Set());
+                fetchGallery();
+            } else {
+                toast.error(data.error || 'Błąd usuwania');
+            }
+        } catch (error) {
+            toast.error('Błąd połączenia');
+        } finally {
+            setDeletingBulk(false);
+        }
+    };
+
+    const saveSortOrderForGroup = async (photos: GalleryPhoto[], isStandardGroup: boolean) => {
+        await persistPhotoOrder(photos.map(p => p.id), isStandardGroup);
+    };
+
     const movePhotoInGroup = async (targetId: number, isStandardGroup: boolean) => {
         if (!gallery || draggedPhotoId === null || draggedPhotoId === targetId) return;
         const currentGroup = sortPhotos(
@@ -1162,17 +1222,58 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
                 )}
             </div>
 
+            {/* Bulk delete bar */}
+            {selectedPhotoIds.size > 0 && (
+                <div className="sticky top-4 z-20 flex items-center justify-between gap-4 bg-red-950/90 border border-red-500/40 rounded-2xl px-6 py-4 shadow-2xl backdrop-blur">
+                    <span className="text-white font-bold text-sm">
+                        Zaznaczono: <span className="text-red-400 font-black">{selectedPhotoIds.size}</span> zdjęć
+                    </span>
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => setSelectedPhotoIds(new Set())}
+                            className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-xl text-xs font-bold transition-all"
+                        >
+                            Odznacz wszystkie
+                        </button>
+                        <button
+                            onClick={bulkDeletePhotos}
+                            disabled={deletingBulk}
+                            className="flex items-center gap-2 px-5 py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all disabled:opacity-50 shadow-lg shadow-red-900/40"
+                        >
+                            <Trash2 className="w-4 h-4" />
+                            {deletingBulk ? 'Usuwanie...' : `Usuń zaznaczone (${selectedPhotoIds.size})`}
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* Photos Grids */}
             <div className="space-y-12">
                 {/* Standard */}
                 {standardPhotos.length > 0 && (
-                    <div className="space-y-6">
+                    <div className="space-y-4">
                         <div className="flex flex-wrap items-center justify-between gap-3">
                             <h3 className="text-sm font-black text-white uppercase tracking-[0.2em] flex items-center gap-3">
                                 <div className="w-2 h-2 rounded-full bg-green-500" />
                                 Zdjęcia Standard ({standardPhotos.length})
                             </h3>
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-wrap items-center gap-2">
+                                {/* Select all / deselect all for this group */}
+                                {standardPhotos.every(p => selectedPhotoIds.has(p.id)) ? (
+                                    <button
+                                        onClick={() => deselectAllInGroup(standardPhotos)}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-xs font-bold transition-all"
+                                    >
+                                        <Square className="w-3.5 h-3.5" /> Odznacz grupę
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={() => selectAllInGroup(standardPhotos)}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-xs font-bold transition-all"
+                                    >
+                                        <CheckSquare className="w-3.5 h-3.5" /> Zaznacz grupę
+                                    </button>
+                                )}
                                 <Move className="w-4 h-4 text-zinc-500" />
                                 <select
                                     value={standardSortMode}
@@ -1187,6 +1288,17 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
                                     <option value="number_asc">Numer zdjęcia: rosnąco</option>
                                     <option value="number_desc">Numer zdjęcia: malejąco</option>
                                 </select>
+                                {standardSortMode !== 'manual' && (
+                                    <button
+                                        onClick={() => saveSortOrderForGroup(standardPhotos, true)}
+                                        disabled={savingOrder}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-green-700 hover:bg-green-600 text-white rounded-lg text-xs font-black uppercase tracking-widest transition-all disabled:opacity-50"
+                                        title="Zapisz tę kolejność jako stałą (widoczną dla klienta)"
+                                    >
+                                        <Save className="w-3.5 h-3.5" />
+                                        {savingOrder ? 'Zapisywanie...' : 'Zapisz kolejność'}
+                                    </button>
+                                )}
                             </div>
                         </div>
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
@@ -1194,6 +1306,8 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
                                 <AdminPhotoCard
                                     key={photo.id}
                                     photo={photo}
+                                    isSelected={selectedPhotoIds.has(photo.id)}
+                                    onToggleSelect={() => togglePhotoSelection(photo.id)}
                                     onToggle={() => togglePhotoType(photo.id, photo.is_standard)}
                                     onDelete={() => deletePhoto(photo.id)}
                                     isDraggable={standardSortMode === 'manual'}
@@ -1223,13 +1337,29 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
 
                 {/* Premium */}
                 {premiumPhotos.length > 0 && (
-                    <div className="space-y-6">
+                    <div className="space-y-4">
                         <div className="flex flex-wrap items-center justify-between gap-3">
                             <h3 className="text-sm font-black text-white uppercase tracking-[0.2em] flex items-center gap-3">
                                 <div className="w-2 h-2 rounded-full bg-gold-500 shadow-[0_0_8px_rgba(234,179,8,0.5)]" />
                                 Dodatkowe Premium ({premiumPhotos.length})
                             </h3>
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-wrap items-center gap-2">
+                                {/* Select all / deselect all for this group */}
+                                {premiumPhotos.every(p => selectedPhotoIds.has(p.id)) ? (
+                                    <button
+                                        onClick={() => deselectAllInGroup(premiumPhotos)}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-xs font-bold transition-all"
+                                    >
+                                        <Square className="w-3.5 h-3.5" /> Odznacz grupę
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={() => selectAllInGroup(premiumPhotos)}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-xs font-bold transition-all"
+                                    >
+                                        <CheckSquare className="w-3.5 h-3.5" /> Zaznacz grupę
+                                    </button>
+                                )}
                                 <Move className="w-4 h-4 text-zinc-500" />
                                 <select
                                     value={premiumSortMode}
@@ -1244,6 +1374,17 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
                                     <option value="number_asc">Numer zdjęcia: rosnąco</option>
                                     <option value="number_desc">Numer zdjęcia: malejąco</option>
                                 </select>
+                                {premiumSortMode !== 'manual' && (
+                                    <button
+                                        onClick={() => saveSortOrderForGroup(premiumPhotos, false)}
+                                        disabled={savingOrder}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-gold-700 hover:bg-gold-600 text-white rounded-lg text-xs font-black uppercase tracking-widest transition-all disabled:opacity-50"
+                                        title="Zapisz tę kolejność jako stałą (widoczną dla klienta)"
+                                    >
+                                        <Save className="w-3.5 h-3.5" />
+                                        {savingOrder ? 'Zapisywanie...' : 'Zapisz kolejność'}
+                                    </button>
+                                )}
                             </div>
                         </div>
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
@@ -1251,6 +1392,8 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
                                 <AdminPhotoCard
                                     key={photo.id}
                                     photo={photo}
+                                    isSelected={selectedPhotoIds.has(photo.id)}
+                                    onToggleSelect={() => togglePhotoSelection(photo.id)}
                                     onToggle={() => togglePhotoType(photo.id, photo.is_standard)}
                                     onDelete={() => deletePhoto(photo.id)}
                                     isDraggable={premiumSortMode === 'manual'}
@@ -1291,6 +1434,8 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
 
 function AdminPhotoCard({
     photo,
+    isSelected,
+    onToggleSelect,
     onToggle,
     onDelete,
     isDraggable,
@@ -1301,6 +1446,8 @@ function AdminPhotoCard({
     onDragEnd,
 }: {
     photo: GalleryPhoto,
+    isSelected?: boolean,
+    onToggleSelect?: () => void,
     onToggle: () => void,
     onDelete: () => void,
     isDraggable?: boolean,
@@ -1317,7 +1464,11 @@ function AdminPhotoCard({
             onDragOver={onDragOver}
             onDrop={onDrop}
             onDragEnd={onDragEnd}
-            className={`group relative aspect-square bg-zinc-900 rounded-2xl overflow-hidden border border-zinc-800 hover:border-zinc-700 transition-all shadow-lg hover:shadow-black/50 ${isDraggable ? 'cursor-grab active:cursor-grabbing' : ''}`}
+            className={`group relative aspect-square bg-zinc-900 rounded-2xl overflow-hidden border transition-all shadow-lg hover:shadow-black/50 ${
+                isSelected
+                    ? 'border-red-500 ring-2 ring-red-500 ring-offset-1 ring-offset-zinc-950'
+                    : 'border-zinc-800 hover:border-zinc-700'
+            } ${isDraggable ? 'cursor-grab active:cursor-grabbing' : ''}`}
         >
             <Image
                 src={photo.thumbnail_url || photo.file_url}
@@ -1326,6 +1477,9 @@ function AdminPhotoCard({
                 sizes="(max-width: 768px) 50vw, 20vw"
                 className="object-cover transition-transform duration-500 group-hover:scale-110"
             />
+            {/* Selection overlay */}
+            {isSelected && <div className="absolute inset-0 bg-red-500/20 pointer-events-none" />}
+
             <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center gap-3 backdrop-blur-[2px]">
                 <button
                     onClick={onToggle}
@@ -1342,6 +1496,22 @@ function AdminPhotoCard({
                     <Trash2 className="w-4 h-4" />
                 </button>
             </div>
+
+            {/* Checkbox (top-left) */}
+            {onToggleSelect && (
+                <button
+                    onClick={(e) => { e.stopPropagation(); onToggleSelect(); }}
+                    className={`absolute top-2 left-2 w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all z-10 ${
+                        isSelected
+                            ? 'bg-red-500 border-red-500 text-white'
+                            : 'bg-black/50 border-zinc-500 text-transparent group-hover:border-zinc-300'
+                    }`}
+                    title={isSelected ? 'Odznacz' : 'Zaznacz'}
+                >
+                    <Check className="w-3.5 h-3.5" />
+                </button>
+            )}
+
             <div className={`absolute top-2.5 right-2.5 px-2 py-0.5 rounded-lg text-[10px] font-black tracking-tighter ${photo.is_standard ? 'bg-green-500 text-white' : 'bg-gold-500 text-black shadow-lg shadow-gold-500/20'}`}>
                 {photo.is_standard ? 'STD' : 'PRM'}
             </div>
