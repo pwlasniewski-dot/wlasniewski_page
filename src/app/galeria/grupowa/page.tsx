@@ -39,6 +39,7 @@ interface AvatarOption {
 export default function GroupGalleryPage() {
   const searchParams = useSearchParams();
   const codeParam = searchParams.get('code');
+  const guestParam = searchParams.get('guest'); // ?guest=1 triggers auto guest mode
   // SECURITY: We no longer accept password in URL params
 
   // Auth state
@@ -79,12 +80,20 @@ export default function GroupGalleryPage() {
   const [showShareModal, setShowShareModal] = useState(false);
   const [copiedShare, setCopiedShare] = useState(false);
 
+  // Guest (anonymous) mode — view only, no account
+  const [isGuestMode, setIsGuestMode] = useState(false);
+
   // Always show registration modal when authenticated - each parent registers separately (not from localStorage)
   // This allows multiple family members to create their own profiles under the same gallery code
   useEffect(() => {
     if (isAuthenticated && galleryInfo && !participantInfo) {
-      setShowRegistrationModal(true);
-      loadAvailableAvatars(galleryInfo.gallery_id);
+      // Auto-enter guest mode when ?guest=1 is in URL
+      if (guestParam === '1') {
+        handleGuestAccess();
+      } else {
+        setShowRegistrationModal(true);
+        loadAvailableAvatars(galleryInfo.gallery_id);
+      }
     }
   }, [isAuthenticated, galleryInfo, participantInfo]);
 
@@ -127,6 +136,33 @@ export default function GroupGalleryPage() {
     setSelectedAvatar('');
     setConsentGiven(false);
     toast.success('Wylogowano pomyślnie');
+  };
+
+  // Guest access — view gallery without creating an account
+  const handleGuestAccess = async () => {
+    if (!galleryInfo) return;
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/galleries/group/${galleryInfo.gallery_id}/guest-token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ access_code: code.trim(), password: password.trim() || undefined }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || 'Nie udało się uzyskać dostępu');
+        return;
+      }
+      setAuthToken(data.token);
+      setIsGuestMode(true);
+      setShowRegistrationModal(false);
+      loadPhotos(galleryInfo.gallery_id, data.token);
+      toast.success('Przeglądasz galerię jako gość');
+    } catch {
+      toast.error('Błąd połączenia');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // RODO: parent self-deletes their account
@@ -814,6 +850,21 @@ export default function GroupGalleryPage() {
             {loading ? 'Rejestracja...' : 'Zapisz i kontynuuj'}
           </button>
 
+          {/* Divider */}
+          <div className="flex items-center gap-3 my-2">
+            <div className="flex-1 h-px bg-zinc-700" />
+            <span className="text-xs text-zinc-500">lub</span>
+            <div className="flex-1 h-px bg-zinc-700" />
+          </div>
+
+          <button
+            onClick={handleGuestAccess}
+            disabled={loading}
+            className="w-full bg-zinc-800 text-zinc-300 font-semibold py-3 rounded-lg hover:bg-zinc-700 transition-all text-sm disabled:opacity-50 mb-3"
+          >
+            Przeglądaj jako gość (bez konta)
+          </button>
+
           {/* Przycisk dla innego rodzica - zmiana konta */}
           <button
             onClick={() => {
@@ -922,6 +973,33 @@ export default function GroupGalleryPage() {
             <p className="text-sm text-zinc-400 mb-6">
               Skopiuj poniższe dane i wyślij je rodzinie przez SMS lub WhatsApp. Każdy może założyć własny profil i samodzielnie zaznaczyć ulubione zdjęcia.
             </p>
+
+            {/* Guest link */}
+            <div className="mb-4">
+              <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Link dla gości (tylko podgląd)</label>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 bg-black border border-zinc-700 rounded-lg px-3 py-2.5 text-sm text-zinc-400 font-mono truncate">
+                  {typeof window !== 'undefined' ? `${window.location.origin}/galeria/grupowa?code=${code}&guest=1` : `/galeria/grupowa?code=${code}&guest=1`}
+                </code>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const url = typeof window !== 'undefined'
+                      ? `${window.location.origin}/galeria/grupowa?code=${code}&guest=1`
+                      : `/galeria/grupowa?code=${code}&guest=1`;
+                    navigator.clipboard.writeText(url).then(() => {
+                      setCopiedShare(true);
+                      setTimeout(() => setCopiedShare(false), 2500);
+                    });
+                  }}
+                  className="flex-shrink-0 p-2.5 bg-zinc-700 text-white rounded-lg hover:bg-zinc-600 transition-colors"
+                  title="Kopiuj link dla gości"
+                >
+                  {copiedShare ? <CheckCheck className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                </button>
+              </div>
+              <p className="text-xs text-zinc-500 mt-1">Gość widzi zdjęcia, ale nie może pobierać ani zaznaczać do druku.</p>
+            </div>
 
             {/* Gallery link */}
             <div className="mb-4">
@@ -1053,8 +1131,8 @@ Wpisz swoje imię i stwórz własny profil, żeby wybrać zdjęcia.`}
         />
       )}
 
-      {/* Consent info banner — widoczny jeśli zgoda nie jest jeszcze wyrażona */}
-      {!consentGiven && photos.length > 0 && (
+      {/* Consent info banner — widoczny jeśli zgoda nie jest jeszcze wyrażona, ukryty dla gości */}
+      {!isGuestMode && !consentGiven && photos.length > 0 && (
         <div className="bg-amber-500/10 border-y border-amber-500/30">
           <div className="max-w-7xl mx-auto px-4 py-4 flex flex-wrap items-start gap-4">
             <div className="flex items-start gap-3 flex-1 min-w-0">
@@ -1084,12 +1162,16 @@ Wpisz swoje imię i stwórz własny profil, żeby wybrać zdjęcia.`}
         <div className="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2 text-sm text-zinc-300">
             <Info className="w-4 h-4 text-gold-500" />
-            <span>
-              Kliknij zdjęcie, aby je powiększyć. Zaznacz <strong className="text-white">do {participantInfo?.max_selections || 5}</strong> zdjęć do druku odbitek.
-            </span>
+            {isGuestMode ? (
+              <span>Tryb gościa — możesz przeglądać i pobierać zdjęcia. Aby zaznaczyć zdjęcia do druku, <button onClick={() => setShowRegistrationModal(true)} className="text-gold-400 underline hover:text-gold-300">załóż konto rodzica</button>.</span>
+            ) : (
+              <span>
+                Kliknij zdjęcie, aby je powiększyć. Zaznacz <strong className="text-white">do {participantInfo?.max_selections || 5}</strong> zdjęć do druku odbitek.
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-2 flex-wrap">
-            {selectedPhotos.length > 0 && (
+            {!isGuestMode && selectedPhotos.length > 0 && (
               <button
                 onClick={handleDownloadSelected}
                 className="flex items-center gap-2 px-4 py-2 bg-gold-500 hover:bg-gold-400 text-black text-sm font-bold rounded-lg transition-colors"
@@ -1099,6 +1181,7 @@ Wpisz swoje imię i stwórz własny profil, żeby wybrać zdjęcia.`}
                 Pobierz zaznaczone ({selectedPhotos.length})
               </button>
             )}
+            {!isGuestMode && (
             <button
               onClick={handleDownloadAll}
               disabled={photos.length === 0}
@@ -1108,6 +1191,7 @@ Wpisz swoje imię i stwórz własny profil, żeby wybrać zdjęcia.`}
               <Package className="w-4 h-4" />
               Pobierz całą galerię (ZIP)
             </button>
+            )}
           </div>
         </div>
       </div>
@@ -1147,7 +1231,8 @@ Wpisz swoje imię i stwórz własny profil, żeby wybrać zdjęcia.`}
                     <ZoomIn className="w-8 h-8 text-white drop-shadow-lg" />
                   </div>
 
-                  {/* Checkbox "Do druku" — top-left */}
+                  {/* Checkbox "Do druku" — top-left (only for registered parents) */}
+                  {!isGuestMode && (
                   <button
                     type="button"
                     onClick={(e) => handleSelectToggle(photo.id, e)}
@@ -1170,8 +1255,10 @@ Wpisz swoje imię i stwórz własny profil, żeby wybrać zdjęcia.`}
                       </>
                     )}
                   </button>
+                  )}
 
-                  {/* Download single button — top-right (na hover) */}
+                  {/* Download single button — top-right (na hover), only for registered parents */}
+                  {!isGuestMode && (
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); handleDownloadSingle(photo.id); }}
@@ -1180,6 +1267,7 @@ Wpisz swoje imię i stwórz własny profil, żeby wybrać zdjęcia.`}
                   >
                     <Download className="w-4 h-4" />
                   </button>
+                  )}
                 </div>
               );
             })}
@@ -1196,8 +1284,8 @@ Wpisz swoje imię i stwórz własny profil, żeby wybrać zdjęcia.`}
         />
       )}
 
-      {/* PRO Sticky Bottom Bar — zawsze widoczny gdy są zdjęcia */}
-      {photos.length > 0 && (
+      {/* PRO Sticky Bottom Bar — only for registered parents with selections */}
+      {!isGuestMode && photos.length > 0 && (
         <div className="fixed bottom-0 left-0 right-0 z-40 bg-zinc-900/95 backdrop-blur-md border-t border-zinc-800 shadow-2xl">
           <div className="max-w-7xl mx-auto px-4 py-3">
             <div className="flex flex-wrap items-center justify-between gap-3">
