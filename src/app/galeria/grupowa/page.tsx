@@ -162,6 +162,7 @@ export default function GroupGalleryPage() {
       setIsGuestMode(true);
       setShowRegistrationModal(false);
       loadPhotos(galleryInfo.gallery_id, data.token);
+      window.scrollTo({ top: 0, behavior: 'instant' });
       toast.success('Przeglądasz galerię jako gość');
     } catch {
       toast.error('Błąd połączenia');
@@ -1120,8 +1121,8 @@ Wpisz swoje imię i stwórz własny profil, żeby wybrać zdjęcia.`}
         <PremiumGalleryHero
           photos={photos}
           title={!isGuestMode && participantInfo?.parent_name ? `Witaj, ${participantInfo.parent_name}` : (galleryInfo?.gallery_name || 'Galeria')}
-          subtitle={galleryInfo?.gallery_name ? `${galleryInfo.gallery_name} — wybierz zdjęcia do druku odbitek` : undefined}
-          badge="Twoja prywatna galeria"
+          subtitle={!isGuestMode && galleryInfo?.gallery_name ? `${galleryInfo.gallery_name} — wybierz zdjęcia do druku odbitek` : undefined}
+          badge={isGuestMode ? undefined : 'Twoja prywatna galeria'}
           showModeToggle
           mode={viewMode}
           onModeChange={setViewMode}
@@ -1129,7 +1130,7 @@ Wpisz swoje imię i stwórz własny profil, żeby wybrać zdjęcia.`}
         />
       )}
 
-      {photos.length > 0 && (
+      {!isGuestMode && photos.length > 0 && (
         <TopReviewNudge
           discountCode="KOMUNIA15"
           theme="dark"
@@ -1288,8 +1289,8 @@ Wpisz swoje imię i stwórz własny profil, żeby wybrać zdjęcia.`}
         )}
       </div>
 
-      {/* UPSELL + PROŚBA O OPINIĘ — boost SEO */}
-      {photos.length > 0 && (
+      {/* UPSELL + PROŚBA O OPINIĘ — boost SEO, only for registered parents */}
+      {!isGuestMode && photos.length > 0 && (
         <PostGalleryUpsell
           clientName={participantInfo?.parent_name}
           discountCode="KOMUNIA15"
