@@ -1233,30 +1233,34 @@ Hasło: ${password}` : ''}`}
       <div className="border-b border-zinc-800 bg-zinc-900/30">
         <div className="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2 text-sm text-zinc-300">
-            <Info className="w-4 h-4 text-gold-500" />
+            <Info className="w-4 h-4 text-gold-500 flex-shrink-0" />
             <span>
-              Kliknij zdjęcie, aby je powiększyć. Zaznacz <strong className="text-white">do {participantInfo?.max_selections || 5}</strong> zdjęć do druku odbitek.
+              Zaznacz <strong className="text-white">swoje ulubione</strong> (do {participantInfo?.max_selections || 5}) i pobierz w pełnej jakości.
             </span>
           </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            {selectedPhotos.length > 0 && (
+          <div className="flex items-center gap-3 flex-wrap">
+            {selectedPhotos.length > 0 ? (
               <button
                 onClick={handleDownloadSelected}
-                className="flex items-center gap-2 px-4 py-2 bg-gold-500 hover:bg-gold-400 text-black text-sm font-bold rounded-lg transition-colors"
+                className="flex items-center gap-2 px-5 py-2.5 bg-gold-500 hover:bg-gold-400 text-black text-sm font-bold rounded-lg transition-all shadow-lg shadow-gold-500/20 hover:scale-105"
                 title={`Pobierz zaznaczone ${selectedPhotos.length} zdjęcia jako JPG`}
               >
                 <Download className="w-4 h-4" />
-                Pobierz zaznaczone ({selectedPhotos.length})
+                Pobierz wybrane ({selectedPhotos.length})
               </button>
+            ) : (
+              <span className="hidden sm:flex items-center gap-2 px-4 py-2.5 text-sm text-zinc-500 italic">
+                <CheckSquare className="w-4 h-4" />
+                Wybierz zdjęcia, aby pobrać tylko swoje
+              </span>
             )}
             <button
               onClick={handleDownloadAll}
               disabled={photos.length === 0}
-              className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
-              title="Pobierz wszystkie zdjęcia w pełnej rozdzielczości jako ZIP"
+              className="text-xs text-zinc-500 hover:text-zinc-300 underline underline-offset-4 decoration-zinc-700 hover:decoration-zinc-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              title="Pobierz wszystkie zdjęcia z galerii w pełnej rozdzielczości jako ZIP (większy plik)"
             >
-              <Package className="w-4 h-4" />
-              Pobierz całą galerię (ZIP)
+              lub pobierz całą galerię
             </button>
           </div>
         </div>
