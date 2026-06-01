@@ -3,6 +3,7 @@
 // REQUIRES: Valid parent JWT token
 
 import { NextRequest, NextResponse } from 'next/server';
+import sharp from 'sharp';
 import prisma from '@/lib/db/prisma';
 import { verifyParentToken, extractTokenFromHeader } from '@/lib/auth/parent-jwt';
 
@@ -61,7 +62,23 @@ export async function GET(
     if (!s3Response.ok) {
       return NextResponse.json({ error: 'Nie udało się pobrać pliku' }, { status: 502 });
     }
-    const buffer = Buffer.from(await s3Response.arrayBuffer());
+    const sourceBuffer = Buffer.from(await s3Response.arrayBuffer());
+
+    // Convert to sRGB so non-color-managed viewers (Windows Photos, etc.)
+    // don't render wide-gamut (Adobe RGB / ProPhoto) JPEGs as washed-out.
+    let buffer: Buffer;
+    try {
+      buffer = await sharp(sourceBuffer)
+        .pipelineColorspace('srgb')
+        .toColorspace('srgb')
+        .withMetadata({ icc: 'srgb' })
+        .jpeg({ quality: 95, chromaSubsampling: '4:4:4', mozjpeg: true })
+        .toBuffer();
+    } catch (e) {
+      console.warn('[download] sharp sRGB conversion failed, returning original:', e);
+      buffer = sourceBuffer;
+    }
+
     const filename = `zdjecie-${photo.id}.jpg`;
 
     return new NextResponse(buffer, {
