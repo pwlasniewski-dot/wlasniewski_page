@@ -62,6 +62,9 @@ export default function GroupGalleryPage() {
   // Photos state
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [selectedPhotos, setSelectedPhotos] = useState<number[]>([]);
+  // Download selection mode — separate from print selection (no limit, only for ZIP download)
+  const [downloadMode, setDownloadMode] = useState(false);
+  const [downloadSelection, setDownloadSelection] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState(false);
   const [lightboxPhoto, setLightboxPhoto] = useState<Photo | null>(null);
 
@@ -553,40 +556,62 @@ export default function GroupGalleryPage() {
     );
   };
 
-  const handleDownloadSelected = async () => {
-    if (selectedPhotos.length === 0) {
-      toast.error('Nie zaznaczono żadnych zdjęć');
-      return;
-    }
-    if (!galleryInfo) return;
-    const tid = toast.loading(`Pobieranie ${selectedPhotos.length} zdjęć...`);
-    for (let i = 0; i < selectedPhotos.length; i++) {
-      await downloadWithAuth(
-        `/api/galleries/group/${galleryInfo.gallery_id}/download/${selectedPhotos[i]}`,
-        `zdjecie-${String(i + 1).padStart(3, '0')}.jpg`
-      );
-      // short delay so the browser doesn't block multiple simultaneous downloads
-      if (i < selectedPhotos.length - 1) {
-        await new Promise(resolve => setTimeout(resolve, 600));
-      }
-    }
-    toast.dismiss(tid);
-  };
-
   const handleDownloadAll = async () => {
     if (!galleryInfo || !authToken) return;
     if (photos.length === 0) {
       toast.error('Brak zdjęć do pobrania');
       return;
     }
-    const tid = toast.loading(`Przygotowywanie pobierania...`);
+    await downloadPhotosAsZip(photos, 'galeria.zip');
+  };
+
+  // Download selection mode (separate from print selection)
+  const toggleDownloadMode = () => {
+    setDownloadMode((v) => {
+      const next = !v;
+      if (!next) setDownloadSelection(new Set());
+      else setViewMode('grid'); // download mode wymaga siatki z checkboxami
+      return next;
+    });
+  };
+
+  const toggleDownloadPick = (photoId: number) => {
+    setDownloadSelection((prev) => {
+      const next = new Set(prev);
+      if (next.has(photoId)) next.delete(photoId);
+      else next.add(photoId);
+      return next;
+    });
+  };
+
+  const selectAllForDownload = () => {
+    setDownloadSelection(new Set(photos.map((p) => p.id)));
+  };
+
+  const handleConfirmDownloadSelection = async () => {
+    if (downloadSelection.size === 0) {
+      toast.error('Zaznacz przynajmniej jedno zdjęcie');
+      return;
+    }
+    const list = photos.filter((p) => downloadSelection.has(p.id));
+    if (list.length === 1) {
+      await handleDownloadSingle(list[0].id);
+    } else {
+      await downloadPhotosAsZip(list, `zdjecia-wybrane-${list.length}.zip`);
+    }
+    // exit mode after download starts
+    setDownloadMode(false);
+    setDownloadSelection(new Set());
+  };
+
+  const downloadPhotosAsZip = async (list: Photo[], filename: string) => {
+    if (!galleryInfo || !authToken) return;
+    const tid = toast.loading(`Przygotowywanie pobierania ${list.length} zdjęć...`);
     try {
       const { downloadZip } = await import('client-zip');
       const streamSaverMod = await import('streamsaver');
       const streamSaver = streamSaverMod.default || streamSaverMod;
 
-      // ponttify mitm dla streamsaver (wymagane na HTTPS)
-      // używamy CDN mitm gdy nie mamy własnego
       try {
         // @ts-expect-error - mitm property
         if (!streamSaver.mitm) streamSaver.mitm = 'https://jimmywarting.github.io/StreamSaver.js/mitm.html?version=2.0.0';
@@ -596,8 +621,8 @@ export default function GroupGalleryPage() {
       let totalBytes = 0;
 
       async function* fileIterator() {
-        for (let i = 0; i < photos.length; i++) {
-          const photo = photos[i];
+        for (let i = 0; i < list.length; i++) {
+          const photo = list[i];
           try {
             const res = await fetch(
               `/api/galleries/group/${galleryInfo!.gallery_id}/download/${photo.id}`,
@@ -611,7 +636,7 @@ export default function GroupGalleryPage() {
             const cl = res.headers.get('Content-Length');
             if (cl) totalBytes += parseInt(cl, 10);
             toast.loading(
-              `Pobieranie ${downloaded}/${photos.length} (${(totalBytes / 1024 / 1024).toFixed(1)} MB)...`,
+              `Pobieranie ${downloaded}/${list.length} (${(totalBytes / 1024 / 1024).toFixed(1)} MB)...`,
               { id: tid }
             );
             yield {
@@ -627,7 +652,7 @@ export default function GroupGalleryPage() {
       const zipResponse = downloadZip(fileIterator());
       if (!zipResponse.body) throw new Error('client-zip: brak body');
 
-      const fileStream = streamSaver.createWriteStream('galeria.zip');
+      const fileStream = streamSaver.createWriteStream(filename);
       await zipResponse.body.pipeTo(fileStream);
 
       toast.success(`Pobrano ${downloaded} zdjęć (${(totalBytes / 1024 / 1024).toFixed(1)} MB)`, { id: tid });
@@ -1232,37 +1257,72 @@ Hasło: ${password}` : ''}`}
       {!isGuestMode && (
       <div className="border-b border-zinc-800 bg-zinc-900/30">
         <div className="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2 text-sm text-zinc-300">
-            <Info className="w-4 h-4 text-gold-500 flex-shrink-0" />
-            <span>
-              Zaznacz <strong className="text-white">swoje ulubione</strong> (do {participantInfo?.max_selections || 5}) i pobierz w pełnej jakości.
-            </span>
-          </div>
-          <div className="flex items-center gap-3 flex-wrap">
-            {selectedPhotos.length > 0 ? (
-              <button
-                onClick={handleDownloadSelected}
-                className="flex items-center gap-2 px-5 py-2.5 bg-gold-500 hover:bg-gold-400 text-black text-sm font-bold rounded-lg transition-all shadow-lg shadow-gold-500/20 hover:scale-105"
-                title={`Pobierz zaznaczone ${selectedPhotos.length} zdjęcia jako JPG`}
-              >
-                <Download className="w-4 h-4" />
-                Pobierz wybrane ({selectedPhotos.length})
-              </button>
-            ) : (
-              <span className="hidden sm:flex items-center gap-2 px-4 py-2.5 text-sm text-zinc-500 italic">
-                <CheckSquare className="w-4 h-4" />
-                Wybierz zdjęcia, aby pobrać tylko swoje
-              </span>
-            )}
-            <button
-              onClick={handleDownloadAll}
-              disabled={photos.length === 0}
-              className="text-xs text-zinc-500 hover:text-zinc-300 underline underline-offset-4 decoration-zinc-700 hover:decoration-zinc-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              title="Pobierz wszystkie zdjęcia z galerii w pełnej rozdzielczości jako ZIP (większy plik)"
-            >
-              lub pobierz całą galerię
-            </button>
-          </div>
+          {downloadMode ? (
+            <>
+              <div className="flex items-center gap-2 text-sm text-zinc-300">
+                <Download className="w-4 h-4 text-gold-500 flex-shrink-0" />
+                <span>
+                  Kliknij zdjęcia, które chcesz <strong className="text-white">pobrać</strong> — następnie wciśnij „Pobierz".
+                </span>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  onClick={selectAllForDownload}
+                  className="text-xs text-zinc-400 hover:text-white underline underline-offset-4 transition-colors"
+                >
+                  Zaznacz wszystkie ({photos.length})
+                </button>
+                <button
+                  onClick={toggleDownloadMode}
+                  className="px-3 py-2 text-sm text-zinc-300 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors"
+                >
+                  Anuluj
+                </button>
+                <button
+                  onClick={handleConfirmDownloadSelection}
+                  disabled={downloadSelection.size === 0}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-gold-500 hover:bg-gold-400 text-black text-sm font-bold rounded-lg transition-all shadow-lg shadow-gold-500/20 disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
+                >
+                  <Download className="w-4 h-4" />
+                  Pobierz wybrane ({downloadSelection.size})
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="flex items-center gap-2 text-sm text-zinc-300">
+                <Info className="w-4 h-4 text-gold-500 flex-shrink-0" />
+                <span>
+                  Zaznacz <strong className="text-white">do {participantInfo?.max_selections || 5}</strong> ulubionych — fotograf wydrukuje Ci odbitki.
+                </span>
+              </div>
+              <div className="flex items-center gap-3 flex-wrap">
+                {selectedPhotos.length > 0 && (
+                  <span className="hidden sm:inline-flex items-center gap-1.5 text-xs text-gold-400 font-medium">
+                    <CheckSquare className="w-3.5 h-3.5" />
+                    {selectedPhotos.length}/{participantInfo?.max_selections || 5} do druku
+                  </span>
+                )}
+                <button
+                  onClick={toggleDownloadMode}
+                  disabled={photos.length === 0}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-white text-sm font-bold rounded-lg transition-all shadow-lg hover:scale-105 disabled:opacity-40 disabled:cursor-not-allowed"
+                  title="Wejdź w tryb wybierania zdjęć do pobrania"
+                >
+                  <Download className="w-4 h-4" />
+                  Pobierz zdjęcia
+                </button>
+                <button
+                  onClick={handleDownloadAll}
+                  disabled={photos.length === 0}
+                  className="text-xs text-zinc-500 hover:text-zinc-300 underline underline-offset-4 decoration-zinc-700 hover:decoration-zinc-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  title="Pobierz wszystkie zdjęcia z galerii w pełnej rozdzielczości jako ZIP (większy plik)"
+                >
+                  lub pobierz całą galerię
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
       )}
@@ -1285,27 +1345,59 @@ Hasło: ${password}` : ''}`}
             {photos.map(photo => {
               const isSelected = selectedPhotos.includes(photo.id);
               const selectionIdx = isSelected ? selectedPhotos.indexOf(photo.id) + 1 : null;
+              const isPickedForDownload = downloadSelection.has(photo.id);
               return (
                 <div
                   key={photo.id}
-                  onClick={() => setLightboxPhoto(photo)}
+                  onClick={() => {
+                    if (downloadMode) {
+                      toggleDownloadPick(photo.id);
+                    } else {
+                      setLightboxPhoto(photo);
+                    }
+                  }}
                   className={`relative aspect-square cursor-pointer rounded-lg overflow-hidden group transition-all ${
-                    isSelected ? 'ring-4 ring-gold-500 shadow-lg shadow-gold-500/20' : 'ring-1 ring-zinc-800 hover:ring-zinc-600'
+                    downloadMode && isPickedForDownload
+                      ? 'ring-4 ring-blue-400 shadow-lg shadow-blue-400/30'
+                      : isSelected
+                        ? 'ring-4 ring-gold-500 shadow-lg shadow-gold-500/20'
+                        : 'ring-1 ring-zinc-800 hover:ring-zinc-600'
                   }`}
                 >
                   <Image
                     src={photo.thumbnail_url || photo.file_url}
                     alt="Zdjęcie z galerii"
                     fill
-                    className="object-cover group-hover:scale-105 transition-transform"
+                    className={`object-cover transition-transform ${downloadMode ? '' : 'group-hover:scale-105'}`}
                   />
-                  {/* Hover overlay - zoom hint */}
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100 pointer-events-none">
-                    <ZoomIn className="w-8 h-8 text-white drop-shadow-lg" />
-                  </div>
 
-                  {/* Checkbox "Do druku" — top-left (only for registered parents) */}
-                  {!isGuestMode && (
+                  {/* Download-mode overlay: big checkbox */}
+                  {downloadMode && (
+                    <>
+                      <div className={`absolute inset-0 transition-colors ${isPickedForDownload ? 'bg-blue-500/20' : 'bg-black/40 group-hover:bg-black/20'}`} />
+                      <div className={`absolute top-3 right-3 w-9 h-9 rounded-md flex items-center justify-center shadow-lg transition-all ${
+                        isPickedForDownload
+                          ? 'bg-blue-500 text-white scale-110'
+                          : 'bg-white/90 text-zinc-700'
+                      }`}>
+                        {isPickedForDownload ? (
+                          <CheckSquare className="w-6 h-6" />
+                        ) : (
+                          <Square className="w-6 h-6" />
+                        )}
+                      </div>
+                    </>
+                  )}
+
+                  {/* Hover overlay - zoom hint (only outside download mode) */}
+                  {!downloadMode && (
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100 pointer-events-none">
+                      <ZoomIn className="w-8 h-8 text-white drop-shadow-lg" />
+                    </div>
+                  )}
+
+                  {/* Checkbox "Do druku" — top-left (only for registered parents, not in download mode) */}
+                  {!isGuestMode && !downloadMode && (
                   <button
                     type="button"
                     onClick={(e) => handleSelectToggle(photo.id, e)}
@@ -1330,8 +1422,8 @@ Hasło: ${password}` : ''}`}
                   </button>
                   )}
 
-                  {/* Download single button — top-right (na hover), only for registered parents */}
-                  {!isGuestMode && (
+                  {/* Download single button — top-right (na hover), only for registered parents, not in download mode */}
+                  {!isGuestMode && !downloadMode && (
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); handleDownloadSingle(photo.id); }}
