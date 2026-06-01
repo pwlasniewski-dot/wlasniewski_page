@@ -566,11 +566,22 @@ export default function GroupGalleryPage() {
   };
 
   // Download selection mode (separate from print selection)
+  const [prevViewMode, setPrevViewMode] = useState<'grid' | 'story' | null>(null);
   const toggleDownloadMode = () => {
     setDownloadMode((v) => {
       const next = !v;
-      if (!next) setDownloadSelection(new Set());
-      else setViewMode('grid'); // download mode wymaga siatki z checkboxami
+      if (!next) {
+        setDownloadSelection(new Set());
+        // przywróć poprzedni widok (np. story)
+        if (prevViewMode) {
+          setViewMode(prevViewMode);
+          setPrevViewMode(null);
+        }
+      } else {
+        // zapamiętaj aktualny widok i przełącz na siatkę
+        setPrevViewMode(viewMode);
+        setViewMode('grid');
+      }
       return next;
     });
   };
@@ -602,6 +613,10 @@ export default function GroupGalleryPage() {
     // exit mode after download starts
     setDownloadMode(false);
     setDownloadSelection(new Set());
+    if (prevViewMode) {
+      setViewMode(prevViewMode);
+      setPrevViewMode(null);
+    }
   };
 
   const downloadPhotosAsZip = async (list: Photo[], filename: string) => {
