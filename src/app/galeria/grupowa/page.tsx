@@ -579,73 +579,66 @@ export default function GroupGalleryPage() {
       toast.error('Brak zdjęć do pobrania');
       return;
     }
-    const tid = toast.loading(`Przygotowywanie pobierania (0/${photos.length})...`);
+    const tid = toast.loading(`Przygotowywanie pobierania...`);
     try {
       const { downloadZip } = await import('client-zip');
+      const streamSaverMod = await import('streamsaver');
+      const streamSaver = streamSaverMod.default || streamSaverMod;
+
+      // ponttify mitm dla streamsaver (wymagane na HTTPS)
+      // używamy CDN mitm gdy nie mamy własnego
+      try {
+        // @ts-expect-error - mitm property
+        if (!streamSaver.mitm) streamSaver.mitm = 'https://jimmywarting.github.io/StreamSaver.js/mitm.html?version=2.0.0';
+      } catch {}
 
       let downloaded = 0;
-      const totalBytes = { val: 0 };
+      let totalBytes = 0;
 
-      // Async iterator generujący wpisy ZIP w locie — pamięć stała, niezależnie od liczby zdjęć
       async function* fileIterator() {
         for (let i = 0; i < photos.length; i++) {
           const photo = photos[i];
-          const res = await fetch(
-            `/api/galleries/group/${galleryInfo!.gallery_id}/download/${photo.id}`,
-            { headers: { Authorization: `Bearer ${authToken}` } }
-          );
-          if (!res.ok) {
-            console.error(`Photo ${photo.id} failed:`, res.status);
-            continue;
+          try {
+            const res = await fetch(
+              `/api/galleries/group/${galleryInfo!.gallery_id}/download/${photo.id}`,
+              { headers: { Authorization: `Bearer ${authToken}` } }
+            );
+            if (!res.ok) {
+              console.error(`[zip] photo ${photo.id} HTTP ${res.status}`);
+              continue;
+            }
+            downloaded++;
+            const cl = res.headers.get('Content-Length');
+            if (cl) totalBytes += parseInt(cl, 10);
+            toast.loading(
+              `Pobieranie ${downloaded}/${photos.length} (${(totalBytes / 1024 / 1024).toFixed(1)} MB)...`,
+              { id: tid }
+            );
+            yield {
+              name: `zdjecie-${String(i + 1).padStart(3, '0')}.jpg`,
+              input: res,
+            };
+          } catch (e) {
+            console.error(`[zip] photo ${photo.id} error:`, e);
           }
-          downloaded++;
-          const cl = res.headers.get('Content-Length');
-          if (cl) totalBytes.val += parseInt(cl, 10);
-          toast.loading(
-            `Pobieranie ${downloaded}/${photos.length} (${(totalBytes.val / 1024 / 1024).toFixed(1)} MB)...`,
-            { id: tid }
-          );
-          yield {
-            name: `zdjecie-${String(i + 1).padStart(3, '0')}.jpg`,
-            input: res,
-          };
         }
       }
 
-      const zipResponse = downloadZip(fileIterator(), { metadata: [] });
-      const zipStream = zipResponse.body;
-      if (!zipStream) throw new Error('Brak strumienia ZIP');
+      const zipResponse = downloadZip(fileIterator());
+      if (!zipResponse.body) throw new Error('client-zip: brak body');
 
-      // 1. Spróbuj File System Access API (Chrome/Edge): zapis bezpośrednio na dysk
-      const anyWindow = window as unknown as { showSaveFilePicker?: (opts: {
-        suggestedName?: string;
-        types?: Array<{ description: string; accept: Record<string, string[]> }>;
-      }) => Promise<{ createWritable: () => Promise<WritableStream> }> };
-
-      if (typeof anyWindow.showSaveFilePicker === 'function') {
-        const handle = await anyWindow.showSaveFilePicker({
-          suggestedName: 'galeria.zip',
-          types: [{ description: 'Archiwum ZIP', accept: { 'application/zip': ['.zip'] } }],
-        });
-        const writable = await handle.createWritable();
-        await zipStream.pipeTo(writable);
-        toast.success(`Pobrano ${downloaded} zdjęć (${(totalBytes.val / 1024 / 1024).toFixed(1)} MB)`, { id: tid });
-        return;
-      }
-
-      // 2. Fallback: streamsaver (Service Worker → natywny download bez RAM)
-      const streamSaver = (await import('streamsaver')).default;
       const fileStream = streamSaver.createWriteStream('galeria.zip');
-      await zipStream.pipeTo(fileStream);
-      toast.success(`Pobrano ${downloaded} zdjęć (${(totalBytes.val / 1024 / 1024).toFixed(1)} MB)`, { id: tid });
+      await zipResponse.body.pipeTo(fileStream);
+
+      toast.success(`Pobrano ${downloaded} zdjęć (${(totalBytes / 1024 / 1024).toFixed(1)} MB)`, { id: tid });
     } catch (err: unknown) {
       const e = err as { name?: string; message?: string };
       if (e?.name === 'AbortError') {
         toast.dismiss(tid);
         return;
       }
-      console.error('ZIP stream error:', err);
-      toast.error('Błąd pobierania ZIP', { id: tid });
+      console.error('[zip] fatal:', err);
+      toast.error(`Błąd pobierania: ${e?.message || 'nieznany'}`, { id: tid });
     }
   };
 
@@ -1559,7 +1552,8 @@ Hasło: ${password}` : ''}`}
               className="max-w-full max-h-[75vh] object-contain rounded-lg shadow-2xl"
             />
 
-            {/* Bottom action bar */}
+            {/* Bottom action bar — hidden for guests */}
+            {!isGuestMode && (
             <div className="mt-6 flex items-center justify-center gap-3 flex-wrap">
               {(() => {
                 const isSelected = selectedPhotos.includes(lightboxPhoto.id);
@@ -1608,6 +1602,7 @@ Hasło: ${password}` : ''}`}
                 );
               })()}
             </div>
+            )}
 
             <p className="mt-4 text-xs text-zinc-500 text-center">
               Użyj strzałek ← → na klawiaturze, aby przeglądać. ESC zamyka.
