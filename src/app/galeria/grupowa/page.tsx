@@ -1356,7 +1356,7 @@ Hasło: ${password}` : ''}`}
             onPhotoClick={(p) => setLightboxPhoto(p as Photo)}
           />
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="columns-2 md:columns-3 lg:columns-4 gap-4">
             {photos.map(photo => {
               const isSelected = selectedPhotos.includes(photo.id);
               const selectionIdx = isSelected ? selectedPhotos.indexOf(photo.id) + 1 : null;
@@ -1371,7 +1371,7 @@ Hasło: ${password}` : ''}`}
                       setLightboxPhoto(photo);
                     }
                   }}
-                  className={`relative aspect-square cursor-pointer rounded-lg overflow-hidden group transition-all ${
+                  className={`relative break-inside-avoid mb-4 cursor-pointer rounded-lg overflow-hidden group transition-all ${
                     downloadMode && isPickedForDownload
                       ? 'ring-4 ring-blue-400 shadow-lg shadow-blue-400/30'
                       : isSelected
@@ -1379,11 +1379,12 @@ Hasło: ${password}` : ''}`}
                         : 'ring-1 ring-zinc-800 hover:ring-zinc-600'
                   }`}
                 >
-                  <Image
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
                     src={photo.thumbnail_url || photo.file_url}
                     alt="Zdjęcie z galerii"
-                    fill
-                    className={`object-cover transition-transform ${downloadMode ? '' : 'group-hover:scale-105'}`}
+                    loading="lazy"
+                    className={`w-full h-auto block transition-transform ${downloadMode ? '' : 'group-hover:scale-[1.02]'}`}
                   />
 
                   {/* Download-mode overlay: big checkbox */}
