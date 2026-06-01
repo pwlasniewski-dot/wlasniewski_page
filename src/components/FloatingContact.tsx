@@ -17,6 +17,12 @@ export default function FloatingContact() {
         setIsAdminPanel(pathname?.startsWith('/admin') || false);
     }, [pathname]);
 
+    const isGalleryPage = pathname?.startsWith('/galeria');
+    const [isMobile, setIsMobile] = useState(false);
+    useEffect(() => {
+        setIsMobile(typeof window !== 'undefined' && window.innerWidth < 768);
+    }, []);
+
     const trackClick = (channel: string) => {
         if (typeof window !== 'undefined' && (window as any).gtag) {
             (window as any).gtag('event', 'contact_click', { channel, page: pathname });
@@ -24,6 +30,7 @@ export default function FloatingContact() {
     };
 
     if (isAdminPanel) return null;
+    if (isGalleryPage && isMobile) return null;
 
     return (
         <div className="fixed bottom-6 right-6 z-[100] flex flex-col items-end gap-3 pointer-events-none">

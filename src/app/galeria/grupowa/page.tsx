@@ -69,6 +69,11 @@ export default function GroupGalleryPage() {
   const [heroIndex, setHeroIndex] = useState(0);
   const [heroPaused, setHeroPaused] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'story'>('story');
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      setViewMode('grid');
+    }
+  }, []);
 
   // Consent state
   const [showConsentModal, setShowConsentModal] = useState(false);
