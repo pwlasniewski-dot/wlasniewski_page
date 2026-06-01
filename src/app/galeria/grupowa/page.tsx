@@ -573,17 +573,45 @@ export default function GroupGalleryPage() {
     toast.dismiss(tid);
   };
 
-  const handleDownloadAll = () => {
-    if (!galleryInfo) return;
+  const handleDownloadAll = async () => {
+    if (!galleryInfo || !authToken) return;
     if (photos.length === 0) {
       toast.error('Brak zdjęć do pobrania');
       return;
     }
-    toast('Generowanie ZIP może chwilę potrwać...', { icon: '⏳' });
-    downloadWithAuth(
-      `/api/galleries/group/${galleryInfo.gallery_id}/download-all`,
-      `galeria.zip`
-    );
+    const tid = toast.loading(`Przygotowywanie ZIP (0/${photos.length})...`);
+    try {
+      const JSZip = (await import('jszip')).default;
+      const zip = new JSZip();
+      for (let i = 0; i < photos.length; i++) {
+        const photo = photos[i];
+        toast.loading(`Pobieranie zdjęć (${i + 1}/${photos.length})...`, { id: tid });
+        const res = await fetch(
+          `/api/galleries/group/${galleryInfo.gallery_id}/download/${photo.id}`,
+          { headers: { Authorization: `Bearer ${authToken}` } }
+        );
+        if (!res.ok) {
+          console.error(`Photo ${photo.id} download failed:`, res.status);
+          continue;
+        }
+        const blob = await res.blob();
+        zip.file(`zdjecie-${String(i + 1).padStart(3, '0')}.jpg`, blob);
+      }
+      toast.loading('Pakowanie ZIP...', { id: tid });
+      const zipBlob = await zip.generateAsync({ type: 'blob', compression: 'STORE' });
+      const url = URL.createObjectURL(zipBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `galeria.zip`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast.success(`Pobrano ${photos.length} zdjęć w ZIP`, { id: tid });
+    } catch (err) {
+      console.error('ZIP error:', err);
+      toast.error('Błąd tworzenia ZIP', { id: tid });
+    }
   };
 
   // PRO: nawigacja po zdjęciach w lightboxie

@@ -7,7 +7,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import archiver from 'archiver';
 import { verifyParentToken, extractTokenFromHeader } from '@/lib/auth/parent-jwt';
-import sharp from 'sharp';
 
 export const maxDuration = 60; // seconds — Netlify Pro allows up to 60s
 
@@ -55,21 +54,13 @@ export async function GET(
       return NextResponse.json({ error: 'Brak zdjęć w galerii' }, { status: 404 });
     }
 
-    const toJpegBuffer = async (input: Buffer): Promise<Buffer> => {
-      try {
-        return await sharp(input)
-          .rotate()
-          .jpeg({ quality: 92, mozjpeg: true })
-          .toBuffer();
-      } catch {
-        return input;
-      }
-    };
+    const toJpegBuffer = async (input: Buffer): Promise<Buffer> => input;
 
     // Build ZIP fully in memory — required for Netlify serverless (no streaming support)
+    // STORE mode (no compression) — JPEGs don't compress, saves CPU/memory
     const zipBuffer = await new Promise<Buffer>((resolve, reject) => {
       const chunks: Buffer[] = [];
-      const archive = archiver('zip', { zlib: { level: 6 } });
+      const archive = archiver('zip', { store: true });
 
       archive.on('data', (chunk: Buffer) => chunks.push(chunk));
       archive.on('end', () => resolve(Buffer.concat(chunks)));
