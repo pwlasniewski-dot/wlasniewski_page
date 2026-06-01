@@ -899,16 +899,16 @@ export default function GroupGalleryPage() {
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              {participantInfo?.avatar && (
+              {!isGuestMode && participantInfo?.avatar && (
                 <div className="w-12 h-12 bg-gold-500/10 border-2 border-gold-500/30 rounded-full flex items-center justify-center text-3xl flex-shrink-0">
                   {participantInfo.avatar}
                 </div>
               )}
               <div>
                 <h1 className="text-2xl font-bold">
-                  {participantInfo?.parent_name || galleryInfo?.gallery_name}
+                  {isGuestMode ? (galleryInfo?.gallery_name || 'Galeria') : (participantInfo?.parent_name || galleryInfo?.gallery_name)}
                 </h1>
-                {participantInfo && (
+                {!isGuestMode && participantInfo && (
                   <p className="text-sm text-zinc-400">
                     {galleryInfo?.gallery_name && (
                       <span className="text-zinc-500">{galleryInfo.gallery_name} • </span>
@@ -1114,7 +1114,7 @@ Wpisz swoje imię i stwórz własny profil, żeby wybrać zdjęcia.`}
       {photos.length > 0 && (
         <PremiumGalleryHero
           photos={photos}
-          title={participantInfo?.parent_name ? `Witaj, ${participantInfo.parent_name}` : (galleryInfo?.gallery_name || 'Twoja galeria')}
+          title={!isGuestMode && participantInfo?.parent_name ? `Witaj, ${participantInfo.parent_name}` : (galleryInfo?.gallery_name || 'Galeria')}
           subtitle={galleryInfo?.gallery_name ? `${galleryInfo.gallery_name} — wybierz zdjęcia do druku odbitek` : undefined}
           badge="Twoja prywatna galeria"
           showModeToggle
@@ -1145,14 +1145,24 @@ Wpisz swoje imię i stwórz własny profil, żeby wybrać zdjęcia.`}
                 </p>
               </div>
             </div>
-            <button
-              onClick={() => setShowConsentModal(true)}
-              disabled={selectedPhotos.length === 0}
-              className="flex-shrink-0 flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-400 text-black text-sm font-bold rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              <Heart className="w-4 h-4" />
-              {selectedPhotos.length === 0 ? 'Zaznacz zdjęcia, aby wyrazić zgodę' : 'Wyraź zgodę RODO'}
-            </button>
+            <div className="flex-shrink-0 flex flex-col sm:flex-row items-center gap-2">
+              <button
+                onClick={() => { setConsentScope('ALL'); setShowConsentModal(true); }}
+                className="flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-400 text-black text-sm font-bold rounded-lg transition-colors"
+              >
+                <Heart className="w-4 h-4" />
+                Zgoda na wszystkie zdjęcia
+              </button>
+              {selectedPhotos.length > 0 && (
+                <button
+                  onClick={() => { setConsentScope('SELECTED'); setShowConsentModal(true); }}
+                  className="flex items-center gap-2 px-4 py-2 bg-amber-700 hover:bg-amber-600 text-white text-sm font-medium rounded-lg transition-colors"
+                >
+                  <Heart className="w-4 h-4" />
+                  Zgoda na zaznaczone ({selectedPhotos.length})
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -1201,6 +1211,8 @@ Wpisz swoje imię i stwórz własny profil, żeby wybrać zdjęcia.`}
         ) : viewMode === 'story' ? (
           <PremiumGalleryStory
             photos={photos}
+            selectedPhotoIds={isGuestMode ? undefined : new Set(selectedPhotos)}
+            onToggleSelect={isGuestMode ? undefined : (p) => handleSelectToggle(p.id)}
             onPhotoClick={(p) => setLightboxPhoto(p as Photo)}
           />
         ) : (
