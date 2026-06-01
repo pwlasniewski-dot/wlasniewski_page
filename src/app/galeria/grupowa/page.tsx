@@ -905,20 +905,12 @@ export default function GroupGalleryPage() {
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              {!isGuestMode && participantInfo?.avatar && (
-                <div className="w-12 h-12 bg-gold-500/10 border-2 border-gold-500/30 rounded-full flex items-center justify-center text-3xl flex-shrink-0">
-                  {participantInfo.avatar}
-                </div>
-              )}
               <div>
                 <h1 className="text-2xl font-bold">
-                  {isGuestMode ? (galleryInfo?.gallery_name || 'Galeria') : (participantInfo?.parent_name || galleryInfo?.gallery_name)}
+                  {galleryInfo?.gallery_name || 'Galeria'}
                 </h1>
                 {!isGuestMode && participantInfo && (
                   <p className="text-sm text-zinc-400">
-                    {galleryInfo?.gallery_name && (
-                      <span className="text-zinc-500">{galleryInfo.gallery_name} • </span>
-                    )}
                     ID: <span className="text-gold-500 font-mono">{participantInfo.parent_identifier}</span>
                   </p>
                 )}
@@ -1120,7 +1112,7 @@ Wpisz swoje imię i stwórz własny profil, żeby wybrać zdjęcia.`}
       {photos.length > 0 && (
         <PremiumGalleryHero
           photos={photos}
-          title={!isGuestMode && participantInfo?.parent_name ? `Witaj, ${participantInfo.parent_name}` : (galleryInfo?.gallery_name || 'Galeria')}
+          title={galleryInfo?.gallery_name || 'Galeria'}
           subtitle={!isGuestMode && galleryInfo?.gallery_name ? `${galleryInfo.gallery_name} — wybierz zdjęcia do druku odbitek` : undefined}
           badge={isGuestMode ? undefined : 'Twoja prywatna galeria'}
           showModeToggle
