@@ -1,13 +1,15 @@
 // API Route: GET /api/galleries/group/[galleryId]/download-all
 // Parent: pobiera całą galerię grupową jako ZIP (pełna rozdzielczość)
 // REQUIRES: Valid parent JWT token
+// NOTE: Builds ZIP fully in-memory (no Node.js streams) — required for Netlify serverless.
 
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import archiver from 'archiver';
-import { PassThrough } from 'stream';
 import { verifyParentToken, extractTokenFromHeader } from '@/lib/auth/parent-jwt';
 import sharp from 'sharp';
+
+export const maxDuration = 60; // seconds — Netlify Pro allows up to 60s
 
 export async function GET(
   request: NextRequest,
@@ -53,56 +55,55 @@ export async function GET(
       return NextResponse.json({ error: 'Brak zdjęć w galerii' }, { status: 404 });
     }
 
-    const zipName = `galeria-${gallery.id}.zip`;
-    const passthrough = new PassThrough();
-    const archive = archiver('zip', { zlib: { level: 9 } });
-
-    archive.on('error', (err) => {
-      console.error('Archiver error:', err);
-      passthrough.end();
-    });
-
-    archive.pipe(passthrough);
-
-    const toJpegBuffer = async (input: Buffer) => {
+    const toJpegBuffer = async (input: Buffer): Promise<Buffer> => {
       try {
         return await sharp(input)
           .rotate()
           .jpeg({ quality: 92, mozjpeg: true })
           .toBuffer();
       } catch {
-        // If conversion fails for a specific file, keep original bytes to avoid breaking full ZIP.
         return input;
       }
     };
 
-    (async () => {
-      try {
-        for (let i = 0; i < gallery.photos.length; i++) {
-          const photo = gallery.photos[i];
-          try {
-            const response = await fetch(photo.file_url);
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            const srcBuf = Buffer.from(await response.arrayBuffer());
-            const jpegBuf = await toJpegBuffer(srcBuf);
-            const idxStr = String(i + 1).padStart(3, '0');
-            archive.append(jpegBuf, { name: `zdjecie-${idxStr}.jpg` });
-          } catch (err) {
-            console.error(`Failed to add photo ${photo.id}:`, err);
-          }
-        }
-        await archive.finalize();
-      } catch (err) {
-        console.error('ZIP generation error:', err);
-        archive.abort();
-      }
-    })();
+    // Build ZIP fully in memory — required for Netlify serverless (no streaming support)
+    const zipBuffer = await new Promise<Buffer>((resolve, reject) => {
+      const chunks: Buffer[] = [];
+      const archive = archiver('zip', { zlib: { level: 6 } });
 
-    return new NextResponse(passthrough as any, {
+      archive.on('data', (chunk: Buffer) => chunks.push(chunk));
+      archive.on('end', () => resolve(Buffer.concat(chunks)));
+      archive.on('error', reject);
+
+      (async () => {
+        try {
+          for (let i = 0; i < gallery.photos.length; i++) {
+            const photo = gallery.photos[i];
+            try {
+              const res = await fetch(photo.file_url);
+              if (!res.ok) throw new Error(`HTTP ${res.status}`);
+              const srcBuf = Buffer.from(await res.arrayBuffer());
+              const jpegBuf = await toJpegBuffer(srcBuf);
+              const idxStr = String(i + 1).padStart(3, '0');
+              archive.append(jpegBuf, { name: `zdjecie-${idxStr}.jpg` });
+            } catch (err) {
+              console.error(`Failed to add photo ${photo.id}:`, err);
+            }
+          }
+          await archive.finalize();
+        } catch (err) {
+          reject(err);
+        }
+      })();
+    });
+
+    const zipName = `galeria-${gallery.id}.zip`;
+    return new NextResponse(zipBuffer, {
       status: 200,
       headers: {
         'Content-Type': 'application/zip',
         'Content-Disposition': `attachment; filename="${zipName}"`,
+        'Content-Length': String(zipBuffer.length),
         'Cache-Control': 'no-cache',
       },
     });

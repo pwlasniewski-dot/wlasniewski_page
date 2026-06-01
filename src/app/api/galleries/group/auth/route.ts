@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      if (password.trim() !== gallery.group_password) {
+      if (password.trim().toLowerCase() !== gallery.group_password.toLowerCase()) {
         return NextResponse.json(
           { error: 'Nieprawidłowe hasło' },
           { status: 401 }
