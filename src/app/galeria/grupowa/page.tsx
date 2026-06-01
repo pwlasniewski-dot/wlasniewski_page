@@ -988,7 +988,7 @@ export default function GroupGalleryPage() {
         </div>
       )}
 
-      {/* HERO SLIDER — wow-factor */
+      {/* HERO SLIDER — wow-factor */}
       {photos.length > 0 && (
         <PremiumGalleryHero
           photos={photos}
