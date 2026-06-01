@@ -1157,21 +1157,18 @@ Wpisz swoje imię i stwórz własny profil, żeby wybrać zdjęcia.`}
         </div>
       )}
 
-      {/* Action Bar pod headerem */}
+      {/* Action Bar pod headerem — only for registered parents, hidden for guests */}
+      {!isGuestMode && (
       <div className="border-b border-zinc-800 bg-zinc-900/30">
         <div className="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2 text-sm text-zinc-300">
             <Info className="w-4 h-4 text-gold-500" />
-            {isGuestMode ? (
-              <span>Tryb gościa — możesz przeglądać i pobierać zdjęcia. Aby zaznaczyć zdjęcia do druku, <button onClick={() => setShowRegistrationModal(true)} className="text-gold-400 underline hover:text-gold-300">załóż konto rodzica</button>.</span>
-            ) : (
-              <span>
-                Kliknij zdjęcie, aby je powiększyć. Zaznacz <strong className="text-white">do {participantInfo?.max_selections || 5}</strong> zdjęć do druku odbitek.
-              </span>
-            )}
+            <span>
+              Kliknij zdjęcie, aby je powiększyć. Zaznacz <strong className="text-white">do {participantInfo?.max_selections || 5}</strong> zdjęć do druku odbitek.
+            </span>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
-            {!isGuestMode && selectedPhotos.length > 0 && (
+            {selectedPhotos.length > 0 && (
               <button
                 onClick={handleDownloadSelected}
                 className="flex items-center gap-2 px-4 py-2 bg-gold-500 hover:bg-gold-400 text-black text-sm font-bold rounded-lg transition-colors"
@@ -1181,7 +1178,6 @@ Wpisz swoje imię i stwórz własny profil, żeby wybrać zdjęcia.`}
                 Pobierz zaznaczone ({selectedPhotos.length})
               </button>
             )}
-            {!isGuestMode && (
             <button
               onClick={handleDownloadAll}
               disabled={photos.length === 0}
@@ -1191,10 +1187,10 @@ Wpisz swoje imię i stwórz własny profil, żeby wybrać zdjęcia.`}
               <Package className="w-4 h-4" />
               Pobierz całą galerię (ZIP)
             </button>
-            )}
           </div>
         </div>
       </div>
+      )}
 
       {/* Galeria — Siatka lub Opowieść */}
       <div className={viewMode === 'story' ? 'pb-32' : 'max-w-7xl mx-auto px-4 py-8 pb-32'}>
