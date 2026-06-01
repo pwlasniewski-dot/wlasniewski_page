@@ -511,12 +511,19 @@ export default function GroupGalleryPage() {
 
   // PRO: pobieranie pliku z autoryzacją (z S3 → blob → trigger download)
   const downloadWithAuth = useCallback(async (url: string, fallbackName: string) => {
-    if (!authToken) return;
+    console.log('[download] start', { url, hasToken: !!authToken });
+    if (!authToken) {
+      toast.error('Brak autoryzacji — zaloguj się ponownie');
+      return;
+    }
     const tid = toast.loading('Pobieranie...');
     try {
       const res = await fetch(url, { headers: { Authorization: `Bearer ${authToken}` } });
+      console.log('[download] response', { status: res.status, ok: res.ok });
       if (!res.ok) {
-        toast.error('Nie udało się pobrać pliku', { id: tid });
+        const text = await res.text().catch(() => '');
+        console.error('[download] failed', res.status, text);
+        toast.error(`Nie udało się pobrać (${res.status})`, { id: tid });
         return;
       }
       const cd = res.headers.get('Content-Disposition') || '';
