@@ -9,6 +9,8 @@ interface Participant {
   participant_code: string | null;
   parent_identifier: string | null;
   parent_name: string | null;
+  parent_email: string | null;
+  parent_phone: string | null;
   avatar: string | null;
   name: string;
   max_selections: number;
@@ -309,6 +311,20 @@ export default function GalleryParticipantsManager({ galleryId }: GalleryPartici
                               <span className="text-amber-400">Brak zgody</span>
                             )}
                           </div>
+                          {(participant.parent_email || participant.parent_phone) && (
+                            <div className="flex flex-wrap items-center gap-3 mt-1.5 text-xs text-zinc-500">
+                              {participant.parent_email && (
+                                <span className="flex items-center gap-1">
+                                  ✉️ <span className="text-zinc-300">{participant.parent_email}</span>
+                                </span>
+                              )}
+                              {participant.parent_phone && (
+                                <span className="flex items-center gap-1">
+                                  📞 <span className="text-zinc-300">{participant.parent_phone}</span>
+                                </span>
+                              )}
+                            </div>
+                          )}
                         </div>
                         <div className="flex items-center gap-2 text-zinc-500">
                           <ImageIcon className="w-4 h-4" />

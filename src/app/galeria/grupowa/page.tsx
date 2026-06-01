@@ -125,6 +125,45 @@ export default function GroupGalleryPage() {
     toast.success('Wylogowano pomyślnie');
   };
 
+  // RODO: parent self-deletes their account
+  const handleDeleteAccount = async () => {
+    if (!participantInfo || !authToken) return;
+    if (!confirm(
+      'Czy na pewno chcesz usunąć swoje konto i wszystkie dane?\n\nZostanie usunięte:\n• Twój profil i identyfikator\n• Wybrane zdjęcia\n• Wyrażone zgody\n\nTej operacji NIE można cofnąć.'
+    )) return;
+
+    try {
+      const res = await fetch(`/api/galleries/group/participant/${participantInfo.participant_id}/delete-account`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${authToken}` },
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        // Clear local storage
+        localStorage.removeItem(`group_participant_${participantInfo.participant_id}`);
+        // Reset all state
+        setIsAuthenticated(false);
+        setGalleryInfo(null);
+        setParticipantInfo(null);
+        setAuthToken(null);
+        setSelectedPhotos([]);
+        setPhotos([]);
+        setCode('');
+        setPassword('');
+        setParentName('');
+        setParentEmail('');
+        setParentPhone('');
+        setSelectedAvatar('');
+        setConsentGiven(false);
+        toast.success('Twoje dane zostały usunięte (RODO)');
+      } else {
+        toast.error(data.error || 'Nie udało się usunąć danych');
+      }
+    } catch (err) {
+      toast.error('Błąd połączenia');
+    }
+  };
+
   const handleAuth = async () => {
     if (!code.trim()) {
       toast.error('Wpisz kod dostępu');
@@ -820,6 +859,14 @@ export default function GroupGalleryPage() {
                 aria-label="Wyloguj"
               >
                 <LogOut className="w-5 h-5" />
+              </button>
+              <button
+                onClick={handleDeleteAccount}
+                className="p-2 text-zinc-600 hover:text-red-500 hover:bg-zinc-800 rounded-lg transition-colors"
+                title="Usuń moje dane (RODO)"
+                aria-label="Usuń konto RODO"
+              >
+                <X className="w-4 h-4" />
               </button>
             </div>
           </div>

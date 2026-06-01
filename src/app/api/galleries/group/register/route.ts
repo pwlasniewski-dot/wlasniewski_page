@@ -3,7 +3,7 @@ import prisma from '@/lib/db/prisma';
 import crypto from 'crypto';
 import { generateParentToken } from '@/lib/auth/parent-jwt';
 import { AVAILABLE_AVATARS } from '@/lib/gallery/avatars';
-import { getAdminEmail, sendEmail } from '@/lib/email/sender';
+import { sendEmail } from '@/lib/email/sender';
 
 /**
  * Generate initials from full name
@@ -229,34 +229,6 @@ export async function POST(request: NextRequest) {
       });
     } catch (emailError) {
       console.error('Failed to send group participant identifier email:', emailError);
-    }
-
-    // Notify admin about new parent profile in group gallery (best-effort).
-    try {
-      const adminEmail = await getAdminEmail();
-      if (adminEmail) {
-        await sendEmail({
-          to: adminEmail,
-          subject: `Nowy rodzic w galerii grupowej: ${participant.parent_identifier}`,
-          html: `
-            <div style="font-family:Arial,sans-serif;line-height:1.6;color:#111;max-width:680px;margin:0 auto;padding:24px;">
-              <h2 style="margin:0 0 12px;">Nowa rejestracja rodzica</h2>
-              <p>Rodzic właśnie założył profil w galerii grupowej.</p>
-              <table style="width:100%;border-collapse:collapse;margin-top:12px;">
-                <tr><td style="padding:6px 0;color:#666;">Galeria</td><td style="padding:6px 0;"><strong>${gallery.client_name || `#${gallery.id}`}</strong></td></tr>
-                <tr><td style="padding:6px 0;color:#666;">ID galerii</td><td style="padding:6px 0;">${gallery.id}</td></tr>
-                <tr><td style="padding:6px 0;color:#666;">Rodzic</td><td style="padding:6px 0;">${participant.parent_name || '-'}</td></tr>
-                <tr><td style="padding:6px 0;color:#666;">Email</td><td style="padding:6px 0;">${participant.parent_email || '-'}</td></tr>
-                <tr><td style="padding:6px 0;color:#666;">Telefon</td><td style="padding:6px 0;">${participant.parent_phone || '-'}</td></tr>
-                <tr><td style="padding:6px 0;color:#666;">Identyfikator</td><td style="padding:6px 0;"><strong>${participant.parent_identifier || '-'}</strong></td></tr>
-                <tr><td style="padding:6px 0;color:#666;">Awatar</td><td style="padding:6px 0;">${participant.avatar || '-'}</td></tr>
-              </table>
-            </div>
-          `,
-        });
-      }
-    } catch (adminNotifyError) {
-      console.error('Failed to send admin notification about group parent registration:', adminNotifyError);
     }
 
     return NextResponse.json({

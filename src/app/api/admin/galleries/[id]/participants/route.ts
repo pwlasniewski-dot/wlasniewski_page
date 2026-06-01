@@ -39,6 +39,8 @@ export async function GET(
                     participant_code: p.participant_code,
                     parent_identifier: p.parent_identifier,
                     parent_name: p.parent_name,
+                    parent_email: p.parent_email,
+                    parent_phone: p.parent_phone,
                     avatar: p.avatar,
                     max_selections: p.max_selections,
                     selections_count: p._count.selections,
