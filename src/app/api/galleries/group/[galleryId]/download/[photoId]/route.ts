@@ -56,18 +56,19 @@ export async function GET(
       return NextResponse.json({ error: 'Zdjęcie nie istnieje' }, { status: 404 });
     }
 
+    // Fetch and buffer fully — required for Netlify serverless (no streaming support)
     const s3Response = await fetch(photo.file_url);
-    if (!s3Response.ok || !s3Response.body) {
+    if (!s3Response.ok) {
       return NextResponse.json({ error: 'Nie udało się pobrać pliku' }, { status: 502 });
     }
+    const buffer = Buffer.from(await s3Response.arrayBuffer());
+    const filename = `zdjecie-${photo.id}.jpg`;
 
-    const ext = (photo.file_url.split('.').pop() || 'jpg').split('?')[0].toLowerCase();
-    const filename = `zdjecie-${photo.id}.${ext}`;
-
-    return new Response(s3Response.body, {
+    return new NextResponse(buffer, {
       headers: {
-        'Content-Type': s3Response.headers.get('Content-Type') || 'image/jpeg',
+        'Content-Type': 'image/jpeg',
         'Content-Disposition': `attachment; filename="${filename}"`,
+        'Content-Length': String(buffer.length),
         'Cache-Control': 'no-cache',
       },
     });

@@ -920,7 +920,7 @@ export default function GroupGalleryPage() {
             </div>
 
             <p className="text-sm text-zinc-400 mb-6">
-              Aby rodzina mogła wejść do tej galerii, przekaż im poniższe dane. Każdy może założyć własny profil i samodzielnie zaznaczyć ulubione zdjęcia.
+              Skopiuj poniższe dane i wyślij je rodzinie przez SMS lub WhatsApp. Każdy może założyć własny profil i samodzielnie zaznaczyć ulubione zdjęcia.
             </p>
 
             {/* Gallery link */}
@@ -957,13 +957,57 @@ export default function GroupGalleryPage() {
               </div>
             </div>
 
-            {/* Password note */}
-            <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 mb-6">
-              <div className="flex items-start gap-3">
-                <Info className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
-                <p className="text-xs text-amber-200">
-                  Jeśli galeria jest chroniona hasłem — podaj je rodzinie ustnie lub przez SMS. <strong>Nie umieszczaj hasła w żadnym linku.</strong>
-                </p>
+            {/* Password — show if entered during login */}
+            {password && (
+              <div className="mb-4">
+                <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Hasło do galerii</label>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 bg-black border border-zinc-700 rounded-lg px-3 py-2.5 text-sm text-white font-mono">
+                    {password}
+                  </code>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(password).then(() => {
+                        setCopiedShare(true);
+                        setTimeout(() => setCopiedShare(false), 2500);
+                      });
+                    }}
+                    className="flex-shrink-0 p-2.5 bg-zinc-700 text-white rounded-lg hover:bg-zinc-600 transition-colors"
+                    title="Kopiuj hasło"
+                  >
+                    <Copy className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Full share text — copy everything at once */}
+            <div className="mb-4">
+              <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Gotowa wiadomość do skopiowania</label>
+              <div className="flex items-start gap-2">
+                <div className="flex-1 bg-black border border-zinc-700 rounded-lg px-3 py-2.5 text-sm text-zinc-300 whitespace-pre-wrap">
+                  {`Wejdź do galerii zdjęć:
+${typeof window !== 'undefined' ? `${window.location.origin}/galeria/grupowa?code=${code}` : `/galeria/grupowa?code=${code}`}${password ? `
+
+Hasło: ${password}` : ''}
+
+Wpisz swoje imię i stwórz własny profil, żeby wybrać zdjęcia.`}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const msg = `Wejdź do galerii zdjęć:\n${typeof window !== 'undefined' ? `${window.location.origin}/galeria/grupowa?code=${code}` : `/galeria/grupowa?code=${code}`}${password ? `\n\nHasło: ${password}` : ''}\n\nWpisz swoje imię i stwórz własny profil, żeby wybrać zdjęcia.`;
+                    navigator.clipboard.writeText(msg).then(() => {
+                      setCopiedShare(true);
+                      setTimeout(() => setCopiedShare(false), 2500);
+                    });
+                  }}
+                  className="flex-shrink-0 p-2.5 bg-gold-500 text-black rounded-lg hover:bg-gold-400 transition-colors mt-0"
+                  title="Kopiuj całą wiadomość"
+                >
+                  {copiedShare ? <CheckCheck className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                </button>
               </div>
             </div>
 
