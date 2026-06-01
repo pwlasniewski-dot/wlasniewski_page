@@ -78,7 +78,7 @@ export default function GroupGalleryPage() {
   // Consent state
   const [showConsentModal, setShowConsentModal] = useState(false);
   const [consentGiven, setConsentGiven] = useState(false);
-  const [consentScope, setConsentScope] = useState<'ALL' | 'SELECTED'>('SELECTED');
+  const [consentScope, setConsentScope] = useState<'ALL' | 'SELECTED'>('ALL');
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   // Share modal
@@ -236,7 +236,7 @@ export default function GroupGalleryPage() {
 
       setGalleryInfo(data);
       setIsAuthenticated(true);
-      toast.success(`Witaj w galerii: ${data.gallery_name}`);
+      toast.success('Witaj w galerii');
 
       // ZAWSZE pokazuj registration modal - nie przywracaj z localStorage
       // Każdy członek rodziny loguje się niezależnie na tym samym kodzie
@@ -397,7 +397,7 @@ export default function GroupGalleryPage() {
       if (response.ok) {
         setSelectedPhotos(data.selected_photos.map((p: any) => p.photo_id));
         setConsentGiven(data.publication_consent || false);
-        setConsentScope(data.consent_scope || 'SELECTED');
+        setConsentScope(data.consent_scope || 'ALL');
         // Hydrate parent_name for existing participants whose localStorage was saved before this field
         if (data.parent_name) {
           setParticipantInfo(prev => {
@@ -907,7 +907,7 @@ export default function GroupGalleryPage() {
             <div className="flex items-center gap-3">
               <div>
                 <h1 className="text-2xl font-bold">
-                  {galleryInfo?.gallery_name || 'Galeria'}
+                  {isGuestMode ? 'Witaj, Gościu' : (participantInfo?.parent_name ? `Witaj, ${participantInfo.parent_name}` : 'Galeria')}
                 </h1>
                 {!isGuestMode && participantInfo && (
                   <p className="text-sm text-zinc-400">
@@ -1058,22 +1058,20 @@ export default function GroupGalleryPage() {
               </div>
             )}
 
-            {/* Full share text — copy everything at once */}
+            {/* Full share text — copy everything at once (guest link for friends) */}
             <div className="mb-4">
-              <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Gotowa wiadomość do skopiowania</label>
+              <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Gotowa wiadomość dla znajomych (link gościa)</label>
               <div className="flex items-start gap-2">
                 <div className="flex-1 bg-black border border-zinc-700 rounded-lg px-3 py-2.5 text-sm text-zinc-300 whitespace-pre-wrap">
-                  {`Wejdź do galerii zdjęć:
-${typeof window !== 'undefined' ? `${window.location.origin}/galeria/grupowa?code=${code}` : `/galeria/grupowa?code=${code}`}${password ? `
+                  {`Zobacz zdjęcia z uroczystości:
+${typeof window !== 'undefined' ? `${window.location.origin}/galeria/grupowa?code=${code}&guest=1` : `/galeria/grupowa?code=${code}&guest=1`}${password ? `
 
-Hasło: ${password}` : ''}
-
-Wpisz swoje imię i stwórz własny profil, żeby wybrać zdjęcia.`}
+Hasło: ${password}` : ''}`}
                 </div>
                 <button
                   type="button"
                   onClick={() => {
-                    const msg = `Wejdź do galerii zdjęć:\n${typeof window !== 'undefined' ? `${window.location.origin}/galeria/grupowa?code=${code}` : `/galeria/grupowa?code=${code}`}${password ? `\n\nHasło: ${password}` : ''}\n\nWpisz swoje imię i stwórz własny profil, żeby wybrać zdjęcia.`;
+                    const msg = `Zobacz zdjęcia z uroczystości:\n${typeof window !== 'undefined' ? `${window.location.origin}/galeria/grupowa?code=${code}&guest=1` : `/galeria/grupowa?code=${code}&guest=1`}${password ? `\n\nHasło: ${password}` : ''}`;
                     navigator.clipboard.writeText(msg).then(() => {
                       setCopiedShare(true);
                       setTimeout(() => setCopiedShare(false), 2500);
@@ -1112,13 +1110,15 @@ Wpisz swoje imię i stwórz własny profil, żeby wybrać zdjęcia.`}
       {photos.length > 0 && (
         <PremiumGalleryHero
           photos={photos}
-          title={galleryInfo?.gallery_name || 'Galeria'}
-          subtitle={!isGuestMode && galleryInfo?.gallery_name ? `${galleryInfo.gallery_name} — wybierz zdjęcia do druku odbitek` : undefined}
+          title={isGuestMode ? 'Witaj, Gościu' : (participantInfo?.parent_name ? `Witaj, ${participantInfo.parent_name}` : 'Galeria')}
+          subtitle={isGuestMode ? undefined : 'Wybierz zdjęcia do druku odbitek'}
           badge={isGuestMode ? undefined : 'Twoja prywatna galeria'}
           showModeToggle
           mode={viewMode}
           onModeChange={setViewMode}
           onPhotoClick={(p) => setLightboxPhoto(p as Photo)}
+          selectedPhotoIds={isGuestMode ? undefined : new Set(selectedPhotos)}
+          onToggleSelect={isGuestMode ? undefined : (p) => handleSelectToggle(p.id)}
         />
       )}
 

@@ -45,6 +45,8 @@ export default function PremiumGalleryHero({
   mode = 'grid',
   onModeChange,
   onPhotoClick,
+  selectedPhotoIds,
+  onToggleSelect,
 }: PremiumGalleryHeroProps) {
   // Detect desktop vs mobile
   const [isDesktop, setIsDesktop] = useState(false);
@@ -234,6 +236,18 @@ export default function PremiumGalleryHero({
               Zobacz to zdjęcie
             </button>
           )}
+          {onToggleSelect && (() => {
+            const isSel = selectedPhotoIds?.has(slides[idx].id) || false;
+            return (
+              <button
+                onClick={() => onToggleSelect(slides[idx])}
+                className={`px-5 py-2 rounded-full text-sm font-semibold transition-all shadow-lg flex items-center gap-2 ${isSel ? 'bg-zinc-900 text-white border border-gold-500' : 'bg-white text-black hover:bg-zinc-100'}`}
+              >
+                <Check className="w-4 h-4" />
+                {isSel ? 'Odznacz do druku' : 'Zaznacz do druku'}
+              </button>
+            );
+          })()}
         </div>
       </div>
 
