@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import toast from 'react-hot-toast';
-import { Check, Lock, User, Info, Heart, LogOut, X, ZoomIn, ChevronLeft, ChevronRight, Download, Package, CheckSquare, Square } from 'lucide-react';
+import { Check, Lock, User, Info, Heart, LogOut, X, ZoomIn, ChevronLeft, ChevronRight, Download, Package, CheckSquare, Square, Share2, Copy, CheckCheck } from 'lucide-react';
 import PremiumGalleryHero, { PremiumGalleryStory } from '@/components/galleries/PremiumGalleryHero';
 import PostGalleryUpsell, { TopReviewNudge } from '@/components/galleries/PostGalleryUpsell';
 
@@ -74,6 +74,10 @@ export default function GroupGalleryPage() {
   const [consentGiven, setConsentGiven] = useState(false);
   const [consentScope, setConsentScope] = useState<'ALL' | 'SELECTED'>('SELECTED');
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+  // Share modal
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [copiedShare, setCopiedShare] = useState(false);
 
   // Always show registration modal when authenticated - each parent registers separately (not from localStorage)
   // This allows multiple family members to create their own profiles under the same gallery code
@@ -500,6 +504,26 @@ export default function GroupGalleryPage() {
     );
   };
 
+  const handleDownloadSelected = async () => {
+    if (selectedPhotos.length === 0) {
+      toast.error('Nie zaznaczono żadnych zdjęć');
+      return;
+    }
+    if (!galleryInfo) return;
+    const tid = toast.loading(`Pobieranie ${selectedPhotos.length} zdjęć...`);
+    for (let i = 0; i < selectedPhotos.length; i++) {
+      await downloadWithAuth(
+        `/api/galleries/group/${galleryInfo.gallery_id}/download/${selectedPhotos[i]}`,
+        `zdjecie-${String(i + 1).padStart(3, '0')}.jpg`
+      );
+      // short delay so the browser doesn't block multiple simultaneous downloads
+      if (i < selectedPhotos.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 600));
+      }
+    }
+    toast.dismiss(tid);
+  };
+
   const handleDownloadAll = () => {
     if (!galleryInfo) return;
     if (photos.length === 0) {
@@ -861,6 +885,14 @@ export default function GroupGalleryPage() {
                 <LogOut className="w-5 h-5" />
               </button>
               <button
+                onClick={() => setShowShareModal(true)}
+                className="p-2 text-zinc-400 hover:text-gold-400 hover:bg-zinc-800 rounded-lg transition-colors"
+                title="Udostępnij galerię rodzinie"
+                aria-label="Udostępnij galerię"
+              >
+                <Share2 className="w-5 h-5" />
+              </button>
+              <button
                 onClick={handleDeleteAccount}
                 className="p-2 text-zinc-600 hover:text-red-500 hover:bg-zinc-800 rounded-lg transition-colors"
                 title="Usuń moje dane (RODO)"
@@ -873,7 +905,90 @@ export default function GroupGalleryPage() {
         </div>
       </div>
 
-      {/* HERO SLIDER — wow-factor */}
+      {/* SHARE MODAL */}
+      {showShareModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 max-w-lg w-full">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-white">Udostępnij galerię rodzinie</h2>
+              <button
+                onClick={() => setShowShareModal(false)}
+                className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <p className="text-sm text-zinc-400 mb-6">
+              Aby rodzina mogła wejść do tej galerii, przekaż im poniższe dane. Każdy może założyć własny profil i samodzielnie zaznaczyć ulubione zdjęcia.
+            </p>
+
+            {/* Gallery link */}
+            <div className="mb-4">
+              <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Link do galerii</label>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 bg-black border border-zinc-700 rounded-lg px-3 py-2.5 text-sm text-gold-400 font-mono truncate">
+                  {typeof window !== 'undefined' ? `${window.location.origin}/galeria/grupowa?code=${code}` : `/galeria/grupowa?code=${code}`}
+                </code>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const url = typeof window !== 'undefined'
+                      ? `${window.location.origin}/galeria/grupowa?code=${code}`
+                      : `/galeria/grupowa?code=${code}`;
+                    navigator.clipboard.writeText(url).then(() => {
+                      setCopiedShare(true);
+                      setTimeout(() => setCopiedShare(false), 2500);
+                    });
+                  }}
+                  className="flex-shrink-0 p-2.5 bg-gold-500 text-black rounded-lg hover:bg-gold-400 transition-colors"
+                  title="Kopiuj link"
+                >
+                  {copiedShare ? <CheckCheck className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            {/* Gallery code */}
+            <div className="mb-4">
+              <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Kod dostępu</label>
+              <div className="bg-black border border-zinc-700 rounded-lg px-3 py-2.5">
+                <span className="text-white font-mono font-bold tracking-wider">{code}</span>
+              </div>
+            </div>
+
+            {/* Password note */}
+            <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 mb-6">
+              <div className="flex items-start gap-3">
+                <Info className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+                <p className="text-xs text-amber-200">
+                  Jeśli galeria jest chroniona hasłem — podaj je rodzinie ustnie lub przez SMS. <strong>Nie umieszczaj hasła w żadnym linku.</strong>
+                </p>
+              </div>
+            </div>
+
+            {/* Parent identifier */}
+            {participantInfo && (
+              <div className="bg-zinc-800 border border-zinc-700 rounded-lg p-4 mb-6">
+                <p className="text-xs text-zinc-400 mb-1">Twój identyfikator rodzica:</p>
+                <p className="text-lg font-mono font-bold text-gold-400">{participantInfo.parent_identifier}</p>
+                <p className="text-xs text-zinc-500 mt-1">
+                  Rodzina może zalogować się własnym emailem lub założyć nowy profil w tej samej galerii.
+                </p>
+              </div>
+            )}
+
+            <button
+              onClick={() => setShowShareModal(false)}
+              className="w-full bg-zinc-800 text-white font-semibold py-3 rounded-lg hover:bg-zinc-700 transition-colors"
+            >
+              Zamknij
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* HERO SLIDER — wow-factor */
       {photos.length > 0 && (
         <PremiumGalleryHero
           photos={photos}
@@ -894,6 +1009,32 @@ export default function GroupGalleryPage() {
         />
       )}
 
+      {/* Consent info banner — widoczny jeśli zgoda nie jest jeszcze wyrażona */}
+      {!consentGiven && photos.length > 0 && (
+        <div className="bg-amber-500/10 border-y border-amber-500/30">
+          <div className="max-w-7xl mx-auto px-4 py-4 flex flex-wrap items-start gap-4">
+            <div className="flex items-start gap-3 flex-1 min-w-0">
+              <Info className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-semibold text-amber-200 mb-1">Zgoda na publikację wizerunku</p>
+                <p className="text-xs text-amber-300/80">
+                  Fotograf może poprosić o zgodę na nieodpłatne publikowanie wybranych zdjęć na swojej stronie internetowej i w mediach społecznościowych w celach promocyjnych.
+                  Wyrażenie zgody jest <strong>dobrowolne</strong> — możesz ją cofnąć w każdej chwili.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowConsentModal(true)}
+              disabled={selectedPhotos.length === 0}
+              className="flex-shrink-0 flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-400 text-black text-sm font-bold rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <Heart className="w-4 h-4" />
+              {selectedPhotos.length === 0 ? 'Zaznacz zdjęcia, aby wyrazić zgodę' : 'Wyraź zgodę RODO'}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Action Bar pod headerem */}
       <div className="border-b border-zinc-800 bg-zinc-900/30">
         <div className="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
@@ -903,15 +1044,27 @@ export default function GroupGalleryPage() {
               Kliknij zdjęcie, aby je powiększyć. Zaznacz <strong className="text-white">do {participantInfo?.max_selections || 5}</strong> zdjęć do druku odbitek.
             </span>
           </div>
-          <button
-            onClick={handleDownloadAll}
-            disabled={photos.length === 0}
-            className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
-            title="Pobierz wszystkie zdjęcia w pełnej rozdzielczości jako ZIP"
-          >
-            <Package className="w-4 h-4" />
-            Pobierz całą galerię (ZIP)
-          </button>
+          <div className="flex items-center gap-2 flex-wrap">
+            {selectedPhotos.length > 0 && (
+              <button
+                onClick={handleDownloadSelected}
+                className="flex items-center gap-2 px-4 py-2 bg-gold-500 hover:bg-gold-400 text-black text-sm font-bold rounded-lg transition-colors"
+                title={`Pobierz zaznaczone ${selectedPhotos.length} zdjęcia jako JPG`}
+              >
+                <Download className="w-4 h-4" />
+                Pobierz zaznaczone ({selectedPhotos.length})
+              </button>
+            )}
+            <button
+              onClick={handleDownloadAll}
+              disabled={photos.length === 0}
+              className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
+              title="Pobierz wszystkie zdjęcia w pełnej rozdzielczości jako ZIP"
+            >
+              <Package className="w-4 h-4" />
+              Pobierz całą galerię (ZIP)
+            </button>
+          </div>
         </div>
       </div>
 
