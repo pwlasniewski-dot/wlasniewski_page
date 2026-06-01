@@ -5,7 +5,7 @@ import { checkRateLimit, getClientIp } from '@/lib/auth/rate-limit';
 
 /**
  * POST /api/galleries/group/login-email
- * Login existing parent profile by email in a specific group gallery.
+ * Login existing parent profile by email OR parent identifier code (e.g. PW-7475).
  */
 export async function POST(request: NextRequest) {
   try {
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
 
     if (!gallery_id || !access_code || !parent_email) {
       return NextResponse.json(
-        { error: 'ID galerii, kod dostępu i email są wymagane' },
+        { error: 'ID galerii, kod dostępu i email/identyfikator są wymagane' },
         { status: 400 }
       );
     }
@@ -32,24 +32,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Nieprawidłowe ID galerii' }, { status: 400 });
     }
 
-    const normalizedEmail = String(parent_email).trim().toLowerCase();
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(normalizedEmail)) {
-      return NextResponse.json({ error: 'Nieprawidłowy format email' }, { status: 400 });
-    }
-
     const normalizedCode = String(access_code).trim().toUpperCase();
 
     const gallery = await prisma.clientGallery.findUnique({
-      where: {
-        group_access_code: normalizedCode,
-      },
-      select: {
-        id: true,
-        expires_at: true,
-        gallery_mode: true,
-        is_active: true,
-      },
+      where: { group_access_code: normalizedCode },
+      select: { id: true, expires_at: true, gallery_mode: true, is_active: true },
     });
 
     if (!gallery || gallery.id !== galleryId || gallery.gallery_mode !== 'GROUP' || !gallery.is_active) {
@@ -60,35 +47,38 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Galeria wygasła' }, { status: 403 });
     }
 
-    let participant = await prisma.galleryParticipant.findFirst({
-      where: {
-        gallery_id: galleryId,
-        parent_email: normalizedEmail,
-      },
-      select: {
-        id: true,
-        parent_identifier: true,
-        parent_name: true,
-        avatar: true,
-        max_selections: true,
-      },
-    });
+    const input = String(parent_email).trim();
 
-    // Legacy fallback for historical mixed-case emails.
-    if (!participant) {
+    // Detect whether input is a parent identifier (e.g. PW-7475, KP-1234) or an email
+    const isIdentifier = /^[A-Z]{1,4}-\d{3,6}$/i.test(input);
+
+    let participant: { id: number; parent_identifier: string | null; parent_name: string | null; avatar: string | null; max_selections: number } | null = null;
+
+    if (isIdentifier) {
       participant = await prisma.galleryParticipant.findFirst({
         where: {
           gallery_id: galleryId,
-          parent_email: { equals: normalizedEmail, mode: 'insensitive' },
+          parent_identifier: { equals: input.toUpperCase(), mode: 'insensitive' },
         },
-        select: {
-          id: true,
-          parent_identifier: true,
-          parent_name: true,
-          avatar: true,
-          max_selections: true,
-        },
+        select: { id: true, parent_identifier: true, parent_name: true, avatar: true, max_selections: true },
       });
+    } else {
+      const normalizedEmail = input.toLowerCase();
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(normalizedEmail)) {
+        return NextResponse.json({ error: 'Wpisz email lub identyfikator (np. PW-7475)' }, { status: 400 });
+      }
+      participant = await prisma.galleryParticipant.findFirst({
+        where: { gallery_id: galleryId, parent_email: normalizedEmail },
+        select: { id: true, parent_identifier: true, parent_name: true, avatar: true, max_selections: true },
+      });
+      // Legacy fallback for historical mixed-case emails
+      if (!participant) {
+        participant = await prisma.galleryParticipant.findFirst({
+          where: { gallery_id: galleryId, parent_email: { equals: normalizedEmail, mode: 'insensitive' } },
+          select: { id: true, parent_identifier: true, parent_name: true, avatar: true, max_selections: true },
+        });
+      }
     }
 
     if (!participant) {

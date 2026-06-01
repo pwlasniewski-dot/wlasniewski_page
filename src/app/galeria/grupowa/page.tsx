@@ -681,13 +681,13 @@ export default function GroupGalleryPage() {
 
           <div className="bg-zinc-800/40 border border-zinc-700 rounded-lg p-4 mb-6">
             <h3 className="text-sm font-semibold text-white mb-1">Masz już profil rodzica?</h3>
-            <p className="text-xs text-zinc-400 mb-3">Wpisz email z rejestracji i od razu wejdziesz do galerii.</p>
+            <p className="text-xs text-zinc-400 mb-3">Wpisz swój email lub identyfikator (np. <span className="font-mono text-gold-400">PW-7475</span>) i od razu wejdziesz do galerii.</p>
             <div className="flex gap-2">
               <input
-                type="email"
+                type="text"
                 value={existingEmail}
                 onChange={e => setExistingEmail(e.target.value)}
-                placeholder="Email z rejestracji"
+                placeholder="Email lub identyfikator (np. PW-7475)"
                 className="flex-1 bg-black border border-zinc-700 rounded-lg px-3 py-2 text-white focus:border-gold-500 focus:outline-none"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && existingEmail.trim() && !loading) {
