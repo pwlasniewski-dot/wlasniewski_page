@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { getApiUrl } from '@/lib/api-config';
 import { Plus, Edit, Trash2, Eye } from 'lucide-react';
 import Link from 'next/link';
@@ -15,12 +16,34 @@ interface BlogPost {
 }
 
 export default function BlogPage() {
+    const router = useRouter();
+    const searchParams = useSearchParams();
     const [posts, setPosts] = useState<BlogPost[]>([]);
     const [loading, setLoading] = useState(true);
+    const [autoRouted, setAutoRouted] = useState(false);
 
     useEffect(() => {
         fetchPosts();
     }, []);
+
+    useEffect(() => {
+        if (autoRouted || loading || posts.length === 0) return;
+
+        const slug = searchParams.get('slug');
+        const focus = searchParams.get('focus') || '';
+        if (!slug) return;
+
+        const match = posts.find(p => p.slug === slug);
+        setAutoRouted(true);
+
+        if (match) {
+            const focusQuery = focus ? `?focus=${encodeURIComponent(focus)}` : '';
+            router.replace(`/admin/blog/edit/${match.id}${focusQuery}`);
+            return;
+        }
+
+        toast.error(`Nie znaleziono wpisu bloga o slugu: ${slug}`);
+    }, [autoRouted, loading, posts, router, searchParams]);
 
     const fetchPosts = async () => {
         try {

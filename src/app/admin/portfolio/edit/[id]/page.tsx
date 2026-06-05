@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { getApiUrl } from '@/lib/api-config';
 import { Save, ArrowLeft, Image as ImageIcon, X, Star, Check } from 'lucide-react';
 import Link from 'next/link';
@@ -14,6 +14,7 @@ import { SortableGalleryItem } from '@/components/admin/SortableGalleryItem';
 export default function EditSessionPage() {
     const router = useRouter();
     const params = useParams();
+    const searchParams = useSearchParams();
     const id = params.id as string;
 
     const [formData, setFormData] = useState({
@@ -45,6 +46,33 @@ export default function EditSessionPage() {
         fetchSettings();
         fetchSession();
     }, [id]);
+
+    useEffect(() => {
+        if (loading) return;
+
+        const rawFocus = (searchParams.get('focus') || '').toLowerCase().trim();
+        if (!rawFocus) return;
+
+        const normalizedFocus =
+            rawFocus.includes('h1') ? 'h1' :
+            rawFocus.includes('akapit') ? 'akapit-intro' :
+            rawFocus.includes('faq') ? 'h2' :
+            rawFocus.includes('h2') ? 'h2' :
+            '';
+
+        if (!normalizedFocus) return;
+
+        const target = document.querySelector(`[data-focus-target="${normalizedFocus}"]`) as HTMLElement | null;
+        if (!target) return;
+
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        target.classList.add('ring-2', 'ring-amber-400', 'ring-offset-2', 'ring-offset-zinc-950', 'rounded-lg');
+        const timer = window.setTimeout(() => {
+            target.classList.remove('ring-2', 'ring-amber-400', 'ring-offset-2', 'ring-offset-zinc-950', 'rounded-lg');
+        }, 2200);
+
+        return () => window.clearTimeout(timer);
+    }, [loading, searchParams]);
 
     const fetchSettings = async () => {
         try {
@@ -363,7 +391,7 @@ export default function EditSessionPage() {
                     </label>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div data-focus-target="h1" className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <label className="block text-sm font-medium text-zinc-400 mb-1">Tytuł sesji</label>
                         <input
@@ -458,7 +486,7 @@ export default function EditSessionPage() {
                     </div>
                 </div>
 
-                <div>
+                <div data-focus-target="h2">
                     <label className="block text-sm font-medium text-zinc-400 mb-2">Zdjęcia w galerii (Przeciągnij, aby zmienić kolejność)</label>
 
                     <DndContext
@@ -520,7 +548,7 @@ export default function EditSessionPage() {
                     multiple={true}
                 />
 
-                <div>
+                <div data-focus-target="akapit-intro">
                     <label className="block text-sm font-medium text-zinc-400 mb-1">Opis</label>
                     <textarea
                         rows={4}

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { getApiUrl } from '@/lib/api-config';
 import { Plus, Edit, Trash2, Image as ImageIcon, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
@@ -8,6 +9,7 @@ import toast from 'react-hot-toast';
 
 interface PortfolioSession {
     id: number;
+    slug: string;
     title: string;
     category: string;
     session_date: string;
@@ -17,12 +19,34 @@ interface PortfolioSession {
 }
 
 export default function PortfolioPage() {
+    const router = useRouter();
+    const searchParams = useSearchParams();
     const [sessions, setSessions] = useState<PortfolioSession[]>([]);
     const [loading, setLoading] = useState(true);
+    const [autoRouted, setAutoRouted] = useState(false);
 
     useEffect(() => {
         fetchSessions();
     }, []);
+
+    useEffect(() => {
+        if (autoRouted || loading || sessions.length === 0) return;
+
+        const slug = searchParams.get('slug');
+        const focus = searchParams.get('focus') || '';
+        if (!slug) return;
+
+        const match = sessions.find(s => s.slug === slug);
+        setAutoRouted(true);
+
+        if (match) {
+            const focusQuery = focus ? `?focus=${encodeURIComponent(focus)}` : '';
+            router.replace(`/admin/portfolio/edit/${match.id}${focusQuery}`);
+            return;
+        }
+
+        toast.error(`Nie znaleziono sesji portfolio o slugu: ${slug}`);
+    }, [autoRouted, loading, sessions, router, searchParams]);
 
     const fetchSessions = async () => {
         try {

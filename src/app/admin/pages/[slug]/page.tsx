@@ -98,6 +98,33 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
     const [showPortfolioHeroPicker, setShowPortfolioHeroPicker] = useState(false);
 
     useEffect(() => {
+        if (loading) return;
+
+        const rawFocus = (searchParams.get('focus') || '').toLowerCase().trim();
+        if (!rawFocus) return;
+
+        const normalizedFocus =
+            rawFocus.includes('h1') ? 'h1' :
+            rawFocus.includes('faq') ? 'h2' :
+            rawFocus.includes('akapit') ? 'akapit-intro' :
+            rawFocus.includes('h2') ? 'h2' :
+            '';
+
+        if (!normalizedFocus) return;
+
+        const target = document.querySelector(`[data-focus-target="${normalizedFocus}"]`) as HTMLElement | null;
+        if (!target) return;
+
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        target.classList.add('ring-2', 'ring-amber-400', 'ring-offset-2', 'ring-offset-zinc-950', 'rounded-lg');
+        const timer = window.setTimeout(() => {
+            target.classList.remove('ring-2', 'ring-amber-400', 'ring-offset-2', 'ring-offset-zinc-950', 'rounded-lg');
+        }, 2200);
+
+        return () => window.clearTimeout(timer);
+    }, [loading, searchParams]);
+
+    useEffect(() => {
         params.then(p => {
             setResolvedParams(p);
             setFormData(prev => ({ ...prev, slug: p.slug }));
@@ -421,7 +448,7 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
 
             <div className="space-y-6">
                 {/* Basic Info */}
-                <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6 space-y-4">
+                <div data-focus-target="h1" className="bg-zinc-900 border border-zinc-800 rounded-lg p-6 space-y-4">
                     <h2 className="text-lg font-semibold text-white">Podstawowe informacje</h2>
 
                     <div>
@@ -548,7 +575,7 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
                 </div>
 
                 {/* Menu Settings */}
-                <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6 space-y-4">
+                <div data-focus-target="h2" className="bg-zinc-900 border border-zinc-800 rounded-lg p-6 space-y-4">
                     <h2 className="text-lg font-semibold text-white">Menu nawigacji</h2>
 
                     <div className="flex items-center gap-3 py-2">
@@ -598,7 +625,7 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
                 </div>
 
                 {/* PAGE BUILDER - Available for ALL pages */}
-                <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6 space-y-4">
+                <div data-focus-target="akapit-intro" className="bg-zinc-900 border border-zinc-800 rounded-lg p-6 space-y-4">
                     <h2 className="text-lg font-semibold text-white">Kreator Strony (Page Builder)</h2>
                     <p className="text-sm text-zinc-400 mb-4">
                         Dodawaj i układaj sekcje, aby zbudować unikalny wygląd strony.

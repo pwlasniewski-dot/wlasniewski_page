@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { getApiUrl } from '@/lib/api-config';
 import { Save, ArrowLeft, Image as ImageIcon } from 'lucide-react';
 import Link from 'next/link';
@@ -11,6 +11,7 @@ import RichTextEditor from '@/components/admin/RichTextEditor';
 
 export default function EditPostPage({ params }: { params: Promise<{ id: string }> }) {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [resolvedParams, setResolvedParams] = useState<{ id: string } | null>(null);
     const [loading, setLoading] = useState(true);
     const [formData, setFormData] = useState({
@@ -59,6 +60,33 @@ export default function EditPostPage({ params }: { params: Promise<{ id: string 
         };
         fetchPost();
     }, [resolvedParams]);
+
+    useEffect(() => {
+        if (loading) return;
+
+        const rawFocus = (searchParams.get('focus') || '').toLowerCase().trim();
+        if (!rawFocus) return;
+
+        const normalizedFocus =
+            rawFocus.includes('h1') ? 'h1' :
+            rawFocus.includes('akapit') ? 'akapit-intro' :
+            rawFocus.includes('faq') ? 'h2' :
+            rawFocus.includes('h2') ? 'h2' :
+            '';
+
+        if (!normalizedFocus) return;
+
+        const target = document.querySelector(`[data-focus-target="${normalizedFocus}"]`) as HTMLElement | null;
+        if (!target) return;
+
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        target.classList.add('ring-2', 'ring-amber-400', 'ring-offset-2', 'ring-offset-zinc-950', 'rounded-lg');
+        const timer = window.setTimeout(() => {
+            target.classList.remove('ring-2', 'ring-amber-400', 'ring-offset-2', 'ring-offset-zinc-950', 'rounded-lg');
+        }, 2200);
+
+        return () => window.clearTimeout(timer);
+    }, [loading, searchParams]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -112,7 +140,7 @@ export default function EditPostPage({ params }: { params: Promise<{ id: string 
             </div>
 
             <div className="bg-zinc-900 shadow rounded-lg border border-zinc-800 p-6 space-y-6">
-                <div>
+                <div data-focus-target="h1">
                     <label className="block text-sm font-medium text-zinc-400 mb-1">Tytuł</label>
                     <input
                         type="text"
@@ -182,7 +210,7 @@ export default function EditPostPage({ params }: { params: Promise<{ id: string 
                     }}
                 />
 
-                <div>
+                <div data-focus-target="akapit-intro">
                     <label className="block text-sm font-medium text-zinc-400 mb-1">Krótki opis (Excerpt)</label>
                     <textarea
                         rows={3}
@@ -192,7 +220,7 @@ export default function EditPostPage({ params }: { params: Promise<{ id: string 
                     />
                 </div>
 
-                <div>
+                <div data-focus-target="h2">
                     <label className="block text-sm font-medium text-zinc-400 mb-1">Treść</label>
                     <RichTextEditor
                         value={formData.content}
