@@ -74,6 +74,33 @@ type Recommendation = {
     sortOrder: number;
 };
 
+type AhrefsLikeIssue = {
+    severity: 'critical' | 'warning' | 'info';
+    title: string;
+    details: string;
+    action: string;
+};
+
+type AhrefsLikeReport = {
+    generatedAt: string;
+    checks: {
+        homepageStatus: number | null;
+        robotsStatus: number | null;
+        sitemapStatus: number | null;
+        sitemapUrlCount: number;
+        homepageTitleLength: number;
+        homepageDescriptionLength: number;
+    };
+    summary: {
+        technicalScore: number;
+        contentScore: number;
+        overallScore: number;
+        criticalIssues: number;
+        warnings: number;
+    };
+    issues: AhrefsLikeIssue[];
+};
+
 type TargetKeyword = { kw: string; volume: string; intent: string };
 
 type Filter = 'all' | 'bad' | 'good' | 'h1' | 'h2' | 'h3' | 'conflicts';
@@ -283,6 +310,7 @@ export default function SeoHeadingsPage() {
     const [keywords, setKeywords] = useState<TargetKeyword[]>([]);
     const [structureConflicts, setStructureConflicts] = useState<StructureConflict[]>([]);
     const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
+    const [ahrefsLikeReport, setAhrefsLikeReport] = useState<AhrefsLikeReport | null>(null);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState<Filter>('all');
     const [search, setSearch] = useState('');
@@ -301,6 +329,7 @@ export default function SeoHeadingsPage() {
                 setKeywords(data.targetKeywords);
                 setStructureConflicts(data.structureConflicts ?? []);
                 setRecommendations(data.recommendations ?? []);
+                setAhrefsLikeReport(data.ahrefsLikeReport ?? null);
             } else {
                 toast.error(data.error ?? 'Błąd pobierania nagłówków');
             }
@@ -449,6 +478,64 @@ export default function SeoHeadingsPage() {
                     <p className="text-xs text-zinc-500 mt-1">
                         {stats.withoutKeyword} nagłówków nie zawiera żadnego z {keywords.length} docelowych słów kluczowych
                     </p>
+                </div>
+            )}
+
+            {ahrefsLikeReport && (
+                <div className="mb-6 rounded-lg border border-zinc-800 bg-zinc-900 p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                        <div>
+                            <h2 className="text-sm font-semibold text-white">Raport po zmianach (Ahrefs-like)</h2>
+                            <p className="text-xs text-zinc-500 mt-1">
+                                Snapshot techniczny i contentowy na bazie live-check + danych z CMS.
+                            </p>
+                        </div>
+                        <span className="text-[11px] text-zinc-500">
+                            {new Date(ahrefsLikeReport.generatedAt).toLocaleString('pl-PL')}
+                        </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 mb-3">
+                        {[
+                            { label: 'Overall', value: ahrefsLikeReport.summary.overallScore, color: 'text-white' },
+                            { label: 'Technical', value: ahrefsLikeReport.summary.technicalScore, color: 'text-sky-400' },
+                            { label: 'Content', value: ahrefsLikeReport.summary.contentScore, color: 'text-violet-400' },
+                            { label: 'Critical', value: ahrefsLikeReport.summary.criticalIssues, color: 'text-rose-400' },
+                            { label: 'Warnings', value: ahrefsLikeReport.summary.warnings, color: 'text-amber-400' },
+                        ].map(item => (
+                            <div key={item.label} className="rounded-md border border-zinc-800 bg-zinc-950 p-2.5 text-center">
+                                <div className={`text-xl font-bold ${item.color}`}>{item.value}</div>
+                                <div className="text-[11px] text-zinc-500 mt-0.5">{item.label}</div>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="mb-3 rounded-md border border-zinc-800 bg-zinc-950 p-3">
+                        <p className="text-xs font-medium text-zinc-300 mb-2">Live checks</p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 text-xs">
+                            <div className="text-zinc-300">Homepage status: <span className="text-white font-medium">{ahrefsLikeReport.checks.homepageStatus ?? 'brak'}</span></div>
+                            <div className="text-zinc-300">robots.txt status: <span className="text-white font-medium">{ahrefsLikeReport.checks.robotsStatus ?? 'brak'}</span></div>
+                            <div className="text-zinc-300">sitemap.xml status: <span className="text-white font-medium">{ahrefsLikeReport.checks.sitemapStatus ?? 'brak'}</span></div>
+                            <div className="text-zinc-300">Sitemap URL count: <span className="text-white font-medium">{ahrefsLikeReport.checks.sitemapUrlCount}</span></div>
+                            <div className="text-zinc-300">Title length (home): <span className="text-white font-medium">{ahrefsLikeReport.checks.homepageTitleLength}</span></div>
+                            <div className="text-zinc-300">Description length (home): <span className="text-white font-medium">{ahrefsLikeReport.checks.homepageDescriptionLength}</span></div>
+                        </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        {ahrefsLikeReport.issues.map((issue, idx) => (
+                            <div key={`${issue.title}-${idx}`} className="rounded-md border border-zinc-800 bg-zinc-950 p-3">
+                                <div className="flex flex-wrap items-center gap-2 mb-1">
+                                    <span className={`text-[11px] px-2 py-0.5 rounded font-medium ${issue.severity === 'critical' ? 'bg-rose-900/60 text-rose-200' : issue.severity === 'warning' ? 'bg-amber-900/60 text-amber-200' : 'bg-sky-900/60 text-sky-200'}`}>
+                                        {issue.severity === 'critical' ? 'Krytyczne' : issue.severity === 'warning' ? 'Ostrzeżenie' : 'Info'}
+                                    </span>
+                                    <p className="text-sm font-medium text-white">{issue.title}</p>
+                                </div>
+                                <p className="text-xs text-zinc-400">{issue.details}</p>
+                                <p className="text-xs text-emerald-300 mt-1">Co zrobić: {issue.action}</p>
+                            </div>
+                        ))}
+                    </div>
                 </div>
             )}
 

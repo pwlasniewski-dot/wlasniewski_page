@@ -159,6 +159,48 @@ type SeoStrategy = {
     h3Suggestions: string[];
 };
 
+type AhrefsLikeIssue = {
+    severity: 'critical' | 'warning' | 'info';
+    title: string;
+    details: string;
+    action: string;
+};
+
+type AhrefsLikeReport = {
+    generatedAt: string;
+    checks: {
+        homepageStatus: number | null;
+        robotsStatus: number | null;
+        sitemapStatus: number | null;
+        sitemapUrlCount: number;
+        homepageTitleLength: number;
+        homepageDescriptionLength: number;
+    };
+    summary: {
+        technicalScore: number;
+        contentScore: number;
+        overallScore: number;
+        criticalIssues: number;
+        warnings: number;
+    };
+    issues: AhrefsLikeIssue[];
+};
+
+async function safeFetchText(url: string): Promise<{ status: number | null; text: string }> {
+    try {
+        const response = await fetch(url, {
+            cache: 'no-store',
+            headers: {
+                'user-agent': 'SEO-OPS-Audit/1.0',
+            },
+        });
+        const text = await response.text();
+        return { status: response.status, text };
+    } catch {
+        return { status: null, text: '' };
+    }
+}
+
 const CITY_LABELS: Record<string, string> = {
     torun: 'Toruń',
     grudziadz: 'Grudziądz',
@@ -455,7 +497,7 @@ export async function GET(request: NextRequest) {
     return withAuth(request, async () => {
         const [pages, blogs] = await Promise.all([
             prisma.page.findMany({
-                select: { id: true, slug: true, title: true, content: true, sections: true, is_published: true },
+                select: { id: true, slug: true, title: true, content: true, sections: true, is_published: true, meta_title: true, meta_description: true },
             }),
             prisma.blogPost.findMany({
                 select: { id: true, slug: true, title: true, content: true, status: true },
@@ -636,6 +678,137 @@ export async function GET(request: NextRequest) {
         const recommendations = buildRecommendations(headings, exposedEntityKeys);
         stats.recommendationGroupsCount = new Set(recommendations.map(item => item.entityKey)).size;
 
+        const [homepageCheck, robotsCheck, sitemapCheck] = await Promise.all([
+            safeFetchText('https://wlasniewski.pl'),
+            safeFetchText('https://wlasniewski.pl/robots.txt'),
+            safeFetchText('https://wlasniewski.pl/sitemap.xml'),
+        ]);
+
+        const sitemapUrlCount = (sitemapCheck.text.match(/<loc>/g) ?? []).length;
+        const homepageMeta = pages.find(page => page.slug === 'strona-glowna');
+        const homepageTitleLength = (homepageMeta?.meta_title ?? '').trim().length;
+        const homepageDescriptionLength = (homepageMeta?.meta_description ?? '').trim().length;
+
+        const issues: AhrefsLikeIssue[] = [];
+
+        if (homepageCheck.status !== 200) {
+            issues.push({
+                severity: 'critical',
+                title: 'Strona główna nie zwraca 200',
+                details: `Status: ${homepageCheck.status ?? 'brak odpowiedzi'}`,
+                action: 'Sprawdź deploy i routing domeny w Netlify.',
+            });
+        }
+
+        if (robotsCheck.status !== 200) {
+            issues.push({
+                severity: 'critical',
+                title: 'robots.txt niedostępny',
+                details: `Status: ${robotsCheck.status ?? 'brak odpowiedzi'}`,
+                action: 'Napraw endpoint robots.txt i upewnij się, że jest publicznie dostępny.',
+            });
+        }
+
+        if (sitemapCheck.status !== 200) {
+            issues.push({
+                severity: 'critical',
+                title: 'sitemap.xml niedostępny',
+                details: `Status: ${sitemapCheck.status ?? 'brak odpowiedzi'}`,
+                action: 'Napraw endpoint sitemap.xml i ponownie wyślij mapę do GSC.',
+            });
+        }
+
+        if (sitemapUrlCount < 20) {
+            issues.push({
+                severity: 'warning',
+                title: 'Mało adresów w sitemap.xml',
+                details: `Wykryto ${sitemapUrlCount} URL-i.`,
+                action: 'Zweryfikuj, czy wszystkie opublikowane strony trafiają do sitemap.',
+            });
+        }
+
+        if (homepageTitleLength > 60 || homepageTitleLength < 35) {
+            issues.push({
+                severity: 'warning',
+                title: 'Meta title strony głównej poza zakresem',
+                details: `Długość: ${homepageTitleLength} znaków (zalecane 35-60).`,
+                action: 'Dopasuj długość title do zakresu 35-60 znaków.',
+            });
+        }
+
+        if (homepageDescriptionLength > 160 || homepageDescriptionLength < 90) {
+            issues.push({
+                severity: 'warning',
+                title: 'Meta description strony głównej poza zakresem',
+                details: `Długość: ${homepageDescriptionLength} znaków (zalecane 90-160).`,
+                action: 'Dopasuj długość meta description do zakresu 90-160 znaków.',
+            });
+        }
+
+        if (stats.conflictEntitiesCount > 0) {
+            issues.push({
+                severity: 'warning',
+                title: 'Konflikty H1/H2/H3 na części stron',
+                details: `Wykryto ${stats.conflictEntitiesCount} stron z konfliktem struktury nagłówków.`,
+                action: 'Napraw strony z filtrów „Konflikty H1/H2/H3”.',
+            });
+        }
+
+        if (stats.withoutKeyword > 0) {
+            const ratio = Math.round((stats.withoutKeyword / Math.max(stats.total, 1)) * 100);
+            issues.push({
+                severity: ratio > 60 ? 'critical' : 'warning',
+                title: 'Słabe pokrycie nagłówków słowami kluczowymi',
+                details: `${stats.withoutKeyword}/${stats.total} nagłówków bez dopasowanej frazy (${ratio}%).`,
+                action: 'Przejdź przez „Plan zmian SEO” i zastosuj rekomendacje od strony głównej.',
+            });
+        }
+
+        if (stats.recommendationGroupsCount > 0) {
+            issues.push({
+                severity: 'info',
+                title: 'Są gotowe rekomendacje zmian',
+                details: `Strony z rekomendacjami: ${stats.recommendationGroupsCount}.`,
+                action: 'Wykonuj podmiany przyciskami „Podmień automatycznie”.',
+            });
+        }
+
+        const technicalPenalty =
+            (homepageCheck.status === 200 ? 0 : 30) +
+            (robotsCheck.status === 200 ? 0 : 20) +
+            (sitemapCheck.status === 200 ? 0 : 20) +
+            (sitemapUrlCount < 20 ? 10 : 0);
+
+        const contentPenalty =
+            (stats.conflictEntitiesCount > 0 ? Math.min(30, stats.conflictEntitiesCount * 2) : 0) +
+            Math.min(45, Math.round((stats.withoutKeyword / Math.max(stats.total, 1)) * 45)) +
+            ((homepageTitleLength < 35 || homepageTitleLength > 60) ? 8 : 0) +
+            ((homepageDescriptionLength < 90 || homepageDescriptionLength > 160) ? 8 : 0);
+
+        const technicalScore = Math.max(0, 100 - technicalPenalty);
+        const contentScore = Math.max(0, 100 - contentPenalty);
+        const overallScore = Math.round((technicalScore * 0.45) + (contentScore * 0.55));
+
+        const ahrefsLikeReport: AhrefsLikeReport = {
+            generatedAt: new Date().toISOString(),
+            checks: {
+                homepageStatus: homepageCheck.status,
+                robotsStatus: robotsCheck.status,
+                sitemapStatus: sitemapCheck.status,
+                sitemapUrlCount,
+                homepageTitleLength,
+                homepageDescriptionLength,
+            },
+            summary: {
+                technicalScore,
+                contentScore,
+                overallScore,
+                criticalIssues: issues.filter(issue => issue.severity === 'critical').length,
+                warnings: issues.filter(issue => issue.severity === 'warning').length,
+            },
+            issues,
+        };
+
         return NextResponse.json({
             success: true,
             headings,
@@ -643,6 +816,7 @@ export async function GET(request: NextRequest) {
             targetKeywords: TARGET_KEYWORDS,
             structureConflicts,
             recommendations,
+            ahrefsLikeReport,
         });
     });
 }
