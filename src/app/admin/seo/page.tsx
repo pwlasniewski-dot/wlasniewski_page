@@ -67,9 +67,12 @@ type KeywordTextAudit = {
 };
 
 type InsertionSuggestion = {
+    slug: string;
     page: string;
     place: 'H1' | 'H2' | 'Akapit intro' | 'FAQ';
     text: string;
+    publicUrl: string;
+    adminUrl: string;
 };
 
 const B2C_LOCAL_TERMS = ['toruń', 'torun', 'grudziądz', 'grudziadz', 'chełmno', 'chelmno', 'wąbrzeźno', 'wabrzezno', 'bydgoszcz', 'świecie', 'swiecie', 'lisewo', 'płużnica', 'pluznica'];
@@ -169,14 +172,60 @@ function keywordToSentence(phrase: string, tab: KeywordTab): string {
     return `Tworzę ${phrase} w naturalnym stylu, z naciskiem na emocje i autentyczność.`;
 }
 
+function normalizePublicPath(slug: string): string {
+    if (slug === 'strona-glowna') return '/';
+    if (slug.startsWith('blog/')) return `/${slug}`;
+    if (slug.startsWith('portfolio/')) return `/${slug}`;
+    return `/${slug}`;
+}
+
+function buildPublicUrl(slug: string, tab: KeywordTab): string {
+    const base = tab === 'b2b' ? 'https://aeroanaliza.pl' : 'https://wlasniewski.pl';
+    return `${base}${normalizePublicPath(slug)}`;
+}
+
+function buildAdminUrl(slug: string, tab: KeywordTab, place: InsertionSuggestion['place']): string {
+    const focus = encodeURIComponent(place.toLowerCase());
+
+    if (slug === 'strona-glowna') {
+        return `/admin/pages/strona-glowna?tab=${tab}&focus=${focus}`;
+    }
+
+    if (slug.startsWith('blog/')) {
+        const postSlug = encodeURIComponent(slug.replace(/^blog\//, ''));
+        return `/admin/blog?slug=${postSlug}&focus=${focus}`;
+    }
+
+    if (slug.startsWith('portfolio/')) {
+        const sessionSlug = encodeURIComponent(slug.replace(/^portfolio\//, ''));
+        return `/admin/portfolio?slug=${sessionSlug}&focus=${focus}`;
+    }
+
+    return `/admin/pages/${encodeURIComponent(slug)}?tab=${tab}&focus=${focus}`;
+}
+
 function buildInsertionSuggestions(entry: KeywordEntry, tab: KeywordTab, audit: KeywordTextAudit): InsertionSuggestion[] {
     const target = audit.shouldBe;
     const pages = entry.pages.slice(0, 3);
 
     if (pages.length === 0) {
         return [
-            { page: '/strona-do-uzupełnienia', place: 'H2', text: target },
-            { page: '/strona-do-uzupełnienia', place: 'Akapit intro', text: keywordToSentence(target, tab) },
+            {
+                slug: 'strona-do-uzupelnienia',
+                page: '/strona-do-uzupełnienia',
+                place: 'H2',
+                text: target,
+                publicUrl: buildPublicUrl('strona-glowna', tab),
+                adminUrl: `/admin/pages?tab=${tab}`,
+            },
+            {
+                slug: 'strona-do-uzupelnienia',
+                page: '/strona-do-uzupełnienia',
+                place: 'Akapit intro',
+                text: keywordToSentence(target, tab),
+                publicUrl: buildPublicUrl('strona-glowna', tab),
+                adminUrl: `/admin/pages?tab=${tab}`,
+            },
         ];
     }
 
@@ -193,9 +242,12 @@ function buildInsertionSuggestions(entry: KeywordEntry, tab: KeywordTab, audit: 
             keywordToSentence(target, tab);
 
         return {
+            slug,
             page: pageLabelFromSlug(slug),
             place,
             text,
+            publicUrl: buildPublicUrl(slug, tab),
+            adminUrl: buildAdminUrl(slug, tab, place),
         };
     });
 }
@@ -1213,7 +1265,24 @@ export default function SeoOpsPage() {
                                             {kw.density}%
                                         </span>
                                     </td>
-                                    <td className="py-2.5 text-xs text-zinc-500 max-w-[200px] truncate">{kw.pages.join(', ')}</td>
+                                    <td className="py-2.5 text-xs text-zinc-500 max-w-[260px]">
+                                        <div className="space-y-1">
+                                            {kw.pages.slice(0, 3).map((slug, pageIdx) => (
+                                                <a
+                                                    key={`${kw.keyword}-page-${pageIdx}`}
+                                                    href={buildPublicUrl(slug, activeTab as KeywordTab)}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="flex items-center gap-1.5 text-zinc-400 hover:text-emerald-300 transition"
+                                                    title="Otwórz stronę z problematyczną frazą"
+                                                >
+                                                    <ExternalLink className="h-3 w-3 shrink-0" />
+                                                    <span className="truncate">{pageLabelFromSlug(slug)}</span>
+                                                </a>
+                                            ))}
+                                            {kw.pages.length === 0 && <span className="text-zinc-600">Brak mapowania stron</span>}
+                                        </div>
+                                    </td>
                                     <td className="py-2.5 pl-4 min-w-[360px]">
                                         <div className="space-y-1.5">
                                             <div className="text-[11px] text-zinc-500">Jest: <span className="text-zinc-300">{audit.asIs}</span></div>
@@ -1228,11 +1297,27 @@ export default function SeoOpsPage() {
                                                 <div className="space-y-1.5">
                                                     {insertionSuggestions.map((suggestion, sIdx) => (
                                                         <div key={`${kw.keyword}-${sIdx}`} className="text-[11px] leading-relaxed">
-                                                            <span className="text-zinc-500">{suggestion.page}</span>
+                                                            <a
+                                                                href={suggestion.publicUrl}
+                                                                target="_blank"
+                                                                rel="noreferrer"
+                                                                className="text-zinc-400 hover:text-emerald-300 underline decoration-zinc-700 underline-offset-2"
+                                                                title="Podgląd strony generującej problem"
+                                                            >
+                                                                {suggestion.page}
+                                                            </a>
                                                             <span className="text-zinc-600"> • </span>
                                                             <span className="text-sky-300">{suggestion.place}</span>
                                                             <span className="text-zinc-600"> → </span>
                                                             <span className="text-emerald-300">{suggestion.text}</span>
+                                                            <span className="text-zinc-600"> • </span>
+                                                            <a
+                                                                href={suggestion.adminUrl}
+                                                                className="text-amber-300 hover:text-amber-200 underline decoration-amber-700 underline-offset-2"
+                                                                title="Przejdź do edycji tekstu w panelu admina"
+                                                            >
+                                                                Edytuj w adminie
+                                                            </a>
                                                         </div>
                                                     ))}
                                                 </div>
