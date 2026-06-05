@@ -42,6 +42,7 @@ type Stats = {
     h2Count: number;
     h3Count: number;
     conflictEntitiesCount: number;
+    recommendationGroupsCount: number;
 };
 
 type StructureConflict = {
@@ -53,6 +54,24 @@ type StructureConflict = {
     h2Count: number;
     h3Count: number;
     issues: string[];
+};
+
+type Recommendation = {
+    id: string;
+    entityKey: string;
+    sourceType: 'page' | 'blog';
+    slug: string;
+    pageLabel: string;
+    level: 'h1' | 'h2' | 'h3';
+    actionType: 'replace' | 'manual';
+    severity: 'critical' | 'warning' | 'info';
+    currentText?: string;
+    suggestedText: string;
+    reason: string;
+    targetKeyword: string;
+    headingId?: string;
+    editable: boolean;
+    sortOrder: number;
 };
 
 type TargetKeyword = { kw: string; volume: string; intent: string };
@@ -263,6 +282,7 @@ export default function SeoHeadingsPage() {
     const [stats, setStats] = useState<Stats | null>(null);
     const [keywords, setKeywords] = useState<TargetKeyword[]>([]);
     const [structureConflicts, setStructureConflicts] = useState<StructureConflict[]>([]);
+    const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState<Filter>('all');
     const [search, setSearch] = useState('');
@@ -280,6 +300,7 @@ export default function SeoHeadingsPage() {
                 setStats(data.stats);
                 setKeywords(data.targetKeywords);
                 setStructureConflicts(data.structureConflicts ?? []);
+                setRecommendations(data.recommendations ?? []);
             } else {
                 toast.error(data.error ?? 'Błąd pobierania nagłówków');
             }
@@ -305,6 +326,7 @@ export default function SeoHeadingsPage() {
                 toast.success('Nagłówek zaktualizowany!');
                 // Update local state
                 setHeadings(prev => prev.map(h => h.id === id ? { ...h, text: newText } : h));
+                await fetchData();
                 return true;
             } else {
                 toast.error(data.error ?? 'Błąd zapisu');
@@ -317,6 +339,31 @@ export default function SeoHeadingsPage() {
     };
 
     const conflictEntityKeys = new Set(structureConflicts.map(c => c.entityKey));
+    const recommendationGroups = recommendations.reduce<Array<{ entityKey: string; pageLabel: string; slug: string; sourceType: 'page' | 'blog'; sortOrder: number; items: Recommendation[] }>>((groups, item) => {
+        const existing = groups.find(group => group.entityKey === item.entityKey);
+        if (existing) {
+            existing.items.push(item);
+            return groups;
+        }
+
+        groups.push({
+            entityKey: item.entityKey,
+            pageLabel: item.pageLabel,
+            slug: item.slug,
+            sourceType: item.sourceType,
+            sortOrder: item.sortOrder,
+            items: [item],
+        });
+        return groups;
+    }, []).sort((left, right) => left.sortOrder - right.sortOrder || left.pageLabel.localeCompare(right.pageLabel, 'pl'));
+
+    const applyRecommendation = async (recommendation: Recommendation) => {
+        if (!recommendation.headingId || !recommendation.editable || recommendation.actionType !== 'replace') {
+            toast.error('Tę zmianę trzeba zrobić ręcznie w edytorze treści.');
+            return;
+        }
+        await handleSave(recommendation.headingId, recommendation.suggestedText);
+    };
 
     const filtered = headings.filter(h => {
         const entityKey = `${h.source.startsWith('blog') ? 'blog' : 'page'}:${h.slug}`;
@@ -427,6 +474,81 @@ export default function SeoHeadingsPage() {
                                 <span className="font-medium">{conflict.pageLabel}</span>
                                 <span>• {conflict.issues.join(', ')}</span>
                                 <span className="text-amber-300/70">(H1: {conflict.h1Count}, H2: {conflict.h2Count}, H3: {conflict.h3Count})</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {recommendationGroups.length > 0 && (
+                <div className="mb-6 bg-zinc-900 border border-zinc-800 rounded-lg p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                        <div>
+                            <h2 className="text-sm font-semibold text-white">Plan zmian SEO dla wystawionych stron</h2>
+                            <p className="text-xs text-zinc-500 mt-1">
+                                Konkretne podmiany „jest → ma być”, posortowane od strony głównej przez strony sprzedażowe i lokalne.
+                            </p>
+                        </div>
+                        <div className="text-xs text-zinc-400">
+                            Stron z rekomendacjami: {stats?.recommendationGroupsCount ?? recommendationGroups.length}
+                        </div>
+                    </div>
+
+                    <div className="space-y-3">
+                        {recommendationGroups.map(group => (
+                            <div key={group.entityKey} className="rounded-lg border border-zinc-800 bg-zinc-950/70 p-3">
+                                <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                                    <div>
+                                        <p className="text-sm font-medium text-white">{group.pageLabel}</p>
+                                        <p className="text-xs text-zinc-500">/{group.slug === 'strona-glowna' ? '' : group.slug}</p>
+                                    </div>
+                                    <span className="text-xs text-zinc-500">Zmian: {group.items.length}</span>
+                                </div>
+
+                                <div className="space-y-2">
+                                    {group.items.map(item => (
+                                        <div key={item.id} className="rounded-md border border-zinc-800 bg-zinc-900 p-3">
+                                            <div className="flex flex-wrap items-center gap-2 mb-2">
+                                                <LevelBadge level={item.level} />
+                                                <span className={`text-[11px] px-2 py-0.5 rounded font-medium ${item.severity === 'critical' ? 'bg-rose-900/60 text-rose-200' : item.severity === 'warning' ? 'bg-amber-900/60 text-amber-200' : 'bg-sky-900/60 text-sky-200'}`}>
+                                                    {item.severity === 'critical' ? 'Priorytet wysoki' : item.severity === 'warning' ? 'Priorytet średni' : 'Do poprawy'}
+                                                </span>
+                                                <span className="text-[11px] text-zinc-500">Fraza: {item.targetKeyword}</span>
+                                            </div>
+
+                                            {item.currentText && (
+                                                <div className="mb-2">
+                                                    <p className="text-[11px] uppercase tracking-wide text-zinc-500 mb-1">Jest</p>
+                                                    <div className="rounded border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-zinc-300">
+                                                        {item.currentText}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            <div className="mb-2">
+                                                <p className="text-[11px] uppercase tracking-wide text-emerald-500 mb-1">Ma być</p>
+                                                <div className="rounded border border-emerald-900/50 bg-emerald-950/20 px-3 py-2 text-sm text-emerald-200">
+                                                    {item.suggestedText}
+                                                </div>
+                                            </div>
+
+                                            <p className="text-xs text-zinc-400 mb-3">{item.reason}</p>
+
+                                            {item.actionType === 'replace' && item.editable && item.headingId ? (
+                                                <button
+                                                    onClick={() => applyRecommendation(item)}
+                                                    className="px-3 py-1.5 rounded text-xs font-medium bg-emerald-700 hover:bg-emerald-600 text-white"
+                                                >
+                                                    Podmień automatycznie
+                                                </button>
+                                            ) : (
+                                                <div className="text-xs text-amber-300">
+                                                    Zmiana ręczna: ta rekomendacja wymaga edycji poziomu nagłówka albo układu treści.
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         ))}
                     </div>

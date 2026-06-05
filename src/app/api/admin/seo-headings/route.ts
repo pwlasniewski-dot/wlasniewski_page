@@ -134,6 +134,322 @@ type StructureConflict = {
     issues: string[];
 };
 
+type Recommendation = {
+    id: string;
+    entityKey: string;
+    sourceType: 'page' | 'blog';
+    slug: string;
+    pageLabel: string;
+    level: 'h1' | 'h2' | 'h3';
+    actionType: 'replace' | 'manual';
+    severity: 'critical' | 'warning' | 'info';
+    currentText?: string;
+    suggestedText: string;
+    reason: string;
+    targetKeyword: string;
+    headingId?: string;
+    editable: boolean;
+    sortOrder: number;
+};
+
+type SeoStrategy = {
+    primaryKeyword: string;
+    suggestH1: (current: string) => string;
+    h2Suggestions: string[];
+    h3Suggestions: string[];
+};
+
+const CITY_LABELS: Record<string, string> = {
+    torun: 'Toruń',
+    grudziadz: 'Grudziądz',
+    chelmno: 'Chełmno',
+    wabrzezno: 'Wąbrzeźno',
+    lisewo: 'Lisewo',
+    pluznica: 'Płużnica',
+    swiecie: 'Świecie',
+    bydgoszcz: 'Bydgoszcz',
+};
+
+function getEntitySortOrder(slug: string, sourceType: 'page' | 'blog'): number {
+    if (sourceType === 'page' && slug === 'strona-glowna') return 0;
+    if (sourceType === 'page' && slug === 'o-mnie') return 1;
+    if (sourceType === 'page' && slug === 'rezerwacja') return 2;
+    if (sourceType === 'page' && slug === 'kontakt') return 3;
+    if (sourceType === 'page' && slug.startsWith('fotograf-')) return 4;
+    if (sourceType === 'page' && slug.includes('portfolio')) return 5;
+    if (sourceType === 'blog') return 90;
+    return 20;
+}
+
+function getSeoStrategy(slug: string, sourceType: 'page' | 'blog'): SeoStrategy {
+    if (sourceType === 'blog') {
+        return {
+            primaryKeyword: 'fotograf toruń',
+            suggestH1: (current) => current.toLowerCase().includes('fotograf toruń') ? current : `${current} | Fotograf Toruń`,
+            h2Suggestions: [
+                'Jak przygotować się do sesji zdjęciowej w Toruniu?',
+                'Co warto wiedzieć przed wyborem fotografa w Toruniu?',
+                'Zdjęcia ślubne i rodzinne w Toruniu – praktyczne wskazówki',
+            ],
+            h3Suggestions: [
+                'Fotograf Toruń – praktyczna wskazówka',
+                'Sesja zdjęciowa Toruń – checklist',
+            ],
+        };
+    }
+
+    if (slug === 'strona-glowna') {
+        return {
+            primaryKeyword: 'fotograf toruń',
+            suggestH1: () => 'Fotograf Toruń – naturalna fotografia ślubna i rodzinna',
+            h2Suggestions: [
+                'Fotografia ślubna i rodzinna w Toruniu',
+                'Sesje zdjęciowe Toruń i okolice',
+                'Dlaczego warto wybrać fotografa z Torunia?',
+            ],
+            h3Suggestions: [
+                'Zdjęcia ślubne Toruń – portfolio',
+                'Sesja rodzinna Toruń – jak pracuję',
+            ],
+        };
+    }
+
+    if (slug === 'o-mnie') {
+        return {
+            primaryKeyword: 'fotograf toruń',
+            suggestH1: () => 'O mnie – fotograf Toruń | Przemysław Właśniewski',
+            h2Suggestions: [
+                'Jak pracuję jako fotograf w Toruniu',
+                'Naturalna fotografia ślubna i rodzinna – moje podejście',
+                'Dlaczego klienci wybierają fotografa z Torunia?',
+            ],
+            h3Suggestions: [
+                'Moje podejście do sesji zdjęciowej',
+                'Fotograf Toruń – emocje zamiast pozowania',
+            ],
+        };
+    }
+
+    if (slug === 'kontakt') {
+        return {
+            primaryKeyword: 'fotograf toruń kontakt',
+            suggestH1: () => 'Kontakt – fotograf Toruń | Umów sesję zdjęciową',
+            h2Suggestions: [
+                'Umów sesję zdjęciową w Toruniu',
+                'Jak skontaktować się z fotografem z Torunia?',
+            ],
+            h3Suggestions: [
+                'Odpowiadam na wiadomości o sesjach w Toruniu',
+            ],
+        };
+    }
+
+    if (slug === 'rezerwacja') {
+        return {
+            primaryKeyword: 'sesja zdjęciowa toruń',
+            suggestH1: () => 'Rezerwacja sesji zdjęciowej – Toruń i okolice',
+            h2Suggestions: [
+                'Jak zarezerwować sesję zdjęciową w Toruniu?',
+                'Dostępne terminy na sesje ślubne i rodzinne',
+            ],
+            h3Suggestions: [
+                'Co przygotować przed rezerwacją sesji?',
+            ],
+        };
+    }
+
+    if (slug.startsWith('fotograf-')) {
+        const cityKey = slug.replace('fotograf-', '');
+        const city = CITY_LABELS[cityKey] || cityKey;
+        return {
+            primaryKeyword: `fotograf ${city.toLowerCase()}`,
+            suggestH1: () => `Fotograf ${city} – naturalna fotografia ślubna i rodzinna`,
+            h2Suggestions: [
+                `Fotografia ślubna ${city}`,
+                `Sesja rodzinna ${city} – naturalne kadry`,
+                `Dlaczego warto wybrać fotografa w ${city}?`,
+            ],
+            h3Suggestions: [
+                `Zdjęcia ślubne ${city}`,
+                `Sesja zdjęciowa ${city} – jak wygląda współpraca?`,
+            ],
+        };
+    }
+
+    if (slug.includes('portfolio')) {
+        return {
+            primaryKeyword: 'zdjęcia ślubne toruń',
+            suggestH1: () => 'Portfolio – zdjęcia ślubne i rodzinne Toruń',
+            h2Suggestions: [
+                'Portfolio fotografa z Torunia',
+                'Zdjęcia ślubne Toruń – wybrane realizacje',
+            ],
+            h3Suggestions: [
+                'Naturalna fotografia ślubna – wybrane kadry',
+            ],
+        };
+    }
+
+    return {
+        primaryKeyword: 'fotograf toruń',
+        suggestH1: (current) => current.toLowerCase().includes('fotograf toruń') ? current : `${current} | Fotograf Toruń`,
+        h2Suggestions: [
+            'Fotograf Toruń – oferta i podejście',
+            'Sesje zdjęciowe w Toruniu i okolicach',
+        ],
+        h3Suggestions: [
+            'Fotograf Toruń – szczegóły współpracy',
+        ],
+    };
+}
+
+function buildRecommendations(
+    headings: HeadingEntry[],
+    exposedEntityKeys: Set<string>
+): Recommendation[] {
+    const grouped = new Map<string, HeadingEntry[]>();
+
+    for (const heading of headings) {
+        const sourceType: 'page' | 'blog' = heading.source.startsWith('blog') ? 'blog' : 'page';
+        const entityKey = `${sourceType}:${heading.slug}`;
+        if (!exposedEntityKeys.has(entityKey)) continue;
+
+        if (!grouped.has(entityKey)) {
+            grouped.set(entityKey, []);
+        }
+        grouped.get(entityKey)!.push(heading);
+    }
+
+    const recommendations: Recommendation[] = [];
+
+    for (const [entityKey, entityHeadings] of grouped.entries()) {
+        const first = entityHeadings[0];
+        if (!first) continue;
+
+        const sourceType: 'page' | 'blog' = first.source.startsWith('blog') ? 'blog' : 'page';
+        const sortOrder = getEntitySortOrder(first.slug, sourceType);
+        const strategy = getSeoStrategy(first.slug, sourceType);
+
+        const h1s = entityHeadings.filter(h => h.level === 'h1');
+        const h2s = entityHeadings.filter(h => h.level === 'h2');
+        const h3s = entityHeadings.filter(h => h.level === 'h3');
+
+        const primaryH1 = h1s[0];
+        if (primaryH1) {
+            const suggested = strategy.suggestH1(primaryH1.text);
+            if ((!primaryH1.hasKeyword || primaryH1.text !== suggested) && primaryH1.text !== suggested) {
+                recommendations.push({
+                    id: `${entityKey}__h1_main`,
+                    entityKey,
+                    sourceType,
+                    slug: first.slug,
+                    pageLabel: first.pageLabel || first.slug,
+                    level: 'h1',
+                    actionType: 'replace',
+                    severity: 'critical',
+                    currentText: primaryH1.text,
+                    suggestedText: suggested,
+                    reason: 'Główny H1 powinien zawierać frazę docelową i jasno opisywać intencję strony.',
+                    targetKeyword: strategy.primaryKeyword,
+                    headingId: primaryH1.id,
+                    editable: primaryH1.editable,
+                    sortOrder,
+                });
+            }
+        } else {
+            recommendations.push({
+                id: `${entityKey}__missing_h1`,
+                entityKey,
+                sourceType,
+                slug: first.slug,
+                pageLabel: first.pageLabel || first.slug,
+                level: 'h1',
+                actionType: 'manual',
+                severity: 'critical',
+                suggestedText: strategy.suggestH1(''),
+                reason: 'Strona nie ma H1. Dodaj jeden główny nagłówek na początku treści.',
+                targetKeyword: strategy.primaryKeyword,
+                editable: false,
+                sortOrder,
+            });
+        }
+
+        for (const extraH1 of h1s.slice(1, 3)) {
+            recommendations.push({
+                id: `${entityKey}__extra_h1__${extraH1.id}`,
+                entityKey,
+                sourceType,
+                slug: first.slug,
+                pageLabel: first.pageLabel || first.slug,
+                level: 'h1',
+                actionType: 'manual',
+                severity: 'critical',
+                currentText: extraH1.text,
+                suggestedText: extraH1.text,
+                reason: 'Ta strona ma więcej niż jedno H1. Zmień ten nagłówek na H2 w edytorze treści.',
+                targetKeyword: strategy.primaryKeyword,
+                editable: false,
+                sortOrder,
+            });
+        }
+
+        h2s.filter(h => !h.hasKeyword).slice(0, 2).forEach((heading, idx) => {
+            const suggested = strategy.h2Suggestions[idx] || strategy.h2Suggestions[strategy.h2Suggestions.length - 1];
+            if (suggested && heading.text !== suggested) {
+                recommendations.push({
+                    id: `${entityKey}__h2__${heading.id}`,
+                    entityKey,
+                    sourceType,
+                    slug: first.slug,
+                    pageLabel: first.pageLabel || first.slug,
+                    level: 'h2',
+                    actionType: 'replace',
+                    severity: 'warning',
+                    currentText: heading.text,
+                    suggestedText: suggested,
+                    reason: 'Ten H2 nie wzmacnia fraz lokalnych ani intencji podstrony.',
+                    targetKeyword: strategy.primaryKeyword,
+                    headingId: heading.id,
+                    editable: heading.editable,
+                    sortOrder,
+                });
+            }
+        });
+
+        h3s.filter(h => !h.hasKeyword).slice(0, 1).forEach((heading, idx) => {
+            const suggested = strategy.h3Suggestions[idx] || strategy.h3Suggestions[strategy.h3Suggestions.length - 1];
+            if (suggested && heading.text !== suggested) {
+                recommendations.push({
+                    id: `${entityKey}__h3__${heading.id}`,
+                    entityKey,
+                    sourceType,
+                    slug: first.slug,
+                    pageLabel: first.pageLabel || first.slug,
+                    level: 'h3',
+                    actionType: 'replace',
+                    severity: 'info',
+                    currentText: heading.text,
+                    suggestedText: suggested,
+                    reason: 'Warto doprecyzować śródtytuł słowem kluczowym lub lokalizacją.',
+                    targetKeyword: strategy.primaryKeyword,
+                    headingId: heading.id,
+                    editable: heading.editable,
+                    sortOrder,
+                });
+            }
+        });
+    }
+
+    return recommendations.sort((left, right) => {
+        if (left.sortOrder !== right.sortOrder) return left.sortOrder - right.sortOrder;
+        const severityRank = { critical: 0, warning: 1, info: 2 };
+        if (severityRank[left.severity] !== severityRank[right.severity]) {
+            return severityRank[left.severity] - severityRank[right.severity];
+        }
+        return left.pageLabel.localeCompare(right.pageLabel, 'pl');
+    });
+}
+
 /* ─── GET ─── */
 export async function GET(request: NextRequest) {
     return withAuth(request, async () => {
@@ -142,7 +458,7 @@ export async function GET(request: NextRequest) {
                 select: { id: true, slug: true, title: true, content: true, sections: true, is_published: true },
             }),
             prisma.blogPost.findMany({
-                select: { id: true, slug: true, title: true, content: true },
+                select: { id: true, slug: true, title: true, content: true, status: true },
             }),
         ]);
 
@@ -249,6 +565,7 @@ export async function GET(request: NextRequest) {
             h2Count: headings.filter(h => h.level === 'h2').length,
             h3Count: headings.filter(h => h.level === 'h3').length,
             conflictEntitiesCount: 0,
+            recommendationGroupsCount: 0,
         };
 
         const entities = new Map<string, {
@@ -304,12 +621,28 @@ export async function GET(request: NextRequest) {
 
         stats.conflictEntitiesCount = structureConflicts.length;
 
+        const exposedEntityKeys = new Set<string>();
+        for (const page of pages) {
+            if (page.is_published) {
+                exposedEntityKeys.add(`page:${page.slug}`);
+            }
+        }
+        for (const blog of blogs) {
+            if (blog.status === 'published') {
+                exposedEntityKeys.add(`blog:${blog.slug}`);
+            }
+        }
+
+        const recommendations = buildRecommendations(headings, exposedEntityKeys);
+        stats.recommendationGroupsCount = new Set(recommendations.map(item => item.entityKey)).size;
+
         return NextResponse.json({
             success: true,
             headings,
             stats,
             targetKeywords: TARGET_KEYWORDS,
             structureConflicts,
+            recommendations,
         });
     });
 }
