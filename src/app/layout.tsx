@@ -212,6 +212,8 @@ export default async function RootLayout({
     return (
         <html lang="pl" className={`${cormorant.variable} ${montserrat.variable} ${playfair.variable} ${lato.variable} ${greatVibes.variable} ${cinzel.variable} ${inter.variable} ${outfit.variable}`} suppressHydrationWarning>
             <head>
+                {/* Ahrefs Site Verification */}
+                <meta name="ahrefs-site-verification" content="ad34c2e1091a50dd0d41ef8609b8c15dff9fae7b00d57dd291f5a8e75dbd675b" />
                 {/* Preconnect to speed up critical resources */}
                 <link rel="preconnect" href="https://wlasniewski-photo-storage.s3.eu-north-1.amazonaws.com" crossOrigin="anonymous" />
                 <link rel="dns-prefetch" href="https://wlasniewski-photo-storage.s3.eu-north-1.amazonaws.com" />

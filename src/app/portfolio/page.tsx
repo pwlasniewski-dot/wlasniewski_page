@@ -15,8 +15,11 @@ export async function generateMetadata(): Promise<Metadata> {
     });
 
     return {
-        title: page?.meta_title || "Portfolio | Fotografia Ślubna i Rodzinna",
-        description: page?.meta_description || "Zobacz moje portfolio. Fotografia ślubna, rodzinna, biznesowa i więcej.",
+        title: page?.meta_title || 'Portfolio Fotografa — Sesje Ślubne i Rodzinne | Fotograf Toruń',
+        description: page?.meta_description || 'Portfolio Przemysława Właśniewskiego — fotografia ślubna, rodzinna, portretowa i biznesowa z Torunia i okolic. Naturalne sesje plenerowe, galeria zdjęć premium.',
+        alternates: {
+            canonical: 'https://wlasniewski.pl/portfolio',
+        },
     };
 }
 

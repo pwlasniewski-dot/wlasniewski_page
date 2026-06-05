@@ -584,7 +584,7 @@ export default function HomeContent({ heroSlides, sections, homeData, orderedSec
                         <div className="relative z-20 w-full h-full flex flex-col items-center justify-center px-4 sm:px-6 text-center">
                             <div className="space-y-3 sm:space-y-4 md:space-y-6 max-w-4xl">
                                 {section.tag && <p className="text-sm md:text-base text-gold-400 font-semibold tracking-wide uppercase">{section.tag}</p>}
-                                {section.title && <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-8xl font-extrabold text-white tracking-tighter drop-shadow-2xl leading-tight">{section.title}</h1>}
+                                {section.title && <h2 className="text-3xl sm:text-5xl md:text-6xl lg:text-8xl font-extrabold text-white tracking-tighter drop-shadow-2xl leading-tight">{section.title}</h2>}
                                 {section.subtitle && <p className="text-sm sm:text-base md:text-lg lg:text-xl text-zinc-200 drop-shadow-lg">{section.subtitle}</p>}
                                 {section.buttonText && (
                                     <div className="pt-4">

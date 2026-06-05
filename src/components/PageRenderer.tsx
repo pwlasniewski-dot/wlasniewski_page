@@ -355,7 +355,7 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                             {data.tag}
                                         </span>
                                     )}
-                                    <h1 className="text-5xl md:text-7xl font-display font-bold text-white leading-tight" dangerouslySetInnerHTML={{ __html: data.title || '' }} />
+                                    <h2 className="text-5xl md:text-7xl font-display font-bold text-white leading-tight" dangerouslySetInnerHTML={{ __html: data.title || '' }} />
                                     {data.subtitle && (
                                         <p className="text-xl md:text-2xl text-zinc-400 font-light">
                                             {data.subtitle}
@@ -834,7 +834,7 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                             <Zap size={12} className="fill-yellow-500/20" /> {data.tag}
                                         </motion.div>
                                     )}
-                                    <h1 className="text-5xl md:text-7xl font-bold text-white mb-8 leading-[1.1] tracking-tight" dangerouslySetInnerHTML={{ __html: data.title || '' }} />
+                                    <h2 className="text-5xl md:text-7xl font-bold text-white mb-8 leading-[1.1] tracking-tight" dangerouslySetInnerHTML={{ __html: data.title || '' }} />
                                     <p className="text-zinc-400 text-lg md:text-xl mb-12 max-w-2xl mx-auto leading-relaxed">{data.subtitle}</p>
                                     {data.buttonText && (
                                         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 }}>

@@ -449,7 +449,7 @@ export default function RezerwacjaPage() {
             <div className="py-20 px-4">
                 <div className="max-w-4xl mx-auto pt-8">
                     <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 text-center">
-                        📸 Zarezerwuj Sesję
+                        Zarezerwuj Sesję Fotograficzną w Toruniu
                     </h1>
                     <p className="text-zinc-400 text-center mb-12">
                         Wybierz usługę, pakiet i termin. Płatność przejdziesz bezpiecznie poprzez Stripe.

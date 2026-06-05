@@ -30,8 +30,11 @@ export async function generateMetadata(): Promise<Metadata> {
     });
 
     return {
-        title: page?.meta_title || 'Kontakt | Przemysław Właśniewski Fotografia',
-        description: page?.meta_description || 'Skontaktuj się ze mną. Zapytaj o termin sesji, ofertę lub napisz po prostu cześć.',
+        title: page?.meta_title || 'Kontakt | Fotograf Toruń — Przemysław Właśniewski ☎ 530 788 694',
+        description: page?.meta_description || 'Skontaktuj się z fotografem w Toruniu. Pytania o sesje fotograficzne, terminy i ofertę? Zadzwoń: 530 788 694 lub wyślij wiadomość — odpowiadam szybko.',
+        alternates: {
+            canonical: 'https://wlasniewski.pl/kontakt',
+        },
     };
 }
 
@@ -75,12 +78,15 @@ export default async function ContactPage() {
                 </Script>
 
                 {hasSections ? (
-                    <PageRenderer sections={sections} />
+                    <>
+                        <h1 className="sr-only">Kontakt — Fotograf Toruń Przemysław Właśniewski</h1>
+                        <PageRenderer sections={sections} />
+                    </>
                 ) : (
                     <div className="container mx-auto px-4">
                         <div className="max-w-4xl mx-auto text-center mb-12">
                             <h1 className="text-4xl md:text-6xl font-display font-bold text-white mb-6">
-                                Skontaktuj się ze mną
+                                Skontaktuj się z fotografem w Toruniu
                             </h1>
                             <p className="text-zinc-400 text-lg">
                                 Masz pytania? Chcesz zarezerwować termin? Napisz do mnie!

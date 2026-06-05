@@ -49,6 +49,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         '/rezerwacja',
         '/portfolio',
         '/blog',
+        '/karta-podarunkowa',
+        '/historia',
         '/foto-wyzwanie',
         '/foto-match',
         '/regulamin',

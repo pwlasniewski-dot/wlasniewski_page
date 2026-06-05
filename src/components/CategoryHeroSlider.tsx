@@ -79,7 +79,7 @@ export default function CategoryHeroSlider({
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 1, delay: 0.5 }}
                 >
-                    <h1 className="text-6xl md:text-8xl font-display font-medium text-white mb-6 tracking-tight drop-shadow-2xl">
+                    <h2 className="text-6xl md:text-8xl font-display font-medium text-white mb-6 tracking-tight drop-shadow-2xl">
                         {title}
                     </h1>
                     <div className="w-24 h-px bg-gold-400 mx-auto mb-6" />

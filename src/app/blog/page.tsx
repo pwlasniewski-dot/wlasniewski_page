@@ -41,10 +41,10 @@ export default function BlogIndex() {
                 {/* Header */}
                 <div className="text-center mb-16">
                     <h1 className="text-4xl md:text-6xl font-extrabold text-white mb-4 font-display">
-                        Blog
+                        Blog Fotografa — Porady i Inspiracje
                     </h1>
                     <p className="text-zinc-300 text-lg max-w-2xl mx-auto">
-                        Porady, inspiracje i za kulisami mojej pracy fotografa
+                        Porady fotograficzne, inspiracje do sesji i kulisy pracy fotografa w Toruniu
                     </p>
                 </div>
 

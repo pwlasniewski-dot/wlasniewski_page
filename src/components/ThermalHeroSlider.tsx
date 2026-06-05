@@ -261,7 +261,7 @@ export default function ThermalHeroSlider({ slides = [], interval = 10000 }: The
                             >
                                 <Activity size={12} className="animate-pulse" /> {slide.category}
                             </motion.div>
-                            <h1 className="text-4xl md:text-7xl lg:text-8xl font-black text-white leading-tight tracking-tighter drop-shadow-2xl" dangerouslySetInnerHTML={{ __html: slide.title }} />
+                            <h2 className="text-4xl md:text-7xl lg:text-8xl font-black text-white leading-tight tracking-tighter drop-shadow-2xl" dangerouslySetInnerHTML={{ __html: slide.title }} />
                             {slide.subtitle && (
                                 <p className="text-lg md:text-2xl text-zinc-300 font-light max-w-2xl mx-auto drop-shadow-xl">
                                     {slide.subtitle}

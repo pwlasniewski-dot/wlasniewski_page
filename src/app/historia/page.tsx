@@ -1,7 +1,16 @@
 import prisma from '@/lib/db/prisma';
 import Image from 'next/image';
+import type { Metadata } from 'next';
 
 export const revalidate = 60; // Revalidate every minute
+
+export const metadata: Metadata = {
+    title: 'Historia | Archiwum Sesji Fotograficznych — Fotograf Toruń',
+    description: 'Archiwum fotograficzne Przemysława Właśniewskiego — fotografi rodzinne, ślubne i biznesowe z lat pracy w Toruniu i okolicach. Chronologiczna historia sesji.',
+    alternates: {
+        canonical: 'https://wlasniewski.pl/historia',
+    },
+};
 
 export default async function HistoryPage() {
     let photos: any[] = [];
@@ -25,9 +34,9 @@ export default async function HistoryPage() {
     return (
         <div className="min-h-screen pt-32 pb-20 container mx-auto px-4">
             <div className="text-center mb-16">
-                <h1 className="text-4xl md:text-5xl font-display mb-4">Historia</h1>
+                <h1 className="text-4xl md:text-5xl font-display mb-4">Historia Fotografii — Archiwum Sesji</h1>
                 <p className="text-lg text-zinc-500 max-w-2xl mx-auto">
-                    Archiwum fotograficzne ułożone chronologicznie.
+                    Archiwum fotograficzne Przemysława Właśniewskiego — sesje rodzinne, ślubne i biznesowe z Torunia i okolic, ułożone chronologicznie.
                 </p>
             </div>
 
