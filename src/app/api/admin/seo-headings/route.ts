@@ -102,6 +102,12 @@ function getSuggestions(level: 'h1' | 'h2' | 'h3', text: string): string[] {
     return pool.filter(s => s.toLowerCase() !== text.toLowerCase()).slice(0, 3);
 }
 
+function levelFromSectionKey(key: string): 'h1' | 'h2' | 'h3' {
+    if (key === 'h1') return 'h1';
+    if (key === 'h3' || key === 'subtitle') return 'h3';
+    return 'h2';
+}
+
 /* ─── Types ─── */
 export type HeadingEntry = {
     id: string;
@@ -115,6 +121,17 @@ export type HeadingEntry = {
     hasKeyword?: boolean;
     matchedKeywords?: string[];
     suggestions?: string[];
+};
+
+type StructureConflict = {
+    entityKey: string;
+    sourceType: 'page' | 'blog';
+    slug: string;
+    pageLabel: string;
+    h1Count: number;
+    h2Count: number;
+    h3Count: number;
+    issues: string[];
 };
 
 /* ─── GET ─── */
@@ -170,7 +187,7 @@ export async function GET(request: NextRequest) {
                         for (const key of ['title', 'heading', 'h1', 'h2', 'h3', 'subtitle']) {
                             if (typeof section[key] === 'string' && (section[key] as string).trim().length > 0) {
                                 const text = (section[key] as string).trim();
-                                const level: 'h1' | 'h2' | 'h3' = key === 'h3' ? 'h3' : key === 'h2' ? 'h2' : 'h1';
+                                const level = levelFromSectionKey(key);
                                 const { hasKeyword, matchedKeywords } = scoreHeading(text);
                                 headings.push({
                                     id: `page_section__${page.slug}__${key}__${sectionIndex}`,
@@ -231,13 +248,68 @@ export async function GET(request: NextRequest) {
             h1Count: headings.filter(h => h.level === 'h1').length,
             h2Count: headings.filter(h => h.level === 'h2').length,
             h3Count: headings.filter(h => h.level === 'h3').length,
+            conflictEntitiesCount: 0,
         };
+
+        const entities = new Map<string, {
+            sourceType: 'page' | 'blog';
+            slug: string;
+            pageLabel: string;
+            h1Count: number;
+            h2Count: number;
+            h3Count: number;
+        }>();
+
+        for (const heading of headings) {
+            const sourceType: 'page' | 'blog' = heading.source.startsWith('blog') ? 'blog' : 'page';
+            const entityKey = `${sourceType}:${heading.slug}`;
+
+            if (!entities.has(entityKey)) {
+                entities.set(entityKey, {
+                    sourceType,
+                    slug: heading.slug,
+                    pageLabel: heading.pageLabel || heading.slug,
+                    h1Count: 0,
+                    h2Count: 0,
+                    h3Count: 0,
+                });
+            }
+
+            const entity = entities.get(entityKey)!;
+            if (heading.level === 'h1') entity.h1Count += 1;
+            if (heading.level === 'h2') entity.h2Count += 1;
+            if (heading.level === 'h3') entity.h3Count += 1;
+        }
+
+        const structureConflicts: StructureConflict[] = [];
+        for (const [entityKey, entity] of entities.entries()) {
+            const issues: string[] = [];
+            if (entity.h1Count === 0) issues.push('Brak nagłówka H1');
+            if (entity.h1Count > 1) issues.push(`Wiele H1 (${entity.h1Count})`);
+            if (entity.h3Count > 0 && entity.h2Count === 0) issues.push('H3 bez H2');
+
+            if (issues.length > 0) {
+                structureConflicts.push({
+                    entityKey,
+                    sourceType: entity.sourceType,
+                    slug: entity.slug,
+                    pageLabel: entity.pageLabel,
+                    h1Count: entity.h1Count,
+                    h2Count: entity.h2Count,
+                    h3Count: entity.h3Count,
+                    issues,
+                });
+            }
+        }
+
+        stats.conflictEntitiesCount = structureConflicts.length;
 
         return NextResponse.json({
             success: true,
             headings,
             stats,
             targetKeywords: TARGET_KEYWORDS,
+            structureConflicts,
         });
     });
 }

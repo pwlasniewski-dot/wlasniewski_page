@@ -41,11 +41,23 @@ type Stats = {
     h1Count: number;
     h2Count: number;
     h3Count: number;
+    conflictEntitiesCount: number;
+};
+
+type StructureConflict = {
+    entityKey: string;
+    sourceType: 'page' | 'blog';
+    slug: string;
+    pageLabel: string;
+    h1Count: number;
+    h2Count: number;
+    h3Count: number;
+    issues: string[];
 };
 
 type TargetKeyword = { kw: string; volume: string; intent: string };
 
-type Filter = 'all' | 'bad' | 'good' | 'h1' | 'h2' | 'h3';
+type Filter = 'all' | 'bad' | 'good' | 'h1' | 'h2' | 'h3' | 'conflicts';
 
 const SEO_HEADINGS_ENDPOINTS = ['/api/admin/seo-headings', '/api/admin/seo/headings'] as const;
 
@@ -102,7 +114,7 @@ function HeadingRow({
     onSave,
 }: {
     entry: HeadingEntry;
-    onSave: (id: string, newText: string) => Promise<void>;
+    onSave: (id: string, newText: string) => Promise<boolean>;
 }) {
     const [editing, setEditing] = useState(false);
     const [value, setValue] = useState(entry.text);
@@ -250,6 +262,7 @@ export default function SeoHeadingsPage() {
     const [headings, setHeadings] = useState<HeadingEntry[]>([]);
     const [stats, setStats] = useState<Stats | null>(null);
     const [keywords, setKeywords] = useState<TargetKeyword[]>([]);
+    const [structureConflicts, setStructureConflicts] = useState<StructureConflict[]>([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState<Filter>('all');
     const [search, setSearch] = useState('');
@@ -266,6 +279,7 @@ export default function SeoHeadingsPage() {
                 setHeadings(data.headings);
                 setStats(data.stats);
                 setKeywords(data.targetKeywords);
+                setStructureConflicts(data.structureConflicts ?? []);
             } else {
                 toast.error(data.error ?? 'Błąd pobierania nagłówków');
             }
@@ -302,12 +316,16 @@ export default function SeoHeadingsPage() {
         }
     };
 
+    const conflictEntityKeys = new Set(structureConflicts.map(c => c.entityKey));
+
     const filtered = headings.filter(h => {
+        const entityKey = `${h.source.startsWith('blog') ? 'blog' : 'page'}:${h.slug}`;
         if (filter === 'bad' && h.hasKeyword) return false;
         if (filter === 'good' && !h.hasKeyword) return false;
         if (filter === 'h1' && h.level !== 'h1') return false;
         if (filter === 'h2' && h.level !== 'h2') return false;
         if (filter === 'h3' && h.level !== 'h3') return false;
+        if (filter === 'conflicts' && !conflictEntityKeys.has(entityKey)) return false;
         if (search && !h.text.toLowerCase().includes(search.toLowerCase()) && !h.pageLabel?.toLowerCase().includes(search.toLowerCase())) return false;
         return true;
     });
@@ -316,6 +334,7 @@ export default function SeoHeadingsPage() {
         { id: 'all', label: 'Wszystkie', count: stats?.total },
         { id: 'bad', label: '⚠ Bez słów kluczowych', count: stats?.withoutKeyword },
         { id: 'good', label: '✓ Z słowami kluczowymi', count: stats?.withKeyword },
+        { id: 'conflicts', label: '⚠ Konflikty H1/H2/H3', count: stats?.conflictEntitiesCount },
         { id: 'h1', label: 'H1', count: stats?.h1Count },
         { id: 'h2', label: 'H2', count: stats?.h2Count },
         { id: 'h3', label: 'H3', count: stats?.h3Count },
@@ -383,6 +402,34 @@ export default function SeoHeadingsPage() {
                     <p className="text-xs text-zinc-500 mt-1">
                         {stats.withoutKeyword} nagłówków nie zawiera żadnego z {keywords.length} docelowych słów kluczowych
                     </p>
+                </div>
+            )}
+
+            {structureConflicts.length > 0 && (
+                <div className="mb-6 bg-amber-950/20 border border-amber-800/50 rounded-lg p-4">
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                        <p className="text-sm font-semibold text-amber-300">
+                            Konflikty struktury nagłówków: {structureConflicts.length}
+                        </p>
+                        <button
+                            onClick={() => setFilter('conflicts')}
+                            className="px-2.5 py-1 text-xs font-medium rounded bg-amber-800/40 hover:bg-amber-700/50 text-amber-200"
+                        >
+                            Pokaż tylko konflikty
+                        </button>
+                    </div>
+                    <p className="text-xs text-amber-200/80 mb-2">
+                        Panel wykrywa błędy struktury (np. wiele H1, brak H1, H3 bez H2). W JSON: `title` i `heading` liczymy jako H2, `subtitle` jako H3.
+                    </p>
+                    <div className="space-y-1">
+                        {structureConflicts.slice(0, 8).map(conflict => (
+                            <div key={conflict.entityKey} className="text-xs text-amber-100/90 flex flex-wrap gap-2">
+                                <span className="font-medium">{conflict.pageLabel}</span>
+                                <span>• {conflict.issues.join(', ')}</span>
+                                <span className="text-amber-300/70">(H1: {conflict.h1Count}, H2: {conflict.h2Count}, H3: {conflict.h3Count})</span>
+                            </div>
+                        ))}
+                    </div>
                 </div>
             )}
 
