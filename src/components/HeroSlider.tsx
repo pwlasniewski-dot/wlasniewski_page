@@ -111,7 +111,7 @@ export default function HeroSlider({ slides = [], interval = 6000 }: HeroSliderP
                 <div className="relative z-20 text-center px-4 space-y-4">
                     <h2 className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-extrabold text-white tracking-tight drop-shadow-2xl">
                         Wspomnienia<br />zapisane światłem
-                    </h1>
+                    </h2>
                     <p className="text-base sm:text-lg md:text-xl text-zinc-200 max-w-2xl mx-auto">
                         Fotografia ślubna i rodzinna pełna naturalnych emocji.
                     </p>
