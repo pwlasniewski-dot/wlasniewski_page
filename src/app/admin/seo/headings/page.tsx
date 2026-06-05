@@ -85,9 +85,11 @@ function HeadingRow({
     const handleSave = async () => {
         if (value.trim() === entry.text.trim()) { setEditing(false); return; }
         setSaving(true);
-        await onSave(entry.id, value.trim());
+        const saved = await onSave(entry.id, value.trim());
         setSaving(false);
-        setEditing(false);
+        if (saved) {
+            setEditing(false);
+        }
     };
 
     const handleCancel = () => {
@@ -248,7 +250,7 @@ export default function SeoHeadingsPage() {
 
     useEffect(() => { fetchData(); }, [fetchData]);
 
-    const handleSave = async (id: string, newText: string) => {
+    const handleSave = async (id: string, newText: string): Promise<boolean> => {
         try {
             const res = await fetch('/api/admin/seo-headings', {
                 method: 'PATCH',
@@ -263,11 +265,14 @@ export default function SeoHeadingsPage() {
                 toast.success('Nagłówek zaktualizowany!');
                 // Update local state
                 setHeadings(prev => prev.map(h => h.id === id ? { ...h, text: newText } : h));
+                return true;
             } else {
                 toast.error(data.error ?? 'Błąd zapisu');
+                return false;
             }
         } catch {
             toast.error('Błąd zapisu nagłówka');
+            return false;
         }
     };
 

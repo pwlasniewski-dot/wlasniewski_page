@@ -178,7 +178,7 @@ export async function GET(request: NextRequest) {
                                     slug: page.slug,
                                     level,
                                     text,
-                                    editable: false,
+                                    editable: true,
                                     htmlTag: level,
                                     pageLabel: label,
                                     hasKeyword,
@@ -308,6 +308,45 @@ export async function PATCH(request: NextRequest) {
                 return full;
             });
             await prisma.blogPost.update({ where: { slug }, data: { content: updated } });
+            return NextResponse.json({ success: true });
+        }
+
+        if (source === 'page_section') {
+            const page = await prisma.page.findUnique({ where: { slug }, select: { sections: true } });
+            if (!page) return NextResponse.json({ error: 'Strona nie znaleziona' }, { status: 404 });
+            if (!page.sections) return NextResponse.json({ error: 'Brak sekcji do edycji' }, { status: 404 });
+
+            const key = parts[2];
+            const originalText = parts.slice(3).join('__');
+            if (!key || !originalText) {
+                return NextResponse.json({ error: 'Nieprawidłowy format sekcji' }, { status: 400 });
+            }
+
+            let sections: Array<Record<string, unknown>>;
+            try {
+                sections = JSON.parse(page.sections) as Array<Record<string, unknown>>;
+            } catch {
+                return NextResponse.json({ error: 'Nie można odczytać sekcji JSON' }, { status: 422 });
+            }
+
+            let updatedCount = 0;
+            const updatedSections = sections.map((section) => {
+                const currentValue = section[key];
+                if (typeof currentValue === 'string' && currentValue.trim() === originalText.trim() && updatedCount === 0) {
+                    updatedCount += 1;
+                    return { ...section, [key]: clean };
+                }
+                return section;
+            });
+
+            if (updatedCount === 0) {
+                return NextResponse.json({ error: 'Nie znaleziono wskazanego nagłówka sekcji' }, { status: 404 });
+            }
+
+            await prisma.page.update({
+                where: { slug },
+                data: { sections: JSON.stringify(updatedSections) },
+            });
             return NextResponse.json({ success: true });
         }
 
