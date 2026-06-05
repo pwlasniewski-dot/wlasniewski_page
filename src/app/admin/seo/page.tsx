@@ -66,6 +66,12 @@ type KeywordTextAudit = {
     note: string;
 };
 
+type InsertionSuggestion = {
+    page: string;
+    place: 'H1' | 'H2' | 'Akapit intro' | 'FAQ';
+    text: string;
+};
+
 const B2C_LOCAL_TERMS = ['toruń', 'torun', 'grudziądz', 'grudziadz', 'chełmno', 'chelmno', 'wąbrzeźno', 'wabrzezno', 'bydgoszcz', 'świecie', 'swiecie', 'lisewo', 'płużnica', 'pluznica'];
 const B2B_SERVICE_TERMS = ['dron', 'termowizja', 'inspekcje', 'monitoring', 'oferty', 'aeroanaliza'];
 
@@ -147,6 +153,51 @@ function auditKeywordText(entry: KeywordEntry, tab: KeywordTab): KeywordTextAudi
         shouldBe: asIs,
         note: 'Fraza wygląda dobrze. Wzmacniaj ją linkowaniem wewnętrznym i kontekstem.',
     };
+}
+
+function pageLabelFromSlug(slug: string): string {
+    if (slug === 'strona-glowna') return '/ (strona główna)';
+    if (slug.startsWith('blog/')) return `/${slug}`;
+    if (slug.startsWith('portfolio/')) return `/${slug}`;
+    return `/${slug}`;
+}
+
+function keywordToSentence(phrase: string, tab: KeywordTab): string {
+    if (tab === 'b2b') {
+        return `Realizujemy ${phrase} z naciskiem na precyzję pomiarową i szybki termin realizacji.`;
+    }
+    return `Tworzę ${phrase} w naturalnym stylu, z naciskiem na emocje i autentyczność.`;
+}
+
+function buildInsertionSuggestions(entry: KeywordEntry, tab: KeywordTab, audit: KeywordTextAudit): InsertionSuggestion[] {
+    const target = audit.shouldBe;
+    const pages = entry.pages.slice(0, 3);
+
+    if (pages.length === 0) {
+        return [
+            { page: '/strona-do-uzupełnienia', place: 'H2', text: target },
+            { page: '/strona-do-uzupełnienia', place: 'Akapit intro', text: keywordToSentence(target, tab) },
+        ];
+    }
+
+    return pages.map((slug, idx) => {
+        let place: InsertionSuggestion['place'] = idx === 0 ? 'H2' : idx === 1 ? 'Akapit intro' : 'FAQ';
+        if (slug === 'strona-glowna' && idx === 0) place = 'H1';
+        if (slug === 'o-mnie' && idx <= 1) place = 'Akapit intro';
+        if (slug === 'rezerwacja' && idx === 0) place = 'H2';
+
+        const text =
+            place === 'H1' ? target :
+            place === 'H2' ? target :
+            place === 'FAQ' ? `Jak wygląda ${target}?` :
+            keywordToSentence(target, tab);
+
+        return {
+            page: pageLabelFromSlug(slug),
+            place,
+            text,
+        };
+    });
 }
 
 type SeoOpsPayload = {
@@ -1151,6 +1202,7 @@ export default function SeoOpsPage() {
                         <tbody>
                             {(activeTab === 'b2c' ? data.keywordAnalytics.b2c : data.keywordAnalytics.b2b).map((kw, i) => {
                                 const audit = auditKeywordText(kw, activeTab as KeywordTab);
+                                const insertionSuggestions = buildInsertionSuggestions(kw, activeTab as KeywordTab, audit);
                                 return (
                                 <tr key={kw.keyword} className="border-b border-zinc-800/50 hover:bg-zinc-800/30 transition align-top">
                                     <td className="py-2.5 pr-4 text-zinc-500">{i + 1}</td>
@@ -1170,6 +1222,21 @@ export default function SeoOpsPage() {
                                                 {audit.status === 'ok' ? 'OK' : audit.status === 'over' ? 'Nadmierna/za ogólna' : 'Do poprawy'}
                                             </div>
                                             <div className="text-[11px] text-zinc-400 leading-relaxed">{audit.note}</div>
+
+                                            <div className="mt-2 rounded border border-zinc-800 bg-zinc-950/70 p-2">
+                                                <div className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">Gdzie wstawić + gotowy tekst</div>
+                                                <div className="space-y-1.5">
+                                                    {insertionSuggestions.map((suggestion, sIdx) => (
+                                                        <div key={`${kw.keyword}-${sIdx}`} className="text-[11px] leading-relaxed">
+                                                            <span className="text-zinc-500">{suggestion.page}</span>
+                                                            <span className="text-zinc-600"> • </span>
+                                                            <span className="text-sky-300">{suggestion.place}</span>
+                                                            <span className="text-zinc-600"> → </span>
+                                                            <span className="text-emerald-300">{suggestion.text}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
                                         </div>
                                     </td>
                                 </tr>
