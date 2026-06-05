@@ -228,7 +228,7 @@ export default async function RootLayout({
                                 "@context": "https://schema.org",
                                 "@graph": [
                                     {
-                                        "@type": ["LocalBusiness", "PhotographyBusiness"],
+                                        "@type": ["LocalBusiness", "ProfessionalService"],
                                         "@id": "https://wlasniewski.pl/#business",
                                         "name": "Przemysław Właśniewski — Fotograf",
                                         "alternateName": "FOTO-DRON Przemysław Właśniewski",

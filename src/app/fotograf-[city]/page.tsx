@@ -555,7 +555,7 @@ export default async function CityLandingPage({ params }: PageProps) {
     // JSON-LD: LocalBusiness
     const localBusinessSchema = {
         '@context': 'https://schema.org',
-        '@type': ['LocalBusiness', 'PhotographyBusiness'],
+        '@type': ['LocalBusiness', 'ProfessionalService'],
         '@id': `https://wlasniewski.pl/${data.slug}#business`,
         name: 'Przemysław Właśniewski — Fotograf',
         description: data.metaDescription,

@@ -26,8 +26,8 @@ const getCachedHomeMetadata = unstable_cache(
 export async function generateMetadata(): Promise<Metadata> {
     const page = await getCachedHomeMetadata();
 
-    const defaultTitle = "Przemysław Właśniewski — Fotograf Toruń | Sesje rodzinne, ślubne, portretowe i komunijne";
-    const defaultDescription = "Profesjonalny fotograf z Torunia. Naturalne sesje rodzinne, ślubne, portretowe i komunijne w Toruniu, Grudziądzu, Chełmnie, Wąbrzeźnie i okolicach. Reportaże pełne emocji i ujęcia z drona.";
+    const defaultTitle = "Fotograf Toruń – Właśniewski | Śluby, sesje rodzinne";
+    const defaultDescription = "Fotograf Toruń – naturalne sesje ślubne, rodzinne i komunijne. Toruń, Grudziądz, Chełmno, Wąbrzeźno i okolice. Reportaże pełne emocji. ☎ 530 788 694";
     const defaultKeywords = "fotograf toruń, fotograf grudziądz, fotograf płużnica, zdjęcia ślubne, sesja rodzinna, fotograf komunijny toruń, fotograf biznesowy, dron kujawsko pomorskie";
 
     // Use DB values only if they're meaningful (not generic placeholder text)
