@@ -166,14 +166,14 @@ export async function GET(request: NextRequest) {
             if (page.sections) {
                 try {
                     const sections = JSON.parse(page.sections) as Record<string, unknown>[];
-                    for (const section of sections) {
+                    for (const [sectionIndex, section] of sections.entries()) {
                         for (const key of ['title', 'heading', 'h1', 'h2', 'h3', 'subtitle']) {
                             if (typeof section[key] === 'string' && (section[key] as string).trim().length > 0) {
                                 const text = (section[key] as string).trim();
                                 const level: 'h1' | 'h2' | 'h3' = key === 'h3' ? 'h3' : key === 'h2' ? 'h2' : 'h1';
                                 const { hasKeyword, matchedKeywords } = scoreHeading(text);
                                 headings.push({
-                                    id: `page_section__${page.slug}__${key}__${text.slice(0, 20)}`,
+                                    id: `page_section__${page.slug}__${key}__${sectionIndex}`,
                                     source: 'page_section',
                                     slug: page.slug,
                                     level,
@@ -317,8 +317,8 @@ export async function PATCH(request: NextRequest) {
             if (!page.sections) return NextResponse.json({ error: 'Brak sekcji do edycji' }, { status: 404 });
 
             const key = parts[2];
-            const originalText = parts.slice(3).join('__');
-            if (!key || !originalText) {
+            const sectionRef = parts.slice(3).join('__');
+            if (!key || !sectionRef) {
                 return NextResponse.json({ error: 'Nieprawidłowy format sekcji' }, { status: 400 });
             }
 
@@ -329,13 +329,28 @@ export async function PATCH(request: NextRequest) {
                 return NextResponse.json({ error: 'Nie można odczytać sekcji JSON' }, { status: 422 });
             }
 
+            const sectionIndex = Number.parseInt(sectionRef, 10);
+            const isIndexRef = Number.isInteger(sectionIndex) && sectionIndex >= 0;
+
             let updatedCount = 0;
-            const updatedSections = sections.map((section) => {
+            const updatedSections = sections.map((section, idx) => {
                 const currentValue = section[key];
-                if (typeof currentValue === 'string' && currentValue.trim() === originalText.trim() && updatedCount === 0) {
+
+                if (typeof currentValue !== 'string' || updatedCount > 0) {
+                    return section;
+                }
+
+                if (isIndexRef && idx === sectionIndex) {
                     updatedCount += 1;
                     return { ...section, [key]: clean };
                 }
+
+                // Backward compatibility for previously generated IDs based on truncated text.
+                if (!isIndexRef && currentValue.trim().startsWith(sectionRef.trim())) {
+                    updatedCount += 1;
+                    return { ...section, [key]: clean };
+                }
+
                 return section;
             });
 
