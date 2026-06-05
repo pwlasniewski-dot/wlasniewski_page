@@ -109,7 +109,15 @@ const navigation = [
 
     { name: 'Analityka', href: '/admin/analytics', icon: BarChart3 },
     { name: 'Marketing & UTM', href: '/admin/marketing', icon: TrendingUp },
-    { name: 'SEO Ops', href: '/admin/seo', icon: Search },
+    {
+        name: 'SEO Ops',
+        href: '/admin/seo',
+        icon: Search,
+        children: [
+            { name: 'Audyt & Autopilot', href: '/admin/seo' },
+            { name: 'Nagłówki H1/H2/H3', href: '/admin/seo/headings' },
+        ]
+    },
     { name: 'Local SEO / Maps', href: '/admin/local-seo', icon: MapPin },
     { name: 'Logi', href: '/admin/logs', icon: List },
     { name: 'Stopka', href: '/admin/footer', icon: FileText },
