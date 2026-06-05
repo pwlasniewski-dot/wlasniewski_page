@@ -57,6 +57,97 @@ type ToolConnection = {
 type LandingPageItem = { page: string; views: number };
 type KeywordEntry = { keyword: string; count: number; density: number; pages: string[] };
 type AiRecommendation = { page: string; severity: 'critical' | 'warning' | 'info'; category: string; finding: string; recommendation: string };
+type KeywordTab = 'b2c' | 'b2b';
+
+type KeywordTextAudit = {
+    status: 'ok' | 'improve' | 'over';
+    asIs: string;
+    shouldBe: string;
+    note: string;
+};
+
+const B2C_LOCAL_TERMS = ['toruń', 'torun', 'grudziądz', 'grudziadz', 'chełmno', 'chelmno', 'wąbrzeźno', 'wabrzezno', 'bydgoszcz', 'świecie', 'swiecie', 'lisewo', 'płużnica', 'pluznica'];
+const B2B_SERVICE_TERMS = ['dron', 'termowizja', 'inspekcje', 'monitoring', 'oferty', 'aeroanaliza'];
+
+function auditKeywordText(entry: KeywordEntry, tab: KeywordTab): KeywordTextAudit {
+    const asIs = entry.keyword;
+    const lower = asIs.toLowerCase();
+    const tokenCount = lower.split(/\s+/).filter(Boolean).length;
+
+    const hasB2CLocal = B2C_LOCAL_TERMS.some(term => lower.includes(term));
+    const hasB2BService = B2B_SERVICE_TERMS.some(term => lower.includes(term));
+
+    if (tab === 'b2c') {
+        if (entry.density > 3.2 && tokenCount <= 2) {
+            return {
+                status: 'over',
+                asIs,
+                shouldBe: `${asIs} w Toruniu – naturalna fotografia`,
+                note: 'Fraza jest zbyt ogólna i często powtarzana. Rozbij ją na dłuższe long-tail nagłówki i akapity.',
+            };
+        }
+
+        if (!hasB2CLocal) {
+            if (lower.includes('fotograf')) {
+                return {
+                    status: 'improve',
+                    asIs,
+                    shouldBe: 'fotograf toruń',
+                    note: 'Dodaj lokalizację do frazy głównej, żeby zwiększyć widoczność lokalną.',
+                };
+            }
+            if (lower.includes('rodzin')) {
+                return {
+                    status: 'improve',
+                    asIs,
+                    shouldBe: 'sesja rodzinna toruń',
+                    note: 'Fraza usługowa bez miasta jest za szeroka. Dodaj miasto i intencję.',
+                };
+            }
+            if (lower.includes('sesj')) {
+                return {
+                    status: 'improve',
+                    asIs,
+                    shouldBe: 'sesja zdjęciowa toruń',
+                    note: 'Doprecyzuj typ sesji + lokalizację, żeby złapać ruch transakcyjny.',
+                };
+            }
+
+            return {
+                status: 'improve',
+                asIs,
+                shouldBe: `${asIs} toruń`,
+                note: 'Dodaj lokalizację i doprecyzuj intencję użytkownika.',
+            };
+        }
+    }
+
+    if (tab === 'b2b') {
+        if (!hasB2BService) {
+            return {
+                status: 'improve',
+                asIs,
+                shouldBe: `${asIs} dron`,
+                note: 'Fraza B2B powinna zawierać usługę techniczną (dron/termowizja/inspekcje).',
+            };
+        }
+        if (entry.density > 3.2 && tokenCount <= 2) {
+            return {
+                status: 'over',
+                asIs,
+                shouldBe: `${asIs} dla przemysłu`,
+                note: 'Fraza jest za często powtarzana. Dodaj kontekst branżowy i synonimy.',
+            };
+        }
+    }
+
+    return {
+        status: 'ok',
+        asIs,
+        shouldBe: asIs,
+        note: 'Fraza wygląda dobrze. Wzmacniaj ją linkowaniem wewnętrznym i kontekstem.',
+    };
+}
 
 type SeoOpsPayload = {
     success: boolean;
@@ -1054,11 +1145,14 @@ export default function SeoOpsPage() {
                                 <th className="pb-3 pr-4">Wystąpienia</th>
                                 <th className="pb-3 pr-4">Gęstość %</th>
                                 <th className="pb-3">Strony</th>
+                                <th className="pb-3 pl-4">Analiza tekstu (Jest → Powinno być)</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {(activeTab === 'b2c' ? data.keywordAnalytics.b2c : data.keywordAnalytics.b2b).map((kw, i) => (
-                                <tr key={kw.keyword} className="border-b border-zinc-800/50 hover:bg-zinc-800/30 transition">
+                            {(activeTab === 'b2c' ? data.keywordAnalytics.b2c : data.keywordAnalytics.b2b).map((kw, i) => {
+                                const audit = auditKeywordText(kw, activeTab as KeywordTab);
+                                return (
+                                <tr key={kw.keyword} className="border-b border-zinc-800/50 hover:bg-zinc-800/30 transition align-top">
                                     <td className="py-2.5 pr-4 text-zinc-500">{i + 1}</td>
                                     <td className="py-2.5 pr-4 font-medium">{kw.keyword}</td>
                                     <td className="py-2.5 pr-4 text-zinc-300">{kw.count}</td>
@@ -1068,10 +1162,20 @@ export default function SeoOpsPage() {
                                         </span>
                                     </td>
                                     <td className="py-2.5 text-xs text-zinc-500 max-w-[200px] truncate">{kw.pages.join(', ')}</td>
+                                    <td className="py-2.5 pl-4 min-w-[360px]">
+                                        <div className="space-y-1.5">
+                                            <div className="text-[11px] text-zinc-500">Jest: <span className="text-zinc-300">{audit.asIs}</span></div>
+                                            <div className="text-[11px] text-emerald-300">Powinno być: <span className="font-medium">{audit.shouldBe}</span></div>
+                                            <div className={`inline-flex rounded px-2 py-0.5 text-[10px] font-semibold ${audit.status === 'ok' ? 'bg-emerald-500/15 text-emerald-300' : audit.status === 'over' ? 'bg-rose-500/15 text-rose-300' : 'bg-amber-500/15 text-amber-300'}`}>
+                                                {audit.status === 'ok' ? 'OK' : audit.status === 'over' ? 'Nadmierna/za ogólna' : 'Do poprawy'}
+                                            </div>
+                                            <div className="text-[11px] text-zinc-400 leading-relaxed">{audit.note}</div>
+                                        </div>
+                                    </td>
                                 </tr>
-                            ))}
+                            );})}
                             {(activeTab === 'b2c' ? data.keywordAnalytics.b2c : data.keywordAnalytics.b2b).length === 0 && (
-                                <tr><td colSpan={5} className="py-6 text-center text-zinc-500">Brak danych — dodaj więcej treści do stron {activeTab === 'b2b' ? 'B2B' : 'B2C'}.</td></tr>
+                                <tr><td colSpan={6} className="py-6 text-center text-zinc-500">Brak danych — dodaj więcej treści do stron {activeTab === 'b2b' ? 'B2B' : 'B2C'}.</td></tr>
                             )}
                         </tbody>
                     </table>
