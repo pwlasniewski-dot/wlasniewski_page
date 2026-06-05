@@ -47,6 +47,33 @@ type TargetKeyword = { kw: string; volume: string; intent: string };
 
 type Filter = 'all' | 'bad' | 'good' | 'h1' | 'h2' | 'h3';
 
+const SEO_HEADINGS_ENDPOINTS = ['/api/admin/seo-headings', '/api/admin/seo/headings'] as const;
+
+async function fetchSeoHeadings(
+    token: string | null,
+    options?: RequestInit
+): Promise<Response> {
+    let lastResponse: Response | null = null;
+
+    for (const endpoint of SEO_HEADINGS_ENDPOINTS) {
+        const response = await fetch(endpoint, {
+            ...options,
+            headers: {
+                ...(options?.headers ?? {}),
+                Authorization: `Bearer ${token ?? ''}`,
+            },
+        });
+
+        if (response.status !== 404) {
+            return response;
+        }
+        lastResponse = response;
+    }
+
+    if (lastResponse) return lastResponse;
+    throw new Error('Brak odpowiedzi z endpointu SEO headings');
+}
+
 /* ─── Level badge ─── */
 function LevelBadge({ level }: { level: string }) {
     const colors: Record<string, string> = {
@@ -233,14 +260,14 @@ export default function SeoHeadingsPage() {
     const fetchData = useCallback(async () => {
         setLoading(true);
         try {
-            const res = await fetch('/api/admin/seo-headings', {
-                headers: { Authorization: `Bearer ${token}` },
-            });
+            const res = await fetchSeoHeadings(token);
             const data = await res.json();
             if (data.success) {
                 setHeadings(data.headings);
                 setStats(data.stats);
                 setKeywords(data.targetKeywords);
+            } else {
+                toast.error(data.error ?? 'Błąd pobierania nagłówków');
             }
         } catch {
             toast.error('Błąd pobierania nagłówków');
@@ -252,11 +279,10 @@ export default function SeoHeadingsPage() {
 
     const handleSave = async (id: string, newText: string): Promise<boolean> => {
         try {
-            const res = await fetch('/api/admin/seo-headings', {
+            const res = await fetchSeoHeadings(token, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`,
                 },
                 body: JSON.stringify({ id, newText }),
             });
