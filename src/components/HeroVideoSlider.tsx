@@ -98,7 +98,7 @@ export default function HeroVideoSlider({ slides = [], interval = 12000 }: HeroV
                         transition={{ duration: 0.8 }}
                         className="max-w-5xl space-y-6"
                     >
-                        <h1
+                        <h2
                             className="text-5xl md:text-8xl font-black text-white tracking-tighter leading-tight drop-shadow-2xl"
                             dangerouslySetInnerHTML={{ __html: slide.title }}
                         />
