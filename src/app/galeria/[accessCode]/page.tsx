@@ -850,7 +850,11 @@ export default function ClientGalleryPage() {
                                     onClick={() => setLightbox(i, lightbox.activeType)}
                                     className={`relative h-14 aspect-[3/2] rounded-xl overflow-hidden border-2 transition-all flex-shrink-0 ${lightbox.activeIndex === i ? 'border-gold-500 scale-110 shadow-2xl -translate-y-1' : 'border-transparent opacity-30 hover:opacity-100 hover:scale-105'}`}
                                 >
-                                    <img src={p.thumbnail_url || p.file_url} className="w-full h-full object-cover" />
+                                    <img
+                                        src={p.thumbnail_url || p.file_url}
+                                        alt={`Miniatura zdjęcia ${i + 1}`}
+                                        className="w-full h-full object-cover"
+                                    />
                                 </button>
                             ))}
                         </div>

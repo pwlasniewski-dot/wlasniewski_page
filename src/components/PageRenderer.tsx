@@ -1155,7 +1155,11 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                                                 )}
                                                             </div>
                                                         ) : (
-                                                            <img src={selectedCase.image} className="max-w-full max-h-[80vh] object-contain rounded-lg" />
+                                                            <img
+                                                                src={selectedCase.image}
+                                                                alt={selectedCase.title || 'Realizacja klienta'}
+                                                                className="max-w-full max-h-[80vh] object-contain rounded-lg"
+                                                            />
                                                         )}
 
                                                         {/* Client Logo in Modal */}

@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
                     <hr>
                     <p><strong>Album:</strong> ${album.title}</p>
                     <p><strong>Cena:</strong> ${album.price} ${album.currency}</p>
-                    ${album.cover_image_url ? `<p><img src="${album.cover_image_url}" style="max-width:300px;border-radius:8px"/></p>` : ''}
+                    ${album.cover_image_url ? `<p><img src="${album.cover_image_url}" alt="Okładka albumu ${album.title}" style="max-width:300px;border-radius:8px"/></p>` : ''}
                     ${message ? `<hr><p><strong>Wiadomosc od klienta:</strong><br>${message}</p>` : ''}
                     <hr>
                     <p style="color:#888">${isAddToOffer ? '<strong>AKCJA:</strong> Zaktualizuj ofertę o cenę albumu i potwierdź klientowi.' : 'Akcja: oddzwon do klienta i potwierdz zamowienie albumu w pakiecie sesji.'}</p>
