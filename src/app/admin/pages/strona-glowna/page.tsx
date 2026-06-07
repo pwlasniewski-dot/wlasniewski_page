@@ -6,7 +6,7 @@
  */
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { getApiUrl } from '@/lib/api-config';
 import {
@@ -105,6 +105,16 @@ interface BannerItem {
     imageShape?: 'square' | 'circle';
 }
 
+type HeadingLevel = 'H1' | 'H2' | 'H3';
+
+type HeadingAuditRow = {
+    location: string;
+    level: HeadingLevel;
+    current: string;
+    shouldBe: string;
+    keywordHint: string;
+};
+
 
 
 
@@ -124,6 +134,136 @@ export default function HomepageManager() {
     const [saving, setSaving] = useState(false);
     const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
     const [currentPickerTarget, setCurrentPickerTarget] = useState<{ type: 'hero' | 'section' | 'advanced' | 'advanced_challenge' | 'rte' | 'mini_gallery_item' | 'story_cover' | 'chronological_gallery' | 'masonry_gallery' | 'featured_carousel_slide', index: number, field?: string, subIndex?: number } | null>(null);
+
+    const seoKeywords = [
+        'fotograf toruń',
+        'fotograf grudziądz',
+        'fotograf chełmno',
+        'fotograf płużnica',
+        'fotograf wąbrzeźno',
+        'fotograf ślubny toruń',
+        'sesja rodzinna toruń',
+        'fotograf komunijny toruń',
+    ];
+
+    const trimText = (value: string | undefined | null) => (value || '').replace(/\s+/g, ' ').trim();
+
+    const suggestHeading = (current: string, location: string, level: HeadingLevel): { text: string; hint: string } => {
+        const clean = trimText(current);
+        const lower = clean.toLowerCase();
+        const longHeading = clean.length > 95 || clean.split(' ').filter(Boolean).length > 14;
+
+        if (level === 'H1') {
+            return {
+                text: 'Fotograf Toruń, Grudziądz, Chełmno, Płużnica, Wąbrzeźno — Przemysław Właśniewski. Sesje rodzinne, ślubne i komunijne',
+                hint: 'fotograf toruń + miasta + usługi',
+            };
+        }
+
+        if (location.includes('Slajd')) {
+            if (lower.includes('komuni')) return { text: 'Fotograf komunijny Toruń i okolice — naturalne kadry', hint: 'fotograf komunijny toruń' };
+            if (lower.includes('slub')) return { text: 'Fotograf ślubny Toruń, Grudziądz, Chełmno', hint: 'fotograf ślubny toruń' };
+            if (lower.includes('rodzin')) return { text: 'Sesja rodzinna Toruń i Grudziądz — naturalna fotografia', hint: 'sesja rodzinna toruń' };
+            return { text: 'Fotograf Toruń i okolice — naturalna fotografia rodzinna i ślubna', hint: 'fotograf toruń' };
+        }
+
+        if (location.includes('Opinie')) return { text: 'Opinie klientów — fotograf Toruń i okolice', hint: 'fotograf toruń opinie' };
+        if (location.includes('Oferta')) return { text: 'Fotograf Toruń, Grudziądz, Chełmno, Płużnica i Wąbrzeźno — sprawdź ofertę', hint: 'fotograf + miasta' };
+        if (location.includes('Kontakt') || location.includes('Napisz')) return { text: 'Napisz do mnie — fotograf Toruń, Grudziądz, Chełmno, Płużnica, Wąbrzeźno', hint: 'kontakt fotograf toruń' };
+
+        if (longHeading) {
+            return {
+                text: 'Fotograf Toruń i okolice — naturalne sesje rodzinne, ślubne i komunijne',
+                hint: 'skrót + lokalizacja + intencja',
+            };
+        }
+
+        return {
+            text: clean || 'Fotograf Toruń i okolice — naturalna fotografia',
+            hint: 'dodaj lokalizację i usługę',
+        };
+    };
+
+    const headingAuditRows = useMemo<HeadingAuditRow[]>(() => {
+        const rows: HeadingAuditRow[] = [];
+
+        const h1Current = 'Fotograf Toruń, Grudziądz, Chełmno, Płużnica, Wąbrzeźno — Przemysław Właśniewski. Sesje rodzinne, ślubne i komunijne';
+        const h1Suggestion = suggestHeading(h1Current, 'Globalny H1 (SSR)', 'H1');
+        rows.push({
+            location: 'Globalny H1 (SSR)',
+            level: 'H1',
+            current: h1Current,
+            shouldBe: h1Suggestion.text,
+            keywordHint: h1Suggestion.hint,
+        });
+
+        heroSlides
+            .filter(s => s.enabled !== false)
+            .forEach((slide, idx) => {
+                const title = trimText(slide.title);
+                if (!title) return;
+                const suggestion = suggestHeading(title, `Hero Slider: Slajd #${idx + 1}`, 'H2');
+                rows.push({
+                    location: `Hero Slider: Slajd #${idx + 1} (pole: Tytuł)`,
+                    level: 'H2',
+                    current: title,
+                    shouldBe: suggestion.text,
+                    keywordHint: suggestion.hint,
+                });
+            });
+
+        sections
+            .filter(s => s.enabled !== false)
+            .forEach((section, idx) => {
+                const base = `${section.label || section.type} #${idx + 1}`;
+
+                if (section.type === 'testimonials') {
+                    const title = trimText((section as any)?.data?.title);
+                    if (title) {
+                        const suggestion = suggestHeading(title, `${base}: Opinie`, 'H2');
+                        rows.push({ location: `${base}: tytuł sekcji`, level: 'H2', current: title, shouldBe: suggestion.text, keywordHint: suggestion.hint });
+                    }
+                }
+
+                if (section.type === 'stories_grid') {
+                    const title = trimText((section as any)?.data?.title);
+                    if (title) {
+                        const suggestion = suggestHeading(title, `${base}: Wybierzcie swoją historię`, 'H2');
+                        rows.push({ location: `${base}: tytuł sekcji`, level: 'H2', current: title, shouldBe: suggestion.text, keywordHint: suggestion.hint });
+                    }
+
+                    const items = ((section as any)?.data?.items || []) as Array<{ title?: string }>;
+                    items.forEach((item, itemIdx) => {
+                        const t = trimText(item.title);
+                        if (!t) return;
+                        const suggestion = suggestHeading(t, `${base}: historia ${itemIdx + 1}`, 'H3');
+                        rows.push({ location: `${base}: historia #${itemIdx + 1}`, level: 'H3', current: t, shouldBe: suggestion.text, keywordHint: suggestion.hint });
+                    });
+                }
+
+                if (section.type === 'features') {
+                    const features = ((section as any)?.data?.features || []) as Array<{ title?: string }>;
+                    features.forEach((f, fIdx) => {
+                        const t = trimText(f.title);
+                        if (!t) return;
+                        const suggestion = suggestHeading(t, `${base}: kafelek ${fIdx + 1}`, 'H3');
+                        rows.push({ location: `${base}: kafelek #${fIdx + 1}`, level: 'H3', current: t, shouldBe: suggestion.text, keywordHint: suggestion.hint });
+                    });
+                }
+
+                if (section.type === 'narrative_text' || section.type === 'featured_carousel' || section.type === 'info_band' || section.type === 'about') {
+                    const title = trimText((section as any)?.data?.title);
+                    if (title) {
+                        const suggestion = suggestHeading(title, `${base}: tytuł`, 'H2');
+                        rows.push({ location: `${base}: tytuł sekcji`, level: 'H2', current: title, shouldBe: suggestion.text, keywordHint: suggestion.hint });
+                    }
+                }
+            });
+
+        return rows;
+    }, [heroSlides, sections]);
+
+    const problematicHeadingCount = headingAuditRows.filter(row => trimText(row.current) !== trimText(row.shouldBe)).length;
 
     useEffect(() => {
         fetchHomepage();
@@ -949,6 +1089,61 @@ export default function HomepageManager() {
                 <button onClick={addPhotoCube3DTemplate} className="px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-white rounded text-sm border border-yellow-500/30 text-yellow-400">Dodaj Kostkę 3D 🎲</button>
             </div>
 
+            {/* SEO Heading Map */}
+            <div className="mb-8 bg-zinc-900 border border-zinc-800 rounded-lg p-6">
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                    <div>
+                        <h2 className="text-lg font-semibold text-white">Mapa nagłówków SEO (H1/H2/H3)</h2>
+                        <p className="text-sm text-zinc-400 mt-1">
+                            Tutaj dokładnie widzisz: gdzie jest nagłówek, jaki ma typ, co jest teraz i co warto podmienić pod pozycjonowanie lokalne.
+                        </p>
+                    </div>
+                    <div className="text-xs px-3 py-1 rounded-full border border-amber-500/40 bg-amber-500/10 text-amber-300">
+                        Do poprawy: {problematicHeadingCount}
+                    </div>
+                </div>
+
+                <div className="mb-4 flex flex-wrap gap-2">
+                    {seoKeywords.map((kw) => (
+                        <span key={kw} className="text-[11px] px-2 py-1 rounded border border-zinc-700 text-zinc-300 bg-zinc-800/60">
+                            {kw}
+                        </span>
+                    ))}
+                </div>
+
+                <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                        <thead>
+                            <tr className="text-left text-xs uppercase tracking-wider text-zinc-500 border-b border-zinc-800">
+                                <th className="py-2 pr-3">Miejsce</th>
+                                <th className="py-2 pr-3">Typ</th>
+                                <th className="py-2 pr-3">Jest</th>
+                                <th className="py-2 pr-3">Powinno być</th>
+                                <th className="py-2">Fraza</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {headingAuditRows.map((row, idx) => {
+                                const changed = trimText(row.current) !== trimText(row.shouldBe);
+                                return (
+                                    <tr key={`${row.location}-${idx}`} className="border-b border-zinc-800/60 align-top">
+                                        <td className="py-2 pr-3 text-zinc-300">{row.location}</td>
+                                        <td className="py-2 pr-3">
+                                            <span className={`text-xs px-2 py-0.5 rounded ${row.level === 'H1' ? 'bg-fuchsia-500/15 text-fuchsia-300' : row.level === 'H2' ? 'bg-sky-500/15 text-sky-300' : 'bg-emerald-500/15 text-emerald-300'}`}>
+                                                {row.level}
+                                            </span>
+                                        </td>
+                                        <td className="py-2 pr-3 text-zinc-400">{row.current || '—'}</td>
+                                        <td className={`py-2 pr-3 ${changed ? 'text-amber-300' : 'text-emerald-300'}`}>{row.shouldBe || '—'}</td>
+                                        <td className="py-2 text-zinc-500">{row.keywordHint}</td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
             <div className="space-y-8">
                 {/* HERO SLIDER (Always First) */}
                 <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6 space-y-4">
@@ -1012,12 +1207,14 @@ export default function HomepageManager() {
                             {/* Text Fields */}
                             <div className="space-y-2">
                                 <div>
-                                    <label className="block text-sm text-zinc-400 mb-1">Tytuł</label>
+                                    <label className="block text-sm text-zinc-400 mb-1">Tytuł <span className="text-sky-300">(renderuje się jako H2)</span></label>
                                     <input type="text" value={slide.title} onChange={e => updateHeroSlide(index, 'title', e.target.value)} placeholder="Główny tytuł" className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-sm text-white" />
+                                    <p className="text-[11px] text-zinc-500 mt-1">W tym polu wpisuj frazę lokalną + usługę, np. „Fotograf ślubny Toruń i Grudziądz”.</p>
                                 </div>
                                 <div>
                                     <label className="block text-sm text-zinc-400 mb-1">Podtytuł</label>
                                     <input type="text" value={slide.subtitle} onChange={e => updateHeroSlide(index, 'subtitle', e.target.value)} placeholder="Podtytuł/opis krótki" className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-sm text-white" />
+                                    <p className="text-[11px] text-zinc-500 mt-1">To jest tekst pomocniczy, nie nagłówek SEO. Trzymaj go krótko i sprzedażowo.</p>
                                 </div>
                                 <div>
                                     <label className="block text-sm text-zinc-400 mb-1">Opis (szczegółowy)</label>
