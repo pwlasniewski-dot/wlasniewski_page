@@ -22,6 +22,9 @@ export default function NarrativeText({
     dropCap = true,
     alignment = 'left',
 }: NarrativeTextProps) {
+    const plainTitle = (title || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    const demoteTitle = plainTitle.length > 110 || plainTitle.split(' ').filter(Boolean).length > 16;
+
     return (
         <section className="narrative-spacing" style={{ backgroundColor }}>
             <div className={`container mx-auto px-6 ${columns === 1 ? 'max-w-3xl' : 'max-w-5xl'}`}>
@@ -35,12 +38,21 @@ export default function NarrativeText({
                             </p>
                         )}
                         {title && (
-                            <h2
-                                className="text-3xl md:text-5xl text-[var(--wedding-brown)]"
-                                style={{ fontFamily: 'var(--font-editorial-heading)' }}
-                            >
-                                {title}
-                            </h2>
+                            demoteTitle ? (
+                                <p
+                                    className="text-3xl md:text-5xl text-[var(--wedding-brown)]"
+                                    style={{ fontFamily: 'var(--font-editorial-heading)' }}
+                                >
+                                    {title}
+                                </p>
+                            ) : (
+                                <h2
+                                    className="text-3xl md:text-5xl text-[var(--wedding-brown)]"
+                                    style={{ fontFamily: 'var(--font-editorial-heading)' }}
+                                >
+                                    {title}
+                                </h2>
+                            )
                         )}
                         <div className="w-12 h-[1px] bg-[var(--wedding-gold)] mx-auto mt-6" />
                     </div>

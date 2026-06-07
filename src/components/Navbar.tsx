@@ -312,6 +312,7 @@ export default function Navbar({ isB2B: serverIsB2B }: { isB2B?: boolean }) {
                                     className="hover:opacity-80 transition-opacity z-10 flex-shrink-0"
                                     aria-label="Strona główna"
                                 >
+                                    <span className="sr-only">Strona główna</span>
                                     <div
                                         className="relative transition-all duration-300"
                                         style={{
@@ -375,6 +376,7 @@ export default function Navbar({ isB2B: serverIsB2B }: { isB2B?: boolean }) {
                                     className="hover:opacity-80 transition-opacity"
                                     aria-label="Strona główna"
                                 >
+                                    <span className="sr-only">Strona główna</span>
                                     <div
                                         className="relative transition-all duration-300"
                                         style={{
@@ -473,6 +475,7 @@ export default function Navbar({ isB2B: serverIsB2B }: { isB2B?: boolean }) {
                                         className="hover:opacity-80 transition-opacity"
                                         aria-label="Strona główna"
                                     >
+                                        <span className="sr-only">Strona główna</span>
                                         <div
                                             className="relative transition-all duration-300"
                                             style={{
@@ -493,6 +496,7 @@ export default function Navbar({ isB2B: serverIsB2B }: { isB2B?: boolean }) {
                             </div>
 
                             {/* MENU BOTTOM CENTER */}
+                                        <span className="sr-only">Strona główna</span>
                             <div className="hidden md:flex items-center gap-8 justify-center">
                                 {[...currentMenuItems, ...currentCtaItems].map((item) => (
                                     <div key={item.id} className="relative group">

@@ -35,6 +35,9 @@ interface WhiteInfoBandProps {
 }
 
 export default function WhiteInfoBand({ image, title, subtitle, content, items, imagePosition }: WhiteInfoBandProps) {
+    const plainTitle = (title || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    const demoteTitle = plainTitle.length > 110 || plainTitle.split(' ').filter(Boolean).length > 16;
+
     return (
         <section className="bg-white py-24 px-6 relative overflow-hidden">
             {/* Subtle architectural background pattern */}
@@ -49,9 +52,15 @@ export default function WhiteInfoBand({ image, title, subtitle, content, items, 
                                 {subtitle}
                             </span>
                         )}
-                        <h2 className="text-4xl md:text-6xl font-bold text-zinc-950 tracking-tight leading-none"
-                            dangerouslySetInnerHTML={{ __html: title || 'Infrastruktura i <span class="text-yellow-600">logistyka</span>' }}
-                        />
+                        {demoteTitle ? (
+                            <p className="text-4xl md:text-6xl font-bold text-zinc-950 tracking-tight leading-none"
+                                dangerouslySetInnerHTML={{ __html: title || 'Infrastruktura i <span class="text-yellow-600">logistyka</span>' }}
+                            />
+                        ) : (
+                            <h2 className="text-4xl md:text-6xl font-bold text-zinc-950 tracking-tight leading-none"
+                                dangerouslySetInnerHTML={{ __html: title || 'Infrastruktura i <span class="text-yellow-600">logistyka</span>' }}
+                            />
+                        )}
                         <div className="h-1.5 w-20 bg-yellow-500 mt-8 rounded-full" />
                     </div>
                 )}

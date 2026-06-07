@@ -148,6 +148,14 @@ export default function HomeContent({ heroSlides, sections, homeData, orderedSec
         };
     };
 
+    const shouldDemoteHeading = (value?: string) => {
+        if (!value) return false;
+        const plain = value.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+        if (!plain) return false;
+        const words = plain.split(' ').filter(Boolean).length;
+        return plain.length > 110 || words > 16;
+    };
+
     const renderSection = (section: Section) => {
         if (section.enabled === false) return null;
         const bgClass = getBackgroundClass(section.backgroundColor);
@@ -182,9 +190,14 @@ export default function HomeContent({ heroSlides, sections, homeData, orderedSec
                                             'md:order-1 text-center md:col-span-2' // Center implies spanning full width or centered text
                                         } ${section.data.textPosition === 'center' ? 'md:text-center' : ''}`}>
 
-                                        <h2 className={`text-3xl md:text-4xl font-display font-bold ${textColors.heading} mb-6`}>
-                                            {section.data.title}
-                                        </h2>
+                                        {(() => {
+                                            const HeadingTag = shouldDemoteHeading(section.data.title) ? 'p' : 'h2';
+                                            return (
+                                                <HeadingTag className={`text-3xl md:text-4xl font-display font-bold ${textColors.heading} mb-6`}>
+                                                    {section.data.title}
+                                                </HeadingTag>
+                                            );
+                                        })()}
                                         <div
                                             className={`prose prose-invert ${textColors.body} mb-8 text-base md:text-lg max-w-none`}
                                             dangerouslySetInnerHTML={{ __html: section.data.content }}
@@ -478,9 +491,14 @@ export default function HomeContent({ heroSlides, sections, homeData, orderedSec
 
                                         {/* Content */}
                                         <div className={`${block.position === 'right' ? 'md:col-start-1 md:row-start-1 text-right' : 'text-left'}`}>
-                                            <h2 className={`text-4xl font-display font-bold ${textColors.heading} mb-4`}>
-                                                {block.title}
-                                            </h2>
+                                            {(() => {
+                                                const HeadingTag = shouldDemoteHeading(block.title) ? 'p' : 'h2';
+                                                return (
+                                                    <HeadingTag className={`text-4xl font-display font-bold ${textColors.heading} mb-4`}>
+                                                        {block.title}
+                                                    </HeadingTag>
+                                                );
+                                            })()}
                                             <div
                                                 className={`text-lg ${textColors.body} leading-relaxed prose prose-zinc`}
                                                 dangerouslySetInnerHTML={{ __html: block.content }}

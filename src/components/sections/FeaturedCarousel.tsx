@@ -33,6 +33,9 @@ export default function FeaturedCarousel({
 }: FeaturedCarouselProps) {
     if (!slides || slides.length === 0) return null;
 
+    const plainTitle = (title || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    const demoteTitle = plainTitle.length > 110 || plainTitle.split(' ').filter(Boolean).length > 16;
+
     return (
         <section className="section-spacing overflow-hidden" style={{ backgroundColor }}>
             <div className="container mx-auto px-6 max-w-7xl">
@@ -46,12 +49,21 @@ export default function FeaturedCarousel({
                             </p>
                         )}
                         {title && (
-                            <h2
-                                className="text-4xl md:text-6xl text-[var(--wedding-brown)] italic"
-                                style={{ fontFamily: 'var(--font-editorial-heading)', fontWeight: 400 }}
-                            >
-                                {title}
-                            </h2>
+                            demoteTitle ? (
+                                <p
+                                    className="text-4xl md:text-6xl text-[var(--wedding-brown)] italic"
+                                    style={{ fontFamily: 'var(--font-editorial-heading)', fontWeight: 400 }}
+                                >
+                                    {title}
+                                </p>
+                            ) : (
+                                <h2
+                                    className="text-4xl md:text-6xl text-[var(--wedding-brown)] italic"
+                                    style={{ fontFamily: 'var(--font-editorial-heading)', fontWeight: 400 }}
+                                >
+                                    {title}
+                                </h2>
+                            )
                         )}
                         <div className="w-12 h-[1px] bg-[var(--wedding-gold)] mx-auto mt-6" />
                     </div>
