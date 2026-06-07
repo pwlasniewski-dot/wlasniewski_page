@@ -9,6 +9,27 @@ interface PageProps {
     params: Promise<{ slug: string }>;
 }
 
+const LOCAL_CITY_LINKS = [
+    { city: 'Toruń', href: '/fotograf-torun' },
+    { city: 'Grudziądz', href: '/fotograf-grudziadz' },
+    { city: 'Chełmno', href: '/fotograf-chelmno' },
+    { city: 'Płużnica', href: '/fotograf-pluznica' },
+    { city: 'Wąbrzeźno', href: '/fotograf-wabrzezno' },
+];
+
+function getServiceLabelBySlug(slug: string) {
+    const lower = slug.toLowerCase();
+
+    if (lower.includes('slub')) return 'fotograf ślubny';
+    if (lower.includes('rodzin')) return 'sesja rodzinna';
+    if (lower.includes('komuni')) return 'fotograf komunijny';
+    if (lower.includes('portret')) return 'sesja portretowa';
+    if (lower.includes('biznes') || lower.includes('wizerunk')) return 'fotograf biznesowy';
+    if (lower.includes('rezerw')) return 'rezerwacja sesji';
+
+    return 'fotograf';
+}
+
 async function getPage(slug: string) {
     const page = await prisma.page.findFirst({
         where: {
@@ -77,6 +98,9 @@ export default async function DynamicPage({ params }: PageProps) {
         redirect(`/b2b/${page!.slug.toLowerCase()}`);
     }
 
+    const serviceLabel = getServiceLabelBySlug(page!.slug);
+    const localCoverageLabel = LOCAL_CITY_LINKS.map(l => l.city).join(', ');
+
     // Intelligent Content Merging Strategy (Zero Loss Protocol)
     let sections: PageSection[] = [];
 
@@ -143,6 +167,35 @@ export default async function DynamicPage({ params }: PageProps) {
                 }}
             />
             <PageRenderer sections={sections} />
+
+            {/* Local SEO reinforcement block for service intent + city coverage */}
+            <section className="border-t border-white/5 bg-zinc-950 py-14 px-6">
+                <div className="mx-auto max-w-5xl">
+                    <h2 className="text-2xl md:text-3xl font-bold text-white mb-5">
+                        {serviceLabel} — {localCoverageLabel} i okolice
+                    </h2>
+                    <p className="text-zinc-300 leading-relaxed mb-6">
+                        Realizuję usługi jako {serviceLabel} na terenie: {localCoverageLabel}.
+                        Pracuję naturalnie, z naciskiem na emocje, światło i autentyczny reportaż.
+                    </p>
+
+                    <h3 className="text-lg md:text-xl font-semibold text-gold-400 mb-3">
+                        Lokalnie: sprawdź dedykowane strony miast
+                    </h3>
+                    <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-sm">
+                        {LOCAL_CITY_LINKS.map((item) => (
+                            <li key={item.href}>
+                                <a
+                                    href={item.href}
+                                    className="block rounded-lg border border-white/10 px-4 py-3 text-zinc-200 hover:text-white hover:border-gold-400/50 transition"
+                                >
+                                    {serviceLabel} {item.city}
+                                </a>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            </section>
         </main>
     );
 }
