@@ -1,4 +1,4 @@
-// Full SEO-optimized data for all city location pages  
+﻿// Full SEO-optimized data for all city location pages  
 // Based on original content from legacy site for maximum SEO impact
 
 export const cityData = {
@@ -9,7 +9,7 @@ export const cityData = {
         metaTitle: "Fotograf Toruń – naturalne sesje rodzinne i plenerowe | Przemysław Właśniewski",
         metaDescription: "Sesje rodzinne i plenerowe w Toruniu: starówka, zamek, bulwar i most. Naturalny styl, galeria online, pudełko i odbitki premium. Zarezerwuj termin.",
         keywords: "fotograf Toruń, sesja rodzinna Toruń, zdjęcia plenerowe Toruń, starówka Toruń, Zamek Krzyżacki, Bulwar Filadelfijski, most w Toruniu",
-        heroImage: "https://wlasniewski.pl/assets/portfolio/Rodzinnie/Sesja%20w%20mie%C5%9Bcie%20Toru%C5%84/sesja-rodzinna-torun-bulwar-filadelfijski-kadr-szeroki-2025-06.webp",
+        heroImage: "https://wlasniewski.pl/assets/portfolio/family/sesja-rodzinna-torun-plener-07.webp",
 
         intro: [
             "Nazywam się Przemek i pracuję jako fotograf w Toruniu. Lubię, gdy zdjęcia są prawdziwe i naturalne. Stawiam na pełną swobodę i często daję Wam możliwość tworzenia własnych pomysłów. Jako fotograf w Toruniu znam miejsca, które pięknie grają z naturalnym światłem i jednocześnie oddają zamierzony efekt na moich zdjęciach.",
@@ -52,7 +52,7 @@ export const cityData = {
         metaTitle: "Fotograf Wąbrzeźno – naturalne sesje rodzinne, ślubne i portretowe | Przemysław Właśniewski",
         metaDescription: "Spokojna fotografia w Wąbrzeźnie: rodzina, ślub, portret. Naturalne światło, galeria online, odbitki i albumy.",
         keywords: "fotograf Wąbrzeźno, sesje rodzinne Wąbrzeźno, fotografia ślubna Wąbrzeźno",
-        heroImage: "https://wlasniewski.pl/assets/portfolio/Rodzinnie/Sesja%20w%20mie%C5%9Bcie%20Toru%C5%84/sesja-rodzinna-torun-bulwar-filadelfijski-kadr-szeroki-2025-06.webp",
+        heroImage: "https://wlasniewski.pl/assets/portfolio/family/sesja-rodzinna-torun-plener-07.webp",
 
         intro: [
             "Nazywam się Przemek — fotograf w Wąbrzeźnie. Pracuję bez presji i bez sztucznego pozowania.",
@@ -96,7 +96,7 @@ export const cityData = {
         metaTitle: "Fotograf Lisewo – rodzinne, ślubne i portretowe | Przemysław Właśniewski",
         metaDescription: "Spokojne, naturalne sesje w Lisewie i okolicach. Rodzina, ślub, portret. Galeria online, odbitki i albumy.",
         keywords: "fotograf Lisewo, sesje rodzinne Lisewo, fotografia ślubna Lisewo",
-        heroImage: "https://wlasniewski.pl/assets/portfolio/Rodzinnie/Sesja%20w%20mie%C5%9Bcie%20Toru%C5%84/sesja-rodzinna-torun-bulwar-filadelfijski-kadr-szeroki-2025-06.webp",
+        heroImage: "https://wlasniewski.pl/assets/portfolio/family/sesja-rodzinna-torun-plener-07.webp",
 
         intro: [
             "Jestem Przemek — fotograf w Lisewie. Pracuję reportażowo i w naturalnym świetle.",
@@ -140,7 +140,7 @@ export const cityData = {
         metaTitle: "Fotograf Płużnica – rodzinne, ślubne i portretowe | Przemysław Właśniewski",
         metaDescription: "Naturalne sesje w gminie Płużnica. Rodzinne, komunijne, ślubne. Galeria online i odbitki premium.",
         keywords: "fotograf Płużnica, sesje rodzinne Płużnica, fotografia komunijna Płużnica",
-        heroImage: "https://wlasniewski.pl/assets/portfolio/Rodzinnie/Sesja%20w%20mie%C5%9Bcie%20Toru%C5%84/sesja-rodzinna-torun-bulwar-filadelfijski-kadr-szeroki-2025-06.webp",
+        heroImage: "https://wlasniewski.pl/assets/portfolio/family/sesja-rodzinna-torun-plener-07.webp",
 
         intro: [
             "Jestem Przemek — fotograf w Płużnicy. Znam najlepsze miejsca w gminie i okolicach.",
@@ -184,7 +184,7 @@ export const cityData = {
         metaTitle: "Fotograf Grudziądz – rodzinne, biznesowe, ślubne | Przemysław Właśniewski",
         metaDescription: "Fotografia w Grudziądzu. Sesje rodzinne, biznesowe, eventowe. Naturalne kadry pełne emocji.",
         keywords: "fotograf Grudziądz, sesje rodzinne Grudziądz, fotografia biznesowa Grudziądz",
-        heroImage: "https://wlasniewski.pl/assets/portfolio/Rodzinnie/Sesja%20w%20mie%C5%9Bcie%20Toru%C5%84/sesja-rodzinna-torun-bulwar-filadelfijski-kadr-szeroki-2025-06.webp",
+        heroImage: "https://wlasniewski.pl/assets/portfolio/family/sesja-rodzinna-torun-plener-07.webp",
 
         intro: [
             "Jestem Przemek — dojeżdżam do Grudziądza na sesje rodzinne, biznesowe i eventowe.",
@@ -228,7 +228,7 @@ export const cityData = {
         metaTitle: "Fotograf Powiat Toruński – wszystkie gminy | Przemysław Właśniewski",
         metaDescription: "Fotografia w całym powiecie toruńskim. Sesje rodzinne, ślubne, komunijne. Dojazd do wszystkich gmin.",
         keywords: "fotograf powiat toruński, sesje rodzinne powiat toruński",
-        heroImage: "https://wlasniewski.pl/assets/portfolio/Rodzinnie/Sesja%20w%20mie%C5%9Bcie%20Toru%C5%84/sesja-rodzinna-torun-bulwar-filadelfijski-kadr-szeroki-2025-06.webp",
+        heroImage: "https://wlasniewski.pl/assets/portfolio/family/sesja-rodzinna-torun-plener-07.webp",
 
         intro: [
             "Jestem Przemek — obsługuję wszystkie gminy powiatu toruńskiego.",
@@ -272,7 +272,7 @@ export const cityData = {
         metaTitle: "Fotograf Powiat Wąbrzeski – wszystkie gminy | Przemysław Właśniewski",
         metaDescription: "Fotografia w całym powiecie wąbrzeskim. Sesje rodzinne, ślubne, komunijne. Profesjonalne podejście.",
         keywords: "fotograf powiat wąbrzeski, sesje rodzinne powiat wąbrzeski",
-        heroImage: "https://wlasniewski.pl/assets/portfolio/Rodzinnie/Sesja%20w%20mie%C5%9Bcie%20Toru%C5%84/sesja-rodzinna-torun-bulwar-filadelfijski-kadr-szeroki-2025-06.webp",
+        heroImage: "https://wlasniewski.pl/assets/portfolio/family/sesja-rodzinna-torun-plener-07.webp",
 
         intro: [
             "Jestem Przemek — obsługuję wszystkie gminy powiatu wąbrzeskiego.",
@@ -311,3 +311,4 @@ export const cityData = {
 };
 
 export type CityKey = keyof typeof cityData;
+

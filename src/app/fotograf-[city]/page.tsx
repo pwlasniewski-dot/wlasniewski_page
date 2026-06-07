@@ -1,4 +1,4 @@
-import { Metadata } from 'next';
+﻿import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -32,7 +32,7 @@ const CITIES: Record<string, CityInfo> = {
         metaTitle: 'Fotograf Toruń ⭐ Wizerunek, Biznes, Starówka, Ślub',
         metaDescription: '★ Fotograf Toruń ★ Sesje wizerunkowe i biznesowe od 450 zł, śluby plenerowe, sesje na starówce. Naturalne portrety, galeria online. ☎ 530 788 694',
         keywords: ['fotograf toruń', 'fotografia wizerunkowa toruń', 'fotograf portretowy toruń', 'fotograf toruń starówka', 'profesjonalna fotografia toruń', 'fotograf ślubny toruń', 'fotografia ślubna toruń', 'sesja zdjęciowa toruń', 'fotografia biznesowa toruń', 'sesja narzeczeńska toruń', 'sesja rodzinna toruń', 'plener ślubny toruń', 'zdjęcia biznesowe toruń', 'sesja w mieście toruń', 'fotograf bulwar filadelfijski'],
-        heroImage: '/assets/portfolio/Rodzinnie/Sesja%20w%20mie%C5%9Bcie%20Toru%C5%84/sesja-rodzinna-torun-bulwar-filadelfijski-kadr-szeroki-2025-06.webp',
+        heroImage: '/assets/portfolio/family/sesja-rodzinna-torun-plener-07.webp',
         lat: 53.0138,
         lng: 18.5984,
         intro: [
@@ -108,7 +108,7 @@ const CITIES: Record<string, CityInfo> = {
         metaTitle: 'Fotograf Grudziądz ⭐ Sesje rodzinne, ślubne, biznesowe',
         metaDescription: '★ Fotograf Grudziądz ★ Sesje rodzinne od 450 zł, śluby, portrety. Spichrze, bulwary nad Wisłą, Góra Zamkowa. ✓ Galeria online ✓ Dojazd w cenie ☎ 530 788 694',
         keywords: ['fotograf grudziądz', 'fotograf ślubny grudziądz', 'sesja rodzinna grudziądz', 'fotografia portretowa grudziądz', 'zdjęcia plenerowe grudziądz', 'sesja narzeczeńska grudziądz'],
-        heroImage: '/assets/portfolio/Rodzinnie/Sesja%20w%20mie%C5%9Bcie%20Toru%C5%84/sesja-rodzinna-torun-bulwar-filadelfijski-kadr-szeroki-2025-06.webp',
+        heroImage: '/assets/portfolio/family/sesja-rodzinna-torun-plener-07.webp',
         lat: 53.4837,
         lng: 18.7536,
         intro: [
@@ -170,7 +170,7 @@ const CITIES: Record<string, CityInfo> = {
         metaTitle: 'Fotograf Chełmno ⭐ Śluby plenerowe, narzeczeńskie, rodzinne',
         metaDescription: '★ Fotograf Chełmno ★ Śluby w plenerze, sesje narzeczeńskie w Mieście Zakochanych, biznesowe i rodzinne. Rynek, mury, Wisła. ☎ 530 788 694',
         keywords: ['fotograf chełmno', 'fotograf ślubny chełmno', 'sesja narzeczeńska chełmno', 'sesja rodzinna chełmno', 'miasto zakochanych zdjęcia', 'fotografia chełmno'],
-        heroImage: '/assets/portfolio/Rodzinnie/Sesja%20w%20mie%C5%9Bcie%20Toru%C5%84/sesja-rodzinna-torun-bulwar-filadelfijski-kadr-szeroki-2025-06.webp',
+        heroImage: '/assets/portfolio/family/sesja-rodzinna-torun-plener-07.webp',
         lat: 53.3490,
         lng: 18.4311,
         intro: [
@@ -231,7 +231,7 @@ const CITIES: Record<string, CityInfo> = {
         metaTitle: 'Fotograf Wąbrzeźno ⭐ Śluby, wizerunek, sesje plenerowe',
         metaDescription: '★ Fotograf Wąbrzeźno ★ Śluby plenerowe, sesje wizerunkowe i biznesowe, rodzinne nad Jeziorem Zamkowym. Lokalny fotograf, dojazd gratis. ☎ 530 788 694',
         keywords: ['fotograf wąbrzeźno', 'fotograf wabrzeźno', 'sesja rodzinna wąbrzeźno', 'fotografia ślubna wąbrzeźno', 'sesja narzeczeńska wąbrzeźno', 'zdjęcia wąbrzeźno'],
-        heroImage: '/assets/portfolio/Rodzinnie/Sesja%20w%20mie%C5%9Bcie%20Toru%C5%84/sesja-rodzinna-torun-bulwar-filadelfijski-kadr-szeroki-2025-06.webp',
+        heroImage: '/assets/portfolio/family/sesja-rodzinna-torun-plener-07.webp',
         lat: 53.2860,
         lng: 18.9557,
         intro: [
@@ -292,7 +292,7 @@ const CITIES: Record<string, CityInfo> = {
         metaTitle: 'Fotograf Lisewo ⭐ Śluby plenerowe, sesje rodzinne',
         metaDescription: '★ Fotograf Lisewo ★ Śluby w plenerze, sesje rodzinne i wizerunkowe z dala od miejskiego zgiełku. Naturalna fotografia. ☎ 530 788 694',
         keywords: ['fotograf lisewo', 'sesja rodzinna lisewo', 'fotografia ślubna lisewo', 'zdjęcia lisewo'],
-        heroImage: '/assets/portfolio/Rodzinnie/Sesja%20w%20mie%C5%9Bcie%20Toru%C5%84/sesja-rodzinna-torun-bulwar-filadelfijski-kadr-szeroki-2025-06.webp',
+        heroImage: '/assets/portfolio/family/sesja-rodzinna-torun-plener-07.webp',
         lat: 53.3147,
         lng: 18.7553,
         intro: [
@@ -342,7 +342,7 @@ const CITIES: Record<string, CityInfo> = {
         metaTitle: 'Fotograf Płużnica ⭐ Śluby plenerowe, sesje rodzinne',
         metaDescription: '★ Fotograf Płużnica ★ Śluby w plenerze, sesje rodzinne, biznesowe. Lokalny fotograf — dojazd w cenie. Galeria online. ☎ 530 788 694',
         keywords: ['fotograf płużnica', 'sesja rodzinna płużnica', 'fotografia komunijna płużnica', 'zdjęcia płużnica'],
-        heroImage: '/assets/portfolio/Rodzinnie/Sesja%20w%20mie%C5%9Bcie%20Toru%C5%84/sesja-rodzinna-torun-bulwar-filadelfijski-kadr-szeroki-2025-06.webp',
+        heroImage: '/assets/portfolio/family/sesja-rodzinna-torun-plener-07.webp',
         lat: 53.3543,
         lng: 18.8849,
         intro: [
@@ -383,7 +383,7 @@ const CITIES: Record<string, CityInfo> = {
         metaTitle: 'Fotograf Świecie ⭐ Śluby, wizerunek, sesje miejskie',
         metaDescription: '★ Fotograf Świecie ★ Śluby plenerowe przy Zamku Krzyżackim, sesje wizerunkowe, biznesowe i rodzinne nad Wdą. ☎ 530 788 694',
         keywords: ['fotograf świecie', 'sesja rodzinna świecie', 'fotografia ślubna świecie', 'zdjęcia świecie', 'fotograf świecie nad wisłą'],
-        heroImage: '/assets/portfolio/Rodzinnie/Sesja%20w%20mie%C5%9Bcie%20Toru%C5%84/sesja-rodzinna-torun-bulwar-filadelfijski-kadr-szeroki-2025-06.webp',
+        heroImage: '/assets/portfolio/family/sesja-rodzinna-torun-plener-07.webp',
         lat: 53.4100,
         lng: 18.4408,
         intro: [
@@ -424,7 +424,7 @@ const CITIES: Record<string, CityInfo> = {
         metaTitle: 'Fotograf Bydgoszcz ⭐ Biznes, wizerunek, śluby, miasto',
         metaDescription: '★ Fotograf Bydgoszcz ★ Sesje wizerunkowe i biznesowe od 450 zł, śluby plenerowe, sesje na Wyspie Młyńskiej i kanałach. ☎ 530 788 694',
         keywords: ['fotograf bydgoszcz', 'fotograf ślubny bydgoszcz', 'sesja rodzinna bydgoszcz', 'fotografia wizerunkowa bydgoszcz', 'zdjęcia bydgoszcz', 'sesja narzeczeńska bydgoszcz'],
-        heroImage: '/assets/portfolio/Rodzinnie/Sesja%20w%20mie%C5%9Bcie%20Toru%C5%84/sesja-rodzinna-torun-bulwar-filadelfijski-kadr-szeroki-2025-06.webp',
+        heroImage: '/assets/portfolio/family/sesja-rodzinna-torun-plener-07.webp',
         lat: 53.1235,
         lng: 18.0084,
         intro: [
@@ -779,3 +779,5 @@ export default async function CityLandingPage({ params }: PageProps) {
         </main>
     );
 }
+
+
