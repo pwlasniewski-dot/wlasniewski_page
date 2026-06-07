@@ -195,7 +195,7 @@ export default async function HomePage() {
     // even when first section uses h2 (magazine_layout, narrative_text, etc.)
     const heroSection = orderedSections.find((s: any) => s?.type === 'hero' && (s.image || s.data?.image));
     const seoH1 = (heroSection?.title || heroSection?.data?.title) ||
-                  'Fotograf Toruń — Przemysław Właśniewski. Sesje rodzinne, ślubne i komunijne';
+                  'Fotograf Toruń, Grudziądz, Chełmno, Płużnica, Wąbrzeźno — Przemysław Właśniewski. Sesje rodzinne, ślubne i komunijne';
 
     return (
         <>

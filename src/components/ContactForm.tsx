@@ -57,10 +57,10 @@ export default function ContactForm() {
         <section className="py-20 px-6 max-w-4xl mx-auto" id="contact-form">
             <div className="text-center mb-12">
                 <h2 className="text-3xl md:text-5xl font-bold mb-4 font-display text-white">
-                    Napisz do mnie
+                    Napisz do mnie — fotograf Toruń, Grudziądz, Chełmno, Płużnica, Wąbrzeźno
                 </h2>
                 <p className="text-zinc-400 text-lg">
-                    Masz pytania? Chcesz zarezerwować termin?
+                    Masz pytania? Chcesz zarezerwować termin sesji w Toruniu lub okolicach?
                 </p>
             </div>
 
