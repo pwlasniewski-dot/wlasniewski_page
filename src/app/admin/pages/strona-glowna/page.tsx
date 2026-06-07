@@ -115,6 +115,17 @@ type HeadingAuditRow = {
     keywordHint: string;
 };
 
+type SeoCategory = 'ogolna' | 'slubna' | 'rodzinna' | 'komunijna' | 'narzeczenska' | 'biznesowa' | 'nieruchomosci';
+type SeoIntent = 'heading' | 'body' | 'cta';
+
+type SeoAudit = {
+    score: number;
+    matchedKeywords: string[];
+    missingKeywords: string[];
+    weakWords: string[];
+    recommendation: string;
+};
+
 
 
 
@@ -135,18 +146,156 @@ export default function HomepageManager() {
     const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
     const [currentPickerTarget, setCurrentPickerTarget] = useState<{ type: 'hero' | 'section' | 'advanced' | 'advanced_challenge' | 'rte' | 'mini_gallery_item' | 'story_cover' | 'chronological_gallery' | 'masonry_gallery' | 'featured_carousel_slide', index: number, field?: string, subIndex?: number } | null>(null);
 
-    const seoKeywords = [
-        'fotograf toruń',
-        'fotograf grudziądz',
-        'fotograf chełmno',
-        'fotograf płużnica',
-        'fotograf wąbrzeźno',
-        'fotograf ślubny toruń',
-        'sesja rodzinna toruń',
-        'fotograf komunijny toruń',
+    const [seoCategory, setSeoCategory] = useState<SeoCategory>('ogolna');
+    const [seoCities, setSeoCities] = useState<string[]>(['Toruń', 'Grudziądz', 'Chełmno', 'Płużnica', 'Wąbrzeźno']);
+
+    const seoKeywordBank: Record<SeoCategory, string[]> = {
+        ogolna: ['fotograf toruń', 'fotograf kujawsko pomorskie', 'sesje zdjęciowe toruń'],
+        slubna: ['fotograf ślubny toruń', 'reportaż ślubny grudziądz', 'sesja ślubna chełmno'],
+        rodzinna: ['sesja rodzinna toruń', 'fotografia rodzinna grudziądz', 'sesja plenerowa kujawsko pomorskie'],
+        komunijna: ['fotograf komunijny toruń', 'sesja komunijna grudziądz', 'zdjęcia komunijne chełmno'],
+        narzeczenska: ['sesja narzeczeńska toruń', 'fotograf zaręczynowy grudziądz', 'sesja dla par kujawsko pomorskie'],
+        biznesowa: ['fotografia biznesowa toruń', 'sesja wizerunkowa grudziądz', 'zdjęcia firmowe kujawsko pomorskie'],
+        nieruchomosci: ['fotografia nieruchomości toruń', 'zdjęcia wnętrz grudziądz', 'fotograf apartamentów kujawsko pomorskie'],
+    };
+
+    const weakKeywordPatterns = [
+        'profesjonalny',
+        'najlepszy',
+        'kreatywny',
+        'wysoka jakość',
+        'pasja',
+        'unikalny',
+        'doskonały',
     ];
 
     const trimText = (value: string | undefined | null) => (value || '').replace(/\s+/g, ' ').trim();
+    const normalize = (value: string | undefined | null) => trimText(value).toLowerCase();
+    const stripHtml = (value: string | undefined | null) => trimText((value || '').replace(/<[^>]*>/g, ' '));
+
+    const cityKeywords = useMemo(
+        () => seoCities.map(city => `fotograf ${city.toLowerCase()}`),
+        [seoCities]
+    );
+
+    const seoKeywords = useMemo(
+        () => Array.from(new Set([...seoKeywordBank[seoCategory], ...cityKeywords])),
+        [seoCategory, cityKeywords]
+    );
+
+    const cityLabel = seoCities.join(', ');
+
+    const analyzeSeoText = (input: string, intent: SeoIntent): SeoAudit => {
+        const clean = stripHtml(input);
+        const lower = normalize(clean);
+        const words = clean.split(' ').filter(Boolean);
+
+        const matchedKeywords = seoKeywords.filter(keyword => lower.includes(keyword.toLowerCase()));
+        const missingKeywords = seoKeywords.filter(keyword => !lower.includes(keyword.toLowerCase()));
+        const weakWords = weakKeywordPatterns.filter(keyword => lower.includes(keyword));
+
+        const keywordCoverage = seoKeywords.length > 0 ? (matchedKeywords.length / seoKeywords.length) * 70 : 0;
+        const cityCoverage = seoCities.length > 0
+            ? (seoCities.filter(city => lower.includes(city.toLowerCase())).length / seoCities.length) * 20
+            : 0;
+
+        let quality = 10;
+        if (intent === 'heading') {
+            if (words.length >= 6 && words.length <= 14) quality += 10;
+            if (words.length > 16) quality -= 8;
+        }
+
+        if (intent === 'body' && words.length >= 40) quality += 8;
+        if (intent === 'body' && words.length < 20) quality -= 6;
+        if (intent === 'cta' && words.length > 8) quality -= 5;
+
+        const penalty = weakWords.length * 6;
+        const score = Math.max(0, Math.min(100, Math.round(keywordCoverage + cityCoverage + quality - penalty)));
+
+        let recommendation = 'Treść jest dobra i gotowa pod publikację.';
+        if (score < 85) recommendation = 'Dodaj więcej lokalizacji i fraz usługowych z aktualnej kategorii.';
+        if (score < 65) recommendation = 'Treść wymaga przebudowy: za mało konkretu lokalnego i intencji usługowej.';
+        if (score < 45) recommendation = 'Treść jest słaba SEO. Użyj gotowej propozycji i dołóż frazy miasto + usługa.';
+
+        return { score, matchedKeywords, missingKeywords, weakWords, recommendation };
+    };
+
+    const buildSuggestedText = (current: string, intent: SeoIntent): string => {
+        const clean = stripHtml(current);
+        const primaryCity = seoCities[0] || 'Toruń';
+        const secondaryCity = seoCities[1] || 'Grudziądz';
+
+        if (intent === 'heading') {
+            if (seoCategory === 'slubna') return `Fotograf ślubny ${primaryCity} i ${secondaryCity} - naturalny reportaż ślubny`;
+            if (seoCategory === 'rodzinna') return `Sesja rodzinna ${primaryCity} i ${secondaryCity} - naturalna fotografia`;
+            if (seoCategory === 'komunijna') return `Fotograf komunijny ${primaryCity} i ${secondaryCity} - reportaż i portrety`;
+            if (seoCategory === 'biznesowa') return `Fotografia biznesowa ${primaryCity} i ${secondaryCity} - profesjonalny wizerunek firmy`;
+            return `Fotograf ${primaryCity} i ${secondaryCity} - sesje ślubne, rodzinne i komunijne`;
+        }
+
+        if (intent === 'cta') {
+            return `Sprawdź ofertę fotografa z ${primaryCity} i umów termin sesji`; 
+        }
+
+        if (clean.length > 40) return clean;
+        return `Tworzę naturalne reportaże i sesje zdjęciowe na terenie ${cityLabel}. Specjalizuję się w fotografii ${seoCategory === 'ogolna' ? 'ślubnej, rodzinnej i komunijnej' : seoCategory}. Każda sesja jest planowana pod Waszą historię, klimat i lokalizację.`;
+    };
+
+    const renderSeoAssistant = (
+        value: string,
+        intent: SeoIntent,
+        label: string,
+        onApply: (next: string) => void,
+    ) => {
+        const clean = stripHtml(value || '');
+        const audit = analyzeSeoText(clean, intent);
+        const suggestion = buildSuggestedText(clean, intent);
+        const scoreColor = audit.score >= 85 ? 'text-emerald-300 border-emerald-500/30 bg-emerald-500/10' : audit.score >= 65 ? 'text-amber-300 border-amber-500/30 bg-amber-500/10' : 'text-red-300 border-red-500/30 bg-red-500/10';
+
+        return (
+            <div className="mt-2 rounded border border-zinc-700 bg-zinc-900/50 p-3 space-y-2">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="text-[11px] text-zinc-400">SEO Assistant: {label}</p>
+                    <span className={`text-[11px] px-2 py-0.5 rounded border ${scoreColor}`}>SEO {audit.score}%</span>
+                </div>
+
+                <p className="text-[11px] text-zinc-500">{audit.recommendation}</p>
+
+                {audit.missingKeywords.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                        {audit.missingKeywords.slice(0, 4).map(kw => (
+                            <span key={kw} className="text-[10px] px-2 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-zinc-300">Brakuje: {kw}</span>
+                        ))}
+                    </div>
+                )}
+
+                {audit.weakWords.length > 0 && (
+                    <p className="text-[10px] text-red-300">Nieistotne/słabe słowa: {audit.weakWords.join(', ')}</p>
+                )}
+
+                <div className="flex flex-wrap gap-2">
+                    <button
+                        type="button"
+                        onClick={() => onApply(suggestion)}
+                        className="text-[11px] px-2 py-1 rounded bg-sky-600/20 border border-sky-500/30 text-sky-300 hover:bg-sky-600/30"
+                    >
+                        Podmień na sugestię
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => onApply(`${clean} ${audit.missingKeywords.slice(0, 2).join(', ')}`.trim())}
+                        className="text-[11px] px-2 py-1 rounded bg-emerald-600/20 border border-emerald-500/30 text-emerald-300 hover:bg-emerald-600/30"
+                    >
+                        Dodaj brakujące frazy
+                    </button>
+                </div>
+            </div>
+        );
+    };
+
+    const toggleSeoCity = (city: string) => {
+        setSeoCities(prev => prev.includes(city) ? prev.filter(c => c !== city) : [...prev, city]);
+    };
 
     const suggestHeading = (current: string, location: string, level: HeadingLevel): { text: string; hint: string } => {
         const clean = trimText(current);
@@ -155,7 +304,7 @@ export default function HomepageManager() {
 
         if (level === 'H1') {
             return {
-                text: 'Fotograf Toruń, Grudziądz, Chełmno, Płużnica, Wąbrzeźno — Przemysław Właśniewski. Sesje rodzinne, ślubne i komunijne',
+                text: `Fotograf ${cityLabel} — Przemysław Właśniewski. Sesje rodzinne, ślubne i komunijne`,
                 hint: 'fotograf toruń + miasta + usługi',
             };
         }
@@ -187,7 +336,7 @@ export default function HomepageManager() {
     const headingAuditRows = useMemo<HeadingAuditRow[]>(() => {
         const rows: HeadingAuditRow[] = [];
 
-        const h1Current = 'Fotograf Toruń, Grudziądz, Chełmno, Płużnica, Wąbrzeźno — Przemysław Właśniewski. Sesje rodzinne, ślubne i komunijne';
+        const h1Current = `Fotograf ${cityLabel} — Przemysław Właśniewski. Sesje rodzinne, ślubne i komunijne`;
         const h1Suggestion = suggestHeading(h1Current, 'Globalny H1 (SSR)', 'H1');
         rows.push({
             location: 'Globalny H1 (SSR)',
@@ -261,7 +410,7 @@ export default function HomepageManager() {
             });
 
         return rows;
-    }, [heroSlides, sections]);
+    }, [heroSlides, sections, cityLabel]);
 
     const problematicHeadingCount = headingAuditRows.filter(row => trimText(row.current) !== trimText(row.shouldBe)).length;
 
@@ -1089,6 +1238,51 @@ export default function HomepageManager() {
                 <button onClick={addPhotoCube3DTemplate} className="px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-white rounded text-sm border border-yellow-500/30 text-yellow-400">Dodaj Kostkę 3D 🎲</button>
             </div>
 
+            <div className="mb-6 bg-zinc-900 border border-zinc-800 rounded-lg p-4 space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                        <h2 className="text-base font-semibold text-white">Silnik słów kluczowych dla edytorów</h2>
+                        <p className="text-xs text-zinc-400 mt-1">Każdy asystent pola tekstowego bierze frazy z tej konfiguracji.</p>
+                    </div>
+                    <span className="text-[11px] px-2 py-1 rounded border border-zinc-700 text-zinc-300 bg-zinc-800/70">Aktywna kategoria: {seoCategory}</span>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-xs text-zinc-400 mb-1">Kategoria fotografii</label>
+                        <select
+                            value={seoCategory}
+                            onChange={e => setSeoCategory(e.target.value as SeoCategory)}
+                            className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-sm text-white"
+                        >
+                            <option value="ogolna">Ogólna</option>
+                            <option value="slubna">Ślubna</option>
+                            <option value="rodzinna">Rodzinna</option>
+                            <option value="komunijna">Komunijna</option>
+                            <option value="narzeczenska">Narzeczeńska</option>
+                            <option value="biznesowa">Biznesowa</option>
+                            <option value="nieruchomosci">Nieruchomości</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label className="block text-xs text-zinc-400 mb-1">Miasta docelowe (Kujawsko-Pomorskie)</label>
+                        <div className="flex flex-wrap gap-2">
+                            {['Toruń', 'Grudziądz', 'Chełmno', 'Płużnica', 'Wąbrzeźno', 'Bydgoszcz', 'Świecie', 'Golub-Dobrzyń'].map(city => (
+                                <button
+                                    key={city}
+                                    type="button"
+                                    onClick={() => toggleSeoCity(city)}
+                                    className={`text-xs px-2 py-1 rounded border ${seoCities.includes(city) ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30' : 'bg-zinc-800 text-zinc-400 border-zinc-700'}`}
+                                >
+                                    {city}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             {/* SEO Heading Map */}
             <div className="mb-8 bg-zinc-900 border border-zinc-800 rounded-lg p-6">
                 <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
@@ -1110,6 +1304,7 @@ export default function HomepageManager() {
                         </span>
                     ))}
                 </div>
+                <p className="text-[11px] text-zinc-500 mb-3">Frazy powyżej są używane przez podpowiadacze przy polach tekstowych w całym module.</p>
 
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm">
@@ -1210,15 +1405,18 @@ export default function HomepageManager() {
                                     <label className="block text-sm text-zinc-400 mb-1">Tytuł <span className="text-sky-300">(renderuje się jako H2)</span></label>
                                     <input type="text" value={slide.title} onChange={e => updateHeroSlide(index, 'title', e.target.value)} placeholder="Główny tytuł" className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-sm text-white" />
                                     <p className="text-[11px] text-zinc-500 mt-1">W tym polu wpisuj frazę lokalną + usługę, np. „Fotograf ślubny Toruń i Grudziądz”.</p>
+                                    {renderSeoAssistant(slide.title, 'heading', `Hero Slider #${index + 1} - Tytuł`, (next) => updateHeroSlide(index, 'title', next))}
                                 </div>
                                 <div>
                                     <label className="block text-sm text-zinc-400 mb-1">Podtytuł</label>
                                     <input type="text" value={slide.subtitle} onChange={e => updateHeroSlide(index, 'subtitle', e.target.value)} placeholder="Podtytuł/opis krótki" className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-sm text-white" />
                                     <p className="text-[11px] text-zinc-500 mt-1">To jest tekst pomocniczy, nie nagłówek SEO. Trzymaj go krótko i sprzedażowo.</p>
+                                    {renderSeoAssistant(slide.subtitle, 'body', `Hero Slider #${index + 1} - Podtytuł`, (next) => updateHeroSlide(index, 'subtitle', next))}
                                 </div>
                                 <div>
                                     <label className="block text-sm text-zinc-400 mb-1">Opis (szczegółowy)</label>
                                     <textarea rows={2} value={slide.description || ''} onChange={e => updateHeroSlide(index, 'description', e.target.value)} placeholder="Dodatkowy opis pod podtytułem" className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-sm text-white" />
+                                    {renderSeoAssistant(slide.description || '', 'body', `Hero Slider #${index + 1} - Opis`, (next) => updateHeroSlide(index, 'description', next))}
                                 </div>
                             </div>
 
@@ -1307,6 +1505,7 @@ export default function HomepageManager() {
                                         <div>
                                             <label className="block text-sm text-zinc-400 mb-1">Tytuł</label>
                                             <input type="text" value={section.data.title} onChange={e => updateSectionData(index, 'title', e.target.value)} className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-white" />
+                                            {renderSeoAssistant(section.data.title || '', 'heading', `${section.label} - Tytuł`, (next) => updateSectionData(index, 'title', next))}
                                         </div>
                                         <div>
                                             <label className="block text-sm text-zinc-400 mb-1">Zdjęcie</label>
@@ -1362,6 +1561,7 @@ export default function HomepageManager() {
                                             placeholder="Opisz siebie..."
                                             onImageRequest={() => openMediaPicker('rte', index, 'content')}
                                         />
+                                        {renderSeoAssistant(section.data.content || '', 'body', `${section.label} - Treść`, (next) => updateSectionData(index, 'content', next))}
                                     </div>
                                 </div>
                             )}
@@ -1410,6 +1610,7 @@ export default function HomepageManager() {
                                                         className="bg-transparent text-white font-bold w-full mr-2 outline-none focus:text-gold-400"
                                                         placeholder="Tytuł kafelka"
                                                     />
+                                                    {renderSeoAssistant(feature.title || '', 'heading', `${section.label} - Kafelek #${fIndex + 1}`, (next) => updateFeature(index, fIndex, 'title', next))}
                                                     <button onClick={() => removeFeature(index, fIndex)} className="text-zinc-500 hover:text-red-400 transition-colors"><Trash2 className="w-4 h-4" /></button>
                                                 </div>
 
@@ -1686,6 +1887,7 @@ export default function HomepageManager() {
                                             onChange={(e) => updateSectionData(index, 'title', e.target.value)}
                                             className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white text-lg"
                                         />
+                                        {renderSeoAssistant(section.data.title || '', 'heading', `${section.label} - Headline`, (next) => updateSectionData(index, 'title', next))}
                                     </div>
                                     <div>
                                         <label className="block text-xs text-zinc-400 mb-1">Treść</label>
@@ -1693,6 +1895,7 @@ export default function HomepageManager() {
                                             value={section.data.content || ''}
                                             onChange={(val) => updateSectionData(index, 'content', val)}
                                         />
+                                        {renderSeoAssistant(section.data.content || '', 'body', `${section.label} - Treść`, (next) => updateSectionData(index, 'content', next))}
                                     </div>
                                 </div>
                             )}
@@ -1706,6 +1909,7 @@ export default function HomepageManager() {
                                             <div>
                                                 <label className="block text-sm text-zinc-400 mb-1">Tytuł główny (opcjonalny)</label>
                                                 <input type="text" value={section.data.title || ''} onChange={e => updateSectionData(index, 'title', e.target.value)} className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-white" placeholder="np. O mnie" />
+                                                {renderSeoAssistant(section.data.title || '', 'heading', `${section.label} - Tytuł`, (next) => updateSectionData(index, 'title', next))}
                                             </div>
                                         </div>
                                     </div>
@@ -1725,6 +1929,7 @@ export default function HomepageManager() {
                                                         <div>
                                                             <label className="block text-sm text-zinc-400 mb-1">Tytuł bloku</label>
                                                             <input type="text" value={block.title} onChange={e => updateAboutBlock(index, bIdx, 'title', e.target.value)} className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-white" />
+                                                            {renderSeoAssistant(block.title || '', 'heading', `${section.label} - Blok #${bIdx + 1} tytuł`, (next) => updateAboutBlock(index, bIdx, 'title', next))}
                                                         </div>
                                                         <div>
                                                             <label className="block text-sm text-zinc-400 mb-1">Zdjęcie</label>
@@ -1763,6 +1968,7 @@ export default function HomepageManager() {
                                                         placeholder="Treść bloku..."
                                                         onImageRequest={() => openMediaPicker('rte', index, 'content', bIdx)}
                                                     />
+                                                    {renderSeoAssistant(block.content || '', 'body', `${section.label} - Blok #${bIdx + 1} treść`, (next) => updateAboutBlock(index, bIdx, 'content', next))}
                                                 </div>
                                             </div>
                                         ))}
@@ -1786,6 +1992,7 @@ export default function HomepageManager() {
                                                 onChange={e => updateSectionData(index, 'title', e.target.value)}
                                                 className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-white"
                                             />
+                                            {renderSeoAssistant(section.data.title || '', 'heading', `${section.label} - Tytuł`, (next) => updateSectionData(index, 'title', next))}
                                         </div>
                                         <div>
                                             <label className="block text-sm text-zinc-400 mb-1">Podtytuł</label>
@@ -1795,6 +2002,7 @@ export default function HomepageManager() {
                                                 onChange={e => updateSectionData(index, 'subtitle', e.target.value)}
                                                 className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-white"
                                             />
+                                            {renderSeoAssistant(section.data.subtitle || '', 'body', `${section.label} - Podtytuł`, (next) => updateSectionData(index, 'subtitle', next))}
                                         </div>
                                     </div>
                                     <div className="bg-zinc-800/50 p-4 rounded-lg">
@@ -1969,6 +2177,7 @@ export default function HomepageManager() {
                                             onChange={(val) => updateMiniGalleryConfig(index, 'description', val)}
                                             placeholder="Tutaj wpisz profesjonalny opis galerii (np. 300 słów)..."
                                         />
+                                        {renderSeoAssistant(section.data.mini_gallery_config.description || '', 'body', `${section.label} - Opis galerii`, (next) => updateMiniGalleryConfig(index, 'description', next))}
                                     </div>
 
                                     {/* Items Grid */}
@@ -2058,6 +2267,7 @@ export default function HomepageManager() {
                                                 <div>
                                                     <label className="block text-sm text-zinc-400 mb-1">Tytuł</label>
                                                     <input type="text" value={section.data.title} onChange={e => updateSectionData(index, 'title', e.target.value)} className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-white" />
+                                                    {renderSeoAssistant(section.data.title || '', 'heading', `${section.label} - Tytuł`, (next) => updateSectionData(index, 'title', next))}
                                                 </div>
                                                 <div>
                                                     <label className="block text-sm text-zinc-400 mb-1">Efekt wizualny</label>
@@ -2131,6 +2341,7 @@ export default function HomepageManager() {
                                             <div>
                                                 <label className="block text-sm text-zinc-400 mb-1">Treść</label>
                                                 <textarea rows={2} value={section.data.content} onChange={e => updateSectionData(index, 'content', e.target.value)} className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-white" />
+                                                {renderSeoAssistant(section.data.content || '', 'body', `${section.label} - Treść`, (next) => updateSectionData(index, 'content', next))}
                                             </div>
                                         </>
                                     ) : (
@@ -2348,10 +2559,12 @@ export default function HomepageManager() {
                                         <div>
                                             <label className="block text-sm text-zinc-400 mb-1">Tytuł</label>
                                             <input type="text" value={section.data.title} onChange={e => updateSectionData(index, 'title', e.target.value)} className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-white" />
+                                            {renderSeoAssistant(section.data.title || '', 'heading', `${section.label} - Tytuł`, (next) => updateSectionData(index, 'title', next))}
                                         </div>
                                         <div>
                                             <label className="block text-sm text-zinc-400 mb-1">Podtytuł</label>
                                             <input type="text" value={section.data.subtitle} onChange={e => updateSectionData(index, 'subtitle', e.target.value)} className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-white" />
+                                            {renderSeoAssistant(section.data.subtitle || '', 'body', `${section.label} - Podtytuł`, (next) => updateSectionData(index, 'subtitle', next))}
                                         </div>
                                     </div>
 
@@ -2377,6 +2590,11 @@ export default function HomepageManager() {
                                                         placeholder="Tytuł Historii"
                                                         className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs text-white"
                                                     />
+                                                    {renderSeoAssistant(story.title || '', 'heading', `${section.label} - Historia #${sIdx + 1} tytuł`, (next) => {
+                                                        const newItems = [...section.data.stories_items];
+                                                        newItems[sIdx].title = next;
+                                                        updateSectionData(index, 'stories_items', newItems);
+                                                    })}
                                                     <input
                                                         type="text"
                                                         value={story.link}
@@ -2511,6 +2729,7 @@ export default function HomepageManager() {
                                                 onChange={(e) => updateSectionData(index, 'title', e.target.value)}
                                                 className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
                                             />
+                                            {renderSeoAssistant(section.data?.title || '', 'heading', `${section.label} - Tytuł`, (next) => updateSectionData(index, 'title', next))}
                                         </div>
                                         <div>
                                             <label className="block text-xs text-zinc-400 mb-1">Podtytuł</label>
@@ -2520,6 +2739,7 @@ export default function HomepageManager() {
                                                 onChange={(e) => updateSectionData(index, 'subtitle', e.target.value)}
                                                 className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
                                             />
+                                            {renderSeoAssistant(section.data?.subtitle || '', 'body', `${section.label} - Podtytuł`, (next) => updateSectionData(index, 'subtitle', next))}
                                         </div>
                                     </div>
                                     <div className="flex flex-wrap gap-2">
@@ -2581,6 +2801,7 @@ export default function HomepageManager() {
                                                         onChange={(e) => updateSectionData(index, 'title', e.target.value)}
                                                         className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
                                                     />
+                                                    {renderSeoAssistant(section.data?.title || '', 'heading', `${section.label} - Tytuł historii`, (next) => updateSectionData(index, 'title', next))}
                                                 </div>
                                             </div>
                                             <div className="grid grid-cols-2 gap-4">
@@ -2592,6 +2813,7 @@ export default function HomepageManager() {
                                                         onChange={(e) => updateSectionData(index, 'subtitle', e.target.value)}
                                                         className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
                                                     />
+                                                    {renderSeoAssistant(section.data?.subtitle || '', 'body', `${section.label} - Lokalizacja`, (next) => updateSectionData(index, 'subtitle', next))}
                                                 </div>
                                                 <div>
                                                     <label className="block text-xs text-zinc-400 mb-1">Tekst Przycisku</label>
@@ -2611,6 +2833,7 @@ export default function HomepageManager() {
                                             value={section.data?.content || ''}
                                             onChange={(val) => updateSectionData(index, 'content', val)}
                                         />
+                                        {renderSeoAssistant(section.data?.content || '', 'body', `${section.label} - Treść`, (next) => updateSectionData(index, 'content', next))}
                                     </div>
                                 </div>
                             )}
@@ -2629,6 +2852,7 @@ export default function HomepageManager() {
                                                         onChange={(e) => updateSectionData(index, 'title', e.target.value)}
                                                         className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
                                                     />
+                                                    {renderSeoAssistant(section.data?.title || '', 'heading', `${section.label} - Tytuł`, (next) => updateSectionData(index, 'title', next))}
                                                 </div>
                                                 <div>
                                                     <label className="block text-xs text-zinc-400 mb-1">Podtytuł</label>
@@ -2638,6 +2862,7 @@ export default function HomepageManager() {
                                                         onChange={(e) => updateSectionData(index, 'subtitle', e.target.value)}
                                                         className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
                                                     />
+                                                    {renderSeoAssistant(section.data?.subtitle || '', 'body', `${section.label} - Podtytuł`, (next) => updateSectionData(index, 'subtitle', next))}
                                                 </div>
                                             </div>
                                         </div>
@@ -2687,6 +2912,11 @@ export default function HomepageManager() {
                                                             className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white"
                                                             placeholder="Tytuł kroku"
                                                         />
+                                                        {renderSeoAssistant(step.title || '', 'heading', `${section.label} - Krok ${sIdx + 1}`, (next) => {
+                                                            const newSteps = [...section.data.steps];
+                                                            newSteps[sIdx].title = next;
+                                                            updateSectionData(index, 'steps', newSteps);
+                                                        })}
                                                         <textarea
                                                             value={step.description || ''}
                                                             onChange={(e) => {
@@ -2730,6 +2960,7 @@ export default function HomepageManager() {
                                                         onChange={(e) => updateSectionData(index, 'title', e.target.value)}
                                                         className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
                                                     />
+                                                    {renderSeoAssistant(section.data?.title || '', 'heading', `${section.label} - Tytuł`, (next) => updateSectionData(index, 'title', next))}
                                                 </div>
                                                 <div>
                                                     <label className="block text-xs text-zinc-400 mb-1">Cena (od)</label>
@@ -2748,6 +2979,7 @@ export default function HomepageManager() {
                                                     onChange={(e) => updateSectionData(index, 'description', e.target.value)}
                                                     className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white h-20"
                                                 />
+                                                {renderSeoAssistant(section.data?.description || '', 'body', `${section.label} - Opis`, (next) => updateSectionData(index, 'description', next))}
                                             </div>
                                             <div>
                                                 <label className="block text-xs text-zinc-400 mb-1">Tekst Przycisku</label>
@@ -2824,6 +3056,7 @@ export default function HomepageManager() {
                                             onChange={(e) => updateSectionData(index, 'title', e.target.value)}
                                             className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white mb-2"
                                         />
+                                        {renderSeoAssistant(section.data?.title || '', 'heading', `${section.label} - Tytuł`, (next) => updateSectionData(index, 'title', next))}
                                     </div>
                                     <div>
                                         <label className="block text-xs text-zinc-400 mb-1">Dłuższy Tekst z Formatowaniem</label>
@@ -2831,6 +3064,7 @@ export default function HomepageManager() {
                                             value={section.data?.content || ''}
                                             onChange={(val) => updateSectionData(index, 'content', val)}
                                         />
+                                        {renderSeoAssistant(section.data?.content || '', 'body', `${section.label} - Treść`, (next) => updateSectionData(index, 'content', next))}
                                     </div>
                                     <div className="flex gap-4">
                                         <div className="flex-1">
@@ -2911,6 +3145,11 @@ export default function HomepageManager() {
                                                             placeholder="Tytuł"
                                                             className="bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-xs text-white"
                                                         />
+                                                        {renderSeoAssistant(item.title || '', 'heading', `${section.label} - Slajd ${i + 1} tytuł`, (next) => {
+                                                            const newItems = [...(section.data?.items || [])];
+                                                            newItems[i].title = next;
+                                                            updateSectionData(index, 'items', newItems);
+                                                        })}
                                                         <input
                                                             type="text"
                                                             value={item.subtitle || ''}
@@ -2964,10 +3203,12 @@ export default function HomepageManager() {
                                         <div>
                                             <label className="block text-xs text-zinc-400 mb-1">Tytuł sekcji (opcjonalnie)</label>
                                             <input type="text" value={section.data?.title || ''} onChange={e => updateSectionData(index, 'title', e.target.value)} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white text-sm" placeholder="np. Moje Portfolio 3D" />
+                                            {renderSeoAssistant(section.data?.title || '', 'heading', `${section.label} - Tytuł`, (next) => updateSectionData(index, 'title', next))}
                                         </div>
                                         <div>
                                             <label className="block text-xs text-zinc-400 mb-1">Podtytuł (opcjonalnie)</label>
                                             <input type="text" value={section.data?.subtitle || ''} onChange={e => updateSectionData(index, 'subtitle', e.target.value)} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white text-sm" placeholder="np. Najlepsze kadry z sesji" />
+                                            {renderSeoAssistant(section.data?.subtitle || '', 'body', `${section.label} - Podtytuł`, (next) => updateSectionData(index, 'subtitle', next))}
                                         </div>
                                     </div>
 
