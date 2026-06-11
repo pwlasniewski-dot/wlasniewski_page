@@ -39,9 +39,9 @@ interface LogActivityParams {
 }
 
 /**
- * Log a CRM activity. Fire-and-forget (non-blocking).
+ * Log a CRM activity. Can be awaited for critical flows (e.g. login).
  */
-export function logCrmActivity(params: LogActivityParams): void {
+export async function logCrmActivity(params: LogActivityParams): Promise<void> {
     const {
         clientId,
         clientEmail,
@@ -64,21 +64,22 @@ export function logCrmActivity(params: LogActivityParams): void {
         userAgent = request.headers.get('user-agent') || null;
     }
 
-    // Fire-and-forget — don't await, don't block the response
-    prisma.crmActivity.create({
-        data: {
-            client_id: clientId ?? null,
-            client_email: clientEmail ?? null,
-            action,
-            entity_type: entityType ?? null,
-            entity_id: entityId ?? null,
-            details: details ? JSON.stringify(details) : null,
-            ip_address: ipAddress,
-            user_agent: userAgent ? userAgent.substring(0, 500) : null,
-        }
-    }).catch((err) => {
-        console.error('[CRM_ACTIVITY] Failed to log:', action, err.message);
-    });
+    try {
+        await prisma.crmActivity.create({
+            data: {
+                client_id: clientId ?? null,
+                client_email: clientEmail ?? null,
+                action,
+                entity_type: entityType ?? null,
+                entity_id: entityId ?? null,
+                details: details ? JSON.stringify(details) : null,
+                ip_address: ipAddress,
+                user_agent: userAgent ? userAgent.substring(0, 500) : null,
+            }
+        });
+    } catch (err: any) {
+        console.error('[CRM_ACTIVITY] Failed to log:', action, err?.message || String(err));
+    }
 }
 
 /**
@@ -94,7 +95,7 @@ export function logClientActivity(
         request?: NextRequest;
     }
 ): void {
-    logCrmActivity({
+    void logCrmActivity({
         clientId: decoded?.id,
         clientEmail: decoded?.email,
         action,

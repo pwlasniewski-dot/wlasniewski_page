@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { verifyPassword, generateToken } from '@/lib/auth/jwt';
 import { logCrmActivity } from '@/lib/crm-activity';
+import { logSystem } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,8 +11,14 @@ export async function POST(request: NextRequest) {
         const body = await request.json();
         const { email, password } = body;
         const normalizedEmail = String(email || '').trim().toLowerCase();
+        const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+            || request.headers.get('x-real-ip')
+            || request.headers.get('cf-connecting-ip')
+            || 'unknown';
+        const ua = request.headers.get('user-agent') || '';
 
         if (!normalizedEmail || !password) {
+            await logSystem('WARN', 'AUTH', 'CLIENT_LOGIN_FAIL_MISSING_FIELDS', { ip, ua, email: normalizedEmail || null });
             return NextResponse.json(
                 { error: 'Email and password are required' },
                 { status: 400 }
@@ -32,6 +39,7 @@ export async function POST(request: NextRequest) {
         });
 
         if (!user || !user.is_active) {
+            await logSystem('WARN', 'AUTH', 'CLIENT_LOGIN_FAIL_INVALID_OR_INACTIVE', { ip, ua, email: normalizedEmail });
             return NextResponse.json(
                 { error: 'Invalid email or password' },
                 { status: 401 }
@@ -42,6 +50,7 @@ export async function POST(request: NextRequest) {
         const isPasswordValid = await verifyPassword(password, user.password_hash);
 
         if (!isPasswordValid) {
+            await logSystem('WARN', 'AUTH', 'CLIENT_LOGIN_FAIL_BAD_PASSWORD', { ip, ua, email: normalizedEmail, userId: user.id });
             return NextResponse.json(
                 { error: 'Invalid email or password' },
                 { status: 401 }
@@ -53,6 +62,7 @@ export async function POST(request: NextRequest) {
             where: { id: user.id },
             data: { last_login: new Date() },
         });
+        await logSystem('INFO', 'AUTH', 'CLIENT_LOGIN_SUCCESS', { ip, ua, email: normalizedEmail, userId: user.id });
 
         // Generate JWT token using the same jose system
         const token = await generateToken({
@@ -76,8 +86,8 @@ export async function POST(request: NextRequest) {
             { status: 200 }
         );
 
-        // Log CRM activity
-        logCrmActivity({
+        // Log CRM activity (await to avoid dropped writes)
+        await logCrmActivity({
             clientId: user.id,
             clientEmail: user.email,
             action: 'login',
@@ -95,6 +105,7 @@ export async function POST(request: NextRequest) {
 
         return response;
     } catch (error) {
+        await logSystem('ERROR', 'AUTH', 'CLIENT_LOGIN_SERVER_ERROR', { error: String(error) });
         console.error('Error during client login:', error);
         return NextResponse.json(
             { error: 'Failed to login' },

@@ -78,8 +78,8 @@ export async function POST(req: NextRequest) {
 
         const token = await generateToken({ id: user.id, email: user.email });
 
-        // Log CRM activity
-        logCrmActivity({
+        // Log CRM activity (await to avoid dropping login events in serverless runtime)
+        await logCrmActivity({
             clientId: user.id,
             clientEmail: user.email,
             action: 'login',
