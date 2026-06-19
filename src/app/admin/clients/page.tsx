@@ -162,6 +162,7 @@ function ClientsContent() {
     const [selectedIds, setSelectedIds] = useState<number[]>([]);
     const [isDeletingBulk, setIsDeletingBulk] = useState(false);
     const [sendingWelcomeEmail, setSendingWelcomeEmail] = useState<number | null>(null);
+    const [hideTestClients, setHideTestClients] = useState(true);
 
     useEffect(() => { fetchClients(); }, []);
 
@@ -298,7 +299,23 @@ function ClientsContent() {
         ? (sortDir === 'desc' ? <ChevronDown className="w-3 h-3 inline ml-1" /> : <ChevronUp className="w-3 h-3 inline ml-1" />)
         : null;
 
-    const filtered = clients
+    const isTestClient = (client: Client) => {
+        const email = (client.email || '').toLowerCase().trim();
+        const name = (client.name || '').toLowerCase().trim();
+
+        return (
+            email.endsWith('@fotomatch.test') ||
+            email.endsWith('@deleted.local') ||
+            /^test\d+@/.test(email) ||
+            name.includes('[t]')
+        );
+    };
+
+    const visibleClients = hideTestClients
+        ? clients.filter(c => !isTestClient(c))
+        : clients;
+
+    const filtered = visibleClients
         .filter(c =>
             (c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 c.email.toLowerCase().includes(searchTerm.toLowerCase())) &&
@@ -316,10 +333,14 @@ function ClientsContent() {
             return 0;
         });
 
+    useEffect(() => {
+        setSelectedIds(prev => prev.filter(id => filtered.some(c => c.id === id)));
+    }, [filtered]);
+
     // Summary stats
-    const totalLTV = clients.reduce((s, c) => s + (c.stats.approvedAmount || c.stats.totalSpent || 0), 0);
-    const pendingOffers = clients.filter(c => c.stats.offerStatus === 'sent').length;
-    const signedContracts = clients.filter(c => c.stats.contractStatus === 'signed').length;
+    const totalLTV = visibleClients.reduce((s, c) => s + (c.stats.approvedAmount || c.stats.totalSpent || 0), 0);
+    const pendingOffers = visibleClients.filter(c => c.stats.offerStatus === 'sent').length;
+    const signedContracts = visibleClients.filter(c => c.stats.contractStatus === 'signed').length;
 
     return (
         <div className="min-h-screen bg-zinc-950 text-white p-6">
@@ -354,6 +375,16 @@ function ClientsContent() {
                             <option value="rejected">Odrzucona</option>
                             <option value="none">Brak oferty</option>
                         </select>
+                        <button
+                            onClick={() => setHideTestClients(v => !v)}
+                            className={`px-3 py-2 rounded-lg text-sm border transition-colors ${hideTestClients
+                                ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/20'
+                                : 'bg-zinc-900 text-zinc-300 border-zinc-800 hover:border-zinc-600'
+                                }`}
+                            title="Ukryj/pokaż konta testowe i zanonimizowane"
+                        >
+                            {hideTestClients ? 'Ukrywanie testowych: ON' : 'Ukrywanie testowych: OFF'}
+                        </button>
                         {selectedIds.length > 0 && (
                             <button
                                 onClick={handleBulkHardDelete}
@@ -375,7 +406,7 @@ function ClientsContent() {
                 {/* KPI Summary Bar */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
                     {[
-                        { label: 'Klientów', value: clients.length, color: 'text-white' },
+                        { label: 'Klientów', value: visibleClients.length, color: 'text-white' },
                         { label: 'LTV łącznie', value: `${totalLTV.toLocaleString('pl-PL')} PLN`, color: 'text-gold-400' },
                         { label: 'Oferty do zatwierdzenia', value: pendingOffers, color: 'text-amber-400' },
                         { label: 'Umowy podpisane', value: signedContracts, color: 'text-green-400' },
@@ -604,7 +635,7 @@ function ClientsContent() {
                     {/* Footer */}
                     {filtered.length > 0 && (
                         <div className="px-4 py-3 border-t border-zinc-800 text-xs text-zinc-500">
-                            Wyświetlono {filtered.length} z {clients.length} klientów
+                            Wyświetlono {filtered.length} z {visibleClients.length} klientów
                         </div>
                     )}
                 </div>

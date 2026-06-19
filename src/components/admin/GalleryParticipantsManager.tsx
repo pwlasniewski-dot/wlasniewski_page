@@ -133,8 +133,11 @@ export default function GalleryParticipantsManager({ galleryId }: GalleryPartici
         return;
       }
       const cd = res.headers.get('Content-Disposition') || '';
-      const m = cd.match(/filename="([^"]+)"/);
-      const name = m?.[1] || fallbackName;
+      const utf8Match = cd.match(/filename\*=UTF-8''([^;]+)/i);
+      const plainMatch = cd.match(/filename="([^"]+)"/i);
+      const name = utf8Match?.[1]
+        ? decodeURIComponent(utf8Match[1])
+        : plainMatch?.[1] || fallbackName;
       const blob = await res.blob();
       const objUrl = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -354,7 +357,7 @@ export default function GalleryParticipantsManager({ galleryId }: GalleryPartici
                                 type="button"
                                 onClick={() => downloadWithAuth(
                                   `/api/admin/galleries/${galleryId}/participants/${participant.id}/download-all`,
-                                  `${participant.parent_identifier || 'rodzic'}_wybory.zip`
+                                  `${(participant.parent_name || 'Klient').trim() || 'Klient'} wybrane zdjecia.zip`
                                 )}
                                 className="flex items-center gap-2 px-3 py-1.5 bg-gold-500 hover:bg-gold-400 text-black text-xs font-bold rounded-lg transition-colors"
                               >

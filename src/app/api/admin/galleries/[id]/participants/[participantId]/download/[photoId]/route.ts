@@ -3,16 +3,17 @@
 // Nazwa pliku: {IDENTIFIKATOR}_{Imie-Nazwisko}_{NN}.jpg
 
 import { NextRequest, NextResponse } from 'next/server';
+import sharp from 'sharp';
 import prisma from '@/lib/db/prisma';
 import { withAuth } from '@/lib/auth/middleware';
 
-function sanitize(input: string): string {
-  return input
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '') // strip diacritics
-    .replace(/[^a-zA-Z0-9_-]+/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '');
+function normalizeDisplayName(input: string | null | undefined): string {
+  const safe = (input || 'Klient')
+    .replace(/[<>:"/\\|?*\x00-\x1F]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  return safe || 'Klient';
 }
 
 export async function GET(
@@ -52,22 +53,29 @@ export async function GET(
       }
 
       const s3Response = await fetch(photo.file_url);
-      if (!s3Response.ok || !s3Response.body) {
+      if (!s3Response.ok) {
         return NextResponse.json({ error: 'Nie udało się pobrać pliku' }, { status: 502 });
       }
 
-      const ext = (photo.file_url.split('.').pop() || 'jpg').split('?')[0].toLowerCase();
-      const idPart = sanitize(participant.parent_identifier || `id-${pId}`);
-      const namePart = sanitize(participant.parent_name || 'rodzic');
-      const idxPart = index !== null && !isNaN(index)
-        ? String(index).padStart(2, '0')
-        : `photo-${phId}`;
-      const filename = `${idPart}_${namePart}_${idxPart}.${ext}`;
+      const sourceBuffer = Buffer.from(await s3Response.arrayBuffer());
+      const jpgBuffer = await sharp(sourceBuffer)
+        .pipelineColorspace('srgb')
+        .toColorspace('srgb')
+        .withMetadata({ icc: 'srgb' })
+        .jpeg({ quality: 95, chromaSubsampling: '4:4:4', mozjpeg: true })
+        .toBuffer();
 
-      return new Response(s3Response.body, {
+      const displayName = normalizeDisplayName(participant.parent_name);
+      const idxPart = index !== null && !isNaN(index)
+        ? String(index)
+        : String(phId);
+      const filename = `${displayName} ${idxPart}.jpg`;
+
+      return new NextResponse(jpgBuffer, {
         headers: {
-          'Content-Type': s3Response.headers.get('Content-Type') || 'image/jpeg',
+          'Content-Type': 'image/jpeg',
           'Content-Disposition': `attachment; filename="${filename}"`,
+          'Content-Length': String(jpgBuffer.length),
           'Cache-Control': 'no-cache',
         },
       });
