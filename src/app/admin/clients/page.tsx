@@ -334,7 +334,13 @@ function ClientsContent() {
         });
 
     useEffect(() => {
-        setSelectedIds(prev => prev.filter(id => filtered.some(c => c.id === id)));
+        setSelectedIds(prev => {
+            const next = prev.filter(id => filtered.some(c => c.id === id));
+            if (next.length === prev.length && next.every((id, idx) => id === prev[idx])) {
+                return prev;
+            }
+            return next;
+        });
     }, [filtered]);
 
     // Summary stats
