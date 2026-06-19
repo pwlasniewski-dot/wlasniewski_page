@@ -148,6 +148,9 @@ export default function PortfolioContent({ categories, sections, fallbackHeroSli
                                         <img
                                             src={category.coverImage}
                                             alt={category.title}
+                                            loading={index < 2 ? 'eager' : 'lazy'}
+                                            decoding="async"
+                                            fetchPriority={index < 2 ? 'high' : 'low'}
                                             className="w-full h-full object-cover transition-transform duration-[3s] ease-out group-hover:scale-110"
                                         />
                                     </div>
