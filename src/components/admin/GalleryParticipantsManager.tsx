@@ -266,6 +266,19 @@ export default function GalleryParticipantsManager({ galleryId }: GalleryPartici
               <p className="text-sm text-zinc-400">
                 <strong className="text-white">{participants.length}</strong> {participants.length === 1 ? 'rodzic zarejestrowany' : 'rodziców zarejestrowanych'}
               </p>
+              {participants.some(p => p.selections_count > 0) && (
+                <button
+                  type="button"
+                  onClick={() => downloadWithAuth(
+                    `/api/admin/galleries/${galleryId}/participants/download-all?layout=nphoto`,
+                    'nphoto-wszyscy-rodzice-pelny-rozmiar.zip'
+                  )}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-gold-500 hover:bg-gold-400 text-black text-xs font-bold rounded-lg transition-colors"
+                >
+                  <Package className="w-3.5 h-3.5" />
+                  Pobierz do Nphoto (wszyscy, pelny rozmiar)
+                </button>
+              )}
             </div>
 
             {participants.length === 0 ? (
