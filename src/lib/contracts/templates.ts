@@ -148,6 +148,11 @@ Strony ustalają wynagrodzenie w kwocie **{{totalPrice}} PLN** brutto.
 ##                §4 TERMIN WYDANIA MATERIAŁÓW
 Galeria online zostanie udostępniona w terminie do 30 dni roboczych od dnia uroczystości.
 
+##               §4A ZASADY WYBORU ZDJĘĆ (TRYB GRUPOWY)
+1. W przypadku galerii grupowej rodzic/opiekun dokonuje wyboru zdjęć w terminie wskazanym przez Wykonawcę w wiadomości e-mail lub komunikacie przy galerii.
+2. Brak wyboru zdjęć przez rodzica/opiekuna w wyznaczonym terminie oznacza akceptację wyboru zastępczego.
+3. Wybór zastępczy obejmuje **1 (jedno) zdjęcie grupowe ogólne** wskazane przez Wykonawcę i stanowi ostateczne rozliczenie wyboru w ramach pakietu.
+
 ##                    §5 UPRAWNIENIA KURIALNE
 Wykonawca posiada zgodę proboszcza/kurii na wykonywanie zdjęć w trakcie liturgii oraz pracuje zgodnie z zasadami ustalonymi z parafią.
 ` + COMMON_FOOTER,

@@ -42,7 +42,6 @@ export default function GalleryParticipantsManager({ galleryId }: GalleryPartici
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [selectedReminderIds, setSelectedReminderIds] = useState<Set<number>>(new Set());
   const [deadlineDate, setDeadlineDate] = useState('');
-  const [fallbackGroupPhotos, setFallbackGroupPhotos] = useState(3);
   const [sendingReminder, setSendingReminder] = useState(false);
 
   const toggleExpand = async (participantId: number) => {
@@ -242,7 +241,6 @@ export default function GalleryParticipantsManager({ galleryId }: GalleryPartici
         body: JSON.stringify({
           participantIds: Array.from(selectedReminderIds),
           deadlineDate,
-          fallbackGroupPhotos,
         }),
       });
 
@@ -408,16 +406,11 @@ export default function GalleryParticipantsManager({ galleryId }: GalleryPartici
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] uppercase tracking-wider text-zinc-500 mb-1">Fallback po terminie</label>
-                  <input
-                    type="number"
-                    min={1}
-                    max={20}
-                    value={fallbackGroupPhotos}
-                    onChange={(e) => setFallbackGroupPhotos(Math.max(1, Number(e.target.value) || 1))}
-                    className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white"
-                  />
-                  <p className="text-[11px] text-zinc-500 mt-1">Jeśli brak wyboru: wybierasz {fallbackGroupPhotos} zdjęcia grupowe ogólne.</p>
+                  <label className="block text-[11px] uppercase tracking-wider text-zinc-500 mb-1">Zasada po terminie (stała)</label>
+                  <div className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white">
+                    1 zdjęcie grupowe ogólne
+                  </div>
+                  <p className="text-[11px] text-zinc-500 mt-1">Jeśli brak wyboru: obowiązuje 1 zdjęcie grupowe.</p>
                 </div>
                 <div className="flex items-end">
                   <button

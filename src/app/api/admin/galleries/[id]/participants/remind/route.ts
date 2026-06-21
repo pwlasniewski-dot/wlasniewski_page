@@ -34,10 +34,7 @@ export async function POST(
         ? body.participantIds.map((v: unknown) => Number(v)).filter((v: number) => !Number.isNaN(v))
         : [];
       const deadlineDate = String(body?.deadlineDate || '').trim();
-      const fallbackGroupPhotosRaw = Number(body?.fallbackGroupPhotos);
-      const fallbackGroupPhotos = Number.isFinite(fallbackGroupPhotosRaw)
-        ? Math.max(1, Math.floor(fallbackGroupPhotosRaw))
-        : 3;
+      const fallbackGroupPhotos = 1;
 
       if (participantIds.length === 0) {
         return NextResponse.json({ success: false, error: 'Brak zaznaczonych opiekunów' }, { status: 400 });
@@ -107,7 +104,7 @@ export async function POST(
       <p style="color:#d4d4d8;line-height:1.6;margin:0 0 12px;">Dzień dobry ${displayName},</p>
       <p style="color:#d4d4d8;line-height:1.6;margin:0 0 12px;">to przypomnienie o wyborze zdjęć w galerii. Ostateczny termin wyboru to <strong style="color:#fff;">${deadlineLabel}</strong>.</p>
       <p style="color:#d4d4d8;line-height:1.6;margin:0 0 12px;">Aktualnie wybrane zdjęcia: <strong style="color:#fff;">${currentSelections}</strong>.</p>
-      <p style="color:#fbbf24;line-height:1.6;margin:0 0 12px;">Po tym terminie, jeśli nie będzie wyboru, fotograf wybierze ${fallbackGroupPhotos} zdjęcia grupowe ogólne.</p>
+      <p style="color:#fbbf24;line-height:1.6;margin:0 0 12px;">Po tym terminie, jeśli nie będzie wyboru, fotograf wybierze ${fallbackGroupPhotos} zdjęcie grupowe ogólne.</p>
       ${gallery.group_password
           ? `<p style="color:#d4d4d8;line-height:1.6;margin:0 0 12px;">Hasło do galerii: <strong style="color:#fff;">${gallery.group_password}</strong></p>`
           : ''}
