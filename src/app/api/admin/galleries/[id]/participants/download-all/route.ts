@@ -5,7 +5,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import archiver from 'archiver';
-import sharp from 'sharp';
 import { PassThrough } from 'stream';
 import { withAuth } from '@/lib/auth/middleware';
 
@@ -35,6 +34,21 @@ function normalizeFilePart(input: string): string {
     .replace(/[^a-zA-Z0-9]+/g, '_')
     .replace(/_+/g, '_')
     .replace(/^_|_$/g, '') || 'Klient';
+}
+
+function getSafeImageExtension(fileUrl: string): string {
+  try {
+    const cleanUrl = fileUrl.split('?')[0] || '';
+    const ext = (cleanUrl.split('.').pop() || '').toLowerCase();
+    if (ext === 'jpg' || ext === 'jpeg') return 'jpg';
+    if (ext === 'png') return 'png';
+    if (ext === 'webp') return 'webp';
+    if (ext === 'tif' || ext === 'tiff') return 'tif';
+    if (ext === 'heic') return 'heic';
+    return 'jpg';
+  } catch {
+    return 'jpg';
+  }
 }
 
 export async function GET(
@@ -79,7 +93,10 @@ export async function GET(
         ? `galeria-${galleryId}-nphoto-pelny-rozmiar.zip`
         : `galeria-${galleryId}-rodzice-wybory.zip`;
       const passthrough = new PassThrough();
-      const archive = archiver('zip', { zlib: { level: 9 } });
+      const archive = archiver('zip', {
+        zlib: { level: 9 },
+        forceZip64: true,
+      });
 
       archive.on('error', (err) => {
         console.error('Archiver error:', err);
@@ -104,27 +121,22 @@ export async function GET(
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
                 const sourceBuffer = Buffer.from(await response.arrayBuffer());
-                const jpgBuffer = await sharp(sourceBuffer)
-                  .pipelineColorspace('srgb')
-                  .toColorspace('srgb')
-                  .withMetadata({ icc: 'srgb' })
-                  .jpeg({ quality: 95, chromaSubsampling: '4:4:4', mozjpeg: true })
-                  .toBuffer();
+                const ext = getSafeImageExtension(sel.photo.file_url);
 
                 const ordinal = String(i + 1).padStart(3, '0');
                 if (isNphotoFlatLayout) {
                   const baseName = `${fileNameBase}_${ordinal}`;
-                  let uniqueName = `${baseName}.jpg`;
+                  let uniqueName = `${baseName}.${ext}`;
                   let dedupeCounter = 2;
                   while (usedNames.has(uniqueName)) {
-                    uniqueName = `${baseName}_${dedupeCounter}.jpg`;
+                    uniqueName = `${baseName}_${dedupeCounter}.${ext}`;
                     dedupeCounter += 1;
                   }
                   usedNames.add(uniqueName);
-                  archive.append(jpgBuffer, { name: uniqueName });
+                  archive.append(sourceBuffer, { name: uniqueName });
                 } else {
-                  const photoName = `${displayName} ${i + 1}.jpg`;
-                  archive.append(jpgBuffer, { name: `${folderName}/${photoName}` });
+                  const photoName = `${displayName} ${i + 1}.${ext}`;
+                  archive.append(sourceBuffer, { name: `${folderName}/${photoName}` });
                 }
               } catch (err) {
                 console.error(`Failed to add photo ${sel.photo.id} for participant ${participant.id}:`, err);
