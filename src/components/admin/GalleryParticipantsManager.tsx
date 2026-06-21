@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Users, Copy, Check, Trash2, Eye, EyeOff, ChevronDown, ChevronUp, Image as ImageIcon, Download, Package } from 'lucide-react';
+import { Users, Copy, Check, Trash2, Eye, EyeOff, ChevronDown, ChevronUp, Image as ImageIcon, Download, Package, Send } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface Participant {
@@ -40,6 +40,10 @@ export default function GalleryParticipantsManager({ galleryId }: GalleryPartici
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [selectionsMap, setSelectionsMap] = useState<Record<number, { loading: boolean; photos: Array<{ photo_id: number; file_url: string; thumbnail_url: string | null; selected_at: string }> }>>({});
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const [selectedReminderIds, setSelectedReminderIds] = useState<Set<number>>(new Set());
+  const [deadlineDate, setDeadlineDate] = useState('');
+  const [fallbackGroupPhotos, setFallbackGroupPhotos] = useState(3);
+  const [sendingReminder, setSendingReminder] = useState(false);
 
   const toggleExpand = async (participantId: number) => {
     if (expandedId === participantId) {
@@ -77,6 +81,13 @@ export default function GalleryParticipantsManager({ galleryId }: GalleryPartici
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [galleryId]);
 
+  useEffect(() => {
+    if (deadlineDate) return;
+    const deadline = new Date();
+    deadline.setDate(deadline.getDate() + 3);
+    setDeadlineDate(deadline.toISOString().slice(0, 10));
+  }, [deadlineDate]);
+
   const fetchGalleryInfo = async () => {
     try {
       const token = localStorage.getItem('admin_token');
@@ -109,7 +120,12 @@ export default function GalleryParticipantsManager({ galleryId }: GalleryPartici
 
       if (response.ok) {
         const data = await response.json();
-        setParticipants(data.participants || []);
+        const items = data.participants || [];
+        setParticipants(items);
+        const initialReminderIds = items
+          .filter((p: Participant) => p.selections_count === 0 && !!p.parent_email)
+          .map((p: Participant) => p.id);
+        setSelectedReminderIds(new Set(initialReminderIds));
       }
     } catch (error) {
       console.error('Fetch participants error:', error);
@@ -175,6 +191,82 @@ export default function GalleryParticipantsManager({ galleryId }: GalleryPartici
       toast.error('Wystąpił błąd');
     }
   };
+
+  const toggleReminderRecipient = (participantId: number) => {
+    setSelectedReminderIds(prev => {
+      const next = new Set(prev);
+      if (next.has(participantId)) next.delete(participantId);
+      else next.add(participantId);
+      return next;
+    });
+  };
+
+  const selectNoSelectionWithEmail = () => {
+    const ids = participants
+      .filter(p => p.selections_count === 0 && !!p.parent_email)
+      .map(p => p.id);
+    setSelectedReminderIds(new Set(ids));
+  };
+
+  const selectAllWithEmail = () => {
+    const ids = participants
+      .filter(p => !!p.parent_email)
+      .map(p => p.id);
+    setSelectedReminderIds(new Set(ids));
+  };
+
+  const clearReminderSelection = () => {
+    setSelectedReminderIds(new Set());
+  };
+
+  const sendReminder = async () => {
+    if (selectedReminderIds.size === 0) {
+      toast.error('Zaznacz przynajmniej jednego opiekuna z emailem');
+      return;
+    }
+    if (!deadlineDate) {
+      toast.error('Ustaw termin ostateczny');
+      return;
+    }
+
+    const toastId = toast.loading('Wysyłanie monitu...');
+    setSendingReminder(true);
+    try {
+      const token = localStorage.getItem('admin_token');
+      const response = await fetch(`/api/admin/galleries/${galleryId}/participants/remind`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          participantIds: Array.from(selectedReminderIds),
+          deadlineDate,
+          fallbackGroupPhotos,
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        toast.error(data.error || 'Nie udało się wysłać monitu', { id: toastId });
+        return;
+      }
+
+      toast.success(`Monit wysłany: ${data.sentCount}/${data.requestedCount}`, { id: toastId });
+      if (Array.isArray(data.skipped) && data.skipped.length > 0) {
+        toast(`Pominięto ${data.skipped.length} pozycji bez maila`, { icon: 'ℹ️' });
+      }
+    } catch (error) {
+      console.error('Send reminder error:', error);
+      toast.error('Błąd wysyłki monitu', { id: toastId });
+    } finally {
+      setSendingReminder(false);
+    }
+  };
+
+  const participantsWithSelections = participants.filter(p => p.selections_count > 0).length;
+  const participantsWithoutSelections = participants.length - participantsWithSelections;
+  const participantsWithEmail = participants.filter(p => !!p.parent_email).length;
 
   if (loading) {
     return (
@@ -262,6 +354,85 @@ export default function GalleryParticipantsManager({ galleryId }: GalleryPartici
 
           {/* Participants List */}
           <div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+              <div className="bg-black/40 border border-zinc-800 rounded-xl p-3">
+                <p className="text-[11px] uppercase tracking-wider text-zinc-500">Wybrali zdjęcia</p>
+                <p className="text-xl font-black text-green-400">{participantsWithSelections}</p>
+              </div>
+              <div className="bg-black/40 border border-zinc-800 rounded-xl p-3">
+                <p className="text-[11px] uppercase tracking-wider text-zinc-500">Nie wybrali</p>
+                <p className="text-xl font-black text-amber-300">{participantsWithoutSelections}</p>
+              </div>
+              <div className="bg-black/40 border border-zinc-800 rounded-xl p-3">
+                <p className="text-[11px] uppercase tracking-wider text-zinc-500">Mają email</p>
+                <p className="text-xl font-black text-blue-300">{participantsWithEmail}</p>
+              </div>
+            </div>
+
+            <div className="mb-4 bg-black/40 border border-zinc-800 rounded-xl p-4 space-y-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={selectNoSelectionWithEmail}
+                  className="px-3 py-1.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-200 text-xs font-bold"
+                >
+                  Zaznacz: bez wyboru + email
+                </button>
+                <button
+                  type="button"
+                  onClick={selectAllWithEmail}
+                  className="px-3 py-1.5 rounded-lg bg-blue-500/15 border border-blue-500/30 text-blue-200 text-xs font-bold"
+                >
+                  Zaznacz: wszyscy z emailem
+                </button>
+                <button
+                  type="button"
+                  onClick={clearReminderSelection}
+                  className="px-3 py-1.5 rounded-lg bg-zinc-800 border border-zinc-700 text-zinc-300 text-xs font-bold"
+                >
+                  Wyczyść zaznaczenie
+                </button>
+                <span className="text-xs text-zinc-400 ml-auto">
+                  Do monitu: <strong className="text-white">{selectedReminderIds.size}</strong>
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-[11px] uppercase tracking-wider text-zinc-500 mb-1">Termin ostateczny wyboru</label>
+                  <input
+                    type="date"
+                    value={deadlineDate}
+                    onChange={(e) => setDeadlineDate(e.target.value)}
+                    className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] uppercase tracking-wider text-zinc-500 mb-1">Fallback po terminie</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={20}
+                    value={fallbackGroupPhotos}
+                    onChange={(e) => setFallbackGroupPhotos(Math.max(1, Number(e.target.value) || 1))}
+                    className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white"
+                  />
+                  <p className="text-[11px] text-zinc-500 mt-1">Jeśli brak wyboru: wybierasz {fallbackGroupPhotos} zdjęcia grupowe ogólne.</p>
+                </div>
+                <div className="flex items-end">
+                  <button
+                    type="button"
+                    onClick={sendReminder}
+                    disabled={sendingReminder || selectedReminderIds.size === 0}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-gold-500 hover:bg-gold-400 text-black text-sm font-black disabled:opacity-50"
+                  >
+                    <Send className="w-4 h-4" />
+                    {sendingReminder ? 'Wysyłanie...' : 'Wyślij monit z terminem'}
+                  </button>
+                </div>
+              </div>
+            </div>
+
             <div className="flex items-center justify-between mb-4">
               <p className="text-sm text-zinc-400">
                 <strong className="text-white">{participants.length}</strong> {participants.length === 1 ? 'rodzic zarejestrowany' : 'rodziców zarejestrowanych'}
@@ -352,6 +523,20 @@ export default function GalleryParticipantsManager({ galleryId }: GalleryPartici
                         className="ml-2 p-2 hover:bg-red-500/10 rounded-lg text-zinc-500 hover:text-red-400 transition-colors"
                       >
                         <Trash2 className="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        disabled={!participant.parent_email}
+                        onClick={() => toggleReminderRecipient(participant.id)}
+                        className={`ml-2 p-2 rounded-lg border transition-colors ${!participant.parent_email
+                          ? 'border-zinc-800 text-zinc-700 cursor-not-allowed'
+                          : selectedReminderIds.has(participant.id)
+                            ? 'border-gold-500/50 text-gold-300 bg-gold-500/10 hover:bg-gold-500/20'
+                            : 'border-zinc-700 text-zinc-400 hover:text-white hover:bg-zinc-800'
+                          }`}
+                        title={!participant.parent_email ? 'Brak emaila opiekuna' : (selectedReminderIds.has(participant.id) ? 'Usuń z monitu' : 'Dodaj do monitu')}
+                      >
+                        <Send className="w-4 h-4" />
                       </button>
                     </div>
                     {isExpanded && (
