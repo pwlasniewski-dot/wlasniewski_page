@@ -44,6 +44,7 @@ export default function ParticipantGalleryPage() {
     
     const [consent, setConsent] = useState(false);
     const [showConsentModal, setShowConsentModal] = useState(false);
+    const [showSelectedOnly, setShowSelectedOnly] = useState(false);
 
     const handleAuth = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -151,7 +152,7 @@ export default function ParticipantGalleryPage() {
             }
 
             // Update local state
-            setPhotos(photos.map(p => 
+            setPhotos(prev => prev.map(p =>
                 p.id === photoId ? { ...p, is_selected: !currentlySelected } : p
             ));
 
@@ -195,6 +196,7 @@ export default function ParticipantGalleryPage() {
     };
 
     const selectedPhotos = photos.filter(p => p.is_selected);
+    const visiblePhotos = showSelectedOnly ? selectedPhotos : photos;
 
     if (!authenticated) {
         return (
@@ -277,17 +279,72 @@ export default function ParticipantGalleryPage() {
                                 <li>• Możesz <strong>pobrać wszystkie</strong> zdjęcia ze swojej galerii</li>
                                 <li>• Musisz <strong>zaznaczyć {participant?.max_selections} zdjęć</strong>, które zostaną wywołane jako odbitki</li>
                                 <li>• Kliknij serduszko 💛 aby zaznaczyć zdjęcie do wydruku</li>
+                                <li>• W sekcji poniżej masz podgląd miniatur już wybranych zdjęć i możesz je tam szybko usunąć</li>
                                 <li>• Po wyborze zdjęć wyraź zgodę na publikację</li>
                             </ul>
                         </div>
                     </div>
                 </div>
+
+                <div className="mt-4 bg-zinc-900 border border-zinc-800 rounded-xl p-6">
+                    <div className="flex items-center justify-between gap-4 mb-4">
+                        <div>
+                            <h3 className="text-lg font-bold text-white">Twoje wybrane do druku</h3>
+                            <p className="text-xs text-zinc-400">
+                                Wybrano {selectedPhotos.length} z {participant?.max_selections || 0}
+                            </p>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => setShowSelectedOnly(v => !v)}
+                            className={`px-3 py-2 text-xs font-bold rounded-lg border transition-colors ${showSelectedOnly
+                                ? 'bg-gold-500 text-black border-gold-500'
+                                : 'bg-zinc-800 text-zinc-200 border-zinc-700 hover:border-zinc-600'
+                                }`}
+                        >
+                            {showSelectedOnly ? 'Pokaz wszystkie zdjecia' : 'Pokaz tylko wybrane'}
+                        </button>
+                    </div>
+
+                    {selectedPhotos.length === 0 ? (
+                        <p className="text-sm text-zinc-500">Nie masz jeszcze wybranych zdjęć do druku.</p>
+                    ) : (
+                        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
+                            {selectedPhotos.map((photo, idx) => (
+                                <div key={photo.id} className="relative aspect-square rounded-lg overflow-hidden border border-gold-500/50 bg-zinc-950">
+                                    <Image
+                                        src={photo.thumbnail_url || photo.file_url}
+                                        alt={`Wybrane zdjęcie ${idx + 1}`}
+                                        fill
+                                        className="object-cover"
+                                    />
+                                    <span className="absolute top-1 left-1 bg-gold-500 text-black text-[10px] font-black px-1.5 py-0.5 rounded">
+                                        {idx + 1}
+                                    </span>
+                                    <button
+                                        type="button"
+                                        onClick={() => toggleSelection(photo.id, true)}
+                                        className="absolute top-1 right-1 w-7 h-7 rounded-full bg-black/80 hover:bg-red-500 text-white flex items-center justify-center transition-colors"
+                                        title="Usuń z wybranych"
+                                    >
+                                        <X className="w-3.5 h-3.5" />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* Photos Grid */}
             <div className="container mx-auto px-4 pb-20">
+                {showSelectedOnly && selectedPhotos.length === 0 ? (
+                    <div className="text-center py-12 border border-dashed border-zinc-800 rounded-xl">
+                        <p className="text-zinc-400">Brak wybranych zdjęć do podglądu.</p>
+                    </div>
+                ) : (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                    {photos.map(photo => (
+                    {visiblePhotos.map(photo => (
                         <div 
                             key={photo.id}
                             className={`relative aspect-square bg-zinc-900 rounded-lg overflow-hidden group cursor-pointer transition-all ${
@@ -327,6 +384,7 @@ export default function ParticipantGalleryPage() {
                         </div>
                     ))}
                 </div>
+                )}
             </div>
 
             {/* Bottom Action Bar */}
