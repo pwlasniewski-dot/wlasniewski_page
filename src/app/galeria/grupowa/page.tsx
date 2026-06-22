@@ -65,6 +65,7 @@ export default function GroupGalleryPage() {
   // Download selection mode — separate from print selection (no limit, only for ZIP download)
   const [downloadMode, setDownloadMode] = useState(false);
   const [downloadSelection, setDownloadSelection] = useState<Set<number>>(new Set());
+  const [showSelectedOnly, setShowSelectedOnly] = useState(false);
   const [loading, setLoading] = useState(false);
   const [lightboxPhoto, setLightboxPhoto] = useState<Photo | null>(null);
 
@@ -716,6 +717,9 @@ export default function GroupGalleryPage() {
     await handlePhotoClick(photoId);
   };
 
+  const selectedPhotoItems = photos.filter((p) => selectedPhotos.includes(p.id));
+  const visiblePhotos = showSelectedOnly ? selectedPhotoItems : photos;
+
   // Login screen
   if (!isAuthenticated) {
     return (
@@ -1319,6 +1323,16 @@ Hasło: ${password}` : ''}`}
                   </span>
                 )}
                 <button
+                  onClick={() => setShowSelectedOnly((v) => !v)}
+                  className={`px-3 py-2 text-xs font-bold rounded-lg border transition-colors ${showSelectedOnly
+                    ? 'bg-gold-500 text-black border-gold-500'
+                    : 'bg-zinc-800 text-zinc-200 border-zinc-700 hover:border-zinc-600'
+                    }`}
+                  title="Filtruj widok tylko do zdjęć wybranych do druku"
+                >
+                  {showSelectedOnly ? 'Pokaż wszystkie' : 'Pokaż tylko wybrane'}
+                </button>
+                <button
                   onClick={toggleDownloadMode}
                   disabled={photos.length === 0}
                   className="flex items-center gap-2 px-5 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-white text-sm font-bold rounded-lg transition-all shadow-lg hover:scale-105 disabled:opacity-40 disabled:cursor-not-allowed"
@@ -1342,22 +1356,67 @@ Hasło: ${password}` : ''}`}
       </div>
       )}
 
+      {/* Podgląd wybranych do druku (miniatury) — tylko dla rodzica */}
+      {!isGuestMode && photos.length > 0 && (
+        <div className="max-w-7xl mx-auto px-4 pt-5">
+          <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl p-4">
+            <div className="flex items-center justify-between gap-3 mb-3">
+              <div>
+                <h3 className="text-base font-bold text-white">Twoje wybrane do druku</h3>
+                <p className="text-xs text-zinc-400">Wybrane: {selectedPhotoItems.length}/{participantInfo?.max_selections || 5}</p>
+              </div>
+            </div>
+            {selectedPhotoItems.length === 0 ? (
+              <p className="text-sm text-zinc-500">Nie masz jeszcze wybranych zdjęć do druku.</p>
+            ) : (
+              <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
+                {selectedPhotoItems.map((photo, idx) => (
+                  <div key={`selected-${photo.id}`} className="relative aspect-square rounded-lg overflow-hidden border border-gold-500/40 bg-black">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={photo.thumbnail_url || photo.file_url}
+                      alt={`Wybrane zdjęcie ${idx + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                    <span className="absolute top-1 left-1 bg-gold-500 text-black text-[10px] font-black px-1.5 py-0.5 rounded">
+                      {idx + 1}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={(e) => handleSelectToggle(photo.id, e)}
+                      className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/80 hover:bg-red-500 text-white flex items-center justify-center transition-colors"
+                      title="Usuń z wybranych"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Galeria — Siatka lub Opowieść */}
       <div className={viewMode === 'story' ? 'pb-32' : 'max-w-7xl mx-auto px-4 py-8 pb-32'}>
         {photos.length === 0 ? (
           <div className="text-center py-20">
             <p className="text-zinc-400">Brak zdjęć w galerii</p>
           </div>
+        ) : showSelectedOnly && selectedPhotoItems.length === 0 ? (
+          <div className="text-center py-20">
+            <p className="text-zinc-400">Brak wybranych zdjęć do podglądu.</p>
+          </div>
         ) : viewMode === 'story' ? (
           <PremiumGalleryStory
-            photos={photos}
+            photos={visiblePhotos}
             selectedPhotoIds={isGuestMode ? undefined : new Set(selectedPhotos)}
             onToggleSelect={isGuestMode ? undefined : (p) => handleSelectToggle(p.id)}
             onPhotoClick={(p) => setLightboxPhoto(p as Photo)}
           />
         ) : (
           <div className="columns-2 md:columns-3 lg:columns-4 gap-4">
-            {photos.map(photo => {
+            {visiblePhotos.map(photo => {
               const isSelected = selectedPhotos.includes(photo.id);
               const selectionIdx = isSelected ? selectedPhotos.indexOf(photo.id) + 1 : null;
               const isPickedForDownload = downloadSelection.has(photo.id);

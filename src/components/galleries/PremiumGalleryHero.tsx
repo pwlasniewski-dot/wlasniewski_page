@@ -353,9 +353,17 @@ export function PremiumGalleryStory({
                 <div className={`h-px flex-1 ${isLight ? 'bg-zinc-300' : 'bg-zinc-700'}`} />
               </div>
 
-              <button
+              <div
+                role="button"
+                tabIndex={0}
                 onClick={() => onPhotoClick?.(photo)}
-                className={`group relative w-full rounded-xl overflow-hidden border ${
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onPhotoClick?.(photo);
+                  }
+                }}
+                className={`group relative w-full rounded-xl overflow-hidden border cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500 ${
                   isLight ? 'border-zinc-200' : 'border-zinc-800'
                 }`}
               >
@@ -404,7 +412,7 @@ export function PremiumGalleryStory({
                     )}
                   </button>
                 )}
-              </button>
+              </div>
 
               <div className="flex justify-end">
                 <button
