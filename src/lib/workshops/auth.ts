@@ -41,9 +41,10 @@ export function pickRandomAvatar(seed?: number): string {
     return KIDS_AVATARS[Math.floor(Math.random() * KIDS_AVATARS.length)];
 }
 
-/** Slug-safe login: "wieldzadz-01". */
+/** Slug-safe login: "Wieldzadz01". */
 export function buildLogin(workshopSlug: string, index: number): string {
-    return `${workshopSlug}-${String(index).padStart(2, '0')}`;
+    const capitalizedSlug = workshopSlug.charAt(0).toUpperCase() + workshopSlug.slice(1);
+    return `${capitalizedSlug}${String(index).padStart(2, '0')}`;
 }
 
 /** Tworzy JWT dla uczestnika warsztatu. Krótki czas życia (ważne tylko w trakcie warsztatu). */

@@ -578,6 +578,23 @@ function ScheduleTab({ workshop, reload }: { workshop: Workshop; reload: () => v
     const [newItem, setNewItem] = useState<{ date: string; start: string; end: string; topic: string; plan: string; image_url: string }>({ date: '', start: '', end: '', topic: '', plan: '', image_url: '' });
     const [editIdx, setEditIdx] = useState<number | null>(null);
     const [uploading, setUploading] = useState<number | null>(null); // -1 = newItem, n>=0 = item index
+    const [saving, setSaving] = useState(false);
+
+    // Auto-save gdy zmienia się content (z debounce)
+    useEffect(() => {
+        const timer = setTimeout(async () => {
+            if (items.length === 0) return;
+            setSaving(true);
+            const token = localStorage.getItem('admin_token') || '';
+            await fetch(`/api/admin/workshops/${workshop.id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify({ schedule: items }),
+            }).catch(() => { });
+            setSaving(false);
+        }, 600); // Czeka 600ms od ostatniej zmiany
+        return () => clearTimeout(timer);
+    }, [items, workshop.id]);
 
     useEffect(() => { setItems(workshop.schedule || []); }, [workshop.schedule]);
 
@@ -728,9 +745,13 @@ function ScheduleTab({ workshop, reload }: { workshop: Workshop; reload: () => v
             )}
 
             {items.length > 0 && editIdx === null && (
-                <button onClick={save} className="bg-gradient-to-r from-rose-500 to-amber-500 hover:from-rose-600 hover:to-amber-600 text-white font-bold px-4 py-2 rounded-lg flex items-center gap-2">
-                    <Save size={16} /> Zapisz harmonogram
-                </button>
+                <div className="flex items-center gap-2 text-sm">
+                    {saving ? (
+                        <span className="text-amber-600 flex items-center gap-1">⏳ Zapisuję…</span>
+                    ) : (
+                        <span className="text-emerald-600 flex items-center gap-1">✓ Zapisano automatycznie</span>
+                    )}
+                </div>
             )}
         </div>
     );

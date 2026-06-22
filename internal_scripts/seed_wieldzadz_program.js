@@ -13,63 +13,36 @@ const SLUG = 'wieldzadz';
 // Między zjazdami uczestnicy fotografują samodzielnie (zadania domowe), na zjazdach omawiamy.
 const SCHEDULE = [
     {
-        date: '2026-07-04', start: '10:00', end: '18:00',
+        date: '2026-07-04', start: '10:00', end: '13:00',
         topic: 'Zjazd 1 (sobota) — Aparat od podszewki + pierwsza sesja',
-        plan: `**10:00** powitanie, integracja, "kto czym fotografuje" (pokazujemy sprzęt).
+        plan: `10:00 powitanie, integracja, "kto czym fotografuje"
+10:15 wykład praktyczny: jak działa aparat — przysłona, czas, ISO na żywych przykładach
+10:50 ćwiczenia z trybem M w sali — każdy ustawia ekspozycję sam
+11:45 omawianie pierwszych zdjęć, feedback, zadanie domowe
 
-**10:30** wykład praktyczny: jak działa aparat — przysłona, czas, ISO bez teorii, od razu na żywych przykładach na rzutniku.
-
-**12:00** ćwiczenia z trybem M w sali — każdy ustawia ekspozycję sam.
-
-**13:00** obiad.
-
-**14:00** wyjście w plener (łąki/las wokół Wieldzadza) — pierwsza sesja w trybie manualnym, ćwiczymy trójkąt ekspozycji w praktyce. Prowadzący chodzi od osoby do osoby z indywidualnymi wskazówkami.
-
-**16:30** powrót, omawianie zdjęć na rzutniku (najlepsze i najsłabsze — bez hejtu, tylko nauka).
-
-**17:30** zadanie domowe na 4 dni: każdy ma temat ("światło poranne", "cień", "ruch", "detal", "portret bliskiej osoby" — losujemy). Minimum 30 zdjęć, wybierasz 5 najlepszych na zjazd 2.
-
-**18:00** koniec dnia.`,
+Zadanie na 4 dni: Losowany temat. Min. 30 zdjęć, wybierz 5 najlepszych na zjazd 2.`,
     },
     {
-        date: '2026-07-08', start: '17:00', end: '21:00',
+        date: '2026-07-08', start: '18:00', end: '21:00',
         topic: 'Zjazd 2 (środa wieczór) — Omówienie zadań + kompozycja i portret',
-        plan: `**17:00** zbiórka, każdy wgrywa swoje 5 najlepszych zdjęć z tygodnia na panel uczestnika (zakładka "Moje zdjęcia").
+        plan: `17:45 zbiórka, wgranie 5 zdjęć na panel
+18:00 szybkie omówienie homework'u — feedback zbiorowy
+18:30 wykład: kompozycja, portret (ogniskowa 50–85 mm)
+19:00 sesja portretowa w parach na miejscu
+20:30 omawianie portretów + zadanie finałowe
 
-**17:30** indywidualne omawianie pracy każdego — prowadzący daje konkretny feedback przy całej grupie (uczymy się od siebie nawzajem).
-
-**18:30** wykład: kompozycja — zasada trójpodziału, linie prowadzące, kadrowanie, "oddech" w portrecie.
-
-**19:00** krótka przerwa, kanapki.
-
-**19:30** sesja portretowa w parach na miejscu — każdy fotografuje partnera w różnym świetle (przy oknie, w cieniu, pod lampą). Ćwiczymy ostrość na oko, ogniskową 50–85 mm, rozmowę z modelem.
-
-**20:30** omawianie portretów na żywo — co działa, co nie.
-
-**20:45** zadanie domowe na 3 dni do finału: własny mini-projekt ("seria 5 zdjęć na jeden temat"), temat wymyśla sam uczestnik.
-
-**21:00** koniec.`,
+Zadanie na 3 dni: Mini-projekt — 5 zdjęć na jeden temat.`,
     },
     {
-        date: '2026-07-11', start: '10:00', end: '17:00',
-        topic: 'Zjazd 3 (sobota) — Wystawa, dyplomy, finałowa sesja grupowa',
-        plan: `**10:00** zbiórka, wgranie finałowych projektów (5 zdjęć × seria) na panel.
+        date: '2026-07-11', start: '10:00', end: '13:00',
+        topic: 'Zjazd 3 (sobota) — Prezentacje + edycja + dyplomy',
+        plan: `09:45 zbiórka, wgranie projektów
+10:00 prezentacje (każdy: 3 min)
+10:45 minikurs edycji w telefonie (Lightroom/Snapseed)
+11:30 wystawa prac + wręczenie dyplomów + grupowe zdjęcie
+12:30 podsumowanie, wymiana kontaktów
 
-**10:30** prezentacja każdego projektu — każdy uczestnik opowiada o swoim temacie, dlaczego go wybrał, co próbował pokazać. Reszta grupy + prowadzący komentują.
-
-**12:30** obiad + grupowe zdjęcie pamiątkowe.
-
-**13:30** minikurs edycji w telefonie (Lightroom Mobile / Snapseed) — minimalna naturalna obróbka, ekspozycja, kontrast, wyostrzenie. Każdy edytuje jedno zdjęcie z własnego portfolio.
-
-**14:30** wystawa wydrukowanych prac (każdy uczestnik dostaje 3 swoje zdjęcia drukowane A4 jako pamiątkę).
-
-**15:30** uroczyste wręczenie dyplomów ukończenia warsztatów + drobne nagrody (książka o fotografii, vouchery na sesję dla rodziny).
-
-**16:00** ostatnia wspólna sesja portretowa — całą grupę fotografuje prowadzący (potem dostajecie te zdjęcia w panelu).
-
-**16:30** podsumowanie, wymiana kontaktów, info jak rozwijać się dalej, polecane książki / kanały YT / kursy.
-
-**17:00** koniec — pendrive z WSZYSTKIMI Twoimi zdjęciami z całych warsztatów + zdjęciami grupowymi do odbioru.`,
+13:00 koniec — pendrive z całym portfolio.`,
     },
 ];
 
