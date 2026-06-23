@@ -801,6 +801,12 @@ export default function GroupGalleryPage() {
     setExtraQty(photoId, '10x15', currentQty > 0 ? 0 : 1);
   };
 
+  const quickAddExtraToCart = (photoId: number) => {
+    const nextQty = getExtraQty(photoId, '10x15') + 1;
+    setExtraQty(photoId, '10x15', nextQty);
+    toast.success(`Dodano do koszyka: 10x15 (${nextQty} szt.)`);
+  };
+
   const handlePurchaseExtras = async () => {
     if (!participantInfo || !authToken) return;
     if (extraCartLines.length === 0) {
@@ -1356,7 +1362,7 @@ Hasło: ${password}` : ''}`}
           selectedPhotoIds={isGuestMode ? undefined : new Set(selectedPhotos)}
           onToggleSelect={isGuestMode ? undefined : (p) => handleSelectToggle(p.id)}
           limitReached={!isGuestMode && selectedPhotos.length >= (participantInfo?.max_selections || 5)}
-          onLimitReached={!isGuestMode && extraPurchaseEnabled ? () => setShowExtraPurchaseModal(true) : undefined}
+          onLimitReached={!isGuestMode && extraPurchaseEnabled ? (photoId: number) => quickAddExtraToCart(photoId) : undefined}
           extraSelectedPhotoIds={isGuestMode ? undefined : new Set(selectedExtraPhotos)}
           paidExtraPhotoIds={isGuestMode ? undefined : new Set(paidExtraPhotoIds)}
         />
@@ -1626,7 +1632,7 @@ Hasło: ${password}` : ''}`}
             onToggleSelect={isGuestMode ? undefined : (p) => handleSelectToggle(p.id)}
             onPhotoClick={(p) => setLightboxPhoto(p as Photo)}
             limitReached={!isGuestMode && selectedPhotos.length >= (participantInfo?.max_selections || 5)}
-            onLimitReached={!isGuestMode && extraPurchaseEnabled ? () => setShowExtraPurchaseModal(true) : undefined}
+            onLimitReached={!isGuestMode && extraPurchaseEnabled ? (photoId: number) => quickAddExtraToCart(photoId) : undefined}
             extraSelectedPhotoIds={isGuestMode ? undefined : new Set(selectedExtraPhotos)}
             paidExtraPhotoIds={isGuestMode ? undefined : new Set(paidExtraPhotoIds)}
           />
@@ -1745,23 +1751,23 @@ Hasło: ${password}` : ''}`}
                   {!isGuestMode && !downloadMode && extraPurchaseEnabled && (
                   <button
                     type="button"
-                    onClick={(e) => { e.stopPropagation(); setShowExtraPurchaseModal(true); }}
+                    onClick={(e) => { e.stopPropagation(); quickAddExtraToCart(photo.id); }}
                     className={`absolute bottom-2 right-2 flex items-center gap-1.5 px-2.5 py-1.5 rounded-full font-bold text-xs shadow-lg transition-all ${
                       selectedExtraPhotos.includes(photo.id)
                         ? 'bg-emerald-500 text-black'
                         : 'bg-black/75 text-emerald-400 hover:bg-black/90'
                     }`}
-                    title={selectedExtraPhotos.includes(photo.id) ? 'To zdjęcie ma już ustawione ilości w koszyku' : 'Ustaw ilości odbitek dla tego zdjęcia'}
+                    title={selectedExtraPhotos.includes(photo.id) ? 'Dodaj kolejną odbitkę 10x15 do koszyka' : 'Dodaj 1 odbitkę 10x15 do koszyka'}
                   >
                     {selectedExtraPhotos.includes(photo.id) ? (
                       <>
                         <CheckSquare className="w-3.5 h-3.5" />
-                        W koszyku
+                        Dodaj kolejną
                       </>
                     ) : (
                       <>
                         <Package className="w-3.5 h-3.5" />
-                        Dodaj do koszyka
+                        Dodaj 10x15
                       </>
                     )}
                   </button>
