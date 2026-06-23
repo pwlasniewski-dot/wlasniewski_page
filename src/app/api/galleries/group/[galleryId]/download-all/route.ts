@@ -18,6 +18,7 @@ export async function GET(
     const { galleryId: gIdRaw } = await params;
     const galleryId = parseInt(gIdRaw);
 
+  import sharp from 'sharp';
     if (isNaN(galleryId)) {
       return NextResponse.json({ error: 'Nieprawidłowe ID' }, { status: 400 });
     }
@@ -65,7 +66,19 @@ export async function GET(
       archive.on('data', (chunk: Buffer) => chunks.push(chunk));
       archive.on('end', () => resolve(Buffer.concat(chunks)));
       archive.on('error', reject);
-
+      const toJpegBuffer = async (input: Buffer): Promise<Buffer> => {
+        try {
+          return await sharp(input)
+            .pipelineColorspace('srgb')
+            .toColorspace('srgb')
+            .withMetadata({ icc: 'srgb' })
+            .jpeg({ quality: 95, chromaSubsampling: '4:4:4', mozjpeg: true })
+            .toBuffer();
+        } catch {
+          // Fallback: return original if conversion fails for a single file.
+          return input;
+        }
+      };
       (async () => {
         try {
           for (let i = 0; i < gallery.photos.length; i++) {
