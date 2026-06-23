@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { AlertCircle, RefreshCw, Search, ArrowLeft, ShoppingBag, Image as ImageIcon, Camera, Ticket } from 'lucide-react';
+import { AlertCircle, RefreshCw, Search, ArrowLeft, ShoppingBag, Image as ImageIcon, Camera, Ticket, CircleDollarSign, Package, Clock3, SlidersHorizontal } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getApiUrl } from '@/lib/api-config';
 
@@ -33,6 +33,21 @@ interface Order {
     photoCount?: number;
     photoIds?: number[];
     selectedPhotos?: Array<{ id: number; thumbnail_url: string | null; file_url: string }>;
+    sizeSummary?: string[];
+    orderItems?: Array<{
+        kind: 'extra_photo' | 'product';
+        title: string;
+        quantity: number;
+        unitAmount: number;
+        totalAmount: number;
+        sizeLabel?: string;
+    }>;
+    orderBreakdown?: {
+        extraPhotoCount: number;
+        extraPhotoUnitAmount: number;
+        extraPhotoTotal: number;
+        productsTotal: number;
+    };
 }
 
 export default function AdminOrdersPage() {
@@ -43,6 +58,10 @@ export default function AdminOrdersPage() {
     const [isAuthorized, setIsAuthorized] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [classFilter, setClassFilter] = useState('all');
+    const [statusFilter, setStatusFilter] = useState('all');
+    const [typeFilter, setTypeFilter] = useState('all');
+
+    const formatMoney = (amount: number, currency = 'PLN') => `${(amount / 100).toFixed(2)} ${currency}`;
 
     const extractClassLabel = (galleryName?: string) => {
         if (!galleryName) return null;
@@ -74,8 +93,10 @@ export default function AdminOrdersPage() {
         const filtered = orders.filter(o => {
             const orderClass = extractClassLabel(o.galleryName);
             const matchesClass = classFilter === 'all' || orderClass === classFilter;
+            const matchesStatus = statusFilter === 'all' || o.status === statusFilter;
+            const matchesType = typeFilter === 'all' || o.type === typeFilter;
 
-            if (!matchesClass) return false;
+            if (!matchesClass || !matchesStatus || !matchesType) return false;
 
             if (!searchTerm) return true;
 
@@ -87,11 +108,26 @@ export default function AdminOrdersPage() {
                 o.id.toLowerCase().includes(lower) ||
                 o.galleryName?.toLowerCase().includes(lower) ||
                 o.participantName?.toLowerCase().includes(lower) ||
-                o.participantIdentifier?.toLowerCase().includes(lower)
+                o.participantIdentifier?.toLowerCase().includes(lower) ||
+                (o.sizeSummary || []).some((size) => size.toLowerCase().includes(lower))
             );
         });
         setFilteredOrders(filtered);
-    }, [searchTerm, classFilter, orders]);
+    }, [searchTerm, classFilter, statusFilter, typeFilter, orders]);
+
+    const stats = useMemo(() => {
+        const paid = orders.filter((order) => order.status === 'paid' || order.status === 'completed');
+        const pending = orders.filter((order) => order.status === 'pending');
+        const gallery = orders.filter((order) => order.type === 'gallery_photo');
+        return {
+            allCount: orders.length,
+            paidRevenue: paid.reduce((sum, order) => sum + order.amount, 0),
+            paidCount: paid.length,
+            pendingCount: pending.length,
+            galleryCount: gallery.length,
+            giftCount: orders.length - gallery.length,
+        };
+    }, [orders]);
 
     const fetchOrders = async () => {
         setLoading(true);
@@ -208,10 +244,34 @@ export default function AdminOrdersPage() {
                         </button>
                     </div>
 
+                    {/* KPI */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+                        <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
+                            <div className="text-xs uppercase tracking-wider text-zinc-500 mb-2">Przychód opłacony</div>
+                            <div className="text-2xl font-black text-emerald-300">{formatMoney(stats.paidRevenue)}</div>
+                            <div className="mt-2 text-xs text-zinc-400 flex items-center gap-1"><CircleDollarSign size={13} /> {stats.paidCount} opłaconych zamówień</div>
+                        </div>
+                        <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
+                            <div className="text-xs uppercase tracking-wider text-zinc-500 mb-2">Wszystkie zamówienia</div>
+                            <div className="text-2xl font-black text-white">{stats.allCount}</div>
+                            <div className="mt-2 text-xs text-zinc-400 flex items-center gap-1"><Package size={13} /> {stats.galleryCount} galeria / {stats.giftCount} karty</div>
+                        </div>
+                        <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
+                            <div className="text-xs uppercase tracking-wider text-zinc-500 mb-2">Oczekujące</div>
+                            <div className="text-2xl font-black text-yellow-300">{stats.pendingCount}</div>
+                            <div className="mt-2 text-xs text-zinc-400 flex items-center gap-1"><Clock3 size={13} /> do monitorowania płatności</div>
+                        </div>
+                        <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
+                            <div className="text-xs uppercase tracking-wider text-zinc-500 mb-2">Wynik filtrowania</div>
+                            <div className="text-2xl font-black text-gold-400">{filteredOrders.length}</div>
+                            <div className="mt-2 text-xs text-zinc-400 flex items-center gap-1"><SlidersHorizontal size={13} /> rekordów po filtrach</div>
+                        </div>
+                    </div>
+
                     {/* Search */}
                     <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 mb-6">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                            <div className="relative md:col-span-2">
+                        <div className="grid grid-cols-1 lg:grid-cols-6 gap-3">
+                            <div className="relative lg:col-span-2">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={20} />
                                 <input
                                     type="text"
@@ -231,6 +291,38 @@ export default function AdminOrdersPage() {
                                     <option key={className} value={className}>{className}</option>
                                 ))}
                             </select>
+                            <select
+                                value={statusFilter}
+                                onChange={(e) => setStatusFilter(e.target.value)}
+                                className="w-full px-3 py-2 bg-zinc-950 border border-zinc-700 rounded-lg text-white focus:border-gold-500 focus:outline-none"
+                            >
+                                <option value="all">Wszystkie statusy</option>
+                                <option value="paid">Opłacone</option>
+                                <option value="completed">Completed</option>
+                                <option value="pending">Oczekujące</option>
+                                <option value="failed">Błąd</option>
+                                <option value="cancelled">Anulowane</option>
+                            </select>
+                            <select
+                                value={typeFilter}
+                                onChange={(e) => setTypeFilter(e.target.value)}
+                                className="w-full px-3 py-2 bg-zinc-950 border border-zinc-700 rounded-lg text-white focus:border-gold-500 focus:outline-none"
+                            >
+                                <option value="all">Wszystkie typy</option>
+                                <option value="gallery_photo">Galeria</option>
+                                <option value="gift_card">Karta podarunkowa</option>
+                            </select>
+                            <button
+                                onClick={() => {
+                                    setSearchTerm('');
+                                    setClassFilter('all');
+                                    setStatusFilter('all');
+                                    setTypeFilter('all');
+                                }}
+                                className="w-full px-3 py-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-lg text-zinc-100 transition-colors"
+                            >
+                                Wyczyść filtry
+                            </button>
                         </div>
                     </div>
 
@@ -243,8 +335,8 @@ export default function AdminOrdersPage() {
                                         <th className="p-4 text-xs font-medium text-zinc-500 uppercase tracking-wider">ID / Data</th>
                                         <th className="p-4 text-xs font-medium text-zinc-500 uppercase tracking-wider">Typ</th>
                                         <th className="p-4 text-xs font-medium text-zinc-500 uppercase tracking-wider">Klient</th>
-                                        <th className="p-4 text-xs font-medium text-zinc-500 uppercase tracking-wider">Pozycja</th>
-                                        <th className="p-4 text-xs font-medium text-zinc-500 uppercase tracking-wider">Płatność</th>
+                                        <th className="p-4 text-xs font-medium text-zinc-500 uppercase tracking-wider">Pozycje koszyka</th>
+                                        <th className="p-4 text-xs font-medium text-zinc-500 uppercase tracking-wider">Kwota i płatność</th>
                                         <th className="p-4 text-xs font-medium text-zinc-500 uppercase tracking-wider">Status</th>
                                         <th className="p-4 text-xs font-medium text-zinc-500 uppercase tracking-wider">Akcje</th>
                                     </tr>
@@ -301,7 +393,28 @@ export default function AdminOrdersPage() {
                                                     ) : (
                                                         <>
                                                             <div className="text-white font-bold">{order.galleryName}</div>
-                                                            <div className="text-xs text-zinc-400 mt-1">{order.photoCount || 0} zdjęć</div>
+                                                            <div className="text-xs text-zinc-400 mt-1">{order.photoCount || 0} zdjęć dodatkowych</div>
+                                                            {order.orderItems && order.orderItems.length > 0 && (
+                                                                <div className="mt-2 space-y-1">
+                                                                    {order.orderItems.slice(0, 2).map((item, index) => (
+                                                                        <div key={`${order.id}-item-${index}`} className="text-xs text-zinc-300">
+                                                                            {item.title} • {item.quantity} × {formatMoney(item.unitAmount)}
+                                                                        </div>
+                                                                    ))}
+                                                                    {order.orderItems.length > 2 && (
+                                                                        <div className="text-xs text-zinc-500">+{order.orderItems.length - 2} kolejnych pozycji</div>
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                            {order.sizeSummary && order.sizeSummary.length > 0 && (
+                                                                <div className="mt-2 flex flex-wrap gap-1">
+                                                                    {order.sizeSummary.map((size) => (
+                                                                        <span key={`${order.id}-${size}`} className="px-2 py-0.5 rounded-full text-[10px] font-semibold border border-amber-500/40 text-amber-300 bg-amber-500/10">
+                                                                            {size}
+                                                                        </span>
+                                                                    ))}
+                                                                </div>
+                                                            )}
                                                             {order.groupAccessCode && (
                                                                 <div className="text-xs text-gold-400 font-mono mt-1">Kod: {order.groupAccessCode}</div>
                                                             )}
@@ -309,7 +422,7 @@ export default function AdminOrdersPage() {
                                                     )}
                                                 </td>
                                                 <td className="p-4">
-                                                    <div className="text-white font-bold">{(order.amount / 100).toFixed(2)} {order.currency}</div>
+                                                    <div className="text-white font-bold">{formatMoney(order.amount, order.currency)}</div>
                                                     <div className="text-xs text-zinc-300 uppercase mt-1">{order.paymentMethod || '-'}</div>
                                                     <div className="text-xs font-mono text-zinc-500 break-all max-w-[150px] mt-1">
                                                         {order.paymentRef || '-'}
@@ -399,7 +512,7 @@ export default function AdminOrdersPage() {
                                             </div>
                                             <div>
                                                 <label className="text-xs text-zinc-500">Wartość</label>
-                                                <div className="text-white font-bold">{(selectedOrder.amount / 100).toFixed(2)} PLN</div>
+                                                <div className="text-white font-bold">{formatMoney(selectedOrder.amount, selectedOrder.currency)}</div>
                                             </div>
                                             <div>
                                                 <label className="text-xs text-zinc-500">Dla kogo</label>
@@ -429,14 +542,62 @@ export default function AdminOrdersPage() {
                                             </div>
                                             <div>
                                                 <label className="text-xs text-zinc-500">Kwota / zdjęcia</label>
-                                                <div className="text-white font-bold">{(selectedOrder.amount / 100).toFixed(2)} PLN • {selectedOrder.photoCount || 0} szt.</div>
+                                                <div className="text-white font-bold">{formatMoney(selectedOrder.amount, selectedOrder.currency)} • {selectedOrder.photoCount || 0} szt.</div>
                                             </div>
+                                            {selectedOrder.sizeSummary && selectedOrder.sizeSummary.length > 0 && (
+                                                <div>
+                                                    <label className="text-xs text-zinc-500">Rozmiary odbitek</label>
+                                                    <div className="flex flex-wrap gap-2 mt-1">
+                                                        {selectedOrder.sizeSummary.map((size) => (
+                                                            <span key={`selected-${size}`} className="px-2.5 py-1 rounded-full text-xs font-semibold border border-amber-500/40 text-amber-300 bg-amber-500/10">
+                                                                {size}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     </>
                                 )}
                             </div>
 
                             <div className="md:col-span-2 border-t border-zinc-800 pt-6">
+                                {selectedOrder.type === 'gallery_photo' && selectedOrder.orderItems && selectedOrder.orderItems.length > 0 && (
+                                    <div className="mb-6">
+                                        <h3 className="text-sm font-medium text-zinc-500 uppercase tracking-wider mb-3">Pozycje Zamówienia</h3>
+                                        <div className="rounded-lg border border-zinc-800 overflow-hidden">
+                                            <table className="w-full text-left border-collapse">
+                                                <thead className="bg-zinc-950/60">
+                                                    <tr>
+                                                        <th className="px-4 py-2 text-xs text-zinc-500 uppercase">Pozycja</th>
+                                                        <th className="px-4 py-2 text-xs text-zinc-500 uppercase">Ilość</th>
+                                                        <th className="px-4 py-2 text-xs text-zinc-500 uppercase">Cena jedn.</th>
+                                                        <th className="px-4 py-2 text-xs text-zinc-500 uppercase">Wartość</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-zinc-800">
+                                                    {selectedOrder.orderItems.map((item, index) => (
+                                                        <tr key={`selected-item-${index}`}>
+                                                            <td className="px-4 py-2 text-sm text-white">
+                                                                {item.title}
+                                                                {item.sizeLabel && <span className="ml-2 text-xs text-amber-300">({item.sizeLabel})</span>}
+                                                            </td>
+                                                            <td className="px-4 py-2 text-sm text-zinc-300">{item.quantity}</td>
+                                                            <td className="px-4 py-2 text-sm text-zinc-300">{formatMoney(item.unitAmount)}</td>
+                                                            <td className="px-4 py-2 text-sm font-semibold text-white">{formatMoney(item.totalAmount)}</td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        {selectedOrder.orderBreakdown && (
+                                            <div className="mt-3 text-xs text-zinc-400">
+                                                Odbitki: {selectedOrder.orderBreakdown.extraPhotoCount} × {formatMoney(selectedOrder.orderBreakdown.extraPhotoUnitAmount)} • Produkty: {formatMoney(selectedOrder.orderBreakdown.productsTotal)}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
                                 <h3 className="text-sm font-medium text-zinc-500 uppercase tracking-wider mb-4">Zdjęcia i Galeria</h3>
                                 {selectedOrder.type === 'gift_card' ? (
                                     <>

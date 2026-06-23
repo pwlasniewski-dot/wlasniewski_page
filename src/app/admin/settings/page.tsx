@@ -57,6 +57,9 @@ export default function SettingsPage() {
         payu_md5_key: '',
         payu_notify_url: '',
         payu_test_mode: true,
+        // Global print prices for group galleries (amount in grosz)
+        group_print_price_10x15: '150',
+        group_print_price_15x21: '250',
         // Portfolio
         portfolio_categories: [] as string[] | string, // Can be array or JSON string
         portfolio_layout: 'slider', // 'slider' | 'column'
@@ -1136,6 +1139,49 @@ export default function SettingsPage() {
                         <p className="mt-1 text-xs text-zinc-500">Adres, na który PayU wyśle potwierdzenie wpłaty. Musi być publicznie dostępny.</p>
                     </div>
                 </div>
+            </div>
+
+            {/* Płatności 50/50 (split payment) */}
+            <div className="bg-zinc-900 shadow rounded-lg border border-zinc-800 p-6">
+                <h2 className="text-lg font-medium text-white mb-1">Globalne ceny odbitek galerii grupowej</h2>
+                <p className="text-xs text-zinc-500 mb-4">Te ceny obowiązują globalnie dla dokupowanych odbitek w galerii grupowej.</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-sm font-medium text-zinc-400 mb-1">Odbitka 10x15 (PLN)</label>
+                        <input
+                            type="number"
+                            min={0}
+                            step="0.01"
+                            value={(Number(settings.group_print_price_10x15 || 0) / 100).toString()}
+                            onChange={e => {
+                                const parsed = Number(e.target.value);
+                                setSettings(s => ({
+                                    ...s,
+                                    group_print_price_10x15: Number.isFinite(parsed) ? String(Math.max(0, Math.round(parsed * 100))) : '0'
+                                }));
+                            }}
+                            className="block w-full rounded-md border-zinc-700 bg-zinc-800 text-white shadow-sm focus:border-gold-500 focus:ring-gold-500 sm:text-sm px-3 py-2"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-zinc-400 mb-1">Odbitka 15x21 (PLN)</label>
+                        <input
+                            type="number"
+                            min={0}
+                            step="0.01"
+                            value={(Number(settings.group_print_price_15x21 || 0) / 100).toString()}
+                            onChange={e => {
+                                const parsed = Number(e.target.value);
+                                setSettings(s => ({
+                                    ...s,
+                                    group_print_price_15x21: Number.isFinite(parsed) ? String(Math.max(0, Math.round(parsed * 100))) : '0'
+                                }));
+                            }}
+                            className="block w-full rounded-md border-zinc-700 bg-zinc-800 text-white shadow-sm focus:border-gold-500 focus:ring-gold-500 sm:text-sm px-3 py-2"
+                        />
+                    </div>
+                </div>
+                <p className="mt-3 text-xs text-zinc-500">W bazie zapisujemy kwoty w groszach, panel pokazuje je w PLN.</p>
             </div>
 
             {/* Płatności 50/50 (split payment) */}

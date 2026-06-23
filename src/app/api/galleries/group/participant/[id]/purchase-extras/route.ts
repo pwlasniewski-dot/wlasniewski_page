@@ -3,6 +3,43 @@ import prisma from '@/lib/db/prisma';
 import { verifyParentToken, extractTokenFromHeader } from '@/lib/auth/parent-jwt';
 import { createPayUOrder, extractClientIpv4 } from '@/lib/payu';
 
+const DEFAULT_GROUP_PRINT_PRICE_10X15 = 150;
+const DEFAULT_GROUP_PRINT_PRICE_15X21 = 250;
+
+const GROUP_EXTRA_PRINT_SIZES = {
+  '10x15': { label: '10x15 cm' },
+  '15x21': { label: '15x21 cm' },
+} as const;
+
+type GroupExtraPrintSize = keyof typeof GROUP_EXTRA_PRINT_SIZES;
+
+function isGroupExtraPrintSize(value: string): value is GroupExtraPrintSize {
+  return value === '10x15' || value === '15x21';
+}
+
+async function getGroupPrintPrices() {
+  const rows = await prisma.setting.findMany({
+    where: {
+      setting_key: {
+        in: ['group_print_price_10x15', 'group_print_price_15x21'],
+      },
+    },
+    select: {
+      setting_key: true,
+      setting_value: true,
+    },
+  });
+
+  const byKey = new Map(rows.map((row) => [row.setting_key, row.setting_value]));
+  const price10x15 = Number(byKey.get('group_print_price_10x15'));
+  const price15x21 = Number(byKey.get('group_print_price_15x21'));
+
+  return {
+    '10x15': Number.isFinite(price10x15) && price10x15 > 0 ? Math.round(price10x15) : DEFAULT_GROUP_PRINT_PRICE_10X15,
+    '15x21': Number.isFinite(price15x21) && price15x21 > 0 ? Math.round(price15x21) : DEFAULT_GROUP_PRINT_PRICE_15X21,
+  } as const;
+}
+
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -32,6 +69,11 @@ export async function POST(
     const photoIds = Array.isArray(body?.photo_ids)
       ? body.photo_ids.map((id: any) => Number(id)).filter((id: number) => Number.isFinite(id))
       : [];
+    const requestedPrintSize = String(body?.print_size || '').trim() || '10x15';
+
+    if (!isGroupExtraPrintSize(requestedPrintSize)) {
+      return NextResponse.json({ error: 'Nieprawidłowy rozmiar odbitki' }, { status: 400 });
+    }
 
     if (photoIds.length === 0) {
       return NextResponse.json({ error: 'Brak wybranych zdjęć' }, { status: 400 });
@@ -84,7 +126,10 @@ export async function POST(
       return NextResponse.json({ error: 'Niektóre zdjęcia nie należą do tej galerii' }, { status: 400 });
     }
 
-    const pricePerPhoto = participant.gallery.price_per_premium || 2000;
+    const printPrices = await getGroupPrintPrices();
+    const basePricePerPhoto = participant.gallery.price_per_premium || printPrices['15x21'];
+    const sizeConfig = GROUP_EXTRA_PRINT_SIZES[requestedPrintSize];
+    const pricePerPhoto = printPrices[requestedPrintSize];
     const totalAmount = pricePerPhoto * photoIds.length;
 
     const order = await prisma.photoOrder.create({
@@ -92,6 +137,13 @@ export async function POST(
         gallery_id: participant.gallery_id,
         participant_id: participant.id,
         photo_ids: JSON.stringify(photoIds),
+        product_ids: JSON.stringify({
+          kind: 'group_extra_prints',
+          print_size: requestedPrintSize,
+          print_size_label: sizeConfig.label,
+          unit_amount: pricePerPhoto,
+          base_unit_amount: basePricePerPhoto,
+        }),
         photo_count: photoIds.length,
         total_amount: totalAmount,
         payment_status: 'pending',
@@ -116,7 +168,7 @@ export async function POST(
           language: 'pl',
         },
         products: [{
-          name: `Dodatkowe zdjęcia (${photoIds.length} szt.)`,
+          name: `Dodatkowe odbitki ${sizeConfig.label} (${photoIds.length} szt.)`,
           unitPrice: pricePerPhoto,
           quantity: photoIds.length,
         }],
@@ -144,6 +196,8 @@ export async function POST(
           total_amount: order.total_amount,
           payment_status: order.payment_status,
           payment_url: paymentUrl || null,
+          print_size: requestedPrintSize,
+          unit_price: pricePerPhoto,
         },
         paymentUrl: paymentUrl || null,
       });
