@@ -49,17 +49,10 @@ type UnifiedOrder = {
 
 type GroupExtraPrintMetadata = {
     kind: 'group_extra_prints';
-    version?: number;
     print_size?: string;
     print_size_label?: string;
     unit_amount?: number;
     base_unit_amount?: number;
-    lines?: Array<{
-        photo_id: number;
-        print_size: string;
-        quantity: number;
-        unit_amount?: number;
-    }>;
 };
 
 function parsePhotoIds(raw: string): number[] {
@@ -109,35 +102,12 @@ function parseGroupExtraPrintMetadata(raw: string | null): GroupExtraPrintMetada
     try {
         const parsed = JSON.parse(raw) as Record<string, unknown>;
         if (parsed && parsed.kind === 'group_extra_prints') {
-            const parsedLines = Array.isArray(parsed.lines)
-                ? parsed.lines
-                    .map((line) => {
-                        const item = line as Record<string, unknown>;
-                        const photo_id = Number(item.photo_id);
-                        const print_size = typeof item.print_size === 'string' ? item.print_size : undefined;
-                        const quantity = Number(item.quantity);
-                        const unit_amount = Number(item.unit_amount);
-                        if (!Number.isInteger(photo_id) || photo_id <= 0) return null;
-                        if (!print_size) return null;
-                        if (!Number.isInteger(quantity) || quantity <= 0) return null;
-                        return {
-                            photo_id,
-                            print_size,
-                            quantity,
-                            unit_amount: Number.isFinite(unit_amount) && unit_amount > 0 ? Math.round(unit_amount) : undefined,
-                        };
-                    })
-                    .filter((line): line is NonNullable<typeof line> => Boolean(line))
-                : undefined;
-
             return {
                 kind: 'group_extra_prints',
-                version: typeof parsed.version === 'number' ? parsed.version : undefined,
                 print_size: typeof parsed.print_size === 'string' ? parsed.print_size : undefined,
                 print_size_label: typeof parsed.print_size_label === 'string' ? parsed.print_size_label : undefined,
                 unit_amount: typeof parsed.unit_amount === 'number' ? parsed.unit_amount : undefined,
                 base_unit_amount: typeof parsed.base_unit_amount === 'number' ? parsed.base_unit_amount : undefined,
-                lines: parsedLines,
             };
         }
     } catch {
@@ -287,8 +257,7 @@ export async function GET(request: NextRequest) {
             const parsedPhotoIds = parsePhotoIds(order.photo_ids);
             const parsedProductIds = parseProductIds(order.product_ids || null);
             const groupExtraMetadata = parseGroupExtraPrintMetadata(order.product_ids || null);
-            const uniquePreviewPhotoIds = Array.from(new Set(parsedPhotoIds));
-            const selectedPhotos = uniquePreviewPhotoIds
+            const selectedPhotos = parsedPhotoIds
                 .map((id) => photosById.get(id))
                 .filter((photo): photo is NonNullable<typeof photo> => Boolean(photo))
                 .map((photo) => ({
@@ -319,56 +288,31 @@ export async function GET(request: NextRequest) {
                     sizeLabel: extractSizeLabel(product.title),
                 }));
 
-            const groupedExtraFromLines = (groupExtraMetadata?.lines || []).reduce(
-                (acc, line) => {
-                    const key = line.print_size;
-                    if (!acc[key]) {
-                        acc[key] = { quantity: 0, unitAmount: Math.max(0, line.unit_amount || 0) };
-                    }
-                    acc[key].quantity += line.quantity;
-                    if (line.unit_amount && line.unit_amount > 0) {
-                        acc[key].unitAmount = line.unit_amount;
-                    }
-                    return acc;
-                },
-                {} as Record<string, { quantity: number; unitAmount: number }>
-            );
-
             const fallbackExtraPhotoUnitAmount = order.photo_count > 0
                 ? Math.round((order.total_amount - productItems.reduce((sum, item) => sum + item.totalAmount, 0)) / order.photo_count)
                 : 0;
-
-            const extraOrderItemsFromLines = Object.entries(groupedExtraFromLines).map(([size, entry]) => ({
-                kind: 'extra_photo' as const,
-                title: 'Dodatkowe odbitki',
-                quantity: entry.quantity,
-                unitAmount: Math.max(0, entry.unitAmount || fallbackExtraPhotoUnitAmount),
-                totalAmount: Math.max(0, entry.quantity * Math.max(0, entry.unitAmount || fallbackExtraPhotoUnitAmount)),
-                sizeLabel: size,
-            }));
-
             const extraPhotoUnitAmount = Math.max(0, groupExtraMetadata?.unit_amount || fallbackExtraPhotoUnitAmount);
+
+            const extraPhotoTotal = Math.max(0, extraPhotoUnitAmount * order.photo_count);
             const extraPhotoSize = groupExtraMetadata?.print_size || undefined;
 
-            const fallbackExtraItems = order.photo_count > 0
-                ? [{
-                    kind: 'extra_photo' as const,
-                    title: 'Dodatkowe odbitki',
-                    quantity: order.photo_count,
-                    unitAmount: extraPhotoUnitAmount,
-                    totalAmount: Math.max(0, extraPhotoUnitAmount * order.photo_count),
-                    sizeLabel: extraPhotoSize,
-                }]
-                : [];
-
-            const extraPhotoItems = extraOrderItemsFromLines.length > 0 ? extraOrderItemsFromLines : fallbackExtraItems;
-            const extraPhotoTotal = extraPhotoItems.reduce((sum, item) => sum + item.totalAmount, 0);
-
-            const orderItems = [...extraPhotoItems, ...productItems];
+            const orderItems = [
+                ...(order.photo_count > 0
+                    ? [{
+                        kind: 'extra_photo' as const,
+                        title: 'Dodatkowe odbitki',
+                        quantity: order.photo_count,
+                        unitAmount: extraPhotoUnitAmount,
+                        totalAmount: extraPhotoTotal,
+                        sizeLabel: extraPhotoSize,
+                    }]
+                    : []),
+                ...productItems,
+            ];
 
             const sizeSummary = Array.from(
                 new Set([
-                    ...extraPhotoItems.map((item) => item.sizeLabel).filter((value): value is string => Boolean(value)),
+                    ...(extraPhotoSize ? [extraPhotoSize] : []),
                     ...productItems.map((item) => item.sizeLabel).filter((value): value is string => Boolean(value)),
                 ])
             );
@@ -402,7 +346,7 @@ export async function GET(request: NextRequest) {
                 sizeSummary,
                 orderItems,
                 orderBreakdown: {
-                    extraPhotoCount: extraPhotoItems.reduce((sum, item) => sum + item.quantity, 0),
+                    extraPhotoCount: order.photo_count,
                     extraPhotoUnitAmount,
                     extraPhotoTotal,
                     productsTotal: productItems.reduce((sum, item) => sum + item.totalAmount, 0),
