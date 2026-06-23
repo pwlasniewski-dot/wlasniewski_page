@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useLayoutEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import toast from 'react-hot-toast';
@@ -117,9 +117,10 @@ export default function GroupGalleryPage() {
   const [heroIndex, setHeroIndex] = useState(0);
   const [heroPaused, setHeroPaused] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'story'>('story');
-  useLayoutEffect(() => {
-    if (typeof window === 'undefined') return;
-    setViewMode(window.innerWidth < 768 ? 'grid' : 'story');
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      setViewMode('grid');
+    }
   }, []);
 
   // Consent state
@@ -1800,9 +1801,6 @@ Hasło: ${password}` : ''}`}
               const isSelected = selectedPhotos.includes(photo.id);
               const selectionIdx = isSelected ? selectedPhotos.indexOf(photo.id) + 1 : null;
               const isPickedForDownload = downloadSelection.has(photo.id);
-              const cardAspectRatio = photo.width && photo.height
-                ? `${photo.width} / ${photo.height}`
-                : '3 / 4';
               return (
                 <div
                   key={photo.id}
@@ -1813,21 +1811,20 @@ Hasło: ${password}` : ''}`}
                       setLightboxPhoto(photo);
                     }
                   }}
-                  className={`relative mb-4 break-inside-avoid cursor-pointer rounded-lg overflow-hidden group transition-all ${
+                  className={`relative break-inside-avoid mb-4 cursor-pointer rounded-lg overflow-hidden group transition-all ${
                     downloadMode && isPickedForDownload
                       ? 'ring-4 ring-blue-400 shadow-lg shadow-blue-400/30'
                       : isSelected
                         ? 'ring-4 ring-gold-500 shadow-lg shadow-gold-500/20'
                         : 'ring-1 ring-zinc-800 hover:ring-zinc-600'
                   }`}
-                  style={{ aspectRatio: cardAspectRatio }}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={photo.thumbnail_url || photo.file_url}
                     alt="Zdjęcie z galerii"
                     loading="lazy"
-                    className={`w-full h-full object-cover block transition-transform ${downloadMode ? '' : 'group-hover:scale-[1.02]'}`}
+                    className={`w-full h-auto block transition-transform ${downloadMode ? '' : 'group-hover:scale-[1.02]'}`}
                   />
 
                   {/* Download-mode overlay: big checkbox */}
