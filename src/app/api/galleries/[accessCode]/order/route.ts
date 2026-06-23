@@ -104,7 +104,8 @@ export async function POST(
             const ip = extractClientIpv4(
                 request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip')
             );
-            const continueUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/galeria/${accessCode}/order/${order.id}/success`;
+            const requestOrigin = new URL(request.url).origin;
+            const continueUrl = `${requestOrigin}/galeria/${accessCode}/order/${order.id}/success`;
 
             const payuProducts = [];
             if (photo_count > 0) {

@@ -154,7 +154,8 @@ export async function POST(
       const ip = extractClientIpv4(
         request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip')
       );
-      const continueUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/galeria/grupowa?code=${encodeURIComponent(participant.gallery.group_access_code || '')}`;
+      const requestOrigin = new URL(request.url).origin;
+      const continueUrl = `${requestOrigin}/galeria/grupowa?code=${encodeURIComponent(participant.gallery.group_access_code || '')}`;
 
       const payuResponse = await createPayUOrder({
         description: `Dodatkowe zdjęcia - ${participant.parent_name || participant.parent_identifier || participant.gallery.client_name}`,

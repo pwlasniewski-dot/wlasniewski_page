@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { AlertCircle, RefreshCw, Search, ArrowLeft, ShoppingBag, Image as ImageIcon, Camera, Ticket, CircleDollarSign, Package, Clock3, SlidersHorizontal } from 'lucide-react';
+import { AlertCircle, RefreshCw, Search, ArrowLeft, ShoppingBag, Image as ImageIcon, Camera, Ticket, CircleDollarSign, Package, Clock3, SlidersHorizontal, Download } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getApiUrl } from '@/lib/api-config';
 
@@ -209,6 +209,51 @@ export default function AdminOrdersPage() {
 
 
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+    const [downloadingOrderId, setDownloadingOrderId] = useState<string | null>(null);
+
+    const handleDownloadParticipantZip = async (order: Order) => {
+        if (!order.galleryId || !order.participantId) {
+            toast.error('Brak danych uczestnika do pobrania ZIP');
+            return;
+        }
+
+        setDownloadingOrderId(order.id);
+        try {
+            const token = localStorage.getItem('admin_token');
+            const endpoint = getApiUrl(`admin/galleries/${order.galleryId}/participants/${order.participantId}/download-all`);
+            const res = await fetch(endpoint, {
+                headers: { 'Authorization': `Bearer ${token}` },
+            });
+
+            if (res.status === 401) {
+                localStorage.removeItem('admin_token');
+                router.push('/admin/login');
+                return;
+            }
+
+            if (!res.ok) {
+                toast.error('Nie udało się pobrać ZIP dla uczestnika');
+                return;
+            }
+
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            const participantSlug = order.participantIdentifier || String(order.participantId);
+            link.href = url;
+            link.download = `druk-${participantSlug}.zip`;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            URL.revokeObjectURL(url);
+            toast.success('Pobieranie ZIP rozpoczęte');
+        } catch (error) {
+            console.error(error);
+            toast.error('Błąd pobierania ZIP');
+        } finally {
+            setDownloadingOrderId(null);
+        }
+    };
 
     return (
         <div className="min-h-screen bg-zinc-950 p-6">
@@ -617,15 +662,26 @@ export default function AdminOrdersPage() {
                                     </>
                                 ) : (
                                     <>
-                                        {selectedOrder.galleryId && (
-                                            <Link
-                                                href={`/admin/galleries/${selectedOrder.galleryId}`}
-                                                className="flex items-center justify-center gap-2 w-full py-4 bg-zinc-800 hover:bg-zinc-700 hover:text-white text-emerald-400 font-bold rounded-xl transition-all border border-zinc-700 hover:border-emerald-500/50"
+                                        <div className="space-y-3">
+                                            <button
+                                                type="button"
+                                                onClick={() => handleDownloadParticipantZip(selectedOrder)}
+                                                disabled={downloadingOrderId === selectedOrder.id || !selectedOrder.galleryId || !selectedOrder.participantId}
+                                                className="flex items-center justify-center gap-2 w-full py-4 bg-emerald-600 hover:bg-emerald-500 disabled:bg-zinc-800 disabled:text-zinc-500 text-black font-bold rounded-xl transition-all border border-emerald-500/50"
                                             >
-                                                <ImageIcon className="w-5 h-5" />
-                                                Otwórz galerię i zarządzaj zamówieniem
-                                            </Link>
-                                        )}
+                                                <Download className="w-5 h-5" />
+                                                {downloadingOrderId === selectedOrder.id ? 'Przygotowuję ZIP...' : 'Pobierz ZIP zdjęć do druku tego rodzica'}
+                                            </button>
+                                            {selectedOrder.galleryId && (
+                                                <Link
+                                                    href={`/admin/galleries/${selectedOrder.galleryId}`}
+                                                    className="flex items-center justify-center gap-2 w-full py-3 bg-zinc-800 hover:bg-zinc-700 hover:text-white text-emerald-300 font-semibold rounded-xl transition-all border border-zinc-700 hover:border-emerald-500/50"
+                                                >
+                                                    <ImageIcon className="w-5 h-5" />
+                                                    Otwórz galerię (widok szczegółowy)
+                                                </Link>
+                                            )}
+                                        </div>
                                         <div className="mt-4">
                                             <p className="text-xs text-zinc-500 mb-2">Wybrane zdjęcia (ID): {(selectedOrder.photoIds || []).join(', ') || '-'}</p>
                                             {selectedOrder.selectedPhotos && selectedOrder.selectedPhotos.length > 0 ? (
