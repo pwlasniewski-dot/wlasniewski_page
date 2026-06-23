@@ -87,11 +87,20 @@ export default function GroupGalleryPage() {
   // PRO Hero + view mode
   const [heroIndex, setHeroIndex] = useState(0);
   const [heroPaused, setHeroPaused] = useState(false);
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'story'>('story');
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.innerWidth < 768) {
-      setViewMode('grid');
-    }
+    if (typeof window === 'undefined') return;
+
+    const syncViewportMode = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobileViewport(mobile);
+      setViewMode(mobile ? 'grid' : 'story');
+    };
+
+    syncViewportMode();
+    window.addEventListener('resize', syncViewportMode);
+    return () => window.removeEventListener('resize', syncViewportMode);
   }, []);
 
   // Consent state
@@ -1314,9 +1323,9 @@ Hasło: ${password}` : ''}`}
           title={isGuestMode ? 'Witaj, Gościu' : (participantInfo?.parent_name ? `Witaj, ${participantInfo.parent_name}` : 'Galeria')}
           subtitle={isGuestMode ? undefined : 'Wybierz zdjęcia do druku odbitek'}
           badge={isGuestMode ? undefined : 'Twoja prywatna galeria'}
-          showModeToggle
+          showModeToggle={isMobileViewport}
           mode={viewMode}
-          onModeChange={setViewMode}
+          onModeChange={(mode) => setViewMode(isMobileViewport ? mode : 'story')}
           onPhotoClick={(p) => setLightboxPhoto(p as Photo)}
           selectedPhotoIds={isGuestMode ? undefined : new Set(selectedPhotos)}
           onToggleSelect={isGuestMode ? undefined : (p) => handleSelectToggle(p.id)}
