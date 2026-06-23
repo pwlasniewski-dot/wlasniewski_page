@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
                     booking_id: booking_id ? Number(booking_id) : undefined,
                     gallery_mode: mode,
                     group_access_code,
-                    group_password: group_password ? String(group_password) : null,
+                    group_password: group_password ? String(group_password).trim() || null : null,
                     max_photos_for_print: max_photos_for_print ? Number(max_photos_for_print) : null,
                 }
             });

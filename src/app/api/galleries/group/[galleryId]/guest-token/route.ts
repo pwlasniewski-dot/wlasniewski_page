@@ -50,11 +50,12 @@ export async function POST(
       return NextResponse.json({ error: 'Galeria wygasła' }, { status: 403 });
     }
 
-    if (gallery.group_password) {
+    const storedPassword = (gallery.group_password || '').trim();
+    if (storedPassword) {
       if (!password) {
         return NextResponse.json({ error: 'Hasło jest wymagane' }, { status: 401 });
       }
-      if (String(password).trim().toLowerCase() !== gallery.group_password.toLowerCase()) {
+      if (String(password).trim().toLowerCase() !== storedPassword.toLowerCase()) {
         return NextResponse.json({ error: 'Nieprawidłowe hasło' }, { status: 401 });
       }
     }

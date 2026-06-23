@@ -100,8 +100,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify password if set
-    if (gallery.group_password) {
+    // Verify password if set.
+    // Trim the stored password too: an accidental trailing space/newline saved
+    // during gallery creation must never make a correct password fail forever.
+    const storedPassword = (gallery.group_password || '').trim();
+    if (storedPassword) {
       if (!password) {
         return NextResponse.json(
           { error: 'Hasło jest wymagane' },
@@ -109,7 +112,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      if (password.trim().toLowerCase() !== gallery.group_password.toLowerCase()) {
+      if (password.trim().toLowerCase() !== storedPassword.toLowerCase()) {
         return NextResponse.json(
           { error: 'Nieprawidłowe hasło' },
           { status: 401 }

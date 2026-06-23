@@ -110,7 +110,7 @@ export async function PUT(
                 updateData.group_access_code = normalized;
             }
             if (group_password !== undefined) {
-                updateData.group_password = group_password ? String(group_password) : null;
+                updateData.group_password = group_password ? String(group_password).trim() || null : null;
             }
             if (max_photos_for_print !== undefined) {
                 updateData.max_photos_for_print = max_photos_for_print === null || max_photos_for_print === ''
