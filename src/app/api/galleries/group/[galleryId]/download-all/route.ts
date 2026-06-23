@@ -7,8 +7,23 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import archiver from 'archiver';
 import { verifyParentToken, extractTokenFromHeader } from '@/lib/auth/parent-jwt';
+import sharp from 'sharp';
 
 export const maxDuration = 60; // seconds — Netlify Pro allows up to 60s
+
+const toJpegBuffer = async (input: Buffer): Promise<Buffer> => {
+  try {
+    return await sharp(input)
+      .pipelineColorspace('srgb')
+      .toColorspace('srgb')
+      .withMetadata({ icc: 'srgb' })
+      .jpeg({ quality: 95, chromaSubsampling: '4:4:4', mozjpeg: true })
+      .toBuffer();
+  } catch {
+    // Fallback: return original if conversion fails for a single file.
+    return input;
+  }
+};
 
 export async function GET(
   request: NextRequest,
@@ -18,7 +33,6 @@ export async function GET(
     const { galleryId: gIdRaw } = await params;
     const galleryId = parseInt(gIdRaw);
 
-  import sharp from 'sharp';
     if (isNaN(galleryId)) {
       return NextResponse.json({ error: 'Nieprawidłowe ID' }, { status: 400 });
     }
@@ -55,8 +69,6 @@ export async function GET(
       return NextResponse.json({ error: 'Brak zdjęć w galerii' }, { status: 404 });
     }
 
-    const toJpegBuffer = async (input: Buffer): Promise<Buffer> => input;
-
     // Build ZIP fully in memory — required for Netlify serverless (no streaming support)
     // STORE mode (no compression) — JPEGs don't compress, saves CPU/memory
     const zipBuffer = await new Promise<Buffer>((resolve, reject) => {
@@ -66,19 +78,6 @@ export async function GET(
       archive.on('data', (chunk: Buffer) => chunks.push(chunk));
       archive.on('end', () => resolve(Buffer.concat(chunks)));
       archive.on('error', reject);
-      const toJpegBuffer = async (input: Buffer): Promise<Buffer> => {
-        try {
-          return await sharp(input)
-            .pipelineColorspace('srgb')
-            .toColorspace('srgb')
-            .withMetadata({ icc: 'srgb' })
-            .jpeg({ quality: 95, chromaSubsampling: '4:4:4', mozjpeg: true })
-            .toBuffer();
-        } catch {
-          // Fallback: return original if conversion fails for a single file.
-          return input;
-        }
-      };
       (async () => {
         try {
           for (let i = 0; i < gallery.photos.length; i++) {
