@@ -13,8 +13,60 @@ const GROUP_EXTRA_PRINT_SIZES = {
 
 type GroupExtraPrintSize = keyof typeof GROUP_EXTRA_PRINT_SIZES;
 
+type GroupExtraPrintLine = {
+  photo_id: number;
+  print_size: GroupExtraPrintSize;
+  quantity: number;
+};
+
 function isGroupExtraPrintSize(value: string): value is GroupExtraPrintSize {
   return value === '10x15' || value === '15x21';
+}
+
+function normalizeRequestedLines(body: any): GroupExtraPrintLine[] {
+  const requestedLines = Array.isArray(body?.order_lines) ? body.order_lines : [];
+  const aggregated = new Map<string, GroupExtraPrintLine>();
+
+  requestedLines.forEach((line: any) => {
+    const photoId = Number(line?.photo_id);
+    const printSize = String(line?.print_size || '').trim();
+    const quantity = Number(line?.quantity);
+
+    if (!Number.isInteger(photoId) || photoId <= 0) return;
+    if (!isGroupExtraPrintSize(printSize)) return;
+    if (!Number.isInteger(quantity) || quantity <= 0) return;
+
+    const key = `${photoId}:${printSize}`;
+    const current = aggregated.get(key);
+    if (current) {
+      current.quantity = Math.min(99, current.quantity + quantity);
+      return;
+    }
+
+    aggregated.set(key, {
+      photo_id: photoId,
+      print_size: printSize,
+      quantity: Math.min(99, quantity),
+    });
+  });
+
+  if (aggregated.size > 0) {
+    return Array.from(aggregated.values());
+  }
+
+  const photoIds = Array.isArray(body?.photo_ids)
+    ? body.photo_ids.map((id: any) => Number(id)).filter((id: number) => Number.isInteger(id) && id > 0)
+    : [];
+  const requestedPrintSize = String(body?.print_size || '').trim() || '10x15';
+  if (!isGroupExtraPrintSize(requestedPrintSize)) {
+    return [];
+  }
+
+  return photoIds.map((photo_id) => ({
+    photo_id,
+    print_size: requestedPrintSize,
+    quantity: 1,
+  }));
 }
 
 async function getGroupPrintPrices() {
@@ -66,17 +118,10 @@ export async function POST(
     }
 
     const body = await request.json().catch(() => ({}));
-    const photoIds = Array.isArray(body?.photo_ids)
-      ? body.photo_ids.map((id: any) => Number(id)).filter((id: number) => Number.isFinite(id))
-      : [];
-    const requestedPrintSize = String(body?.print_size || '').trim() || '10x15';
+    const requestedLines = normalizeRequestedLines(body);
 
-    if (!isGroupExtraPrintSize(requestedPrintSize)) {
-      return NextResponse.json({ error: 'Nieprawidłowy rozmiar odbitki' }, { status: 400 });
-    }
-
-    if (photoIds.length === 0) {
-      return NextResponse.json({ error: 'Brak wybranych zdjęć' }, { status: 400 });
+    if (requestedLines.length === 0) {
+      return NextResponse.json({ error: 'Brak wybranych odbitek do zamówienia' }, { status: 400 });
     }
 
     const participant = await prisma.galleryParticipant.findUnique({
@@ -114,37 +159,67 @@ export async function POST(
       return NextResponse.json({ error: 'Ta opcja nie jest włączona dla tego rodzica' }, { status: 403 });
     }
 
+    const uniquePhotoIds = Array.from(new Set(requestedLines.map((line) => line.photo_id)));
+
     const photos = await prisma.galleryPhoto.findMany({
       where: {
-        id: { in: photoIds },
+        id: { in: uniquePhotoIds },
         gallery_id: participant.gallery_id,
       },
       select: { id: true },
     });
 
-    if (photos.length !== photoIds.length) {
+    if (photos.length !== uniquePhotoIds.length) {
       return NextResponse.json({ error: 'Niektóre zdjęcia nie należą do tej galerii' }, { status: 400 });
     }
 
     const printPrices = await getGroupPrintPrices();
     const basePricePerPhoto = participant.gallery.price_per_premium || printPrices['15x21'];
-    const sizeConfig = GROUP_EXTRA_PRINT_SIZES[requestedPrintSize];
-    const pricePerPhoto = printPrices[requestedPrintSize];
-    const totalAmount = pricePerPhoto * photoIds.length;
+
+    const normalizedLines = requestedLines.map((line) => {
+      const unitAmount = printPrices[line.print_size];
+      return {
+        ...line,
+        print_size_label: GROUP_EXTRA_PRINT_SIZES[line.print_size].label,
+        unit_amount: unitAmount,
+        line_total: unitAmount * line.quantity,
+      };
+    });
+
+    const totalAmount = normalizedLines.reduce((sum, line) => sum + line.line_total, 0);
+    const totalQuantity = normalizedLines.reduce((sum, line) => sum + line.quantity, 0);
+    const expandedPhotoIds = normalizedLines.flatMap((line) => Array.from({ length: line.quantity }, () => line.photo_id));
+
+    const groupedBySize = normalizedLines.reduce<Record<GroupExtraPrintSize, { quantity: number; unitAmount: number }>>(
+      (acc, line) => {
+        acc[line.print_size].quantity += line.quantity;
+        acc[line.print_size].unitAmount = line.unit_amount;
+        return acc;
+      },
+      {
+        '10x15': { quantity: 0, unitAmount: printPrices['10x15'] },
+        '15x21': { quantity: 0, unitAmount: printPrices['15x21'] },
+      }
+    );
+
+    const uniqueSizes = Array.from(new Set(normalizedLines.map((line) => line.print_size)));
+    const singleSize = uniqueSizes.length === 1 ? uniqueSizes[0] : undefined;
 
     const order = await prisma.photoOrder.create({
       data: {
         gallery_id: participant.gallery_id,
         participant_id: participant.id,
-        photo_ids: JSON.stringify(photoIds),
+        photo_ids: JSON.stringify(expandedPhotoIds),
         product_ids: JSON.stringify({
           kind: 'group_extra_prints',
-          print_size: requestedPrintSize,
-          print_size_label: sizeConfig.label,
-          unit_amount: pricePerPhoto,
+          version: 2,
+          print_size: singleSize,
+          print_size_label: singleSize ? GROUP_EXTRA_PRINT_SIZES[singleSize].label : undefined,
+          unit_amount: singleSize ? printPrices[singleSize] : undefined,
           base_unit_amount: basePricePerPhoto,
+          lines: normalizedLines,
         }),
-        photo_count: photoIds.length,
+        photo_count: totalQuantity,
         total_amount: totalAmount,
         payment_status: 'pending',
       },
@@ -157,6 +232,14 @@ export async function POST(
       const requestOrigin = new URL(request.url).origin;
       const continueUrl = `${requestOrigin}/galeria/grupowa?code=${encodeURIComponent(participant.gallery.group_access_code || '')}`;
 
+      const products = (Object.entries(groupedBySize) as Array<[GroupExtraPrintSize, { quantity: number; unitAmount: number }]>)
+        .filter(([, value]) => value.quantity > 0)
+        .map(([size, value]) => ({
+          name: `Dodatkowe odbitki ${GROUP_EXTRA_PRINT_SIZES[size].label}`,
+          unitPrice: value.unitAmount,
+          quantity: value.quantity,
+        }));
+
       const payuResponse = await createPayUOrder({
         description: `Dodatkowe zdjęcia - ${participant.parent_name || participant.parent_identifier || participant.gallery.client_name}`,
         currencyCode: 'PLN',
@@ -168,11 +251,7 @@ export async function POST(
           lastName: (participant.parent_name || participant.gallery.client_name || '').split(' ').slice(1).join(' ') || 'Galeria',
           language: 'pl',
         },
-        products: [{
-          name: `Dodatkowe odbitki ${sizeConfig.label} (${photoIds.length} szt.)`,
-          unitPrice: pricePerPhoto,
-          quantity: photoIds.length,
-        }],
+        products,
         continueUrl,
       }, ip);
 
@@ -197,8 +276,7 @@ export async function POST(
           total_amount: order.total_amount,
           payment_status: order.payment_status,
           payment_url: paymentUrl || null,
-          print_size: requestedPrintSize,
-          unit_price: pricePerPhoto,
+          order_lines: normalizedLines,
         },
         paymentUrl: paymentUrl || null,
       });
