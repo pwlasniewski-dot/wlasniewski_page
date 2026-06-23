@@ -3,28 +3,36 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { AlertCircle, RefreshCw, Search, ArrowLeft, ShoppingBag, Image as ImageIcon } from 'lucide-react';
-import GiftCard from '@/components/GiftCard';
+import { AlertCircle, RefreshCw, Search, ArrowLeft, ShoppingBag, Image as ImageIcon, Camera, Ticket } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getApiUrl } from '@/lib/api-config';
 
 interface Order {
-    id: number;
-    customerId: number;
+    type: 'gift_card' | 'gallery_photo';
+    rawId: number;
+    id: string;
     customerEmail: string;
     customerName: string;
     recipientName?: string;
     recipientEmail?: string;
     amount: number;
     currency: string;
-    status: string; // payment_status
-    deliveryStatus: string;
+    status: string;
     createdAt: string;
-    payuOrderId?: string;
-    stripeSessionId?: string;
+    paymentRef?: string;
     paymentMethod: string;
     giftCardCode?: string;
     giftCardValue?: number;
+    galleryId?: number;
+    galleryName?: string;
+    groupAccessCode?: string | null;
+    participantId?: number | null;
+    participantName?: string | null;
+    participantEmail?: string | null;
+    participantIdentifier?: string | null;
+    photoCount?: number;
+    photoIds?: number[];
+    selectedPhotos?: Array<{ id: number; thumbnail_url: string | null; file_url: string }>;
 }
 
 export default function AdminOrdersPage() {
@@ -34,6 +42,22 @@ export default function AdminOrdersPage() {
     const [loading, setLoading] = useState(true);
     const [isAuthorized, setIsAuthorized] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const [classFilter, setClassFilter] = useState('all');
+
+    const extractClassLabel = (galleryName?: string) => {
+        if (!galleryName) return null;
+        const match = galleryName.match(/klasa\s*[a-z0-9]+/i);
+        return match ? match[0].replace(/\s+/g, ' ').trim().toUpperCase() : null;
+    };
+
+    const classOptions = Array.from(
+        new Set(
+            orders
+                .filter((order) => order.type === 'gallery_photo')
+                .map((order) => extractClassLabel(order.galleryName))
+                .filter((value): value is string => Boolean(value))
+        )
+    ).sort((a, b) => a.localeCompare(b, 'pl'));
 
     useEffect(() => {
         const token = localStorage.getItem('admin_token');
@@ -46,26 +70,34 @@ export default function AdminOrdersPage() {
     }, [router]);
 
     useEffect(() => {
-        if (!searchTerm) {
-            setFilteredOrders(orders);
-            return;
-        }
         const lower = searchTerm.toLowerCase();
-        const filtered = orders.filter(o =>
-            o.customerEmail.toLowerCase().includes(lower) ||
-            o.customerName.toLowerCase().includes(lower) ||
-            o.payuOrderId?.toLowerCase().includes(lower) ||
-            o.giftCardCode?.toLowerCase().includes(lower) ||
-            `ORD-${o.id}`.toLowerCase().includes(lower)
-        );
+        const filtered = orders.filter(o => {
+            const orderClass = extractClassLabel(o.galleryName);
+            const matchesClass = classFilter === 'all' || orderClass === classFilter;
+
+            if (!matchesClass) return false;
+
+            if (!searchTerm) return true;
+
+            return (
+                o.customerEmail.toLowerCase().includes(lower) ||
+                o.customerName.toLowerCase().includes(lower) ||
+                o.paymentRef?.toLowerCase().includes(lower) ||
+                o.giftCardCode?.toLowerCase().includes(lower) ||
+                o.id.toLowerCase().includes(lower) ||
+                o.galleryName?.toLowerCase().includes(lower) ||
+                o.participantName?.toLowerCase().includes(lower) ||
+                o.participantIdentifier?.toLowerCase().includes(lower)
+            );
+        });
         setFilteredOrders(filtered);
-    }, [searchTerm, orders]);
+    }, [searchTerm, classFilter, orders]);
 
     const fetchOrders = async () => {
         setLoading(true);
         try {
             const token = localStorage.getItem('admin_token');
-            const res = await fetch(getApiUrl('gift-cards/orders'), {
+            const res = await fetch(getApiUrl('admin/orders'), {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
@@ -99,11 +131,22 @@ export default function AdminOrdersPage() {
 
     const getStatusColor = (status: string) => {
         switch (status) {
-            case 'completed': return 'text-green-400 bg-green-400/10 border-green-400/20';
+            case 'completed':
+            case 'paid':
+                return 'text-green-400 bg-green-400/10 border-green-400/20';
             case 'pending': return 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20';
+            case 'cancelled': return 'text-zinc-400 bg-zinc-400/10 border-zinc-400/20';
             case 'failed': return 'text-red-400 bg-red-400/10 border-red-400/20';
             default: return 'text-zinc-400 bg-zinc-400/10 border-zinc-400/20';
         }
+    };
+
+    const getStatusLabel = (status: string) => {
+        if (status === 'completed' || status === 'paid') return 'Opłacone';
+        if (status === 'pending') return 'Oczekuje';
+        if (status === 'cancelled') return 'Anulowane';
+        if (status === 'failed') return 'Błąd';
+        return status;
     };
 
     const handleResendEmail = async (orderId: number) => {
@@ -151,10 +194,10 @@ export default function AdminOrdersPage() {
                                 </button>
                                 <h1 className="text-3xl font-bold text-white flex items-center gap-2">
                                     <ShoppingBag className="text-gold-500" />
-                                    Zamówienia Kart
+                                    Zamówienia
                                 </h1>
                             </div>
-                            <p className="text-zinc-400 ml-9">Pełna historia zakupów kart podarunkowych</p>
+                            <p className="text-zinc-400 ml-9">Jedna lista: karty podarunkowe + dodatkowe odbitki z galerii</p>
                         </div>
                         <button
                             onClick={fetchOrders}
@@ -167,15 +210,27 @@ export default function AdminOrdersPage() {
 
                     {/* Search */}
                     <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 mb-6">
-                        <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={20} />
-                            <input
-                                type="text"
-                                placeholder="Szukaj po e-mailu, nazwisku, kodzie karty lub ID zamówienia..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2 bg-zinc-950 border border-zinc-700 rounded-lg text-white focus:border-gold-500 focus:outline-none placeholder-zinc-600"
-                            />
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <div className="relative md:col-span-2">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={20} />
+                                <input
+                                    type="text"
+                                    placeholder="Szukaj po e-mailu, nazwisku, kodzie, galerii, uczestniku lub ID..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="w-full pl-10 pr-4 py-2 bg-zinc-950 border border-zinc-700 rounded-lg text-white focus:border-gold-500 focus:outline-none placeholder-zinc-600"
+                                />
+                            </div>
+                            <select
+                                value={classFilter}
+                                onChange={(e) => setClassFilter(e.target.value)}
+                                className="w-full px-3 py-2 bg-zinc-950 border border-zinc-700 rounded-lg text-white focus:border-gold-500 focus:outline-none"
+                            >
+                                <option value="all">Wszystkie klasy</option>
+                                {classOptions.map((className) => (
+                                    <option key={className} value={className}>{className}</option>
+                                ))}
+                            </select>
                         </div>
                     </div>
 
@@ -186,8 +241,9 @@ export default function AdminOrdersPage() {
                                 <thead>
                                     <tr className="bg-zinc-950/50 border-b border-zinc-800">
                                         <th className="p-4 text-xs font-medium text-zinc-500 uppercase tracking-wider">ID / Data</th>
+                                        <th className="p-4 text-xs font-medium text-zinc-500 uppercase tracking-wider">Typ</th>
                                         <th className="p-4 text-xs font-medium text-zinc-500 uppercase tracking-wider">Klient</th>
-                                        <th className="p-4 text-xs font-medium text-zinc-500 uppercase tracking-wider">Karta</th>
+                                        <th className="p-4 text-xs font-medium text-zinc-500 uppercase tracking-wider">Pozycja</th>
                                         <th className="p-4 text-xs font-medium text-zinc-500 uppercase tracking-wider">Płatność</th>
                                         <th className="p-4 text-xs font-medium text-zinc-500 uppercase tracking-wider">Status</th>
                                         <th className="p-4 text-xs font-medium text-zinc-500 uppercase tracking-wider">Akcje</th>
@@ -196,7 +252,7 @@ export default function AdminOrdersPage() {
                                 <tbody className="divide-y divide-zinc-800">
                                     {filteredOrders.length === 0 ? (
                                         <tr>
-                                            <td colSpan={6} className="p-8 text-center text-zinc-500">
+                                            <td colSpan={7} className="p-8 text-center text-zinc-500">
                                                 {loading ? 'Ładowanie...' : 'Brak zamówień'}
                                             </td>
                                         </tr>
@@ -208,33 +264,62 @@ export default function AdminOrdersPage() {
                                                 onClick={() => setSelectedOrder(order)}
                                             >
                                                 <td className="p-4">
-                                                    <div className="font-mono text-gold-400 font-bold">ORD-{order.id}</div>
+                                                    <div className="font-mono text-gold-400 font-bold">{order.id}</div>
                                                     <div className="text-xs text-zinc-500 mt-1">{formatDate(order.createdAt)}</div>
+                                                </td>
+                                                <td className="p-4">
+                                                    {order.type === 'gift_card' ? (
+                                                        <span className="inline-flex items-center gap-1.5 px-2 py-1 text-xs font-bold rounded-full bg-purple-500/10 border border-purple-500/30 text-purple-300">
+                                                            <Ticket size={12} />
+                                                            Karta
+                                                        </span>
+                                                    ) : (
+                                                        <span className="inline-flex items-center gap-1.5 px-2 py-1 text-xs font-bold rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-300">
+                                                            <Camera size={12} />
+                                                            Galeria
+                                                        </span>
+                                                    )}
                                                 </td>
                                                 <td className="p-4">
                                                     <div className="text-white font-medium">{order.customerName}</div>
                                                     <div className="text-sm text-zinc-400">{order.customerEmail}</div>
-                                                </td>
-                                                <td className="p-4">
-                                                    <div className="text-white font-bold">{order.amount / 100} PLN</div>
-                                                    {order.giftCardCode && (
-                                                        <div className="text-xs text-emerald-400 font-mono mt-1 bg-emerald-900/30 px-2 py-0.5 rounded inline-block">
-                                                            {order.giftCardCode}
-                                                        </div>
+                                                    {order.participantIdentifier && (
+                                                        <div className="text-xs text-zinc-500 mt-1">ID: {order.participantIdentifier}</div>
                                                     )}
-                                                    <div className="text-xs text-zinc-500 mt-1">Dla: {order.recipientName || order.recipientEmail}</div>
                                                 </td>
                                                 <td className="p-4">
-                                                    <div className="text-sm text-zinc-300 uppercase">{order.paymentMethod}</div>
+                                                    {order.type === 'gift_card' ? (
+                                                        <>
+                                                            <div className="text-white font-bold">Karta podarunkowa</div>
+                                                            {order.giftCardCode && (
+                                                                <div className="text-xs text-emerald-400 font-mono mt-1 bg-emerald-900/30 px-2 py-0.5 rounded inline-block">
+                                                                    {order.giftCardCode}
+                                                                </div>
+                                                            )}
+                                                            <div className="text-xs text-zinc-500 mt-1">Dla: {order.recipientName || order.recipientEmail || '-'}</div>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <div className="text-white font-bold">{order.galleryName}</div>
+                                                            <div className="text-xs text-zinc-400 mt-1">{order.photoCount || 0} zdjęć</div>
+                                                            {order.groupAccessCode && (
+                                                                <div className="text-xs text-gold-400 font-mono mt-1">Kod: {order.groupAccessCode}</div>
+                                                            )}
+                                                        </>
+                                                    )}
+                                                </td>
+                                                <td className="p-4">
+                                                    <div className="text-white font-bold">{(order.amount / 100).toFixed(2)} {order.currency}</div>
+                                                    <div className="text-xs text-zinc-300 uppercase mt-1">{order.paymentMethod || '-'}</div>
                                                     <div className="text-xs font-mono text-zinc-500 break-all max-w-[150px] mt-1">
-                                                        {order.payuOrderId || order.stripeSessionId || '-'}
+                                                        {order.paymentRef || '-'}
                                                     </div>
                                                 </td>
                                                 <td className="p-4">
                                                     <span className={`px-2 py-1 text-xs font-bold rounded-full border ${getStatusColor(order.status)}`}>
-                                                        {order.status === 'completed' ? 'Opłacone' : order.status === 'pending' ? 'Oczekuje' : order.status}
+                                                        {getStatusLabel(order.status)}
                                                     </span>
-                                                    {order.deliveryStatus !== 'sent' && order.status === 'completed' && (
+                                                    {order.type === 'gift_card' && order.status === 'completed' && (
                                                         <div className="mt-2 text-xs text-red-400 flex items-center gap-1">
                                                             <AlertCircle size={12} /> Nie wysłano
                                                         </div>
@@ -252,12 +337,12 @@ export default function AdminOrdersPage() {
                                                         >
                                                             <Search size={16} />
                                                         </button>
-                                                        {order.status === 'completed' && (
+                                                        {order.type === 'gift_card' && order.status === 'completed' && (
                                                             <button
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();
                                                                     if (confirm('Czy na pewno chcesz wysłać ponownie email z kartą do klienta?')) {
-                                                                        handleResendEmail(order.id);
+                                                                        handleResendEmail(order.rawId);
                                                                     }
                                                                 }}
                                                                 className="p-2 hover:bg-zinc-700 text-zinc-400 hover:text-white rounded transition-colors"
@@ -283,7 +368,7 @@ export default function AdminOrdersPage() {
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={() => setSelectedOrder(null)}>
                     <div className="bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl max-w-2xl w-full overflow-hidden" onClick={e => e.stopPropagation()}>
                         <div className="p-6 border-b border-zinc-800 flex justify-between items-center">
-                            <h2 className="text-xl font-bold text-white">Szczegóły Zamówienia <span className="text-gold-500">ORD-{selectedOrder.id}</span></h2>
+                            <h2 className="text-xl font-bold text-white">Szczegóły Zamówienia <span className="text-gold-500">{selectedOrder.id}</span></h2>
                             <button onClick={() => setSelectedOrder(null)} className="text-zinc-400 hover:text-white"><div className="w-6 h-6 flex items-center justify-center">✕</div></button>
                         </div>
                         <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -302,57 +387,119 @@ export default function AdminOrdersPage() {
                             </div>
 
                             <div>
-                                <h3 className="text-sm font-medium text-zinc-500 uppercase tracking-wider mb-4">Dane Odbiorcy (Karta)</h3>
-                                <div className="space-y-3">
-                                    <div>
-                                        <label className="text-xs text-zinc-500">Kod Karty</label>
-                                        <div className="text-emerald-400 font-mono font-bold bg-emerald-900/20 px-2 py-1 rounded inline-block">
-                                            {selectedOrder.giftCardCode || '-'}
+                                {selectedOrder.type === 'gift_card' ? (
+                                    <>
+                                        <h3 className="text-sm font-medium text-zinc-500 uppercase tracking-wider mb-4">Dane Odbiorcy (Karta)</h3>
+                                        <div className="space-y-3">
+                                            <div>
+                                                <label className="text-xs text-zinc-500">Kod Karty</label>
+                                                <div className="text-emerald-400 font-mono font-bold bg-emerald-900/20 px-2 py-1 rounded inline-block">
+                                                    {selectedOrder.giftCardCode || '-'}
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className="text-xs text-zinc-500">Wartość</label>
+                                                <div className="text-white font-bold">{(selectedOrder.amount / 100).toFixed(2)} PLN</div>
+                                            </div>
+                                            <div>
+                                                <label className="text-xs text-zinc-500">Dla kogo</label>
+                                                <div className="text-white">{selectedOrder.recipientName || '-'}</div>
+                                            </div>
+                                            <div>
+                                                <label className="text-xs text-zinc-500">Email odbiorcy</label>
+                                                <div className="text-zinc-300">{selectedOrder.recipientEmail || '(Pusty - wysłano do kupującego)'}</div>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div>
-                                        <label className="text-xs text-zinc-500">Wartość</label>
-                                        <div className="text-white font-bold">{selectedOrder.amount / 100} PLN</div>
-                                    </div>
-                                    <div>
-                                        <label className="text-xs text-zinc-500">Dla kogo</label>
-                                        <div className="text-white">{selectedOrder.recipientName || '-'}</div>
-                                    </div>
-                                    <div>
-                                        <label className="text-xs text-zinc-500">Email odbiorcy</label>
-                                        <div className="text-zinc-300">{selectedOrder.recipientEmail || '(Pusty - wysłano do kupującego)'}</div>
-                                    </div>
-                                </div>
+                                    </>
+                                ) : (
+                                    <>
+                                        <h3 className="text-sm font-medium text-zinc-500 uppercase tracking-wider mb-4">Szczegóły Zakupu (Galeria)</h3>
+                                        <div className="space-y-3">
+                                            <div>
+                                                <label className="text-xs text-zinc-500">Galeria</label>
+                                                <div className="text-white font-medium">{selectedOrder.galleryName || '-'}</div>
+                                            </div>
+                                            <div>
+                                                <label className="text-xs text-zinc-500">Uczestnik</label>
+                                                <div className="text-white">{selectedOrder.participantName || selectedOrder.participantIdentifier || '-'}</div>
+                                            </div>
+                                            <div>
+                                                <label className="text-xs text-zinc-500">ID uczestnika / email</label>
+                                                <div className="text-zinc-300">{selectedOrder.participantIdentifier || '-'} {selectedOrder.participantEmail ? `• ${selectedOrder.participantEmail}` : ''}</div>
+                                            </div>
+                                            <div>
+                                                <label className="text-xs text-zinc-500">Kwota / zdjęcia</label>
+                                                <div className="text-white font-bold">{(selectedOrder.amount / 100).toFixed(2)} PLN • {selectedOrder.photoCount || 0} szt.</div>
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
                             </div>
 
                             <div className="md:col-span-2 border-t border-zinc-800 pt-6">
                                 <h3 className="text-sm font-medium text-zinc-500 uppercase tracking-wider mb-4">Zdjęcia i Galeria</h3>
-                                <Link
-                                    href={`/admin/galleries?createFor=${encodeURIComponent(JSON.stringify({
-                                        name: selectedOrder.recipientName || selectedOrder.customerName,
-                                        email: selectedOrder.recipientEmail || selectedOrder.customerEmail
-                                    }))}`}
-                                    className="flex items-center justify-center gap-2 w-full py-4 bg-zinc-800 hover:bg-zinc-700 hover:text-white text-gold-500 font-bold rounded-xl transition-all border border-zinc-700 hover:border-gold-500/50"
-                                >
-                                    <ImageIcon className="w-5 h-5" />
-                                    Zarządzaj Zdjęciami (Dodaj do Panelu Klienta)
-                                </Link>
-                                <p className="text-center text-xs text-zinc-500 mt-2 mb-6">
-                                    Jeśli to zamówienie karty, możesz od razu utworzyć galerię dla obdarowanego (jeśli podano email).
-                                </p>
+                                {selectedOrder.type === 'gift_card' ? (
+                                    <>
+                                        <Link
+                                            href={`/admin/galleries?createFor=${encodeURIComponent(JSON.stringify({
+                                                name: selectedOrder.recipientName || selectedOrder.customerName,
+                                                email: selectedOrder.recipientEmail || selectedOrder.customerEmail
+                                            }))}`}
+                                            className="flex items-center justify-center gap-2 w-full py-4 bg-zinc-800 hover:bg-zinc-700 hover:text-white text-gold-500 font-bold rounded-xl transition-all border border-zinc-700 hover:border-gold-500/50"
+                                        >
+                                            <ImageIcon className="w-5 h-5" />
+                                            Zarządzaj Zdjęciami (Dodaj do Panelu Klienta)
+                                        </Link>
+                                        <p className="text-center text-xs text-zinc-500 mt-2 mb-6">
+                                            Jeśli to zamówienie karty, możesz od razu utworzyć galerię dla obdarowanego (jeśli podano email).
+                                        </p>
+                                    </>
+                                ) : (
+                                    <>
+                                        {selectedOrder.galleryId && (
+                                            <Link
+                                                href={`/admin/galleries/${selectedOrder.galleryId}`}
+                                                className="flex items-center justify-center gap-2 w-full py-4 bg-zinc-800 hover:bg-zinc-700 hover:text-white text-emerald-400 font-bold rounded-xl transition-all border border-zinc-700 hover:border-emerald-500/50"
+                                            >
+                                                <ImageIcon className="w-5 h-5" />
+                                                Otwórz galerię i zarządzaj zamówieniem
+                                            </Link>
+                                        )}
+                                        <div className="mt-4">
+                                            <p className="text-xs text-zinc-500 mb-2">Wybrane zdjęcia (ID): {(selectedOrder.photoIds || []).join(', ') || '-'}</p>
+                                            {selectedOrder.selectedPhotos && selectedOrder.selectedPhotos.length > 0 ? (
+                                                <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
+                                                    {selectedOrder.selectedPhotos.map((photo) => (
+                                                        <div key={photo.id} className="relative aspect-square rounded-lg overflow-hidden border border-zinc-700 bg-zinc-950">
+                                                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                            <img
+                                                                src={photo.thumbnail_url || photo.file_url}
+                                                                alt={`Zdjęcie ${photo.id}`}
+                                                                className="w-full h-full object-cover"
+                                                            />
+                                                            <span className="absolute bottom-1 left-1 text-[10px] px-1.5 py-0.5 rounded bg-black/70 text-white font-mono">#{photo.id}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <p className="text-xs text-zinc-500">Brak podglądu miniatur.</p>
+                                            )}
+                                        </div>
+                                    </>
+                                )}
 
                                 <h3 className="text-sm font-medium text-zinc-500 uppercase tracking-wider mb-4">Status i Akcje</h3>
                                 <div className="flex items-center justify-between bg-zinc-950 p-4 rounded-lg border border-zinc-800">
                                     <div className="flex items-center gap-3">
-                                        <div className={`w-3 h-3 rounded-full ${selectedOrder.status === 'completed' ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
+                                        <div className={`w-3 h-3 rounded-full ${(selectedOrder.status === 'completed' || selectedOrder.status === 'paid') ? 'bg-green-500' : selectedOrder.status === 'pending' ? 'bg-yellow-500' : 'bg-zinc-500'}`}></div>
                                         <div>
-                                            <div className="text-sm font-medium text-white">Status Płatności: {selectedOrder.status}</div>
-                                            <div className="text-xs text-zinc-500">Ref: {selectedOrder.payuOrderId || selectedOrder.stripeSessionId}</div>
+                                            <div className="text-sm font-medium text-white">Status Płatności: {getStatusLabel(selectedOrder.status)}</div>
+                                            <div className="text-xs text-zinc-500">Ref: {selectedOrder.paymentRef || '-'}</div>
                                         </div>
                                     </div>
-                                    {selectedOrder.status === 'completed' && (
+                                    {selectedOrder.type === 'gift_card' && selectedOrder.status === 'completed' && (
                                         <button
-                                            onClick={() => handleResendEmail(selectedOrder.id)}
+                                            onClick={() => handleResendEmail(selectedOrder.rawId)}
                                             className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2"
                                         >
                                             <RefreshCw size={14} /> Wyślij email ponownie

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
     LayoutDashboard,
     Image,
@@ -48,7 +48,7 @@ const navigation = [
             { name: 'Złożone rezerwacje', href: '/admin/bookings' },
             { name: 'Kalendarz', href: '/admin/bookings/calendar' },
             { name: 'Grafik / Dostępność', href: '/admin/availability' },
-            { name: 'Zamówienia (Sklep)', href: '/admin/bookings/orders' },
+            { name: 'Zamówienia', href: '/admin/bookings/orders' },
             { name: 'Pakiety rezerwacji', href: '/admin/rezerwacja' },
         ]
     },
@@ -141,6 +141,20 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
     const pathname = usePathname();
     const router = useRouter();
     const [expandedMenu, setExpandedMenu] = useState<string | null>(null);
+
+    useEffect(() => {
+        const activeParent = navigation.find((item) => {
+            if (!('children' in item) || !item.children) return false;
+
+            return item.children.some((child: any) => {
+                return pathname === child.href || pathname.startsWith(`${child.href}/`);
+            });
+        });
+
+        if (activeParent) {
+            setExpandedMenu(activeParent.name);
+        }
+    }, [pathname]);
 
     const handleLogout = () => {
         localStorage.removeItem('admin_token');
