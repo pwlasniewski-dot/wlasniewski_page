@@ -26,17 +26,52 @@ function parsePhotoIds(raw: string | null | undefined): number[] {
   return [];
 }
 
-function parsePaidPrintFormat(raw: string | null | undefined): string {
-  if (!raw) return '10x15';
-  try {
-    const parsed = JSON.parse(raw) as Record<string, unknown>;
-    if (parsed && parsed.kind === 'group_extra_prints' && typeof parsed.print_size === 'string') {
-      return parsed.print_size;
+function parsePaidPrintEntries(photoIdsRaw: string | null | undefined, productIdsRaw: string | null | undefined): Array<{ photo_id: number; format: string; quantity: number }> {
+  const fallbackPhotoIds = parsePhotoIds(photoIdsRaw);
+
+  if (productIdsRaw) {
+    try {
+      const parsed = JSON.parse(productIdsRaw) as Record<string, unknown>;
+      if (parsed && parsed.kind === 'group_extra_prints') {
+        const rawLines = Array.isArray(parsed.lines) ? parsed.lines : [];
+        const lines = rawLines
+          .map((line) => {
+            const item = line as Record<string, unknown>;
+            const photo_id = Number(item.photo_id);
+            const print_size = typeof item.print_size === 'string' ? item.print_size : null;
+            const quantity = Number(item.quantity);
+            if (!Number.isInteger(photo_id) || photo_id <= 0) return null;
+            if (!print_size) return null;
+            if (!Number.isInteger(quantity) || quantity <= 0) return null;
+            return { photo_id, format: print_size, quantity };
+          })
+          .filter((line): line is { photo_id: number; format: string; quantity: number } => Boolean(line));
+
+        if (lines.length > 0) return lines;
+
+        if (typeof parsed.print_size === 'string' && fallbackPhotoIds.length > 0) {
+          const byPhoto = new Map<number, number>();
+          fallbackPhotoIds.forEach((photoId) => byPhoto.set(photoId, (byPhoto.get(photoId) || 0) + 1));
+          return Array.from(byPhoto.entries()).map(([photo_id, quantity]) => ({
+            photo_id,
+            format: parsed.print_size as string,
+            quantity,
+          }));
+        }
+      }
+    } catch {
+      // ignore invalid payload
     }
-  } catch {
-    // ignore invalid payload
   }
-  return '10x15';
+
+  if (fallbackPhotoIds.length === 0) return [];
+  const byPhoto = new Map<number, number>();
+  fallbackPhotoIds.forEach((photoId) => byPhoto.set(photoId, (byPhoto.get(photoId) || 0) + 1));
+  return Array.from(byPhoto.entries()).map(([photo_id, quantity]) => ({
+    photo_id,
+    format: '10x15',
+    quantity,
+  }));
 }
 
 function normalizeDisplayName(input: string | null | undefined): string {
@@ -112,22 +147,22 @@ export async function GET(
       const displayName = normalizeDisplayName(participant.parent_name);
       const zipName = `${normalizeZipFilename(displayName)}-wybrane-zdjecia.zip`;
 
-      const paidPhotoIds = new Set<number>();
-      const paidFormatByPhotoId = new Map<number, string>();
+      const paidItems: Array<{ id: number; format: string }> = [];
       paidOrders.forEach((order) => {
-        const format = parsePaidPrintFormat(order.product_ids);
-        parsePhotoIds(order.photo_ids).forEach((photoId) => {
-          paidPhotoIds.add(photoId);
-          if (!paidFormatByPhotoId.has(photoId)) {
-            paidFormatByPhotoId.set(photoId, format);
+        const entries = parsePaidPrintEntries(order.photo_ids, order.product_ids);
+        entries.forEach((entry) => {
+          for (let i = 0; i < entry.quantity; i++) {
+            paidItems.push({ id: entry.photo_id, format: entry.format });
           }
         });
       });
 
-      const paidPhotos = paidPhotoIds.size
+      const paidPhotoIds = Array.from(new Set(paidItems.map((item) => item.id)));
+
+      const paidPhotos = paidPhotoIds.length
         ? await prisma.galleryPhoto.findMany({
             where: {
-              id: { in: Array.from(paidPhotoIds) },
+              id: { in: paidPhotoIds },
               gallery_id: galleryId,
             },
             select: { id: true, file_url: true },
@@ -143,22 +178,19 @@ export async function GET(
         format: DEFAULT_STANDARD_PRINT_FORMAT,
       }));
 
-      const paidItems = Array.from(paidPhotoIds)
-        .map((id) => ({
-          id,
-          file_url: paidPhotoUrlById.get(id) || null,
+      const paidPrintItems = paidItems
+        .map((item) => ({
+          id: item.id,
+          file_url: paidPhotoUrlById.get(item.id) || null,
           source: 'PLATNE' as const,
-          format: paidFormatByPhotoId.get(id) || '10x15',
+          format: item.format || '10x15',
         }))
         .filter((item): item is { id: number; file_url: string; source: 'PLATNE'; format: string } => Boolean(item.file_url));
 
-      const mergedItems: Array<{ id: number; file_url: string; source: 'STANDARD' | 'PLATNE'; format: string }> = [];
-      const seen = new Set<number>();
-      [...standardItems, ...paidItems].forEach((item) => {
-        if (seen.has(item.id)) return;
-        seen.add(item.id);
-        mergedItems.push(item);
-      });
+      const mergedItems: Array<{ id: number; file_url: string; source: 'STANDARD' | 'PLATNE'; format: string }> = [
+        ...standardItems,
+        ...paidPrintItems,
+      ];
 
       const passthrough = new PassThrough();
       const archive = archiver('zip', { zlib: { level: 9 } });
