@@ -132,6 +132,7 @@ export default function GroupGalleryPage() {
   // Share modal
   const [showShareModal, setShowShareModal] = useState(false);
   const [copiedShare, setCopiedShare] = useState(false);
+  const [showExtraPurchaseModal, setShowExtraPurchaseModal] = useState(false);
   const [purchasingExtras, setPurchasingExtras] = useState(false);
   const [selectedExtraPrintSize, setSelectedExtraPrintSize] = useState<GroupExtraPrintSize>('10x15');
 
@@ -813,6 +814,7 @@ export default function GroupGalleryPage() {
     .reduce((sum, line) => sum + line.quantity, 0);
   const paidExtraOrdersCount = extraOrdersHistory.filter((order) => order.payment_status === 'paid' || order.payment_status === 'completed').length;
   const unpaidExtraOrdersCount = extraOrdersHistory.filter((order) => order.payment_status !== 'paid' && order.payment_status !== 'completed').length;
+  const selectedExtraPhotoItems = photos.filter((p) => selectedExtraPhotos.includes(p.id));
   const availableExtraPhotos = photos;
   const allSelectedIds = new Set([...selectedPhotos, ...selectedExtraPhotos, ...paidExtraPhotoIds]);
   const visiblePhotos = showSelectedOnly ? photos.filter(p => allSelectedIds.has(p.id)) : photos;
@@ -1565,7 +1567,7 @@ Hasło: ${password}` : ''}`}
                 {extraPurchaseEnabled && extraCartTotalUnits === 0 && (
                   <button
                     type="button"
-                    onClick={() => document.getElementById('extras-order-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                    onClick={() => setShowExtraPurchaseModal(true)}
                     className="flex items-center gap-2 px-5 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-emerald-400 text-sm font-bold rounded-lg border border-emerald-800 transition-all"
                     title="Wybierz dodatkowe odbitki do druku"
                   >
@@ -1625,7 +1627,7 @@ Hasło: ${password}` : ''}`}
 
       {/* Dodatkowe odbitki do druku — sekcja płatnych zdjęć poza limitem */}
       {!isGuestMode && extraPurchaseEnabled && photos.length > 0 && (
-        <div id="extras-order-section" className="max-w-7xl mx-auto px-4 pt-4">
+        <div className="max-w-7xl mx-auto px-4 pt-4">
           <div className="bg-emerald-900/20 border border-emerald-600/40 rounded-xl p-4">
             <div className="flex items-center justify-between gap-3 mb-3">
               <div>
@@ -1634,142 +1636,37 @@ Hasło: ${password}` : ''}`}
                 <p className="text-xs text-zinc-400 mt-1">Historia zamówień: {paidExtraOrdersCount} opłaconych, {unpaidExtraOrdersCount} nieopłaconych. To samo zdjęcie możesz zamawiać wielokrotnie.</p>
               </div>
             </div>
-            {availableExtraPhotos.length === 0 ? (
-              <p className="text-zinc-500 text-sm">Nie masz jeszcze wybranych dodatkowych zdjęć.</p>
+            {extraCartTotalUnits === 0 ? (
+              <p className="text-sm text-emerald-200/50">Zaznacz poniżej interesujące Cię zdjęcia, aby rozszerzyć liczbę odbitek poza limit 5 odbitek.</p>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 mb-5">
-                {availableExtraPhotos.map((photo) => {
-                  const orderedStats = orderedPhotoTotals[photo.id];
-                  const qty10x15 = getExtraQty(photo.id, '10x15');
-                  const qty15x21 = getExtraQty(photo.id, '15x21');
-                  const hasInCart = qty10x15 + qty15x21 > 0;
-                  return (
-                    <div
-                      key={photo.id}
-                      className={`relative rounded-xl overflow-hidden border transition-all text-left ${hasInCart ? 'border-gold-500 ring-2 ring-gold-500/20' : 'border-zinc-800 hover:border-zinc-600'}`}
+              <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
+                {selectedExtraPhotoItems.map((photo, idx) => (
+                  <div key={`extra-${photo.id}`} className="relative aspect-square rounded-lg overflow-hidden border border-emerald-500/60 bg-black">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={photo.thumbnail_url || photo.file_url}
+                      alt={`Dodatkowa odbitka do druku ${idx + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                    <span className="absolute top-1 left-1 bg-emerald-500 text-black text-[10px] font-black px-1.5 py-0.5 rounded">
+                      10x15: {getExtraQty(photo.id, '10x15')} • 15x21: {getExtraQty(photo.id, '15x21')}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setExtraQty(photo.id, '10x15', 0);
+                        setExtraQty(photo.id, '15x21', 0);
+                      }}
+                      className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/80 hover:bg-red-500 text-white flex items-center justify-center transition-colors"
+                      title="Usuń wszystkie dodatkowe odbitki tego zdjęcia"
                     >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={photo.thumbnail_url || photo.file_url}
-                        alt={`Dodatkowe zdjęcie ${photo.id}`}
-                        className="w-full aspect-square object-cover"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/0 to-black/0" />
-                      <div className="absolute top-2 left-2 px-2 py-1 rounded-full bg-black/70 text-[10px] font-bold text-white">
-                        {hasInCart ? 'W koszyku' : 'Dodaj'}
-                      </div>
-
-                      {orderedStats && (orderedStats.paid_total > 0 || orderedStats.unpaid_total > 0) && (
-                        <div className="absolute top-2 right-2 px-2 py-1 rounded-full bg-emerald-950/90 border border-emerald-700 text-[10px] font-bold text-emerald-200">
-                          Wcześniej: {orderedStats.paid_total} opł. / {orderedStats.unpaid_total} nieopł.
-                        </div>
-                      )}
-
-                      <div className="p-2 border-t border-zinc-800 bg-zinc-950/90 space-y-2">
-                        <div className="text-[10px] text-zinc-400 font-semibold">
-                          10x15 ({(globalPrice10x15 / 100).toFixed(2)} PLN)
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => setExtraQty(photo.id, '10x15', qty10x15 - 1)}
-                            className="w-7 h-7 rounded-md bg-zinc-800 hover:bg-zinc-700 text-white font-bold"
-                          >
-                            -
-                          </button>
-                          <span className="min-w-[24px] text-center text-sm font-bold text-white">{qty10x15}</span>
-                          <button
-                            type="button"
-                            onClick={() => setExtraQty(photo.id, '10x15', qty10x15 + 1)}
-                            className="w-7 h-7 rounded-md bg-zinc-800 hover:bg-zinc-700 text-white font-bold"
-                          >
-                            +
-                          </button>
-                        </div>
-
-                        <div className="text-[10px] text-zinc-400 font-semibold">
-                          15x21 ({(globalPrice15x21 / 100).toFixed(2)} PLN)
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => setExtraQty(photo.id, '15x21', qty15x21 - 1)}
-                            className="w-7 h-7 rounded-md bg-zinc-800 hover:bg-zinc-700 text-white font-bold"
-                          >
-                            -
-                          </button>
-                          <span className="min-w-[24px] text-center text-sm font-bold text-white">{qty15x21}</span>
-                          <button
-                            type="button"
-                            onClick={() => setExtraQty(photo.id, '15x21', qty15x21 + 1)}
-                            className="w-7 h-7 rounded-md bg-zinc-800 hover:bg-zinc-700 text-white font-bold"
-                          >
-                            +
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
               </div>
             )}
-
-            {extraOrdersHistory.length > 0 && (
-              <div className="mb-5 bg-zinc-900 border border-zinc-800 rounded-xl p-4">
-                <h4 className="text-sm font-bold text-white mb-2">Historia poprzednich zamówień (także nieopłaconych)</h4>
-                <p className="text-xs text-zinc-400 mb-3">Możesz zamówić to samo zdjęcie ponownie. To, co dodasz teraz, utworzy nowe zamówienie.</p>
-                <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
-                  {extraOrdersHistory.slice(0, 8).map((order) => {
-                    const linesSummary = order.lines
-                      .map((line) => `${line.quantity}x ${line.print_size} (foto #${line.photo_id})`)
-                      .join(', ');
-                    const isPaid = order.payment_status === 'paid' || order.payment_status === 'completed';
-                    return (
-                      <div key={`order-history-inline-${order.order_id}`} className="border border-zinc-800 rounded-lg p-2.5 bg-zinc-950/60">
-                        <div className="flex items-center justify-between gap-2 text-xs">
-                          <span className="text-zinc-200 font-semibold">Zamówienie #{order.order_id}</span>
-                          <span className={isPaid ? 'text-emerald-400 font-bold' : 'text-amber-300 font-bold'}>{order.payment_state_label}</span>
-                        </div>
-                        <p className="text-[11px] text-zinc-400 mt-1">{new Date(order.created_at).toLocaleString('pl-PL')} • {(order.total_amount / 100).toFixed(2)} PLN</p>
-                        <p className="text-[11px] text-zinc-300 mt-1">{linesSummary || 'Brak szczegółów pozycji'}</p>
-                        {!isPaid && order.payment_url && (
-                          <a
-                            href={order.payment_url}
-                            className="inline-block mt-1 text-[11px] font-bold text-gold-400 hover:text-gold-300"
-                          >
-                            Dokończ płatność tego zamówienia
-                          </a>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            <div className="flex flex-wrap items-center justify-between gap-3 bg-zinc-900 border border-zinc-800 rounded-xl p-4">
-              <div>
-                <p className="text-sm text-white font-semibold">Wybrane do zakupu: {extraCartTotalUnits} odbitek</p>
-                <p className="text-xs text-zinc-400">10x15: {extraCartQty10x15} szt. • 15x21: {extraCartQty15x21} szt. • Razem: {(extraCartTotal / 100).toFixed(2)} PLN</p>
-              </div>
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => setExtraCartByPhoto({})}
-                  className="px-4 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white text-sm font-bold"
-                >
-                  Wyczyść
-                </button>
-                <button
-                  type="button"
-                  onClick={handlePurchaseExtras}
-                  disabled={purchasingExtras || extraCartTotalUnits === 0}
-                  className="px-5 py-2 rounded-lg bg-gold-500 hover:bg-gold-400 text-black text-sm font-black disabled:opacity-50"
-                >
-                  {purchasingExtras ? 'Przekierowuję do PayU...' : `Przejdź do płatności (${(extraCartTotal / 100).toFixed(2)} PLN)`}
-                </button>
-              </div>
-            </div>
           </div>
         </div>
       )}
@@ -2078,7 +1975,178 @@ Hasło: ${password}` : ''}`}
         </div>
       )}
 
-      
+      {/* Extra purchase modal */}
+      {showExtraPurchaseModal && extraPurchaseEnabled && (
+        <div className="fixed inset-0 z-[80] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-5xl max-h-[92vh] overflow-hidden flex flex-col">
+            <div className="p-5 border-b border-zinc-800 flex items-start justify-between gap-4">
+              <div>
+                <h3 className="text-xl font-black text-white">Dokup dodatkowe zdjęcia</h3>
+                <p className="text-sm text-zinc-400 mt-1">
+                  Wybierz zdjęcia ponad darmowy limit {participantInfo?.max_selections || 5}. Płatność przejdzie przez PayU.
+                </p>
+                <div className="mt-3 inline-flex items-center gap-1 bg-zinc-900 border border-zinc-700 rounded-lg p-1">
+                  {GROUP_EXTRA_PRINT_SIZES.map((option) => (
+                    <button
+                      key={option.code}
+                      type="button"
+                      onClick={() => setSelectedExtraPrintSize(option.code)}
+                      className={`px-3 py-1.5 rounded-md text-xs font-bold transition-colors ${selectedExtraPrintSize === option.code ? 'bg-gold-500 text-black' : 'text-zinc-300 hover:bg-zinc-800'}`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowExtraPurchaseModal(false)}
+                className="w-10 h-10 rounded-full bg-zinc-900 hover:bg-zinc-800 text-white flex items-center justify-center"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-5 overflow-y-auto flex-1">
+              {availableExtraPhotos.length === 0 ? (
+                <p className="text-zinc-500 text-sm">Nie masz jeszcze wybranych dodatkowych zdjęć.</p>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 mb-5">
+                  {availableExtraPhotos.map((photo) => {
+                    const orderedStats = orderedPhotoTotals[photo.id];
+                    const qty10x15 = getExtraQty(photo.id, '10x15');
+                    const qty15x21 = getExtraQty(photo.id, '15x21');
+                    const hasInCart = qty10x15 + qty15x21 > 0;
+                    return (
+                      <div
+                        key={photo.id}
+                        className={`relative rounded-xl overflow-hidden border transition-all text-left ${hasInCart ? 'border-gold-500 ring-2 ring-gold-500/20' : 'border-zinc-800 hover:border-zinc-600'}`}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={photo.thumbnail_url || photo.file_url}
+                          alt={`Dodatkowe zdjęcie ${photo.id}`}
+                          className="w-full aspect-square object-cover"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/0 to-black/0" />
+                        <div className="absolute top-2 left-2 px-2 py-1 rounded-full bg-black/70 text-[10px] font-bold text-white">
+                          {hasInCart ? 'W koszyku' : 'Dodaj'}
+                        </div>
+
+                        {orderedStats && (orderedStats.paid_total > 0 || orderedStats.unpaid_total > 0) && (
+                          <div className="absolute top-2 right-2 px-2 py-1 rounded-full bg-emerald-950/90 border border-emerald-700 text-[10px] font-bold text-emerald-200">
+                            Wcześniej: {orderedStats.paid_total} opł. / {orderedStats.unpaid_total} nieopł.
+                          </div>
+                        )}
+
+                        <div className="p-2 border-t border-zinc-800 bg-zinc-950/90 space-y-2">
+                          <div className="text-[10px] text-zinc-400 font-semibold">
+                            10x15 ({(globalPrice10x15 / 100).toFixed(2)} PLN)
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setExtraQty(photo.id, '10x15', qty10x15 - 1)}
+                              className="w-7 h-7 rounded-md bg-zinc-800 hover:bg-zinc-700 text-white font-bold"
+                            >
+                              -
+                            </button>
+                            <span className="min-w-[24px] text-center text-sm font-bold text-white">{qty10x15}</span>
+                            <button
+                              type="button"
+                              onClick={() => setExtraQty(photo.id, '10x15', qty10x15 + 1)}
+                              className="w-7 h-7 rounded-md bg-zinc-800 hover:bg-zinc-700 text-white font-bold"
+                            >
+                              +
+                            </button>
+                          </div>
+
+                          <div className="text-[10px] text-zinc-400 font-semibold">
+                            15x21 ({(globalPrice15x21 / 100).toFixed(2)} PLN)
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setExtraQty(photo.id, '15x21', qty15x21 - 1)}
+                              className="w-7 h-7 rounded-md bg-zinc-800 hover:bg-zinc-700 text-white font-bold"
+                            >
+                              -
+                            </button>
+                            <span className="min-w-[24px] text-center text-sm font-bold text-white">{qty15x21}</span>
+                            <button
+                              type="button"
+                              onClick={() => setExtraQty(photo.id, '15x21', qty15x21 + 1)}
+                              className="w-7 h-7 rounded-md bg-zinc-800 hover:bg-zinc-700 text-white font-bold"
+                            >
+                              +
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {extraOrdersHistory.length > 0 && (
+                <div className="mb-5 bg-zinc-900 border border-zinc-800 rounded-xl p-4">
+                  <h4 className="text-sm font-bold text-white mb-2">Historia poprzednich zamówień (także nieopłaconych)</h4>
+                  <p className="text-xs text-zinc-400 mb-3">Możesz zamówić to samo zdjęcie ponownie. To, co dodasz teraz, utworzy nowe zamówienie.</p>
+                  <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
+                    {extraOrdersHistory.slice(0, 8).map((order) => {
+                      const linesSummary = order.lines
+                        .map((line) => `${line.quantity}x ${line.print_size} (foto #${line.photo_id})`)
+                        .join(', ');
+                      const isPaid = order.payment_status === 'paid' || order.payment_status === 'completed';
+                      return (
+                        <div key={`order-history-${order.order_id}`} className="border border-zinc-800 rounded-lg p-2.5 bg-zinc-950/60">
+                          <div className="flex items-center justify-between gap-2 text-xs">
+                            <span className="text-zinc-200 font-semibold">Zamówienie #{order.order_id}</span>
+                            <span className={isPaid ? 'text-emerald-400 font-bold' : 'text-amber-300 font-bold'}>{order.payment_state_label}</span>
+                          </div>
+                          <p className="text-[11px] text-zinc-400 mt-1">{new Date(order.created_at).toLocaleString('pl-PL')} • {(order.total_amount / 100).toFixed(2)} PLN</p>
+                          <p className="text-[11px] text-zinc-300 mt-1">{linesSummary || 'Brak szczegółów pozycji'}</p>
+                          {!isPaid && order.payment_url && (
+                            <a
+                              href={order.payment_url}
+                              className="inline-block mt-1 text-[11px] font-bold text-gold-400 hover:text-gold-300"
+                            >
+                              Dokończ płatność tego zamówienia
+                            </a>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex flex-wrap items-center justify-between gap-3 bg-zinc-900 border border-zinc-800 rounded-xl p-4">
+                <div>
+                  <p className="text-sm text-white font-semibold">Wybrane do zakupu: {extraCartTotalUnits} odbitek</p>
+                  <p className="text-xs text-zinc-400">10x15: {extraCartQty10x15} szt. • 15x21: {extraCartQty15x21} szt. • Razem: {(extraCartTotal / 100).toFixed(2)} PLN</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setExtraCartByPhoto({})}
+                    className="px-4 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white text-sm font-bold"
+                  >
+                    Wyczyść
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handlePurchaseExtras}
+                    disabled={purchasingExtras || extraCartTotalUnits === 0}
+                    className="px-5 py-2 rounded-lg bg-gold-500 hover:bg-gold-400 text-black text-sm font-black disabled:opacity-50"
+                  >
+                    {purchasingExtras ? 'Przekierowuję do PayU...' : `Przejdź do płatności (${(extraCartTotal / 100).toFixed(2)} PLN)`}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* LIGHTBOX PRO — nawigacja, licznik, akcje */}
       {lightboxPhoto && (
