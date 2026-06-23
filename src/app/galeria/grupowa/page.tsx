@@ -1409,7 +1409,7 @@ Hasło: ${password}` : ''}`}
           onToggleSelect={isGuestMode ? undefined : (p) => handleSelectToggle(p.id)}
           limitReached={!isGuestMode && selectedPhotos.length >= (participantInfo?.max_selections || 5)}
           onLimitReached={!isGuestMode && extraPurchaseEnabled ? (photoId: number) => toggleExtraPhoto(photoId) : undefined}
-          extraSelectedPhotoIds={isGuestMode ? undefined : new Set(extraSelectedPhotos)}
+          extraSelectedPhotoIds={isGuestMode ? undefined : new Set(selectedExtraPhotos)}
           paidExtraPhotoIds={isGuestMode ? undefined : new Set(paidExtraPhotoIds)}
         />
       )}
@@ -1689,7 +1689,7 @@ Hasło: ${password}` : ''}`}
             onPhotoClick={(p) => setLightboxPhoto(p as Photo)}
             limitReached={!isGuestMode && selectedPhotos.length >= (participantInfo?.max_selections || 5)}
             onLimitReached={!isGuestMode && extraPurchaseEnabled ? (photoId: number) => toggleExtraPhoto(photoId) : undefined}
-            extraSelectedPhotoIds={isGuestMode ? undefined : new Set(extraSelectedPhotos)}
+            extraSelectedPhotoIds={isGuestMode ? undefined : new Set(selectedExtraPhotos)}
             paidExtraPhotoIds={isGuestMode ? undefined : new Set(paidExtraPhotoIds)}
           />
         ) : (
@@ -1809,13 +1809,13 @@ Hasło: ${password}` : ''}`}
                     type="button"
                     onClick={(e) => { e.stopPropagation(); toggleExtraPhoto(photo.id); }}
                     className={`absolute bottom-2 right-2 flex items-center gap-1.5 px-2.5 py-1.5 rounded-full font-bold text-xs shadow-lg transition-all ${
-                      extraSelectedPhotos.includes(photo.id)
+                      selectedExtraPhotos.includes(photo.id)
                         ? 'bg-emerald-500 text-black'
                         : 'bg-black/75 text-emerald-400 hover:bg-black/90'
                     }`}
-                    title={extraSelectedPhotos.includes(photo.id) ? 'Usuń z koszyka' : `Kup dodatkową odbitkę ${selectedExtraSizeOption.label}: +${(selectedExtraUnitPrice / 100).toFixed(2)} zł`}
+                    title={selectedExtraPhotos.includes(photo.id) ? 'Usuń z koszyka' : `Kup dodatkową odbitkę ${selectedExtraSizeOption.label}: +${(selectedExtraUnitPrice / 100).toFixed(2)} zł`}
                   >
-                    {extraSelectedPhotos.includes(photo.id) ? (
+                    {selectedExtraPhotos.includes(photo.id) ? (
                       <>
                         <CheckSquare className="w-3.5 h-3.5" />
                         W koszyku
