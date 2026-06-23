@@ -62,6 +62,7 @@ export async function PUT(
             const {
                 standard_count, price_per_premium, expires_at, is_active, description,
                 gallery_mode, group_access_code, group_password, max_photos_for_print,
+                allow_extra_photo_purchase,
             } = body;
 
             const updateData: any = {};
@@ -80,6 +81,9 @@ export async function PUT(
                     updateData.group_access_code = null;
                     updateData.group_password = null;
                 }
+            }
+            if (allow_extra_photo_purchase !== undefined) {
+                updateData.allow_extra_photo_purchase = !!allow_extra_photo_purchase;
             }
             if (group_access_code !== undefined) {
                 const normalized = group_access_code

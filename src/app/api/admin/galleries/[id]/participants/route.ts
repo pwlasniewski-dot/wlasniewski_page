@@ -43,6 +43,7 @@ export async function GET(
                     parent_phone: p.parent_phone,
                     avatar: p.avatar,
                     max_selections: p.max_selections,
+                    allow_extra_photo_purchase: p.allow_extra_photo_purchase,
                     selections_count: p._count.selections,
                     publication_consent: p.publication_consent,
                     consent_scope: p.consent_scope,
@@ -71,7 +72,7 @@ export async function POST(
         try {
             const { id } = await params;
             const galleryId = Number(id);
-            const { name, max_selections, notes } = await request.json();
+            const { name, max_selections, allow_extra_photo_purchase, notes } = await request.json();
 
             if (!name) {
                 return NextResponse.json(
@@ -98,6 +99,7 @@ export async function POST(
                     name,
                     participant_code: participantCode!,
                     max_selections: max_selections || 5,
+                    allow_extra_photo_purchase: !!allow_extra_photo_purchase,
                     notes: notes || null,
                 }
             });
@@ -110,6 +112,7 @@ export async function POST(
                     name: participant.name,
                     participant_code: participant.participant_code,
                     max_selections: participant.max_selections,
+                    allow_extra_photo_purchase: participant.allow_extra_photo_purchase,
                     notes: participant.notes,
                 }
             });

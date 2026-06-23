@@ -43,6 +43,7 @@ export async function POST(request: NextRequest) {
         expires_at: true,
         gallery_mode: true,
         is_active: true,
+        allow_extra_photo_purchase: true,
       },
     });
 
@@ -65,6 +66,7 @@ export async function POST(request: NextRequest) {
         parent_name: true,
         avatar: true,
         max_selections: true,
+        allow_extra_photo_purchase: true,
       },
     });
 
@@ -96,6 +98,7 @@ export async function POST(request: NextRequest) {
       parent_name: participant.parent_name,
       avatar: participant.avatar,
       max_selections: participant.max_selections,
+      allow_extra_photo_purchase: participant.allow_extra_photo_purchase,
       token,
     });
   } catch (error) {

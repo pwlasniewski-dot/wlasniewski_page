@@ -195,7 +195,15 @@ export async function generateMetadata(): Promise<Metadata> {
             }
         };
     } catch (e) {
-        console.error('Failed to generate dynamic metadata', e);
+        const message = e instanceof Error ? e.message : String(e);
+
+        // DB can be temporarily unreachable in local/dev environments.
+        // Do not surface this as a hard server error for the page render.
+        if (message.includes("Can't reach database server")) {
+            console.warn('Dynamic metadata fallback: database unreachable');
+        } else {
+            console.warn('Dynamic metadata fallback:', message);
+        }
         return baseMetadata;
     }
 }

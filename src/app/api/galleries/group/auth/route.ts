@@ -50,6 +50,8 @@ export async function POST(request: NextRequest) {
         description: true,
         group_password: true,
         max_photos_for_print: true,
+          allow_extra_photo_purchase: true,
+        price_per_premium: true,
         expires_at: true,
         gallery_mode: true,
         is_active: true,
@@ -94,6 +96,8 @@ export async function POST(request: NextRequest) {
       gallery_name: gallery.client_name,
       description: gallery.description,
       max_photos_for_print: gallery.max_photos_for_print || 5,
+      allow_extra_photo_purchase: gallery.allow_extra_photo_purchase,
+      price_per_premium: gallery.price_per_premium,
       expires_at: gallery.expires_at,
     });
 

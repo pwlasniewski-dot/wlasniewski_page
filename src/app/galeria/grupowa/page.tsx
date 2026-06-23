@@ -20,6 +20,8 @@ interface GalleryInfo {
   gallery_id: number;
   gallery_name: string;
   max_photos_for_print: number;
+  allow_extra_photo_purchase?: boolean;
+  price_per_premium?: number;
 }
 
 interface ParticipantInfo {
@@ -28,6 +30,7 @@ interface ParticipantInfo {
   parent_name?: string;
   avatar: string;
   max_selections: number;
+  allow_extra_photo_purchase?: boolean;
   token: string;
 }
 
@@ -62,6 +65,8 @@ export default function GroupGalleryPage() {
   // Photos state
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [selectedPhotos, setSelectedPhotos] = useState<number[]>([]);
+  const [paidExtraPhotoIds, setPaidExtraPhotoIds] = useState<number[]>([]);
+  const [extraSelectedPhotos, setExtraSelectedPhotos] = useState<number[]>([]);
   // Download selection mode — separate from print selection (no limit, only for ZIP download)
   const [downloadMode, setDownloadMode] = useState(false);
   const [downloadSelection, setDownloadSelection] = useState<Set<number>>(new Set());
@@ -88,6 +93,8 @@ export default function GroupGalleryPage() {
   // Share modal
   const [showShareModal, setShowShareModal] = useState(false);
   const [copiedShare, setCopiedShare] = useState(false);
+  const [showExtraPurchaseModal, setShowExtraPurchaseModal] = useState(false);
+  const [purchasingExtras, setPurchasingExtras] = useState(false);
 
   // Guest (anonymous) mode — view only, no account
   const [isGuestMode, setIsGuestMode] = useState(false);
@@ -136,6 +143,8 @@ export default function GroupGalleryPage() {
     setParticipantInfo(null);
     setAuthToken(null);
     setSelectedPhotos([]);
+    setExtraSelectedPhotos([]);
+    setPaidExtraPhotoIds([]);
     setPhotos([]);
     setCode('');
     setPassword('');
@@ -301,6 +310,7 @@ export default function GroupGalleryPage() {
       }
 
       setParticipantInfo(data);
+      setPaidExtraPhotoIds(data.paid_extra_photo_ids || []);
       setAuthToken(data.token);
       // Zapisz token dla każdego uczestnika indywidualnie (nie per galerię!)
       // Każdy rodzic ma swój participant_id i własny klucz w localStorage
@@ -349,6 +359,7 @@ export default function GroupGalleryPage() {
       }
 
       setParticipantInfo(data);
+      setPaidExtraPhotoIds(data.paid_extra_photo_ids || []);
       setAuthToken(data.token);
       localStorage.setItem(
         `group_participant_${data.participant_id}`,
@@ -400,8 +411,12 @@ export default function GroupGalleryPage() {
 
       if (response.ok) {
         setSelectedPhotos(data.selected_photos.map((p: any) => p.photo_id));
+        setPaidExtraPhotoIds(data.paid_extra_photo_ids || []);
         setConsentGiven(data.publication_consent || false);
         setConsentScope(data.consent_scope || 'ALL');
+        if (typeof data.allow_extra_photo_purchase === 'boolean') {
+          setParticipantInfo(prev => prev ? { ...prev, allow_extra_photo_purchase: data.allow_extra_photo_purchase } : prev);
+        }
         // Hydrate parent_name for existing participants whose localStorage was saved before this field
         if (data.parent_name) {
           setParticipantInfo(prev => {
@@ -718,7 +733,67 @@ export default function GroupGalleryPage() {
   };
 
   const selectedPhotoItems = photos.filter((p) => selectedPhotos.includes(p.id));
-  const visiblePhotos = showSelectedOnly ? selectedPhotoItems : photos;
+  const extraPurchaseEnabled = !!participantInfo && !!galleryInfo && !isGuestMode && (participantInfo.allow_extra_photo_purchase || galleryInfo.allow_extra_photo_purchase);
+  const selectedExtraPhotoItems = photos.filter((p) => extraSelectedPhotos.includes(p.id));
+  const availableExtraPhotos = photos.filter((p) => !selectedPhotos.includes(p.id) && !paidExtraPhotoIds.includes(p.id));
+  const allSelectedIds = new Set([...selectedPhotos, ...extraSelectedPhotos, ...paidExtraPhotoIds]);
+  const visiblePhotos = showSelectedOnly ? photos.filter(p => allSelectedIds.has(p.id)) : photos;
+
+  const toggleExtraPhoto = (photoId: number) => {
+    if (selectedPhotos.includes(photoId) || paidExtraPhotoIds.includes(photoId)) return;
+    setExtraSelectedPhotos(prev => {
+      const next = prev.includes(photoId)
+        ? prev.filter(id => id !== photoId)
+        : [...prev, photoId];
+      return next;
+    });
+  };
+
+  const handlePurchaseExtras = async (directPhotoIds?: number[]) => {
+    if (!participantInfo || !authToken) return;
+    const ids = directPhotoIds ?? extraSelectedPhotos;
+    if (ids.length === 0) {
+      toast.error('Wybierz przynajmniej jedno dodatkowe zdjęcie');
+      return;
+    }
+
+    setPurchasingExtras(true);
+    try {
+      const response = await fetch(`/api/galleries/group/participant/${participantInfo.participant_id}/purchase-extras`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`,
+        },
+        body: JSON.stringify({ photo_ids: ids }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        if (response.status === 401) {
+          toast.error('Sesja wygasła. Zaloguj się ponownie.');
+          setIsAuthenticated(false);
+          setAuthToken(null);
+          setParticipantInfo(null);
+        } else {
+          toast.error(data.error || 'Nie udało się utworzyć zamówienia');
+        }
+        return;
+      }
+
+      if (data.paymentUrl) {
+        toast.success('Przekierowuję do płatności PayU...');
+        window.location.href = data.paymentUrl;
+      } else {
+        toast.success(data.message || 'Zamówienie utworzone');
+      }
+    } catch (error) {
+      console.error('Purchase extras error:', error);
+      toast.error('Nie udało się utworzyć zamówienia');
+    } finally {
+      setPurchasingExtras(false);
+    }
+  };
 
   // Login screen
   if (!isAuthenticated) {
@@ -1226,6 +1301,10 @@ Hasło: ${password}` : ''}`}
           onPhotoClick={(p) => setLightboxPhoto(p as Photo)}
           selectedPhotoIds={isGuestMode ? undefined : new Set(selectedPhotos)}
           onToggleSelect={isGuestMode ? undefined : (p) => handleSelectToggle(p.id)}
+          limitReached={!isGuestMode && selectedPhotos.length >= (participantInfo?.max_selections || 5)}
+          onLimitReached={!isGuestMode && extraPurchaseEnabled ? (photoId: number) => toggleExtraPhoto(photoId) : undefined}
+          extraSelectedPhotoIds={isGuestMode ? undefined : new Set(extraSelectedPhotos)}
+          paidExtraPhotoIds={isGuestMode ? undefined : new Set(paidExtraPhotoIds)}
         />
       )}
 
@@ -1328,7 +1407,7 @@ Hasło: ${password}` : ''}`}
                     ? 'bg-gold-500 text-black border-gold-500'
                     : 'bg-zinc-800 text-zinc-200 border-zinc-700 hover:border-zinc-600'
                     }`}
-                  title="Filtruj widok tylko do zdjęć wybranych do druku"
+                  title="Filtruj widok do wybranych zdjęć (bezpłatne + płatne + opłacone)"
                 >
                   {showSelectedOnly ? 'Pokaż wszystkie' : 'Pokaż tylko wybrane'}
                 </button>
@@ -1349,6 +1428,35 @@ Hasło: ${password}` : ''}`}
                 >
                   lub pobierz całą galerię
                 </button>
+                {extraPurchaseEnabled && extraSelectedPhotos.length > 0 && (
+                  <div className="flex items-center gap-3 px-4 py-2.5 bg-emerald-900/40 border border-emerald-500/60 rounded-xl">
+                    <div className="flex flex-col">
+                      <span className="text-[10px] text-emerald-400 uppercase tracking-wider font-bold">Koszyk</span>
+                      <span className="text-lg font-black text-emerald-200 leading-tight">{(extraSelectedPhotos.length * ((galleryInfo?.price_per_premium || 2000) / 100)).toFixed(2)} zł</span>
+                      <span className="text-[10px] text-emerald-400">{extraSelectedPhotos.length} szt. × {(galleryInfo?.price_per_premium || 2000) / 100} zł</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handlePurchaseExtras()}
+                      disabled={purchasingExtras}
+                      className="flex items-center gap-1.5 px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-black text-sm font-black rounded-lg transition-all disabled:opacity-50 whitespace-nowrap shadow-lg shadow-emerald-500/30"
+                    >
+                      <Package className="w-4 h-4" />
+                      {purchasingExtras ? 'Ładowanie...' : 'Przejdź do płatności'}
+                    </button>
+                  </div>
+                )}
+                {extraPurchaseEnabled && extraSelectedPhotos.length === 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowExtraPurchaseModal(true)}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-emerald-400 text-sm font-bold rounded-lg border border-emerald-800 transition-all"
+                    title="Wybierz dodatkowe odbitki do druku"
+                  >
+                    <Package className="w-4 h-4" />
+                    Dodatkowe odbitki
+                  </button>
+                )}
               </div>
             </>
           )}
@@ -1363,8 +1471,9 @@ Hasło: ${password}` : ''}`}
             <div className="flex items-center justify-between gap-3 mb-3">
               <div>
                 <h3 className="text-base font-bold text-white">Twoje wybrane do druku</h3>
-                <p className="text-xs text-zinc-400">Wybrane: {selectedPhotoItems.length}/{participantInfo?.max_selections || 5}</p>
+                <p className="text-xs text-zinc-400">Wybrane: {selectedPhotoItems.length}/{participantInfo?.max_selections || 5}{extraSelectedPhotos.length > 0 ? ` + ${extraSelectedPhotos.length} płatnych w koszyku` : paidExtraPhotoIds.length > 0 ? ` + ${paidExtraPhotoIds.length} opłaconych` : ''}</p>
               </div>
+              <p className="text-xs font-semibold text-zinc-300">📸 Fotograf widzi Twoje wybrane zdjęcia w panelu administratora — po zatwierdzeniu zgody RODO poniżej.</p>
             </div>
             {selectedPhotoItems.length === 0 ? (
               <p className="text-sm text-zinc-500">Nie masz jeszcze wybranych zdjęć do druku.</p>
@@ -1397,13 +1506,57 @@ Hasło: ${password}` : ''}`}
         </div>
       )}
 
+      {/* Dodatkowe odbitki do druku — sekcja płatnych zdjęć poza limitem */}
+      {!isGuestMode && extraPurchaseEnabled && photos.length > 0 && (
+        <div className="max-w-7xl mx-auto px-4 pt-4">
+          <div className="bg-emerald-900/20 border border-emerald-600/40 rounded-xl p-4">
+            <div className="flex items-center justify-between gap-3 mb-3">
+              <div>
+                <h3 className="text-base font-bold text-emerald-300">Dodatkowe odbitki do druku — płatne</h3>
+                <p className="text-xs text-emerald-200/70">Rozszerzony wybór: {extraSelectedPhotos.length} szt. × {(galleryInfo?.price_per_premium || 2000) / 100} zł = <span className="font-bold">{(extraSelectedPhotos.length * ((galleryInfo?.price_per_premium || 2000) / 100)).toFixed(2)} zł</span></p>
+              </div>
+            </div>
+            {extraSelectedPhotos.length === 0 ? (
+              <p className="text-sm text-emerald-200/50">Zaznacz poniżej interesujące Cię zdjęcia, aby rozszerzyć liczbę odbiotek poza limit 5 odbitek.</p>
+            ) : (
+              <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
+                {selectedExtraPhotoItems.map((photo, idx) => (
+                  <div key={`extra-${photo.id}`} className="relative aspect-square rounded-lg overflow-hidden border border-emerald-500/60 bg-black">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={photo.thumbnail_url || photo.file_url}
+                      alt={`Dodatkowa odbitka do druku ${idx + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                    <span className="absolute top-1 left-1 bg-emerald-500 text-black text-[10px] font-black px-1.5 py-0.5 rounded">
+                      +{(galleryInfo?.price_per_premium || 2000) / 100} zł
+                    </span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleExtraPhoto(photo.id);
+                      }}
+                      className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/80 hover:bg-red-500 text-white flex items-center justify-center transition-colors"
+                      title="Usuń z wybranych dodatkowych odbipek"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Galeria — Siatka lub Opowieść */}
       <div className={viewMode === 'story' ? 'pb-32' : 'max-w-7xl mx-auto px-4 py-8 pb-32'}>
         {photos.length === 0 ? (
           <div className="text-center py-20">
             <p className="text-zinc-400">Brak zdjęć w galerii</p>
           </div>
-        ) : showSelectedOnly && selectedPhotoItems.length === 0 ? (
+        ) : showSelectedOnly && allSelectedIds.size === 0 ? (
           <div className="text-center py-20">
             <p className="text-zinc-400">Brak wybranych zdjęć do podglądu.</p>
           </div>
@@ -1413,6 +1566,10 @@ Hasło: ${password}` : ''}`}
             selectedPhotoIds={isGuestMode ? undefined : new Set(selectedPhotos)}
             onToggleSelect={isGuestMode ? undefined : (p) => handleSelectToggle(p.id)}
             onPhotoClick={(p) => setLightboxPhoto(p as Photo)}
+            limitReached={!isGuestMode && selectedPhotos.length >= (participantInfo?.max_selections || 5)}
+            onLimitReached={!isGuestMode && extraPurchaseEnabled ? (photoId: number) => toggleExtraPhoto(photoId) : undefined}
+            extraSelectedPhotoIds={isGuestMode ? undefined : new Set(extraSelectedPhotos)}
+            paidExtraPhotoIds={isGuestMode ? undefined : new Set(paidExtraPhotoIds)}
           />
         ) : (
           <div className="columns-2 md:columns-3 lg:columns-4 gap-4">
@@ -1467,7 +1624,15 @@ Hasło: ${password}` : ''}`}
                   {/* Hover overlay - zoom hint (only outside download mode) */}
                   {!downloadMode && (
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100 pointer-events-none">
-                      <ZoomIn className="w-8 h-8 text-white drop-shadow-lg" />
+                      {selectedPhotos.length >= (participantInfo?.max_selections || 5) && !isSelected && extraPurchaseEnabled ? (
+                        <div className="flex flex-col items-center gap-1 text-center">
+                          <Lock className="w-6 h-6 text-red-400" />
+                          <span className="text-white font-bold text-xs">Limit 5/5</span>
+                          <span className="text-emerald-300 text-[10px]">💰 Kup extras</span>
+                        </div>
+                      ) : (
+                        <ZoomIn className="w-8 h-8 text-white drop-shadow-lg" />
+                      )}
                     </div>
                   )}
 
@@ -1476,17 +1641,25 @@ Hasło: ${password}` : ''}`}
                   <button
                     type="button"
                     onClick={(e) => handleSelectToggle(photo.id, e)}
+                    disabled={selectedPhotos.length >= (participantInfo?.max_selections || 5) && !isSelected}
                     className={`absolute top-2 left-2 flex items-center gap-1.5 px-2.5 py-1.5 rounded-full font-bold text-xs shadow-lg transition-all ${
                       isSelected
                         ? 'bg-gold-500 text-black'
-                        : 'bg-black/75 text-white hover:bg-black/90 opacity-100'
+                        : selectedPhotos.length >= (participantInfo?.max_selections || 5)
+                          ? 'bg-red-600/80 text-white cursor-not-allowed opacity-90'
+                          : 'bg-black/75 text-white hover:bg-black/90 opacity-100'
                     }`}
-                    title={isSelected ? 'Kliknij, aby odznaczyć' : 'Zaznacz do druku'}
+                    title={isSelected ? 'Kliknij, aby odznaczyć' : selectedPhotos.length >= (participantInfo?.max_selections || 5) ? `Limit osiągnięty! Kup dodatkowe odbitki aby wybrać więcej.` : 'Zaznacz do druku'}
                   >
                     {isSelected ? (
                       <>
                         <CheckSquare className="w-3.5 h-3.5" />
                         {selectionIdx}/{participantInfo?.max_selections}
+                      </>
+                    ) : selectedPhotos.length >= (participantInfo?.max_selections || 5) ? (
+                      <>
+                        <Lock className="w-3.5 h-3.5" />
+                        Limit 5/5
                       </>
                     ) : (
                       <>
@@ -1506,6 +1679,32 @@ Hasło: ${password}` : ''}`}
                     title="Pobierz to zdjęcie"
                   >
                     <Download className="w-4 h-4" />
+                  </button>
+                  )}
+
+                  {/* Extra purchase button — bottom-right, only if enabled and photo not already selected/paid */}
+                  {!isGuestMode && !downloadMode && extraPurchaseEnabled && !isSelected && !paidExtraPhotoIds.includes(photo.id) && (
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); toggleExtraPhoto(photo.id); }}
+                    className={`absolute bottom-2 right-2 flex items-center gap-1.5 px-2.5 py-1.5 rounded-full font-bold text-xs shadow-lg transition-all ${
+                      extraSelectedPhotos.includes(photo.id)
+                        ? 'bg-emerald-500 text-black'
+                        : 'bg-black/75 text-emerald-400 hover:bg-black/90'
+                    }`}
+                    title={extraSelectedPhotos.includes(photo.id) ? 'Usuń z koszyka' : `Kup dodatkową odbitkę: +${(galleryInfo?.price_per_premium || 2000) / 100} zł`}
+                  >
+                    {extraSelectedPhotos.includes(photo.id) ? (
+                      <>
+                        <CheckSquare className="w-3.5 h-3.5" />
+                        Wybór płatny
+                      </>
+                    ) : (
+                      <>
+                        <Package className="w-3.5 h-3.5" />
+                        Dodaj do koszyka
+                      </>
+                    )}
                   </button>
                   )}
                 </div>
@@ -1650,6 +1849,87 @@ Hasło: ${password}` : ''}`}
               >
                 {loading ? 'Zapisywanie...' : 'Wyrażam zgodę'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Extra purchase modal */}
+      {showExtraPurchaseModal && extraPurchaseEnabled && (
+        <div className="fixed inset-0 z-[80] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-5xl max-h-[92vh] overflow-hidden flex flex-col">
+            <div className="p-5 border-b border-zinc-800 flex items-start justify-between gap-4">
+              <div>
+                <h3 className="text-xl font-black text-white">Dokup dodatkowe zdjęcia</h3>
+                <p className="text-sm text-zinc-400 mt-1">
+                  Wybierz zdjęcia ponad darmowy limit {participantInfo?.max_selections || 5}. Płatność przejdzie przez PayU.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowExtraPurchaseModal(false)}
+                className="w-10 h-10 rounded-full bg-zinc-900 hover:bg-zinc-800 text-white flex items-center justify-center"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-5 overflow-y-auto flex-1">
+              {availableExtraPhotos.length === 0 ? (
+                <p className="text-zinc-500 text-sm">Nie masz jeszcze wybranych dodatkowych zdjęć.</p>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 mb-5">
+                  {availableExtraPhotos.map((photo) => {
+                    const purchased = paidExtraPhotoIds.includes(photo.id);
+                    return (
+                      <button
+                        key={photo.id}
+                        type="button"
+                        onClick={() => toggleExtraPhoto(photo.id)}
+                        disabled={purchased}
+                        className={`relative aspect-square rounded-xl overflow-hidden border transition-all text-left ${purchased ? 'border-emerald-500/60 opacity-70 cursor-default' : extraSelectedPhotos.includes(photo.id) ? 'border-gold-500 ring-2 ring-gold-500/20' : 'border-zinc-800 hover:border-zinc-600'}`}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={photo.thumbnail_url || photo.file_url}
+                          alt={`Dodatkowe zdjęcie ${photo.id}`}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/0 to-black/0" />
+                        <div className="absolute top-2 left-2 px-2 py-1 rounded-full bg-black/70 text-[10px] font-bold text-white">
+                          {purchased ? 'Kupione' : extraSelectedPhotos.includes(photo.id) ? 'Wybrane' : 'Dodaj'}
+                        </div>
+                        <div className="absolute bottom-2 left-2 right-2 text-[11px] text-white font-semibold">
+                          {(galleryInfo?.price_per_premium ? `Cena: ${(galleryInfo.price_per_premium / 100).toFixed(2)} PLN` : '')}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              <div className="flex flex-wrap items-center justify-between gap-3 bg-zinc-900 border border-zinc-800 rounded-xl p-4">
+                <div>
+                  <p className="text-sm text-white font-semibold">Wybrane do zakupu: {selectedExtraPhotoItems.length}</p>
+                  <p className="text-xs text-zinc-400">Płatne zdjęcia są przypięte do Twojego profilu rodzica.</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setExtraSelectedPhotos([])}
+                    className="px-4 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white text-sm font-bold"
+                  >
+                    Wyczyść
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handlePurchaseExtras}
+                    disabled={purchasingExtras || extraSelectedPhotos.length === 0}
+                    className="px-5 py-2 rounded-lg bg-gold-500 hover:bg-gold-400 text-black text-sm font-black disabled:opacity-50"
+                  >
+                    {purchasingExtras ? 'Przekierowuję do PayU...' : 'Przejdź do płatności'}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>

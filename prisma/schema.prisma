@@ -912,6 +912,7 @@ model ClientGallery {
   group_access_code    String? @unique // Kod dla trybu grupowego (np. KOMUNIA2026)
   group_password       String? // Hasło dla trybu grupowego (opcjonalne)
   max_photos_for_print Int?    // Limit zdjęć do druku (ustawiane przez admina)
+  allow_extra_photo_purchase Boolean @default(false) // Czy rodzice mogą dokupować zdjęcia ponad limit
   
   client            User?                  @relation("ClientGalleries", fields: [client_id], references: [id])
   photographer      User?                  @relation("PhotographerGalleries", fields: [photographer_id], references: [id])
@@ -954,6 +955,7 @@ model GalleryParticipant {
   
   name                 String // Nazwa uczestnika (np. "Dziecko 1", "Jan Kowalski")
   max_selections       Int              @default(5) // Limit zdjęć do wyboru
+  allow_extra_photo_purchase Boolean    @default(false) // Możliwość dokupienia dodatkowych zdjęć
   publication_consent  Boolean          @default(false) // Zgoda na publikację
   consent_scope        String?          // "ALL" - wszystkie zdjęcia | "SELECTED" - tylko wybrane
   consent_given_at     DateTime?
@@ -1087,6 +1089,7 @@ model OfferRecommendedAlbum {
 model PhotoOrder {
   id             Int           @id @default(autoincrement())
   gallery_id     Int
+  participant_id Int?
   photo_ids      String
   photo_count    Int
   total_amount   Int

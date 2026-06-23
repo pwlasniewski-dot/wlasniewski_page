@@ -243,6 +243,28 @@ export async function POST(request: NextRequest) {
                 handled = true;
             }
 
+            // ============================================================
+            // Gallery photo orders (GALLERY_<photoOrderId>_...)
+            // ============================================================
+            if (!handled && typeOrId === 'GALLERY' && !isNaN(resourceId)) {
+                const photoOrder = await prisma.photoOrder.findUnique({
+                    where: { id: resourceId },
+                }).catch(() => null);
+
+                if (photoOrder) {
+                    await prisma.photoOrder.update({
+                        where: { id: photoOrder.id },
+                        data: {
+                            payment_status: 'paid',
+                            paid_at: new Date(),
+                            payment_id: orderId,
+                        },
+                    }).catch((e) => { console.error('[PayU] Gallery photoOrder update failed:', e); });
+
+                    handled = true;
+                }
+            }
+
             // Check if it's a booking (simple numeric ID for bookings from checkout endpoint)
             // Skip if extOrderId uses typed format (CHALLENGE_<id>, BOOKING_<id>, CART_...) —
             // those are handled by dedicated branches below.

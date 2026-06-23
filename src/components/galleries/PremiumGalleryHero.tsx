@@ -27,6 +27,10 @@ interface PremiumGalleryHeroProps {
   mode?: 'grid' | 'story';
   onModeChange?: (m: 'grid' | 'story') => void;
   onPhotoClick?: (photo: HeroPhoto) => void;
+  limitReached?: boolean;
+  onLimitReached?: (photoId: number) => void;
+  extraSelectedPhotoIds?: Set<number>;
+  paidExtraPhotoIds?: Set<number>;
 }
 
 /**
@@ -47,6 +51,10 @@ export default function PremiumGalleryHero({
   onPhotoClick,
   selectedPhotoIds,
   onToggleSelect,
+  limitReached,
+  onLimitReached,
+  extraSelectedPhotoIds,
+  paidExtraPhotoIds,
 }: PremiumGalleryHeroProps) {
   // Detect desktop vs mobile
   const [isDesktop, setIsDesktop] = useState(false);
@@ -238,13 +246,27 @@ export default function PremiumGalleryHero({
           )}
           {onToggleSelect && (() => {
             const isSel = selectedPhotoIds?.has(slides[idx].id) || false;
+            const isInExtras = extraSelectedPhotoIds?.has(slides[idx].id) || false;
+            const isPaid = paidExtraPhotoIds?.has(slides[idx].id) || false;
+            const isBlocked = !isSel && limitReached;
             return (
               <button
-                onClick={() => onToggleSelect(slides[idx])}
-                className={`px-5 py-2 rounded-full text-sm font-semibold transition-all shadow-lg flex items-center gap-2 ${isSel ? 'bg-zinc-900 text-white border border-gold-500' : 'bg-white text-black hover:bg-zinc-100'}`}
+                onClick={() => {
+                  if (isPaid) return;
+                  if (isBlocked) { onLimitReached?.(slides[idx].id); return; }
+                  onToggleSelect(slides[idx]);
+                }}
+                className={`px-5 py-2 rounded-full text-sm font-semibold transition-all shadow-lg flex items-center gap-2 ${
+                  isSel ? 'bg-zinc-900 text-white border border-gold-500'
+                  : isPaid ? 'bg-emerald-700 text-white cursor-default'
+                  : isInExtras ? 'bg-emerald-500 hover:bg-emerald-400 text-black cursor-pointer'
+                  : isBlocked ? 'bg-emerald-500 hover:bg-emerald-400 text-black cursor-pointer'
+                  : 'bg-white text-black hover:bg-zinc-100'
+                }`}
+                title={isPaid ? 'Już opłacone' : isInExtras ? 'Kliknij aby usunąć z koszyka' : isBlocked ? 'Kup dodatkową odbitkę' : undefined}
               >
                 <Check className="w-4 h-4" />
-                {isSel ? 'Odznacz do druku' : 'Zaznacz do druku'}
+                {isSel ? 'Odznacz do druku' : isPaid ? 'Opłacone ✓' : isInExtras ? 'Wybór płatny ✓' : isBlocked ? '🛒 Dodaj do koszyka' : 'Zaznacz do druku'}
               </button>
             );
           })()}
@@ -323,11 +345,19 @@ export function PremiumGalleryStory({
   selectedPhotoIds,
   onToggleSelect,
   onPhotoClick,
+  limitReached,
+  onLimitReached,
+  extraSelectedPhotoIds,
+  paidExtraPhotoIds,
 }: {
   photos: HeroPhoto[];
   selectedPhotoIds?: Set<number>;
   onToggleSelect?: (photo: HeroPhoto) => void;
   onPhotoClick?: (photo: HeroPhoto) => void;
+  limitReached?: boolean;
+  onLimitReached?: (photoId: number) => void;
+  extraSelectedPhotoIds?: Set<number>;
+  paidExtraPhotoIds?: Set<number>;
 }) {
   if (photos.length === 0) return null;
 
@@ -336,6 +366,8 @@ export function PremiumGalleryStory({
       {photos.map((photo, index) => {
         const isLight = index % 2 === 0;
         const isSelected = selectedPhotoIds?.has(photo.id) || false;
+        const isInExtras = extraSelectedPhotoIds?.has(photo.id) || false;
+        const isPaid = paidExtraPhotoIds?.has(photo.id) || false;
         return (
           <section
             key={photo.id}
@@ -394,27 +426,49 @@ export function PremiumGalleryStory({
                     </div>
                   );
                 })()}
-                {onToggleSelect && (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      onToggleSelect(photo);
-                    }}
-                    className={`absolute top-3 left-3 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all ${isSelected ? 'bg-gold-500 text-black' : (isLight ? 'bg-white/90 text-black hover:bg-white' : 'bg-black/80 text-white hover:bg-black')}`}
-                    title={isSelected ? 'Odznacz do druku' : 'Zaznacz do druku'}
-                  >
-                    {isSelected ? (
-                      <span className="inline-flex items-center gap-1"><Check className="w-3 h-3" /> Odznacz</span>
-                    ) : (
-                      'Do druku'
-                    )}
-                  </button>
-                )}
               </div>
 
-              <div className="flex justify-end">
+              <div className="flex items-center justify-between gap-3">
+                {onToggleSelect && (() => {
+                  const isBlocked = !isSelected && limitReached;
+                  return (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (isPaid) return;
+                        if (isBlocked) {
+                          onLimitReached?.(photo.id);
+                          return;
+                        }
+                        onToggleSelect(photo);
+                      }}
+                      className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all ${
+                        isSelected
+                          ? 'bg-gold-500 text-black'
+                          : isPaid
+                            ? 'bg-emerald-700 text-white cursor-default'
+                            : isInExtras
+                              ? 'bg-emerald-500 text-black'
+                              : isBlocked
+                                ? 'bg-emerald-500 hover:bg-emerald-400 text-black'
+                                : (isLight ? 'bg-zinc-900 text-white hover:bg-black' : 'bg-white text-black hover:bg-zinc-100')
+                      }`}
+                      title={isSelected ? 'Odznacz do druku' : isPaid ? 'Już opłacone' : isInExtras ? 'Kliknij aby usunąć z koszyka' : isBlocked ? 'Kup dodatkową odbitkę' : 'Zaznacz do druku'}
+                    >
+                      {isSelected ? (
+                        <span className="inline-flex items-center gap-1"><Check className="w-3 h-3" /> Odznacz</span>
+                      ) : isPaid ? (
+                        <span className="inline-flex items-center gap-1">✓ Opłacone</span>
+                      ) : isInExtras ? (
+                        <span className="inline-flex items-center gap-1">✓ Wybór płatny</span>
+                      ) : isBlocked ? (
+                        <span className="inline-flex items-center gap-1">🛒 Dodaj do koszyka</span>
+                      ) : (
+                        'Do druku'
+                      )}
+                    </button>
+                  );
+                })()}
                 <button
                   onClick={() => onPhotoClick?.(photo)}
                   className={`px-4 py-2 rounded-full text-xs font-semibold ${

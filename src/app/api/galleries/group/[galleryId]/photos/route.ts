@@ -9,10 +9,11 @@ import { verifyParentToken, extractTokenFromHeader } from '@/lib/auth/parent-jwt
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { galleryId: string } }
+  { params }: { params: Promise<{ galleryId: string }> }
 ) {
   try {
-    const galleryId = parseInt(params.galleryId);
+    const { galleryId: galleryIdStr } = await params;
+    const galleryId = parseInt(galleryIdStr);
 
     if (isNaN(galleryId)) {
       return NextResponse.json(

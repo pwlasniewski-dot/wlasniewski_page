@@ -51,6 +51,9 @@ export async function POST(request: NextRequest) {
 
         const orderId = Number(order.extOrderId);
         const status = order.status; // COMPLETED, CANCELED, PENDING
+        const typedParts = String(order.extOrderId || '').split('_');
+        const typedType = typedParts[0];
+        const typedResourceId = typedParts.length > 1 ? parseInt(typedParts[1]) : NaN;
 
         console.log(`PayU Notification for Order #${orderId}: ${status}`);
         await logSystem('INFO', 'PAYMENT', `PayU Status Change: Order #${orderId} -> ${status}`, { orderId, status });
@@ -96,6 +99,26 @@ export async function POST(request: NextRequest) {
                 // PayU usually respects the per-order notifyUrl.
                 // So Challenge orders go to `api/payu/notify` (if I set it correctly in `createPayUOrder`).
                 // Let's verify `lib/payu.ts`.
+            }
+        } else if (typedType === 'GALLERY' && !isNaN(typedResourceId)) {
+            try {
+                const updatedOrder = await prisma.photoOrder.update({
+                    where: { id: typedResourceId },
+                    data: {
+                        payment_status: paymentStatus,
+                        paid_at: paymentStatus === 'paid' ? new Date() : null,
+                        updated_at: new Date(),
+                    },
+                    include: {
+                        gallery: true,
+                    }
+                });
+
+                if (paymentStatus === 'paid' && updatedOrder.gallery?.client_email) {
+                    await logSystem('INFO', 'SYSTEM', `GALLERY order #${typedResourceId} fully paid.`, { email: updatedOrder.gallery.client_email });
+                }
+            } catch (updateError) {
+                console.error("Failed to update GALLERY order", updateError);
             }
         }
 

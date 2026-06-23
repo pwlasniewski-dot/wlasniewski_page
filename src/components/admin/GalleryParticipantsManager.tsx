@@ -14,6 +14,7 @@ interface Participant {
   avatar: string | null;
   name: string;
   max_selections: number;
+  allow_extra_photo_purchase: boolean;
   publication_consent: boolean;
   consent_scope: string | null;
   consent_given_at: string | null;
@@ -26,6 +27,7 @@ interface GalleryInfo {
   group_access_code: string | null;
   group_password: string | null;
   max_photos_for_print: number | null;
+  allow_extra_photo_purchase: boolean;
 }
 
 interface GalleryParticipantsManagerProps {
@@ -43,6 +45,7 @@ export default function GalleryParticipantsManager({ galleryId }: GalleryPartici
   const [selectedReminderIds, setSelectedReminderIds] = useState<Set<number>>(new Set());
   const [deadlineDate, setDeadlineDate] = useState('');
   const [sendingReminder, setSendingReminder] = useState(false);
+  const [savingGallerySettings, setSavingGallerySettings] = useState(false);
 
   const toggleExpand = async (participantId: number) => {
     if (expandedId === participantId) {
@@ -103,6 +106,7 @@ export default function GalleryParticipantsManager({ galleryId }: GalleryPartici
           group_access_code: g.group_access_code,
           group_password: g.group_password,
           max_photos_for_print: g.max_photos_for_print,
+          allow_extra_photo_purchase: !!g.allow_extra_photo_purchase,
         });
       }
     } catch (error) {
@@ -218,6 +222,58 @@ export default function GalleryParticipantsManager({ galleryId }: GalleryPartici
     setSelectedReminderIds(new Set());
   };
 
+  const saveGalleryExtraPurchaseSetting = async (value: boolean) => {
+    try {
+      setSavingGallerySettings(true);
+      const token = localStorage.getItem('admin_token');
+      const response = await fetch(`/api/admin/galleries/${galleryId}`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ allow_extra_photo_purchase: value }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        toast.error(data.error || 'Nie udało się zapisać ustawienia');
+        return;
+      }
+      setGalleryInfo(prev => prev ? { ...prev, allow_extra_photo_purchase: value } : prev);
+      toast.success(value ? 'Włączono dokupowanie zdjęć' : 'Wyłączono dokupowanie zdjęć');
+    } catch (error) {
+      console.error('Save gallery setting error:', error);
+      toast.error('Błąd zapisu ustawienia');
+    } finally {
+      setSavingGallerySettings(false);
+    }
+  };
+
+  const toggleParticipantExtraPurchase = async (participant: Participant) => {
+    try {
+      const nextValue = !participant.allow_extra_photo_purchase;
+      const token = localStorage.getItem('admin_token');
+      const response = await fetch(`/api/admin/galleries/${galleryId}/participants/${participant.id}`, {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ allow_extra_photo_purchase: nextValue }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        toast.error(data.error || 'Nie udało się zaktualizować rodzica');
+        return;
+      }
+      setParticipants(prev => prev.map(p => p.id === participant.id ? { ...p, allow_extra_photo_purchase: nextValue } : p));
+      toast.success(nextValue ? 'Rodzic może dokupować zdjęcia' : 'Dokupowanie zdjęć wyłączone');
+    } catch (error) {
+      console.error('Toggle participant extra purchase error:', error);
+      toast.error('Błąd aktualizacji rodzica');
+    }
+  };
+
   const sendReminder = async () => {
     if (selectedReminderIds.size === 0) {
       toast.error('Zaznacz przynajmniej jednego opiekuna z emailem');
@@ -328,6 +384,25 @@ export default function GalleryParticipantsManager({ galleryId }: GalleryPartici
                   </button>
                 )}
               </div>
+            </div>
+
+            <div className="md:col-span-2 bg-zinc-900/70 border border-zinc-700 rounded-xl p-4 flex items-center justify-between gap-4">
+              <div>
+                <p className="text-xs font-bold text-zinc-500 uppercase">Dokupowanie zdjęć</p>
+                <p className="text-sm text-zinc-300 mt-1">Globalnie pozwól rodzicom dokupywać dodatkowe zdjęcia po limicie druków.</p>
+              </div>
+              <label className="flex items-center gap-3 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={galleryInfo.allow_extra_photo_purchase}
+                  onChange={(e) => saveGalleryExtraPurchaseSetting(e.target.checked)}
+                  disabled={savingGallerySettings}
+                  className="h-4 w-4 rounded border-zinc-600 bg-zinc-900 text-gold-500"
+                />
+                <span className="text-sm font-bold text-white">
+                  {savingGallerySettings ? 'Zapisywanie…' : (galleryInfo.allow_extra_photo_purchase ? 'Włączone' : 'Wyłączone')}
+                </span>
+              </label>
             </div>
 
             <div className="md:col-span-2">
@@ -482,6 +557,14 @@ export default function GalleryParticipantsManager({ galleryId }: GalleryPartici
                             <span>
                               Wybrano: <strong className="text-white">{participant.selections_count}/{participant.max_selections}</strong>
                             </span>
+                            <button
+                              type="button"
+                              onClick={() => toggleParticipantExtraPurchase(participant)}
+                              className={`px-2 py-1 rounded-full border transition-colors ${participant.allow_extra_photo_purchase ? 'border-emerald-500/40 text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20' : 'border-zinc-700 text-zinc-400 hover:text-white hover:bg-zinc-800'}`}
+                              title="Włącz / wyłącz dokupowanie dodatkowych zdjęć dla tego rodzica"
+                            >
+                              Extra: {participant.allow_extra_photo_purchase ? 'TAK' : 'NIE'}
+                            </button>
                             {participant.publication_consent ? (
                               <span className="text-green-400 flex items-center gap-1">
                                 <Check className="w-3 h-3" />

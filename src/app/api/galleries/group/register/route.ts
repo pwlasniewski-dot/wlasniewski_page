@@ -123,6 +123,7 @@ export async function POST(request: NextRequest) {
         id: true,
         client_name: true,
         max_photos_for_print: true,
+        allow_extra_photo_purchase: true,
         group_password: true,
       },
     });
@@ -195,6 +196,7 @@ export async function POST(request: NextRequest) {
         first_login_at: new Date(),
         name: parent_name.trim(), // Pole wymagane przez schemę - używamy imienia rodzica
         max_selections: gallery.max_photos_for_print || 5,
+        allow_extra_photo_purchase: gallery.allow_extra_photo_purchase,
         publication_consent: false,
       },
     });

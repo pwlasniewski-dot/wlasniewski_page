@@ -30,6 +30,7 @@ export interface GalleryPhoto {
 export interface PhotoOrder {
     id: number;
     gallery_id: number;
+    participant_id?: number | null;
     photo_ids: string; // JSON array
     photo_count: number;
     total_amount: number; // in cents

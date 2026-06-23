@@ -81,7 +81,7 @@ export default function CategoryHeroSlider({
                 >
                     <h2 className="text-6xl md:text-8xl font-display font-medium text-white mb-6 tracking-tight drop-shadow-2xl">
                         {title}
-                    </h1>
+                    </h2>
                     <div className="w-24 h-px bg-gold-400 mx-auto mb-6" />
                     {description && (
                         <p className="text-zinc-200 text-lg md:text-xl max-w-2xl mx-auto font-light font-sans tracking-wide">

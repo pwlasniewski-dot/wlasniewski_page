@@ -9,10 +9,11 @@ import { verifyParentToken, extractTokenFromHeader } from '@/lib/auth/parent-jwt
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const participantId = parseInt(params.id);
+    const { id } = await params;
+    const participantId = parseInt(id, 10);
     const { photo_id } = await request.json();
 
     if (isNaN(participantId) || !photo_id) {
@@ -57,6 +58,7 @@ export async function POST(
         selections: true,
         gallery: {
           select: {
+            allow_extra_photo_purchase: true,
             gallery_mode: true,
             is_active: true,
           },
@@ -158,10 +160,11 @@ export async function POST(
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const participantId = parseInt(params.id);
+    const { id } = await params;
+    const participantId = parseInt(id, 10);
 
     if (isNaN(participantId)) {
       return NextResponse.json(
@@ -212,6 +215,11 @@ export async function GET(
             },
           },
         },
+        gallery: {
+          select: {
+            allow_extra_photo_purchase: true,
+          },
+        },
       },
     });
 
@@ -221,6 +229,25 @@ export async function GET(
         { status: 404 }
       );
     }
+
+    const paidOrders = await prisma.photoOrder.findMany({
+      where: {
+        gallery_id: participant.gallery_id,
+        participant_id: participant.id,
+        payment_status: 'paid',
+      },
+      select: { photo_ids: true },
+    });
+
+    const paidExtraPhotoIds = new Set<number>();
+    paidOrders.forEach(order => {
+      try {
+        const ids = JSON.parse(order.photo_ids) as number[];
+        ids.forEach(id => paidExtraPhotoIds.add(id));
+      } catch {
+        // ignore broken payloads
+      }
+    });
 
     return NextResponse.json({
       parent_name: participant.parent_name,
@@ -234,6 +261,8 @@ export async function GET(
       })),
       selected_count: participant.selections.length,
       max_selections: participant.max_selections,
+      allow_extra_photo_purchase: participant.allow_extra_photo_purchase || participant.gallery.allow_extra_photo_purchase,
+      paid_extra_photo_ids: Array.from(paidExtraPhotoIds),
       publication_consent: participant.publication_consent,
       consent_scope: participant.consent_scope,
     });

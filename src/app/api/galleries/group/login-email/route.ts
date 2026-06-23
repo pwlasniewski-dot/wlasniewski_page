@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
 
     const gallery = await prisma.clientGallery.findUnique({
       where: { group_access_code: normalizedCode },
-      select: { id: true, expires_at: true, gallery_mode: true, is_active: true },
+      select: { id: true, expires_at: true, gallery_mode: true, is_active: true, allow_extra_photo_purchase: true },
     });
 
     if (!gallery || gallery.id !== galleryId || gallery.gallery_mode !== 'GROUP' || !gallery.is_active) {
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
     // Detect whether input is a parent identifier (e.g. PW-7475, KP-1234) or an email
     const isIdentifier = /^[A-Z]{1,4}-\d{3,6}$/i.test(input);
 
-    let participant: { id: number; parent_identifier: string | null; parent_name: string | null; avatar: string | null; max_selections: number } | null = null;
+    let participant: { id: number; parent_identifier: string | null; parent_name: string | null; avatar: string | null; max_selections: number; allow_extra_photo_purchase: boolean } | null = null;
 
     if (isIdentifier) {
       participant = await prisma.galleryParticipant.findFirst({
@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
           gallery_id: galleryId,
           parent_identifier: { equals: input.toUpperCase(), mode: 'insensitive' },
         },
-        select: { id: true, parent_identifier: true, parent_name: true, avatar: true, max_selections: true },
+        select: { id: true, parent_identifier: true, parent_name: true, avatar: true, max_selections: true, allow_extra_photo_purchase: true },
       });
     } else {
       const normalizedEmail = input.toLowerCase();
@@ -70,13 +70,13 @@ export async function POST(request: NextRequest) {
       }
       participant = await prisma.galleryParticipant.findFirst({
         where: { gallery_id: galleryId, parent_email: normalizedEmail },
-        select: { id: true, parent_identifier: true, parent_name: true, avatar: true, max_selections: true },
+        select: { id: true, parent_identifier: true, parent_name: true, avatar: true, max_selections: true, allow_extra_photo_purchase: true },
       });
       // Legacy fallback for historical mixed-case emails
       if (!participant) {
         participant = await prisma.galleryParticipant.findFirst({
           where: { gallery_id: galleryId, parent_email: { equals: normalizedEmail, mode: 'insensitive' } },
-          select: { id: true, parent_identifier: true, parent_name: true, avatar: true, max_selections: true },
+          select: { id: true, parent_identifier: true, parent_name: true, avatar: true, max_selections: true, allow_extra_photo_purchase: true },
         });
       }
     }
@@ -100,6 +100,7 @@ export async function POST(request: NextRequest) {
       parent_name: participant.parent_name,
       avatar: participant.avatar,
       max_selections: participant.max_selections,
+      allow_extra_photo_purchase: participant.allow_extra_photo_purchase,
       token,
     });
   } catch (error) {

@@ -22,6 +22,11 @@ export function isB2BContext({
     port?: string | null;
     pathname?: string | null;
 }): boolean {
+    // 0. Galeria/konto routes are NEVER B2B (even on port 3001)
+    if (pathname && (pathname.startsWith('/galeria') || pathname.startsWith('/konto') || pathname.startsWith('/strefa-klienta'))) {
+        return false;
+    }
+
     // 1. Check Port (local development B2B mock)
     if (port === '3001') return true;
 

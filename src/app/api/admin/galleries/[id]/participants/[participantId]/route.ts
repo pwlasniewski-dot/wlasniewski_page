@@ -13,13 +13,14 @@ export async function PATCH(
     return withAuth(request, async () => {
         try {
             const { participantId } = await params;
-            const { name, max_selections, notes } = await request.json();
+            const { name, max_selections, allow_extra_photo_purchase, notes } = await request.json();
 
             const participant = await prisma.galleryParticipant.update({
                 where: { id: Number(participantId) },
                 data: {
                     ...(name !== undefined && { name }),
                     ...(max_selections !== undefined && { max_selections }),
+                    ...(allow_extra_photo_purchase !== undefined && { allow_extra_photo_purchase: !!allow_extra_photo_purchase }),
                     ...(notes !== undefined && { notes }),
                 }
             });
