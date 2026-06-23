@@ -1,6 +1,7 @@
 // API Route: GET /api/admin/galleries/[id]/participants/download-all
-// Admin: pobiera jeden ZIP z wybranymi zdjęciami wszystkich rodziców.
-// Struktura ZIP: folder per rodzic + pliki "Imie Nazwisko N.jpg"
+// Admin: pobiera jeden ZIP z kompletem zdjęć do druku wszystkich rodziców
+// (zarówno wybory standardowe, jak i opłacone dodatkowe).
+// Struktura ZIP: folder per rodzic + pliki "Imie Nazwisko N [STANDARD|PLATNE].jpg"
 
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
@@ -51,6 +52,34 @@ function getSafeImageExtension(fileUrl: string): string {
   }
 }
 
+function parsePhotoIds(raw: string | null | undefined): number[] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) {
+      return parsed
+        .map((value) => Number(value))
+        .filter((value) => Number.isInteger(value) && value > 0);
+    }
+  } catch {
+    // ignore invalid payload
+  }
+  return [];
+}
+
+function parsePaidPrintFormat(raw: string | null | undefined): string {
+  if (!raw) return '10x15';
+  try {
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    if (parsed && parsed.kind === 'group_extra_prints' && typeof parsed.print_size === 'string') {
+      return parsed.print_size;
+    }
+  } catch {
+    // ignore invalid payload
+  }
+  return '10x15';
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -85,7 +114,58 @@ export async function GET(
         orderBy: { created_at: 'asc' },
       });
 
-      if (participants.length === 0) {
+      const participantIds = participants.map((p) => p.id);
+
+      const paidOrders = participantIds.length
+        ? await prisma.photoOrder.findMany({
+            where: {
+              gallery_id: galleryId,
+              participant_id: { in: participantIds },
+              payment_status: { in: ['paid', 'completed'] },
+            },
+            select: {
+              participant_id: true,
+              photo_ids: true,
+              created_at: true,
+            },
+            orderBy: { created_at: 'asc' },
+          })
+        : [];
+
+      const paidPhotoIdsByParticipant = new Map<number, number[]>();
+      const paidFormatByParticipantPhoto = new Map<string, string>();
+      const allPaidPhotoIds = new Set<number>();
+
+      for (const order of paidOrders) {
+        if (!order.participant_id) continue;
+        const current = paidPhotoIdsByParticipant.get(order.participant_id) || [];
+        const fromOrder = parsePhotoIds(order.photo_ids);
+        const paidFormat = parsePaidPrintFormat(order.product_ids as string | null | undefined);
+        fromOrder.forEach((id) => allPaidPhotoIds.add(id));
+        fromOrder.forEach((id) => {
+          const key = `${order.participant_id}:${id}`;
+          if (!paidFormatByParticipantPhoto.has(key)) {
+            paidFormatByParticipantPhoto.set(key, paidFormat);
+          }
+        });
+        paidPhotoIdsByParticipant.set(order.participant_id, [...current, ...fromOrder]);
+      }
+
+      const paidPhotos = allPaidPhotoIds.size
+        ? await prisma.galleryPhoto.findMany({
+            where: {
+              id: { in: Array.from(allPaidPhotoIds) },
+              gallery_id: galleryId,
+            },
+            select: { id: true, file_url: true },
+          })
+        : [];
+      const paidPhotoUrlById = new Map(paidPhotos.map((p) => [p.id, p.file_url]));
+
+      const hasAnyStandard = participants.some((p) => p.selections.length > 0);
+      const hasAnyPaid = paidOrders.length > 0;
+
+      if (!hasAnyStandard && !hasAnyPaid) {
         return NextResponse.json({ error: 'Brak wyborów do pobrania' }, { status: 404 });
       }
 
@@ -114,18 +194,49 @@ export async function GET(
             const folderName = `${String(participant.id).padStart(3, '0')}-${normalizeFolderName(displayName)}`;
             const fileNameBase = normalizeFilePart(displayName);
 
-            for (let i = 0; i < participant.selections.length; i++) {
-              const sel = participant.selections[i];
+            const standardPhotos = participant.selections.map((sel) => ({
+              id: sel.photo.id,
+              file_url: sel.photo.file_url,
+              source: 'STANDARD' as const,
+              format: '15x21',
+            }));
+
+            const paidPhotoIds = paidPhotoIdsByParticipant.get(participant.id) || [];
+            const paidPhotosForParticipant = paidPhotoIds
+              .map((id) => ({ id, file_url: paidPhotoUrlById.get(id) || null }))
+              .filter((p): p is { id: number; file_url: string } => Boolean(p.file_url))
+              .map((p) => ({
+                ...p,
+                source: 'PLATNE' as const,
+                format: paidFormatByParticipantPhoto.get(`${participant.id}:${p.id}`) || '10x15',
+              }));
+
+            const merged: Array<{ id: number; file_url: string; source: 'STANDARD' | 'PLATNE'; format: string }> = [];
+            const seenPhotoIds = new Set<number>();
+            [...standardPhotos, ...paidPhotosForParticipant].forEach((photo) => {
+              if (seenPhotoIds.has(photo.id)) return;
+              seenPhotoIds.add(photo.id);
+              merged.push(photo);
+            });
+
+            if (merged.length === 0) {
+              continue;
+            }
+
+            for (let i = 0; i < merged.length; i++) {
+              const item = merged[i];
               try {
-                const response = await fetch(sel.photo.file_url);
+                const response = await fetch(item.file_url);
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
                 const sourceBuffer = Buffer.from(await response.arrayBuffer());
-                const ext = getSafeImageExtension(sel.photo.file_url);
+                const ext = getSafeImageExtension(item.file_url);
 
                 const ordinal = String(i + 1).padStart(3, '0');
                 if (isNphotoFlatLayout) {
-                  const baseName = `${fileNameBase}_${ordinal}`;
+                  const sourcePart = item.source === 'PLATNE' ? 'platne' : 'standard';
+                  const formatPart = item.format.replace(/[^0-9xX]/g, '').toLowerCase() || 'format';
+                  const baseName = `${fileNameBase}_${formatPart}_${sourcePart}_${ordinal}`;
                   let uniqueName = `${baseName}.${ext}`;
                   let dedupeCounter = 2;
                   while (usedNames.has(uniqueName)) {
@@ -135,11 +246,11 @@ export async function GET(
                   usedNames.add(uniqueName);
                   archive.append(sourceBuffer, { name: uniqueName });
                 } else {
-                  const photoName = `${displayName} ${i + 1}.${ext}`;
+                  const photoName = `${displayName} ${i + 1} [${item.format}] [${item.source}].${ext}`;
                   archive.append(sourceBuffer, { name: `${folderName}/${photoName}` });
                 }
               } catch (err) {
-                console.error(`Failed to add photo ${sel.photo.id} for participant ${participant.id}:`, err);
+                console.error(`Failed to add photo ${item.id} for participant ${participant.id}:`, err);
               }
             }
           }

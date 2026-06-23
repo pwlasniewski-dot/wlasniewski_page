@@ -33,6 +33,8 @@ interface Order {
     photoCount?: number;
     photoIds?: number[];
     selectedPhotos?: Array<{ id: number; thumbnail_url: string | null; file_url: string }>;
+    standardPhotoCount?: number;
+    standardSelectedPhotos?: Array<{ id: number; thumbnail_url: string | null; file_url: string }>;
     sizeSummary?: string[];
     orderItems?: Array<{
         kind: 'extra_photo' | 'product';
@@ -210,6 +212,16 @@ export default function AdminOrdersPage() {
 
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
     const [downloadingOrderId, setDownloadingOrderId] = useState<string | null>(null);
+    const [downloadingGalleryId, setDownloadingGalleryId] = useState<number | null>(null);
+
+    const collectOrderFormats = (order: Order): string[] => {
+        const formats = new Set<string>();
+        if ((order.standardPhotoCount || 0) > 0) {
+            formats.add('15x21');
+        }
+        (order.sizeSummary || []).forEach((size) => formats.add(size));
+        return Array.from(formats);
+    };
 
     const handleDownloadParticipantZip = async (order: Order) => {
         if (!order.galleryId || !order.participantId) {
@@ -239,9 +251,13 @@ export default function AdminOrdersPage() {
             const blob = await res.blob();
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
-            const participantSlug = order.participantIdentifier || String(order.participantId);
+            const participantSlug = (order.participantName || order.participantIdentifier || String(order.participantId))
+                .replace(/[^a-zA-Z0-9]+/g, '-')
+                .replace(/^-|-$/g, '')
+                .toLowerCase() || 'uczestnik';
+            const formatsSlug = collectOrderFormats(order).join('-') || 'format';
             link.href = url;
-            link.download = `druk-${participantSlug}.zip`;
+            link.download = `druk-${participantSlug}-${formatsSlug}.zip`;
             document.body.appendChild(link);
             link.click();
             link.remove();
@@ -252,6 +268,44 @@ export default function AdminOrdersPage() {
             toast.error('Błąd pobierania ZIP');
         } finally {
             setDownloadingOrderId(null);
+        }
+    };
+
+    const handleDownloadGalleryZip = async (galleryId: number) => {
+        setDownloadingGalleryId(galleryId);
+        try {
+            const token = localStorage.getItem('admin_token');
+            const endpoint = getApiUrl(`admin/galleries/${galleryId}/participants/download-all`);
+            const res = await fetch(endpoint, {
+                headers: { 'Authorization': `Bearer ${token}` },
+            });
+
+            if (res.status === 401) {
+                localStorage.removeItem('admin_token');
+                router.push('/admin/login');
+                return;
+            }
+
+            if (!res.ok) {
+                toast.error('Nie udało się pobrać ZIP całej galerii');
+                return;
+            }
+
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `druk-galeria-${galleryId}-wszyscy.zip`;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            URL.revokeObjectURL(url);
+            toast.success('Pobieranie ZIP całej galerii rozpoczęte');
+        } catch (error) {
+            console.error(error);
+            toast.error('Błąd pobierania ZIP galerii');
+        } finally {
+            setDownloadingGalleryId(null);
         }
     };
 
@@ -673,6 +727,17 @@ export default function AdminOrdersPage() {
                                                 {downloadingOrderId === selectedOrder.id ? 'Przygotowuję ZIP...' : 'Pobierz ZIP zdjęć do druku tego rodzica'}
                                             </button>
                                             {selectedOrder.galleryId && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleDownloadGalleryZip(selectedOrder.galleryId!)}
+                                                    disabled={downloadingGalleryId === selectedOrder.galleryId}
+                                                    className="flex items-center justify-center gap-2 w-full py-3 bg-gold-500 hover:bg-gold-400 disabled:bg-zinc-800 disabled:text-zinc-500 text-black font-semibold rounded-xl transition-all border border-gold-400/50"
+                                                >
+                                                    <Download className="w-5 h-5" />
+                                                    {downloadingGalleryId === selectedOrder.galleryId ? 'Przygotowuję ZIP galerii...' : 'Pobierz ZIP całej galerii (wszyscy rodzice)'}
+                                                </button>
+                                            )}
+                                            {selectedOrder.galleryId && (
                                                 <Link
                                                     href={`/admin/galleries/${selectedOrder.galleryId}`}
                                                     className="flex items-center justify-center gap-2 w-full py-3 bg-zinc-800 hover:bg-zinc-700 hover:text-white text-emerald-300 font-semibold rounded-xl transition-all border border-zinc-700 hover:border-emerald-500/50"
@@ -683,7 +748,7 @@ export default function AdminOrdersPage() {
                                             )}
                                         </div>
                                         <div className="mt-4">
-                                            <p className="text-xs text-zinc-500 mb-2">Wybrane zdjęcia (ID): {(selectedOrder.photoIds || []).join(', ') || '-'}</p>
+                                            <p className="text-xs text-zinc-500 mb-2">Płatne dodatkowe (ID): {(selectedOrder.photoIds || []).join(', ') || '-'}</p>
                                             {selectedOrder.selectedPhotos && selectedOrder.selectedPhotos.length > 0 ? (
                                                 <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
                                                     {selectedOrder.selectedPhotos.map((photo) => (
@@ -700,6 +765,27 @@ export default function AdminOrdersPage() {
                                                 </div>
                                             ) : (
                                                 <p className="text-xs text-zinc-500">Brak podglądu miniatur.</p>
+                                            )}
+                                        </div>
+                                        <div className="mt-4">
+                                            <p className="text-xs text-zinc-500 mb-2">Standard do druku 15x21 (ID): {(selectedOrder.standardSelectedPhotos || []).map((photo) => photo.id).join(', ') || '-'}</p>
+                                            {selectedOrder.standardSelectedPhotos && selectedOrder.standardSelectedPhotos.length > 0 ? (
+                                                <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
+                                                    {selectedOrder.standardSelectedPhotos.map((photo) => (
+                                                        <div key={`std-${photo.id}`} className="relative aspect-square rounded-lg overflow-hidden border border-gold-500/30 bg-zinc-950">
+                                                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                            <img
+                                                                src={photo.thumbnail_url || photo.file_url}
+                                                                alt={`Standard ${photo.id}`}
+                                                                className="w-full h-full object-cover"
+                                                            />
+                                                            <span className="absolute bottom-1 left-1 text-[10px] px-1.5 py-0.5 rounded bg-black/70 text-white font-mono">#{photo.id}</span>
+                                                            <span className="absolute top-1 right-1 text-[9px] px-1.5 py-0.5 rounded bg-gold-500 text-black font-bold">15x21</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <p className="text-xs text-zinc-500">Brak standardowych miniatur dla tego rodzica.</p>
                                             )}
                                         </div>
                                     </>

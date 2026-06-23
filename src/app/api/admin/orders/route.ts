@@ -28,6 +28,8 @@ type UnifiedOrder = {
     photoCount?: number;
     photoIds?: number[];
     selectedPhotos?: Array<{ id: number; thumbnail_url: string | null; file_url: string }>;
+    standardPhotoCount?: number;
+    standardSelectedPhotos?: Array<{ id: number; thumbnail_url: string | null; file_url: string }>;
     sizeSummary?: string[];
     orderItems?: Array<{
         kind: 'extra_photo' | 'product';
@@ -173,10 +175,32 @@ export async function GET(request: NextRequest) {
             })
             : [];
 
+        const participantSelections = participantIds.length
+            ? await prisma.photoSelection.findMany({
+                where: { participant_id: { in: participantIds } },
+                select: {
+                    participant_id: true,
+                    photo_id: true,
+                },
+                orderBy: { selected_at: 'asc' },
+            })
+            : [];
+
+        const standardPhotoIdsByParticipant = new Map<number, number[]>();
+        participantSelections.forEach((selection) => {
+            const current = standardPhotoIdsByParticipant.get(selection.participant_id) || [];
+            if (!current.includes(selection.photo_id)) {
+                standardPhotoIdsByParticipant.set(selection.participant_id, [...current, selection.photo_id]);
+            }
+        });
+
         const participantsById = new Map(participants.map((participant) => [participant.id, participant]));
 
         const allPhotoIds = Array.from(
-            new Set(photoOrders.flatMap((order) => parsePhotoIds(order.photo_ids)))
+            new Set([
+                ...photoOrders.flatMap((order) => parsePhotoIds(order.photo_ids)),
+                ...Array.from(standardPhotoIdsByParticipant.values()).flat(),
+            ])
         );
 
         const allProductIds = Array.from(
@@ -234,6 +258,16 @@ export async function GET(request: NextRequest) {
             const parsedProductIds = parseProductIds(order.product_ids || null);
             const groupExtraMetadata = parseGroupExtraPrintMetadata(order.product_ids || null);
             const selectedPhotos = parsedPhotoIds
+                .map((id) => photosById.get(id))
+                .filter((photo): photo is NonNullable<typeof photo> => Boolean(photo))
+                .map((photo) => ({
+                    id: photo.id,
+                    thumbnail_url: photo.thumbnail_url,
+                    file_url: photo.file_url,
+                }));
+
+            const standardPhotoIds = order.participant_id ? (standardPhotoIdsByParticipant.get(order.participant_id) || []) : [];
+            const standardSelectedPhotos = standardPhotoIds
                 .map((id) => photosById.get(id))
                 .filter((photo): photo is NonNullable<typeof photo> => Boolean(photo))
                 .map((photo) => ({
@@ -307,6 +341,8 @@ export async function GET(request: NextRequest) {
                 photoCount: order.photo_count,
                 photoIds: parsedPhotoIds,
                 selectedPhotos,
+                standardPhotoCount: standardSelectedPhotos.length,
+                standardSelectedPhotos,
                 sizeSummary,
                 orderItems,
                 orderBreakdown: {
