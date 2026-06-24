@@ -187,6 +187,7 @@ export async function GET(
             gallery: {
                 id: gallery.id,
                 client_name: gallery.client_name,
+                gallery_mode: gallery.gallery_mode,
                 description: gallery.description,
                 standard_count: gallery.standard_count,
                 price_per_premium: gallery.price_per_premium,

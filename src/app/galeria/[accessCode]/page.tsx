@@ -22,6 +22,7 @@ interface GalleryPhoto {
 interface Gallery {
     id: number;
     client_name: string;
+    gallery_mode: 'INDIVIDUAL' | 'GROUP';
     description: string | null;
     standard_count: number;
     price_per_premium: number;
@@ -80,6 +81,7 @@ export default function ClientGalleryPage() {
     const currentPhoto = lightbox.isOpen
         ? (lightbox.activeType === 'standard' ? gallery?.standard_photos[lightbox.activeIndex] : gallery?.premium_photos[lightbox.activeIndex])
         : null;
+    const canSelectStandard = gallery?.gallery_mode === 'GROUP';
 
     useEffect(() => {
         if (accessCode) {
@@ -481,18 +483,20 @@ export default function ClientGalleryPage() {
                                                 className="block w-full h-auto object-contain"
                                             />
                                             <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition-colors duration-300 pointer-events-none" />
-                                            <button
-                                                type="button"
-                                                onClick={(e) => {
-                                                    e.preventDefault();
-                                                    e.stopPropagation();
-                                                    toggleStandard(photo.id);
-                                                }}
-                                                className={`absolute top-3 left-3 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all ${selectedStandard.has(photo.id) ? 'bg-gold-500 text-black' : 'bg-black/75 text-white hover:bg-black/90'}`}
-                                                title={selectedStandard.has(photo.id) ? 'Odznacz do druku' : 'Zaznacz do druku'}
-                                            >
-                                                {selectedStandard.has(photo.id) ? 'Odznacz' : 'Do druku'}
-                                            </button>
+                                            {canSelectStandard && (
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        toggleStandard(photo.id);
+                                                    }}
+                                                    className={`absolute top-3 left-3 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all ${selectedStandard.has(photo.id) ? 'bg-gold-500 text-black' : 'bg-black/75 text-white hover:bg-black/90'}`}
+                                                    title={selectedStandard.has(photo.id) ? 'Odznacz do druku' : 'Zaznacz do druku'}
+                                                >
+                                                    {selectedStandard.has(photo.id) ? 'Odznacz' : 'Do druku'}
+                                                </button>
+                                            )}
                                         </figure>
                                     </button>
                                 </div>
@@ -508,8 +512,8 @@ export default function ClientGalleryPage() {
                                     width: p.width,
                                     height: p.height,
                                 }))}
-                                selectedPhotoIds={selectedStandard}
-                                onToggleSelect={(p) => toggleStandard(p.id)}
+                                selectedPhotoIds={canSelectStandard ? selectedStandard : undefined}
+                                onToggleSelect={canSelectStandard ? (p) => toggleStandard(p.id) : undefined}
                                 onPhotoClick={(p) => {
                                     const idx = gallery.standard_photos.findIndex(ph => ph.id === p.id);
                                     if (idx !== -1) setLightbox(idx, 'standard');
@@ -517,6 +521,12 @@ export default function ClientGalleryPage() {
                             />
                         </div>
                         )}
+                    </div>
+                )}
+
+                {!canSelectStandard && gallery.standard_photos.length > 0 && (
+                    <div className="mb-12 rounded-2xl border border-zinc-800 bg-zinc-900/40 px-4 py-3 text-sm text-zinc-400">
+                        Ta galeria działa w trybie indywidualnym. Możesz pobierać zdjęcia i zamawiać dodatki, ale zaznaczanie do druku jest wyłączone.
                     </div>
                 )}
 
@@ -768,12 +778,14 @@ export default function ClientGalleryPage() {
                                     </>
                                 ) : (
                                     <div className="hidden md:flex items-center gap-3">
-                                        <button
-                                            onClick={() => toggleStandard(currentPhoto.id)}
-                                            className={`h-16 px-8 text-[10px] font-black uppercase rounded-2xl tracking-widest items-center gap-3 shadow-2xl transition-colors ${selectedStandard.has(currentPhoto.id) ? 'bg-gold-500 text-black hover:bg-gold-400' : 'bg-white/10 text-white border border-white/15 hover:bg-white hover:text-black'}`}
-                                        >
-                                            {selectedStandard.has(currentPhoto.id) ? 'Odznacz do druku' : 'Zaznacz do druku'}
-                                        </button>
+                                        {canSelectStandard && (
+                                            <button
+                                                onClick={() => toggleStandard(currentPhoto.id)}
+                                                className={`h-16 px-8 text-[10px] font-black uppercase rounded-2xl tracking-widest items-center gap-3 shadow-2xl transition-colors ${selectedStandard.has(currentPhoto.id) ? 'bg-gold-500 text-black hover:bg-gold-400' : 'bg-white/10 text-white border border-white/15 hover:bg-white hover:text-black'}`}
+                                            >
+                                                {selectedStandard.has(currentPhoto.id) ? 'Odznacz do druku' : 'Zaznacz do druku'}
+                                            </button>
+                                        )}
                                         <button
                                             onClick={() => downloadPhoto(currentPhoto.id)}
                                             className="h-16 px-12 bg-white text-black text-[10px] font-black uppercase rounded-2xl tracking-widest items-center gap-3 shadow-2xl hover:bg-gold-500 transition-colors"
