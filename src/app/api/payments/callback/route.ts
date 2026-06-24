@@ -102,6 +102,12 @@ export async function POST(request: NextRequest) {
             }
         } else if (typedType === 'GALLERY' && !isNaN(typedResourceId)) {
             try {
+                const existing = await prisma.photoOrder.findUnique({
+                    where: { id: typedResourceId },
+                    select: { payment_status: true },
+                }).catch(() => null);
+                const wasAlreadyPaid = existing?.payment_status === 'paid';
+
                 const updatedOrder = await prisma.photoOrder.update({
                     where: { id: typedResourceId },
                     data: {
@@ -116,6 +122,16 @@ export async function POST(request: NextRequest) {
 
                 if (paymentStatus === 'paid' && updatedOrder.gallery?.client_email) {
                     await logSystem('INFO', 'SYSTEM', `GALLERY order #${typedResourceId} fully paid.`, { email: updatedOrder.gallery.client_email });
+                }
+
+                // Maile o zamówieniu — tylko przy pierwszym przejściu na 'paid'
+                if (paymentStatus === 'paid' && !wasAlreadyPaid) {
+                    try {
+                        const { sendGroupExtraOrderEmails } = await import('@/lib/email/groupOrder');
+                        await sendGroupExtraOrderEmails(typedResourceId);
+                    } catch (e) {
+                        console.error('Failed to send GALLERY order emails', e);
+                    }
                 }
             } catch (updateError) {
                 console.error("Failed to update GALLERY order", updateError);

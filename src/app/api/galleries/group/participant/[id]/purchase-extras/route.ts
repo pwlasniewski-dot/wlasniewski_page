@@ -230,7 +230,7 @@ export async function POST(
         request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip')
       );
       const requestOrigin = new URL(request.url).origin;
-      const continueUrl = `${requestOrigin}/galeria/grupowa?code=${encodeURIComponent(participant.gallery.group_access_code || '')}`;
+      const continueUrl = `${requestOrigin}/galeria/grupowa?code=${encodeURIComponent(participant.gallery.group_access_code || '')}&participant=${participant.id}&order=${order.id}&payu=return`;
 
       const products = (Object.entries(groupedBySize) as Array<[GroupExtraPrintSize, { quantity: number; unitAmount: number }]>)
         .filter(([, value]) => value.quantity > 0)

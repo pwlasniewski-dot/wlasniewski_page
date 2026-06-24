@@ -252,6 +252,7 @@ export async function POST(request: NextRequest) {
                 }).catch(() => null);
 
                 if (photoOrder) {
+                    const wasAlreadyPaid = photoOrder.payment_status === 'paid';
                     await prisma.photoOrder.update({
                         where: { id: photoOrder.id },
                         data: {
@@ -260,6 +261,16 @@ export async function POST(request: NextRequest) {
                             payment_id: orderId,
                         },
                     }).catch((e) => { console.error('[PayU] Gallery photoOrder update failed:', e); });
+
+                    // Maile o zamówieniu — tylko przy pierwszym przejściu na 'paid'
+                    if (!wasAlreadyPaid) {
+                        try {
+                            const { sendGroupExtraOrderEmails } = await import('@/lib/email/groupOrder');
+                            await sendGroupExtraOrderEmails(photoOrder.id);
+                        } catch (e) {
+                            console.error('[PayU] Gallery order emails failed:', e);
+                        }
+                    }
 
                     handled = true;
                 }

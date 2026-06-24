@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import toast from 'react-hot-toast';
@@ -41,6 +41,27 @@ interface AvatarOption {
   available: boolean;
 }
 
+interface OrderConfirmationLine {
+  photo_id: number;
+  print_size: string | null;
+  print_size_label: string | null;
+  quantity: number;
+  unit_amount: number | null;
+  line_total: number | null;
+  thumbnail_url: string | null;
+}
+
+interface OrderConfirmation {
+  id: number;
+  payment_status: string;
+  photo_count: number;
+  total_amount: number;
+  created_at: string;
+  paid_at: string | null;
+  kind: string | null;
+  lines: OrderConfirmationLine[];
+}
+
 const INCLUDED_PRINT_SIZE = '15x21';
 const GROUP_EXTRA_PRINT_SIZES = [
   { code: '10x15', label: '10x15 cm' },
@@ -55,6 +76,8 @@ export default function GroupGalleryPage() {
   const searchParams = useSearchParams();
   const codeParam = searchParams.get('code');
   const guestParam = searchParams.get('guest'); // ?guest=1 triggers auto guest mode
+  const participantParam = searchParams.get('participant'); // PayU return: restore session
+  const orderParam = searchParams.get('order'); // PayU return: order to confirm
   // SECURITY: We no longer accept password in URL params
 
   // Auth state
@@ -116,6 +139,11 @@ export default function GroupGalleryPage() {
   const [copiedShare, setCopiedShare] = useState(false);
   const [showExtraPurchaseModal, setShowExtraPurchaseModal] = useState(false);
   const [purchasingExtras, setPurchasingExtras] = useState(false);
+  // Order confirmation (after PayU return)
+  const [confirmOrder, setConfirmOrder] = useState<OrderConfirmation | null>(null);
+  const [showOrderModal, setShowOrderModal] = useState(false);
+  const [orderLoading, setOrderLoading] = useState(false);
+  const sessionRestoredRef = useRef(false);
   // Guest (anonymous) mode — view only, no account
   const [isGuestMode, setIsGuestMode] = useState(false);
 
@@ -269,6 +297,7 @@ export default function GroupGalleryPage() {
 
       setGalleryInfo(data);
       setIsAuthenticated(true);
+      try { localStorage.setItem(`group_gallery_${data.gallery_id}`, JSON.stringify(data)); } catch {}
       toast.success('Witaj w galerii');
 
       // ZAWSZE pokazuj registration modal - nie przywracaj z localStorage
@@ -462,6 +491,101 @@ export default function GroupGalleryPage() {
       console.error('Load selections error:', error);
     }
   };
+
+  // Pobranie pojedynczego zamówienia do ekranu potwierdzenia (po powrocie z PayU).
+  // Jeśli płatność jeszcze nie potwierdzona przez webhook — odpytujemy kilkukrotnie.
+  const fetchOrderConfirmation = useCallback(async (
+    orderId: number,
+    participantId: number,
+    token: string,
+    attempt = 0
+  ) => {
+    try {
+      if (attempt === 0) setOrderLoading(true);
+      const res = await fetch(
+        `/api/galleries/group/participant/${participantId}/orders?order_id=${orderId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const data = await res.json();
+      if (res.ok && data.order) {
+        setConfirmOrder(data.order);
+        setShowOrderModal(true);
+        if (data.order.payment_status === 'paid') {
+          setExtraCartByPhoto({});
+          loadSelections(participantId, token);
+        } else if (attempt < 8) {
+          // webhook PayU może mieć opóźnienie — spróbuj ponownie
+          setTimeout(() => fetchOrderConfirmation(orderId, participantId, token, attempt + 1), 3000);
+        }
+      }
+    } catch (e) {
+      console.error('Order confirmation fetch error', e);
+    } finally {
+      if (attempt === 0) setOrderLoading(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Restore sesji po powrocie z PayU (?participant=&order=) — bez ponownego logowania.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (sessionRestoredRef.current) return;
+    if (isAuthenticated) return;
+    if (!participantParam) return;
+
+    const pid = Number(participantParam);
+    if (!Number.isInteger(pid) || pid <= 0) return;
+
+    try {
+      const rawP = localStorage.getItem(`group_participant_${pid}`);
+      if (!rawP) return; // brak zapisanej sesji w tej przeglądarce — zwykłe logowanie
+      const pdata = JSON.parse(rawP);
+      if (!pdata?.token || !pdata?.gallery_id) return;
+
+      sessionRestoredRef.current = true;
+
+      let gi: GalleryInfo | null = null;
+      const rawG = localStorage.getItem(`group_gallery_${pdata.gallery_id}`);
+      if (rawG) {
+        try { gi = JSON.parse(rawG); } catch { gi = null; }
+      }
+      if (!gi) {
+        gi = {
+          gallery_id: pdata.gallery_id,
+          gallery_name: pdata.gallery_name || 'Galeria',
+          max_photos_for_print: pdata.max_selections || 5,
+          allow_extra_photo_purchase: pdata.allow_extra_photo_purchase,
+        };
+      }
+
+      setGalleryInfo(gi);
+      setParticipantInfo(pdata);
+      setPaidExtraPhotoIds(pdata.paid_extra_photo_ids || []);
+      setAuthToken(pdata.token);
+      setIsAuthenticated(true);
+      setShowRegistrationModal(false);
+
+      loadPhotos(pdata.gallery_id, pdata.token);
+      loadSelections(pdata.participant_id, pdata.token);
+
+      if (orderParam) {
+        const oid = Number(orderParam);
+        if (Number.isInteger(oid) && oid > 0) {
+          fetchOrderConfirmation(oid, pdata.participant_id, pdata.token);
+        }
+      }
+
+      // Wyczyść parametry z URL, aby nie powtarzać restore przy odświeżeniu
+      const url = new URL(window.location.href);
+      url.searchParams.delete('participant');
+      url.searchParams.delete('order');
+      url.searchParams.delete('payu');
+      window.history.replaceState({}, '', url.toString());
+    } catch (e) {
+      console.error('Restore session error', e);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [participantParam, orderParam]);
 
   const handlePhotoClick = async (photoId: number) => {
     if (!participantInfo || !authToken) return;
@@ -2039,6 +2163,75 @@ Hasło: ${password}` : ''}`}
                   </button>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL POTWIERDZENIA ZAMÓWIENIA — po powrocie z PayU */}
+      {showOrderModal && confirmOrder && (
+        <div className="fixed inset-0 z-[90] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-lg max-h-[92vh] overflow-hidden flex flex-col">
+            <div className="p-5 border-b border-zinc-800 flex items-start justify-between gap-4">
+              <div>
+                <h3 className="text-xl font-black text-white">Zamówienie #{confirmOrder.id}</h3>
+                <div className="mt-2">
+                  {confirmOrder.payment_status === 'paid' ? (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-300 text-xs font-bold border border-emerald-500/40">
+                      <Check className="w-3.5 h-3.5" /> Opłacone
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 text-amber-300 text-xs font-bold border border-amber-500/40">
+                      <Info className="w-3.5 h-3.5" /> {orderLoading ? 'Sprawdzam status płatności…' : 'Oczekuje na potwierdzenie płatności…'}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowOrderModal(false)}
+                className="w-10 h-10 rounded-full bg-zinc-900 hover:bg-zinc-800 text-white flex items-center justify-center"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-5 overflow-y-auto flex-1 space-y-3">
+              <p className="text-xs text-zinc-400">
+                Dziękujemy! Oto podsumowanie Twojego zamówienia dodatkowych odbitek.
+                {confirmOrder.payment_status !== 'paid' && ' Potwierdzenie płatności może zająć chwilę — ten ekran zaktualizuje się automatycznie.'}
+              </p>
+              <div className="space-y-2">
+                {confirmOrder.lines.map((line, idx) => (
+                  <div key={`order-line-${line.photo_id}-${idx}`} className="flex items-center gap-3 bg-zinc-900 border border-zinc-800 rounded-lg p-2">
+                    <div className="w-14 h-14 rounded-md overflow-hidden bg-black flex-shrink-0">
+                      {line.thumbnail_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={line.thumbnail_url} alt={`Zamówione zdjęcie ${idx + 1}`} className="w-full h-full object-cover" />
+                      ) : null}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-white">Odbitka {line.print_size_label || ''}</p>
+                      <p className="text-xs text-zinc-400">Ilość: {line.quantity}</p>
+                    </div>
+                    <p className="text-sm font-bold text-emerald-300 whitespace-nowrap">
+                      {line.line_total != null ? `${(line.line_total / 100).toFixed(2)} zł` : ''}
+                    </p>
+                  </div>
+                ))}
+              </div>
+              <div className="flex items-center justify-between border-t border-zinc-800 pt-3">
+                <span className="text-sm text-zinc-300 font-semibold">Razem ({confirmOrder.photo_count} szt.)</span>
+                <span className="text-lg font-black text-emerald-300">{(confirmOrder.total_amount / 100).toFixed(2)} zł</span>
+              </div>
+            </div>
+            <div className="p-5 border-t border-zinc-800">
+              <button
+                type="button"
+                onClick={() => setShowOrderModal(false)}
+                className="w-full px-5 py-2.5 rounded-lg bg-gold-500 hover:bg-gold-400 text-black text-sm font-black"
+              >
+                Wróć do galerii
+              </button>
             </div>
           </div>
         </div>
