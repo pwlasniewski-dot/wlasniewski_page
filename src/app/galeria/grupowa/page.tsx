@@ -1135,6 +1135,7 @@ export default function GroupGalleryPage() {
                       setShowRegistrationModal(false);
                       loadPhotos(galleryInfo?.gallery_id || 0, savedParticipant.token);
                       loadSelections(savedParticipant.participant_id, savedParticipant.token);
+                      loadOrders(savedParticipant.participant_id, savedParticipant.token);
                     }}
                     className="w-full bg-gold-500 text-black text-xs font-bold py-2 rounded hover:bg-gold-400 transition-all"
                   >
