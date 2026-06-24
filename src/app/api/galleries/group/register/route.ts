@@ -263,6 +263,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       participant_id: participant.id,
+      gallery_id: gallery_id,
       parent_identifier: parentIdentifier,
       parent_name: participant.parent_name,
       avatar: avatar,

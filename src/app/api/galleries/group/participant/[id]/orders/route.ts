@@ -85,6 +85,15 @@ export async function GET(
       : [];
     const photoMap = new Map(photos.map((p) => [p.id, p]));
 
+    // Numer kadru = pozycja zdjęcia w galerii wg order_index (1-based), tak jak widzi je rodzic.
+    const orderedPhotos = await prisma.galleryPhoto.findMany({
+      where: { gallery_id: participant.gallery_id },
+      orderBy: { order_index: 'asc' },
+      select: { id: true },
+    });
+    const frameMap = new Map<number, number>();
+    orderedPhotos.forEach((p, idx) => frameMap.set(p.id, idx + 1));
+
     const result = parsed.map(({ order, meta, lines }) => ({
       id: order.id,
       payment_status: order.payment_status,
@@ -98,6 +107,7 @@ export async function GET(
         const photo = photoMap.get(pid);
         return {
           photo_id: pid,
+          frame_number: frameMap.get(pid) ?? null,
           print_size: line.print_size || null,
           print_size_label: line.print_size_label || line.print_size || null,
           quantity: line.quantity || 1,

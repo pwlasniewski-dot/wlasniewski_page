@@ -49,6 +49,7 @@ interface OrderConfirmationLine {
   unit_amount: number | null;
   line_total: number | null;
   thumbnail_url: string | null;
+  frame_number: number | null;
 }
 
 interface OrderConfirmation {
@@ -143,6 +144,7 @@ export default function GroupGalleryPage() {
   const [confirmOrder, setConfirmOrder] = useState<OrderConfirmation | null>(null);
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [orderLoading, setOrderLoading] = useState(false);
+  const [participantOrders, setParticipantOrders] = useState<OrderConfirmation[]>([]);
   const sessionRestoredRef = useRef(false);
   // Guest (anonymous) mode — view only, no account
   const [isGuestMode, setIsGuestMode] = useState(false);
@@ -363,16 +365,14 @@ export default function GroupGalleryPage() {
       setAuthToken(data.token);
       // Zapisz token dla każdego uczestnika indywidualnie (nie per galerię!)
       // Każdy rodzic ma swój participant_id i własny klucz w localStorage
-      localStorage.setItem(
-        `group_participant_${data.participant_id}`,
-        JSON.stringify(data)
-      );
+      persistParticipant(data, galleryInfo);
       setShowRegistrationModal(false);
       toast.success(`Witaj! Twój awatar: ${data.avatar}`);
 
       // Load photos and selections
       loadPhotos(galleryInfo.gallery_id, data.token);
       loadSelections(data.participant_id, data.token);
+      loadOrders(data.participant_id, data.token);
 
     } catch (error) {
       console.error('Registration error:', error);
@@ -410,15 +410,13 @@ export default function GroupGalleryPage() {
       setParticipantInfo(data);
       setPaidExtraPhotoIds(data.paid_extra_photo_ids || []);
       setAuthToken(data.token);
-      localStorage.setItem(
-        `group_participant_${data.participant_id}`,
-        JSON.stringify(data)
-      );
+      persistParticipant(data, galleryInfo);
       setShowRegistrationModal(false);
       toast.success(`Witaj ponownie, ${data.parent_name || 'Rodzicu'}!`);
 
       loadPhotos(galleryInfo.gallery_id, data.token);
       loadSelections(data.participant_id, data.token);
+      loadOrders(data.participant_id, data.token);
     } catch (error) {
       console.error('Existing parent email login error:', error);
       toast.error('Wystąpił błąd podczas logowania');
@@ -449,6 +447,41 @@ export default function GroupGalleryPage() {
     }
   };
 
+  // Zapis sesji rodzica do localStorage z gwarancją obecności gallery_id (potrzebne do
+  // automatycznego przywrócenia sesji po powrocie z PayU — bez ponownego logowania).
+  const persistParticipant = (data: any, gallery?: GalleryInfo | null) => {
+    if (typeof window === 'undefined' || !data?.participant_id) return;
+    const g = gallery || galleryInfo;
+    const enriched = {
+      ...data,
+      gallery_id: data.gallery_id ?? g?.gallery_id,
+      gallery_name: data.gallery_name ?? g?.gallery_name,
+      allow_extra_photo_purchase: data.allow_extra_photo_purchase ?? g?.allow_extra_photo_purchase,
+    };
+    try {
+      localStorage.setItem(
+        `group_participant_${data.participant_id}`,
+        JSON.stringify(enriched)
+      );
+    } catch {}
+  };
+
+  // Pobranie historii zamówień rodzica (lista) — do sekcji "Twoje zamówienia".
+  const loadOrders = async (participantId: number, token: string) => {
+    try {
+      const res = await fetch(
+        `/api/galleries/group/participant/${participantId}/orders`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const data = await res.json();
+      if (res.ok && Array.isArray(data.orders)) {
+        setParticipantOrders(data.orders);
+      }
+    } catch (e) {
+      console.error('Load orders error', e);
+    }
+  };
+
   const loadSelections = async (participantId: number, token: string) => {
     try {
       const response = await fetch(`/api/galleries/group/participant/${participantId}/select`, {
@@ -463,6 +496,7 @@ export default function GroupGalleryPage() {
         setPaidExtraPhotoIds(data.paid_extra_photo_ids || []);
         setConsentGiven(data.publication_consent || false);
         setConsentScope(data.consent_scope || 'ALL');
+        loadOrders(participantId, token);
         if (typeof data.allow_extra_photo_purchase === 'boolean') {
           setParticipantInfo(prev => prev ? { ...prev, allow_extra_photo_purchase: data.allow_extra_photo_purchase } : prev);
         }
@@ -513,6 +547,7 @@ export default function GroupGalleryPage() {
         if (data.order.payment_status === 'paid') {
           setExtraCartByPhoto({});
           loadSelections(participantId, token);
+          loadOrders(participantId, token);
         } else if (attempt < 8) {
           // webhook PayU może mieć opóźnienie — spróbuj ponownie
           setTimeout(() => fetchOrderConfirmation(orderId, participantId, token, attempt + 1), 3000);
@@ -540,7 +575,25 @@ export default function GroupGalleryPage() {
       const rawP = localStorage.getItem(`group_participant_${pid}`);
       if (!rawP) return; // brak zapisanej sesji w tej przeglądarce — zwykłe logowanie
       const pdata = JSON.parse(rawP);
-      if (!pdata?.token || !pdata?.gallery_id) return;
+      if (!pdata?.token) return;
+
+      // gallery_id mógł nie zostać zapisany w starszych rekordach — spróbuj go odtworzyć
+      // z zapisanego obiektu galerii (group_gallery_*), aby restore nie wymagał logowania.
+      let resolvedGalleryId: number | undefined = pdata.gallery_id;
+      if (!resolvedGalleryId) {
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith('group_gallery_')) {
+            const parsed = Number(key.replace('group_gallery_', ''));
+            if (Number.isInteger(parsed) && parsed > 0) {
+              resolvedGalleryId = parsed;
+              break;
+            }
+          }
+        }
+      }
+      if (!resolvedGalleryId) return;
+      pdata.gallery_id = resolvedGalleryId;
 
       sessionRestoredRef.current = true;
 
@@ -565,8 +618,12 @@ export default function GroupGalleryPage() {
       setIsAuthenticated(true);
       setShowRegistrationModal(false);
 
+      // Zaktualizuj zapis sesji o gallery_id (gdy starszy rekord go nie miał)
+      persistParticipant(pdata, gi);
+
       loadPhotos(pdata.gallery_id, pdata.token);
       loadSelections(pdata.participant_id, pdata.token);
+      loadOrders(pdata.participant_id, pdata.token);
 
       if (orderParam) {
         const oid = Number(orderParam);
@@ -1754,6 +1811,50 @@ Hasło: ${password}` : ''}`}
                 )})}
               </div>
             )}
+
+            {participantOrders.length > 0 && (
+              <div className="mt-5 pt-4 border-t border-emerald-700/40">
+                <h4 className="text-sm font-bold text-emerald-200 mb-3">Twoje zamówienia</h4>
+                <div className="space-y-3">
+                  {participantOrders.map((order) => {
+                    const isPaid = order.payment_status === 'paid';
+                    return (
+                      <div key={`order-${order.id}`} className="bg-zinc-950/60 border border-emerald-700/40 rounded-lg p-3">
+                        <div className="flex items-center justify-between gap-2 mb-2">
+                          <span className="text-sm font-black text-white">Zamówienie #{order.id}</span>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isPaid ? 'bg-emerald-500 text-black' : 'bg-amber-500/90 text-black'}`}>
+                            {isPaid ? 'Opłacone' : 'Oczekuje na płatność'}
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap gap-2 mb-2">
+                          {order.lines.map((line, i) => (
+                            <div key={`order-${order.id}-line-${i}`} className="w-20 rounded-md overflow-hidden border border-emerald-600/40 bg-black">
+                              <div className="relative aspect-square">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  src={line.thumbnail_url || ''}
+                                  alt={line.frame_number ? `Kadr ${line.frame_number}` : `Zdjęcie ${line.photo_id}`}
+                                  className="w-full h-full object-cover"
+                                />
+                                {line.frame_number != null && (
+                                  <span className="absolute top-0.5 left-0.5 bg-black/80 text-white text-[9px] font-black px-1 rounded">
+                                    Kadr {line.frame_number}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-[9px] text-emerald-200/80 text-center py-0.5">{line.print_size_label || line.print_size}</p>
+                            </div>
+                          ))}
+                        </div>
+                        <p className="text-xs text-emerald-200/80">
+                          Zdjęć: <span className="font-bold">{order.photo_count}</span> • Kwota: <span className="font-bold">{(order.total_amount / 100).toFixed(2)} zł</span>
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -2210,7 +2311,9 @@ Hasło: ${password}` : ''}`}
                       ) : null}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-white">Odbitka {line.print_size_label || ''}</p>
+                      <p className="text-sm font-semibold text-white">
+                        {line.frame_number != null ? `Kadr ${line.frame_number} — ` : ''}Odbitka {line.print_size_label || ''}
+                      </p>
                       <p className="text-xs text-zinc-400">Ilość: {line.quantity}</p>
                     </div>
                     <p className="text-sm font-bold text-emerald-300 whitespace-nowrap">

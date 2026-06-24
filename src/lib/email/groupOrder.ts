@@ -3,6 +3,7 @@ import { sendEmail, getAdminEmail } from '@/lib/email/sender';
 import { logSystem } from '@/lib/logger';
 
 type ParsedLine = {
+  photo_id?: number;
   print_size_label?: string;
   print_size?: string;
   quantity?: number;
@@ -15,14 +16,18 @@ function formatPln(amountGrosze: number | null | undefined): string {
   return `${(value / 100).toFixed(2)} zł`;
 }
 
-function buildLinesRows(lines: ParsedLine[]): string {
+function buildLinesRows(lines: ParsedLine[], frameMap: Map<number, number>): string {
   if (!lines.length) return '';
   return lines
     .map((line) => {
       const label = line.print_size_label || line.print_size || 'Odbitka';
       const qty = line.quantity || 1;
       const total = formatPln(line.line_total ?? (line.unit_amount ?? 0) * qty);
+      const pid = Number(line.photo_id);
+      const frame = frameMap.get(pid);
+      const kadr = frame ? `Kadr ${frame}` : '—';
       return `<tr>
+        <td style="padding:8px 12px;border-bottom:1px solid #eee;">${kadr}</td>
         <td style="padding:8px 12px;border-bottom:1px solid #eee;">${label}</td>
         <td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:center;">${qty}</td>
         <td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:right;">${total}</td>
@@ -69,16 +74,26 @@ export async function sendGroupExtraOrderEmails(orderId: number): Promise<void> 
       lines = [];
     }
 
+    // Numer kadru = pozycja zdjęcia w galerii wg order_index (1-based), tak jak widzi je rodzic.
+    const orderedPhotos = await prisma.galleryPhoto.findMany({
+      where: { gallery_id: order.gallery_id },
+      orderBy: { order_index: 'asc' },
+      select: { id: true },
+    });
+    const frameMap = new Map<number, number>();
+    orderedPhotos.forEach((p, idx) => frameMap.set(p.id, idx + 1));
+
     const parentName = participant?.parent_name || participant?.parent_identifier || 'Rodzicu';
     const galleryName = order.gallery?.client_name || 'Galeria';
     const accessCode = order.gallery?.group_access_code || '';
     const total = formatPln(order.total_amount);
-    const rows = buildLinesRows(lines);
+    const rows = buildLinesRows(lines, frameMap);
 
     const summaryTable = `
       <table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;">
         <thead>
           <tr>
+            <th style="padding:8px 12px;text-align:left;border-bottom:2px solid #333;">Kadr</th>
             <th style="padding:8px 12px;text-align:left;border-bottom:2px solid #333;">Pozycja</th>
             <th style="padding:8px 12px;text-align:center;border-bottom:2px solid #333;">Ilość</th>
             <th style="padding:8px 12px;text-align:right;border-bottom:2px solid #333;">Kwota</th>
@@ -87,7 +102,7 @@ export async function sendGroupExtraOrderEmails(orderId: number): Promise<void> 
         <tbody>
           ${rows}
           <tr>
-            <td style="padding:10px 12px;font-weight:bold;">Razem (${order.photo_count} szt.)</td>
+            <td style="padding:10px 12px;font-weight:bold;" colspan="2">Razem (${order.photo_count} szt.)</td>
             <td></td>
             <td style="padding:10px 12px;text-align:right;font-weight:bold;">${total}</td>
           </tr>
