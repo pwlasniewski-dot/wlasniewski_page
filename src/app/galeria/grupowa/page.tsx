@@ -1717,7 +1717,7 @@ Hasło: ${password}` : ''}`}
                 <p className="text-xs text-zinc-400">Wybrane: {selectedPhotoItems.length}/{participantInfo?.max_selections || 5}{extraCartTotalUnits > 0 ? ` + ${extraCartTotalUnits} odbitek w koszyku` : paidExtraPhotoIds.length > 0 ? ` + ${paidExtraPhotoIds.length} opłaconych zdjęć` : ''}</p>
                 <p className="text-xs text-zinc-500 mt-1">Pakiet podstawowy: odbitki {INCLUDED_PRINT_SIZE} cm.</p>
               </div>
-              <p className="text-xs font-semibold text-zinc-300">📸 Fotograf widzi Twoje wybrane zdjęcia w panelu administratora — po zatwierdzeniu zgody RODO poniżej.</p>
+              <p className="text-xs font-semibold text-zinc-300">📸 Fotograf widzi Twoje wybrane zdjęcia w panelu administratora.</p>
             </div>
             {selectedPhotoItems.length === 0 ? (
               <p className="text-sm text-zinc-500">Nie masz jeszcze wybranych zdjęć do druku.</p>
