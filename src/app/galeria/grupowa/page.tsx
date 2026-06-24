@@ -48,7 +48,8 @@ const GROUP_EXTRA_PRINT_SIZES = [
 ] as const;
 
 type GroupExtraPrintSize = (typeof GROUP_EXTRA_PRINT_SIZES)[number]['code'];
-type ExtraCartByPhoto = Record<number, Record<GroupExtraPrintSize, number>>;
+// Jedno zdjęcie = jeden rozmiar odbitki (uproszczony model koszyka)
+type ExtraCartByPhoto = Record<number, GroupExtraPrintSize>;
 
 export default function GroupGalleryPage() {
   const searchParams = useSearchParams();
@@ -755,56 +756,56 @@ export default function GroupGalleryPage() {
   const extraPurchaseEnabled = !!participantInfo && !!galleryInfo && !isGuestMode && (participantInfo.allow_extra_photo_purchase || galleryInfo.allow_extra_photo_purchase);
   const globalPrice10x15 = galleryInfo?.group_print_price_10x15 || 150;
   const globalPrice15x21 = galleryInfo?.group_print_price_15x21 || 250;
-  const getExtraQty = (photoId: number, size: GroupExtraPrintSize) => extraCartByPhoto[photoId]?.[size] || 0;
-  const selectedExtraPhotos = Object.entries(extraCartByPhoto)
-    .map(([photoId]) => Number(photoId))
-    .filter((photoId) => getExtraQty(photoId, '10x15') + getExtraQty(photoId, '15x21') > 0);
-  const extraCartLines = selectedExtraPhotos.flatMap((photoId) => {
-    const qty10x15 = getExtraQty(photoId, '10x15');
-    const qty15x21 = getExtraQty(photoId, '15x21');
-    const lines: Array<{ photo_id: number; print_size: GroupExtraPrintSize; quantity: number }> = [];
-    if (qty10x15 > 0) lines.push({ photo_id: photoId, print_size: '10x15', quantity: qty10x15 });
-    if (qty15x21 > 0) lines.push({ photo_id: photoId, print_size: '15x21', quantity: qty15x21 });
-    return lines;
-  });
-  const extraCartQty10x15 = extraCartLines.filter((line) => line.print_size === '10x15').reduce((sum, line) => sum + line.quantity, 0);
-  const extraCartQty15x21 = extraCartLines.filter((line) => line.print_size === '15x21').reduce((sum, line) => sum + line.quantity, 0);
-  const extraCartTotalUnits = extraCartQty10x15 + extraCartQty15x21;
-  const extraCartTotal = (extraCartQty10x15 * globalPrice10x15) + (extraCartQty15x21 * globalPrice15x21);
+  const DEFAULT_EXTRA_SIZE: GroupExtraPrintSize = '10x15';
+  const priceForSize = (size: GroupExtraPrintSize) => (size === '15x21' ? globalPrice15x21 : globalPrice10x15);
+  const isInExtraCart = (photoId: number) => Object.prototype.hasOwnProperty.call(extraCartByPhoto, photoId);
+  const getExtraSize = (photoId: number): GroupExtraPrintSize | null => extraCartByPhoto[photoId] ?? null;
+  const selectedExtraPhotos = Object.keys(extraCartByPhoto).map((photoId) => Number(photoId));
+  const extraCartLines = selectedExtraPhotos.map((photoId) => ({
+    photo_id: photoId,
+    print_size: extraCartByPhoto[photoId],
+    quantity: 1,
+  }));
+  const extraCartQty10x15 = extraCartLines.filter((line) => line.print_size === '10x15').length;
+  const extraCartQty15x21 = extraCartLines.filter((line) => line.print_size === '15x21').length;
+  const extraCartTotalUnits = selectedExtraPhotos.length;
+  const extraCartTotal = extraCartLines.reduce((sum, line) => sum + priceForSize(line.print_size), 0);
   const availableExtraPhotos = photos;
   const allSelectedIds = new Set([...selectedPhotos, ...selectedExtraPhotos, ...paidExtraPhotoIds]);
   const visiblePhotos = showSelectedOnly ? photos.filter(p => allSelectedIds.has(p.id)) : photos;
 
-  const setExtraQty = (photoId: number, size: GroupExtraPrintSize, quantity: number) => {
-    const normalized = Math.max(0, Math.min(99, Math.floor(quantity)));
+  const setExtraSize = (photoId: number, size: GroupExtraPrintSize) => {
+    setExtraCartByPhoto((prev) => (Object.prototype.hasOwnProperty.call(prev, photoId)
+      ? { ...prev, [photoId]: size }
+      : prev));
+  };
+
+  const removeExtraFromCart = (photoId: number) => {
     setExtraCartByPhoto((prev) => {
-      const currentByPhoto = prev[photoId] || { '10x15': 0, '15x21': 0 };
-      const nextByPhoto = {
-        ...currentByPhoto,
-        [size]: normalized,
-      };
-
-      if (nextByPhoto['10x15'] === 0 && nextByPhoto['15x21'] === 0) {
-        const { [photoId]: _removed, ...rest } = prev;
-        return rest;
-      }
-
-      return {
-        ...prev,
-        [photoId]: nextByPhoto,
-      };
+      const { [photoId]: _removed, ...rest } = prev;
+      return rest;
     });
   };
 
-  const toggleExtraPhoto = (photoId: number) => {
-    const currentQty = getExtraQty(photoId, '10x15');
-    setExtraQty(photoId, '10x15', currentQty > 0 ? 0 : 1);
+  // Dodanie do koszyka — domyślny rozmiar 10x15, rozmiar zmieniany później w koszyku.
+  // Opłacone wcześniej zdjęcia NIE są blokowane; pokazujemy tylko informację.
+  const quickAddExtraToCart = (photoId: number) => {
+    if (isInExtraCart(photoId)) return;
+    setExtraCartByPhoto((prev) => ({ ...prev, [photoId]: DEFAULT_EXTRA_SIZE }));
+    if (paidExtraPhotoIds.includes(photoId)) {
+      toast('To zdjęcie kupiłeś już wcześniej — możesz zamówić je ponownie.', { icon: 'ℹ️' });
+    } else {
+      toast.success('Dodano do koszyka');
+    }
   };
 
-  const quickAddExtraToCart = (photoId: number) => {
-    const nextQty = getExtraQty(photoId, '10x15') + 1;
-    setExtraQty(photoId, '10x15', nextQty);
-    toast.success(`Dodano do koszyka: 10x15 (${nextQty} szt.)`);
+  const toggleExtraInCart = (photoId: number) => {
+    if (isInExtraCart(photoId)) {
+      removeExtraFromCart(photoId);
+      toast.success('Usunięto z koszyka');
+      return;
+    }
+    quickAddExtraToCart(photoId);
   };
 
   const handlePurchaseExtras = async () => {
@@ -1362,7 +1363,7 @@ Hasło: ${password}` : ''}`}
           selectedPhotoIds={isGuestMode ? undefined : new Set(selectedPhotos)}
           onToggleSelect={isGuestMode ? undefined : (p) => handleSelectToggle(p.id)}
           limitReached={!isGuestMode && selectedPhotos.length >= (participantInfo?.max_selections || 5)}
-          onLimitReached={!isGuestMode && extraPurchaseEnabled ? (photoId: number) => quickAddExtraToCart(photoId) : undefined}
+          onLimitReached={!isGuestMode && extraPurchaseEnabled ? (photoId: number) => toggleExtraInCart(photoId) : undefined}
           extraSelectedPhotoIds={isGuestMode ? undefined : new Set(selectedExtraPhotos)}
           paidExtraPhotoIds={isGuestMode ? undefined : new Set(paidExtraPhotoIds)}
         />
@@ -1574,39 +1575,57 @@ Hasło: ${password}` : ''}`}
             <div className="flex items-center justify-between gap-3 mb-3">
               <div>
                 <h3 className="text-base font-bold text-emerald-300">Dodatkowe odbitki do druku — płatne</h3>
-                <p className="text-xs text-emerald-200/70">10x15: {extraCartQty10x15} szt. • 15x21: {extraCartQty15x21} szt. • Razem: <span className="font-bold">{(extraCartTotal / 100).toFixed(2)} zł</span></p>
+                <p className="text-xs text-emerald-200/70">Zdjęć w koszyku: <span className="font-bold">{extraCartTotalUnits}</span> • Razem: <span className="font-bold">{(extraCartTotal / 100).toFixed(2)} zł</span></p>
               </div>
             </div>
             {extraCartTotalUnits === 0 ? (
-              <p className="text-sm text-emerald-200/50">Zaznacz poniżej interesujące Cię zdjęcia, aby rozszerzyć liczbę odbitek poza limit 5 odbitek.</p>
+              <p className="text-sm text-emerald-200/50">Zaznacz poniżej interesujące Cię zdjęcia, aby rozszerzyć liczbę odbitek poza limit 5 odbitek. Rozmiar odbitki wybierzesz tutaj, w koszyku.</p>
             ) : (
-              <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
+              <div className="flex flex-wrap gap-3">
                 {selectedExtraPhotos.map((photoId, idx) => {
                   const photo = photos.find((item) => item.id === photoId);
                   if (!photo) return null;
+                  const size = getExtraSize(photo.id) || DEFAULT_EXTRA_SIZE;
+                  const wasPaid = paidExtraPhotoIds.includes(photo.id);
                   return (
-                  <div key={`extra-${photo.id}`} className="relative aspect-square rounded-lg overflow-hidden border border-emerald-500/60 bg-black">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={photo.thumbnail_url || photo.file_url}
-                      alt={`Dodatkowa odbitka do druku ${idx + 1}`}
-                      className="w-full h-full object-cover"
-                    />
-                    <span className="absolute top-1 left-1 bg-emerald-500 text-black text-[10px] font-black px-1.5 py-0.5 rounded">
-                      10x15: {getExtraQty(photo.id, '10x15')} • 15x21: {getExtraQty(photo.id, '15x21')}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setExtraQty(photo.id, '10x15', 0);
-                        setExtraQty(photo.id, '15x21', 0);
-                      }}
-                      className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/80 hover:bg-red-500 text-white flex items-center justify-center transition-colors"
-                      title="Usuń wszystkie dodatkowe odbitki tego zdjęcia"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
+                  <div key={`extra-${photo.id}`} className="w-32 rounded-lg overflow-hidden border border-emerald-500/60 bg-zinc-950">
+                    <div className="relative aspect-square bg-black">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={photo.thumbnail_url || photo.file_url}
+                        alt={`Dodatkowa odbitka do druku ${idx + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                      {wasPaid && (
+                        <span className="absolute top-1 left-1 bg-amber-500 text-black text-[9px] font-black px-1.5 py-0.5 rounded">
+                          Kupione wcześniej
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeExtraFromCart(photo.id);
+                        }}
+                        className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/80 hover:bg-red-500 text-white flex items-center justify-center transition-colors"
+                        title="Usuń to zdjęcie z koszyka"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                    <div className="p-2 space-y-1.5">
+                      <label className="block text-[10px] text-emerald-300/80 font-semibold">Rozmiar odbitki</label>
+                      <select
+                        value={size}
+                        onChange={(e) => setExtraSize(photo.id, e.target.value as GroupExtraPrintSize)}
+                        className="w-full bg-zinc-900 border border-emerald-700/60 text-white text-xs rounded-md px-2 py-1.5 focus:outline-none focus:border-emerald-400"
+                      >
+                        {GROUP_EXTRA_PRINT_SIZES.map((opt) => (
+                          <option key={opt.code} value={opt.code}>{opt.label}</option>
+                        ))}
+                      </select>
+                      <p className="text-[10px] text-emerald-200/70 font-bold">{(priceForSize(size) / 100).toFixed(2)} zł</p>
+                    </div>
                   </div>
                 )})}
               </div>
@@ -1632,7 +1651,7 @@ Hasło: ${password}` : ''}`}
             onToggleSelect={isGuestMode ? undefined : (p) => handleSelectToggle(p.id)}
             onPhotoClick={(p) => setLightboxPhoto(p as Photo)}
             limitReached={!isGuestMode && selectedPhotos.length >= (participantInfo?.max_selections || 5)}
-            onLimitReached={!isGuestMode && extraPurchaseEnabled ? (photoId: number) => quickAddExtraToCart(photoId) : undefined}
+            onLimitReached={!isGuestMode && extraPurchaseEnabled ? (photoId: number) => toggleExtraInCart(photoId) : undefined}
             extraSelectedPhotoIds={isGuestMode ? undefined : new Set(selectedExtraPhotos)}
             paidExtraPhotoIds={isGuestMode ? undefined : new Set(paidExtraPhotoIds)}
           />
@@ -1747,27 +1766,27 @@ Hasło: ${password}` : ''}`}
                   </button>
                   )}
 
-                  {/* Extra purchase button — bottom-right, only if enabled and photo not already selected/paid */}
+                  {/* Extra purchase button — bottom-right, only if enabled */}
                   {!isGuestMode && !downloadMode && extraPurchaseEnabled && (
                   <button
                     type="button"
-                    onClick={(e) => { e.stopPropagation(); quickAddExtraToCart(photo.id); }}
+                    onClick={(e) => { e.stopPropagation(); toggleExtraInCart(photo.id); }}
                     className={`absolute bottom-2 right-2 flex items-center gap-1.5 px-2.5 py-1.5 rounded-full font-bold text-xs shadow-lg transition-all ${
                       selectedExtraPhotos.includes(photo.id)
                         ? 'bg-emerald-500 text-black'
                         : 'bg-black/75 text-emerald-400 hover:bg-black/90'
                     }`}
-                    title={selectedExtraPhotos.includes(photo.id) ? 'Dodaj kolejną odbitkę 10x15 do koszyka' : 'Dodaj 1 odbitkę 10x15 do koszyka'}
+                    title={selectedExtraPhotos.includes(photo.id) ? 'Kliknij, aby usunąć z koszyka' : 'Dodaj to zdjęcie do koszyka (rozmiar wybierzesz w koszyku)'}
                   >
                     {selectedExtraPhotos.includes(photo.id) ? (
                       <>
                         <CheckSquare className="w-3.5 h-3.5" />
-                        Dodaj kolejną
+                        W koszyku
                       </>
                     ) : (
                       <>
                         <Package className="w-3.5 h-3.5" />
-                        Dodaj 10x15
+                        Dodaj do koszyka
                       </>
                     )}
                   </button>
@@ -1927,9 +1946,9 @@ Hasło: ${password}` : ''}`}
               <div>
                 <h3 className="text-xl font-black text-white">Dokup dodatkowe zdjęcia</h3>
                 <p className="text-sm text-zinc-400 mt-1">
-                  Ustaw osobno ilości odbitek 10x15 i 15x21 przy wybranych zdjęciach. Płatność przejdzie przez PayU.
+                  Dodaj zdjęcia do koszyka, a rozmiar odbitki (10x15 lub 15x21) wybierzesz przy każdym zdjęciu. Płatność przejdzie przez PayU.
                 </p>
-                <p className="mt-3 text-xs text-zinc-500">Przy każdym zdjęciu możesz wpisać niezależnie np. 3 szt. 10x15 i 5 szt. 15x21.</p>
+                <p className="mt-3 text-xs text-zinc-500">Jedno zdjęcie = jedna odbitka w wybranym rozmiarze.</p>
               </div>
               <button
                 type="button"
@@ -1945,13 +1964,13 @@ Hasło: ${password}` : ''}`}
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 mb-5">
                   {availableExtraPhotos.map((photo) => {
-                    const qty10x15 = getExtraQty(photo.id, '10x15');
-                    const qty15x21 = getExtraQty(photo.id, '15x21');
-                    const hasInCart = qty10x15 + qty15x21 > 0;
+                    const inCart = isInExtraCart(photo.id);
+                    const size = getExtraSize(photo.id) || DEFAULT_EXTRA_SIZE;
+                    const wasPaid = paidExtraPhotoIds.includes(photo.id);
                     return (
                       <div
                         key={photo.id}
-                        className={`relative rounded-xl overflow-hidden border transition-all text-left ${hasInCart ? 'border-gold-500 ring-2 ring-gold-500/20' : 'border-zinc-800 hover:border-zinc-600'}`}
+                        className={`relative rounded-xl overflow-hidden border transition-all text-left ${inCart ? 'border-gold-500 ring-2 ring-gold-500/20' : 'border-zinc-800 hover:border-zinc-600'}`}
                       >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
@@ -1959,48 +1978,37 @@ Hasło: ${password}` : ''}`}
                           alt={`Dodatkowe zdjęcie ${photo.id}`}
                           className="w-full aspect-square object-cover"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/0 to-black/0" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/0 to-black/0 pointer-events-none" />
+                        {wasPaid && (
+                          <div className="absolute top-2 right-2 px-2 py-1 rounded-full bg-amber-500 text-[10px] font-black text-black">
+                            Kupione wcześniej
+                          </div>
+                        )}
                         <div className="absolute top-2 left-2 px-2 py-1 rounded-full bg-black/70 text-[10px] font-bold text-white">
-                          {hasInCart ? 'W koszyku' : 'Dodaj'}
+                          {inCart ? 'W koszyku' : 'Dodaj'}
                         </div>
                         <div className="p-2 border-t border-zinc-800 bg-zinc-950/90 space-y-2">
-                          <div className="text-[10px] text-zinc-400 font-semibold">10x15 ({(globalPrice10x15 / 100).toFixed(2)} PLN)</div>
-                          <div className="flex items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => setExtraQty(photo.id, '10x15', qty10x15 - 1)}
-                              className="w-7 h-7 rounded-md bg-zinc-800 hover:bg-zinc-700 text-white font-bold"
-                            >
-                              -
-                            </button>
-                            <span className="min-w-[24px] text-center text-sm font-bold text-white">{qty10x15}</span>
-                            <button
-                              type="button"
-                              onClick={() => setExtraQty(photo.id, '10x15', qty10x15 + 1)}
-                              className="w-7 h-7 rounded-md bg-zinc-800 hover:bg-zinc-700 text-white font-bold"
-                            >
-                              +
-                            </button>
-                          </div>
-
-                          <div className="text-[10px] text-zinc-400 font-semibold">15x21 ({(globalPrice15x21 / 100).toFixed(2)} PLN)</div>
-                          <div className="flex items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => setExtraQty(photo.id, '15x21', qty15x21 - 1)}
-                              className="w-7 h-7 rounded-md bg-zinc-800 hover:bg-zinc-700 text-white font-bold"
-                            >
-                              -
-                            </button>
-                            <span className="min-w-[24px] text-center text-sm font-bold text-white">{qty15x21}</span>
-                            <button
-                              type="button"
-                              onClick={() => setExtraQty(photo.id, '15x21', qty15x21 + 1)}
-                              className="w-7 h-7 rounded-md bg-zinc-800 hover:bg-zinc-700 text-white font-bold"
-                            >
-                              +
-                            </button>
-                          </div>
+                          <button
+                            type="button"
+                            onClick={() => toggleExtraInCart(photo.id)}
+                            className={`w-full px-2 py-1.5 rounded-md text-xs font-bold transition-all ${inCart ? 'bg-zinc-800 hover:bg-red-600 text-white' : 'bg-gold-500 hover:bg-gold-400 text-black'}`}
+                          >
+                            {inCart ? 'Usuń z koszyka' : 'Dodaj do koszyka'}
+                          </button>
+                          {inCart && (
+                            <>
+                              <div className="text-[10px] text-zinc-400 font-semibold">Rozmiar odbitki</div>
+                              <select
+                                value={size}
+                                onChange={(e) => setExtraSize(photo.id, e.target.value as GroupExtraPrintSize)}
+                                className="w-full bg-zinc-900 border border-zinc-700 text-white text-xs rounded-md px-2 py-1.5 focus:outline-none focus:border-gold-500"
+                              >
+                                {GROUP_EXTRA_PRINT_SIZES.map((opt) => (
+                                  <option key={opt.code} value={opt.code}>{opt.label} ({(priceForSize(opt.code) / 100).toFixed(2)} PLN)</option>
+                                ))}
+                              </select>
+                            </>
+                          )}
                         </div>
                       </div>
                     );

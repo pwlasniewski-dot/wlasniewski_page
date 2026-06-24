@@ -252,21 +252,19 @@ export default function PremiumGalleryHero({
             return (
               <button
                 onClick={() => {
-                  if (isPaid) return;
                   if (isBlocked) { onLimitReached?.(slides[idx].id); return; }
                   onToggleSelect(slides[idx]);
                 }}
                 className={`px-5 py-2 rounded-full text-sm font-semibold transition-all shadow-lg flex items-center gap-2 ${
                   isSel ? 'bg-zinc-900 text-white border border-gold-500'
-                  : isPaid ? 'bg-emerald-700 text-white cursor-default'
                   : isInExtras ? 'bg-emerald-500 hover:bg-emerald-400 text-black cursor-pointer'
                   : isBlocked ? 'bg-emerald-500 hover:bg-emerald-400 text-black cursor-pointer'
                   : 'bg-white text-black hover:bg-zinc-100'
                 }`}
-                title={isPaid ? 'Już opłacone' : isInExtras ? 'Kliknij aby usunąć z koszyka' : isBlocked ? 'Kup dodatkową odbitkę' : undefined}
+                title={isInExtras ? 'Kliknij aby usunąć z koszyka' : isBlocked ? 'Kup dodatkową odbitkę' : isPaid ? 'Kupione wcześniej — możesz zamówić ponownie' : undefined}
               >
                 <Check className="w-4 h-4" />
-                {isSel ? 'Odznacz do druku' : isPaid ? 'Opłacone ✓' : isInExtras ? 'Wybór płatny ✓' : isBlocked ? '🛒 Dodaj do koszyka' : 'Zaznacz do druku'}
+                {isSel ? 'Odznacz do druku' : isInExtras ? 'Wybór płatny ✓' : isBlocked ? '🛒 Dodaj do koszyka' : 'Zaznacz do druku'}
               </button>
             );
           })()}
@@ -435,7 +433,6 @@ export function PremiumGalleryStory({
                     <button
                       type="button"
                       onClick={() => {
-                        if (isPaid) return;
                         if (isBlocked) {
                           onLimitReached?.(photo.id);
                           return;
@@ -445,20 +442,16 @@ export function PremiumGalleryStory({
                       className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all ${
                         isSelected
                           ? 'bg-gold-500 text-black'
-                          : isPaid
-                            ? 'bg-emerald-700 text-white cursor-default'
-                            : isInExtras
+                          : isInExtras
                               ? 'bg-emerald-500 text-black'
                               : isBlocked
                                 ? 'bg-emerald-500 hover:bg-emerald-400 text-black'
                                 : (isLight ? 'bg-zinc-900 text-white hover:bg-black' : 'bg-white text-black hover:bg-zinc-100')
                       }`}
-                      title={isSelected ? 'Odznacz do druku' : isPaid ? 'Już opłacone' : isInExtras ? 'Kliknij aby usunąć z koszyka' : isBlocked ? 'Kup dodatkową odbitkę' : 'Zaznacz do druku'}
+                      title={isSelected ? 'Odznacz do druku' : isInExtras ? 'Kliknij aby usunąć z koszyka' : isBlocked ? 'Kup dodatkową odbitkę' : isPaid ? 'Kupione wcześniej — możesz zamówić ponownie' : 'Zaznacz do druku'}
                     >
                       {isSelected ? (
                         <span className="inline-flex items-center gap-1"><Check className="w-3 h-3" /> Odznacz</span>
-                      ) : isPaid ? (
-                        <span className="inline-flex items-center gap-1">✓ Opłacone</span>
                       ) : isInExtras ? (
                         <span className="inline-flex items-center gap-1">✓ Wybór płatny</span>
                       ) : isBlocked ? (
