@@ -702,26 +702,26 @@ function ClientDetailsContent({ id }: { id: string }) {
             {/* Header / Hero */}
             <div className="bg-zinc-900 border-b border-zinc-800 sticky top-0 z-30">
                 <div className="max-w-7xl mx-auto px-6 py-6">
-                    <div className="flex items-center gap-4 mb-6">
+                    <div className="flex flex-wrap items-start gap-4 mb-6">
                         <NextLink href="/admin/clients" className="p-2 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-white transition-colors">
                             <ChevronLeft className="w-6 h-6" />
                         </NextLink>
-                        <div>
+                        <div className="min-w-0">
                             <h1 className="text-3xl font-display font-bold text-white mb-1 flex items-center gap-3">
                                 {client.name}
                                 {!client.is_active && <span className="px-2 py-0.5 bg-red-500/20 text-red-500 text-xs rounded-full uppercase tracking-wider font-bold">Nieaktywny</span>}
                             </h1>
-                            <div className="flex items-center gap-6 text-sm text-zinc-400">
+                            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-zinc-400">
                                 <span className="flex items-center gap-2"><Mail className="w-4 h-4" /> {client.email}</span>
                                 {client.phone && <span className="flex items-center gap-2"><Phone className="w-4 h-4" /> {client.phone}</span>}
                                 <span className="flex items-center gap-2"><Shield className="w-4 h-4" /> ID: {client.id}</span>
                             </div>
                         </div>
-                        <div className="ml-auto flex gap-3">
+                        <div className="ml-auto w-full sm:w-auto flex flex-wrap justify-start sm:justify-end gap-2">
                             <button
                                 onClick={handleSendWelcomeEmail}
                                 disabled={sendingWelcomeEmail}
-                                className="px-6 py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-zinc-700 text-white font-bold rounded-lg transition-all flex items-center gap-2"
+                                className="px-4 sm:px-6 py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-zinc-700 text-white font-bold rounded-lg transition-all flex items-center gap-2"
                                 title="Wyślij email powitalny z linkiem do ustawienia hasła do ${client.email}"
                             >
                                 {sendingWelcomeEmail ? (
@@ -730,16 +730,16 @@ function ClientDetailsContent({ id }: { id: string }) {
                                     </>
                                 ) : (
                                     <>
-                                        <Mail className="w-4 h-4" /> Wyślij Email Powitalny
+                                        <Mail className="w-4 h-4" /> <span className="hidden sm:inline">Wyślij Email Powitalny</span><span className="sm:hidden">Wyślij email</span>
                                     </>
                                 )}
                             </button>
                             <button
                                 onClick={handleUpdateClient}
                                 disabled={isSaving}
-                                className="px-6 py-2 bg-gold-600 hover:bg-gold-500 text-black font-bold rounded-lg transition-all flex items-center gap-2"
+                                className="px-4 sm:px-6 py-2 bg-gold-600 hover:bg-gold-500 text-black font-bold rounded-lg transition-all flex items-center gap-2"
                             >
-                                <Save className="w-4 h-4" /> Save Changes
+                                <Save className="w-4 h-4" /> Zapisz zmiany
                             </button>
                         </div>
                     </div>
@@ -1242,8 +1242,8 @@ function ClientDetailsContent({ id }: { id: string }) {
                                 client.offers.map((offer: any) => (
                                     <div key={offer.id} className="space-y-4">
                                         <div className="bg-zinc-900 hover:bg-zinc-800/80 p-6 rounded-xl border border-zinc-800 transition-all group">
-                                            <div className="flex items-center justify-between gap-4">
-                                            <div className="flex items-center gap-6">
+                                            <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+                                            <div className="flex items-center gap-6 min-w-0">
                                                 <div className={`w-2 h-12 rounded-full ${offer.type === 'b2b' ? 'bg-indigo-500' : 'bg-rose-500'}`} />
                                                 <div>
                                                     <div className="flex items-center gap-3 mb-1">
@@ -1255,9 +1255,9 @@ function ClientDetailsContent({ id }: { id: string }) {
                                                     <p className="text-zinc-500 text-sm">Utworzono: {new Date(offer.created_at).toLocaleDateString()}</p>
                                                 </div>
                                             </div>
-                                            <div className="flex items-center gap-8">
-                                                <div className="text-right">
-                                                    <div className="flex flex-col items-end mb-2">
+                                            <div className="w-full xl:w-auto flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 xl:justify-end">
+                                                <div className="text-left sm:text-right">
+                                                    <div className="flex flex-col sm:items-end mb-2">
                                                         <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${offer.status === 'accepted' ? 'bg-green-500/10 text-green-400 border-green-500/20' :
                                                             offer.status === 'rejected' ? 'bg-red-500/10 text-red-400 border-red-500/20' :
                                                                 offer.status === 'pending' || offer.status === 'sent' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
@@ -1278,13 +1278,13 @@ function ClientDetailsContent({ id }: { id: string }) {
                                                             <p className="text-xs uppercase font-bold text-zinc-600 tracking-wider">Wartość końcowa</p>
                                                         </>
                                                     ) : (
-                                                        <div className="flex flex-col items-end">
+                                                        <div className="flex flex-col sm:items-end">
                                                             <span className="text-xs font-bold text-zinc-600 uppercase">Wartość</span>
                                                             <span className="text-sm font-bold text-zinc-500 italic">Po decyzji klienta</span>
                                                         </div>
                                                     )}
                                                 </div>
-                                                <div className="flex gap-2">
+                                                <div className="flex flex-wrap justify-start xl:justify-end gap-2">
                                                     <NextLink href={`/admin/offers/${offer.id}`} className="p-3 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-white border border-zinc-700 hover:border-zinc-500 transition-all">
                                                         Edytuj
                                                     </NextLink>
@@ -1455,8 +1455,8 @@ function ClientDetailsContent({ id }: { id: string }) {
                             {client.contracts?.length > 0 ? (
                                 client.contracts.map((contract: any) => (
                                     <div key={contract.id} className="bg-zinc-900 p-6 rounded-xl border border-zinc-800">
-                                        <div className="flex items-center justify-between gap-4">
-                                        <div>
+                                        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+                                        <div className="min-w-0">
                                             <h3 className="text-lg font-bold text-white mb-1">
                                                 {contract.contract_number || `Umowa #${contract.id}`}
                                             </h3>
@@ -1475,7 +1475,7 @@ function ClientDetailsContent({ id }: { id: string }) {
                                                 </div>
                                             )}
                                         </div>
-                                        <div className="flex gap-2">
+                                        <div className="w-full xl:w-auto flex flex-wrap justify-start xl:justify-end gap-2">
                                             {/* View contract link (admin) */}
                                             <a
                                                 href={`/admin/umowy/${contract.id}`}

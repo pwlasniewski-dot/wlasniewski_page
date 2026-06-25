@@ -371,7 +371,7 @@ export function PremiumGalleryStory({
             key={photo.id}
             className={`py-14 md:py-20 ${isLight ? 'bg-white text-black' : 'bg-black text-white'}`}
           >
-            <div className="max-w-5xl mx-auto px-6 flex flex-col gap-6">
+            <div className="max-w-5xl mx-auto px-0 sm:px-6 flex flex-col gap-6">
               <div className="flex items-center gap-4">
                 <span
                   className={`font-mono text-xs tracking-[0.4em] uppercase ${
@@ -393,7 +393,7 @@ export function PremiumGalleryStory({
                     onPhotoClick?.(photo);
                   }
                 }}
-                className={`group relative w-full rounded-xl overflow-hidden border cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500 ${
+                className={`group relative w-full rounded-none sm:rounded-xl overflow-hidden border sm:border cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500 ${
                   isLight ? 'border-zinc-200' : 'border-zinc-800'
                 }`}
               >
@@ -413,13 +413,13 @@ export function PremiumGalleryStory({
                     );
                   }
                   return (
-                    <div className="relative w-full aspect-[3/2]">
+                    <div className="relative w-full aspect-[16/9] sm:aspect-[3/2]">
                       <Image
                         src={photo.file_url}
                         alt={`Kadr ${index + 1}`}
                         fill
                         sizes="(max-width: 1024px) 100vw, 1024px"
-                        className="object-contain transition-transform duration-700 group-hover:scale-[1.03]"
+                        className="object-cover sm:object-contain transition-transform duration-700 group-hover:scale-[1.03]"
                       />
                     </div>
                   );

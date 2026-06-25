@@ -56,7 +56,7 @@ export default function ClientGalleryPage() {
     const [selectedPremium, setSelectedPremium] = useState<Set<number>>(new Set());
     const [selectedStandard, setSelectedStandard] = useState<Set<number>>(new Set());
     const [downloadingAll, setDownloadingAll] = useState(false);
-    const [viewMode, setViewMode] = useState<'grid' | 'story'>('story');
+    const [viewMode, setViewMode] = useState<'grid' | 'story'>('grid');
 
     // Advanced Lightbox State
     const [lightbox, _setLightbox] = useState({
@@ -71,11 +71,15 @@ export default function ClientGalleryPage() {
     const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
     const [touchStartX, setTouchStartX] = useState<number | null>(null);
     const [touchCurrentX, setTouchCurrentX] = useState<number | null>(null);
+    const [swipeOffsetX, setSwipeOffsetX] = useState(0);
+    const [isTouchSwiping, setIsTouchSwiping] = useState(false);
 
     const setLightbox = (index: number, type: 'standard' | 'premium', open = true) => {
         _setLightbox({ isOpen: open, activeIndex: index, activeType: type });
         setZoom(1);
         setPosition({ x: 0, y: 0 });
+        setSwipeOffsetX(0);
+        setIsTouchSwiping(false);
     };
 
     const currentPhoto = lightbox.isOpen
@@ -88,6 +92,12 @@ export default function ClientGalleryPage() {
             fetchGallery();
         }
     }, [accessCode]);
+
+    useEffect(() => {
+        if (typeof window !== 'undefined' && window.matchMedia('(min-width: 768px)').matches) {
+            setViewMode('story');
+        }
+    }, []);
 
     const fetchGallery = async (passwordOverride?: string) => {
         try {
@@ -189,6 +199,22 @@ export default function ClientGalleryPage() {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [lightbox.isOpen, navigateLightbox]);
 
+    useEffect(() => {
+        if (!lightbox.isOpen || !gallery) return;
+        const list = lightbox.activeType === 'standard' ? gallery.standard_photos : gallery.premium_photos;
+        if (list.length === 0) return;
+        const current = lightbox.activeIndex;
+        const next = (current + 1) % list.length;
+        const prev = (current - 1 + list.length) % list.length;
+
+        [current, next, prev].forEach((idx) => {
+            const candidate = list[idx];
+            if (!candidate?.file_url) return;
+            const preload = new window.Image();
+            preload.src = candidate.file_url;
+        });
+    }, [lightbox.isOpen, lightbox.activeType, lightbox.activeIndex, gallery]);
+
     // Zoom & Pan Handlers
     const handleWheel = (e: React.WheelEvent) => {
         if (!lightbox.isOpen) return;
@@ -218,8 +244,10 @@ export default function ClientGalleryPage() {
         if (zoom > 1) return;
         const x = e.touches[0]?.clientX;
         if (typeof x === 'number') {
+            setIsTouchSwiping(true);
             setTouchStartX(x);
             setTouchCurrentX(x);
+            setSwipeOffsetX(0);
         }
     };
 
@@ -228,6 +256,7 @@ export default function ClientGalleryPage() {
         const x = e.touches[0]?.clientX;
         if (typeof x === 'number') {
             setTouchCurrentX(x);
+            setSwipeOffsetX(x - touchStartX);
         }
     };
 
@@ -235,6 +264,8 @@ export default function ClientGalleryPage() {
         if (zoom > 1 || touchStartX === null || touchCurrentX === null) {
             setTouchStartX(null);
             setTouchCurrentX(null);
+            setSwipeOffsetX(0);
+            setIsTouchSwiping(false);
             return;
         }
 
@@ -249,6 +280,8 @@ export default function ClientGalleryPage() {
 
         setTouchStartX(null);
         setTouchCurrentX(null);
+        setSwipeOffsetX(0);
+        setIsTouchSwiping(false);
     };
 
     const downloadAllFree = async () => {
@@ -467,15 +500,15 @@ export default function ClientGalleryPage() {
 
                         {/* GRID MODE - Masonry Layout (portfolio style) */}
                         {viewMode === 'grid' ? (
-                        <div className="columns-1 sm:columns-2 md:columns-3 gap-4 space-y-4 p-4">
+                        <div className="columns-1 sm:columns-2 md:columns-3 gap-4 space-y-3 sm:space-y-4 p-0 sm:p-4">
                             {gallery.standard_photos.map((photo, idx) => (
-                                <div key={photo.id} className="break-inside-avoid mb-4">
+                                <div key={photo.id} className="break-inside-avoid mb-3 sm:mb-4">
                                     <button
                                         type="button"
                                         onClick={() => setLightbox(idx, 'standard')}
                                         className="group relative w-full text-left"
                                     >
-                                        <figure className={`relative w-full overflow-hidden rounded-xl bg-zinc-900 shadow-md hover:shadow-xl transition-all duration-300 hover:scale-[1.02] ${selectedStandard.has(photo.id) ? 'ring-4 ring-gold-500/80' : ''}`}>
+                                        <figure className={`relative w-full overflow-hidden rounded-none sm:rounded-xl bg-zinc-900 shadow-md hover:shadow-xl transition-all duration-300 hover:scale-[1.02] ${selectedStandard.has(photo.id) ? 'ring-4 ring-gold-500/80' : ''}`}>
                                             <img
                                                 src={photo.file_url}
                                                 alt={`Photo ${photo.id}`}
@@ -816,19 +849,21 @@ export default function ClientGalleryPage() {
                             onTouchStart={handleTouchStart}
                             onTouchMove={handleTouchMove}
                             onTouchEnd={handleTouchEnd}
+                            style={{ touchAction: zoom > 1 ? 'none' : 'pan-y' }}
                         >
                             <motion.div
                                 animate={{
                                     scale: zoom,
-                                    x: position.x,
-                                    y: position.y,
+                                    x: zoom > 1 ? position.x : swipeOffsetX,
+                                    y: zoom > 1 ? position.y : 0,
                                 }}
-                                transition={dragging ? { duration: 0 } : { type: 'spring', damping: 30, stiffness: 250 }}
+                                transition={(dragging || isTouchSwiping) ? { duration: 0 } : { type: 'spring', damping: 30, stiffness: 250 }}
                                 className="relative w-full h-[85vh] flex items-center justify-center cursor-grab active:cursor-grabbing"
                             >
                                 <img
-                                    src={`/api/galleries/${accessCode}/download/${currentPhoto.id}`}
+                                    src={currentPhoto.file_url}
                                     alt="Full View"
+                                    loading="eager"
                                     className="max-w-full max-h-full object-contain shadow-[0_0_150px_rgba(0,0,0,1)] rounded-sm pointer-events-none"
                                 />
                             </motion.div>
