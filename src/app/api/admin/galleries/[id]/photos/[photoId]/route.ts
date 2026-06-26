@@ -2,11 +2,231 @@
 // Update or delete a gallery photo
 
 import { NextRequest, NextResponse } from 'next/server';
+import sharp from 'sharp';
 import prisma from '@/lib/db/prisma';
 import { withAuth } from '@/lib/auth/middleware';
-import fs from 'fs/promises';
-import path from 'path';
-import { deleteFromS3 } from '@/lib/storage/s3';
+import { deleteFromS3, uploadToS3 } from '@/lib/storage/s3';
+import { logSystem } from '@/lib/logger';
+
+const MAX_FILE_SIZE = 30 * 1024 * 1024;
+const MIN_DOWNLOAD_WIDTH = 3000;
+const MIN_DOWNLOAD_HEIGHT = 2000;
+
+type ReplaceMode = 'both' | 'preview' | 'download';
+
+function extractS3Key(fileUrl: string): string {
+    if (!fileUrl) return '';
+    if (fileUrl.startsWith('http')) {
+        const parsed = new URL(fileUrl);
+        return decodeURIComponent(parsed.pathname.replace(/^\//, ''));
+    }
+    return fileUrl;
+}
+
+function normalizeReplaceMode(value: FormDataEntryValue | null): ReplaceMode {
+    const v = String(value || '').trim().toLowerCase();
+    if (v === 'preview') return 'preview';
+    if (v === 'download') return 'download';
+    return 'both';
+}
+
+// POST - Replace photo file in-place (keeps the same photo ID)
+export async function POST(
+    request: NextRequest,
+    { params }: { params: Promise<{ id: string; photoId: string }> }
+) {
+    return withAuth(request, async (req) => {
+        try {
+            const { id, photoId } = await params;
+            const galleryId = Number(id);
+            const parsedPhotoId = Number(photoId);
+
+            if (!Number.isInteger(galleryId) || !Number.isInteger(parsedPhotoId)) {
+                await logSystem('WARN', 'MEDIA_UPLOAD', 'GALLERY_PHOTO_REPLACE_INVALID_IDS', {
+                    admin_user_id: req.user?.id || null,
+                    gallery_id_raw: id,
+                    photo_id_raw: photoId,
+                });
+                return NextResponse.json(
+                    { success: false, error: 'Nieprawidłowe ID galerii lub zdjęcia' },
+                    { status: 400 }
+                );
+            }
+
+            const existingPhoto = await prisma.galleryPhoto.findFirst({
+                where: { id: parsedPhotoId, gallery_id: galleryId },
+                select: {
+                    id: true,
+                    file_url: true,
+                    thumbnail_url: true,
+                    file_size: true,
+                    width: true,
+                    height: true,
+                },
+            });
+
+            if (!existingPhoto) {
+                await logSystem('WARN', 'MEDIA_UPLOAD', 'GALLERY_PHOTO_REPLACE_NOT_FOUND', {
+                    admin_user_id: req.user?.id || null,
+                    gallery_id: galleryId,
+                    photo_id: parsedPhotoId,
+                });
+                return NextResponse.json(
+                    { success: false, error: 'Zdjęcie nie znalezione w tej galerii' },
+                    { status: 404 }
+                );
+            }
+
+            const formData = await request.formData();
+            const file = formData.get('photo') as File | null;
+            const mode = normalizeReplaceMode(formData.get('mode'));
+
+            if (!file || !file.type?.startsWith('image/')) {
+                await logSystem('WARN', 'MEDIA_UPLOAD', 'GALLERY_PHOTO_REPLACE_INVALID_FILE', {
+                    admin_user_id: req.user?.id || null,
+                    gallery_id: galleryId,
+                    photo_id: parsedPhotoId,
+                    file_type: file?.type || null,
+                });
+                return NextResponse.json(
+                    { success: false, error: 'Wymagany jest poprawny plik obrazu (pole photo)' },
+                    { status: 400 }
+                );
+            }
+
+            if (file.size > MAX_FILE_SIZE) {
+                await logSystem('WARN', 'MEDIA_UPLOAD', 'GALLERY_PHOTO_REPLACE_FILE_TOO_LARGE', {
+                    admin_user_id: req.user?.id || null,
+                    gallery_id: galleryId,
+                    photo_id: parsedPhotoId,
+                    file_size: file.size,
+                    max_size: MAX_FILE_SIZE,
+                });
+                return NextResponse.json(
+                    { success: false, error: `Plik jest za duży (max 30MB)` },
+                    { status: 400 }
+                );
+            }
+
+            const buffer = Buffer.from(await file.arrayBuffer());
+            const metadata = await sharp(buffer).metadata();
+
+            const fileKey = extractS3Key(existingPhoto.file_url);
+            const thumbKey = extractS3Key(existingPhoto.thumbnail_url || '');
+
+            if (!fileKey || !thumbKey) {
+                await logSystem('ERROR', 'MEDIA_UPLOAD', 'GALLERY_PHOTO_REPLACE_MISSING_S3_KEYS', {
+                    admin_user_id: req.user?.id || null,
+                    gallery_id: galleryId,
+                    photo_id: parsedPhotoId,
+                    has_file_key: !!fileKey,
+                    has_thumb_key: !!thumbKey,
+                });
+                return NextResponse.json(
+                    { success: false, error: 'Brak poprawnych kluczy S3 dla podmiany zdjęcia' },
+                    { status: 400 }
+                );
+            }
+
+            const newWidth = metadata.width || 0;
+            const newHeight = metadata.height || 0;
+            const shouldReplaceDownload = mode === 'both' || mode === 'download';
+            const shouldReplacePreview = mode === 'both' || mode === 'preview';
+
+            if (shouldReplaceDownload && (newWidth < MIN_DOWNLOAD_WIDTH || newHeight < MIN_DOWNLOAD_HEIGHT)) {
+                await logSystem('WARN', 'MEDIA_UPLOAD', 'GALLERY_PHOTO_REPLACE_DOWNLOAD_TOO_SMALL', {
+                    admin_user_id: req.user?.id || null,
+                    gallery_id: galleryId,
+                    photo_id: parsedPhotoId,
+                    mode,
+                    width: newWidth,
+                    height: newHeight,
+                    min_width: MIN_DOWNLOAD_WIDTH,
+                    min_height: MIN_DOWNLOAD_HEIGHT,
+                });
+                return NextResponse.json(
+                    {
+                        success: false,
+                        error: `Źródło pobierania musi mieć min. ${MIN_DOWNLOAD_WIDTH}x${MIN_DOWNLOAD_HEIGHT}px`,
+                    },
+                    { status: 400 }
+                );
+            }
+
+            // Overwrite original under the same S3 key/URL so all links and references stay intact.
+            if (shouldReplaceDownload) {
+                const sourceMimeType = (file.type || 'application/octet-stream').toLowerCase();
+                await uploadToS3(buffer, fileKey, sourceMimeType);
+            }
+
+            // Overwrite thumbnail under the same thumbnail key.
+            if (shouldReplacePreview) {
+                const thumbnailBuffer = await sharp(buffer)
+                    .rotate()
+                    .resize(400, 400, {
+                        fit: 'cover',
+                        position: 'center',
+                    })
+                    .webp({ quality: 80 })
+                    .toBuffer();
+
+                await uploadToS3(thumbnailBuffer, thumbKey, 'image/webp');
+            }
+
+            const updated = await prisma.galleryPhoto.update({
+                where: { id: parsedPhotoId },
+                data: {
+                    ...(shouldReplaceDownload
+                        ? {
+                            file_size: buffer.length,
+                            width: newWidth,
+                            height: newHeight,
+                        }
+                        : {}),
+                },
+            });
+
+            await logSystem('INFO', 'MEDIA_UPLOAD', 'GALLERY_PHOTO_REPLACED_IN_PLACE', {
+                admin_user_id: req.user?.id || null,
+                gallery_id: galleryId,
+                photo_id: parsedPhotoId,
+                mode,
+                file_key: fileKey,
+                thumbnail_key: thumbKey,
+                old: {
+                    file_size: existingPhoto.file_size,
+                    width: existingPhoto.width,
+                    height: existingPhoto.height,
+                },
+                new: {
+                    file_size: updated.file_size,
+                    width: updated.width,
+                    height: updated.height,
+                },
+            });
+
+            return NextResponse.json({
+                success: true,
+                message: mode === 'preview'
+                    ? 'Podmieniono źródło podglądu zdjęcia'
+                    : mode === 'download'
+                        ? 'Podmieniono źródło pobierania (oryginał)'
+                        : 'Podmieniono źródło podglądu i pobierania',
+                photo: updated,
+            });
+        } catch (error) {
+            console.error('Error replacing photo:', error);
+            await logSystem('ERROR', 'MEDIA_UPLOAD', 'GALLERY_PHOTO_REPLACE_FAILED', {
+                admin_user_id: req.user?.id || null,
+                error: error instanceof Error ? error.message : String(error),
+            });
+            return NextResponse.json(
+                { success: false, error: 'Nie udało się podmienić zdjęcia' },
+                { status: 500 }
+            );
+        }
+    });
+}
 
 // PUT - Update photo properties
 export async function PUT(

@@ -134,6 +134,15 @@ export async function GET(
             } catch (e) { }
         });
 
+        // Debug logging for GROUP galleries
+        if (gallery.gallery_mode === 'GROUP') {
+            console.log(`[DEBUG GROUP GALLERY] ${gallery.access_code}:`, {
+                max_photos_for_print: gallery.max_photos_for_print,
+                premium_photos_count: premium_photos.length,
+                paid_photo_ids: Array.from(paidPhotoIds),
+            });
+        }
+
         // Avoid spamming CRM activity on page refreshes: log at most once per 10 minutes per gallery/client.
         if (gallery.client_id || gallery.client_email) {
             const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
@@ -190,6 +199,7 @@ export async function GET(
                 gallery_mode: gallery.gallery_mode,
                 description: gallery.description,
                 standard_count: gallery.standard_count,
+                max_photos_for_print: gallery.max_photos_for_print,
                 price_per_premium: gallery.price_per_premium,
                 expires_at: gallery.expires_at,
                 standard_photos,

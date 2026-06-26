@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { verifyParentToken, extractTokenFromHeader } from '@/lib/auth/parent-jwt';
 import { createPayUOrder, extractClientIpv4 } from '@/lib/payu';
+import { logSystem } from '@/lib/logger';
 
 const DEFAULT_GROUP_PRINT_PRICE_10X15 = 150;
 const DEFAULT_GROUP_PRINT_PRICE_15X21 = 250;
@@ -99,21 +100,34 @@ export async function POST(
   try {
     const participantId = parseInt(params.id, 10);
     if (Number.isNaN(participantId)) {
+      await logSystem('WARN', 'BASKET', 'GROUP_EXTRA_PURCHASE_INVALID_PARTICIPANT_ID', {
+        participant_id_raw: params.id,
+      });
       return NextResponse.json({ error: 'Nieprawidłowe ID uczestnika' }, { status: 400 });
     }
 
     const authHeader = request.headers.get('Authorization');
     const token = extractTokenFromHeader(authHeader);
     if (!token) {
+      await logSystem('WARN', 'BASKET', 'GROUP_EXTRA_PURCHASE_NO_TOKEN', {
+        participant_id: participantId,
+      });
       return NextResponse.json({ error: 'Brak autoryzacji' }, { status: 401 });
     }
 
     const payload = await verifyParentToken(token);
     if (!payload) {
+      await logSystem('WARN', 'BASKET', 'GROUP_EXTRA_PURCHASE_INVALID_TOKEN', {
+        participant_id: participantId,
+      });
       return NextResponse.json({ error: 'Nieprawidłowy token autoryzacyjny' }, { status: 401 });
     }
 
     if (payload.participant_id !== participantId) {
+      await logSystem('WARN', 'BASKET', 'GROUP_EXTRA_PURCHASE_FORBIDDEN_PARTICIPANT_MISMATCH', {
+        token_participant_id: payload.participant_id,
+        requested_participant_id: participantId,
+      });
       return NextResponse.json({ error: 'Brak dostępu do tego uczestnika' }, { status: 403 });
     }
 
@@ -121,6 +135,9 @@ export async function POST(
     const requestedLines = normalizeRequestedLines(body);
 
     if (requestedLines.length === 0) {
+      await logSystem('WARN', 'BASKET', 'GROUP_EXTRA_PURCHASE_EMPTY_LINES', {
+        participant_id: participantId,
+      });
       return NextResponse.json({ error: 'Brak wybranych odbitek do zamówienia' }, { status: 400 });
     }
 
@@ -144,18 +161,35 @@ export async function POST(
     });
 
     if (!participant || !participant.gallery || participant.gallery.gallery_mode !== 'GROUP') {
+      await logSystem('WARN', 'BASKET', 'GROUP_EXTRA_PURCHASE_PARTICIPANT_NOT_FOUND', {
+        participant_id: participantId,
+      });
       return NextResponse.json({ error: 'Uczestnik nie istnieje' }, { status: 404 });
     }
 
     if (!participant.gallery.is_active) {
+      await logSystem('WARN', 'BASKET', 'GROUP_EXTRA_PURCHASE_GALLERY_INACTIVE', {
+        participant_id: participantId,
+        gallery_id: participant.gallery.id,
+      });
       return NextResponse.json({ error: 'Galeria jest nieaktywna' }, { status: 403 });
     }
 
     if (participant.gallery.expires_at && new Date(participant.gallery.expires_at) < new Date()) {
+      await logSystem('WARN', 'BASKET', 'GROUP_EXTRA_PURCHASE_GALLERY_EXPIRED', {
+        participant_id: participantId,
+        gallery_id: participant.gallery.id,
+      });
       return NextResponse.json({ error: 'Galeria wygasła' }, { status: 403 });
     }
 
     if (!participant.allow_extra_photo_purchase && !participant.gallery.allow_extra_photo_purchase) {
+      await logSystem('WARN', 'BASKET', 'GROUP_EXTRA_PURCHASE_DISABLED', {
+        participant_id: participant.id,
+        gallery_id: participant.gallery.id,
+        participant_allow_extra: participant.allow_extra_photo_purchase,
+        gallery_allow_extra: participant.gallery.allow_extra_photo_purchase,
+      });
       return NextResponse.json({ error: 'Ta opcja nie jest włączona dla tego rodzica' }, { status: 403 });
     }
 
@@ -170,6 +204,12 @@ export async function POST(
     });
 
     if (photos.length !== uniquePhotoIds.length) {
+      await logSystem('WARN', 'BASKET', 'GROUP_EXTRA_PURCHASE_INVALID_PHOTO_IDS', {
+        participant_id: participant.id,
+        gallery_id: participant.gallery.id,
+        requested_photo_count: uniquePhotoIds.length,
+        found_photo_count: photos.length,
+      });
       return NextResponse.json({ error: 'Niektóre zdjęcia nie należą do tej galerii' }, { status: 400 });
     }
 
@@ -225,6 +265,15 @@ export async function POST(
       },
     });
 
+    await logSystem('INFO', 'BASKET', 'GROUP_EXTRA_PURCHASE_ORDER_CREATED', {
+      participant_id: participant.id,
+      gallery_id: participant.gallery.id,
+      order_id: order.id,
+      line_count: normalizedLines.length,
+      photo_count: totalQuantity,
+      total_amount: totalAmount,
+    });
+
     try {
       const ip = extractClientIpv4(
         request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip')
@@ -268,6 +317,15 @@ export async function POST(
         });
       }
 
+      await logSystem('INFO', 'PAYMENT', 'GROUP_EXTRA_PURCHASE_PAYU_INIT', {
+        participant_id: participant.id,
+        gallery_id: participant.gallery.id,
+        order_id: order.id,
+        total_amount: totalAmount,
+        has_payment_url: !!paymentUrl,
+        payment_id: paymentId,
+      });
+
       return NextResponse.json({
         success: true,
         order: {
@@ -282,6 +340,13 @@ export async function POST(
       });
     } catch (payuError: any) {
       console.error('PayU extra purchase error:', payuError);
+      await logSystem('ERROR', 'PAYMENT', 'GROUP_EXTRA_PURCHASE_PAYU_INIT_FAILED', {
+        participant_id: participant.id,
+        gallery_id: participant.gallery.id,
+        order_id: order.id,
+        total_amount: totalAmount,
+        error: payuError?.message || String(payuError),
+      });
       return NextResponse.json({
         success: true,
         order: {
@@ -295,6 +360,10 @@ export async function POST(
     }
   } catch (error) {
     console.error('Extra purchase error:', error);
+    await logSystem('ERROR', 'BASKET', 'GROUP_EXTRA_PURCHASE_FATAL_ERROR', {
+      participant_id_raw: params.id,
+      error: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json({ error: 'Nie udało się utworzyć zamówienia' }, { status: 500 });
   }
 }

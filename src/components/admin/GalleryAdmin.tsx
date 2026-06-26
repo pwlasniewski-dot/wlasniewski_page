@@ -2,10 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { getApiUrl } from '@/lib/api-config';
-import { Upload, Trash2, Check, X, Eye, ImageIcon, Plus, ArrowLeft, Calendar, Save, ShoppingBag, Mail, Move, CheckSquare, Square } from 'lucide-react';
+import { Upload, Trash2, Check, X, Eye, ImageIcon, Plus, ArrowLeft, Calendar, Save, ShoppingBag, Mail, Move, CheckSquare, Square, Download } from 'lucide-react';
 import Image from 'next/image';
 import toast from 'react-hot-toast';
-import imageCompression from 'browser-image-compression';
 import GalleryParticipantsManager from './GalleryParticipantsManager';
 
 interface GalleryPhoto {
@@ -63,14 +62,15 @@ interface GalleryAdminProps {
 }
 
 export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClose, onCreated }: GalleryAdminProps) {
-    const SAFE_UPLOAD_LIMIT_BYTES = 5 * 1024 * 1024; // Keep below common serverless request limits.
+    const SAFE_UPLOAD_LIMIT_BYTES = 30 * 1024 * 1024;
+    const MIN_DOWNLOAD_WIDTH = 3000;
+    const MIN_DOWNLOAD_HEIGHT = 2000;
 
     const [gallery, setGallery] = useState<Gallery | null>(null);
     const [loading, setLoading] = useState(!!galleryId);
     const [uploading, setUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
     const [uploadStats, setUploadStats] = useState({ current: 0, total: 0 });
-    const [skipOptimization, setSkipOptimization] = useState(false);
     const [sendingAccessEmail, setSendingAccessEmail] = useState(false);
     const [standardSortMode, setStandardSortMode] = useState<SortMode>('manual');
     const [premiumSortMode, setPremiumSortMode] = useState<SortMode>('manual');
@@ -78,6 +78,7 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
     const [savingOrder, setSavingOrder] = useState(false);
     const [selectedPhotoIds, setSelectedPhotoIds] = useState<Set<number>>(new Set());
     const [deletingBulk, setDeletingBulk] = useState(false);
+    const [replacingPhotoAction, setReplacingPhotoAction] = useState<{ photoId: number; mode: 'preview' | 'download' } | null>(null);
 
     // Settings logic
     const [isEditingSettings, setIsEditingSettings] = useState(false);
@@ -383,26 +384,7 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
         try {
             const token = localStorage.getItem('admin_token');
 
-            const prepareFileForUpload = async (file: File): Promise<File> => {
-                if (!file.type.startsWith('image/')) {
-                    return file;
-                }
-
-                try {
-                    const compressed = await imageCompression(file, {
-                        maxSizeMB: 4.5,
-                        maxWidthOrHeight: 2560,
-                        useWebWorker: true,
-                        fileType: 'image/webp',
-                    });
-
-                    const baseName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
-                    return new File([compressed], `${baseName}.webp`, { type: 'image/webp' });
-                } catch (compressionError) {
-                    console.warn(`Compression failed for ${file.name}, using original file`, compressionError);
-                    return file;
-                }
-            };
+            const prepareFileForUpload = async (file: File): Promise<File> => file;
 
             // Upload each file individually to show real progress
             for (const file of fileArray) {
@@ -427,7 +409,7 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
                     const formData = new FormData();
                     formData.append('photos', fileToUpload);
                     formData.append('is_standard', isStandard.toString());
-                    formData.append('skip_optimization', skipOptimization.toString());
+                    formData.append('skip_optimization', 'true');
 
                     const res = await fetch(getApiUrl(`admin/galleries/${galleryId}/upload`), {
                         method: 'POST',
@@ -522,6 +504,51 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
             });
             fetchGallery();
         } catch (error) { }
+    };
+
+    const handleReplacePhoto = async (photoId: number, file: File, mode: 'preview' | 'download') => {
+        if (!galleryId || !file) return;
+
+        if (!file.type?.startsWith('image/')) {
+            toast.error('Wybierz poprawny plik obrazu');
+            return;
+        }
+
+        if (file.size > SAFE_UPLOAD_LIMIT_BYTES) {
+            toast.error(`Plik jest za duży (${(file.size / 1024 / 1024).toFixed(1)}MB, limit 30MB)`);
+            return;
+        }
+
+        setReplacingPhotoAction({ photoId, mode });
+        try {
+            const token = localStorage.getItem('admin_token');
+            const formData = new FormData();
+            formData.append('photo', file);
+            formData.append('mode', mode);
+
+            const res = await fetch(getApiUrl(`admin/galleries/${galleryId}/photos/${photoId}`), {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: formData,
+            });
+
+            const data = await res.json();
+            if (!res.ok || !data.success) {
+                toast.error(data.error || 'Nie udało się podmienić zdjęcia');
+                return;
+            }
+
+            toast.success(
+                mode === 'download'
+                    ? 'Podmieniono źródło pobierania (oryginał)'
+                    : 'Podmieniono źródło podglądu'
+            );
+            fetchGallery();
+        } catch (error) {
+            toast.error('Błąd podmiany zdjęcia');
+        } finally {
+            setReplacingPhotoAction(null);
+        }
     };
 
     const handleSendAccessEmail = async () => {
@@ -861,6 +888,9 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
 
     const standardPhotos = sortPhotos((gallery.photos || []).filter(p => p.is_standard), standardSortMode);
     const premiumPhotos = sortPhotos((gallery.photos || []).filter(p => !p.is_standard), premiumSortMode);
+    const allPhotos = gallery.photos || [];
+    const mappedDownloadCount = allPhotos.filter(p => (p.width || 0) >= MIN_DOWNLOAD_WIDTH && (p.height || 0) >= MIN_DOWNLOAD_HEIGHT).length;
+    const mappingProgressPercent = allPhotos.length > 0 ? Math.round((mappedDownloadCount / allPhotos.length) * 100) : 0;
 
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-12">
@@ -1190,10 +1220,7 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
             <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-8">
                 <div className="flex items-center justify-between mb-8">
                     <h3 className="text-xs font-black text-zinc-500 uppercase tracking-[0.2em]">Wgraj zdjęcia do galerii</h3>
-                    <label className="flex items-center gap-3 cursor-pointer group">
-                        <input type="checkbox" checked={skipOptimization} onChange={e => setSkipOptimization(e.target.checked)} className="rounded border-zinc-700 bg-black text-gold-500 w-4 h-4" />
-                        <span className="text-xs font-bold text-zinc-400 group-hover:text-zinc-200 transition-colors">Pełna jakość (no WebP)</span>
-                    </label>
+                    <span className="text-xs font-bold text-emerald-400">Pełna jakość zawsze włączona</span>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <label className="border-2 border-dashed border-zinc-800 rounded-2xl p-10 hover:border-green-500/50 hover:bg-green-500/5 transition-all cursor-pointer text-center group relative overflow-hidden">
@@ -1220,6 +1247,37 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
                         </div>
                     </div>
                 )}
+            </div>
+
+            {/* Mapping progress */}
+            <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-8">
+                <div className="flex items-center justify-between gap-4 mb-6">
+                    <h3 className="text-xs font-black text-zinc-500 uppercase tracking-[0.2em]">Mapa postępu mapowania źródła pobierania</h3>
+                    <span className="text-xs font-bold text-zinc-300">
+                        {mappedDownloadCount}/{allPhotos.length} zdjęć gotowych do full download ({mappingProgressPercent}%)
+                    </span>
+                </div>
+                <div className="bg-black/50 rounded-full h-2 overflow-hidden border border-zinc-900 mb-4">
+                    <div
+                        className="bg-emerald-500 h-full transition-all duration-500"
+                        style={{ width: `${mappingProgressPercent}%` }}
+                    />
+                </div>
+                <div className="grid grid-cols-10 sm:grid-cols-12 md:grid-cols-16 lg:grid-cols-20 gap-1.5">
+                    {allPhotos.map((photo) => {
+                        const mapped = (photo.width || 0) >= MIN_DOWNLOAD_WIDTH && (photo.height || 0) >= MIN_DOWNLOAD_HEIGHT;
+                        return (
+                            <div
+                                key={photo.id}
+                                title={`#${photo.id} ${mapped ? 'OK' : 'WYMAGA PODMIANY'} · ${photo.width || 0}x${photo.height || 0}`}
+                                className={`h-3 rounded ${mapped ? 'bg-emerald-500/90' : 'bg-amber-500/90'}`}
+                            />
+                        );
+                    })}
+                </div>
+                <p className="text-xs text-zinc-500 mt-4">
+                    Zielone: źródło pobierania spełnia min. {MIN_DOWNLOAD_WIDTH}x{MIN_DOWNLOAD_HEIGHT}px. Pomarańczowe: podmień źródło pobierania na karcie zdjęcia (ikona strzałki w dół).
+                </p>
             </div>
 
             {/* Bulk delete bar */}
@@ -1310,6 +1368,10 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
                                     onToggleSelect={() => togglePhotoSelection(photo.id)}
                                     onToggle={() => togglePhotoType(photo.id, photo.is_standard)}
                                     onDelete={() => deletePhoto(photo.id)}
+                                    onReplacePreview={(file) => handleReplacePhoto(photo.id, file, 'preview')}
+                                    onReplaceDownload={(file) => handleReplacePhoto(photo.id, file, 'download')}
+                                    isReplacingPreview={replacingPhotoAction?.photoId === photo.id && replacingPhotoAction?.mode === 'preview'}
+                                    isReplacingDownload={replacingPhotoAction?.photoId === photo.id && replacingPhotoAction?.mode === 'download'}
                                     isDraggable={standardSortMode === 'manual'}
                                     isSavingOrder={savingOrder}
                                     onDragStart={(e) => {
@@ -1396,6 +1458,10 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
                                     onToggleSelect={() => togglePhotoSelection(photo.id)}
                                     onToggle={() => togglePhotoType(photo.id, photo.is_standard)}
                                     onDelete={() => deletePhoto(photo.id)}
+                                    onReplacePreview={(file) => handleReplacePhoto(photo.id, file, 'preview')}
+                                    onReplaceDownload={(file) => handleReplacePhoto(photo.id, file, 'download')}
+                                    isReplacingPreview={replacingPhotoAction?.photoId === photo.id && replacingPhotoAction?.mode === 'preview'}
+                                    isReplacingDownload={replacingPhotoAction?.photoId === photo.id && replacingPhotoAction?.mode === 'download'}
                                     isDraggable={premiumSortMode === 'manual'}
                                     isSavingOrder={savingOrder}
                                     onDragStart={(e) => {
@@ -1438,6 +1504,10 @@ function AdminPhotoCard({
     onToggleSelect,
     onToggle,
     onDelete,
+    onReplacePreview,
+    onReplaceDownload,
+    isReplacingPreview,
+    isReplacingDownload,
     isDraggable,
     isSavingOrder,
     onDragStart,
@@ -1450,6 +1520,10 @@ function AdminPhotoCard({
     onToggleSelect?: () => void,
     onToggle: () => void,
     onDelete: () => void,
+    onReplacePreview?: (file: File) => void,
+    onReplaceDownload?: (file: File) => void,
+    isReplacingPreview?: boolean,
+    isReplacingDownload?: boolean,
     isDraggable?: boolean,
     isSavingOrder?: boolean,
     onDragStart?: (e: React.DragEvent<HTMLDivElement>) => void,
@@ -1495,6 +1569,44 @@ function AdminPhotoCard({
                 >
                     <Trash2 className="w-4 h-4" />
                 </button>
+                {onReplacePreview && (
+                    <label
+                        className={`p-2.5 rounded-xl transition-all shadow-lg cursor-pointer ${isReplacingPreview ? 'bg-zinc-700 text-zinc-300' : 'bg-sky-500 hover:bg-sky-400 text-white'}`}
+                        title="Podmień źródło podglądu"
+                    >
+                        <Eye className="w-4 h-4" />
+                        <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            disabled={!!isReplacingPreview}
+                            onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) onReplacePreview(file);
+                                e.currentTarget.value = '';
+                            }}
+                        />
+                    </label>
+                )}
+                {onReplaceDownload && (
+                    <label
+                        className={`p-2.5 rounded-xl transition-all shadow-lg cursor-pointer ${isReplacingDownload ? 'bg-zinc-700 text-zinc-300' : 'bg-emerald-600 hover:bg-emerald-500 text-white'}`}
+                        title="Podmień źródło pobierania (oryginał)"
+                    >
+                        <Download className="w-4 h-4" />
+                        <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            disabled={!!isReplacingDownload}
+                            onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) onReplaceDownload(file);
+                                e.currentTarget.value = '';
+                            }}
+                        />
+                    </label>
+                )}
             </div>
 
             {/* Checkbox (top-left) */}

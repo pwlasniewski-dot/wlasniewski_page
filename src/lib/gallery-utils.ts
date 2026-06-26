@@ -76,30 +76,26 @@ export async function processGalleryPhoto(
     // Upload main image to S3
     const file_url = await uploadToS3(processedBuffer, `${folderPath}/${filename}`, mimeType);
 
-    let thumbnail_url = file_url;
     let width = 0;
     let height = 0;
 
-    if (!options.skipOptimization) {
-        const thumbnailFilename = `thumb_${timestamp}-${hash}.webp`;
+    const thumbnailFilename = `thumb_${timestamp}-${hash}.webp`;
+    const thumbnailBuffer = await sharp(file)
+        .rotate() // Ensure rotation is correct
+        .resize(400, 400, {
+            fit: 'cover',
+            position: 'center'
+        })
+        .webp({ quality: 80 })
+        .toBuffer();
 
-        const thumbnailBuffer = await sharp(file)
-            .rotate() // Ensure rotation is correct
-            .resize(400, 400, {
-                fit: 'cover',
-                position: 'center'
-            })
-            .webp({ quality: 80 })
-            .toBuffer();
+    // Upload thumbnail to S3
+    const thumbnail_url = await uploadToS3(thumbnailBuffer, `${folderPath}/${thumbnailFilename}`, 'image/webp');
 
-        // Upload thumbnail to S3
-        thumbnail_url = await uploadToS3(thumbnailBuffer, `${folderPath}/${thumbnailFilename}`, 'image/webp');
-
-        // Get dimensions of processed image
-        const processedMetadata = await sharp(processedBuffer).metadata();
-        width = processedMetadata.width || 0;
-        height = processedMetadata.height || 0;
-    }
+    // Keep correct dimensions for both optimized and full-quality uploads.
+    const processedMetadata = await sharp(processedBuffer).metadata();
+    width = processedMetadata.width || 0;
+    height = processedMetadata.height || 0;
 
     return {
         file_url,

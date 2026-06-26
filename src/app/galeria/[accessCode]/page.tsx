@@ -861,7 +861,7 @@ export default function ClientGalleryPage() {
                                 className="relative w-full h-[85vh] flex items-center justify-center cursor-grab active:cursor-grabbing"
                             >
                                 <img
-                                    src={currentPhoto.file_url}
+                                    src={`/api/galleries/${accessCode}/download/${currentPhoto.id}`}
                                     alt="Full View"
                                     loading="eager"
                                     className="max-w-full max-h-full object-contain shadow-[0_0_150px_rgba(0,0,0,1)] rounded-sm pointer-events-none"
