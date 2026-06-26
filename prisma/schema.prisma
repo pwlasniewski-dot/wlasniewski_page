@@ -925,18 +925,22 @@ model ClientGallery {
 }
 
 model GalleryPhoto {
-  id            Int              @id @default(autoincrement())
-  gallery_id    Int
-  file_url      String
-  thumbnail_url String?
-  file_size     Int
-  width         Int?
-  height        Int?
-  is_standard   Boolean          @default(false)
-  order_index   Int              @default(0)
-  created_at    DateTime         @default(now())
-  gallery       ClientGallery    @relation(fields: [gallery_id], references: [id], onDelete: Cascade)
-  selections    PhotoSelection[]
+  id                      Int              @id @default(autoincrement())
+  gallery_id              Int
+  file_url                String           // Original preview source (never changes)
+  thumbnail_url           String?          // Original thumbnail (never changes)
+  download_source_url     String?          // Mapped full-quality source (if admin mapped)
+  thumbnail_source_url    String?          // Custom thumbnail source (if admin mapped)
+  file_size               Int
+  width                   Int?             // Original dimensions
+  height                  Int?
+  download_source_width   Int?             // Download source dimensions (if mapped)
+  download_source_height  Int?
+  is_standard             Boolean          @default(false)
+  order_index             Int              @default(0)
+  created_at              DateTime         @default(now())
+  gallery                 ClientGallery    @relation(fields: [gallery_id], references: [id], onDelete: Cascade)
+  selections              PhotoSelection[]
 
   @@map("gallery_photos")
 }

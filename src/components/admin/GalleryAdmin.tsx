@@ -889,7 +889,7 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
     const standardPhotos = sortPhotos((gallery.photos || []).filter(p => p.is_standard), standardSortMode);
     const premiumPhotos = sortPhotos((gallery.photos || []).filter(p => !p.is_standard), premiumSortMode);
     const allPhotos = gallery.photos || [];
-    const mappedDownloadCount = allPhotos.filter(p => (p.width || 0) >= MIN_DOWNLOAD_WIDTH && (p.height || 0) >= MIN_DOWNLOAD_HEIGHT).length;
+    const mappedDownloadCount = allPhotos.filter(p => !!p.download_source_url).length;
     const mappingProgressPercent = allPhotos.length > 0 ? Math.round((mappedDownloadCount / allPhotos.length) * 100) : 0;
 
     return (
@@ -1265,18 +1265,18 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
                 </div>
                 <div className="grid grid-cols-10 sm:grid-cols-12 md:grid-cols-16 lg:grid-cols-20 gap-1.5">
                     {allPhotos.map((photo) => {
-                        const mapped = (photo.width || 0) >= MIN_DOWNLOAD_WIDTH && (photo.height || 0) >= MIN_DOWNLOAD_HEIGHT;
+                        const isMapped = !!photo.download_source_url;
                         return (
                             <div
                                 key={photo.id}
-                                title={`#${photo.id} ${mapped ? 'OK' : 'WYMAGA PODMIANY'} · ${photo.width || 0}x${photo.height || 0}`}
-                                className={`h-3 rounded ${mapped ? 'bg-emerald-500/90' : 'bg-amber-500/90'}`}
+                                title={`#${photo.id} ${isMapped ? 'ZMAPOWANE' : 'WYMAGA MAPOWANIA'} ${photo.download_source_width ? `· ${photo.download_source_width}x${photo.download_source_height}` : ''}`}
+                                className={`h-3 rounded ${isMapped ? 'bg-emerald-500/90' : 'bg-amber-500/90'}`}
                             />
                         );
                     })}
                 </div>
                 <p className="text-xs text-zinc-500 mt-4">
-                    Zielone: źródło pobierania spełnia min. {MIN_DOWNLOAD_WIDTH}x{MIN_DOWNLOAD_HEIGHT}px. Pomarańczowe: podmień źródło pobierania na karcie zdjęcia (ikona strzałki w dół).
+                    Zielone: źródło pobierania zmapowane. Pomarańczowe: kliknij zielony button (📥) na karcie zdjęcia aby zmapować źródło pobierania.
                 </p>
             </div>
 

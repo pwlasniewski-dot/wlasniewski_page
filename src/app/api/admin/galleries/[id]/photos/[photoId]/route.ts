@@ -3,6 +3,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import sharp from 'sharp';
+import crypto from 'crypto';
 import prisma from '@/lib/db/prisma';
 import { withAuth } from '@/lib/auth/middleware';
 import { deleteFromS3, uploadToS3 } from '@/lib/storage/s3';
@@ -111,23 +112,6 @@ export async function POST(
             const buffer = Buffer.from(await file.arrayBuffer());
             const metadata = await sharp(buffer).metadata();
 
-            const fileKey = extractS3Key(existingPhoto.file_url);
-            const thumbKey = extractS3Key(existingPhoto.thumbnail_url || '');
-
-            if (!fileKey || !thumbKey) {
-                await logSystem('ERROR', 'MEDIA_UPLOAD', 'GALLERY_PHOTO_REPLACE_MISSING_S3_KEYS', {
-                    admin_user_id: req.user?.id || null,
-                    gallery_id: galleryId,
-                    photo_id: parsedPhotoId,
-                    has_file_key: !!fileKey,
-                    has_thumb_key: !!thumbKey,
-                });
-                return NextResponse.json(
-                    { success: false, error: 'Brak poprawnych kluczy S3 dla podmiany zdjęcia' },
-                    { status: 400 }
-                );
-            }
-
             const newWidth = metadata.width || 0;
             const newHeight = metadata.height || 0;
             const shouldReplaceDownload = mode === 'both' || mode === 'download';
@@ -153,14 +137,26 @@ export async function POST(
                 );
             }
 
-            // Overwrite original under the same S3 key/URL so all links and references stay intact.
+            const hash = crypto.randomBytes(8).toString('hex');
+            const timestamp = Date.now();
+            const folderPath = `galleries/${galleryId}`;
+            const updateData: any = {};
+
+            // Upload to SEPARATE S3 keys — do not modify original files
             if (shouldReplaceDownload) {
+                const downloadFilename = `download-${timestamp}-${hash}.${file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg'}`;
+                const downloadKey = `${folderPath}/${downloadFilename}`;
                 const sourceMimeType = (file.type || 'application/octet-stream').toLowerCase();
-                await uploadToS3(buffer, fileKey, sourceMimeType);
+                const downloadUrl = await uploadToS3(buffer, downloadKey, sourceMimeType);
+                
+                updateData.download_source_url = downloadUrl;
+                updateData.download_source_width = newWidth;
+                updateData.download_source_height = newHeight;
             }
 
-            // Overwrite thumbnail under the same thumbnail key.
             if (shouldReplacePreview) {
+                const thumbFilename = `preview-thumb-${timestamp}-${hash}.webp`;
+                const thumbKey = `${folderPath}/${thumbFilename}`;
                 const thumbnailBuffer = await sharp(buffer)
                     .rotate()
                     .resize(400, 400, {
@@ -170,20 +166,13 @@ export async function POST(
                     .webp({ quality: 80 })
                     .toBuffer();
 
-                await uploadToS3(thumbnailBuffer, thumbKey, 'image/webp');
+                const thumbnailUrl = await uploadToS3(thumbnailBuffer, thumbKey, 'image/webp');
+                updateData.thumbnail_source_url = thumbnailUrl;
             }
 
             const updated = await prisma.galleryPhoto.update({
                 where: { id: parsedPhotoId },
-                data: {
-                    ...(shouldReplaceDownload
-                        ? {
-                            file_size: buffer.length,
-                            width: newWidth,
-                            height: newHeight,
-                        }
-                        : {}),
-                },
+                data: updateData,
             });
 
             await logSystem('INFO', 'MEDIA_UPLOAD', 'GALLERY_PHOTO_REPLACED_IN_PLACE', {

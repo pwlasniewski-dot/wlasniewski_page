@@ -83,9 +83,11 @@ export async function GET(
       return NextResponse.json({ error: 'Brak zdjęć w galerii' }, { status: 404 });
     }
 
-    const eligiblePhotos = gallery.photos.filter((photo) => (
-      (photo.width || 0) >= MIN_DOWNLOAD_WIDTH && (photo.height || 0) >= MIN_DOWNLOAD_HEIGHT
-    ));
+    const eligiblePhotos = gallery.photos.filter((photo) => {
+      const width = photo.download_source_width || photo.width || 0;
+      const height = photo.download_source_height || photo.height || 0;
+      return width >= MIN_DOWNLOAD_WIDTH && height >= MIN_DOWNLOAD_HEIGHT;
+    });
 
     if (eligiblePhotos.length === 0) {
       await logSystem('WARN', 'BASKET', 'GROUP_DOWNLOAD_ALL_BLOCKED_NO_FULL_QUALITY', {
@@ -119,15 +121,16 @@ export async function GET(
           for (let i = 0; i < eligiblePhotos.length; i++) {
             const photo = eligiblePhotos[i];
             try {
-              const res = await fetch(photo.file_url);
+              const downloadUrl = photo.download_source_url || photo.file_url;
+              const res = await fetch(downloadUrl);
               if (!res.ok) throw new Error(`HTTP ${res.status}`);
               const srcBuf = Buffer.from(await res.arrayBuffer());
               const idxStr = String(i + 1).padStart(3, '0');
               const urlPath = (() => {
                 try {
-                  return new URL(photo.file_url).pathname;
+                  return new URL(downloadUrl).pathname;
                 } catch {
-                  return photo.file_url;
+                  return downloadUrl;
                 }
               })();
               const extMatch = urlPath.match(/\.([a-zA-Z0-9]+)$/);

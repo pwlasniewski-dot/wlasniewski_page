@@ -81,7 +81,15 @@ export async function GET(
 
     const photo = await prisma.galleryPhoto.findFirst({
       where: { id: photoId, gallery_id: galleryId },
-      select: { id: true, file_url: true, width: true, height: true },
+      select: { 
+        id: true, 
+        file_url: true,
+        download_source_url: true,
+        width: true, 
+        height: true,
+        download_source_width: true,
+        download_source_height: true,
+      },
     });
 
     if (!photo) {
@@ -93,13 +101,20 @@ export async function GET(
       return NextResponse.json({ error: 'Zdjęcie nie istnieje' }, { status: 404 });
     }
 
-    if ((photo.width || 0) < MIN_DOWNLOAD_WIDTH || (photo.height || 0) < MIN_DOWNLOAD_HEIGHT) {
+    // Use download_source if mapped, otherwise use original file_url
+    const downloadUrl = photo.download_source_url || photo.file_url;
+    const downloadWidth = photo.download_source_width || photo.width || 0;
+    const downloadHeight = photo.download_source_height || photo.height || 0;
+    const isMapped = !!photo.download_source_url;
+
+    if (downloadWidth < MIN_DOWNLOAD_WIDTH || downloadHeight < MIN_DOWNLOAD_HEIGHT) {
       await logSystem('WARN', 'BASKET', 'GROUP_DOWNLOAD_SINGLE_BLOCKED_LOW_RES', {
         participant_id: payload.participant_id,
         gallery_id: galleryId,
         photo_id: photoId,
-        width: photo.width || 0,
-        height: photo.height || 0,
+        width: downloadWidth,
+        height: downloadHeight,
+        is_mapped: isMapped,
         min_width: MIN_DOWNLOAD_WIDTH,
         min_height: MIN_DOWNLOAD_HEIGHT,
       });
@@ -110,13 +125,14 @@ export async function GET(
     }
 
     // Fetch and return original bytes — no conversion/compression on download.
-    const s3Response = await fetch(photo.file_url);
+    const s3Response = await fetch(downloadUrl);
     if (!s3Response.ok) {
       await logSystem('ERROR', 'BASKET', 'GROUP_DOWNLOAD_SINGLE_S3_FETCH_FAILED', {
         participant_id: payload.participant_id,
         gallery_id: galleryId,
         photo_id: photoId,
         s3_status: s3Response.status,
+        is_download_source: isMapped,
       });
       return NextResponse.json({ error: 'Nie udało się pobrać pliku' }, { status: 502 });
     }
@@ -125,9 +141,9 @@ export async function GET(
 
     const urlPath = (() => {
       try {
-        return new URL(photo.file_url).pathname;
+        return new URL(downloadUrl).pathname;
       } catch {
-        return photo.file_url;
+        return downloadUrl;
       }
     })();
     const extMatch = urlPath.match(/\.([a-zA-Z0-9]+)$/);
@@ -141,6 +157,7 @@ export async function GET(
       bytes: buffer.length,
       content_type: contentType,
       filename,
+      is_download_source: isMapped,
     });
 
     return new NextResponse(buffer, {
