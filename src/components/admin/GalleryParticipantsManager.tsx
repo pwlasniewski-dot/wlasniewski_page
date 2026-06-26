@@ -534,10 +534,17 @@ export default function GalleryParticipantsManager({ galleryId }: GalleryPartici
                   return (
                   <div key={participant.id} className="bg-black/50 border border-zinc-800 rounded-xl overflow-hidden hover:border-zinc-700 transition-colors">
                     <div className="flex items-center justify-between p-4">
-                      <button
-                        type="button"
+                      <div
+                        role="button"
+                        tabIndex={0}
                         onClick={() => toggleExpand(participant.id)}
-                        className="flex-1 flex items-center gap-3 text-left"
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            toggleExpand(participant.id);
+                          }
+                        }}
+                        className="flex-1 flex items-center gap-3 text-left cursor-pointer"
                       >
                         {participant.avatar && (
                           <div className="w-12 h-12 bg-gold-500/10 border border-gold-500/30 rounded-full flex items-center justify-center text-2xl flex-shrink-0">
@@ -593,7 +600,7 @@ export default function GalleryParticipantsManager({ galleryId }: GalleryPartici
                           <ImageIcon className="w-4 h-4" />
                           {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                         </div>
-                      </button>
+                      </div>
                       <button
                         onClick={() => handleDeleteParticipant(participant.id)}
                         className="ml-2 p-2 hover:bg-red-500/10 rounded-lg text-zinc-500 hover:text-red-400 transition-colors"
