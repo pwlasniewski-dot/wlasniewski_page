@@ -11,6 +11,12 @@ interface GalleryPhoto {
     id: number;
     file_url: string;
     thumbnail_url: string | null;
+    download_source_url?: string | null;
+    thumbnail_source_url?: string | null;
+    width?: number | null;
+    height?: number | null;
+    download_source_width?: number | null;
+    download_source_height?: number | null;
     is_standard: boolean;
     order_index: number;
     created_at: string;
@@ -79,6 +85,7 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
     const [selectedPhotoIds, setSelectedPhotoIds] = useState<Set<number>>(new Set());
     const [deletingBulk, setDeletingBulk] = useState(false);
     const [replacingPhotoAction, setReplacingPhotoAction] = useState<{ photoId: number; mode: 'preview' | 'download' } | null>(null);
+    const [showDogrywanieCompare, setShowDogrywanieCompare] = useState(false);
 
     // Settings logic
     const [isEditingSettings, setIsEditingSettings] = useState(false);
@@ -1253,9 +1260,20 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
             <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-8">
                 <div className="flex items-center justify-between gap-4 mb-6">
                     <h3 className="text-xs font-black text-zinc-500 uppercase tracking-[0.2em]">Mapa postępu mapowania źródła pobierania</h3>
-                    <span className="text-xs font-bold text-zinc-300">
-                        {mappedDownloadCount}/{allPhotos.length} zdjęć gotowych do full download ({mappingProgressPercent}%)
-                    </span>
+                    <div className="flex items-center gap-4 flex-wrap justify-end">
+                        <label className="flex items-center gap-2 text-xs text-zinc-300 bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2">
+                            <input
+                                type="checkbox"
+                                checked={showDogrywanieCompare}
+                                onChange={(e) => setShowDogrywanieCompare(e.target.checked)}
+                                className="accent-emerald-500"
+                            />
+                            Tryb dogrywania: WEBP ↔ JPG
+                        </label>
+                        <span className="text-xs font-bold text-zinc-300">
+                            {mappedDownloadCount}/{allPhotos.length} zdjęć gotowych do full download ({mappingProgressPercent}%)
+                        </span>
+                    </div>
                 </div>
                 <div className="bg-black/50 rounded-full h-2 overflow-hidden border border-zinc-900 mb-4">
                     <div
@@ -1278,6 +1296,11 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
                 <p className="text-xs text-zinc-500 mt-4">
                     Zielone: źródło pobierania zmapowane. Pomarańczowe: kliknij zielony button (📥) na karcie zdjęcia aby zmapować źródło pobierania.
                 </p>
+                {showDogrywanieCompare && (
+                    <p className="text-xs text-emerald-300 mt-2">
+                        Tryb dogrywania aktywny: na kartach zobaczysz po lewej wcześniejszy podgląd (WEBP), po prawej zmapowany JPG full.
+                    </p>
+                )}
             </div>
 
             {/* Bulk delete bar */}
@@ -1372,6 +1395,7 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
                                     onReplaceDownload={(file) => handleReplacePhoto(photo.id, file, 'download')}
                                     isReplacingPreview={replacingPhotoAction?.photoId === photo.id && replacingPhotoAction?.mode === 'preview'}
                                     isReplacingDownload={replacingPhotoAction?.photoId === photo.id && replacingPhotoAction?.mode === 'download'}
+                                    showDogrywanieCompare={showDogrywanieCompare}
                                     isDraggable={standardSortMode === 'manual'}
                                     isSavingOrder={savingOrder}
                                     onDragStart={(e) => {
@@ -1462,6 +1486,7 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
                                     onReplaceDownload={(file) => handleReplacePhoto(photo.id, file, 'download')}
                                     isReplacingPreview={replacingPhotoAction?.photoId === photo.id && replacingPhotoAction?.mode === 'preview'}
                                     isReplacingDownload={replacingPhotoAction?.photoId === photo.id && replacingPhotoAction?.mode === 'download'}
+                                    showDogrywanieCompare={showDogrywanieCompare}
                                     isDraggable={premiumSortMode === 'manual'}
                                     isSavingOrder={savingOrder}
                                     onDragStart={(e) => {
@@ -1508,6 +1533,7 @@ function AdminPhotoCard({
     onReplaceDownload,
     isReplacingPreview,
     isReplacingDownload,
+    showDogrywanieCompare,
     isDraggable,
     isSavingOrder,
     onDragStart,
@@ -1524,6 +1550,7 @@ function AdminPhotoCard({
     onReplaceDownload?: (file: File) => void,
     isReplacingPreview?: boolean,
     isReplacingDownload?: boolean,
+    showDogrywanieCompare?: boolean,
     isDraggable?: boolean,
     isSavingOrder?: boolean,
     onDragStart?: (e: React.DragEvent<HTMLDivElement>) => void,
@@ -1531,6 +1558,8 @@ function AdminPhotoCard({
     onDrop?: () => void,
     onDragEnd?: () => void,
 }) {
+    const hasMappedDownload = !!photo.download_source_url;
+
     return (
         <div
             draggable={!!isDraggable && !isSavingOrder}
@@ -1630,6 +1659,43 @@ function AdminPhotoCard({
             {isDraggable && (
                 <div className="absolute bottom-2 left-2 px-2 py-1 rounded-lg bg-black/60 text-zinc-300 text-[10px] font-bold flex items-center gap-1 pointer-events-none">
                     <Move className="w-3 h-3" /> przesuń
+                </div>
+            )}
+
+            {showDogrywanieCompare && (
+                <div className="absolute left-1.5 right-1.5 bottom-1.5 z-20 rounded-lg border border-zinc-700 bg-black/85 p-1.5 backdrop-blur-sm">
+                    <div className="grid grid-cols-2 gap-1.5">
+                        <div>
+                            <div className="text-[9px] font-black uppercase tracking-wide text-sky-300 mb-1">WEBP (wcześniej)</div>
+                            <div className="relative h-14 rounded overflow-hidden border border-sky-500/40 bg-zinc-950">
+                                <Image
+                                    src={photo.thumbnail_source_url || photo.thumbnail_url || photo.file_url}
+                                    alt="WEBP preview"
+                                    fill
+                                    sizes="120px"
+                                    className="object-cover"
+                                />
+                            </div>
+                        </div>
+                        <div>
+                            <div className={`text-[9px] font-black uppercase tracking-wide mb-1 ${hasMappedDownload ? 'text-emerald-300' : 'text-zinc-400'}`}>
+                                JPG full {hasMappedDownload ? 'zmapowane' : 'brak'}
+                            </div>
+                            <div className="relative h-14 rounded overflow-hidden border border-emerald-500/40 bg-zinc-950 flex items-center justify-center">
+                                {hasMappedDownload ? (
+                                    <Image
+                                        src={photo.download_source_url!}
+                                        alt="JPG full mapped"
+                                        fill
+                                        sizes="120px"
+                                        className="object-cover"
+                                    />
+                                ) : (
+                                    <span className="text-[9px] font-bold uppercase tracking-wide text-zinc-500">Czeka na JPG</span>
+                                )}
+                            </div>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>
