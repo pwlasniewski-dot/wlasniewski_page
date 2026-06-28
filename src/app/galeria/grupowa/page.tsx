@@ -84,6 +84,8 @@ export default function GroupGalleryPage() {
   // Auth state
   const [code, setCode] = useState(codeParam || '');
   const [password, setPassword] = useState('');
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [authErrorKind, setAuthErrorKind] = useState<'password' | 'code' | 'generic' | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [galleryInfo, setGalleryInfo] = useState<GalleryInfo | null>(null);
 
@@ -277,10 +279,14 @@ export default function GroupGalleryPage() {
 
   const handleAuth = async () => {
     if (!code.trim()) {
+      setAuthError('Wpisz kod dostępu');
+      setAuthErrorKind('code');
       toast.error('Wpisz kod dostępu');
       return;
     }
 
+    setAuthError(null);
+    setAuthErrorKind(null);
     setLoading(true);
     try {
       const response = await fetch('/api/galleries/group/auth', {
@@ -292,13 +298,28 @@ export default function GroupGalleryPage() {
         }),
       });
 
-      const data = await response.json();
+      let data: any = null;
+      try {
+        data = await response.json();
+      } catch {
+        data = null;
+      }
 
       if (!response.ok) {
-        toast.error(data.error || 'Nieprawidłowy kod dostępu');
+        const apiError = typeof data?.error === 'string' ? data.error : '';
+        const isBadPassword = response.status === 401 && /hasło|haslo/i.test(apiError);
+        const message = isBadPassword
+          ? 'Niepoprawne hasło'
+          : (apiError || (response.status === 404 ? 'Nieprawidłowy kod dostępu' : 'Nie udało się zalogować'));
+
+        setAuthError(message);
+        setAuthErrorKind(isBadPassword ? 'password' : (response.status === 404 ? 'code' : 'generic'));
+        toast.error(message);
         return;
       }
 
+      setAuthError(null);
+      setAuthErrorKind(null);
       setGalleryInfo(data);
       setIsAuthenticated(true);
       try { localStorage.setItem(`group_gallery_${data.gallery_id}`, JSON.stringify(data)); } catch {}
@@ -1075,7 +1096,13 @@ export default function GroupGalleryPage() {
               <input
                 type="text"
                 value={code}
-                onChange={e => setCode(e.target.value.toUpperCase())}
+                onChange={e => {
+                  setCode(e.target.value.toUpperCase());
+                  if (authErrorKind === 'code' || authErrorKind === 'generic') {
+                    setAuthError(null);
+                    setAuthErrorKind(null);
+                  }
+                }}
                 placeholder="np. KOMUNIA2026"
                 className="w-full bg-black border border-zinc-700 rounded-lg px-4 py-3 text-white focus:border-gold-500 focus:outline-none uppercase"
                 autoFocus
@@ -1089,11 +1116,26 @@ export default function GroupGalleryPage() {
               <input
                 type="password"
                 value={password}
-                onChange={e => setPassword(e.target.value)}
+                onChange={e => {
+                  setPassword(e.target.value);
+                  if (authErrorKind === 'password' || authErrorKind === 'generic') {
+                    setAuthError(null);
+                    setAuthErrorKind(null);
+                  }
+                }}
                 placeholder="••••"
-                className="w-full bg-black border border-zinc-700 rounded-lg px-4 py-3 text-white focus:border-gold-500 focus:outline-none"
+                className={`w-full bg-black border rounded-lg px-4 py-3 text-white focus:border-gold-500 focus:outline-none ${authErrorKind === 'password' ? 'border-red-500' : 'border-zinc-700'}`}
               />
+              {authErrorKind === 'password' && authError && (
+                <p className="mt-2 text-sm text-red-400">{authError}</p>
+              )}
             </div>
+
+            {authErrorKind !== 'password' && authError && (
+              <div className="rounded-lg border border-red-500/40 bg-red-950/30 px-3 py-2 text-sm text-red-300">
+                {authError}
+              </div>
+            )}
 
             <button
               type="submit"
