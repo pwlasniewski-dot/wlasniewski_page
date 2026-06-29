@@ -224,6 +224,8 @@ export async function GET(
       (async () => {
         try {
           const usedNames = new Set<string>();
+          let appendedFiles = 0;
+          const skippedPhotos: string[] = [];
 
           for (const participant of participants) {
             const displayName = normalizeDisplayName(participant.parent_name || participant.parent_identifier || `Rodzic ${participant.id}`);
@@ -269,29 +271,58 @@ export async function GET(
                   const sourcePart = item.source === 'PLATNE' ? 'platne' : 'standard';
                   const formatPart = item.format.replace(/[^0-9xX]/g, '').toLowerCase() || 'format';
                   const baseName = `${fileNameBase}_${formatPart}_${sourcePart}_${ordinal}`;
-                  const jpgBuffer = await sharp(sourceBuffer)
-                    .pipelineColorspace('srgb')
-                    .toColorspace('srgb')
-                    .withMetadata({ icc: 'srgb' })
-                    .jpeg({ quality: 95, chromaSubsampling: '4:4:4', mozjpeg: true })
-                    .toBuffer();
+                  try {
+                    const jpgBuffer = await sharp(sourceBuffer)
+                      .pipelineColorspace('srgb')
+                      .toColorspace('srgb')
+                      .withMetadata({ icc: 'srgb' })
+                      .jpeg({ quality: 95, chromaSubsampling: '4:4:4', mozjpeg: true })
+                      .toBuffer();
 
-                  let uniqueName = `${baseName}.jpg`;
-                  let dedupeCounter = 2;
-                  while (usedNames.has(uniqueName)) {
-                    uniqueName = `${baseName}_${dedupeCounter}.jpg`;
-                    dedupeCounter += 1;
+                    let uniqueName = `${baseName}.jpg`;
+                    let dedupeCounter = 2;
+                    while (usedNames.has(uniqueName)) {
+                      uniqueName = `${baseName}_${dedupeCounter}.jpg`;
+                      dedupeCounter += 1;
+                    }
+                    usedNames.add(uniqueName);
+                    archive.append(jpgBuffer, { name: uniqueName });
+                    appendedFiles += 1;
+                  } catch (jpgErr) {
+                    // Fallback: keep original bytes if conversion to JPG fails.
+                    // Better to include file for operator than produce empty ZIP.
+                    const fallbackExt = ext || 'bin';
+                    let uniqueName = `${baseName}.${fallbackExt}`;
+                    let dedupeCounter = 2;
+                    while (usedNames.has(uniqueName)) {
+                      uniqueName = `${baseName}_${dedupeCounter}.${fallbackExt}`;
+                      dedupeCounter += 1;
+                    }
+                    usedNames.add(uniqueName);
+                    archive.append(sourceBuffer, { name: uniqueName });
+                    appendedFiles += 1;
+                    console.warn(`JPG conversion failed for photo ${item.id}; appended original as .${fallbackExt}`, jpgErr);
                   }
-                  usedNames.add(uniqueName);
-                  archive.append(jpgBuffer, { name: uniqueName });
                 } else {
                   const photoName = `${displayName} ${i + 1} [${item.format}] [${item.source}].${ext}`;
                   archive.append(sourceBuffer, { name: `${folderName}/${photoName}` });
+                  appendedFiles += 1;
                 }
               } catch (err) {
+                skippedPhotos.push(`participant=${participant.id}, photo=${item.id}, url=${item.file_url}`);
                 console.error(`Failed to add photo ${item.id} for participant ${participant.id}:`, err);
               }
             }
+          }
+
+          if (appendedFiles === 0) {
+            const details = skippedPhotos.length
+              ? skippedPhotos.join('\n')
+              : 'Brak plików do dodania (0 pozycji po filtrowaniu).';
+            archive.append(
+              `ZIP utworzony, ale nie dodano żadnego zdjęcia.\n\nSzczegóły:\n${details}\n`,
+              { name: '_ZIP_ERROR_README.txt' }
+            );
           }
 
           await archive.finalize();
