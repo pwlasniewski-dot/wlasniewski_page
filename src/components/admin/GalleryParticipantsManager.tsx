@@ -146,7 +146,16 @@ export default function GalleryParticipantsManager({ galleryId }: GalleryPartici
     const toastId = toast.loading('Przygotowywanie pliku...');
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+      const separator = url.includes('?') ? '&' : '?';
+      const bustUrl = `${url}${separator}_ts=${Date.now()}`;
+      const res = await fetch(bustUrl, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Cache-Control': 'no-cache',
+          Pragma: 'no-cache',
+        },
+        cache: 'no-store',
+      });
       if (!res.ok) {
         toast.error('Nie udało się pobrać pliku', { id: toastId });
         return;
@@ -158,6 +167,10 @@ export default function GalleryParticipantsManager({ galleryId }: GalleryPartici
         ? decodeURIComponent(utf8Match[1])
         : plainMatch?.[1] || fallbackName;
       const blob = await res.blob();
+      if (!blob || blob.size === 0) {
+        toast.error('ZIP jest pusty (0 B). Odśwież panel Ctrl+F5 i spróbuj ponownie.', { id: toastId });
+        return;
+      }
       const objUrl = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = objUrl;

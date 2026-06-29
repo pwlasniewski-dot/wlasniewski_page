@@ -206,8 +206,8 @@ export async function GET(
       }
 
       const zipName = isNphotoFlatLayout
-        ? `galeria-${galleryId}-nphoto-pelny-rozmiar.zip`
-        : `galeria-${galleryId}-rodzice-wybory.zip`;
+        ? `galeria-${galleryId}-nphoto-pelny-rozmiar-${Date.now()}.zip`
+        : `galeria-${galleryId}-rodzice-wybory-${Date.now()}.zip`;
       const passthrough = new PassThrough();
       const archive = archiver('zip', {
         zlib: { level: 9 },
@@ -337,7 +337,10 @@ export async function GET(
         headers: {
           'Content-Type': 'application/zip',
           'Content-Disposition': `attachment; filename="${zipName}"`,
-          'Cache-Control': 'no-cache',
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+          'Surrogate-Control': 'no-store',
         },
       });
     } catch (error) {
