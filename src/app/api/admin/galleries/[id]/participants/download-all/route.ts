@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import archiver from 'archiver';
 import { PassThrough } from 'stream';
+import sharp from 'sharp';
 import { withAuth } from '@/lib/auth/middleware';
 
 function normalizeDisplayName(input: string | null | undefined): string {
@@ -141,7 +142,7 @@ export async function GET(
         include: {
           selections: {
             include: {
-              photo: { select: { id: true, file_url: true } },
+              photo: { select: { id: true, file_url: true, download_source_url: true } },
             },
             orderBy: { selected_at: 'asc' },
           },
@@ -190,10 +191,12 @@ export async function GET(
               id: { in: Array.from(allPaidPhotoIds) },
               gallery_id: galleryId,
             },
-            select: { id: true, file_url: true },
+            select: { id: true, file_url: true, download_source_url: true },
           })
         : [];
-      const paidPhotoUrlById = new Map(paidPhotos.map((p) => [p.id, p.file_url]));
+      const paidPhotoUrlById = new Map(
+        paidPhotos.map((p) => [p.id, p.download_source_url || p.file_url])
+      );
 
       const hasAnyStandard = participants.some((p) => p.selections.length > 0);
       const hasAnyPaid = paidOrders.length > 0;
@@ -229,7 +232,7 @@ export async function GET(
 
             const standardPhotos = participant.selections.map((sel) => ({
               id: sel.photo.id,
-              file_url: sel.photo.file_url,
+              file_url: sel.photo.download_source_url || sel.photo.file_url,
               source: 'STANDARD' as const,
               format: '15x21',
             }));
@@ -266,14 +269,21 @@ export async function GET(
                   const sourcePart = item.source === 'PLATNE' ? 'platne' : 'standard';
                   const formatPart = item.format.replace(/[^0-9xX]/g, '').toLowerCase() || 'format';
                   const baseName = `${fileNameBase}_${formatPart}_${sourcePart}_${ordinal}`;
-                  let uniqueName = `${baseName}.${ext}`;
+                  const jpgBuffer = await sharp(sourceBuffer)
+                    .pipelineColorspace('srgb')
+                    .toColorspace('srgb')
+                    .withMetadata({ icc: 'srgb' })
+                    .jpeg({ quality: 95, chromaSubsampling: '4:4:4', mozjpeg: true })
+                    .toBuffer();
+
+                  let uniqueName = `${baseName}.jpg`;
                   let dedupeCounter = 2;
                   while (usedNames.has(uniqueName)) {
-                    uniqueName = `${baseName}_${dedupeCounter}.${ext}`;
+                    uniqueName = `${baseName}_${dedupeCounter}.jpg`;
                     dedupeCounter += 1;
                   }
                   usedNames.add(uniqueName);
-                  archive.append(sourceBuffer, { name: uniqueName });
+                  archive.append(jpgBuffer, { name: uniqueName });
                 } else {
                   const photoName = `${displayName} ${i + 1} [${item.format}] [${item.source}].${ext}`;
                   archive.append(sourceBuffer, { name: `${folderName}/${photoName}` });
