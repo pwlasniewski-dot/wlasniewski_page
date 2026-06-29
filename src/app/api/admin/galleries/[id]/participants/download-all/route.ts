@@ -208,23 +208,20 @@ export async function GET(
       const zipName = isNphotoFlatLayout
         ? `galeria-${galleryId}-nphoto-pelny-rozmiar-${Date.now()}.zip`
         : `galeria-${galleryId}-rodzice-wybory-${Date.now()}.zip`;
-      const zipBuffer = await (async () => {
-        const passthrough = new PassThrough();
-        const archive = archiver('zip', {
-          zlib: { level: 9 },
-          forceZip64: true,
-        });
+      const passthrough = new PassThrough();
+      const archive = archiver('zip', {
+        // lower compression keeps CPU usage down in serverless environment
+        zlib: { level: 1 },
+        forceZip64: true,
+      });
 
-        const chunks: Buffer[] = [];
-        const zipDone = new Promise<Buffer>((resolve, reject) => {
-          passthrough.on('data', (chunk) => chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)));
-          passthrough.on('end', () => resolve(Buffer.concat(chunks)));
-          passthrough.on('error', reject);
-          archive.on('error', reject);
-        });
+      archive.on('error', (err) => {
+        console.error('Archiver error:', err);
+        passthrough.destroy(err as Error);
+      });
+      archive.pipe(passthrough);
 
-        archive.pipe(passthrough);
-
+      const generationPromise = (async () => {
         const usedNames = new Set<string>();
         let appendedFiles = 0;
         const skippedPhotos: string[] = [];
@@ -255,9 +252,7 @@ export async function GET(
             ...paidPhotosForParticipant,
           ];
 
-          if (merged.length === 0) {
-            continue;
-          }
+          if (merged.length === 0) continue;
 
           for (let i = 0; i < merged.length; i++) {
             const item = merged[i];
@@ -267,12 +262,13 @@ export async function GET(
 
               const sourceBuffer = Buffer.from(await response.arrayBuffer());
               const ext = getSafeImageExtension(item.file_url);
-
               const ordinal = String(i + 1).padStart(3, '0');
+
               if (isNphotoFlatLayout) {
                 const sourcePart = item.source === 'PLATNE' ? 'platne' : 'standard';
                 const formatPart = item.format.replace(/[^0-9xX]/g, '').toLowerCase() || 'format';
                 const baseName = `${fileNameBase}_${formatPart}_${sourcePart}_${ordinal}`;
+
                 try {
                   const jpgBuffer = await sharp(sourceBuffer)
                     .pipelineColorspace('srgb')
@@ -326,10 +322,17 @@ export async function GET(
         }
 
         await archive.finalize();
-        return zipDone;
-      })();
+      })().catch((err) => {
+        console.error('ZIP generation error:', err);
+        try {
+          archive.abort();
+        } catch {}
+        passthrough.end();
+      });
 
-      return new NextResponse(zipBuffer, {
+      void generationPromise;
+
+      return new NextResponse(passthrough as any, {
         status: 200,
         headers: {
           'Content-Type': 'application/zip',
