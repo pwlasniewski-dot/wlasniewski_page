@@ -1,5 +1,6 @@
 import { S3Client, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
+import type { Readable } from 'stream';
 
 // Try specific keys first, then standard AWS SDK keys
 const accessKeyId = (process.env.MY_AWS_ACCESS_KEY_ID || process.env.AWS_ACCESS_KEY_ID || '').trim();
@@ -78,6 +79,44 @@ export async function uploadToS3(fileBuffer: Buffer, fileName: string, mimeType:
         });
         throw new Error(`S3 Upload failed: ${error.message}`);
     }
+}
+
+/**
+ * Strumieniowy upload na S3 (dla dużych plików budowanych w locie, np. ZIP galerii).
+ * Nie trzyma całości w pamięci — czyta ze strumienia i wysyła multipartem.
+ * Zwraca publiczny URL obiektu. Ustaw contentDisposition, aby wymusić pobieranie.
+ */
+export async function uploadStreamToS3(
+    stream: Readable,
+    fileName: string,
+    mimeType: string,
+    contentDisposition?: string,
+): Promise<string> {
+    const bucketName = process.env.S3_BUCKET || 'wlasniewski-photo-storage';
+    const region = process.env.S3_REGION || 'eu-north-1';
+
+    if (!accessKeyId || !secretAccessKey) {
+        throw new Error('Missing AWS Credentials. Set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY in environment.');
+    }
+
+    const upload = new Upload({
+        client: s3Client,
+        params: {
+            Bucket: bucketName,
+            Key: fileName,
+            Body: stream,
+            ContentType: mimeType,
+            ...(contentDisposition ? { ContentDisposition: contentDisposition } : {}),
+        },
+        // Trzymaj pamięć w ryzach: 5MB części, max 4 równolegle
+        partSize: 5 * 1024 * 1024,
+        queueSize: 4,
+    });
+
+    await upload.done();
+
+    const encodedKey = fileName.split('/').map(encodeURIComponent).join('/');
+    return `https://${bucketName}.s3.${region}.amazonaws.com/${encodedKey}`;
 }
 
 export async function deleteFromS3(fileUrl: string): Promise<void> {

@@ -202,6 +202,49 @@ export default function GalleryParticipantsManager({ galleryId }: GalleryPartici
     }
   };
 
+  // Pobieranie ZIP całej galerii: serwer buduje archiwum i wgrywa je na S3,
+  // a my dostajemy mały JSON z linkiem (nie przepychamy 100+ MB przez funkcję).
+  const downloadZipViaLink = async (url: string) => {
+    const toastId = toast.loading('Pakuję zdjęcia do ZIP... to może potrwać chwilę');
+    try {
+      const token = localStorage.getItem('admin_token');
+      if (!token) {
+        toast.error('Brak sesji admina - zaloguj się ponownie', { id: toastId });
+        return;
+      }
+      const separator = url.includes('?') ? '&' : '?';
+      const fetchUrl = `${url}${separator}_ts=${Date.now()}`;
+      const res = await fetch(fetchUrl, {
+        headers: { Authorization: `Bearer ${token}`, 'Cache-Control': 'no-cache' },
+        cache: 'no-store',
+      });
+
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.downloadUrl) {
+        const message = (data && typeof data.error === 'string')
+          ? data.error
+          : `Nie udało się przygotować pobierania (HTTP ${res.status})`;
+        toast.error(message, { id: toastId, duration: 6000 });
+        return;
+      }
+
+      const a = document.createElement('a');
+      a.href = data.downloadUrl;
+      a.download = data.fileName || 'galeria.zip';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      const skippedNote = data.skippedCount > 0
+        ? ` (${data.skippedCount} zdjęć pominięto z powodu błędu)`
+        : '';
+      toast.success(`Pobieranie rozpoczęte — ${data.photoCount} zdjęć${skippedNote}`, { id: toastId, duration: 5000 });
+    } catch (err) {
+      console.error('Download ZIP error:', err);
+      toast.error('Błąd pobierania — sprawdź połączenie i spróbuj ponownie', { id: toastId });
+    }
+  };
+
   const handleDeleteParticipant = async (participantId: number) => {
     if (!confirm('Czy na pewno usunąć uczestnika?')) return;
 
@@ -537,9 +580,8 @@ export default function GalleryParticipantsManager({ galleryId }: GalleryPartici
               {participants.some(p => p.selections_count > 0) && (
                 <button
                   type="button"
-                  onClick={() => downloadWithAuth(
-                    `/api/admin/galleries/${galleryId}/participants/download-all?layout=nphoto`,
-                    'nphoto-wszyscy-rodzice-pelny-rozmiar.zip'
+                  onClick={() => downloadZipViaLink(
+                    `/api/admin/galleries/${galleryId}/participants/download-all?layout=nphoto`
                   )}
                   className="flex items-center gap-2 px-3 py-1.5 bg-gold-500 hover:bg-gold-400 text-black text-xs font-bold rounded-lg transition-colors"
                 >

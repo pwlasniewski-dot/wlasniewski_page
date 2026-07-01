@@ -818,15 +818,57 @@ export default function GroupGalleryPage() {
     );
   };
 
+  // Pobieranie ZIP (całość / wybrane): serwer buduje archiwum i wgrywa je na S3,
+  // a my dostajemy mały JSON z linkiem. Dzięki temu duże galerie nie wywalają
+  // funkcji serverless (brak przepychania 100+ MB przez odpowiedź).
+  const downloadZipViaLink = useCallback(async (url: string) => {
+    if (!authToken) {
+      toast.error('Brak autoryzacji — zaloguj się ponownie');
+      return;
+    }
+    const tid = toast.loading('Pakuję zdjęcia do ZIP... to może potrwać chwilę');
+    try {
+      const separator = url.includes('?') ? '&' : '?';
+      const fetchUrl = `${url}${separator}_ts=${Date.now()}`;
+      const res = await fetch(fetchUrl, {
+        headers: { Authorization: `Bearer ${authToken}` },
+        cache: 'no-store',
+      });
+
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.downloadUrl) {
+        const message = (data && typeof data.error === 'string')
+          ? data.error
+          : `Nie udało się przygotować pobierania (HTTP ${res.status})`;
+        toast.error(message, { id: tid, duration: 6000 });
+        return;
+      }
+
+      const a = document.createElement('a');
+      a.href = data.downloadUrl;
+      a.download = data.fileName || 'galeria.zip';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      const failedNote = data.failedCount > 0
+        ? ` (${data.failedCount} zdjęć pominięto z powodu błędu)`
+        : '';
+      toast.success(`Pobieranie rozpoczęte — ${data.photoCount} zdjęć${failedNote}`, { id: tid, duration: 5000 });
+    } catch (err) {
+      console.error('Download ZIP error:', err);
+      toast.error('Błąd pobierania — sprawdź połączenie i spróbuj ponownie', { id: tid });
+    }
+  }, [authToken]);
+
   const handleDownloadAll = async () => {
     if (!galleryInfo || !authToken) return;
     if (photos.length === 0) {
       toast.error('Brak zdjęć do pobrania');
       return;
     }
-    await downloadWithAuth(
-      `/api/galleries/group/${galleryInfo.gallery_id}/download-all`,
-      'galeria.zip'
+    await downloadZipViaLink(
+      `/api/galleries/group/${galleryInfo.gallery_id}/download-all`
     );
   };
 
@@ -874,9 +916,8 @@ export default function GroupGalleryPage() {
       await handleDownloadSingle(list[0].id);
     } else {
       const photoIds = list.map((photo) => photo.id).join(',');
-      await downloadWithAuth(
-        `/api/galleries/group/${galleryInfo!.gallery_id}/download-all?photo_ids=${encodeURIComponent(photoIds)}`,
-        `zdjecia-wybrane-${list.length}.zip`
+      await downloadZipViaLink(
+        `/api/galleries/group/${galleryInfo!.gallery_id}/download-all?photo_ids=${encodeURIComponent(photoIds)}`
       );
     }
     // exit mode after download starts

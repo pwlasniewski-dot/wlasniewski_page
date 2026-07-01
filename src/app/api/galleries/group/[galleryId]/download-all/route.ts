@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import archiver from 'archiver';
 import { verifyParentToken, extractTokenFromHeader } from '@/lib/auth/parent-jwt';
+import { uploadStreamToS3 } from '@/lib/storage/s3';
 import { logSystem } from '@/lib/logger';
 
 export const maxDuration = 60; // seconds — Netlify Pro allows up to 60s
@@ -110,15 +111,32 @@ export async function GET(
     let failedPhotos = 0;
     const failedPhotoIds: number[] = [];
 
-    // Build ZIP fully in memory — required for Netlify serverless (no streaming support)
-    // STORE mode (no compression) — JPEGs don't compress, saves CPU/memory
-    // Pobieramy pliki z S3 RÓWNOLEGLE w partiach, aby zmieścić się w limicie 60s serverless.
-    const CONCURRENCY = 10;
-    const fetched: Array<{ index: number; buf: Buffer; ext: string } | null> = new Array(eligiblePhotos.length).fill(null);
+    // ZIP jest budowany w locie i STRUMIENIOWANY prosto na S3 (bez trzymania całości
+    // w pamięci) — to jedyny niezawodny sposób na duże galerie w serverless.
+    // Klient dostaje mały JSON z linkiem do gotowego pliku na S3.
+    // STORE mode (bez kompresji) — JPEG/webp się nie kompresują, oszczędza CPU.
+    const CONCURRENCY = 20;
+    const archive = archiver('zip', { store: true });
+    archive.on('warning', (err) => console.warn('archiver warning:', err));
 
+    const randomSuffix = Math.random().toString(36).slice(2, 10);
+    const zipName = requestedPhotoIds.length > 0
+      ? `galeria-${gallery.id}-wybrane-${eligiblePhotos.length}.zip`
+      : `galeria-${gallery.id}.zip`;
+    const s3Key = `temp-zips/gallery-${gallery.id}/${Date.now()}-${randomSuffix}-${zipName}`;
+
+    // Start strumieniowego uploadu na S3 (czyta z archiwum w miarę napływu danych)
+    const uploadPromise = uploadStreamToS3(
+      archive as unknown as import('stream').Readable,
+      s3Key,
+      'application/zip',
+      `attachment; filename="${zipName}"`,
+    );
+
+    // Pobieramy pliki z S3 RÓWNOLEGLE w partiach i dokładamy je do archiwum.
     for (let start = 0; start < eligiblePhotos.length; start += CONCURRENCY) {
       const batch = eligiblePhotos.slice(start, start + CONCURRENCY);
-      await Promise.all(batch.map(async (photo, offset) => {
+      const results = await Promise.all(batch.map(async (photo, offset) => {
         const i = start + offset;
         try {
           const downloadUrl = photo.download_source_url || photo.file_url;
@@ -134,38 +152,35 @@ export async function GET(
           })();
           const extMatch = urlPath.match(/\.([a-zA-Z0-9]+)$/);
           const ext = extMatch ? extMatch[1].toLowerCase() : 'bin';
-          fetched[i] = { index: i, buf: srcBuf, ext };
+          return { index: i, buf: srcBuf, ext };
         } catch (err) {
           failedPhotos += 1;
           failedPhotoIds.push(photo.id);
           console.error(`Failed to fetch photo ${photo.id}:`, err);
+          return null;
         }
       }));
+
+      for (const item of results) {
+        if (!item) continue;
+        const idxStr = String(item.index + 1).padStart(3, '0');
+        archive.append(item.buf, { name: `zdjecie-${idxStr}.${item.ext}` });
+        addedPhotos += 1;
+      }
     }
 
-    const zipBuffer = await new Promise<Buffer>((resolve, reject) => {
-      const chunks: Buffer[] = [];
-      const archive = archiver('zip', { store: true });
+    if (addedPhotos === 0) {
+      archive.destroy();
+      await uploadPromise.catch(() => {});
+      return NextResponse.json(
+        { error: 'Nie udało się pobrać żadnego zdjęcia. Spróbuj ponownie za chwilę.' },
+        { status: 502 }
+      );
+    }
 
-      archive.on('data', (chunk: Buffer) => chunks.push(chunk));
-      archive.on('end', () => resolve(Buffer.concat(chunks)));
-      archive.on('error', reject);
-      (async () => {
-        try {
-          for (const item of fetched) {
-            if (!item) continue;
-            const idxStr = String(item.index + 1).padStart(3, '0');
-            archive.append(item.buf, { name: `zdjecie-${idxStr}.${item.ext}` });
-            addedPhotos += 1;
-          }
-          await archive.finalize();
-        } catch (err) {
-          reject(err);
-        }
-      })();
-    });
+    await archive.finalize();
+    const downloadUrl = await uploadPromise;
 
-    const zipName = `galeria-${gallery.id}.zip`;
     await logSystem('INFO', 'BASKET', 'GROUP_DOWNLOAD_ALL_SUCCESS', {
       participant_id: payload.participant_id,
       gallery_id: galleryId,
@@ -174,18 +189,16 @@ export async function GET(
       added_photo_count: addedPhotos,
       failed_photo_count: failedPhotos,
       failed_photo_ids: failedPhotoIds,
-      zip_bytes: zipBuffer.length,
       zip_name: zipName,
+      s3_key: s3Key,
     });
 
-    return new NextResponse(zipBuffer, {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/zip',
-        'Content-Disposition': `attachment; filename="${zipName}"`,
-        'Content-Length': String(zipBuffer.length),
-        'Cache-Control': 'no-cache',
-      },
+    return NextResponse.json({
+      success: true,
+      downloadUrl,
+      fileName: zipName,
+      photoCount: addedPhotos,
+      failedCount: failedPhotos,
     });
   } catch (error) {
     console.error('Parent download-all error:', error);
