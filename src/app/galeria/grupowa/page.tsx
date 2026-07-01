@@ -1026,7 +1026,7 @@ export default function GroupGalleryPage() {
       return;
     }
     if (!extraSizeConfirmed) {
-      toast.error('Potwierdź, że wybrane rozmiary odbitek się zgadzają');
+      toast.error('Zaznacz duży checkbox potwierdzenia rozmiarów odbitek przed przejściem do płatności');
       return;
     }
 
@@ -1734,19 +1734,21 @@ Hasło: ${password}` : ''}`}
                       <span className="text-lg font-black text-emerald-200 leading-tight">{(extraCartTotal / 100).toFixed(2)} zł</span>
                       <span className="text-[10px] text-emerald-400">10x15: {extraCartQty10x15} szt. • 15x21: {extraCartQty15x21} szt.</span>
                     </div>
-                    <label className="flex items-center gap-2 text-xs text-emerald-100 max-w-[280px]">
+                    <label className={`flex items-center gap-3 px-4 py-3 rounded-xl border max-w-[420px] transition-all ${extraSizeConfirmed ? 'border-emerald-500/50 bg-emerald-950/40 text-emerald-100' : 'border-amber-500 bg-amber-500/15 text-amber-100 animate-pulse shadow-lg shadow-amber-500/20'}`}>
                       <input
                         type="checkbox"
                         checked={extraSizeConfirmed}
                         onChange={(e) => setExtraSizeConfirmed(e.target.checked)}
-                        className="rounded border-emerald-700 bg-emerald-950 text-gold-500 focus:ring-gold-500"
+                        className="h-5 w-5 rounded border-amber-400 bg-black/40 text-gold-500 focus:ring-gold-500"
                       />
-                      Potwierdzam, że rozmiary odbitek w koszyku się zgadzają.
+                      <span className="text-sm md:text-base font-black leading-tight">
+                        Potwierdzam, że rozmiary odbitek w koszyku się zgadzają.
+                      </span>
                     </label>
                     <button
                       type="button"
                       onClick={() => handlePurchaseExtras()}
-                      disabled={purchasingExtras || !extraSizeConfirmed}
+                      disabled={purchasingExtras}
                       className="flex items-center gap-1.5 px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-black text-sm font-black rounded-lg transition-all disabled:opacity-50 whitespace-nowrap shadow-lg shadow-emerald-500/30"
                     >
                       <Package className="w-4 h-4" />
