@@ -765,7 +765,14 @@ export default function GroupGalleryPage() {
       if (!res.ok) {
         const text = await res.text().catch(() => '');
         console.error('[download] failed', res.status, text);
-        toast.error(`Nie udało się pobrać (${res.status})`, { id: tid });
+        let message = `Nie udało się pobrać (${res.status})`;
+        try {
+          const parsed = text ? JSON.parse(text) : null;
+          if (parsed?.error && typeof parsed.error === 'string') {
+            message = parsed.error;
+          }
+        } catch {}
+        toast.error(message, { id: tid });
         return;
       }
       const cd = res.headers.get('Content-Disposition') || '';
@@ -801,7 +808,10 @@ export default function GroupGalleryPage() {
       toast.error('Brak zdjęć do pobrania');
       return;
     }
-    await downloadPhotosAsZip(photos, 'galeria.zip');
+    await downloadWithAuth(
+      `/api/galleries/group/${galleryInfo.gallery_id}/download-all`,
+      'galeria.zip'
+    );
   };
 
   // Download selection mode (separate from print selection)
@@ -847,7 +857,11 @@ export default function GroupGalleryPage() {
     if (list.length === 1) {
       await handleDownloadSingle(list[0].id);
     } else {
-      await downloadPhotosAsZip(list, `zdjecia-wybrane-${list.length}.zip`);
+      const photoIds = list.map((photo) => photo.id).join(',');
+      await downloadWithAuth(
+        `/api/galleries/group/${galleryInfo!.gallery_id}/download-all?photo_ids=${encodeURIComponent(photoIds)}`,
+        `zdjecia-wybrane-${list.length}.zip`
+      );
     }
     // exit mode after download starts
     setDownloadMode(false);
@@ -855,69 +869,6 @@ export default function GroupGalleryPage() {
     if (prevViewMode) {
       setViewMode(prevViewMode);
       setPrevViewMode(null);
-    }
-  };
-
-  const downloadPhotosAsZip = async (list: Photo[], filename: string) => {
-    if (!galleryInfo || !authToken) return;
-    const tid = toast.loading(`Przygotowywanie pobierania ${list.length} zdjęć...`);
-    try {
-      const { downloadZip } = await import('client-zip');
-      const streamSaverMod = await import('streamsaver');
-      const streamSaver = streamSaverMod.default || streamSaverMod;
-
-      try {
-        // @ts-expect-error - mitm property
-        if (!streamSaver.mitm) streamSaver.mitm = 'https://jimmywarting.github.io/StreamSaver.js/mitm.html?version=2.0.0';
-      } catch {}
-
-      let downloaded = 0;
-      let totalBytes = 0;
-
-      async function* fileIterator() {
-        for (let i = 0; i < list.length; i++) {
-          const photo = list[i];
-          try {
-            const res = await fetch(
-              `/api/galleries/group/${galleryInfo!.gallery_id}/download/${photo.id}`,
-              { headers: { Authorization: `Bearer ${authToken}` } }
-            );
-            if (!res.ok) {
-              console.error(`[zip] photo ${photo.id} HTTP ${res.status}`);
-              continue;
-            }
-            downloaded++;
-            const cl = res.headers.get('Content-Length');
-            if (cl) totalBytes += parseInt(cl, 10);
-            toast.loading(
-              `Pobieranie ${downloaded}/${list.length} (${(totalBytes / 1024 / 1024).toFixed(1)} MB)...`,
-              { id: tid }
-            );
-            yield {
-              name: `zdjecie-${String(i + 1).padStart(3, '0')}.jpg`,
-              input: res,
-            };
-          } catch (e) {
-            console.error(`[zip] photo ${photo.id} error:`, e);
-          }
-        }
-      }
-
-      const zipResponse = downloadZip(fileIterator());
-      if (!zipResponse.body) throw new Error('client-zip: brak body');
-
-      const fileStream = streamSaver.createWriteStream(filename);
-      await zipResponse.body.pipeTo(fileStream);
-
-      toast.success(`Pobrano ${downloaded} zdjęć (${(totalBytes / 1024 / 1024).toFixed(1)} MB)`, { id: tid });
-    } catch (err: unknown) {
-      const e = err as { name?: string; message?: string };
-      if (e?.name === 'AbortError') {
-        toast.dismiss(tid);
-        return;
-      }
-      console.error('[zip] fatal:', err);
-      toast.error(`Błąd pobierania: ${e?.message || 'nieznany'}`, { id: tid });
     }
   };
 

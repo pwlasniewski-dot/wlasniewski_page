@@ -83,7 +83,21 @@ export async function GET(
       return NextResponse.json({ error: 'Brak zdjęć w galerii' }, { status: 404 });
     }
 
-    const eligiblePhotos = gallery.photos.filter((photo) => {
+    const requestedPhotoIdsRaw = new URL(request.url).searchParams.get('photo_ids') || '';
+    const requestedPhotoIds = requestedPhotoIdsRaw
+      .split(',')
+      .map((value) => Number(value.trim()))
+      .filter((value) => Number.isInteger(value) && value > 0);
+
+    const targetPhotos = requestedPhotoIds.length > 0
+      ? gallery.photos.filter((photo) => requestedPhotoIds.includes(photo.id))
+      : gallery.photos;
+
+    if (requestedPhotoIds.length > 0 && targetPhotos.length === 0) {
+      return NextResponse.json({ error: 'Nie znaleziono wybranych zdjęć do pobrania' }, { status: 404 });
+    }
+
+    const eligiblePhotos = targetPhotos.filter((photo) => {
       const width = photo.download_source_width || photo.width || 0;
       const height = photo.download_source_height || photo.height || 0;
       return width >= MIN_DOWNLOAD_WIDTH && height >= MIN_DOWNLOAD_HEIGHT;
@@ -94,6 +108,7 @@ export async function GET(
         participant_id: payload.participant_id,
         gallery_id: galleryId,
         total_photos: gallery.photos.length,
+        requested_photo_count: targetPhotos.length,
         min_width: MIN_DOWNLOAD_WIDTH,
         min_height: MIN_DOWNLOAD_HEIGHT,
       });
