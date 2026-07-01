@@ -340,6 +340,15 @@ export async function POST(
       });
     } catch (payuError: any) {
       console.error('PayU extra purchase error:', payuError);
+      await prisma.photoOrder.update({
+        where: { id: order.id },
+        data: {
+          payment_status: 'failed_init',
+        },
+      }).catch((updateError) => {
+        console.error('Failed to mark group extra order as failed_init:', updateError);
+      });
+
       await logSystem('ERROR', 'PAYMENT', 'GROUP_EXTRA_PURCHASE_PAYU_INIT_FAILED', {
         participant_id: participant.id,
         gallery_id: participant.gallery.id,
@@ -347,16 +356,19 @@ export async function POST(
         total_amount: totalAmount,
         error: payuError?.message || String(payuError),
       });
-      return NextResponse.json({
-        success: true,
-        order: {
-          id: order.id,
-          photo_count: order.photo_count,
-          total_amount: order.total_amount,
-          payment_status: 'failed_init',
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Nie udało się zainicjować płatności PayU. Spróbuj ponownie za chwilę lub skontaktuj się z administratorem.',
+          order: {
+            id: order.id,
+            photo_count: order.photo_count,
+            total_amount: order.total_amount,
+            payment_status: 'failed_init',
+          },
         },
-        message: 'Zamówienie utworzone, ale błąd inicjalizacji płatności (PayU).',
-      });
+        { status: 502 }
+      );
     }
   } catch (error) {
     console.error('Extra purchase error:', error);
