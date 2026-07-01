@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import archiver from 'archiver';
+import { PassThrough } from 'stream';
 import sharp from 'sharp';
 import { withAuthWithQueryToken } from '@/lib/auth/middleware';
 import { uploadStreamToS3 } from '@/lib/storage/s3';
@@ -222,8 +223,11 @@ export async function GET(
 
       // Strumieniujemy archiwum PROSTO na S3 (bez trzymania całości w pamięci ani
       // przepychania przez odpowiedź funkcji). Klient dostaje mały link.
+      // archiver nie jest natywnym Readable — mostkujemy natywnym PassThrough.
+      const passthrough = new PassThrough();
+      archive.pipe(passthrough);
       const uploadPromise = uploadStreamToS3(
-        archive as unknown as import('stream').Readable,
+        passthrough,
         s3Key,
         'application/zip',
         `attachment; filename="${zipName}"`,

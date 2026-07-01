@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import archiver from 'archiver';
+import { PassThrough } from 'stream';
 import { verifyParentToken, extractTokenFromHeader } from '@/lib/auth/parent-jwt';
 import { uploadStreamToS3 } from '@/lib/storage/s3';
 import { logSystem } from '@/lib/logger';
@@ -125,9 +126,12 @@ export async function GET(
       : `galeria-${gallery.id}.zip`;
     const s3Key = `temp-zips/gallery-${gallery.id}/${Date.now()}-${randomSuffix}-${zipName}`;
 
-    // Start strumieniowego uploadu na S3 (czyta z archiwum w miarę napływu danych)
+    // Start strumieniowego uploadu na S3 (czyta z archiwum w miarę napływu danych).
+    // archiver nie jest natywnym Readable (lib-storage go odrzuca) — mostkujemy PassThrough.
+    const passthrough = new PassThrough();
+    archive.pipe(passthrough);
     const uploadPromise = uploadStreamToS3(
-      archive as unknown as import('stream').Readable,
+      passthrough,
       s3Key,
       'application/zip',
       `attachment; filename="${zipName}"`,
