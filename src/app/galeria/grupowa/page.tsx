@@ -140,7 +140,6 @@ export default function GroupGalleryPage() {
   // Share modal
   const [showShareModal, setShowShareModal] = useState(false);
   const [copiedShare, setCopiedShare] = useState(false);
-  const [showExtraPurchaseModal, setShowExtraPurchaseModal] = useState(false);
   const [purchasingExtras, setPurchasingExtras] = useState(false);
   const [extraDraftSizeByPhoto, setExtraDraftSizeByPhoto] = useState<ExtraCartByPhoto>({});
   const [extraSizeConfirmed, setExtraSizeConfirmed] = useState(false);
@@ -1027,7 +1026,6 @@ export default function GroupGalleryPage() {
       return;
     }
     if (!extraSizeConfirmed) {
-      setShowExtraPurchaseModal(true);
       toast.error('Potwierdź, że wybrane rozmiary odbitek się zgadzają');
       return;
     }
@@ -1730,16 +1728,25 @@ Hasło: ${password}` : ''}`}
                   lub pobierz całą galerię
                 </button>
                 {extraPurchaseEnabled && extraCartTotalUnits > 0 && (
-                  <div className="flex items-center gap-3 px-4 py-2.5 bg-emerald-900/40 border border-emerald-500/60 rounded-xl">
-                    <div className="flex flex-col">
+                  <div className="flex flex-wrap items-center gap-3 px-4 py-2.5 bg-emerald-900/40 border border-emerald-500/60 rounded-xl">
+                    <div className="flex flex-col min-w-[140px]">
                       <span className="text-[10px] text-emerald-400 uppercase tracking-wider font-bold">Koszyk</span>
                       <span className="text-lg font-black text-emerald-200 leading-tight">{(extraCartTotal / 100).toFixed(2)} zł</span>
                       <span className="text-[10px] text-emerald-400">10x15: {extraCartQty10x15} szt. • 15x21: {extraCartQty15x21} szt.</span>
                     </div>
+                    <label className="flex items-center gap-2 text-xs text-emerald-100 max-w-[280px]">
+                      <input
+                        type="checkbox"
+                        checked={extraSizeConfirmed}
+                        onChange={(e) => setExtraSizeConfirmed(e.target.checked)}
+                        className="rounded border-emerald-700 bg-emerald-950 text-gold-500 focus:ring-gold-500"
+                      />
+                      Potwierdzam, że rozmiary odbitek w koszyku się zgadzają.
+                    </label>
                     <button
                       type="button"
-                      onClick={() => setShowExtraPurchaseModal(true)}
-                      disabled={purchasingExtras}
+                      onClick={() => handlePurchaseExtras()}
+                      disabled={purchasingExtras || !extraSizeConfirmed}
                       className="flex items-center gap-1.5 px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-black text-sm font-black rounded-lg transition-all disabled:opacity-50 whitespace-nowrap shadow-lg shadow-emerald-500/30"
                     >
                       <Package className="w-4 h-4" />
@@ -1748,15 +1755,9 @@ Hasło: ${password}` : ''}`}
                   </div>
                 )}
                 {extraPurchaseEnabled && extraCartTotalUnits === 0 && (
-                  <button
-                    type="button"
-                    onClick={() => setShowExtraPurchaseModal(true)}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-emerald-400 text-sm font-bold rounded-lg border border-emerald-800 transition-all"
-                    title="Wybierz dodatkowe odbitki do druku"
-                  >
-                    <Package className="w-4 h-4" />
-                    Dodatkowe odbitki
-                  </button>
+                  <div className="px-4 py-2 text-xs text-zinc-500 border border-dashed border-zinc-800 rounded-xl">
+                    Wybierz dodatkowe odbitki bezpośrednio w sekcji poniżej.
+                  </div>
                 )}
               </div>
             </>
@@ -2221,128 +2222,6 @@ Hasło: ${password}` : ''}`}
           </div>
         </div>
       )}
-
-      {/* Extra purchase modal */}
-      {showExtraPurchaseModal && extraPurchaseEnabled && (
-        <div className="fixed inset-0 z-[80] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-5xl max-h-[92vh] overflow-hidden flex flex-col">
-            <div className="p-5 border-b border-zinc-800 flex items-start justify-between gap-4">
-              <div>
-                <h3 className="text-xl font-black text-white">Dokup dodatkowe zdjęcia</h3>
-                <p className="text-sm text-zinc-400 mt-1">
-                  Dodaj zdjęcia do koszyka, a rozmiar odbitki (10x15 lub 15x21) wybierzesz przy każdym zdjęciu. Płatność przejdzie przez PayU.
-                </p>
-                <p className="mt-3 text-xs text-zinc-500">Jedno zdjęcie = jedna odbitka w wybranym rozmiarze.</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowExtraPurchaseModal(false)}
-                className="w-10 h-10 rounded-full bg-zinc-900 hover:bg-zinc-800 text-white flex items-center justify-center"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="p-5 overflow-y-auto flex-1">
-              {availableExtraPhotos.length === 0 ? (
-                <p className="text-zinc-500 text-sm">Nie masz jeszcze wybranych dodatkowych zdjęć.</p>
-              ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 mb-5">
-                  {availableExtraPhotos.map((photo) => {
-                    const inCart = isInExtraCart(photo.id);
-                    const size = inCart ? (getExtraSize(photo.id) || DEFAULT_EXTRA_SIZE) : getPendingExtraSize(photo.id);
-                    const wasPaid = paidExtraPhotoIds.includes(photo.id);
-                    return (
-                      <div
-                        key={photo.id}
-                        className={`relative rounded-xl overflow-hidden border transition-all text-left ${inCart ? 'border-gold-500 ring-2 ring-gold-500/20' : 'border-zinc-800 hover:border-zinc-600'}`}
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={photo.thumbnail_url || photo.file_url}
-                          alt={`Dodatkowe zdjęcie ${photo.id}`}
-                          className="w-full aspect-square object-cover"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/0 to-black/0 pointer-events-none" />
-                        {wasPaid && (
-                          <div className="absolute top-2 right-2 px-2 py-1 rounded-full bg-amber-500 text-[10px] font-black text-black">
-                            Kupione wcześniej
-                          </div>
-                        )}
-                        <div className="absolute top-2 left-2 px-2 py-1 rounded-full bg-black/70 text-[10px] font-bold text-white">
-                          {inCart ? 'W koszyku' : 'Dodaj'}
-                        </div>
-                        <div className="p-2 border-t border-zinc-800 bg-zinc-950/90 space-y-2">
-                          <div className="text-[10px] text-zinc-400 font-semibold">Rozmiar odbitki</div>
-                          <select
-                            value={size}
-                            onChange={(e) => {
-                              const nextSize = e.target.value as GroupExtraPrintSize;
-                              if (inCart) setExtraSize(photo.id, nextSize);
-                              else setPendingExtraSize(photo.id, nextSize);
-                            }}
-                            className="w-full bg-zinc-900 border border-zinc-700 text-white text-xs rounded-md px-2 py-1.5 focus:outline-none focus:border-gold-500"
-                          >
-                            {GROUP_EXTRA_PRINT_SIZES.map((opt) => (
-                              <option key={opt.code} value={opt.code}>{opt.label} ({(priceForSize(opt.code) / 100).toFixed(2)} PLN)</option>
-                            ))}
-                          </select>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (inCart) toggleExtraInCart(photo.id);
-                              else quickAddExtraToCart(photo.id, size);
-                            }}
-                            className={`w-full px-2 py-1.5 rounded-md text-xs font-bold transition-all ${inCart ? 'bg-zinc-800 hover:bg-red-600 text-white' : 'bg-gold-500 hover:bg-gold-400 text-black'}`}
-                          >
-                            {inCart ? 'Usuń z koszyka' : 'Dodaj do koszyka'}
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              <div className="flex flex-wrap items-center justify-between gap-3 bg-zinc-900 border border-zinc-800 rounded-xl p-4">
-                <div>
-                  <p className="text-sm text-white font-semibold">Wybrane do zakupu: {extraCartTotalUnits} odbitek</p>
-                  <p className="text-xs text-zinc-400">10x15: {extraCartQty10x15} szt. • 15x21: {extraCartQty15x21} szt. • Razem: {(extraCartTotal / 100).toFixed(2)} PLN</p>
-                  <label className="mt-2 inline-flex items-center gap-2 text-xs text-zinc-300 select-none">
-                    <input
-                      type="checkbox"
-                      checked={extraSizeConfirmed}
-                      onChange={(e) => setExtraSizeConfirmed(e.target.checked)}
-                      className="rounded border-zinc-700 bg-zinc-900 text-gold-500 focus:ring-gold-500"
-                    />
-                    Potwierdzam, że wybrane rozmiary odbitek się zgadzają.
-                  </label>
-                </div>
-                <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setExtraCartByPhoto({});
-                      setExtraSizeConfirmed(false);
-                    }}
-                    className="px-4 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white text-sm font-bold"
-                  >
-                    Wyczyść
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handlePurchaseExtras}
-                    disabled={purchasingExtras || extraCartTotalUnits === 0 || !extraSizeConfirmed}
-                    className="px-5 py-2 rounded-lg bg-gold-500 hover:bg-gold-400 text-black text-sm font-black disabled:opacity-50"
-                  >
-                    {purchasingExtras ? 'Przekierowuję do PayU...' : `Przejdź do płatności (${(extraCartTotal / 100).toFixed(2)} PLN)`}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* MODAL POTWIERDZENIA ZAMÓWIENIA — po powrocie z PayU */}
       {showOrderModal && confirmOrder && (
         <div className="fixed inset-0 z-[90] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4">
