@@ -118,27 +118,31 @@ export default function JpgMapPage({ params }: { params: Promise<{ id: string }>
     (data?.items || []).filter((i) => i.category === cat && !i.mapped && i.jpg_url).map((i) => i.webp_id);
 
   const renderItem = (it: MapItem) => (
-    <div key={it.webp_id} className="flex items-center gap-3 rounded-lg border border-zinc-800 bg-zinc-900/60 p-2">
+    <div key={it.webp_id} className="flex items-center gap-4 rounded-lg border border-zinc-800 bg-zinc-900/60 p-3">
       <div className="w-10 shrink-0 text-center text-xs text-zinc-500">#{it.order_index}</div>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3">
         <div className="text-center">
           {it.webp_thumb ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={it.webp_thumb} alt="webp" className="h-20 w-20 rounded object-cover" />
+            <a href={it.webp_full || it.webp_thumb} target="_blank" rel="noreferrer">
+              <img src={it.webp_thumb} alt="webp" className="h-48 w-48 cursor-zoom-in rounded object-cover transition hover:ring-2 hover:ring-emerald-500" />
+            </a>
           ) : (
-            <div className="h-20 w-20 rounded bg-zinc-800" />
+            <div className="h-48 w-48 rounded bg-zinc-800" />
           )}
-          <div className="mt-1 text-[10px] text-zinc-500">webp #{it.webp_id}</div>
+          <div className="mt-1 text-[11px] text-zinc-500">webp #{it.webp_id}</div>
         </div>
-        <div className="text-zinc-600">→</div>
+        <div className="text-2xl text-zinc-600">→</div>
         <div className="text-center">
           {it.jpg_url ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={it.jpg_url} alt="jpg" className="h-20 w-20 rounded object-cover" />
+            <a href={it.jpg_url} target="_blank" rel="noreferrer">
+              <img src={it.jpg_url} alt="jpg" className="h-48 w-48 cursor-zoom-in rounded object-cover transition hover:ring-2 hover:ring-emerald-500" />
+            </a>
           ) : (
-            <div className="h-20 w-20 rounded bg-zinc-800" />
+            <div className="h-48 w-48 rounded bg-zinc-800" />
           )}
-          <div className="mt-1 max-w-[90px] truncate text-[10px] text-zinc-500" title={it.jpg_name}>
+          <div className="mt-1 max-w-[192px] truncate text-[11px] text-zinc-500" title={it.jpg_name}>
             {it.jpg_name}
           </div>
         </div>
@@ -213,7 +217,7 @@ export default function JpgMapPage({ params }: { params: Promise<{ id: string }>
             )}
           </div>
         </div>
-        <div className="grid grid-cols-1 gap-2 xl:grid-cols-2">{items.map(renderItem)}</div>
+        <div className="grid grid-cols-1 gap-3">{items.map(renderItem)}</div>
       </section>
     );
   };
