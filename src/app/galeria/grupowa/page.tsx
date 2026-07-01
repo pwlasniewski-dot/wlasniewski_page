@@ -1027,6 +1027,7 @@ export default function GroupGalleryPage() {
       return;
     }
     if (!extraSizeConfirmed) {
+      setShowExtraPurchaseModal(true);
       toast.error('Potwierdź, że wybrane rozmiary odbitek się zgadzają');
       return;
     }
