@@ -138,6 +138,8 @@ export async function GET(
     );
 
     // Pobieramy pliki z S3 RÓWNOLEGLE w partiach i dokładamy je do archiwum.
+    // BEZ konwersji w locie — po zmapowaniu download_source_url to już JPG.
+    // Konwersja 300+ zdjęć przez sharp w 60s serverless = 502, dlatego stream surowy.
     for (let start = 0; start < eligiblePhotos.length; start += CONCURRENCY) {
       const batch = eligiblePhotos.slice(start, start + CONCURRENCY);
       const results = await Promise.all(batch.map(async (photo, offset) => {
@@ -148,11 +150,7 @@ export async function GET(
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           const srcBuf = Buffer.from(await res.arrayBuffer());
           const urlPath = (() => {
-            try {
-              return new URL(downloadUrl).pathname;
-            } catch {
-              return downloadUrl;
-            }
+            try { return new URL(downloadUrl).pathname; } catch { return downloadUrl; }
           })();
           const extMatch = urlPath.match(/\.([a-zA-Z0-9]+)$/);
           const ext = extMatch ? extMatch[1].toLowerCase() : 'bin';

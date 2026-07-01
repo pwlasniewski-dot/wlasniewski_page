@@ -8,6 +8,9 @@ import archiver from 'archiver';
 import { PassThrough } from 'stream';
 import sharp from 'sharp';
 import { withAuthWithQueryToken } from '@/lib/auth/middleware';
+import { uploadStreamToS3 } from '@/lib/storage/s3';
+
+export const maxDuration = 60; // seconds — Netlify Pro
 
 const DEFAULT_STANDARD_PRINT_FORMAT = '15x21';
 
@@ -192,52 +195,55 @@ export async function GET(
         ...paidPrintItems,
       ];
 
-      const passthrough = new PassThrough();
+      const s3Key = `temp-zips/admin-participant-${galleryId}-${pId}/${Date.now()}-${Math.random().toString(36).slice(2, 10)}-${zipName}`;
       const archive = archiver('zip', { zlib: { level: 9 } });
+      archive.on('warning', (err) => console.warn('archiver warning:', err));
+      archive.on('error', (err) => console.error('Archiver error:', err));
 
-      archive.on('error', (err) => {
-        console.error('Archiver error:', err);
-        passthrough.end();
-      });
-
+      // archiver nie jest natywnym Readable — mostkujemy PassThrough, strumień na S3.
+      const passthrough = new PassThrough();
       archive.pipe(passthrough);
+      const uploadPromise = uploadStreamToS3(
+        passthrough,
+        s3Key,
+        'application/zip',
+        `attachment; filename="${zipName}"`,
+      );
 
-      (async () => {
+      let appended = 0;
+      let skipped = 0;
+      for (let i = 0; i < mergedItems.length; i++) {
+        const item = mergedItems[i];
         try {
-          for (let i = 0; i < mergedItems.length; i++) {
-            const item = mergedItems[i];
-            try {
-              const response = await fetch(item.file_url);
-              if (!response.ok) throw new Error(`HTTP ${response.status}`);
-              const sourceBuffer = Buffer.from(await response.arrayBuffer());
-              const jpgBuffer = await sharp(sourceBuffer)
-                .pipelineColorspace('srgb')
-                .toColorspace('srgb')
-                .withMetadata({ icc: 'srgb' })
-                .jpeg({ quality: 95, chromaSubsampling: '4:4:4', mozjpeg: true })
-                .toBuffer();
+          const response = await fetch(item.file_url);
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          const sourceBuffer = Buffer.from(await response.arrayBuffer());
+          const jpgBuffer = await sharp(sourceBuffer)
+            .pipelineColorspace('srgb')
+            .toColorspace('srgb')
+            .withMetadata({ icc: 'srgb' })
+            .jpeg({ quality: 95, chromaSubsampling: '4:4:4', mozjpeg: true })
+            .toBuffer();
 
-              const idxStr = String(i + 1);
-              const name = `${displayName} ${idxStr} [${item.format}] [${item.source}].jpg`;
-              archive.append(jpgBuffer, { name });
-            } catch (err) {
-              console.error(`Failed to add photo ${item.id}:`, err);
-            }
-          }
-          await archive.finalize();
+          const idxStr = String(i + 1);
+          const name = `${displayName} ${idxStr} [${item.format}] [${item.source}].jpg`;
+          archive.append(jpgBuffer, { name });
+          appended += 1;
         } catch (err) {
-          console.error('ZIP generation error:', err);
-          archive.abort();
+          skipped += 1;
+          console.error(`Failed to add photo ${item.id}:`, err);
         }
-      })();
+      }
 
-      return new NextResponse(passthrough as any, {
-        status: 200,
-        headers: {
-          'Content-Type': 'application/zip',
-          'Content-Disposition': `attachment; filename="${zipName}"`,
-          'Cache-Control': 'no-cache',
-        },
+      await archive.finalize();
+      const downloadUrl = await uploadPromise;
+
+      return NextResponse.json({
+        success: true,
+        downloadUrl,
+        fileName: zipName,
+        photoCount: appended,
+        skippedCount: skipped,
       });
     } catch (error) {
       console.error('Admin participant download-all error:', error);

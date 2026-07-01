@@ -1,0 +1,2516 @@
+{
+  "generated_at": "2026-07-01T20:16:44.968Z",
+  "gallery_id": 19,
+  "jpg_dir": "D:\\Sony A7 III\\Klasa 1 Torun\\Pierwsza Komunia Swięta Szkoła Seslezjańska Klasa C 30.05.2026",
+  "counts": {
+    "webp_db": 299,
+    "jpg_disk": 284,
+    "strong": 250,
+    "weak": 49,
+    "none": 0,
+    "ambiguous": 11,
+    "dup_jpg": 13,
+    "unused_jpg": 1,
+    "webp_download_errors": 0,
+    "jpg_read_errors": 0
+  },
+  "thresholds": {
+    "STRONG": 6,
+    "WEAK": 12
+  },
+  "matches": [
+    {
+      "webp_id": 1217,
+      "order_index": 1,
+      "best_jpg": "Selezjanie C251.jpg",
+      "best_dist": 5,
+      "second_dist": 6,
+      "margin": 1
+    },
+    {
+      "webp_id": 1218,
+      "order_index": 2,
+      "best_jpg": "Selezjanie C001.jpg",
+      "best_dist": 9,
+      "second_dist": 14,
+      "margin": 5
+    },
+    {
+      "webp_id": 1219,
+      "order_index": 3,
+      "best_jpg": "Selezjanie C002.jpg",
+      "best_dist": 4,
+      "second_dist": 16,
+      "margin": 12
+    },
+    {
+      "webp_id": 1220,
+      "order_index": 4,
+      "best_jpg": "Selezjanie C003.jpg",
+      "best_dist": 7,
+      "second_dist": 23,
+      "margin": 16
+    },
+    {
+      "webp_id": 1221,
+      "order_index": 5,
+      "best_jpg": "Selezjanie C004.jpg",
+      "best_dist": 6,
+      "second_dist": 22,
+      "margin": 16
+    },
+    {
+      "webp_id": 1222,
+      "order_index": 6,
+      "best_jpg": "Selezjanie C005.jpg",
+      "best_dist": 3,
+      "second_dist": 19,
+      "margin": 16
+    },
+    {
+      "webp_id": 1223,
+      "order_index": 7,
+      "best_jpg": "Selezjanie C006.jpg",
+      "best_dist": 4,
+      "second_dist": 16,
+      "margin": 12
+    },
+    {
+      "webp_id": 1224,
+      "order_index": 8,
+      "best_jpg": "Selezjanie C007.jpg",
+      "best_dist": 5,
+      "second_dist": 21,
+      "margin": 16
+    },
+    {
+      "webp_id": 1225,
+      "order_index": 9,
+      "best_jpg": "Selezjanie C008.jpg",
+      "best_dist": 3,
+      "second_dist": 18,
+      "margin": 15
+    },
+    {
+      "webp_id": 1226,
+      "order_index": 10,
+      "best_jpg": "Selezjanie C009.jpg",
+      "best_dist": 2,
+      "second_dist": 19,
+      "margin": 17
+    },
+    {
+      "webp_id": 1227,
+      "order_index": 11,
+      "best_jpg": "Selezjanie C010.jpg",
+      "best_dist": 12,
+      "second_dist": 21,
+      "margin": 9
+    },
+    {
+      "webp_id": 1228,
+      "order_index": 12,
+      "best_jpg": "Selezjanie C011.jpg",
+      "best_dist": 5,
+      "second_dist": 19,
+      "margin": 14
+    },
+    {
+      "webp_id": 1229,
+      "order_index": 13,
+      "best_jpg": "Selezjanie C012.jpg",
+      "best_dist": 8,
+      "second_dist": 19,
+      "margin": 11
+    },
+    {
+      "webp_id": 1230,
+      "order_index": 14,
+      "best_jpg": "Selezjanie C014.jpg",
+      "best_dist": 8,
+      "second_dist": 17,
+      "margin": 9
+    },
+    {
+      "webp_id": 1231,
+      "order_index": 15,
+      "best_jpg": "Selezjanie C013.jpg",
+      "best_dist": 5,
+      "second_dist": 15,
+      "margin": 10
+    },
+    {
+      "webp_id": 1232,
+      "order_index": 16,
+      "best_jpg": "Selezjanie C015.jpg",
+      "best_dist": 2,
+      "second_dist": 20,
+      "margin": 18
+    },
+    {
+      "webp_id": 1233,
+      "order_index": 17,
+      "best_jpg": "Selezjanie C016.jpg",
+      "best_dist": 1,
+      "second_dist": 19,
+      "margin": 18
+    },
+    {
+      "webp_id": 1234,
+      "order_index": 18,
+      "best_jpg": "Selezjanie C017.jpg",
+      "best_dist": 2,
+      "second_dist": 15,
+      "margin": 13
+    },
+    {
+      "webp_id": 1235,
+      "order_index": 19,
+      "best_jpg": "Selezjanie C021.jpg",
+      "best_dist": 5,
+      "second_dist": 16,
+      "margin": 11
+    },
+    {
+      "webp_id": 1236,
+      "order_index": 20,
+      "best_jpg": "Selezjanie C018.jpg",
+      "best_dist": 5,
+      "second_dist": 12,
+      "margin": 7
+    },
+    {
+      "webp_id": 1237,
+      "order_index": 21,
+      "best_jpg": "Selezjanie C019.jpg",
+      "best_dist": 3,
+      "second_dist": 16,
+      "margin": 13
+    },
+    {
+      "webp_id": 1238,
+      "order_index": 22,
+      "best_jpg": "Selezjanie C020.jpg",
+      "best_dist": 2,
+      "second_dist": 16,
+      "margin": 14
+    },
+    {
+      "webp_id": 1239,
+      "order_index": 23,
+      "best_jpg": "Selezjanie C022.jpg",
+      "best_dist": 5,
+      "second_dist": 21,
+      "margin": 16
+    },
+    {
+      "webp_id": 1240,
+      "order_index": 24,
+      "best_jpg": "Selezjanie C023.jpg",
+      "best_dist": 6,
+      "second_dist": 19,
+      "margin": 13
+    },
+    {
+      "webp_id": 1241,
+      "order_index": 25,
+      "best_jpg": "Selezjanie C024.jpg",
+      "best_dist": 3,
+      "second_dist": 15,
+      "margin": 12
+    },
+    {
+      "webp_id": 1242,
+      "order_index": 26,
+      "best_jpg": "Selezjanie C026.jpg",
+      "best_dist": 1,
+      "second_dist": 18,
+      "margin": 17
+    },
+    {
+      "webp_id": 1243,
+      "order_index": 27,
+      "best_jpg": "Selezjanie C025.jpg",
+      "best_dist": 7,
+      "second_dist": 16,
+      "margin": 9
+    },
+    {
+      "webp_id": 1244,
+      "order_index": 28,
+      "best_jpg": "Selezjanie C027.jpg",
+      "best_dist": 4,
+      "second_dist": 17,
+      "margin": 13
+    },
+    {
+      "webp_id": 1245,
+      "order_index": 29,
+      "best_jpg": "Selezjanie C028.jpg",
+      "best_dist": 6,
+      "second_dist": 19,
+      "margin": 13
+    },
+    {
+      "webp_id": 1246,
+      "order_index": 30,
+      "best_jpg": "Selezjanie C029.jpg",
+      "best_dist": 10,
+      "second_dist": 18,
+      "margin": 8
+    },
+    {
+      "webp_id": 1247,
+      "order_index": 31,
+      "best_jpg": "Selezjanie C030.jpg",
+      "best_dist": 3,
+      "second_dist": 17,
+      "margin": 14
+    },
+    {
+      "webp_id": 1248,
+      "order_index": 32,
+      "best_jpg": "Selezjanie C031.jpg",
+      "best_dist": 7,
+      "second_dist": 20,
+      "margin": 13
+    },
+    {
+      "webp_id": 1249,
+      "order_index": 33,
+      "best_jpg": "Selezjanie C032.jpg",
+      "best_dist": 8,
+      "second_dist": 20,
+      "margin": 12
+    },
+    {
+      "webp_id": 1250,
+      "order_index": 34,
+      "best_jpg": "Selezjanie C033.jpg",
+      "best_dist": 8,
+      "second_dist": 16,
+      "margin": 8
+    },
+    {
+      "webp_id": 1251,
+      "order_index": 35,
+      "best_jpg": "Selezjanie C034.jpg",
+      "best_dist": 6,
+      "second_dist": 18,
+      "margin": 12
+    },
+    {
+      "webp_id": 1252,
+      "order_index": 36,
+      "best_jpg": "Selezjanie C035.jpg",
+      "best_dist": 5,
+      "second_dist": 17,
+      "margin": 12
+    },
+    {
+      "webp_id": 1253,
+      "order_index": 37,
+      "best_jpg": "Selezjanie C036.jpg",
+      "best_dist": 4,
+      "second_dist": 16,
+      "margin": 12
+    },
+    {
+      "webp_id": 1254,
+      "order_index": 38,
+      "best_jpg": "Selezjanie C037.jpg",
+      "best_dist": 7,
+      "second_dist": 16,
+      "margin": 9
+    },
+    {
+      "webp_id": 1255,
+      "order_index": 39,
+      "best_jpg": "Selezjanie C038.jpg",
+      "best_dist": 3,
+      "second_dist": 17,
+      "margin": 14
+    },
+    {
+      "webp_id": 1256,
+      "order_index": 40,
+      "best_jpg": "Selezjanie C039.jpg",
+      "best_dist": 1,
+      "second_dist": 18,
+      "margin": 17
+    },
+    {
+      "webp_id": 1257,
+      "order_index": 41,
+      "best_jpg": "Selezjanie C040.jpg",
+      "best_dist": 2,
+      "second_dist": 19,
+      "margin": 17
+    },
+    {
+      "webp_id": 1258,
+      "order_index": 42,
+      "best_jpg": "Selezjanie C041.jpg",
+      "best_dist": 3,
+      "second_dist": 16,
+      "margin": 13
+    },
+    {
+      "webp_id": 1259,
+      "order_index": 43,
+      "best_jpg": "Selezjanie C042.jpg",
+      "best_dist": 3,
+      "second_dist": 18,
+      "margin": 15
+    },
+    {
+      "webp_id": 1260,
+      "order_index": 44,
+      "best_jpg": "Selezjanie C043.jpg",
+      "best_dist": 6,
+      "second_dist": 19,
+      "margin": 13
+    },
+    {
+      "webp_id": 1261,
+      "order_index": 45,
+      "best_jpg": "Selezjanie C044.jpg",
+      "best_dist": 3,
+      "second_dist": 18,
+      "margin": 15
+    },
+    {
+      "webp_id": 1262,
+      "order_index": 46,
+      "best_jpg": "Selezjanie C045.jpg",
+      "best_dist": 3,
+      "second_dist": 13,
+      "margin": 10
+    },
+    {
+      "webp_id": 1263,
+      "order_index": 47,
+      "best_jpg": "Selezjanie C046.jpg",
+      "best_dist": 2,
+      "second_dist": 17,
+      "margin": 15
+    },
+    {
+      "webp_id": 1264,
+      "order_index": 48,
+      "best_jpg": "Selezjanie C047.jpg",
+      "best_dist": 5,
+      "second_dist": 20,
+      "margin": 15
+    },
+    {
+      "webp_id": 1265,
+      "order_index": 49,
+      "best_jpg": "Selezjanie C048.jpg",
+      "best_dist": 2,
+      "second_dist": 15,
+      "margin": 13
+    },
+    {
+      "webp_id": 1266,
+      "order_index": 50,
+      "best_jpg": "Selezjanie C049.jpg",
+      "best_dist": 5,
+      "second_dist": 16,
+      "margin": 11
+    },
+    {
+      "webp_id": 1267,
+      "order_index": 51,
+      "best_jpg": "Selezjanie C050.jpg",
+      "best_dist": 4,
+      "second_dist": 14,
+      "margin": 10
+    },
+    {
+      "webp_id": 1268,
+      "order_index": 52,
+      "best_jpg": "Selezjanie C051.jpg",
+      "best_dist": 6,
+      "second_dist": 19,
+      "margin": 13
+    },
+    {
+      "webp_id": 1269,
+      "order_index": 53,
+      "best_jpg": "Selezjanie C052.jpg",
+      "best_dist": 7,
+      "second_dist": 19,
+      "margin": 12
+    },
+    {
+      "webp_id": 1270,
+      "order_index": 54,
+      "best_jpg": "Selezjanie C053.jpg",
+      "best_dist": 2,
+      "second_dist": 17,
+      "margin": 15
+    },
+    {
+      "webp_id": 1271,
+      "order_index": 55,
+      "best_jpg": "Selezjanie C054.jpg",
+      "best_dist": 3,
+      "second_dist": 20,
+      "margin": 17
+    },
+    {
+      "webp_id": 1272,
+      "order_index": 56,
+      "best_jpg": "Selezjanie C055.jpg",
+      "best_dist": 1,
+      "second_dist": 12,
+      "margin": 11
+    },
+    {
+      "webp_id": 1273,
+      "order_index": 57,
+      "best_jpg": "Selezjanie C056.jpg",
+      "best_dist": 5,
+      "second_dist": 17,
+      "margin": 12
+    },
+    {
+      "webp_id": 1274,
+      "order_index": 58,
+      "best_jpg": "Selezjanie C057.jpg",
+      "best_dist": 5,
+      "second_dist": 11,
+      "margin": 6
+    },
+    {
+      "webp_id": 1275,
+      "order_index": 59,
+      "best_jpg": "Selezjanie C058.jpg",
+      "best_dist": 3,
+      "second_dist": 16,
+      "margin": 13
+    },
+    {
+      "webp_id": 1276,
+      "order_index": 60,
+      "best_jpg": "Selezjanie C059.jpg",
+      "best_dist": 5,
+      "second_dist": 18,
+      "margin": 13
+    },
+    {
+      "webp_id": 1277,
+      "order_index": 61,
+      "best_jpg": "Selezjanie C060.jpg",
+      "best_dist": 5,
+      "second_dist": 17,
+      "margin": 12
+    },
+    {
+      "webp_id": 1278,
+      "order_index": 62,
+      "best_jpg": "Selezjanie C061.jpg",
+      "best_dist": 3,
+      "second_dist": 18,
+      "margin": 15
+    },
+    {
+      "webp_id": 1279,
+      "order_index": 63,
+      "best_jpg": "Selezjanie C062.jpg",
+      "best_dist": 6,
+      "second_dist": 19,
+      "margin": 13
+    },
+    {
+      "webp_id": 1280,
+      "order_index": 64,
+      "best_jpg": "Selezjanie C063.jpg",
+      "best_dist": 3,
+      "second_dist": 18,
+      "margin": 15
+    },
+    {
+      "webp_id": 1281,
+      "order_index": 65,
+      "best_jpg": "Selezjanie C064.jpg",
+      "best_dist": 5,
+      "second_dist": 16,
+      "margin": 11
+    },
+    {
+      "webp_id": 1282,
+      "order_index": 66,
+      "best_jpg": "Selezjanie C065.jpg",
+      "best_dist": 3,
+      "second_dist": 17,
+      "margin": 14
+    },
+    {
+      "webp_id": 1283,
+      "order_index": 67,
+      "best_jpg": "Selezjanie C066.jpg",
+      "best_dist": 7,
+      "second_dist": 13,
+      "margin": 6
+    },
+    {
+      "webp_id": 1284,
+      "order_index": 68,
+      "best_jpg": "Selezjanie C067.jpg",
+      "best_dist": 6,
+      "second_dist": 16,
+      "margin": 10
+    },
+    {
+      "webp_id": 1285,
+      "order_index": 69,
+      "best_jpg": "Selezjanie C068.jpg",
+      "best_dist": 6,
+      "second_dist": 15,
+      "margin": 9
+    },
+    {
+      "webp_id": 1286,
+      "order_index": 70,
+      "best_jpg": "Selezjanie C069.jpg",
+      "best_dist": 4,
+      "second_dist": 17,
+      "margin": 13
+    },
+    {
+      "webp_id": 1287,
+      "order_index": 71,
+      "best_jpg": "Selezjanie C070.jpg",
+      "best_dist": 3,
+      "second_dist": 20,
+      "margin": 17
+    },
+    {
+      "webp_id": 1288,
+      "order_index": 72,
+      "best_jpg": "Selezjanie C071.jpg",
+      "best_dist": 8,
+      "second_dist": 14,
+      "margin": 6
+    },
+    {
+      "webp_id": 1289,
+      "order_index": 73,
+      "best_jpg": "Selezjanie C073.jpg",
+      "best_dist": 4,
+      "second_dist": 15,
+      "margin": 11
+    },
+    {
+      "webp_id": 1290,
+      "order_index": 74,
+      "best_jpg": "Selezjanie C072.jpg",
+      "best_dist": 3,
+      "second_dist": 18,
+      "margin": 15
+    },
+    {
+      "webp_id": 1291,
+      "order_index": 75,
+      "best_jpg": "Selezjanie C074.jpg",
+      "best_dist": 4,
+      "second_dist": 19,
+      "margin": 15
+    },
+    {
+      "webp_id": 1292,
+      "order_index": 76,
+      "best_jpg": "Selezjanie C075.jpg",
+      "best_dist": 6,
+      "second_dist": 14,
+      "margin": 8
+    },
+    {
+      "webp_id": 1293,
+      "order_index": 77,
+      "best_jpg": "Selezjanie C076.jpg",
+      "best_dist": 4,
+      "second_dist": 20,
+      "margin": 16
+    },
+    {
+      "webp_id": 1294,
+      "order_index": 78,
+      "best_jpg": "Selezjanie C077.jpg",
+      "best_dist": 3,
+      "second_dist": 17,
+      "margin": 14
+    },
+    {
+      "webp_id": 1295,
+      "order_index": 79,
+      "best_jpg": "Selezjanie C078.jpg",
+      "best_dist": 2,
+      "second_dist": 17,
+      "margin": 15
+    },
+    {
+      "webp_id": 1296,
+      "order_index": 80,
+      "best_jpg": "Selezjanie C079.jpg",
+      "best_dist": 2,
+      "second_dist": 16,
+      "margin": 14
+    },
+    {
+      "webp_id": 1297,
+      "order_index": 81,
+      "best_jpg": "Selezjanie C080.jpg",
+      "best_dist": 7,
+      "second_dist": 19,
+      "margin": 12
+    },
+    {
+      "webp_id": 1298,
+      "order_index": 82,
+      "best_jpg": "Selezjanie C081.jpg",
+      "best_dist": 3,
+      "second_dist": 17,
+      "margin": 14
+    },
+    {
+      "webp_id": 1299,
+      "order_index": 83,
+      "best_jpg": "Selezjanie C082.jpg",
+      "best_dist": 5,
+      "second_dist": 19,
+      "margin": 14
+    },
+    {
+      "webp_id": 1300,
+      "order_index": 84,
+      "best_jpg": "Selezjanie C083.jpg",
+      "best_dist": 7,
+      "second_dist": 19,
+      "margin": 12
+    },
+    {
+      "webp_id": 1301,
+      "order_index": 85,
+      "best_jpg": "Selezjanie C084.jpg",
+      "best_dist": 4,
+      "second_dist": 23,
+      "margin": 19
+    },
+    {
+      "webp_id": 1302,
+      "order_index": 86,
+      "best_jpg": "Selezjanie C085.jpg",
+      "best_dist": 6,
+      "second_dist": 16,
+      "margin": 10
+    },
+    {
+      "webp_id": 1303,
+      "order_index": 87,
+      "best_jpg": "Selezjanie C086.jpg",
+      "best_dist": 6,
+      "second_dist": 8,
+      "margin": 2
+    },
+    {
+      "webp_id": 1304,
+      "order_index": 88,
+      "best_jpg": "Selezjanie C087.jpg",
+      "best_dist": 2,
+      "second_dist": 14,
+      "margin": 12
+    },
+    {
+      "webp_id": 1305,
+      "order_index": 89,
+      "best_jpg": "Selezjanie C088.jpg",
+      "best_dist": 3,
+      "second_dist": 16,
+      "margin": 13
+    },
+    {
+      "webp_id": 1306,
+      "order_index": 90,
+      "best_jpg": "Selezjanie C089.jpg",
+      "best_dist": 5,
+      "second_dist": 16,
+      "margin": 11
+    },
+    {
+      "webp_id": 1307,
+      "order_index": 91,
+      "best_jpg": "Selezjanie C090.jpg",
+      "best_dist": 3,
+      "second_dist": 19,
+      "margin": 16
+    },
+    {
+      "webp_id": 1308,
+      "order_index": 92,
+      "best_jpg": "Selezjanie C091.jpg",
+      "best_dist": 3,
+      "second_dist": 17,
+      "margin": 14
+    },
+    {
+      "webp_id": 1309,
+      "order_index": 93,
+      "best_jpg": "Selezjanie C092.jpg",
+      "best_dist": 3,
+      "second_dist": 18,
+      "margin": 15
+    },
+    {
+      "webp_id": 1310,
+      "order_index": 94,
+      "best_jpg": "Selezjanie C093.jpg",
+      "best_dist": 4,
+      "second_dist": 19,
+      "margin": 15
+    },
+    {
+      "webp_id": 1311,
+      "order_index": 95,
+      "best_jpg": "Selezjanie C094.jpg",
+      "best_dist": 1,
+      "second_dist": 16,
+      "margin": 15
+    },
+    {
+      "webp_id": 1312,
+      "order_index": 96,
+      "best_jpg": "Selezjanie C095.jpg",
+      "best_dist": 4,
+      "second_dist": 17,
+      "margin": 13
+    },
+    {
+      "webp_id": 1313,
+      "order_index": 97,
+      "best_jpg": "Selezjanie C096.jpg",
+      "best_dist": 2,
+      "second_dist": 17,
+      "margin": 15
+    },
+    {
+      "webp_id": 1314,
+      "order_index": 98,
+      "best_jpg": "Selezjanie C097.jpg",
+      "best_dist": 3,
+      "second_dist": 16,
+      "margin": 13
+    },
+    {
+      "webp_id": 1315,
+      "order_index": 99,
+      "best_jpg": "Selezjanie C098.jpg",
+      "best_dist": 6,
+      "second_dist": 18,
+      "margin": 12
+    },
+    {
+      "webp_id": 1316,
+      "order_index": 100,
+      "best_jpg": "Selezjanie C099.jpg",
+      "best_dist": 2,
+      "second_dist": 16,
+      "margin": 14
+    },
+    {
+      "webp_id": 1317,
+      "order_index": 101,
+      "best_jpg": "Selezjanie C100.jpg",
+      "best_dist": 6,
+      "second_dist": 16,
+      "margin": 10
+    },
+    {
+      "webp_id": 1318,
+      "order_index": 102,
+      "best_jpg": "Selezjanie C101.jpg",
+      "best_dist": 3,
+      "second_dist": 19,
+      "margin": 16
+    },
+    {
+      "webp_id": 1319,
+      "order_index": 103,
+      "best_jpg": "Selezjanie C102.jpg",
+      "best_dist": 3,
+      "second_dist": 19,
+      "margin": 16
+    },
+    {
+      "webp_id": 1321,
+      "order_index": 105,
+      "best_jpg": "Selezjanie C104.jpg",
+      "best_dist": 5,
+      "second_dist": 19,
+      "margin": 14
+    },
+    {
+      "webp_id": 1322,
+      "order_index": 106,
+      "best_jpg": "Selezjanie C105.jpg",
+      "best_dist": 1,
+      "second_dist": 12,
+      "margin": 11
+    },
+    {
+      "webp_id": 1323,
+      "order_index": 107,
+      "best_jpg": "Selezjanie C106.jpg",
+      "best_dist": 2,
+      "second_dist": 20,
+      "margin": 18
+    },
+    {
+      "webp_id": 1324,
+      "order_index": 108,
+      "best_jpg": "Selezjanie C107.jpg",
+      "best_dist": 6,
+      "second_dist": 14,
+      "margin": 8
+    },
+    {
+      "webp_id": 1325,
+      "order_index": 109,
+      "best_jpg": "Selezjanie C108.jpg",
+      "best_dist": 4,
+      "second_dist": 14,
+      "margin": 10
+    },
+    {
+      "webp_id": 1326,
+      "order_index": 110,
+      "best_jpg": "Selezjanie C109.jpg",
+      "best_dist": 3,
+      "second_dist": 17,
+      "margin": 14
+    },
+    {
+      "webp_id": 1327,
+      "order_index": 111,
+      "best_jpg": "Selezjanie C110.jpg",
+      "best_dist": 3,
+      "second_dist": 17,
+      "margin": 14
+    },
+    {
+      "webp_id": 1328,
+      "order_index": 112,
+      "best_jpg": "Selezjanie C114.jpg",
+      "best_dist": 2,
+      "second_dist": 19,
+      "margin": 17
+    },
+    {
+      "webp_id": 1329,
+      "order_index": 113,
+      "best_jpg": "Selezjanie C111.jpg",
+      "best_dist": 5,
+      "second_dist": 20,
+      "margin": 15
+    },
+    {
+      "webp_id": 1330,
+      "order_index": 114,
+      "best_jpg": "Selezjanie C112.jpg",
+      "best_dist": 2,
+      "second_dist": 19,
+      "margin": 17
+    },
+    {
+      "webp_id": 1331,
+      "order_index": 115,
+      "best_jpg": "Selezjanie C113.jpg",
+      "best_dist": 7,
+      "second_dist": 19,
+      "margin": 12
+    },
+    {
+      "webp_id": 1332,
+      "order_index": 116,
+      "best_jpg": "Selezjanie C115.jpg",
+      "best_dist": 2,
+      "second_dist": 20,
+      "margin": 18
+    },
+    {
+      "webp_id": 1333,
+      "order_index": 117,
+      "best_jpg": "Selezjanie C116.jpg",
+      "best_dist": 6,
+      "second_dist": 16,
+      "margin": 10
+    },
+    {
+      "webp_id": 1334,
+      "order_index": 118,
+      "best_jpg": "Selezjanie C117.jpg",
+      "best_dist": 3,
+      "second_dist": 19,
+      "margin": 16
+    },
+    {
+      "webp_id": 1335,
+      "order_index": 119,
+      "best_jpg": "Selezjanie C118.jpg",
+      "best_dist": 8,
+      "second_dist": 20,
+      "margin": 12
+    },
+    {
+      "webp_id": 1336,
+      "order_index": 120,
+      "best_jpg": "Selezjanie C119.jpg",
+      "best_dist": 3,
+      "second_dist": 15,
+      "margin": 12
+    },
+    {
+      "webp_id": 1337,
+      "order_index": 121,
+      "best_jpg": "Selezjanie C120.jpg",
+      "best_dist": 3,
+      "second_dist": 19,
+      "margin": 16
+    },
+    {
+      "webp_id": 1338,
+      "order_index": 122,
+      "best_jpg": "Selezjanie C121.jpg",
+      "best_dist": 5,
+      "second_dist": 17,
+      "margin": 12
+    },
+    {
+      "webp_id": 1339,
+      "order_index": 123,
+      "best_jpg": "Selezjanie C122.jpg",
+      "best_dist": 2,
+      "second_dist": 17,
+      "margin": 15
+    },
+    {
+      "webp_id": 1340,
+      "order_index": 124,
+      "best_jpg": "Selezjanie C123.jpg",
+      "best_dist": 3,
+      "second_dist": 21,
+      "margin": 18
+    },
+    {
+      "webp_id": 1341,
+      "order_index": 125,
+      "best_jpg": "Selezjanie C124.jpg",
+      "best_dist": 11,
+      "second_dist": 17,
+      "margin": 6
+    },
+    {
+      "webp_id": 1342,
+      "order_index": 126,
+      "best_jpg": "Selezjanie C125.jpg",
+      "best_dist": 6,
+      "second_dist": 19,
+      "margin": 13
+    },
+    {
+      "webp_id": 1343,
+      "order_index": 127,
+      "best_jpg": "Selezjanie C126.jpg",
+      "best_dist": 1,
+      "second_dist": 20,
+      "margin": 19
+    },
+    {
+      "webp_id": 1344,
+      "order_index": 128,
+      "best_jpg": "Selezjanie C127.jpg",
+      "best_dist": 5,
+      "second_dist": 19,
+      "margin": 14
+    },
+    {
+      "webp_id": 1345,
+      "order_index": 129,
+      "best_jpg": "Selezjanie C128.jpg",
+      "best_dist": 8,
+      "second_dist": 18,
+      "margin": 10
+    },
+    {
+      "webp_id": 1346,
+      "order_index": 130,
+      "best_jpg": "Selezjanie C129.jpg",
+      "best_dist": 4,
+      "second_dist": 21,
+      "margin": 17
+    },
+    {
+      "webp_id": 1347,
+      "order_index": 131,
+      "best_jpg": "Selezjanie C130.jpg",
+      "best_dist": 3,
+      "second_dist": 20,
+      "margin": 17
+    },
+    {
+      "webp_id": 1348,
+      "order_index": 132,
+      "best_jpg": "Selezjanie C131.jpg",
+      "best_dist": 1,
+      "second_dist": 13,
+      "margin": 12
+    },
+    {
+      "webp_id": 1349,
+      "order_index": 133,
+      "best_jpg": "Selezjanie C132.jpg",
+      "best_dist": 2,
+      "second_dist": 18,
+      "margin": 16
+    },
+    {
+      "webp_id": 1350,
+      "order_index": 134,
+      "best_jpg": "Selezjanie C133.jpg",
+      "best_dist": 4,
+      "second_dist": 20,
+      "margin": 16
+    },
+    {
+      "webp_id": 1351,
+      "order_index": 135,
+      "best_jpg": "Selezjanie C134.jpg",
+      "best_dist": 1,
+      "second_dist": 21,
+      "margin": 20
+    },
+    {
+      "webp_id": 1352,
+      "order_index": 136,
+      "best_jpg": "Selezjanie C135.jpg",
+      "best_dist": 7,
+      "second_dist": 21,
+      "margin": 14
+    },
+    {
+      "webp_id": 1353,
+      "order_index": 137,
+      "best_jpg": "Selezjanie C136.jpg",
+      "best_dist": 8,
+      "second_dist": 19,
+      "margin": 11
+    },
+    {
+      "webp_id": 1354,
+      "order_index": 138,
+      "best_jpg": "Selezjanie C137.jpg",
+      "best_dist": 4,
+      "second_dist": 18,
+      "margin": 14
+    },
+    {
+      "webp_id": 1355,
+      "order_index": 139,
+      "best_jpg": "Selezjanie C138.jpg",
+      "best_dist": 5,
+      "second_dist": 18,
+      "margin": 13
+    },
+    {
+      "webp_id": 1356,
+      "order_index": 140,
+      "best_jpg": "Selezjanie C139.jpg",
+      "best_dist": 2,
+      "second_dist": 11,
+      "margin": 9
+    },
+    {
+      "webp_id": 1357,
+      "order_index": 141,
+      "best_jpg": "Selezjanie C140.jpg",
+      "best_dist": 4,
+      "second_dist": 13,
+      "margin": 9
+    },
+    {
+      "webp_id": 1358,
+      "order_index": 142,
+      "best_jpg": "Selezjanie C141.jpg",
+      "best_dist": 2,
+      "second_dist": 18,
+      "margin": 16
+    },
+    {
+      "webp_id": 1359,
+      "order_index": 143,
+      "best_jpg": "Selezjanie C142.jpg",
+      "best_dist": 7,
+      "second_dist": 18,
+      "margin": 11
+    },
+    {
+      "webp_id": 1360,
+      "order_index": 144,
+      "best_jpg": "Selezjanie C143.jpg",
+      "best_dist": 5,
+      "second_dist": 19,
+      "margin": 14
+    },
+    {
+      "webp_id": 1361,
+      "order_index": 145,
+      "best_jpg": "Selezjanie C144.jpg",
+      "best_dist": 3,
+      "second_dist": 17,
+      "margin": 14
+    },
+    {
+      "webp_id": 1362,
+      "order_index": 146,
+      "best_jpg": "Selezjanie C145.jpg",
+      "best_dist": 3,
+      "second_dist": 17,
+      "margin": 14
+    },
+    {
+      "webp_id": 1363,
+      "order_index": 147,
+      "best_jpg": "Selezjanie C146.jpg",
+      "best_dist": 1,
+      "second_dist": 16,
+      "margin": 15
+    },
+    {
+      "webp_id": 1364,
+      "order_index": 148,
+      "best_jpg": "Selezjanie C147.jpg",
+      "best_dist": 4,
+      "second_dist": 22,
+      "margin": 18
+    },
+    {
+      "webp_id": 1365,
+      "order_index": 149,
+      "best_jpg": "Selezjanie C148.jpg",
+      "best_dist": 7,
+      "second_dist": 19,
+      "margin": 12
+    },
+    {
+      "webp_id": 1366,
+      "order_index": 150,
+      "best_jpg": "Selezjanie C149.jpg",
+      "best_dist": 10,
+      "second_dist": 17,
+      "margin": 7
+    },
+    {
+      "webp_id": 1367,
+      "order_index": 151,
+      "best_jpg": "Selezjanie C150.jpg",
+      "best_dist": 5,
+      "second_dist": 19,
+      "margin": 14
+    },
+    {
+      "webp_id": 1368,
+      "order_index": 152,
+      "best_jpg": "Selezjanie C151.jpg",
+      "best_dist": 5,
+      "second_dist": 20,
+      "margin": 15
+    },
+    {
+      "webp_id": 1369,
+      "order_index": 153,
+      "best_jpg": "Selezjanie C152.jpg",
+      "best_dist": 4,
+      "second_dist": 21,
+      "margin": 17
+    },
+    {
+      "webp_id": 1370,
+      "order_index": 154,
+      "best_jpg": "Selezjanie C153.jpg",
+      "best_dist": 5,
+      "second_dist": 17,
+      "margin": 12
+    },
+    {
+      "webp_id": 1371,
+      "order_index": 155,
+      "best_jpg": "Selezjanie C154.jpg",
+      "best_dist": 5,
+      "second_dist": 21,
+      "margin": 16
+    },
+    {
+      "webp_id": 1372,
+      "order_index": 156,
+      "best_jpg": "Selezjanie C155.jpg",
+      "best_dist": 2,
+      "second_dist": 15,
+      "margin": 13
+    },
+    {
+      "webp_id": 1373,
+      "order_index": 157,
+      "best_jpg": "Selezjanie C156.jpg",
+      "best_dist": 7,
+      "second_dist": 18,
+      "margin": 11
+    },
+    {
+      "webp_id": 1374,
+      "order_index": 158,
+      "best_jpg": "Selezjanie C157.jpg",
+      "best_dist": 6,
+      "second_dist": 14,
+      "margin": 8
+    },
+    {
+      "webp_id": 1375,
+      "order_index": 159,
+      "best_jpg": "Selezjanie C158.jpg",
+      "best_dist": 2,
+      "second_dist": 20,
+      "margin": 18
+    },
+    {
+      "webp_id": 1376,
+      "order_index": 160,
+      "best_jpg": "Selezjanie C159.jpg",
+      "best_dist": 4,
+      "second_dist": 19,
+      "margin": 15
+    },
+    {
+      "webp_id": 1377,
+      "order_index": 161,
+      "best_jpg": "Selezjanie C160.jpg",
+      "best_dist": 5,
+      "second_dist": 16,
+      "margin": 11
+    },
+    {
+      "webp_id": 1378,
+      "order_index": 162,
+      "best_jpg": "Selezjanie C161.jpg",
+      "best_dist": 4,
+      "second_dist": 17,
+      "margin": 13
+    },
+    {
+      "webp_id": 1379,
+      "order_index": 163,
+      "best_jpg": "Selezjanie C162.jpg",
+      "best_dist": 3,
+      "second_dist": 15,
+      "margin": 12
+    },
+    {
+      "webp_id": 1380,
+      "order_index": 164,
+      "best_jpg": "Selezjanie C163.jpg",
+      "best_dist": 3,
+      "second_dist": 18,
+      "margin": 15
+    },
+    {
+      "webp_id": 1381,
+      "order_index": 165,
+      "best_jpg": "Selezjanie C164.jpg",
+      "best_dist": 1,
+      "second_dist": 18,
+      "margin": 17
+    },
+    {
+      "webp_id": 1382,
+      "order_index": 166,
+      "best_jpg": "Selezjanie C165.jpg",
+      "best_dist": 1,
+      "second_dist": 13,
+      "margin": 12
+    },
+    {
+      "webp_id": 1383,
+      "order_index": 167,
+      "best_jpg": "Selezjanie C167.jpg",
+      "best_dist": 1,
+      "second_dist": 8,
+      "margin": 7
+    },
+    {
+      "webp_id": 1384,
+      "order_index": 168,
+      "best_jpg": "Selezjanie C166.jpg",
+      "best_dist": 4,
+      "second_dist": 14,
+      "margin": 10
+    },
+    {
+      "webp_id": 1385,
+      "order_index": 169,
+      "best_jpg": "Selezjanie C169.jpg",
+      "best_dist": 4,
+      "second_dist": 7,
+      "margin": 3
+    },
+    {
+      "webp_id": 1386,
+      "order_index": 170,
+      "best_jpg": "Selezjanie C168.jpg",
+      "best_dist": 3,
+      "second_dist": 15,
+      "margin": 12
+    },
+    {
+      "webp_id": 1387,
+      "order_index": 171,
+      "best_jpg": "Selezjanie C170.jpg",
+      "best_dist": 1,
+      "second_dist": 10,
+      "margin": 9
+    },
+    {
+      "webp_id": 1388,
+      "order_index": 172,
+      "best_jpg": "Selezjanie C171.jpg",
+      "best_dist": 6,
+      "second_dist": 7,
+      "margin": 1
+    },
+    {
+      "webp_id": 1389,
+      "order_index": 173,
+      "best_jpg": "Selezjanie C172.jpg",
+      "best_dist": 3,
+      "second_dist": 11,
+      "margin": 8
+    },
+    {
+      "webp_id": 1390,
+      "order_index": 174,
+      "best_jpg": "Selezjanie C175.jpg",
+      "best_dist": 1,
+      "second_dist": 8,
+      "margin": 7
+    },
+    {
+      "webp_id": 1391,
+      "order_index": 175,
+      "best_jpg": "Selezjanie C173.jpg",
+      "best_dist": 3,
+      "second_dist": 17,
+      "margin": 14
+    },
+    {
+      "webp_id": 1392,
+      "order_index": 176,
+      "best_jpg": "Selezjanie C174.jpg",
+      "best_dist": 3,
+      "second_dist": 10,
+      "margin": 7
+    },
+    {
+      "webp_id": 1393,
+      "order_index": 177,
+      "best_jpg": "Selezjanie C176.jpg",
+      "best_dist": 4,
+      "second_dist": 8,
+      "margin": 4
+    },
+    {
+      "webp_id": 1394,
+      "order_index": 178,
+      "best_jpg": "Selezjanie C178.jpg",
+      "best_dist": 4,
+      "second_dist": 5,
+      "margin": 1
+    },
+    {
+      "webp_id": 1395,
+      "order_index": 179,
+      "best_jpg": "Selezjanie C177.jpg",
+      "best_dist": 5,
+      "second_dist": 9,
+      "margin": 4
+    },
+    {
+      "webp_id": 1396,
+      "order_index": 180,
+      "best_jpg": "Selezjanie C179.jpg",
+      "best_dist": 3,
+      "second_dist": 9,
+      "margin": 6
+    },
+    {
+      "webp_id": 1397,
+      "order_index": 181,
+      "best_jpg": "Selezjanie C180.jpg",
+      "best_dist": 2,
+      "second_dist": 13,
+      "margin": 11
+    },
+    {
+      "webp_id": 1398,
+      "order_index": 182,
+      "best_jpg": "Selezjanie C182.jpg",
+      "best_dist": 0,
+      "second_dist": 11,
+      "margin": 11
+    },
+    {
+      "webp_id": 1399,
+      "order_index": 183,
+      "best_jpg": "Selezjanie C181.jpg",
+      "best_dist": 2,
+      "second_dist": 6,
+      "margin": 4
+    },
+    {
+      "webp_id": 1400,
+      "order_index": 184,
+      "best_jpg": "Selezjanie C183.jpg",
+      "best_dist": 2,
+      "second_dist": 7,
+      "margin": 5
+    },
+    {
+      "webp_id": 1401,
+      "order_index": 185,
+      "best_jpg": "Selezjanie C184.jpg",
+      "best_dist": 5,
+      "second_dist": 11,
+      "margin": 6
+    },
+    {
+      "webp_id": 1402,
+      "order_index": 186,
+      "best_jpg": "Selezjanie C186.jpg",
+      "best_dist": 3,
+      "second_dist": 9,
+      "margin": 6
+    },
+    {
+      "webp_id": 1403,
+      "order_index": 187,
+      "best_jpg": "Selezjanie C185.jpg",
+      "best_dist": 4,
+      "second_dist": 12,
+      "margin": 8
+    },
+    {
+      "webp_id": 1404,
+      "order_index": 188,
+      "best_jpg": "Selezjanie C187.jpg",
+      "best_dist": 3,
+      "second_dist": 5,
+      "margin": 2
+    },
+    {
+      "webp_id": 1405,
+      "order_index": 189,
+      "best_jpg": "Selezjanie C188.jpg",
+      "best_dist": 3,
+      "second_dist": 8,
+      "margin": 5
+    },
+    {
+      "webp_id": 1406,
+      "order_index": 190,
+      "best_jpg": "Selezjanie C190.jpg",
+      "best_dist": 2,
+      "second_dist": 5,
+      "margin": 3
+    },
+    {
+      "webp_id": 1407,
+      "order_index": 191,
+      "best_jpg": "Selezjanie C189.jpg",
+      "best_dist": 4,
+      "second_dist": 9,
+      "margin": 5
+    },
+    {
+      "webp_id": 1408,
+      "order_index": 192,
+      "best_jpg": "Selezjanie C191.jpg",
+      "best_dist": 2,
+      "second_dist": 7,
+      "margin": 5
+    },
+    {
+      "webp_id": 1409,
+      "order_index": 193,
+      "best_jpg": "Selezjanie C192.jpg",
+      "best_dist": 4,
+      "second_dist": 11,
+      "margin": 7
+    },
+    {
+      "webp_id": 1410,
+      "order_index": 194,
+      "best_jpg": "Selezjanie C194.jpg",
+      "best_dist": 3,
+      "second_dist": 8,
+      "margin": 5
+    },
+    {
+      "webp_id": 1411,
+      "order_index": 195,
+      "best_jpg": "Selezjanie C193.jpg",
+      "best_dist": 5,
+      "second_dist": 6,
+      "margin": 1
+    },
+    {
+      "webp_id": 1412,
+      "order_index": 196,
+      "best_jpg": "Selezjanie C195.jpg",
+      "best_dist": 6,
+      "second_dist": 9,
+      "margin": 3
+    },
+    {
+      "webp_id": 1413,
+      "order_index": 197,
+      "best_jpg": "Selezjanie C196.jpg",
+      "best_dist": 3,
+      "second_dist": 10,
+      "margin": 7
+    },
+    {
+      "webp_id": 1414,
+      "order_index": 198,
+      "best_jpg": "Selezjanie C197.jpg",
+      "best_dist": 3,
+      "second_dist": 10,
+      "margin": 7
+    },
+    {
+      "webp_id": 1415,
+      "order_index": 199,
+      "best_jpg": "Selezjanie C198.jpg",
+      "best_dist": 3,
+      "second_dist": 7,
+      "margin": 4
+    },
+    {
+      "webp_id": 1416,
+      "order_index": 200,
+      "best_jpg": "Selezjanie C199.jpg",
+      "best_dist": 4,
+      "second_dist": 11,
+      "margin": 7
+    },
+    {
+      "webp_id": 1417,
+      "order_index": 201,
+      "best_jpg": "Selezjanie C200.jpg",
+      "best_dist": 2,
+      "second_dist": 16,
+      "margin": 14
+    },
+    {
+      "webp_id": 1418,
+      "order_index": 202,
+      "best_jpg": "Selezjanie C202.jpg",
+      "best_dist": 3,
+      "second_dist": 8,
+      "margin": 5
+    },
+    {
+      "webp_id": 1419,
+      "order_index": 203,
+      "best_jpg": "Selezjanie C201.jpg",
+      "best_dist": 6,
+      "second_dist": 20,
+      "margin": 14
+    },
+    {
+      "webp_id": 1420,
+      "order_index": 204,
+      "best_jpg": "Selezjanie C203.jpg",
+      "best_dist": 3,
+      "second_dist": 21,
+      "margin": 18
+    },
+    {
+      "webp_id": 1421,
+      "order_index": 205,
+      "best_jpg": "Selezjanie C204.jpg",
+      "best_dist": 5,
+      "second_dist": 16,
+      "margin": 11
+    },
+    {
+      "webp_id": 1422,
+      "order_index": 206,
+      "best_jpg": "Selezjanie C205.jpg",
+      "best_dist": 6,
+      "second_dist": 21,
+      "margin": 15
+    },
+    {
+      "webp_id": 1423,
+      "order_index": 207,
+      "best_jpg": "Selezjanie C206.jpg",
+      "best_dist": 4,
+      "second_dist": 20,
+      "margin": 16
+    },
+    {
+      "webp_id": 1424,
+      "order_index": 208,
+      "best_jpg": "Selezjanie C207.jpg",
+      "best_dist": 4,
+      "second_dist": 15,
+      "margin": 11
+    },
+    {
+      "webp_id": 1425,
+      "order_index": 209,
+      "best_jpg": "Selezjanie C208.jpg",
+      "best_dist": 2,
+      "second_dist": 18,
+      "margin": 16
+    },
+    {
+      "webp_id": 1426,
+      "order_index": 210,
+      "best_jpg": "Selezjanie C209.jpg",
+      "best_dist": 8,
+      "second_dist": 20,
+      "margin": 12
+    },
+    {
+      "webp_id": 1427,
+      "order_index": 211,
+      "best_jpg": "Selezjanie C210.jpg",
+      "best_dist": 4,
+      "second_dist": 16,
+      "margin": 12
+    },
+    {
+      "webp_id": 1428,
+      "order_index": 212,
+      "best_jpg": "Selezjanie C211.jpg",
+      "best_dist": 8,
+      "second_dist": 18,
+      "margin": 10
+    },
+    {
+      "webp_id": 1429,
+      "order_index": 213,
+      "best_jpg": "Selezjanie C212.jpg",
+      "best_dist": 5,
+      "second_dist": 17,
+      "margin": 12
+    },
+    {
+      "webp_id": 1430,
+      "order_index": 214,
+      "best_jpg": "Selezjanie C213.jpg",
+      "best_dist": 6,
+      "second_dist": 15,
+      "margin": 9
+    },
+    {
+      "webp_id": 1431,
+      "order_index": 215,
+      "best_jpg": "Selezjanie C214.jpg",
+      "best_dist": 6,
+      "second_dist": 17,
+      "margin": 11
+    },
+    {
+      "webp_id": 1432,
+      "order_index": 216,
+      "best_jpg": "Selezjanie C215.jpg",
+      "best_dist": 4,
+      "second_dist": 19,
+      "margin": 15
+    },
+    {
+      "webp_id": 1433,
+      "order_index": 217,
+      "best_jpg": "Selezjanie C216.jpg",
+      "best_dist": 6,
+      "second_dist": 15,
+      "margin": 9
+    },
+    {
+      "webp_id": 1434,
+      "order_index": 218,
+      "best_jpg": "Selezjanie C217.jpg",
+      "best_dist": 4,
+      "second_dist": 18,
+      "margin": 14
+    },
+    {
+      "webp_id": 1435,
+      "order_index": 219,
+      "best_jpg": "Selezjanie C218.jpg",
+      "best_dist": 3,
+      "second_dist": 22,
+      "margin": 19
+    },
+    {
+      "webp_id": 1436,
+      "order_index": 220,
+      "best_jpg": "Selezjanie C219.jpg",
+      "best_dist": 2,
+      "second_dist": 18,
+      "margin": 16
+    },
+    {
+      "webp_id": 1437,
+      "order_index": 221,
+      "best_jpg": "Selezjanie C220.jpg",
+      "best_dist": 4,
+      "second_dist": 17,
+      "margin": 13
+    },
+    {
+      "webp_id": 1438,
+      "order_index": 222,
+      "best_jpg": "Selezjanie C221.jpg",
+      "best_dist": 2,
+      "second_dist": 15,
+      "margin": 13
+    },
+    {
+      "webp_id": 1439,
+      "order_index": 223,
+      "best_jpg": "Selezjanie C222.jpg",
+      "best_dist": 3,
+      "second_dist": 20,
+      "margin": 17
+    },
+    {
+      "webp_id": 1440,
+      "order_index": 224,
+      "best_jpg": "Selezjanie C223.jpg",
+      "best_dist": 7,
+      "second_dist": 20,
+      "margin": 13
+    },
+    {
+      "webp_id": 1441,
+      "order_index": 225,
+      "best_jpg": "Selezjanie C224.jpg",
+      "best_dist": 1,
+      "second_dist": 21,
+      "margin": 20
+    },
+    {
+      "webp_id": 1442,
+      "order_index": 226,
+      "best_jpg": "Selezjanie C225.jpg",
+      "best_dist": 9,
+      "second_dist": 11,
+      "margin": 2
+    },
+    {
+      "webp_id": 1443,
+      "order_index": 227,
+      "best_jpg": "Selezjanie C226.jpg",
+      "best_dist": 5,
+      "second_dist": 20,
+      "margin": 15
+    },
+    {
+      "webp_id": 1444,
+      "order_index": 228,
+      "best_jpg": "Selezjanie C227.jpg",
+      "best_dist": 3,
+      "second_dist": 20,
+      "margin": 17
+    },
+    {
+      "webp_id": 1445,
+      "order_index": 229,
+      "best_jpg": "Selezjanie C228.jpg",
+      "best_dist": 7,
+      "second_dist": 19,
+      "margin": 12
+    },
+    {
+      "webp_id": 1446,
+      "order_index": 230,
+      "best_jpg": "Selezjanie C229.jpg",
+      "best_dist": 6,
+      "second_dist": 20,
+      "margin": 14
+    },
+    {
+      "webp_id": 1447,
+      "order_index": 231,
+      "best_jpg": "Selezjanie C230.jpg",
+      "best_dist": 7,
+      "second_dist": 19,
+      "margin": 12
+    },
+    {
+      "webp_id": 1448,
+      "order_index": 232,
+      "best_jpg": "Selezjanie C231.jpg",
+      "best_dist": 2,
+      "second_dist": 20,
+      "margin": 18
+    },
+    {
+      "webp_id": 1449,
+      "order_index": 233,
+      "best_jpg": "Selezjanie C232.jpg",
+      "best_dist": 3,
+      "second_dist": 19,
+      "margin": 16
+    },
+    {
+      "webp_id": 1450,
+      "order_index": 234,
+      "best_jpg": "Selezjanie C233.jpg",
+      "best_dist": 3,
+      "second_dist": 19,
+      "margin": 16
+    },
+    {
+      "webp_id": 1451,
+      "order_index": 235,
+      "best_jpg": "Selezjanie C234.jpg",
+      "best_dist": 4,
+      "second_dist": 14,
+      "margin": 10
+    },
+    {
+      "webp_id": 1452,
+      "order_index": 236,
+      "best_jpg": "Selezjanie C235.jpg",
+      "best_dist": 7,
+      "second_dist": 22,
+      "margin": 15
+    },
+    {
+      "webp_id": 1453,
+      "order_index": 237,
+      "best_jpg": "Selezjanie C236.jpg",
+      "best_dist": 6,
+      "second_dist": 20,
+      "margin": 14
+    },
+    {
+      "webp_id": 1454,
+      "order_index": 238,
+      "best_jpg": "Selezjanie C237.jpg",
+      "best_dist": 4,
+      "second_dist": 20,
+      "margin": 16
+    },
+    {
+      "webp_id": 1455,
+      "order_index": 239,
+      "best_jpg": "Selezjanie C239.jpg",
+      "best_dist": 3,
+      "second_dist": 16,
+      "margin": 13
+    },
+    {
+      "webp_id": 1456,
+      "order_index": 240,
+      "best_jpg": "Selezjanie C238.jpg",
+      "best_dist": 8,
+      "second_dist": 17,
+      "margin": 9
+    },
+    {
+      "webp_id": 1457,
+      "order_index": 241,
+      "best_jpg": "Selezjanie C241.jpg",
+      "best_dist": 5,
+      "second_dist": 18,
+      "margin": 13
+    },
+    {
+      "webp_id": 1458,
+      "order_index": 242,
+      "best_jpg": "Selezjanie C240.jpg",
+      "best_dist": 7,
+      "second_dist": 15,
+      "margin": 8
+    },
+    {
+      "webp_id": 1459,
+      "order_index": 243,
+      "best_jpg": "Selezjanie C242.jpg",
+      "best_dist": 4,
+      "second_dist": 18,
+      "margin": 14
+    },
+    {
+      "webp_id": 1460,
+      "order_index": 244,
+      "best_jpg": "Selezjanie C243.jpg",
+      "best_dist": 7,
+      "second_dist": 17,
+      "margin": 10
+    },
+    {
+      "webp_id": 1461,
+      "order_index": 245,
+      "best_jpg": "Selezjanie C244.jpg",
+      "best_dist": 6,
+      "second_dist": 16,
+      "margin": 10
+    },
+    {
+      "webp_id": 1462,
+      "order_index": 246,
+      "best_jpg": "Selezjanie C245.jpg",
+      "best_dist": 8,
+      "second_dist": 19,
+      "margin": 11
+    },
+    {
+      "webp_id": 1463,
+      "order_index": 247,
+      "best_jpg": "Selezjanie C246.jpg",
+      "best_dist": 6,
+      "second_dist": 20,
+      "margin": 14
+    },
+    {
+      "webp_id": 1464,
+      "order_index": 248,
+      "best_jpg": "Selezjanie C247.jpg",
+      "best_dist": 1,
+      "second_dist": 13,
+      "margin": 12
+    },
+    {
+      "webp_id": 1465,
+      "order_index": 249,
+      "best_jpg": "Selezjanie C248.jpg",
+      "best_dist": 3,
+      "second_dist": 17,
+      "margin": 14
+    },
+    {
+      "webp_id": 1466,
+      "order_index": 250,
+      "best_jpg": "Selezjanie C249.jpg",
+      "best_dist": 3,
+      "second_dist": 14,
+      "margin": 11
+    },
+    {
+      "webp_id": 1467,
+      "order_index": 251,
+      "best_jpg": "Selezjanie C252.jpg",
+      "best_dist": 5,
+      "second_dist": 18,
+      "margin": 13
+    },
+    {
+      "webp_id": 1468,
+      "order_index": 252,
+      "best_jpg": "Selezjanie C253.jpg",
+      "best_dist": 6,
+      "second_dist": 17,
+      "margin": 11
+    },
+    {
+      "webp_id": 1469,
+      "order_index": 253,
+      "best_jpg": "Selezjanie C254.jpg",
+      "best_dist": 5,
+      "second_dist": 19,
+      "margin": 14
+    },
+    {
+      "webp_id": 1470,
+      "order_index": 254,
+      "best_jpg": "Selezjanie C255.jpg",
+      "best_dist": 3,
+      "second_dist": 18,
+      "margin": 15
+    },
+    {
+      "webp_id": 1471,
+      "order_index": 255,
+      "best_jpg": "Selezjanie C256.jpg",
+      "best_dist": 8,
+      "second_dist": 14,
+      "margin": 6
+    },
+    {
+      "webp_id": 1216,
+      "order_index": 256,
+      "best_jpg": "Selezjanie C251.jpg",
+      "best_dist": 4,
+      "second_dist": 13,
+      "margin": 9
+    },
+    {
+      "webp_id": 1472,
+      "order_index": 257,
+      "best_jpg": "Selezjanie C257.jpg",
+      "best_dist": 5,
+      "second_dist": 20,
+      "margin": 15
+    },
+    {
+      "webp_id": 1473,
+      "order_index": 258,
+      "best_jpg": "Selezjanie C258.jpg",
+      "best_dist": 2,
+      "second_dist": 17,
+      "margin": 15
+    },
+    {
+      "webp_id": 1474,
+      "order_index": 259,
+      "best_jpg": "Selezjanie C259.jpg",
+      "best_dist": 7,
+      "second_dist": 14,
+      "margin": 7
+    },
+    {
+      "webp_id": 1475,
+      "order_index": 260,
+      "best_jpg": "Selezjanie C260.jpg",
+      "best_dist": 7,
+      "second_dist": 16,
+      "margin": 9
+    },
+    {
+      "webp_id": 1476,
+      "order_index": 261,
+      "best_jpg": "Selezjanie C261.jpg",
+      "best_dist": 3,
+      "second_dist": 16,
+      "margin": 13
+    },
+    {
+      "webp_id": 1477,
+      "order_index": 262,
+      "best_jpg": "Selezjanie C263.jpg",
+      "best_dist": 5,
+      "second_dist": 15,
+      "margin": 10
+    },
+    {
+      "webp_id": 1478,
+      "order_index": 263,
+      "best_jpg": "Selezjanie C262.jpg",
+      "best_dist": 6,
+      "second_dist": 18,
+      "margin": 12
+    },
+    {
+      "webp_id": 1479,
+      "order_index": 264,
+      "best_jpg": "Selezjanie C264.jpg",
+      "best_dist": 4,
+      "second_dist": 16,
+      "margin": 12
+    },
+    {
+      "webp_id": 1480,
+      "order_index": 265,
+      "best_jpg": "Selezjanie C265.jpg",
+      "best_dist": 6,
+      "second_dist": 12,
+      "margin": 6
+    },
+    {
+      "webp_id": 1481,
+      "order_index": 266,
+      "best_jpg": "Selezjanie C266.jpg",
+      "best_dist": 3,
+      "second_dist": 17,
+      "margin": 14
+    },
+    {
+      "webp_id": 1482,
+      "order_index": 267,
+      "best_jpg": "Selezjanie C267.jpg",
+      "best_dist": 5,
+      "second_dist": 19,
+      "margin": 14
+    },
+    {
+      "webp_id": 1483,
+      "order_index": 268,
+      "best_jpg": "Selezjanie C268.jpg",
+      "best_dist": 4,
+      "second_dist": 9,
+      "margin": 5
+    },
+    {
+      "webp_id": 1484,
+      "order_index": 269,
+      "best_jpg": "Selezjanie C269.jpg",
+      "best_dist": 4,
+      "second_dist": 7,
+      "margin": 3
+    },
+    {
+      "webp_id": 1485,
+      "order_index": 270,
+      "best_jpg": "Selezjanie C270.jpg",
+      "best_dist": 2,
+      "second_dist": 18,
+      "margin": 16
+    },
+    {
+      "webp_id": 1486,
+      "order_index": 271,
+      "best_jpg": "Selezjanie C271.jpg",
+      "best_dist": 3,
+      "second_dist": 15,
+      "margin": 12
+    },
+    {
+      "webp_id": 1487,
+      "order_index": 272,
+      "best_jpg": "Selezjanie C272.jpg",
+      "best_dist": 4,
+      "second_dist": 15,
+      "margin": 11
+    },
+    {
+      "webp_id": 1488,
+      "order_index": 273,
+      "best_jpg": "Selezjanie C273.jpg",
+      "best_dist": 6,
+      "second_dist": 12,
+      "margin": 6
+    },
+    {
+      "webp_id": 1489,
+      "order_index": 274,
+      "best_jpg": "Selezjanie C274.jpg",
+      "best_dist": 1,
+      "second_dist": 15,
+      "margin": 14
+    },
+    {
+      "webp_id": 1490,
+      "order_index": 275,
+      "best_jpg": "Selezjanie C275.jpg",
+      "best_dist": 8,
+      "second_dist": 17,
+      "margin": 9
+    },
+    {
+      "webp_id": 1491,
+      "order_index": 276,
+      "best_jpg": "Selezjanie C276.jpg",
+      "best_dist": 8,
+      "second_dist": 14,
+      "margin": 6
+    },
+    {
+      "webp_id": 1492,
+      "order_index": 277,
+      "best_jpg": "Selezjanie C277.jpg",
+      "best_dist": 9,
+      "second_dist": 15,
+      "margin": 6
+    },
+    {
+      "webp_id": 1493,
+      "order_index": 278,
+      "best_jpg": "Selezjanie C278.jpg",
+      "best_dist": 3,
+      "second_dist": 17,
+      "margin": 14
+    },
+    {
+      "webp_id": 1494,
+      "order_index": 279,
+      "best_jpg": "Selezjanie C279.jpg",
+      "best_dist": 4,
+      "second_dist": 18,
+      "margin": 14
+    },
+    {
+      "webp_id": 1495,
+      "order_index": 280,
+      "best_jpg": "Selezjanie C280.jpg",
+      "best_dist": 7,
+      "second_dist": 12,
+      "margin": 5
+    },
+    {
+      "webp_id": 1496,
+      "order_index": 281,
+      "best_jpg": "Selezjanie C281.jpg",
+      "best_dist": 7,
+      "second_dist": 17,
+      "margin": 10
+    },
+    {
+      "webp_id": 1497,
+      "order_index": 282,
+      "best_jpg": "Selezjanie C282.jpg",
+      "best_dist": 8,
+      "second_dist": 8,
+      "margin": 0
+    },
+    {
+      "webp_id": 1498,
+      "order_index": 283,
+      "best_jpg": "Selezjanie C282.jpg",
+      "best_dist": 6,
+      "second_dist": 6,
+      "margin": 0
+    },
+    {
+      "webp_id": 1499,
+      "order_index": 284,
+      "best_jpg": "Selezjanie C284.jpg",
+      "best_dist": 3,
+      "second_dist": 17,
+      "margin": 14
+    },
+    {
+      "webp_id": 2187,
+      "order_index": 285,
+      "best_jpg": "Selezjanie C250.jpg",
+      "best_dist": 0,
+      "second_dist": 9,
+      "margin": 9
+    },
+    {
+      "webp_id": 2188,
+      "order_index": 286,
+      "best_jpg": "Selezjanie C251.jpg",
+      "best_dist": 0,
+      "second_dist": 9,
+      "margin": 9
+    },
+    {
+      "webp_id": 2189,
+      "order_index": 287,
+      "best_jpg": "Selezjanie C004.jpg",
+      "best_dist": 0,
+      "second_dist": 21,
+      "margin": 21
+    },
+    {
+      "webp_id": 2190,
+      "order_index": 288,
+      "best_jpg": "Selezjanie C283.jpg",
+      "best_dist": 0,
+      "second_dist": 2,
+      "margin": 2
+    },
+    {
+      "webp_id": 2191,
+      "order_index": 289,
+      "best_jpg": "Selezjanie C282.jpg",
+      "best_dist": 0,
+      "second_dist": 2,
+      "margin": 2
+    },
+    {
+      "webp_id": 2192,
+      "order_index": 290,
+      "best_jpg": "Selezjanie C275.jpg",
+      "best_dist": 0,
+      "second_dist": 19,
+      "margin": 19
+    },
+    {
+      "webp_id": 2194,
+      "order_index": 291,
+      "best_jpg": "Selezjanie C001.jpg",
+      "best_dist": 9,
+      "second_dist": 14,
+      "margin": 5
+    },
+    {
+      "webp_id": 2195,
+      "order_index": 292,
+      "best_jpg": "Selezjanie C002.jpg",
+      "best_dist": 4,
+      "second_dist": 16,
+      "margin": 12
+    },
+    {
+      "webp_id": 2196,
+      "order_index": 293,
+      "best_jpg": "Selezjanie C003.jpg",
+      "best_dist": 7,
+      "second_dist": 23,
+      "margin": 16
+    },
+    {
+      "webp_id": 2197,
+      "order_index": 294,
+      "best_jpg": "Selezjanie C004.jpg",
+      "best_dist": 6,
+      "second_dist": 22,
+      "margin": 16
+    },
+    {
+      "webp_id": 2198,
+      "order_index": 295,
+      "best_jpg": "Selezjanie C005.jpg",
+      "best_dist": 3,
+      "second_dist": 19,
+      "margin": 16
+    },
+    {
+      "webp_id": 2199,
+      "order_index": 296,
+      "best_jpg": "Selezjanie C006.jpg",
+      "best_dist": 4,
+      "second_dist": 16,
+      "margin": 12
+    },
+    {
+      "webp_id": 2200,
+      "order_index": 297,
+      "best_jpg": "Selezjanie C007.jpg",
+      "best_dist": 5,
+      "second_dist": 21,
+      "margin": 16
+    },
+    {
+      "webp_id": 2201,
+      "order_index": 298,
+      "best_jpg": "Selezjanie C008.jpg",
+      "best_dist": 3,
+      "second_dist": 18,
+      "margin": 15
+    },
+    {
+      "webp_id": 2202,
+      "order_index": 299,
+      "best_jpg": "Selezjanie C009.jpg",
+      "best_dist": 2,
+      "second_dist": 19,
+      "margin": 17
+    },
+    {
+      "webp_id": 2203,
+      "order_index": 300,
+      "best_jpg": "Selezjanie C010.jpg",
+      "best_dist": 12,
+      "second_dist": 21,
+      "margin": 9
+    }
+  ],
+  "unused_jpg": [
+    "Selezjanie C103.jpg"
+  ],
+  "dup_jpg": [
+    {
+      "jpg": "Selezjanie C251.jpg",
+      "webp_ids": [
+        1217,
+        1216,
+        2188
+      ]
+    },
+    {
+      "jpg": "Selezjanie C001.jpg",
+      "webp_ids": [
+        1218,
+        2194
+      ]
+    },
+    {
+      "jpg": "Selezjanie C002.jpg",
+      "webp_ids": [
+        1219,
+        2195
+      ]
+    },
+    {
+      "jpg": "Selezjanie C003.jpg",
+      "webp_ids": [
+        1220,
+        2196
+      ]
+    },
+    {
+      "jpg": "Selezjanie C004.jpg",
+      "webp_ids": [
+        1221,
+        2189,
+        2197
+      ]
+    },
+    {
+      "jpg": "Selezjanie C005.jpg",
+      "webp_ids": [
+        1222,
+        2198
+      ]
+    },
+    {
+      "jpg": "Selezjanie C006.jpg",
+      "webp_ids": [
+        1223,
+        2199
+      ]
+    },
+    {
+      "jpg": "Selezjanie C007.jpg",
+      "webp_ids": [
+        1224,
+        2200
+      ]
+    },
+    {
+      "jpg": "Selezjanie C008.jpg",
+      "webp_ids": [
+        1225,
+        2201
+      ]
+    },
+    {
+      "jpg": "Selezjanie C009.jpg",
+      "webp_ids": [
+        1226,
+        2202
+      ]
+    },
+    {
+      "jpg": "Selezjanie C010.jpg",
+      "webp_ids": [
+        1227,
+        2203
+      ]
+    },
+    {
+      "jpg": "Selezjanie C275.jpg",
+      "webp_ids": [
+        1490,
+        2192
+      ]
+    },
+    {
+      "jpg": "Selezjanie C282.jpg",
+      "webp_ids": [
+        1497,
+        1498,
+        2191
+      ]
+    }
+  ],
+  "webp_download_errors": [],
+  "jpg_read_errors": []
+}

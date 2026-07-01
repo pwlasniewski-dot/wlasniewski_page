@@ -933,6 +933,9 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
                     <a href={`/galeria/${gallery.access_code}`} target="_blank" className="flex items-center gap-2 px-5 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-white text-sm font-bold rounded-xl border border-zinc-700 shadow-md transition-all">
                         <Eye className="w-4 h-4" /> Podgląd
                     </a>
+                    <a href={`/admin/galleries/${galleryId}/jpg-map`} className="flex items-center gap-2 px-5 py-2.5 bg-emerald-800 hover:bg-emerald-700 text-white text-sm font-bold rounded-xl border border-emerald-700 shadow-md transition-all">
+                        <ImageIcon className="w-4 h-4" /> Porządkuj JPG
+                    </a>
                 </div>
             </div>
 
@@ -1261,6 +1264,12 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
                 <div className="flex items-center justify-between gap-4 mb-6">
                     <h3 className="text-xs font-black text-zinc-500 uppercase tracking-[0.2em]">Mapa postępu mapowania źródła pobierania</h3>
                     <div className="flex items-center gap-4 flex-wrap justify-end">
+                        <a
+                            href={`/admin/galleries/${galleryId}/jpg-map`}
+                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white text-xs font-black uppercase tracking-wider shadow-lg shadow-emerald-500/20 transition-all"
+                        >
+                            <ImageIcon className="w-4 h-4" /> Mapowanie JPG (auto)
+                        </a>
                         <label className="flex items-center gap-2 text-xs text-zinc-300 bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2">
                             <input
                                 type="checkbox"

@@ -4,6 +4,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
+import sharp from 'sharp';
 import { verifyParentToken, extractTokenFromHeader } from '@/lib/auth/parent-jwt';
 import { logSystem } from '@/lib/logger';
 
@@ -115,18 +116,40 @@ export async function GET(
       });
       return NextResponse.json({ error: 'Nie udało się pobrać pliku' }, { status: 502 });
     }
-    const buffer = Buffer.from(await s3Response.arrayBuffer());
-    const contentType = s3Response.headers.get('content-type') || 'application/octet-stream';
+    const srcBuffer = Buffer.from(await s3Response.arrayBuffer());
 
-    const urlPath = (() => {
+    // Konwersja do JPG — klient/laboratorium wymaga JPG, nie webp.
+    // Jeśli źródło to już JPG (zmapowany oryginał), streamujemy surowo — bez utraty jakości.
+    const srcContentType = (s3Response.headers.get('content-type') || '').toLowerCase();
+    const srcIsJpeg = srcContentType.includes('jpeg') || /\.jpe?g(\?|$)/i.test(downloadUrl);
+    let buffer: Buffer;
+    let contentType: string;
+    let ext: string;
+    if (srcIsJpeg) {
+      buffer = srcBuffer;
+      contentType = 'image/jpeg';
+      ext = 'jpg';
+    } else {
       try {
-        return new URL(downloadUrl).pathname;
-      } catch {
-        return downloadUrl;
+        buffer = await sharp(srcBuffer)
+          .pipelineColorspace('srgb')
+          .toColorspace('srgb')
+          .withMetadata({ icc: 'srgb' })
+          .jpeg({ quality: 95, chromaSubsampling: '4:4:4', mozjpeg: true })
+          .toBuffer();
+        contentType = 'image/jpeg';
+        ext = 'jpg';
+      } catch (convErr) {
+        console.error(`JPG conversion failed for photo ${photo.id}, serving original:`, convErr);
+        buffer = srcBuffer;
+        contentType = s3Response.headers.get('content-type') || 'application/octet-stream';
+        const urlPath = (() => {
+          try { return new URL(downloadUrl).pathname; } catch { return downloadUrl; }
+        })();
+        const extMatch = urlPath.match(/\.([a-zA-Z0-9]+)$/);
+        ext = extMatch ? extMatch[1].toLowerCase() : 'bin';
       }
-    })();
-    const extMatch = urlPath.match(/\.([a-zA-Z0-9]+)$/);
-    const ext = extMatch ? extMatch[1].toLowerCase() : 'bin';
+    }
     const filename = `zdjecie-${photo.id}.${ext}`;
 
     await logSystem('INFO', 'BASKET', 'GROUP_DOWNLOAD_SINGLE_SUCCESS', {

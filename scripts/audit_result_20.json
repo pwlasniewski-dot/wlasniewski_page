@@ -1,0 +1,3650 @@
+{
+  "generated_at": "2026-07-01T20:34:44.834Z",
+  "gallery_id": 20,
+  "jpg_dir": "G:\\Torun 2026 A i B\\Obrobione LRC 20260614\\Pierwsza Komunia Swięta Szkoła Seslezjańska Klasa A i B 30.05.2026",
+  "counts": {
+    "webp_db": 441,
+    "jpg_disk": 465,
+    "strong": 357,
+    "weak": 83,
+    "none": 1,
+    "ambiguous": 43,
+    "dup_jpg": 8,
+    "unused_jpg": 35,
+    "webp_download_errors": 0,
+    "jpg_read_errors": 0
+  },
+  "thresholds": {
+    "STRONG": 6,
+    "WEAK": 12
+  },
+  "matches": [
+    {
+      "webp_id": 1506,
+      "order_index": 1,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu001.jpg",
+      "best_dist": 3,
+      "second_dist": 15,
+      "margin": 12
+    },
+    {
+      "webp_id": 1507,
+      "order_index": 2,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu002.jpg",
+      "best_dist": 4,
+      "second_dist": 15,
+      "margin": 11
+    },
+    {
+      "webp_id": 1508,
+      "order_index": 3,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu003.jpg",
+      "best_dist": 5,
+      "second_dist": 15,
+      "margin": 10
+    },
+    {
+      "webp_id": 1509,
+      "order_index": 4,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu004.jpg",
+      "best_dist": 6,
+      "second_dist": 17,
+      "margin": 11
+    },
+    {
+      "webp_id": 1510,
+      "order_index": 5,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu005.jpg",
+      "best_dist": 2,
+      "second_dist": 19,
+      "margin": 17
+    },
+    {
+      "webp_id": 1511,
+      "order_index": 6,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu006.jpg",
+      "best_dist": 8,
+      "second_dist": 17,
+      "margin": 9
+    },
+    {
+      "webp_id": 1512,
+      "order_index": 7,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu007.jpg",
+      "best_dist": 6,
+      "second_dist": 19,
+      "margin": 13
+    },
+    {
+      "webp_id": 1513,
+      "order_index": 8,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu008.jpg",
+      "best_dist": 6,
+      "second_dist": 18,
+      "margin": 12
+    },
+    {
+      "webp_id": 1514,
+      "order_index": 9,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu009.jpg",
+      "best_dist": 3,
+      "second_dist": 18,
+      "margin": 15
+    },
+    {
+      "webp_id": 1515,
+      "order_index": 10,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu010.jpg",
+      "best_dist": 4,
+      "second_dist": 13,
+      "margin": 9
+    },
+    {
+      "webp_id": 1516,
+      "order_index": 11,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu011.jpg",
+      "best_dist": 4,
+      "second_dist": 18,
+      "margin": 14
+    },
+    {
+      "webp_id": 1517,
+      "order_index": 12,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu012.jpg",
+      "best_dist": 6,
+      "second_dist": 16,
+      "margin": 10
+    },
+    {
+      "webp_id": 1518,
+      "order_index": 13,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu013.jpg",
+      "best_dist": 4,
+      "second_dist": 15,
+      "margin": 11
+    },
+    {
+      "webp_id": 1519,
+      "order_index": 14,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu014.jpg",
+      "best_dist": 2,
+      "second_dist": 22,
+      "margin": 20
+    },
+    {
+      "webp_id": 1520,
+      "order_index": 15,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu015.jpg",
+      "best_dist": 2,
+      "second_dist": 21,
+      "margin": 19
+    },
+    {
+      "webp_id": 1521,
+      "order_index": 16,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu016.jpg",
+      "best_dist": 5,
+      "second_dist": 19,
+      "margin": 14
+    },
+    {
+      "webp_id": 1522,
+      "order_index": 17,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu017.jpg",
+      "best_dist": 5,
+      "second_dist": 19,
+      "margin": 14
+    },
+    {
+      "webp_id": 1523,
+      "order_index": 18,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu018.jpg",
+      "best_dist": 9,
+      "second_dist": 19,
+      "margin": 10
+    },
+    {
+      "webp_id": 1524,
+      "order_index": 19,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu019.jpg",
+      "best_dist": 2,
+      "second_dist": 19,
+      "margin": 17
+    },
+    {
+      "webp_id": 1525,
+      "order_index": 20,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu020.jpg",
+      "best_dist": 5,
+      "second_dist": 19,
+      "margin": 14
+    },
+    {
+      "webp_id": 1526,
+      "order_index": 21,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu021.jpg",
+      "best_dist": 2,
+      "second_dist": 18,
+      "margin": 16
+    },
+    {
+      "webp_id": 1527,
+      "order_index": 22,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu022.jpg",
+      "best_dist": 3,
+      "second_dist": 18,
+      "margin": 15
+    },
+    {
+      "webp_id": 1528,
+      "order_index": 23,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu023.jpg",
+      "best_dist": 7,
+      "second_dist": 18,
+      "margin": 11
+    },
+    {
+      "webp_id": 1529,
+      "order_index": 24,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu024.jpg",
+      "best_dist": 4,
+      "second_dist": 18,
+      "margin": 14
+    },
+    {
+      "webp_id": 1530,
+      "order_index": 25,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu025.jpg",
+      "best_dist": 6,
+      "second_dist": 18,
+      "margin": 12
+    },
+    {
+      "webp_id": 1531,
+      "order_index": 26,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu026.jpg",
+      "best_dist": 6,
+      "second_dist": 14,
+      "margin": 8
+    },
+    {
+      "webp_id": 1532,
+      "order_index": 27,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu027.jpg",
+      "best_dist": 8,
+      "second_dist": 17,
+      "margin": 9
+    },
+    {
+      "webp_id": 1533,
+      "order_index": 28,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu028.jpg",
+      "best_dist": 2,
+      "second_dist": 20,
+      "margin": 18
+    },
+    {
+      "webp_id": 1534,
+      "order_index": 29,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu029.jpg",
+      "best_dist": 8,
+      "second_dist": 13,
+      "margin": 5
+    },
+    {
+      "webp_id": 1535,
+      "order_index": 30,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu030.jpg",
+      "best_dist": 2,
+      "second_dist": 17,
+      "margin": 15
+    },
+    {
+      "webp_id": 1536,
+      "order_index": 31,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu031.jpg",
+      "best_dist": 4,
+      "second_dist": 19,
+      "margin": 15
+    },
+    {
+      "webp_id": 1537,
+      "order_index": 32,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu032.jpg",
+      "best_dist": 3,
+      "second_dist": 19,
+      "margin": 16
+    },
+    {
+      "webp_id": 1538,
+      "order_index": 33,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu033.jpg",
+      "best_dist": 4,
+      "second_dist": 18,
+      "margin": 14
+    },
+    {
+      "webp_id": 1539,
+      "order_index": 34,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu034.jpg",
+      "best_dist": 2,
+      "second_dist": 18,
+      "margin": 16
+    },
+    {
+      "webp_id": 1540,
+      "order_index": 35,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu035.jpg",
+      "best_dist": 4,
+      "second_dist": 15,
+      "margin": 11
+    },
+    {
+      "webp_id": 1541,
+      "order_index": 36,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu036.jpg",
+      "best_dist": 3,
+      "second_dist": 17,
+      "margin": 14
+    },
+    {
+      "webp_id": 1542,
+      "order_index": 37,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu037.jpg",
+      "best_dist": 3,
+      "second_dist": 20,
+      "margin": 17
+    },
+    {
+      "webp_id": 1543,
+      "order_index": 38,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu038.jpg",
+      "best_dist": 3,
+      "second_dist": 16,
+      "margin": 13
+    },
+    {
+      "webp_id": 1544,
+      "order_index": 39,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu039.jpg",
+      "best_dist": 3,
+      "second_dist": 18,
+      "margin": 15
+    },
+    {
+      "webp_id": 1545,
+      "order_index": 40,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu040.jpg",
+      "best_dist": 1,
+      "second_dist": 16,
+      "margin": 15
+    },
+    {
+      "webp_id": 1546,
+      "order_index": 41,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu041.jpg",
+      "best_dist": 3,
+      "second_dist": 17,
+      "margin": 14
+    },
+    {
+      "webp_id": 1547,
+      "order_index": 42,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu042.jpg",
+      "best_dist": 5,
+      "second_dist": 15,
+      "margin": 10
+    },
+    {
+      "webp_id": 1548,
+      "order_index": 43,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu043.jpg",
+      "best_dist": 4,
+      "second_dist": 17,
+      "margin": 13
+    },
+    {
+      "webp_id": 1549,
+      "order_index": 44,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu044.jpg",
+      "best_dist": 7,
+      "second_dist": 22,
+      "margin": 15
+    },
+    {
+      "webp_id": 1550,
+      "order_index": 45,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu045.jpg",
+      "best_dist": 6,
+      "second_dist": 17,
+      "margin": 11
+    },
+    {
+      "webp_id": 1551,
+      "order_index": 46,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu046.jpg",
+      "best_dist": 3,
+      "second_dist": 16,
+      "margin": 13
+    },
+    {
+      "webp_id": 1552,
+      "order_index": 47,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu047.jpg",
+      "best_dist": 7,
+      "second_dist": 19,
+      "margin": 12
+    },
+    {
+      "webp_id": 1553,
+      "order_index": 48,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu048.jpg",
+      "best_dist": 4,
+      "second_dist": 19,
+      "margin": 15
+    },
+    {
+      "webp_id": 1554,
+      "order_index": 49,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu049.jpg",
+      "best_dist": 5,
+      "second_dist": 19,
+      "margin": 14
+    },
+    {
+      "webp_id": 1555,
+      "order_index": 50,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu050.jpg",
+      "best_dist": 6,
+      "second_dist": 19,
+      "margin": 13
+    },
+    {
+      "webp_id": 1556,
+      "order_index": 51,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu051.jpg",
+      "best_dist": 7,
+      "second_dist": 18,
+      "margin": 11
+    },
+    {
+      "webp_id": 1557,
+      "order_index": 52,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu052.jpg",
+      "best_dist": 6,
+      "second_dist": 19,
+      "margin": 13
+    },
+    {
+      "webp_id": 1558,
+      "order_index": 53,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu053.jpg",
+      "best_dist": 7,
+      "second_dist": 18,
+      "margin": 11
+    },
+    {
+      "webp_id": 1559,
+      "order_index": 54,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu054.jpg",
+      "best_dist": 1,
+      "second_dist": 19,
+      "margin": 18
+    },
+    {
+      "webp_id": 1560,
+      "order_index": 55,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu055.jpg",
+      "best_dist": 5,
+      "second_dist": 18,
+      "margin": 13
+    },
+    {
+      "webp_id": 1561,
+      "order_index": 56,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu056.jpg",
+      "best_dist": 8,
+      "second_dist": 17,
+      "margin": 9
+    },
+    {
+      "webp_id": 1562,
+      "order_index": 57,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu057.jpg",
+      "best_dist": 4,
+      "second_dist": 16,
+      "margin": 12
+    },
+    {
+      "webp_id": 1563,
+      "order_index": 58,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu058.jpg",
+      "best_dist": 4,
+      "second_dist": 21,
+      "margin": 17
+    },
+    {
+      "webp_id": 1564,
+      "order_index": 59,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu059.jpg",
+      "best_dist": 7,
+      "second_dist": 18,
+      "margin": 11
+    },
+    {
+      "webp_id": 1565,
+      "order_index": 60,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu060.jpg",
+      "best_dist": 10,
+      "second_dist": 18,
+      "margin": 8
+    },
+    {
+      "webp_id": 1566,
+      "order_index": 61,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu061.jpg",
+      "best_dist": 5,
+      "second_dist": 19,
+      "margin": 14
+    },
+    {
+      "webp_id": 1567,
+      "order_index": 62,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu062.jpg",
+      "best_dist": 5,
+      "second_dist": 19,
+      "margin": 14
+    },
+    {
+      "webp_id": 1568,
+      "order_index": 63,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu063.jpg",
+      "best_dist": 6,
+      "second_dist": 20,
+      "margin": 14
+    },
+    {
+      "webp_id": 1569,
+      "order_index": 64,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu064.jpg",
+      "best_dist": 4,
+      "second_dist": 15,
+      "margin": 11
+    },
+    {
+      "webp_id": 1570,
+      "order_index": 65,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu065.jpg",
+      "best_dist": 3,
+      "second_dist": 19,
+      "margin": 16
+    },
+    {
+      "webp_id": 1571,
+      "order_index": 66,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu066.jpg",
+      "best_dist": 7,
+      "second_dist": 15,
+      "margin": 8
+    },
+    {
+      "webp_id": 1572,
+      "order_index": 67,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu067.jpg",
+      "best_dist": 3,
+      "second_dist": 18,
+      "margin": 15
+    },
+    {
+      "webp_id": 1573,
+      "order_index": 68,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu068.jpg",
+      "best_dist": 9,
+      "second_dist": 19,
+      "margin": 10
+    },
+    {
+      "webp_id": 1574,
+      "order_index": 69,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu069.jpg",
+      "best_dist": 4,
+      "second_dist": 20,
+      "margin": 16
+    },
+    {
+      "webp_id": 1575,
+      "order_index": 70,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu070.jpg",
+      "best_dist": 6,
+      "second_dist": 15,
+      "margin": 9
+    },
+    {
+      "webp_id": 1576,
+      "order_index": 71,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu071.jpg",
+      "best_dist": 2,
+      "second_dist": 19,
+      "margin": 17
+    },
+    {
+      "webp_id": 1577,
+      "order_index": 72,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu072.jpg",
+      "best_dist": 4,
+      "second_dist": 14,
+      "margin": 10
+    },
+    {
+      "webp_id": 1578,
+      "order_index": 73,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu073.jpg",
+      "best_dist": 4,
+      "second_dist": 20,
+      "margin": 16
+    },
+    {
+      "webp_id": 1579,
+      "order_index": 74,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu074.jpg",
+      "best_dist": 4,
+      "second_dist": 20,
+      "margin": 16
+    },
+    {
+      "webp_id": 1580,
+      "order_index": 75,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu075.jpg",
+      "best_dist": 8,
+      "second_dist": 21,
+      "margin": 13
+    },
+    {
+      "webp_id": 1581,
+      "order_index": 76,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu076.jpg",
+      "best_dist": 5,
+      "second_dist": 19,
+      "margin": 14
+    },
+    {
+      "webp_id": 1582,
+      "order_index": 77,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu077.jpg",
+      "best_dist": 3,
+      "second_dist": 15,
+      "margin": 12
+    },
+    {
+      "webp_id": 1583,
+      "order_index": 78,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu078.jpg",
+      "best_dist": 5,
+      "second_dist": 16,
+      "margin": 11
+    },
+    {
+      "webp_id": 1584,
+      "order_index": 79,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu079.jpg",
+      "best_dist": 6,
+      "second_dist": 18,
+      "margin": 12
+    },
+    {
+      "webp_id": 1585,
+      "order_index": 80,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu080.jpg",
+      "best_dist": 3,
+      "second_dist": 14,
+      "margin": 11
+    },
+    {
+      "webp_id": 1586,
+      "order_index": 81,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu081.jpg",
+      "best_dist": 9,
+      "second_dist": 18,
+      "margin": 9
+    },
+    {
+      "webp_id": 1587,
+      "order_index": 82,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu082.jpg",
+      "best_dist": 11,
+      "second_dist": 20,
+      "margin": 9
+    },
+    {
+      "webp_id": 1588,
+      "order_index": 83,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu083.jpg",
+      "best_dist": 8,
+      "second_dist": 17,
+      "margin": 9
+    },
+    {
+      "webp_id": 1589,
+      "order_index": 84,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu084.jpg",
+      "best_dist": 2,
+      "second_dist": 18,
+      "margin": 16
+    },
+    {
+      "webp_id": 1591,
+      "order_index": 86,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu086.jpg",
+      "best_dist": 6,
+      "second_dist": 21,
+      "margin": 15
+    },
+    {
+      "webp_id": 1592,
+      "order_index": 87,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu087.jpg",
+      "best_dist": 4,
+      "second_dist": 18,
+      "margin": 14
+    },
+    {
+      "webp_id": 1593,
+      "order_index": 88,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu088.jpg",
+      "best_dist": 5,
+      "second_dist": 16,
+      "margin": 11
+    },
+    {
+      "webp_id": 1594,
+      "order_index": 89,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu089.jpg",
+      "best_dist": 5,
+      "second_dist": 19,
+      "margin": 14
+    },
+    {
+      "webp_id": 1595,
+      "order_index": 90,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu090.jpg",
+      "best_dist": 5,
+      "second_dist": 16,
+      "margin": 11
+    },
+    {
+      "webp_id": 1596,
+      "order_index": 91,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu091.jpg",
+      "best_dist": 1,
+      "second_dist": 19,
+      "margin": 18
+    },
+    {
+      "webp_id": 1597,
+      "order_index": 92,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu092.jpg",
+      "best_dist": 4,
+      "second_dist": 16,
+      "margin": 12
+    },
+    {
+      "webp_id": 1598,
+      "order_index": 93,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu093.jpg",
+      "best_dist": 2,
+      "second_dist": 20,
+      "margin": 18
+    },
+    {
+      "webp_id": 1599,
+      "order_index": 94,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu094.jpg",
+      "best_dist": 3,
+      "second_dist": 20,
+      "margin": 17
+    },
+    {
+      "webp_id": 1600,
+      "order_index": 95,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu095.jpg",
+      "best_dist": 3,
+      "second_dist": 19,
+      "margin": 16
+    },
+    {
+      "webp_id": 1601,
+      "order_index": 96,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu096.jpg",
+      "best_dist": 4,
+      "second_dist": 19,
+      "margin": 15
+    },
+    {
+      "webp_id": 1602,
+      "order_index": 97,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu097.jpg",
+      "best_dist": 3,
+      "second_dist": 17,
+      "margin": 14
+    },
+    {
+      "webp_id": 1603,
+      "order_index": 98,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu098.jpg",
+      "best_dist": 2,
+      "second_dist": 19,
+      "margin": 17
+    },
+    {
+      "webp_id": 1604,
+      "order_index": 99,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu099.jpg",
+      "best_dist": 3,
+      "second_dist": 19,
+      "margin": 16
+    },
+    {
+      "webp_id": 1605,
+      "order_index": 100,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu100.jpg",
+      "best_dist": 3,
+      "second_dist": 17,
+      "margin": 14
+    },
+    {
+      "webp_id": 1606,
+      "order_index": 101,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu101.jpg",
+      "best_dist": 5,
+      "second_dist": 17,
+      "margin": 12
+    },
+    {
+      "webp_id": 1607,
+      "order_index": 102,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu102.jpg",
+      "best_dist": 4,
+      "second_dist": 17,
+      "margin": 13
+    },
+    {
+      "webp_id": 1608,
+      "order_index": 103,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu103.jpg",
+      "best_dist": 2,
+      "second_dist": 17,
+      "margin": 15
+    },
+    {
+      "webp_id": 1609,
+      "order_index": 104,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu104.jpg",
+      "best_dist": 3,
+      "second_dist": 18,
+      "margin": 15
+    },
+    {
+      "webp_id": 1611,
+      "order_index": 106,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu106.jpg",
+      "best_dist": 6,
+      "second_dist": 18,
+      "margin": 12
+    },
+    {
+      "webp_id": 1612,
+      "order_index": 107,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu107.jpg",
+      "best_dist": 4,
+      "second_dist": 17,
+      "margin": 13
+    },
+    {
+      "webp_id": 1613,
+      "order_index": 108,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu108.jpg",
+      "best_dist": 5,
+      "second_dist": 20,
+      "margin": 15
+    },
+    {
+      "webp_id": 1614,
+      "order_index": 109,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu109.jpg",
+      "best_dist": 5,
+      "second_dist": 21,
+      "margin": 16
+    },
+    {
+      "webp_id": 1615,
+      "order_index": 110,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu110.jpg",
+      "best_dist": 2,
+      "second_dist": 16,
+      "margin": 14
+    },
+    {
+      "webp_id": 1616,
+      "order_index": 111,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu111.jpg",
+      "best_dist": 5,
+      "second_dist": 18,
+      "margin": 13
+    },
+    {
+      "webp_id": 1617,
+      "order_index": 112,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu112.jpg",
+      "best_dist": 3,
+      "second_dist": 19,
+      "margin": 16
+    },
+    {
+      "webp_id": 1618,
+      "order_index": 113,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu113.jpg",
+      "best_dist": 3,
+      "second_dist": 17,
+      "margin": 14
+    },
+    {
+      "webp_id": 1619,
+      "order_index": 114,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu114.jpg",
+      "best_dist": 2,
+      "second_dist": 19,
+      "margin": 17
+    },
+    {
+      "webp_id": 1620,
+      "order_index": 115,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu115.jpg",
+      "best_dist": 5,
+      "second_dist": 17,
+      "margin": 12
+    },
+    {
+      "webp_id": 1621,
+      "order_index": 116,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu116.jpg",
+      "best_dist": 1,
+      "second_dist": 19,
+      "margin": 18
+    },
+    {
+      "webp_id": 1623,
+      "order_index": 118,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu118.jpg",
+      "best_dist": 8,
+      "second_dist": 19,
+      "margin": 11
+    },
+    {
+      "webp_id": 1624,
+      "order_index": 119,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu119.jpg",
+      "best_dist": 5,
+      "second_dist": 15,
+      "margin": 10
+    },
+    {
+      "webp_id": 1625,
+      "order_index": 120,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu120.jpg",
+      "best_dist": 8,
+      "second_dist": 15,
+      "margin": 7
+    },
+    {
+      "webp_id": 1626,
+      "order_index": 121,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu121.jpg",
+      "best_dist": 5,
+      "second_dist": 17,
+      "margin": 12
+    },
+    {
+      "webp_id": 1627,
+      "order_index": 122,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu122.jpg",
+      "best_dist": 3,
+      "second_dist": 21,
+      "margin": 18
+    },
+    {
+      "webp_id": 1628,
+      "order_index": 123,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu123.jpg",
+      "best_dist": 2,
+      "second_dist": 17,
+      "margin": 15
+    },
+    {
+      "webp_id": 1629,
+      "order_index": 124,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu124.jpg",
+      "best_dist": 4,
+      "second_dist": 21,
+      "margin": 17
+    },
+    {
+      "webp_id": 1631,
+      "order_index": 126,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu126.jpg",
+      "best_dist": 2,
+      "second_dist": 20,
+      "margin": 18
+    },
+    {
+      "webp_id": 1632,
+      "order_index": 127,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu127.jpg",
+      "best_dist": 2,
+      "second_dist": 13,
+      "margin": 11
+    },
+    {
+      "webp_id": 1633,
+      "order_index": 128,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu128.jpg",
+      "best_dist": 4,
+      "second_dist": 19,
+      "margin": 15
+    },
+    {
+      "webp_id": 1634,
+      "order_index": 129,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu129.jpg",
+      "best_dist": 7,
+      "second_dist": 15,
+      "margin": 8
+    },
+    {
+      "webp_id": 1635,
+      "order_index": 130,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu130.jpg",
+      "best_dist": 6,
+      "second_dist": 20,
+      "margin": 14
+    },
+    {
+      "webp_id": 1637,
+      "order_index": 132,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu132.jpg",
+      "best_dist": 2,
+      "second_dist": 20,
+      "margin": 18
+    },
+    {
+      "webp_id": 1638,
+      "order_index": 133,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu133.jpg",
+      "best_dist": 6,
+      "second_dist": 17,
+      "margin": 11
+    },
+    {
+      "webp_id": 1639,
+      "order_index": 134,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu134.jpg",
+      "best_dist": 7,
+      "second_dist": 19,
+      "margin": 12
+    },
+    {
+      "webp_id": 1640,
+      "order_index": 135,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu135.jpg",
+      "best_dist": 9,
+      "second_dist": 19,
+      "margin": 10
+    },
+    {
+      "webp_id": 1641,
+      "order_index": 136,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu136.jpg",
+      "best_dist": 3,
+      "second_dist": 18,
+      "margin": 15
+    },
+    {
+      "webp_id": 1642,
+      "order_index": 137,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu137.jpg",
+      "best_dist": 2,
+      "second_dist": 18,
+      "margin": 16
+    },
+    {
+      "webp_id": 1643,
+      "order_index": 138,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu138.jpg",
+      "best_dist": 6,
+      "second_dist": 17,
+      "margin": 11
+    },
+    {
+      "webp_id": 1644,
+      "order_index": 139,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu139.jpg",
+      "best_dist": 4,
+      "second_dist": 20,
+      "margin": 16
+    },
+    {
+      "webp_id": 1645,
+      "order_index": 140,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu140.jpg",
+      "best_dist": 5,
+      "second_dist": 20,
+      "margin": 15
+    },
+    {
+      "webp_id": 1646,
+      "order_index": 141,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu141.jpg",
+      "best_dist": 6,
+      "second_dist": 20,
+      "margin": 14
+    },
+    {
+      "webp_id": 1648,
+      "order_index": 143,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu143.jpg",
+      "best_dist": 8,
+      "second_dist": 17,
+      "margin": 9
+    },
+    {
+      "webp_id": 1649,
+      "order_index": 144,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu144.jpg",
+      "best_dist": 3,
+      "second_dist": 15,
+      "margin": 12
+    },
+    {
+      "webp_id": 1650,
+      "order_index": 145,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu145.jpg",
+      "best_dist": 4,
+      "second_dist": 21,
+      "margin": 17
+    },
+    {
+      "webp_id": 1651,
+      "order_index": 146,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu146.jpg",
+      "best_dist": 4,
+      "second_dist": 19,
+      "margin": 15
+    },
+    {
+      "webp_id": 1652,
+      "order_index": 147,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu147.jpg",
+      "best_dist": 6,
+      "second_dist": 11,
+      "margin": 5
+    },
+    {
+      "webp_id": 1654,
+      "order_index": 149,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu149.jpg",
+      "best_dist": 5,
+      "second_dist": 20,
+      "margin": 15
+    },
+    {
+      "webp_id": 1655,
+      "order_index": 150,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu150.jpg",
+      "best_dist": 5,
+      "second_dist": 19,
+      "margin": 14
+    },
+    {
+      "webp_id": 1657,
+      "order_index": 152,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu152.jpg",
+      "best_dist": 4,
+      "second_dist": 17,
+      "margin": 13
+    },
+    {
+      "webp_id": 1658,
+      "order_index": 153,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu153.jpg",
+      "best_dist": 2,
+      "second_dist": 20,
+      "margin": 18
+    },
+    {
+      "webp_id": 1659,
+      "order_index": 154,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu154.jpg",
+      "best_dist": 4,
+      "second_dist": 20,
+      "margin": 16
+    },
+    {
+      "webp_id": 1660,
+      "order_index": 155,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu155.jpg",
+      "best_dist": 8,
+      "second_dist": 19,
+      "margin": 11
+    },
+    {
+      "webp_id": 1661,
+      "order_index": 156,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu156.jpg",
+      "best_dist": 3,
+      "second_dist": 20,
+      "margin": 17
+    },
+    {
+      "webp_id": 1662,
+      "order_index": 157,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu157.jpg",
+      "best_dist": 5,
+      "second_dist": 20,
+      "margin": 15
+    },
+    {
+      "webp_id": 1663,
+      "order_index": 158,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu158.jpg",
+      "best_dist": 10,
+      "second_dist": 22,
+      "margin": 12
+    },
+    {
+      "webp_id": 1664,
+      "order_index": 159,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu159.jpg",
+      "best_dist": 5,
+      "second_dist": 20,
+      "margin": 15
+    },
+    {
+      "webp_id": 1665,
+      "order_index": 160,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu160.jpg",
+      "best_dist": 3,
+      "second_dist": 20,
+      "margin": 17
+    },
+    {
+      "webp_id": 1666,
+      "order_index": 161,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu161.jpg",
+      "best_dist": 7,
+      "second_dist": 16,
+      "margin": 9
+    },
+    {
+      "webp_id": 1667,
+      "order_index": 162,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu162.jpg",
+      "best_dist": 11,
+      "second_dist": 19,
+      "margin": 8
+    },
+    {
+      "webp_id": 1668,
+      "order_index": 163,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu163.jpg",
+      "best_dist": 4,
+      "second_dist": 15,
+      "margin": 11
+    },
+    {
+      "webp_id": 1670,
+      "order_index": 165,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu165.jpg",
+      "best_dist": 4,
+      "second_dist": 18,
+      "margin": 14
+    },
+    {
+      "webp_id": 1671,
+      "order_index": 166,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu166.jpg",
+      "best_dist": 5,
+      "second_dist": 12,
+      "margin": 7
+    },
+    {
+      "webp_id": 1672,
+      "order_index": 167,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu167.jpg",
+      "best_dist": 6,
+      "second_dist": 18,
+      "margin": 12
+    },
+    {
+      "webp_id": 1673,
+      "order_index": 168,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu168.jpg",
+      "best_dist": 6,
+      "second_dist": 19,
+      "margin": 13
+    },
+    {
+      "webp_id": 1674,
+      "order_index": 169,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu169.jpg",
+      "best_dist": 2,
+      "second_dist": 18,
+      "margin": 16
+    },
+    {
+      "webp_id": 1675,
+      "order_index": 170,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu170.jpg",
+      "best_dist": 4,
+      "second_dist": 18,
+      "margin": 14
+    },
+    {
+      "webp_id": 1676,
+      "order_index": 171,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu171.jpg",
+      "best_dist": 1,
+      "second_dist": 17,
+      "margin": 16
+    },
+    {
+      "webp_id": 1677,
+      "order_index": 172,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu172.jpg",
+      "best_dist": 3,
+      "second_dist": 18,
+      "margin": 15
+    },
+    {
+      "webp_id": 1678,
+      "order_index": 173,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu173.jpg",
+      "best_dist": 3,
+      "second_dist": 15,
+      "margin": 12
+    },
+    {
+      "webp_id": 1679,
+      "order_index": 174,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu174.jpg",
+      "best_dist": 0,
+      "second_dist": 17,
+      "margin": 17
+    },
+    {
+      "webp_id": 1681,
+      "order_index": 176,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu176.jpg",
+      "best_dist": 3,
+      "second_dist": 19,
+      "margin": 16
+    },
+    {
+      "webp_id": 1682,
+      "order_index": 177,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu177.jpg",
+      "best_dist": 6,
+      "second_dist": 21,
+      "margin": 15
+    },
+    {
+      "webp_id": 1683,
+      "order_index": 178,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu178.jpg",
+      "best_dist": 3,
+      "second_dist": 17,
+      "margin": 14
+    },
+    {
+      "webp_id": 1684,
+      "order_index": 179,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu179.jpg",
+      "best_dist": 4,
+      "second_dist": 17,
+      "margin": 13
+    },
+    {
+      "webp_id": 1685,
+      "order_index": 180,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu180.jpg",
+      "best_dist": 4,
+      "second_dist": 18,
+      "margin": 14
+    },
+    {
+      "webp_id": 1686,
+      "order_index": 181,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu181.jpg",
+      "best_dist": 3,
+      "second_dist": 16,
+      "margin": 13
+    },
+    {
+      "webp_id": 1687,
+      "order_index": 182,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu182.jpg",
+      "best_dist": 6,
+      "second_dist": 16,
+      "margin": 10
+    },
+    {
+      "webp_id": 1688,
+      "order_index": 183,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu183.jpg",
+      "best_dist": 5,
+      "second_dist": 17,
+      "margin": 12
+    },
+    {
+      "webp_id": 1689,
+      "order_index": 184,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu184.jpg",
+      "best_dist": 4,
+      "second_dist": 19,
+      "margin": 15
+    },
+    {
+      "webp_id": 1690,
+      "order_index": 185,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu185.jpg",
+      "best_dist": 11,
+      "second_dist": 16,
+      "margin": 5
+    },
+    {
+      "webp_id": 1691,
+      "order_index": 186,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu186.jpg",
+      "best_dist": 7,
+      "second_dist": 18,
+      "margin": 11
+    },
+    {
+      "webp_id": 1692,
+      "order_index": 187,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu187.jpg",
+      "best_dist": 8,
+      "second_dist": 21,
+      "margin": 13
+    },
+    {
+      "webp_id": 1693,
+      "order_index": 188,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu188.jpg",
+      "best_dist": 4,
+      "second_dist": 17,
+      "margin": 13
+    },
+    {
+      "webp_id": 1694,
+      "order_index": 189,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu189.jpg",
+      "best_dist": 2,
+      "second_dist": 18,
+      "margin": 16
+    },
+    {
+      "webp_id": 1696,
+      "order_index": 191,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu191.jpg",
+      "best_dist": 11,
+      "second_dist": 19,
+      "margin": 8
+    },
+    {
+      "webp_id": 1698,
+      "order_index": 193,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu193.jpg",
+      "best_dist": 4,
+      "second_dist": 16,
+      "margin": 12
+    },
+    {
+      "webp_id": 1699,
+      "order_index": 194,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu194.jpg",
+      "best_dist": 8,
+      "second_dist": 19,
+      "margin": 11
+    },
+    {
+      "webp_id": 1700,
+      "order_index": 195,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu195.jpg",
+      "best_dist": 7,
+      "second_dist": 18,
+      "margin": 11
+    },
+    {
+      "webp_id": 1701,
+      "order_index": 196,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu196.jpg",
+      "best_dist": 6,
+      "second_dist": 17,
+      "margin": 11
+    },
+    {
+      "webp_id": 1703,
+      "order_index": 198,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu198.jpg",
+      "best_dist": 5,
+      "second_dist": 11,
+      "margin": 6
+    },
+    {
+      "webp_id": 1704,
+      "order_index": 199,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu199.jpg",
+      "best_dist": 4,
+      "second_dist": 15,
+      "margin": 11
+    },
+    {
+      "webp_id": 1705,
+      "order_index": 200,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu200.jpg",
+      "best_dist": 4,
+      "second_dist": 17,
+      "margin": 13
+    },
+    {
+      "webp_id": 1706,
+      "order_index": 201,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu201.jpg",
+      "best_dist": 4,
+      "second_dist": 15,
+      "margin": 11
+    },
+    {
+      "webp_id": 1707,
+      "order_index": 202,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu202.jpg",
+      "best_dist": 5,
+      "second_dist": 20,
+      "margin": 15
+    },
+    {
+      "webp_id": 1708,
+      "order_index": 203,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu203.jpg",
+      "best_dist": 4,
+      "second_dist": 9,
+      "margin": 5
+    },
+    {
+      "webp_id": 1709,
+      "order_index": 204,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu204.jpg",
+      "best_dist": 2,
+      "second_dist": 19,
+      "margin": 17
+    },
+    {
+      "webp_id": 1710,
+      "order_index": 205,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu205.jpg",
+      "best_dist": 2,
+      "second_dist": 20,
+      "margin": 18
+    },
+    {
+      "webp_id": 1711,
+      "order_index": 206,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu206.jpg",
+      "best_dist": 2,
+      "second_dist": 16,
+      "margin": 14
+    },
+    {
+      "webp_id": 1712,
+      "order_index": 207,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu207.jpg",
+      "best_dist": 3,
+      "second_dist": 17,
+      "margin": 14
+    },
+    {
+      "webp_id": 1713,
+      "order_index": 208,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu208.jpg",
+      "best_dist": 7,
+      "second_dist": 17,
+      "margin": 10
+    },
+    {
+      "webp_id": 1714,
+      "order_index": 209,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu209.jpg",
+      "best_dist": 9,
+      "second_dist": 17,
+      "margin": 8
+    },
+    {
+      "webp_id": 1715,
+      "order_index": 210,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu210.jpg",
+      "best_dist": 3,
+      "second_dist": 17,
+      "margin": 14
+    },
+    {
+      "webp_id": 1716,
+      "order_index": 211,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu211.jpg",
+      "best_dist": 5,
+      "second_dist": 18,
+      "margin": 13
+    },
+    {
+      "webp_id": 1717,
+      "order_index": 212,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu212.jpg",
+      "best_dist": 4,
+      "second_dist": 13,
+      "margin": 9
+    },
+    {
+      "webp_id": 1718,
+      "order_index": 213,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu213.jpg",
+      "best_dist": 2,
+      "second_dist": 21,
+      "margin": 19
+    },
+    {
+      "webp_id": 1719,
+      "order_index": 214,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu214.jpg",
+      "best_dist": 5,
+      "second_dist": 17,
+      "margin": 12
+    },
+    {
+      "webp_id": 1720,
+      "order_index": 215,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu215.jpg",
+      "best_dist": 3,
+      "second_dist": 15,
+      "margin": 12
+    },
+    {
+      "webp_id": 1721,
+      "order_index": 216,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu216.jpg",
+      "best_dist": 4,
+      "second_dist": 16,
+      "margin": 12
+    },
+    {
+      "webp_id": 1722,
+      "order_index": 217,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu217.jpg",
+      "best_dist": 6,
+      "second_dist": 19,
+      "margin": 13
+    },
+    {
+      "webp_id": 1723,
+      "order_index": 218,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu218.jpg",
+      "best_dist": 3,
+      "second_dist": 18,
+      "margin": 15
+    },
+    {
+      "webp_id": 1724,
+      "order_index": 219,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu219.jpg",
+      "best_dist": 5,
+      "second_dist": 21,
+      "margin": 16
+    },
+    {
+      "webp_id": 1725,
+      "order_index": 220,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu220.jpg",
+      "best_dist": 4,
+      "second_dist": 21,
+      "margin": 17
+    },
+    {
+      "webp_id": 1726,
+      "order_index": 221,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu221.jpg",
+      "best_dist": 5,
+      "second_dist": 17,
+      "margin": 12
+    },
+    {
+      "webp_id": 1728,
+      "order_index": 223,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu223.jpg",
+      "best_dist": 5,
+      "second_dist": 17,
+      "margin": 12
+    },
+    {
+      "webp_id": 1729,
+      "order_index": 224,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu224.jpg",
+      "best_dist": 10,
+      "second_dist": 20,
+      "margin": 10
+    },
+    {
+      "webp_id": 1730,
+      "order_index": 225,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu225.jpg",
+      "best_dist": 4,
+      "second_dist": 17,
+      "margin": 13
+    },
+    {
+      "webp_id": 1731,
+      "order_index": 226,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu226.jpg",
+      "best_dist": 6,
+      "second_dist": 18,
+      "margin": 12
+    },
+    {
+      "webp_id": 1732,
+      "order_index": 227,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu227.jpg",
+      "best_dist": 5,
+      "second_dist": 20,
+      "margin": 15
+    },
+    {
+      "webp_id": 1733,
+      "order_index": 228,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu228.jpg",
+      "best_dist": 7,
+      "second_dist": 21,
+      "margin": 14
+    },
+    {
+      "webp_id": 1734,
+      "order_index": 229,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu229.jpg",
+      "best_dist": 3,
+      "second_dist": 19,
+      "margin": 16
+    },
+    {
+      "webp_id": 1735,
+      "order_index": 230,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu230.jpg",
+      "best_dist": 2,
+      "second_dist": 19,
+      "margin": 17
+    },
+    {
+      "webp_id": 1736,
+      "order_index": 231,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu231.jpg",
+      "best_dist": 5,
+      "second_dist": 18,
+      "margin": 13
+    },
+    {
+      "webp_id": 1737,
+      "order_index": 232,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu232.jpg",
+      "best_dist": 6,
+      "second_dist": 19,
+      "margin": 13
+    },
+    {
+      "webp_id": 1738,
+      "order_index": 233,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu233.jpg",
+      "best_dist": 3,
+      "second_dist": 19,
+      "margin": 16
+    },
+    {
+      "webp_id": 1739,
+      "order_index": 234,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu234.jpg",
+      "best_dist": 3,
+      "second_dist": 15,
+      "margin": 12
+    },
+    {
+      "webp_id": 1740,
+      "order_index": 235,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu235.jpg",
+      "best_dist": 5,
+      "second_dist": 18,
+      "margin": 13
+    },
+    {
+      "webp_id": 1741,
+      "order_index": 236,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu236.jpg",
+      "best_dist": 4,
+      "second_dist": 19,
+      "margin": 15
+    },
+    {
+      "webp_id": 1742,
+      "order_index": 237,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu237.jpg",
+      "best_dist": 8,
+      "second_dist": 19,
+      "margin": 11
+    },
+    {
+      "webp_id": 1743,
+      "order_index": 238,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu238.jpg",
+      "best_dist": 8,
+      "second_dist": 18,
+      "margin": 10
+    },
+    {
+      "webp_id": 1744,
+      "order_index": 239,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu239.jpg",
+      "best_dist": 7,
+      "second_dist": 18,
+      "margin": 11
+    },
+    {
+      "webp_id": 1745,
+      "order_index": 240,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu240.jpg",
+      "best_dist": 4,
+      "second_dist": 19,
+      "margin": 15
+    },
+    {
+      "webp_id": 1746,
+      "order_index": 241,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu241.jpg",
+      "best_dist": 2,
+      "second_dist": 13,
+      "margin": 11
+    },
+    {
+      "webp_id": 1747,
+      "order_index": 242,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu242.jpg",
+      "best_dist": 5,
+      "second_dist": 7,
+      "margin": 2
+    },
+    {
+      "webp_id": 1748,
+      "order_index": 243,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu243.jpg",
+      "best_dist": 4,
+      "second_dist": 7,
+      "margin": 3
+    },
+    {
+      "webp_id": 1749,
+      "order_index": 244,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu244.jpg",
+      "best_dist": 3,
+      "second_dist": 7,
+      "margin": 4
+    },
+    {
+      "webp_id": 1750,
+      "order_index": 245,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu245.jpg",
+      "best_dist": 6,
+      "second_dist": 9,
+      "margin": 3
+    },
+    {
+      "webp_id": 1751,
+      "order_index": 246,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu246.jpg",
+      "best_dist": 2,
+      "second_dist": 9,
+      "margin": 7
+    },
+    {
+      "webp_id": 1752,
+      "order_index": 247,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu247.jpg",
+      "best_dist": 2,
+      "second_dist": 5,
+      "margin": 3
+    },
+    {
+      "webp_id": 1753,
+      "order_index": 248,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu248.jpg",
+      "best_dist": 2,
+      "second_dist": 7,
+      "margin": 5
+    },
+    {
+      "webp_id": 1754,
+      "order_index": 249,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu249.jpg",
+      "best_dist": 2,
+      "second_dist": 5,
+      "margin": 3
+    },
+    {
+      "webp_id": 1755,
+      "order_index": 250,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu250.jpg",
+      "best_dist": 3,
+      "second_dist": 8,
+      "margin": 5
+    },
+    {
+      "webp_id": 1756,
+      "order_index": 251,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu251.jpg",
+      "best_dist": 4,
+      "second_dist": 5,
+      "margin": 1
+    },
+    {
+      "webp_id": 1757,
+      "order_index": 252,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu252.jpg",
+      "best_dist": 4,
+      "second_dist": 7,
+      "margin": 3
+    },
+    {
+      "webp_id": 1758,
+      "order_index": 253,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu253.jpg",
+      "best_dist": 6,
+      "second_dist": 8,
+      "margin": 2
+    },
+    {
+      "webp_id": 1759,
+      "order_index": 254,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu254.jpg",
+      "best_dist": 0,
+      "second_dist": 6,
+      "margin": 6
+    },
+    {
+      "webp_id": 1760,
+      "order_index": 255,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu257.jpg",
+      "best_dist": 4,
+      "second_dist": 5,
+      "margin": 1
+    },
+    {
+      "webp_id": 1761,
+      "order_index": 256,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu256.jpg",
+      "best_dist": 3,
+      "second_dist": 7,
+      "margin": 4
+    },
+    {
+      "webp_id": 1762,
+      "order_index": 257,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu257.jpg",
+      "best_dist": 2,
+      "second_dist": 5,
+      "margin": 3
+    },
+    {
+      "webp_id": 1763,
+      "order_index": 258,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu258.jpg",
+      "best_dist": 3,
+      "second_dist": 5,
+      "margin": 2
+    },
+    {
+      "webp_id": 1764,
+      "order_index": 259,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu259.jpg",
+      "best_dist": 3,
+      "second_dist": 6,
+      "margin": 3
+    },
+    {
+      "webp_id": 1765,
+      "order_index": 260,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu260.jpg",
+      "best_dist": 9,
+      "second_dist": 9,
+      "margin": 0
+    },
+    {
+      "webp_id": 1766,
+      "order_index": 261,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu261.jpg",
+      "best_dist": 2,
+      "second_dist": 8,
+      "margin": 6
+    },
+    {
+      "webp_id": 1767,
+      "order_index": 262,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu262.jpg",
+      "best_dist": 1,
+      "second_dist": 8,
+      "margin": 7
+    },
+    {
+      "webp_id": 1768,
+      "order_index": 263,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu263.jpg",
+      "best_dist": 3,
+      "second_dist": 8,
+      "margin": 5
+    },
+    {
+      "webp_id": 1769,
+      "order_index": 264,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu264.jpg",
+      "best_dist": 4,
+      "second_dist": 5,
+      "margin": 1
+    },
+    {
+      "webp_id": 1770,
+      "order_index": 265,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu265.jpg",
+      "best_dist": 2,
+      "second_dist": 6,
+      "margin": 4
+    },
+    {
+      "webp_id": 1771,
+      "order_index": 266,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu266.jpg",
+      "best_dist": 3,
+      "second_dist": 10,
+      "margin": 7
+    },
+    {
+      "webp_id": 1772,
+      "order_index": 267,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu267.jpg",
+      "best_dist": 2,
+      "second_dist": 4,
+      "margin": 2
+    },
+    {
+      "webp_id": 1773,
+      "order_index": 268,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu268.jpg",
+      "best_dist": 4,
+      "second_dist": 12,
+      "margin": 8
+    },
+    {
+      "webp_id": 1774,
+      "order_index": 269,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu269.jpg",
+      "best_dist": 2,
+      "second_dist": 7,
+      "margin": 5
+    },
+    {
+      "webp_id": 1775,
+      "order_index": 270,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu270.jpg",
+      "best_dist": 4,
+      "second_dist": 5,
+      "margin": 1
+    },
+    {
+      "webp_id": 1776,
+      "order_index": 271,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu271.jpg",
+      "best_dist": 4,
+      "second_dist": 7,
+      "margin": 3
+    },
+    {
+      "webp_id": 1777,
+      "order_index": 272,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu260.jpg",
+      "best_dist": 4,
+      "second_dist": 5,
+      "margin": 1
+    },
+    {
+      "webp_id": 1778,
+      "order_index": 273,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu273.jpg",
+      "best_dist": 4,
+      "second_dist": 7,
+      "margin": 3
+    },
+    {
+      "webp_id": 1779,
+      "order_index": 274,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu274.jpg",
+      "best_dist": 4,
+      "second_dist": 6,
+      "margin": 2
+    },
+    {
+      "webp_id": 1780,
+      "order_index": 275,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu275.jpg",
+      "best_dist": 2,
+      "second_dist": 8,
+      "margin": 6
+    },
+    {
+      "webp_id": 1781,
+      "order_index": 276,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu276.jpg",
+      "best_dist": 2,
+      "second_dist": 5,
+      "margin": 3
+    },
+    {
+      "webp_id": 1782,
+      "order_index": 277,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu276.jpg",
+      "best_dist": 5,
+      "second_dist": 6,
+      "margin": 1
+    },
+    {
+      "webp_id": 1783,
+      "order_index": 278,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu278.jpg",
+      "best_dist": 3,
+      "second_dist": 8,
+      "margin": 5
+    },
+    {
+      "webp_id": 1784,
+      "order_index": 279,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu279.jpg",
+      "best_dist": 3,
+      "second_dist": 7,
+      "margin": 4
+    },
+    {
+      "webp_id": 1785,
+      "order_index": 280,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu280.jpg",
+      "best_dist": 4,
+      "second_dist": 8,
+      "margin": 4
+    },
+    {
+      "webp_id": 1786,
+      "order_index": 281,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu281.jpg",
+      "best_dist": 2,
+      "second_dist": 10,
+      "margin": 8
+    },
+    {
+      "webp_id": 1787,
+      "order_index": 282,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu282.jpg",
+      "best_dist": 6,
+      "second_dist": 7,
+      "margin": 1
+    },
+    {
+      "webp_id": 1788,
+      "order_index": 283,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu283.jpg",
+      "best_dist": 3,
+      "second_dist": 7,
+      "margin": 4
+    },
+    {
+      "webp_id": 1789,
+      "order_index": 284,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu284.jpg",
+      "best_dist": 5,
+      "second_dist": 6,
+      "margin": 1
+    },
+    {
+      "webp_id": 1790,
+      "order_index": 285,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu285.jpg",
+      "best_dist": 2,
+      "second_dist": 6,
+      "margin": 4
+    },
+    {
+      "webp_id": 1791,
+      "order_index": 286,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu286.jpg",
+      "best_dist": 4,
+      "second_dist": 6,
+      "margin": 2
+    },
+    {
+      "webp_id": 1792,
+      "order_index": 287,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu287.jpg",
+      "best_dist": 4,
+      "second_dist": 8,
+      "margin": 4
+    },
+    {
+      "webp_id": 1793,
+      "order_index": 288,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu288.jpg",
+      "best_dist": 4,
+      "second_dist": 7,
+      "margin": 3
+    },
+    {
+      "webp_id": 1794,
+      "order_index": 289,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu289.jpg",
+      "best_dist": 3,
+      "second_dist": 8,
+      "margin": 5
+    },
+    {
+      "webp_id": 1795,
+      "order_index": 290,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu290.jpg",
+      "best_dist": 2,
+      "second_dist": 4,
+      "margin": 2
+    },
+    {
+      "webp_id": 1796,
+      "order_index": 291,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu290.jpg",
+      "best_dist": 3,
+      "second_dist": 5,
+      "margin": 2
+    },
+    {
+      "webp_id": 1797,
+      "order_index": 292,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu290.jpg",
+      "best_dist": 9,
+      "second_dist": 9,
+      "margin": 0
+    },
+    {
+      "webp_id": 1798,
+      "order_index": 293,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu293.jpg",
+      "best_dist": 2,
+      "second_dist": 8,
+      "margin": 6
+    },
+    {
+      "webp_id": 1799,
+      "order_index": 294,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu294.jpg",
+      "best_dist": 6,
+      "second_dist": 7,
+      "margin": 1
+    },
+    {
+      "webp_id": 1800,
+      "order_index": 295,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu295.jpg",
+      "best_dist": 11,
+      "second_dist": 14,
+      "margin": 3
+    },
+    {
+      "webp_id": 1801,
+      "order_index": 296,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu296.jpg",
+      "best_dist": 7,
+      "second_dist": 7,
+      "margin": 0
+    },
+    {
+      "webp_id": 1802,
+      "order_index": 297,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu297.jpg",
+      "best_dist": 10,
+      "second_dist": 12,
+      "margin": 2
+    },
+    {
+      "webp_id": 1803,
+      "order_index": 298,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu298.jpg",
+      "best_dist": 6,
+      "second_dist": 8,
+      "margin": 2
+    },
+    {
+      "webp_id": 1804,
+      "order_index": 299,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu299.jpg",
+      "best_dist": 7,
+      "second_dist": 9,
+      "margin": 2
+    },
+    {
+      "webp_id": 1805,
+      "order_index": 300,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu300.jpg",
+      "best_dist": 2,
+      "second_dist": 11,
+      "margin": 9
+    },
+    {
+      "webp_id": 1806,
+      "order_index": 301,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu314.jpg",
+      "best_dist": 3,
+      "second_dist": 4,
+      "margin": 1
+    },
+    {
+      "webp_id": 1807,
+      "order_index": 302,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu302.jpg",
+      "best_dist": 2,
+      "second_dist": 10,
+      "margin": 8
+    },
+    {
+      "webp_id": 1808,
+      "order_index": 303,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu303.jpg",
+      "best_dist": 2,
+      "second_dist": 11,
+      "margin": 9
+    },
+    {
+      "webp_id": 1809,
+      "order_index": 304,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu304.jpg",
+      "best_dist": 6,
+      "second_dist": 9,
+      "margin": 3
+    },
+    {
+      "webp_id": 1810,
+      "order_index": 305,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu305.jpg",
+      "best_dist": 4,
+      "second_dist": 6,
+      "margin": 2
+    },
+    {
+      "webp_id": 1811,
+      "order_index": 306,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu306.jpg",
+      "best_dist": 7,
+      "second_dist": 9,
+      "margin": 2
+    },
+    {
+      "webp_id": 1812,
+      "order_index": 307,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu307.jpg",
+      "best_dist": 5,
+      "second_dist": 7,
+      "margin": 2
+    },
+    {
+      "webp_id": 1813,
+      "order_index": 308,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu308.jpg",
+      "best_dist": 6,
+      "second_dist": 8,
+      "margin": 2
+    },
+    {
+      "webp_id": 1814,
+      "order_index": 309,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu309.jpg",
+      "best_dist": 3,
+      "second_dist": 6,
+      "margin": 3
+    },
+    {
+      "webp_id": 1815,
+      "order_index": 310,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu310.jpg",
+      "best_dist": 6,
+      "second_dist": 9,
+      "margin": 3
+    },
+    {
+      "webp_id": 1816,
+      "order_index": 311,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu311.jpg",
+      "best_dist": 6,
+      "second_dist": 9,
+      "margin": 3
+    },
+    {
+      "webp_id": 1817,
+      "order_index": 312,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu312.jpg",
+      "best_dist": 7,
+      "second_dist": 8,
+      "margin": 1
+    },
+    {
+      "webp_id": 1818,
+      "order_index": 313,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu313.jpg",
+      "best_dist": 4,
+      "second_dist": 7,
+      "margin": 3
+    },
+    {
+      "webp_id": 1819,
+      "order_index": 314,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu314.jpg",
+      "best_dist": 2,
+      "second_dist": 5,
+      "margin": 3
+    },
+    {
+      "webp_id": 1820,
+      "order_index": 315,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu315.jpg",
+      "best_dist": 3,
+      "second_dist": 6,
+      "margin": 3
+    },
+    {
+      "webp_id": 1821,
+      "order_index": 316,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu316.jpg",
+      "best_dist": 7,
+      "second_dist": 8,
+      "margin": 1
+    },
+    {
+      "webp_id": 1822,
+      "order_index": 317,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu317.jpg",
+      "best_dist": 2,
+      "second_dist": 7,
+      "margin": 5
+    },
+    {
+      "webp_id": 1823,
+      "order_index": 318,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu318.jpg",
+      "best_dist": 3,
+      "second_dist": 11,
+      "margin": 8
+    },
+    {
+      "webp_id": 1824,
+      "order_index": 319,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu319.jpg",
+      "best_dist": 3,
+      "second_dist": 7,
+      "margin": 4
+    },
+    {
+      "webp_id": 1825,
+      "order_index": 320,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu320.jpg",
+      "best_dist": 6,
+      "second_dist": 12,
+      "margin": 6
+    },
+    {
+      "webp_id": 1826,
+      "order_index": 321,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu321.jpg",
+      "best_dist": 3,
+      "second_dist": 18,
+      "margin": 15
+    },
+    {
+      "webp_id": 1827,
+      "order_index": 322,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu322.jpg",
+      "best_dist": 4,
+      "second_dist": 19,
+      "margin": 15
+    },
+    {
+      "webp_id": 1828,
+      "order_index": 323,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu323.jpg",
+      "best_dist": 1,
+      "second_dist": 17,
+      "margin": 16
+    },
+    {
+      "webp_id": 1829,
+      "order_index": 324,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu324.jpg",
+      "best_dist": 4,
+      "second_dist": 18,
+      "margin": 14
+    },
+    {
+      "webp_id": 1831,
+      "order_index": 326,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu326.jpg",
+      "best_dist": 2,
+      "second_dist": 16,
+      "margin": 14
+    },
+    {
+      "webp_id": 1832,
+      "order_index": 327,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu327.jpg",
+      "best_dist": 2,
+      "second_dist": 17,
+      "margin": 15
+    },
+    {
+      "webp_id": 1833,
+      "order_index": 328,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu328.jpg",
+      "best_dist": 4,
+      "second_dist": 19,
+      "margin": 15
+    },
+    {
+      "webp_id": 1834,
+      "order_index": 329,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu329.jpg",
+      "best_dist": 1,
+      "second_dist": 17,
+      "margin": 16
+    },
+    {
+      "webp_id": 1835,
+      "order_index": 330,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu330.jpg",
+      "best_dist": 1,
+      "second_dist": 13,
+      "margin": 12
+    },
+    {
+      "webp_id": 1836,
+      "order_index": 331,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu331.jpg",
+      "best_dist": 2,
+      "second_dist": 16,
+      "margin": 14
+    },
+    {
+      "webp_id": 1837,
+      "order_index": 332,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu332.jpg",
+      "best_dist": 4,
+      "second_dist": 18,
+      "margin": 14
+    },
+    {
+      "webp_id": 1838,
+      "order_index": 333,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu333.jpg",
+      "best_dist": 2,
+      "second_dist": 19,
+      "margin": 17
+    },
+    {
+      "webp_id": 1841,
+      "order_index": 336,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu336.jpg",
+      "best_dist": 5,
+      "second_dist": 19,
+      "margin": 14
+    },
+    {
+      "webp_id": 1842,
+      "order_index": 337,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu337.jpg",
+      "best_dist": 13,
+      "second_dist": 18,
+      "margin": 5
+    },
+    {
+      "webp_id": 1843,
+      "order_index": 338,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu338.jpg",
+      "best_dist": 9,
+      "second_dist": 16,
+      "margin": 7
+    },
+    {
+      "webp_id": 1844,
+      "order_index": 339,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu339.jpg",
+      "best_dist": 6,
+      "second_dist": 19,
+      "margin": 13
+    },
+    {
+      "webp_id": 1845,
+      "order_index": 340,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu340.jpg",
+      "best_dist": 2,
+      "second_dist": 16,
+      "margin": 14
+    },
+    {
+      "webp_id": 1847,
+      "order_index": 342,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu342.jpg",
+      "best_dist": 7,
+      "second_dist": 18,
+      "margin": 11
+    },
+    {
+      "webp_id": 1848,
+      "order_index": 343,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu343.jpg",
+      "best_dist": 8,
+      "second_dist": 20,
+      "margin": 12
+    },
+    {
+      "webp_id": 1849,
+      "order_index": 344,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu344.jpg",
+      "best_dist": 1,
+      "second_dist": 17,
+      "margin": 16
+    },
+    {
+      "webp_id": 1850,
+      "order_index": 345,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu345.jpg",
+      "best_dist": 3,
+      "second_dist": 18,
+      "margin": 15
+    },
+    {
+      "webp_id": 1851,
+      "order_index": 346,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu346.jpg",
+      "best_dist": 1,
+      "second_dist": 18,
+      "margin": 17
+    },
+    {
+      "webp_id": 1852,
+      "order_index": 347,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu347.jpg",
+      "best_dist": 4,
+      "second_dist": 15,
+      "margin": 11
+    },
+    {
+      "webp_id": 1853,
+      "order_index": 348,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu348.jpg",
+      "best_dist": 10,
+      "second_dist": 17,
+      "margin": 7
+    },
+    {
+      "webp_id": 1854,
+      "order_index": 349,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu349.jpg",
+      "best_dist": 5,
+      "second_dist": 20,
+      "margin": 15
+    },
+    {
+      "webp_id": 1855,
+      "order_index": 350,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu350.jpg",
+      "best_dist": 5,
+      "second_dist": 15,
+      "margin": 10
+    },
+    {
+      "webp_id": 1856,
+      "order_index": 351,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu351.jpg",
+      "best_dist": 5,
+      "second_dist": 19,
+      "margin": 14
+    },
+    {
+      "webp_id": 1857,
+      "order_index": 352,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu352.jpg",
+      "best_dist": 3,
+      "second_dist": 16,
+      "margin": 13
+    },
+    {
+      "webp_id": 1858,
+      "order_index": 353,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu353.jpg",
+      "best_dist": 4,
+      "second_dist": 16,
+      "margin": 12
+    },
+    {
+      "webp_id": 1859,
+      "order_index": 354,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu354.jpg",
+      "best_dist": 5,
+      "second_dist": 18,
+      "margin": 13
+    },
+    {
+      "webp_id": 1860,
+      "order_index": 355,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu355.jpg",
+      "best_dist": 8,
+      "second_dist": 19,
+      "margin": 11
+    },
+    {
+      "webp_id": 1861,
+      "order_index": 356,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu356.jpg",
+      "best_dist": 3,
+      "second_dist": 15,
+      "margin": 12
+    },
+    {
+      "webp_id": 1862,
+      "order_index": 357,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu357.jpg",
+      "best_dist": 4,
+      "second_dist": 17,
+      "margin": 13
+    },
+    {
+      "webp_id": 1863,
+      "order_index": 358,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu358.jpg",
+      "best_dist": 2,
+      "second_dist": 19,
+      "margin": 17
+    },
+    {
+      "webp_id": 1864,
+      "order_index": 359,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu359.jpg",
+      "best_dist": 2,
+      "second_dist": 17,
+      "margin": 15
+    },
+    {
+      "webp_id": 1866,
+      "order_index": 361,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu361.jpg",
+      "best_dist": 6,
+      "second_dist": 14,
+      "margin": 8
+    },
+    {
+      "webp_id": 1867,
+      "order_index": 362,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu362.jpg",
+      "best_dist": 7,
+      "second_dist": 19,
+      "margin": 12
+    },
+    {
+      "webp_id": 1868,
+      "order_index": 363,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu363.jpg",
+      "best_dist": 6,
+      "second_dist": 15,
+      "margin": 9
+    },
+    {
+      "webp_id": 1869,
+      "order_index": 364,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu364.jpg",
+      "best_dist": 5,
+      "second_dist": 13,
+      "margin": 8
+    },
+    {
+      "webp_id": 1870,
+      "order_index": 365,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu365.jpg",
+      "best_dist": 5,
+      "second_dist": 21,
+      "margin": 16
+    },
+    {
+      "webp_id": 1871,
+      "order_index": 366,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu366.jpg",
+      "best_dist": 1,
+      "second_dist": 20,
+      "margin": 19
+    },
+    {
+      "webp_id": 1872,
+      "order_index": 367,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu367.jpg",
+      "best_dist": 5,
+      "second_dist": 19,
+      "margin": 14
+    },
+    {
+      "webp_id": 1873,
+      "order_index": 368,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu368.jpg",
+      "best_dist": 3,
+      "second_dist": 16,
+      "margin": 13
+    },
+    {
+      "webp_id": 1874,
+      "order_index": 369,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu369.jpg",
+      "best_dist": 5,
+      "second_dist": 20,
+      "margin": 15
+    },
+    {
+      "webp_id": 1875,
+      "order_index": 370,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu370.jpg",
+      "best_dist": 6,
+      "second_dist": 17,
+      "margin": 11
+    },
+    {
+      "webp_id": 1876,
+      "order_index": 371,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu371.jpg",
+      "best_dist": 2,
+      "second_dist": 16,
+      "margin": 14
+    },
+    {
+      "webp_id": 1877,
+      "order_index": 372,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu372.jpg",
+      "best_dist": 3,
+      "second_dist": 19,
+      "margin": 16
+    },
+    {
+      "webp_id": 1878,
+      "order_index": 373,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu373.jpg",
+      "best_dist": 3,
+      "second_dist": 20,
+      "margin": 17
+    },
+    {
+      "webp_id": 1880,
+      "order_index": 375,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu375.jpg",
+      "best_dist": 7,
+      "second_dist": 17,
+      "margin": 10
+    },
+    {
+      "webp_id": 1882,
+      "order_index": 377,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu377.jpg",
+      "best_dist": 7,
+      "second_dist": 17,
+      "margin": 10
+    },
+    {
+      "webp_id": 1883,
+      "order_index": 378,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu378.jpg",
+      "best_dist": 6,
+      "second_dist": 14,
+      "margin": 8
+    },
+    {
+      "webp_id": 1884,
+      "order_index": 379,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu379.jpg",
+      "best_dist": 6,
+      "second_dist": 19,
+      "margin": 13
+    },
+    {
+      "webp_id": 1885,
+      "order_index": 380,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu380.jpg",
+      "best_dist": 8,
+      "second_dist": 18,
+      "margin": 10
+    },
+    {
+      "webp_id": 1887,
+      "order_index": 382,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu382.jpg",
+      "best_dist": 5,
+      "second_dist": 21,
+      "margin": 16
+    },
+    {
+      "webp_id": 1889,
+      "order_index": 384,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu384.jpg",
+      "best_dist": 7,
+      "second_dist": 21,
+      "margin": 14
+    },
+    {
+      "webp_id": 1890,
+      "order_index": 385,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu385.jpg",
+      "best_dist": 3,
+      "second_dist": 19,
+      "margin": 16
+    },
+    {
+      "webp_id": 1891,
+      "order_index": 386,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu386.jpg",
+      "best_dist": 9,
+      "second_dist": 14,
+      "margin": 5
+    },
+    {
+      "webp_id": 1892,
+      "order_index": 387,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu387.jpg",
+      "best_dist": 3,
+      "second_dist": 16,
+      "margin": 13
+    },
+    {
+      "webp_id": 1893,
+      "order_index": 388,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu388.jpg",
+      "best_dist": 12,
+      "second_dist": 20,
+      "margin": 8
+    },
+    {
+      "webp_id": 1894,
+      "order_index": 389,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu389.jpg",
+      "best_dist": 3,
+      "second_dist": 22,
+      "margin": 19
+    },
+    {
+      "webp_id": 1895,
+      "order_index": 390,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu390.jpg",
+      "best_dist": 4,
+      "second_dist": 18,
+      "margin": 14
+    },
+    {
+      "webp_id": 1896,
+      "order_index": 391,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu391.jpg",
+      "best_dist": 1,
+      "second_dist": 18,
+      "margin": 17
+    },
+    {
+      "webp_id": 1897,
+      "order_index": 392,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu392.jpg",
+      "best_dist": 6,
+      "second_dist": 20,
+      "margin": 14
+    },
+    {
+      "webp_id": 1898,
+      "order_index": 393,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu393.jpg",
+      "best_dist": 9,
+      "second_dist": 19,
+      "margin": 10
+    },
+    {
+      "webp_id": 1900,
+      "order_index": 395,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu395.jpg",
+      "best_dist": 10,
+      "second_dist": 11,
+      "margin": 1
+    },
+    {
+      "webp_id": 1901,
+      "order_index": 396,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu396.jpg",
+      "best_dist": 7,
+      "second_dist": 17,
+      "margin": 10
+    },
+    {
+      "webp_id": 1902,
+      "order_index": 397,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu397.jpg",
+      "best_dist": 9,
+      "second_dist": 13,
+      "margin": 4
+    },
+    {
+      "webp_id": 1903,
+      "order_index": 398,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu398.jpg",
+      "best_dist": 7,
+      "second_dist": 17,
+      "margin": 10
+    },
+    {
+      "webp_id": 1904,
+      "order_index": 399,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu399.jpg",
+      "best_dist": 5,
+      "second_dist": 17,
+      "margin": 12
+    },
+    {
+      "webp_id": 1905,
+      "order_index": 400,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu400.jpg",
+      "best_dist": 5,
+      "second_dist": 20,
+      "margin": 15
+    },
+    {
+      "webp_id": 1906,
+      "order_index": 401,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu401.jpg",
+      "best_dist": 2,
+      "second_dist": 17,
+      "margin": 15
+    },
+    {
+      "webp_id": 1907,
+      "order_index": 402,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu402.jpg",
+      "best_dist": 0,
+      "second_dist": 14,
+      "margin": 14
+    },
+    {
+      "webp_id": 1908,
+      "order_index": 403,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu403.jpg",
+      "best_dist": 5,
+      "second_dist": 15,
+      "margin": 10
+    },
+    {
+      "webp_id": 1909,
+      "order_index": 404,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu404.jpg",
+      "best_dist": 4,
+      "second_dist": 19,
+      "margin": 15
+    },
+    {
+      "webp_id": 1910,
+      "order_index": 405,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu405.jpg",
+      "best_dist": 5,
+      "second_dist": 16,
+      "margin": 11
+    },
+    {
+      "webp_id": 1911,
+      "order_index": 406,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu406.jpg",
+      "best_dist": 5,
+      "second_dist": 20,
+      "margin": 15
+    },
+    {
+      "webp_id": 1912,
+      "order_index": 407,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu407.jpg",
+      "best_dist": 4,
+      "second_dist": 18,
+      "margin": 14
+    },
+    {
+      "webp_id": 1913,
+      "order_index": 408,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu408.jpg",
+      "best_dist": 7,
+      "second_dist": 20,
+      "margin": 13
+    },
+    {
+      "webp_id": 1914,
+      "order_index": 409,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu409.jpg",
+      "best_dist": 4,
+      "second_dist": 17,
+      "margin": 13
+    },
+    {
+      "webp_id": 1915,
+      "order_index": 410,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu410.jpg",
+      "best_dist": 3,
+      "second_dist": 17,
+      "margin": 14
+    },
+    {
+      "webp_id": 1916,
+      "order_index": 411,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu411.jpg",
+      "best_dist": 3,
+      "second_dist": 18,
+      "margin": 15
+    },
+    {
+      "webp_id": 1917,
+      "order_index": 412,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu412.jpg",
+      "best_dist": 6,
+      "second_dist": 20,
+      "margin": 14
+    },
+    {
+      "webp_id": 1918,
+      "order_index": 413,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu413.jpg",
+      "best_dist": 3,
+      "second_dist": 19,
+      "margin": 16
+    },
+    {
+      "webp_id": 1919,
+      "order_index": 414,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu414.jpg",
+      "best_dist": 6,
+      "second_dist": 16,
+      "margin": 10
+    },
+    {
+      "webp_id": 1920,
+      "order_index": 415,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu415.jpg",
+      "best_dist": 6,
+      "second_dist": 19,
+      "margin": 13
+    },
+    {
+      "webp_id": 1921,
+      "order_index": 416,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu416.jpg",
+      "best_dist": 4,
+      "second_dist": 18,
+      "margin": 14
+    },
+    {
+      "webp_id": 1922,
+      "order_index": 417,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu417.jpg",
+      "best_dist": 9,
+      "second_dist": 11,
+      "margin": 2
+    },
+    {
+      "webp_id": 1923,
+      "order_index": 418,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu417.jpg",
+      "best_dist": 9,
+      "second_dist": 9,
+      "margin": 0
+    },
+    {
+      "webp_id": 1924,
+      "order_index": 419,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu417.jpg",
+      "best_dist": 12,
+      "second_dist": 13,
+      "margin": 1
+    },
+    {
+      "webp_id": 1925,
+      "order_index": 420,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu420.jpg",
+      "best_dist": 2,
+      "second_dist": 20,
+      "margin": 18
+    },
+    {
+      "webp_id": 1926,
+      "order_index": 421,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu421.jpg",
+      "best_dist": 5,
+      "second_dist": 15,
+      "margin": 10
+    },
+    {
+      "webp_id": 1927,
+      "order_index": 422,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu422.jpg",
+      "best_dist": 3,
+      "second_dist": 18,
+      "margin": 15
+    },
+    {
+      "webp_id": 1928,
+      "order_index": 423,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu423.jpg",
+      "best_dist": 4,
+      "second_dist": 14,
+      "margin": 10
+    },
+    {
+      "webp_id": 1929,
+      "order_index": 424,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu424.jpg",
+      "best_dist": 9,
+      "second_dist": 9,
+      "margin": 0
+    },
+    {
+      "webp_id": 1930,
+      "order_index": 425,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu425.jpg",
+      "best_dist": 2,
+      "second_dist": 14,
+      "margin": 12
+    },
+    {
+      "webp_id": 1931,
+      "order_index": 426,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu426.jpg",
+      "best_dist": 6,
+      "second_dist": 9,
+      "margin": 3
+    },
+    {
+      "webp_id": 1932,
+      "order_index": 427,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu426.jpg",
+      "best_dist": 9,
+      "second_dist": 12,
+      "margin": 3
+    },
+    {
+      "webp_id": 1933,
+      "order_index": 428,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu428.jpg",
+      "best_dist": 7,
+      "second_dist": 15,
+      "margin": 8
+    },
+    {
+      "webp_id": 1934,
+      "order_index": 429,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu429.jpg",
+      "best_dist": 5,
+      "second_dist": 23,
+      "margin": 18
+    },
+    {
+      "webp_id": 1935,
+      "order_index": 430,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu430.jpg",
+      "best_dist": 5,
+      "second_dist": 17,
+      "margin": 12
+    },
+    {
+      "webp_id": 1936,
+      "order_index": 431,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu431.jpg",
+      "best_dist": 6,
+      "second_dist": 7,
+      "margin": 1
+    },
+    {
+      "webp_id": 1937,
+      "order_index": 432,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu432.jpg",
+      "best_dist": 4,
+      "second_dist": 8,
+      "margin": 4
+    },
+    {
+      "webp_id": 1938,
+      "order_index": 433,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu433.jpg",
+      "best_dist": 3,
+      "second_dist": 18,
+      "margin": 15
+    },
+    {
+      "webp_id": 1939,
+      "order_index": 434,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu434.jpg",
+      "best_dist": 2,
+      "second_dist": 9,
+      "margin": 7
+    },
+    {
+      "webp_id": 1940,
+      "order_index": 435,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu435.jpg",
+      "best_dist": 5,
+      "second_dist": 8,
+      "margin": 3
+    },
+    {
+      "webp_id": 1941,
+      "order_index": 436,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu436.jpg",
+      "best_dist": 8,
+      "second_dist": 15,
+      "margin": 7
+    },
+    {
+      "webp_id": 1942,
+      "order_index": 437,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu437.jpg",
+      "best_dist": 3,
+      "second_dist": 12,
+      "margin": 9
+    },
+    {
+      "webp_id": 1943,
+      "order_index": 438,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu438.jpg",
+      "best_dist": 7,
+      "second_dist": 12,
+      "margin": 5
+    },
+    {
+      "webp_id": 1944,
+      "order_index": 439,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu439.jpg",
+      "best_dist": 5,
+      "second_dist": 10,
+      "margin": 5
+    },
+    {
+      "webp_id": 1945,
+      "order_index": 440,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu440.jpg",
+      "best_dist": 3,
+      "second_dist": 10,
+      "margin": 7
+    },
+    {
+      "webp_id": 1946,
+      "order_index": 441,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu441.jpg",
+      "best_dist": 3,
+      "second_dist": 15,
+      "margin": 12
+    },
+    {
+      "webp_id": 1947,
+      "order_index": 442,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu442.jpg",
+      "best_dist": 5,
+      "second_dist": 13,
+      "margin": 8
+    },
+    {
+      "webp_id": 1948,
+      "order_index": 443,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu443.jpg",
+      "best_dist": 9,
+      "second_dist": 11,
+      "margin": 2
+    },
+    {
+      "webp_id": 1949,
+      "order_index": 444,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu444.jpg",
+      "best_dist": 4,
+      "second_dist": 12,
+      "margin": 8
+    },
+    {
+      "webp_id": 1950,
+      "order_index": 445,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu445.jpg",
+      "best_dist": 7,
+      "second_dist": 10,
+      "margin": 3
+    },
+    {
+      "webp_id": 1951,
+      "order_index": 446,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu446.jpg",
+      "best_dist": 4,
+      "second_dist": 13,
+      "margin": 9
+    },
+    {
+      "webp_id": 1952,
+      "order_index": 447,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu447.jpg",
+      "best_dist": 2,
+      "second_dist": 4,
+      "margin": 2
+    },
+    {
+      "webp_id": 1953,
+      "order_index": 448,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu448.jpg",
+      "best_dist": 1,
+      "second_dist": 3,
+      "margin": 2
+    },
+    {
+      "webp_id": 1954,
+      "order_index": 449,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu449.jpg",
+      "best_dist": 7,
+      "second_dist": 12,
+      "margin": 5
+    },
+    {
+      "webp_id": 1955,
+      "order_index": 450,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu450.jpg",
+      "best_dist": 8,
+      "second_dist": 14,
+      "margin": 6
+    },
+    {
+      "webp_id": 1956,
+      "order_index": 451,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu451.jpg",
+      "best_dist": 6,
+      "second_dist": 20,
+      "margin": 14
+    },
+    {
+      "webp_id": 1957,
+      "order_index": 452,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu452.jpg",
+      "best_dist": 1,
+      "second_dist": 17,
+      "margin": 16
+    },
+    {
+      "webp_id": 1958,
+      "order_index": 453,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu453.jpg",
+      "best_dist": 5,
+      "second_dist": 12,
+      "margin": 7
+    },
+    {
+      "webp_id": 1959,
+      "order_index": 454,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu454.jpg",
+      "best_dist": 5,
+      "second_dist": 9,
+      "margin": 4
+    },
+    {
+      "webp_id": 1960,
+      "order_index": 455,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu455.jpg",
+      "best_dist": 5,
+      "second_dist": 15,
+      "margin": 10
+    },
+    {
+      "webp_id": 1961,
+      "order_index": 456,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu456.jpg",
+      "best_dist": 8,
+      "second_dist": 11,
+      "margin": 3
+    },
+    {
+      "webp_id": 1962,
+      "order_index": 457,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu457.jpg",
+      "best_dist": 6,
+      "second_dist": 11,
+      "margin": 5
+    },
+    {
+      "webp_id": 1963,
+      "order_index": 458,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu459.jpg",
+      "best_dist": 6,
+      "second_dist": 7,
+      "margin": 1
+    },
+    {
+      "webp_id": 1964,
+      "order_index": 459,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu459.jpg",
+      "best_dist": 3,
+      "second_dist": 8,
+      "margin": 5
+    },
+    {
+      "webp_id": 1965,
+      "order_index": 460,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu460.jpg",
+      "best_dist": 3,
+      "second_dist": 10,
+      "margin": 7
+    },
+    {
+      "webp_id": 1966,
+      "order_index": 461,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu461.jpg",
+      "best_dist": 2,
+      "second_dist": 14,
+      "margin": 12
+    },
+    {
+      "webp_id": 1967,
+      "order_index": 462,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu462.jpg",
+      "best_dist": 9,
+      "second_dist": 11,
+      "margin": 2
+    },
+    {
+      "webp_id": 1968,
+      "order_index": 463,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu463.jpg",
+      "best_dist": 7,
+      "second_dist": 7,
+      "margin": 0
+    },
+    {
+      "webp_id": 1969,
+      "order_index": 464,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu464.jpg",
+      "best_dist": 6,
+      "second_dist": 15,
+      "margin": 9
+    },
+    {
+      "webp_id": 1970,
+      "order_index": 465,
+      "best_jpg": "Pierwsza Komunia Święta w Toruniu465.jpg",
+      "best_dist": 4,
+      "second_dist": 6,
+      "margin": 2
+    }
+  ],
+  "unused_jpg": [
+    "Pierwsza Komunia Święta w Toruniu085.jpg",
+    "Pierwsza Komunia Święta w Toruniu105.jpg",
+    "Pierwsza Komunia Święta w Toruniu117.jpg",
+    "Pierwsza Komunia Święta w Toruniu125.jpg",
+    "Pierwsza Komunia Święta w Toruniu131.jpg",
+    "Pierwsza Komunia Święta w Toruniu142.jpg",
+    "Pierwsza Komunia Święta w Toruniu148.jpg",
+    "Pierwsza Komunia Święta w Toruniu151.jpg",
+    "Pierwsza Komunia Święta w Toruniu164.jpg",
+    "Pierwsza Komunia Święta w Toruniu175.jpg",
+    "Pierwsza Komunia Święta w Toruniu190.jpg",
+    "Pierwsza Komunia Święta w Toruniu192.jpg",
+    "Pierwsza Komunia Święta w Toruniu197.jpg",
+    "Pierwsza Komunia Święta w Toruniu222.jpg",
+    "Pierwsza Komunia Święta w Toruniu255.jpg",
+    "Pierwsza Komunia Święta w Toruniu272.jpg",
+    "Pierwsza Komunia Święta w Toruniu277.jpg",
+    "Pierwsza Komunia Święta w Toruniu291.jpg",
+    "Pierwsza Komunia Święta w Toruniu292.jpg",
+    "Pierwsza Komunia Święta w Toruniu301.jpg",
+    "Pierwsza Komunia Święta w Toruniu325.jpg",
+    "Pierwsza Komunia Święta w Toruniu334.jpg",
+    "Pierwsza Komunia Święta w Toruniu335.jpg",
+    "Pierwsza Komunia Święta w Toruniu337.jpg",
+    "Pierwsza Komunia Święta w Toruniu341.jpg",
+    "Pierwsza Komunia Święta w Toruniu360.jpg",
+    "Pierwsza Komunia Święta w Toruniu374.jpg",
+    "Pierwsza Komunia Święta w Toruniu376.jpg",
+    "Pierwsza Komunia Święta w Toruniu381.jpg",
+    "Pierwsza Komunia Święta w Toruniu383.jpg",
+    "Pierwsza Komunia Święta w Toruniu394.jpg",
+    "Pierwsza Komunia Święta w Toruniu418.jpg",
+    "Pierwsza Komunia Święta w Toruniu419.jpg",
+    "Pierwsza Komunia Święta w Toruniu427.jpg",
+    "Pierwsza Komunia Święta w Toruniu458.jpg"
+  ],
+  "dup_jpg": [
+    {
+      "jpg": "Pierwsza Komunia Święta w Toruniu257.jpg",
+      "webp_ids": [
+        1760,
+        1762
+      ]
+    },
+    {
+      "jpg": "Pierwsza Komunia Święta w Toruniu260.jpg",
+      "webp_ids": [
+        1765,
+        1777
+      ]
+    },
+    {
+      "jpg": "Pierwsza Komunia Święta w Toruniu276.jpg",
+      "webp_ids": [
+        1781,
+        1782
+      ]
+    },
+    {
+      "jpg": "Pierwsza Komunia Święta w Toruniu290.jpg",
+      "webp_ids": [
+        1795,
+        1796,
+        1797
+      ]
+    },
+    {
+      "jpg": "Pierwsza Komunia Święta w Toruniu314.jpg",
+      "webp_ids": [
+        1806,
+        1819
+      ]
+    },
+    {
+      "jpg": "Pierwsza Komunia Święta w Toruniu417.jpg",
+      "webp_ids": [
+        1922,
+        1923,
+        1924
+      ]
+    },
+    {
+      "jpg": "Pierwsza Komunia Święta w Toruniu426.jpg",
+      "webp_ids": [
+        1931,
+        1932
+      ]
+    },
+    {
+      "jpg": "Pierwsza Komunia Święta w Toruniu459.jpg",
+      "webp_ids": [
+        1963,
+        1964
+      ]
+    }
+  ],
+  "webp_download_errors": [],
+  "jpg_read_errors": []
+}
