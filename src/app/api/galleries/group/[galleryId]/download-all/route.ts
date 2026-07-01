@@ -29,7 +29,7 @@ export async function GET(
     }
 
     const authHeader = request.headers.get('Authorization');
-    const token = extractTokenFromHeader(authHeader);
+    const token = extractTokenFromHeader(authHeader) || request.nextUrl.searchParams.get('download_token');
     if (!token) {
       await logSystem('WARN', 'BASKET', 'GROUP_DOWNLOAD_ALL_NO_TOKEN', {
         gallery_id: galleryId,

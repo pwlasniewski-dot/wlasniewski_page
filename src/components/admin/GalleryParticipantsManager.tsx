@@ -146,40 +146,19 @@ export default function GalleryParticipantsManager({ galleryId }: GalleryPartici
     const toastId = toast.loading('Przygotowywanie pliku...');
     try {
       const token = localStorage.getItem('admin_token');
+      if (!token) {
+        toast.error('Brak sesji admina - zaloguj się ponownie', { id: toastId });
+        return;
+      }
       const separator = url.includes('?') ? '&' : '?';
-      const bustUrl = `${url}${separator}_ts=${Date.now()}`;
-      const res = await fetch(bustUrl, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Cache-Control': 'no-cache',
-          Pragma: 'no-cache',
-        },
-        cache: 'no-store',
-      });
-      if (!res.ok) {
-        toast.error('Nie udało się pobrać pliku', { id: toastId });
-        return;
-      }
-      const cd = res.headers.get('Content-Disposition') || '';
-      const utf8Match = cd.match(/filename\*=UTF-8''([^;]+)/i);
-      const plainMatch = cd.match(/filename="([^"]+)"/i);
-      const name = utf8Match?.[1]
-        ? decodeURIComponent(utf8Match[1])
-        : plainMatch?.[1] || fallbackName;
-      const blob = await res.blob();
-      if (!blob || blob.size === 0) {
-        toast.error('ZIP jest pusty (0 B). Odśwież panel Ctrl+F5 i spróbuj ponownie.', { id: toastId });
-        return;
-      }
-      const objUrl = URL.createObjectURL(blob);
+      const nativeUrl = `${url}${separator}admin_token=${encodeURIComponent(token)}&_ts=${Date.now()}`;
       const a = document.createElement('a');
-      a.href = objUrl;
-      a.download = name;
+      a.href = nativeUrl;
+      a.download = fallbackName;
       document.body.appendChild(a);
       a.click();
       a.remove();
-      URL.revokeObjectURL(objUrl);
-      toast.success('Pobrano', { id: toastId });
+      toast.success('Rozpoczęto pobieranie', { id: toastId });
     } catch (err) {
       console.error('Download error:', err);
       toast.error('Błąd pobierania', { id: toastId });

@@ -753,41 +753,21 @@ export default function GroupGalleryPage() {
 
   // PRO: pobieranie pliku z autoryzacją (z S3 → blob → trigger download)
   const downloadWithAuth = useCallback(async (url: string, fallbackName: string) => {
-    console.log('[download] start', { url, hasToken: !!authToken });
     if (!authToken) {
       toast.error('Brak autoryzacji — zaloguj się ponownie');
       return;
     }
-    const tid = toast.loading('Pobieranie...');
+    const tid = toast.loading('Przygotowywanie pobierania...');
     try {
-      const res = await fetch(url, { headers: { Authorization: `Bearer ${authToken}` } });
-      console.log('[download] response', { status: res.status, ok: res.ok });
-      if (!res.ok) {
-        const text = await res.text().catch(() => '');
-        console.error('[download] failed', res.status, text);
-        let message = `Nie udało się pobrać (${res.status})`;
-        try {
-          const parsed = text ? JSON.parse(text) : null;
-          if (parsed?.error && typeof parsed.error === 'string') {
-            message = parsed.error;
-          }
-        } catch {}
-        toast.error(message, { id: tid });
-        return;
-      }
-      const cd = res.headers.get('Content-Disposition') || '';
-      const m = cd.match(/filename="([^"]+)"/);
-      const name = m?.[1] || fallbackName;
-      const blob = await res.blob();
-      const objUrl = URL.createObjectURL(blob);
+      const separator = url.includes('?') ? '&' : '?';
+      const nativeUrl = `${url}${separator}download_token=${encodeURIComponent(authToken)}&_ts=${Date.now()}`;
       const a = document.createElement('a');
-      a.href = objUrl;
-      a.download = name;
+      a.href = nativeUrl;
+      a.download = fallbackName;
       document.body.appendChild(a);
       a.click();
       a.remove();
-      URL.revokeObjectURL(objUrl);
-      toast.success('Pobrano', { id: tid });
+      toast.success('Rozpoczęto pobieranie', { id: tid });
     } catch (err) {
       console.error('Download error:', err);
       toast.error('Błąd pobierania', { id: tid });

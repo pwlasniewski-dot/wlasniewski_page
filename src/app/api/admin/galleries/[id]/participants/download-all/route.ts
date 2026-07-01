@@ -8,7 +8,7 @@ import prisma from '@/lib/db/prisma';
 import archiver from 'archiver';
 import { PassThrough } from 'stream';
 import sharp from 'sharp';
-import { withAuth } from '@/lib/auth/middleware';
+import { withAuthWithQueryToken } from '@/lib/auth/middleware';
 
 function normalizeDisplayName(input: string | null | undefined): string {
   const safe = (input || 'Klient')
@@ -120,7 +120,7 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  return withAuth(request, async () => {
+  return withAuthWithQueryToken(request, async () => {
     try {
       const { id } = await params;
       const galleryId = Number(id);
