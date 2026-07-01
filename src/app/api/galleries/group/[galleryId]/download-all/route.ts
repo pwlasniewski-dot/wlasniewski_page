@@ -112,6 +112,37 @@ export async function GET(
 
     // Build ZIP fully in memory — required for Netlify serverless (no streaming support)
     // STORE mode (no compression) — JPEGs don't compress, saves CPU/memory
+    // Pobieramy pliki z S3 RÓWNOLEGLE w partiach, aby zmieścić się w limicie 60s serverless.
+    const CONCURRENCY = 10;
+    const fetched: Array<{ index: number; buf: Buffer; ext: string } | null> = new Array(eligiblePhotos.length).fill(null);
+
+    for (let start = 0; start < eligiblePhotos.length; start += CONCURRENCY) {
+      const batch = eligiblePhotos.slice(start, start + CONCURRENCY);
+      await Promise.all(batch.map(async (photo, offset) => {
+        const i = start + offset;
+        try {
+          const downloadUrl = photo.download_source_url || photo.file_url;
+          const res = await fetch(downloadUrl);
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const srcBuf = Buffer.from(await res.arrayBuffer());
+          const urlPath = (() => {
+            try {
+              return new URL(downloadUrl).pathname;
+            } catch {
+              return downloadUrl;
+            }
+          })();
+          const extMatch = urlPath.match(/\.([a-zA-Z0-9]+)$/);
+          const ext = extMatch ? extMatch[1].toLowerCase() : 'bin';
+          fetched[i] = { index: i, buf: srcBuf, ext };
+        } catch (err) {
+          failedPhotos += 1;
+          failedPhotoIds.push(photo.id);
+          console.error(`Failed to fetch photo ${photo.id}:`, err);
+        }
+      }));
+    }
+
     const zipBuffer = await new Promise<Buffer>((resolve, reject) => {
       const chunks: Buffer[] = [];
       const archive = archiver('zip', { store: true });
@@ -121,30 +152,11 @@ export async function GET(
       archive.on('error', reject);
       (async () => {
         try {
-          for (let i = 0; i < eligiblePhotos.length; i++) {
-            const photo = eligiblePhotos[i];
-            try {
-              const downloadUrl = photo.download_source_url || photo.file_url;
-              const res = await fetch(downloadUrl);
-              if (!res.ok) throw new Error(`HTTP ${res.status}`);
-              const srcBuf = Buffer.from(await res.arrayBuffer());
-              const idxStr = String(i + 1).padStart(3, '0');
-              const urlPath = (() => {
-                try {
-                  return new URL(downloadUrl).pathname;
-                } catch {
-                  return downloadUrl;
-                }
-              })();
-              const extMatch = urlPath.match(/\.([a-zA-Z0-9]+)$/);
-              const ext = extMatch ? extMatch[1].toLowerCase() : 'bin';
-              archive.append(srcBuf, { name: `zdjecie-${idxStr}.${ext}` });
-              addedPhotos += 1;
-            } catch (err) {
-              failedPhotos += 1;
-              failedPhotoIds.push(photo.id);
-              console.error(`Failed to add photo ${photo.id}:`, err);
-            }
+          for (const item of fetched) {
+            if (!item) continue;
+            const idxStr = String(item.index + 1).padStart(3, '0');
+            archive.append(item.buf, { name: `zdjecie-${idxStr}.${item.ext}` });
+            addedPhotos += 1;
           }
           await archive.finalize();
         } catch (err) {
