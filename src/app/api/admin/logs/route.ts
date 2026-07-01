@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
         try {
             const logs = await prisma.systemLog.findMany({
                 orderBy: { created_at: 'desc' },
-                take: 100,
+                take: 300,
             });
             return NextResponse.json({ success: true, logs });
         } catch (error) {
