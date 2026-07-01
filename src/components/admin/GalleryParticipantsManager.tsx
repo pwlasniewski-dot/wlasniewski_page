@@ -151,17 +151,54 @@ export default function GalleryParticipantsManager({ galleryId }: GalleryPartici
         return;
       }
       const separator = url.includes('?') ? '&' : '?';
-      const nativeUrl = `${url}${separator}admin_token=${encodeURIComponent(token)}&_ts=${Date.now()}`;
+      const fetchUrl = `${url}${separator}_ts=${Date.now()}`;
+      const res = await fetch(fetchUrl, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Cache-Control': 'no-cache',
+        },
+        cache: 'no-store',
+      });
+
+      if (!res.ok) {
+        let message = `Nie udało się pobrać (HTTP ${res.status})`;
+        try {
+          const parsed = await res.json();
+          if (parsed?.error && typeof parsed.error === 'string') {
+            message = parsed.error;
+          }
+        } catch {
+          // odpowiedź nie jest JSON-em
+        }
+        toast.error(message, { id: toastId, duration: 6000 });
+        return;
+      }
+
+      const cd = res.headers.get('Content-Disposition') || '';
+      const utf8Match = cd.match(/filename\*=UTF-8''([^;]+)/i);
+      const plainMatch = cd.match(/filename="([^"]+)"/i);
+      const name = utf8Match?.[1]
+        ? decodeURIComponent(utf8Match[1])
+        : plainMatch?.[1] || fallbackName;
+
+      const blob = await res.blob();
+      if (!blob || blob.size === 0) {
+        toast.error('ZIP jest pusty (0 B). Odśwież panel Ctrl+F5 i spróbuj ponownie.', { id: toastId });
+        return;
+      }
+
+      const objUrl = URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = nativeUrl;
-      a.download = fallbackName;
+      a.href = objUrl;
+      a.download = name;
       document.body.appendChild(a);
       a.click();
       a.remove();
-      toast.success('Rozpoczęto pobieranie', { id: toastId });
+      URL.revokeObjectURL(objUrl);
+      toast.success('Pobrano', { id: toastId });
     } catch (err) {
       console.error('Download error:', err);
-      toast.error('Błąd pobierania', { id: toastId });
+      toast.error('Błąd pobierania — sprawdź połączenie i spróbuj ponownie', { id: toastId });
     }
   };
 

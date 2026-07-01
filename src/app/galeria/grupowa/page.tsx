@@ -751,7 +751,9 @@ export default function GroupGalleryPage() {
     }
   };
 
-  // PRO: pobieranie pliku z autoryzacją (z S3 → blob → trigger download)
+  // PRO: pobieranie pliku z autoryzacją (fetch → blob → trigger download)
+  // Używamy fetch (nie natywnego <a download>), aby móc pokazać PRAWDZIWY błąd z serwera
+  // (np. 409 "brak pełnej jakości") zamiast cichej "witryna niedostępna" w historii przeglądarki.
   const downloadWithAuth = useCallback(async (url: string, fallbackName: string) => {
     if (!authToken) {
       toast.error('Brak autoryzacji — zaloguj się ponownie');
@@ -760,17 +762,51 @@ export default function GroupGalleryPage() {
     const tid = toast.loading('Przygotowywanie pobierania...');
     try {
       const separator = url.includes('?') ? '&' : '?';
-      const nativeUrl = `${url}${separator}download_token=${encodeURIComponent(authToken)}&_ts=${Date.now()}`;
+      const fetchUrl = `${url}${separator}_ts=${Date.now()}`;
+      const res = await fetch(fetchUrl, {
+        headers: { Authorization: `Bearer ${authToken}` },
+        cache: 'no-store',
+      });
+
+      if (!res.ok) {
+        let message = `Nie udało się pobrać (HTTP ${res.status})`;
+        try {
+          const parsed = await res.json();
+          if (parsed?.error && typeof parsed.error === 'string') {
+            message = parsed.error;
+          }
+        } catch {
+          // odpowiedź nie jest JSON-em — zostaw domyślny komunikat
+        }
+        toast.error(message, { id: tid, duration: 6000 });
+        return;
+      }
+
+      const cd = res.headers.get('Content-Disposition') || '';
+      const utf8Match = cd.match(/filename\*=UTF-8''([^;]+)/i);
+      const plainMatch = cd.match(/filename="([^"]+)"/i);
+      const name = utf8Match?.[1]
+        ? decodeURIComponent(utf8Match[1])
+        : plainMatch?.[1] || fallbackName;
+
+      const blob = await res.blob();
+      if (!blob || blob.size === 0) {
+        toast.error('Pobrany plik jest pusty. Spróbuj ponownie za chwilę.', { id: tid });
+        return;
+      }
+
+      const objUrl = URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = nativeUrl;
-      a.download = fallbackName;
+      a.href = objUrl;
+      a.download = name;
       document.body.appendChild(a);
       a.click();
       a.remove();
-      toast.success('Rozpoczęto pobieranie', { id: tid });
+      URL.revokeObjectURL(objUrl);
+      toast.success('Pobrano', { id: tid });
     } catch (err) {
       console.error('Download error:', err);
-      toast.error('Błąd pobierania', { id: tid });
+      toast.error('Błąd pobierania — sprawdź połączenie i spróbuj ponownie', { id: tid });
     }
   }, [authToken]);
 

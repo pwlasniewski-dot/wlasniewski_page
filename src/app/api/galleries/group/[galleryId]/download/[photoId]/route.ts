@@ -7,9 +7,6 @@ import prisma from '@/lib/db/prisma';
 import { verifyParentToken, extractTokenFromHeader } from '@/lib/auth/parent-jwt';
 import { logSystem } from '@/lib/logger';
 
-const MIN_DOWNLOAD_WIDTH = 3000;
-const MIN_DOWNLOAD_HEIGHT = 2000;
-
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ galleryId: string; photoId: string }> }
@@ -103,27 +100,9 @@ export async function GET(
 
     // Use download_source if mapped, otherwise use original file_url
     const downloadUrl = photo.download_source_url || photo.file_url;
-    const downloadWidth = photo.download_source_width || photo.width || 0;
-    const downloadHeight = photo.download_source_height || photo.height || 0;
     const isMapped = !!photo.download_source_url;
 
-    if (downloadWidth < MIN_DOWNLOAD_WIDTH || downloadHeight < MIN_DOWNLOAD_HEIGHT) {
-      await logSystem('WARN', 'BASKET', 'GROUP_DOWNLOAD_SINGLE_BLOCKED_LOW_RES', {
-        participant_id: payload.participant_id,
-        gallery_id: galleryId,
-        photo_id: photoId,
-        width: downloadWidth,
-        height: downloadHeight,
-        is_mapped: isMapped,
-        min_width: MIN_DOWNLOAD_WIDTH,
-        min_height: MIN_DOWNLOAD_HEIGHT,
-      });
-      return NextResponse.json(
-        { error: `Źródło pobierania dla tego zdjęcia jest jeszcze mapowane do pełnej jakości (min. ${MIN_DOWNLOAD_WIDTH}x${MIN_DOWNLOAD_HEIGHT}px)` },
-        { status: 409 }
-      );
-    }
-
+    // Pobieramy to, co jest — bez blokady na pełną jakość.
     // Fetch and return original bytes — no conversion/compression on download.
     const s3Response = await fetch(downloadUrl);
     if (!s3Response.ok) {

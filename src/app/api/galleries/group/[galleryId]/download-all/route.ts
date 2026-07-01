@@ -10,8 +10,6 @@ import { verifyParentToken, extractTokenFromHeader } from '@/lib/auth/parent-jwt
 import { logSystem } from '@/lib/logger';
 
 export const maxDuration = 60; // seconds — Netlify Pro allows up to 60s
-const MIN_DOWNLOAD_WIDTH = 3000;
-const MIN_DOWNLOAD_HEIGHT = 2000;
 
 export async function GET(
   request: NextRequest,
@@ -97,24 +95,14 @@ export async function GET(
       return NextResponse.json({ error: 'Nie znaleziono wybranych zdjęć do pobrania' }, { status: 404 });
     }
 
-    const eligiblePhotos = targetPhotos.filter((photo) => {
-      const width = photo.download_source_width || photo.width || 0;
-      const height = photo.download_source_height || photo.height || 0;
-      return width >= MIN_DOWNLOAD_WIDTH && height >= MIN_DOWNLOAD_HEIGHT;
-    });
+    // Pobieramy to, co jest: zmapowane pełne źródło jeśli istnieje, w innym wypadku
+    // aktualny plik (webp/podgląd). Nie blokujemy pobrania brakiem pełnej jakości.
+    const eligiblePhotos = targetPhotos;
 
     if (eligiblePhotos.length === 0) {
-      await logSystem('WARN', 'BASKET', 'GROUP_DOWNLOAD_ALL_BLOCKED_NO_FULL_QUALITY', {
-        participant_id: payload.participant_id,
-        gallery_id: galleryId,
-        total_photos: gallery.photos.length,
-        requested_photo_count: targetPhotos.length,
-        min_width: MIN_DOWNLOAD_WIDTH,
-        min_height: MIN_DOWNLOAD_HEIGHT,
-      });
       return NextResponse.json(
-        { error: `Brak zdjęć gotowych do pobrania w pełnej jakości (min. ${MIN_DOWNLOAD_WIDTH}x${MIN_DOWNLOAD_HEIGHT}px)` },
-        { status: 409 }
+        { error: 'Brak zdjęć do pobrania' },
+        { status: 404 }
       );
     }
 
