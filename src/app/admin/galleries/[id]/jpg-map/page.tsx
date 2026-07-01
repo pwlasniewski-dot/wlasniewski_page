@@ -117,6 +117,33 @@ export default function JpgMapPage({ params }: { params: Promise<{ id: string }>
   const unmappedIdsByCategory = (cat: string) =>
     (data?.items || []).filter((i) => i.category === cat && !i.mapped && i.jpg_url).map((i) => i.webp_id);
 
+  const uploadJpg = useCallback(
+    async (webpId: number, file: File) => {
+      setBusy(true);
+      setMsg(null);
+      try {
+        const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null;
+        const fd = new FormData();
+        fd.append('webp_id', String(webpId));
+        fd.append('file', file);
+        const res = await fetch(`/api/admin/galleries/${galleryId}/jpg-map/upload`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          body: fd,
+        });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || 'Błąd wysyłki pliku');
+        setMsg(`Wgrano własny JPG dla zdjęcia #${webpId}.`);
+        await load();
+      } catch (e) {
+        setMsg(e instanceof Error ? e.message : 'Błąd');
+      } finally {
+        setBusy(false);
+      }
+    },
+    [galleryId, load]
+  );
+
   const renderItem = (it: MapItem) => (
     <div key={it.webp_id} className="flex items-center gap-4 rounded-lg border border-zinc-800 bg-zinc-900/60 p-3">
       <div className="w-10 shrink-0 text-center text-xs text-zinc-500">#{it.order_index}</div>
@@ -173,6 +200,22 @@ export default function JpgMapPage({ params }: { params: Promise<{ id: string }>
             Zmapuj
           </button>
         )}
+        <label
+          className={`cursor-pointer rounded bg-sky-700 px-2 py-1 text-center text-xs text-white hover:bg-sky-600 ${busy ? 'pointer-events-none opacity-40' : ''}`}
+        >
+          Wgraj własny JPG
+          <input
+            type="file"
+            accept="image/jpeg,.jpg,.jpeg"
+            className="hidden"
+            disabled={busy}
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) uploadJpg(it.webp_id, f);
+              e.target.value = '';
+            }}
+          />
+        </label>
         {it.category === 'excess' && (
           <button
             onClick={() => runAction('delete', [it.webp_id])}
