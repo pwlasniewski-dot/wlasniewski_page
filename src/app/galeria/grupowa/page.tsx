@@ -1738,7 +1738,7 @@ Hasło: ${password}` : ''}`}
                     </div>
                     <button
                       type="button"
-                      onClick={() => handlePurchaseExtras()}
+                      onClick={() => setShowExtraPurchaseModal(true)}
                       disabled={purchasingExtras}
                       className="flex items-center gap-1.5 px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-black text-sm font-black rounded-lg transition-all disabled:opacity-50 whitespace-nowrap shadow-lg shadow-emerald-500/30"
                     >
