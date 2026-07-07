@@ -771,9 +771,8 @@ export default function GalleryParticipantsManager({ galleryId }: GalleryPartici
                               </p>
                               <button
                                 type="button"
-                                onClick={() => downloadWithAuth(
-                                  `/api/admin/galleries/${galleryId}/participants/${participant.id}/download-all`,
-                                  `${(participant.parent_name || 'Klient').trim() || 'Klient'} wybrane zdjecia.zip`
+                                onClick={() => downloadZipViaLink(
+                                  `/api/admin/galleries/${galleryId}/participants/${participant.id}/download-all`
                                 )}
                                 className="flex items-center gap-2 px-3 py-1.5 bg-gold-500 hover:bg-gold-400 text-black text-xs font-bold rounded-lg transition-colors"
                               >
