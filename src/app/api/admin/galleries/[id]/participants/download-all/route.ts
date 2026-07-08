@@ -11,6 +11,8 @@ import sharp from 'sharp';
 import { withAuthWithQueryToken } from '@/lib/auth/middleware';
 import { uploadStreamToS3 } from '@/lib/storage/s3';
 
+export const maxDuration = 60; // seconds — Netlify Pro
+
 function normalizeDisplayName(input: string | null | undefined): string {
   const safe = (input || 'Klient')
     .replace(/[<>:"/\\|?*\x00-\x1F]/g, ' ')
@@ -280,7 +282,21 @@ export async function GET(
               const formatPart = item.format.replace(/[^0-9xX]/g, '').toLowerCase() || 'format';
               const baseName = `${fileNameBase}_${formatPart}_${sourcePart}_${ordinal}`;
 
-              try {
+              // Zrodlo (download_source_url) to juz gotowy, pelnowymiarowy JPG.
+              // NIE re-enkodujemy przez sharp/mozjpeg — to CPU-heavy i przy calej
+              // galerii (setki zdjec) powodowalo timeout/OOM funkcji => 502.
+              // Sharp uruchamiamy TYLKO gdy zrodlo nie jest JPG (webp/png/itp.).
+              if (ext === 'jpg') {
+                let uniqueName = `${baseName}.jpg`;
+                let dedupeCounter = 2;
+                while (usedNames.has(uniqueName)) {
+                  uniqueName = `${baseName}_${dedupeCounter}.jpg`;
+                  dedupeCounter += 1;
+                }
+                usedNames.add(uniqueName);
+                archive.append(sourceBuffer, { name: uniqueName });
+                appendedFiles += 1;
+              } else try {
                 const jpgBuffer = await sharp(sourceBuffer)
                   .pipelineColorspace('srgb')
                   .toColorspace('srgb')
