@@ -105,6 +105,8 @@ export default function GroupGalleryPage() {
   const [selectedPhotos, setSelectedPhotos] = useState<number[]>([]);
   const [paidExtraPhotoIds, setPaidExtraPhotoIds] = useState<number[]>([]);
   const [extraCartByPhoto, setExtraCartByPhoto] = useState<ExtraCartByPhoto>({});
+  // Ilość sztuk odbitki per zdjęcie (domyślnie 1). Klucz = photo_id.
+  const [extraQtyByPhoto, setExtraQtyByPhoto] = useState<Record<number, number>>({});
   // Download selection mode — separate from print selection (no limit, only for ZIP download)
   const [downloadMode, setDownloadMode] = useState(false);
   const [downloadSelection, setDownloadSelection] = useState<Set<number>>(new Set());
@@ -197,6 +199,7 @@ export default function GroupGalleryPage() {
     setAuthToken(null);
     setSelectedPhotos([]);
     setExtraCartByPhoto({});
+    setExtraQtyByPhoto({});
     setPaidExtraPhotoIds([]);
     setPhotos([]);
     setCode('');
@@ -568,6 +571,7 @@ export default function GroupGalleryPage() {
         setShowOrderModal(true);
         if (data.order.payment_status === 'paid') {
           setExtraCartByPhoto({});
+          setExtraQtyByPhoto({});
           loadSelections(participantId, token);
           loadOrders(participantId, token);
         } else if (attempt < 8) {
@@ -972,15 +976,19 @@ export default function GroupGalleryPage() {
   const isInExtraCart = (photoId: number) => Object.prototype.hasOwnProperty.call(extraCartByPhoto, photoId);
   const getExtraSize = (photoId: number): GroupExtraPrintSize | null => extraCartByPhoto[photoId] ?? null;
   const selectedExtraPhotos = Object.keys(extraCartByPhoto).map((photoId) => Number(photoId));
+  const getExtraQty = (photoId: number): number => {
+    const q = extraQtyByPhoto[photoId];
+    return Number.isInteger(q) && q > 0 ? Math.min(99, q) : 1;
+  };
   const extraCartLines = selectedExtraPhotos.map((photoId) => ({
     photo_id: photoId,
     print_size: extraCartByPhoto[photoId],
-    quantity: 1,
+    quantity: getExtraQty(photoId),
   }));
-  const extraCartQty10x15 = extraCartLines.filter((line) => line.print_size === '10x15').length;
-  const extraCartQty15x21 = extraCartLines.filter((line) => line.print_size === '15x21').length;
-  const extraCartTotalUnits = selectedExtraPhotos.length;
-  const extraCartTotal = extraCartLines.reduce((sum, line) => sum + priceForSize(line.print_size), 0);
+  const extraCartQty10x15 = extraCartLines.filter((line) => line.print_size === '10x15').reduce((sum, line) => sum + line.quantity, 0);
+  const extraCartQty15x21 = extraCartLines.filter((line) => line.print_size === '15x21').reduce((sum, line) => sum + line.quantity, 0);
+  const extraCartTotalUnits = extraCartLines.reduce((sum, line) => sum + line.quantity, 0);
+  const extraCartTotal = extraCartLines.reduce((sum, line) => sum + priceForSize(line.print_size) * line.quantity, 0);
   const availableExtraPhotos = photos;
   const allSelectedIds = new Set([...selectedPhotos, ...selectedExtraPhotos, ...paidExtraPhotoIds]);
   const visiblePhotos = showSelectedOnly ? photos.filter(p => allSelectedIds.has(p.id)) : photos;
@@ -989,6 +997,11 @@ export default function GroupGalleryPage() {
     setExtraCartByPhoto((prev) => (Object.prototype.hasOwnProperty.call(prev, photoId)
       ? { ...prev, [photoId]: size }
       : prev));
+  };
+
+  const setExtraQty = (photoId: number, qty: number) => {
+    const clamped = Math.max(1, Math.min(99, Math.floor(qty) || 1));
+    setExtraQtyByPhoto((prev) => ({ ...prev, [photoId]: clamped }));
   };
 
   const getPendingExtraSize = (photoId: number): GroupExtraPrintSize => (
@@ -1002,6 +1015,10 @@ export default function GroupGalleryPage() {
   const removeExtraFromCart = (photoId: number) => {
     setExtraCartByPhoto((prev) => {
       const { [photoId]: _removed, ...rest } = prev;
+      return rest;
+    });
+    setExtraQtyByPhoto((prev) => {
+      const { [photoId]: _removedQty, ...rest } = prev;
       return rest;
     });
   };
@@ -1070,6 +1087,7 @@ export default function GroupGalleryPage() {
       } else {
         toast.success(data.message || 'Zamówienie utworzone');
         setExtraCartByPhoto({});
+        setExtraQtyByPhoto({});
         setExtraSizeConfirmed(false);
       }
     } catch (error) {
@@ -1875,7 +1893,40 @@ Hasło: ${password}` : ''}`}
                           <option key={opt.code} value={opt.code}>{opt.label}</option>
                         ))}
                       </select>
-                      <p className="text-[10px] text-emerald-200/70 font-bold">{(priceForSize(size) / 100).toFixed(2)} zł</p>
+                      <label className="block text-[10px] text-emerald-300/80 font-semibold">Ilość sztuk</label>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); setExtraQty(photo.id, getExtraQty(photo.id) - 1); }}
+                          disabled={getExtraQty(photo.id) <= 1}
+                          className="w-7 h-7 shrink-0 rounded-md bg-zinc-800 border border-emerald-700/60 text-white text-base font-black flex items-center justify-center hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed"
+                          title="Zmniejsz ilość"
+                        >
+                          −
+                        </button>
+                        <input
+                          type="number"
+                          min={1}
+                          max={99}
+                          value={getExtraQty(photo.id)}
+                          onChange={(e) => setExtraQty(photo.id, Number(e.target.value))}
+                          className="w-full min-w-0 bg-zinc-900 border border-emerald-700/60 text-white text-center text-sm font-bold rounded-md px-1 py-1 focus:outline-none focus:border-emerald-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); setExtraQty(photo.id, getExtraQty(photo.id) + 1); }}
+                          disabled={getExtraQty(photo.id) >= 99}
+                          className="w-7 h-7 shrink-0 rounded-md bg-zinc-800 border border-emerald-700/60 text-white text-base font-black flex items-center justify-center hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed"
+                          title="Zwiększ ilość"
+                        >
+                          +
+                        </button>
+                      </div>
+                      <p className="text-[10px] text-emerald-200/70 font-bold">
+                        {getExtraQty(photo.id) > 1
+                          ? `${getExtraQty(photo.id)} × ${(priceForSize(size) / 100).toFixed(2)} zł = ${((priceForSize(size) * getExtraQty(photo.id)) / 100).toFixed(2)} zł`
+                          : `${(priceForSize(size) / 100).toFixed(2)} zł`}
+                      </p>
                     </div>
                   </div>
                 )})}
