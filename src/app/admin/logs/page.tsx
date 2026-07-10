@@ -20,6 +20,7 @@ export default function AdminLogsPage() {
     const [isGenerating, setIsGenerating] = useState(false);
     const [filterLevel, setFilterLevel] = useState<string>('ALL');
     const [filterModule, setFilterModule] = useState<'ALL' | 'GALLERY'>('ALL');
+    const [activeLog, setActiveLog] = useState<SystemLog | null>(null);
 
     // Moduły dotyczące aktywności klientów w galeriach (koszyk, pobrania, płatności).
     const GALLERY_MODULES = ['BASKET', 'PAYMENT', 'CHECKOUT'];
@@ -125,6 +126,27 @@ export default function AdminLogsPage() {
         };
     };
 
+    const fmtFullTime = (iso: string) => {
+        const d = new Date(iso);
+        return d.toLocaleString('pl-PL', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+        });
+    };
+
+    const prettyMetadata = (metadata: string | null) => {
+        if (!metadata) return '-';
+        try {
+            return JSON.stringify(JSON.parse(metadata), null, 2);
+        } catch {
+            return metadata;
+        }
+    };
+
     const getIcon = (level: string) => {
         switch (level) {
             case 'ERROR': return <AlertCircle className="w-5 h-5 text-red-500" />;
@@ -213,8 +235,7 @@ export default function AdminLogsPage() {
                                     </span>
                                 </div>
                                 <div className="text-right leading-tight">
-                                    <div className="text-sm font-semibold text-white tabular-nums">{t.time}</div>
-                                    <div className="text-[11px] text-zinc-400 tabular-nums">{t.date}</div>
+                                    <div className="text-sm font-semibold text-white tabular-nums">{fmtFullTime(log.created_at)}</div>
                                 </div>
                             </div>
                             <div className="mt-2 text-sm text-zinc-100">
@@ -224,12 +245,13 @@ export default function AdminLogsPage() {
                                 <div className="mt-1 text-xs text-emerald-300">{details}</div>
                             )}
                             {log.metadata && (
-                                <details className="mt-2 cursor-pointer">
-                                    <summary className="text-[11px] text-zinc-500 hover:text-gold-400 select-none">Szczegóły techniczne</summary>
-                                    <pre className="mt-2 bg-zinc-950 p-3 rounded text-[11px] overflow-auto max-h-64 border border-zinc-700 text-zinc-300 whitespace-pre-wrap break-words">
-                                        {log.metadata}
-                                    </pre>
-                                </details>
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveLog(log)}
+                                    className="mt-2 text-[11px] text-gold-400 hover:text-gold-300 underline underline-offset-2"
+                                >
+                                    Pokaż pełny log JSON
+                                </button>
                             )}
                         </div>
                     );
@@ -286,12 +308,13 @@ export default function AdminLogsPage() {
                                         </td>
                                         <td className="px-6 py-4 max-w-md text-zinc-500 font-mono text-xs">
                                             {log.metadata ? (
-                                                <details className="cursor-pointer group">
-                                                    <summary className="truncate hover:text-gold-400 select-none">📋 {log.metadata.length} znaków</summary>
-                                                    <pre className="mt-2 bg-zinc-950 p-3 rounded text-xs overflow-auto max-h-64 border border-zinc-700 text-zinc-300 whitespace-pre-wrap break-words">
-                                                        {log.metadata}
-                                                    </pre>
-                                                </details>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setActiveLog(log)}
+                                                    className="text-gold-400 hover:text-gold-300 underline underline-offset-2"
+                                                >
+                                                    Otwórz pełny JSON ({log.metadata.length} znaków)
+                                                </button>
                                             ) : (
                                                 <span className="text-zinc-700">-</span>
                                             )}
@@ -310,6 +333,33 @@ export default function AdminLogsPage() {
                     </table>
                 </div>
             </div>
+
+            {activeLog && (
+                <div className="fixed inset-0 z-[9999] bg-black/80 p-3 md:p-8">
+                    <div className="mx-auto h-full max-w-6xl rounded-xl border border-zinc-700 bg-zinc-950 shadow-2xl flex flex-col">
+                        <div className="flex items-start justify-between gap-3 border-b border-zinc-800 p-4 md:p-5">
+                            <div>
+                                <h2 className="text-lg font-bold text-white">Pełny log techniczny</h2>
+                                <p className="text-sm text-zinc-400 mt-1">
+                                    {activeLog.module} · {activeLog.level} · {fmtFullTime(activeLog.created_at)}
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setActiveLog(null)}
+                                className="px-3 py-1.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-100 text-sm"
+                            >
+                                Zamknij
+                            </button>
+                        </div>
+                        <div className="flex-1 overflow-auto p-4 md:p-5">
+                            <pre className="text-xs md:text-sm text-zinc-200 whitespace-pre-wrap break-all leading-relaxed">
+                                {prettyMetadata(activeLog.metadata)}
+                            </pre>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
