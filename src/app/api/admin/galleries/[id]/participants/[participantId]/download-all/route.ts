@@ -86,6 +86,21 @@ function normalizeDisplayName(input: string | null | undefined): string {
   return safe || 'Klient';
 }
 
+function getSafeImageExtension(fileUrl: string): string {
+  try {
+    const cleanUrl = fileUrl.split('?')[0] || '';
+    const ext = (cleanUrl.split('.').pop() || '').toLowerCase();
+    if (ext === 'jpg' || ext === 'jpeg') return 'jpg';
+    if (ext === 'png') return 'png';
+    if (ext === 'webp') return 'webp';
+    if (ext === 'tif' || ext === 'tiff') return 'tif';
+    if (ext === 'heic') return 'heic';
+    return 'jpg';
+  } catch {
+    return 'jpg';
+  }
+}
+
 function normalizeZipFilename(input: string): string {
   return input
     .normalize('NFD')
@@ -115,7 +130,7 @@ export async function GET(
         include: {
           selections: {
             include: {
-              photo: { select: { id: true, file_url: true } },
+              photo: { select: { id: true, file_url: true, download_source_url: true } },
             },
             orderBy: { selected_at: 'asc' },
           },
@@ -168,15 +183,17 @@ export async function GET(
               id: { in: paidPhotoIds },
               gallery_id: galleryId,
             },
-            select: { id: true, file_url: true },
+            select: { id: true, file_url: true, download_source_url: true },
           })
         : [];
 
-      const paidPhotoUrlById = new Map(paidPhotos.map((photo) => [photo.id, photo.file_url]));
+      const paidPhotoUrlById = new Map(
+        paidPhotos.map((photo) => [photo.id, photo.download_source_url || photo.file_url])
+      );
 
       const standardItems = participant.selections.map((selection) => ({
         id: selection.photo.id,
-        file_url: selection.photo.file_url,
+        file_url: selection.photo.download_source_url || selection.photo.file_url,
         source: 'STANDARD' as const,
         format: DEFAULT_STANDARD_PRINT_FORMAT,
       }));
@@ -196,7 +213,7 @@ export async function GET(
       ];
 
       const s3Key = `temp-zips/admin-participant-${galleryId}-${pId}/${Date.now()}-${Math.random().toString(36).slice(2, 10)}-${zipName}`;
-      const archive = archiver('zip', { zlib: { level: 9 } });
+      const archive = archiver('zip', { store: true, forceZip64: true });
       archive.on('warning', (err) => console.warn('archiver warning:', err));
       archive.on('error', (err) => console.error('Archiver error:', err));
 
@@ -218,17 +235,36 @@ export async function GET(
           const response = await fetch(item.file_url);
           if (!response.ok) throw new Error(`HTTP ${response.status}`);
           const sourceBuffer = Buffer.from(await response.arrayBuffer());
-          const jpgBuffer = await sharp(sourceBuffer)
-            .pipelineColorspace('srgb')
-            .toColorspace('srgb')
-            .withMetadata({ icc: 'srgb' })
-            .jpeg({ quality: 95, chromaSubsampling: '4:4:4', mozjpeg: true })
-            .toBuffer();
-
+          const ext = getSafeImageExtension(item.file_url);
           const idxStr = String(i + 1);
-          const name = `${displayName} ${idxStr} [${item.format}] [${item.source}].jpg`;
-          archive.append(jpgBuffer, { name });
-          appended += 1;
+
+          // Zrodlo (download_source_url) to juz gotowy, pelnowymiarowy JPG.
+          // NIE re-enkodujemy przez sharp/mozjpeg — to CPU-heavy i przy wielu
+          // odbitkach (dziesiatki zdjec) powodowalo timeout/OOM funkcji => 502.
+          // Sharp uruchamiamy TYLKO gdy zrodlo nie jest JPG (webp/png/itp.).
+          if (ext === 'jpg') {
+            const name = `${displayName} ${idxStr} [${item.format}] [${item.source}].jpg`;
+            archive.append(sourceBuffer, { name });
+            appended += 1;
+          } else {
+            try {
+              const jpgBuffer = await sharp(sourceBuffer)
+                .pipelineColorspace('srgb')
+                .toColorspace('srgb')
+                .withMetadata({ icc: 'srgb' })
+                .jpeg({ quality: 95, chromaSubsampling: '4:4:4', mozjpeg: true })
+                .toBuffer();
+
+              const name = `${displayName} ${idxStr} [${item.format}] [${item.source}].jpg`;
+              archive.append(jpgBuffer, { name });
+              appended += 1;
+            } catch (jpgErr) {
+              const name = `${displayName} ${idxStr} [${item.format}] [${item.source}].${ext}`;
+              archive.append(sourceBuffer, { name });
+              appended += 1;
+              console.warn(`JPG conversion failed for photo ${item.id}; appended original as .${ext}`, jpgErr);
+            }
+          }
         } catch (err) {
           skipped += 1;
           console.error(`Failed to add photo ${item.id}:`, err);

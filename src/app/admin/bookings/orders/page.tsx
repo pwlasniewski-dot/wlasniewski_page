@@ -248,20 +248,23 @@ export default function AdminOrdersPage() {
                 return;
             }
 
-            const blob = await res.blob();
-            const url = URL.createObjectURL(blob);
+            const data = await res.json();
+            if (!data?.downloadUrl) {
+                toast.error('Nie udało się pobrać ZIP dla uczestnika');
+                return;
+            }
+
             const link = document.createElement('a');
             const participantSlug = (order.participantName || order.participantIdentifier || String(order.participantId))
                 .replace(/[^a-zA-Z0-9]+/g, '-')
                 .replace(/^-|-$/g, '')
                 .toLowerCase() || 'uczestnik';
             const formatsSlug = collectOrderFormats(order).join('-') || 'format';
-            link.href = url;
-            link.download = `druk-${participantSlug}-${formatsSlug}.zip`;
+            link.href = data.downloadUrl;
+            link.download = data.fileName || `druk-${participantSlug}-${formatsSlug}.zip`;
             document.body.appendChild(link);
             link.click();
             link.remove();
-            URL.revokeObjectURL(url);
             toast.success('Pobieranie ZIP rozpoczęte');
         } catch (error) {
             console.error(error);
@@ -291,15 +294,18 @@ export default function AdminOrdersPage() {
                 return;
             }
 
-            const blob = await res.blob();
-            const url = URL.createObjectURL(blob);
+            const data = await res.json();
+            if (!data?.downloadUrl) {
+                toast.error('Nie udało się pobrać ZIP całej galerii');
+                return;
+            }
+
             const link = document.createElement('a');
-            link.href = url;
-            link.download = `druk-galeria-${galleryId}-wszyscy.zip`;
+            link.href = data.downloadUrl;
+            link.download = data.fileName || `druk-galeria-${galleryId}-wszyscy.zip`;
             document.body.appendChild(link);
             link.click();
             link.remove();
-            URL.revokeObjectURL(url);
             toast.success('Pobieranie ZIP całej galerii rozpoczęte');
         } catch (error) {
             console.error(error);

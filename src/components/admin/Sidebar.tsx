@@ -47,7 +47,7 @@ const navigation = [
         children: [
             { name: 'Złożone rezerwacje', href: '/admin/bookings' },
             { name: 'Kalendarz', href: '/admin/bookings/calendar' },
-            { name: 'Grafik / Dostępność', href: '/admin/availability' },
+            { name: 'Grafik / Dostępność', href: '/admin/bookings/calendar' },
             { name: 'Zamówienia', href: '/admin/bookings/orders' },
             { name: 'Pakiety rezerwacji', href: '/admin/rezerwacja' },
         ]
