@@ -76,6 +76,7 @@ export async function POST(request: NextRequest) {
         client_name: true,
         description: true,
         group_password: true,
+        external_download_url: true,
         max_photos_for_print: true,
           allow_extra_photo_purchase: true,
         price_per_premium: true,
@@ -133,6 +134,7 @@ export async function POST(request: NextRequest) {
       group_print_price_10x15: printPrices.price10x15,
       group_print_price_15x21: printPrices.price15x21,
       expires_at: gallery.expires_at,
+      external_download_url: gallery.external_download_url,
     });
 
   } catch (error) {

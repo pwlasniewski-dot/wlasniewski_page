@@ -913,6 +913,7 @@ model ClientGallery {
   group_password       String? // Hasło dla trybu grupowego (opcjonalne)
   max_photos_for_print Int?    // Limit zdjęć do druku (ustawiane przez admina)
   allow_extra_photo_purchase Boolean @default(false) // Czy rodzice mogą dokupować zdjęcia ponad limit
+  external_download_url String? // Opcjonalny link do pobrania całej galerii (np. Adobe)
   
   client            User?                  @relation("ClientGalleries", fields: [client_id], references: [id])
   photographer      User?                  @relation("PhotographerGalleries", fields: [photographer_id], references: [id])

@@ -57,6 +57,7 @@ interface Gallery {
     group_access_code?: string | null;
     group_password?: string | null;
     max_photos_for_print?: number | null;
+    external_download_url?: string | null;
 }
 
 interface GalleryAdminProps {
@@ -99,6 +100,7 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
         group_access_code: '',
         group_password: '',
         max_photos_for_print: '' as string | number,
+        external_download_url: '',
     });
 
     // Create state
@@ -113,6 +115,7 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
         group_access_code: '',
         group_password: '',
         max_photos_for_print: '' as string | number,
+        external_download_url: '',
     });
     const [creating, setCreating] = useState(false);
 
@@ -147,6 +150,7 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
                 group_access_code: gallery.group_access_code || '',
                 group_password: gallery.group_password || '',
                 max_photos_for_print: gallery.max_photos_for_print ?? '',
+                external_download_url: gallery.external_download_url || '',
             });
         }
     }, [gallery]);
@@ -233,6 +237,7 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
                 is_active: editData.is_active,
                 description: editData.description,
                 gallery_mode: editData.gallery_mode,
+                external_download_url: editData.external_download_url || null,
             };
             payload.group_password = editData.group_password || null;
             if (editData.gallery_mode === 'GROUP') {
@@ -282,6 +287,7 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
                     group_access_code: newGallery.gallery_mode === 'GROUP' ? newGallery.group_access_code : undefined,
                     group_password: newGallery.group_password ? newGallery.group_password : undefined,
                     max_photos_for_print: newGallery.gallery_mode === 'GROUP' && newGallery.max_photos_for_print ? Number(newGallery.max_photos_for_print) : undefined,
+                    external_download_url: newGallery.external_download_url || undefined,
                 })
             });
 
@@ -863,6 +869,17 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
                                     className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:border-purple-500 outline-none transition-colors"
                                 />
                             </div>
+                            <div className="space-y-2">
+                                <label className="block text-xs uppercase font-bold text-zinc-500 ml-1">Link do pobrania całej galerii (opcjonalne)</label>
+                                <input
+                                    type="url"
+                                    value={newGallery.external_download_url}
+                                    onChange={e => setNewGallery({ ...newGallery, external_download_url: e.target.value })}
+                                    placeholder="https://adobe.ly/..."
+                                    className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:border-purple-500 outline-none transition-colors"
+                                />
+                                <p className="text-[11px] text-zinc-500">Po zapisaniu tekst „lub pobierz całą galerię” otworzy ten link.</p>
+                            </div>
                         </div>
                     )}
 
@@ -1068,6 +1085,17 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
                                         placeholder="np. 5"
                                         className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:border-purple-500 outline-none transition-all"
                                     />
+                                </div>
+                                <div className="space-y-2 md:col-span-3">
+                                    <label className="block text-xs font-bold text-zinc-500 uppercase ml-1 tracking-widest">Link do pobrania całej galerii</label>
+                                    <input
+                                        type="url"
+                                        value={editData.external_download_url}
+                                        onChange={(e) => setEditData({ ...editData, external_download_url: e.target.value })}
+                                        placeholder="https://adobe.ly/..."
+                                        className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:border-purple-500 outline-none transition-all"
+                                    />
+                                    <p className="text-[11px] text-zinc-500">Opcjonalnie. Link zastępuje standardowe pobieranie ZIP pod tekstem „lub pobierz całą galerię”.</p>
                                 </div>
                             </div>
                         )}

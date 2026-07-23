@@ -62,7 +62,7 @@ export async function PUT(
             const {
                 standard_count, price_per_premium, expires_at, is_active, description,
                 gallery_mode, group_access_code, group_password, max_photos_for_print,
-                allow_extra_photo_purchase,
+                allow_extra_photo_purchase, external_download_url,
             } = body;
 
             const updateData: any = {};
@@ -116,6 +116,23 @@ export async function PUT(
                 updateData.max_photos_for_print = max_photos_for_print === null || max_photos_for_print === ''
                     ? null
                     : Number(max_photos_for_print);
+            }
+            if (external_download_url !== undefined) {
+                const rawUrl = String(external_download_url || '').trim();
+                if (!rawUrl) {
+                    updateData.external_download_url = null;
+                } else {
+                    try {
+                        const parsedUrl = new URL(rawUrl);
+                        if (parsedUrl.protocol !== 'https:') throw new Error('invalid protocol');
+                        updateData.external_download_url = parsedUrl.toString();
+                    } catch {
+                        return NextResponse.json(
+                            { success: false, error: 'Link do galerii musi być poprawnym adresem HTTPS' },
+                            { status: 400 }
+                        );
+                    }
+                }
             }
 
             const gallery = await prisma.clientGallery.update({

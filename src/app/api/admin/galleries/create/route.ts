@@ -25,6 +25,7 @@ export async function POST(request: NextRequest) {
                 group_access_code: rawGroupCode,
                 group_password,
                 max_photos_for_print,
+                external_download_url,
             } = body;
 
             if (!client_name || !client_email) {
@@ -35,6 +36,19 @@ export async function POST(request: NextRequest) {
             }
 
             const mode = gallery_mode === 'GROUP' ? 'GROUP' : 'INDIVIDUAL';
+            let externalDownloadUrl: string | null = null;
+            if (external_download_url) {
+                try {
+                    const parsedUrl = new URL(String(external_download_url).trim());
+                    if (parsedUrl.protocol !== 'https:') throw new Error('invalid protocol');
+                    externalDownloadUrl = parsedUrl.toString();
+                } catch {
+                    return NextResponse.json(
+                        { success: false, error: 'Link do galerii musi być poprawnym adresem HTTPS' },
+                        { status: 400 }
+                    );
+                }
+            }
             let group_access_code: string | null = null;
             if (mode === 'GROUP') {
                 const normalized = String(rawGroupCode || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
@@ -77,6 +91,7 @@ export async function POST(request: NextRequest) {
                     group_access_code,
                     group_password: group_password ? String(group_password).trim() || null : null,
                     max_photos_for_print: max_photos_for_print ? Number(max_photos_for_print) : null,
+                    external_download_url: externalDownloadUrl,
                 }
             });
 

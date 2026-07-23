@@ -24,6 +24,7 @@ interface GalleryInfo {
   price_per_premium?: number;
   group_print_price_10x15?: number;
   group_print_price_15x21?: number;
+  external_download_url?: string | null;
 }
 
 interface ParticipantInfo {
@@ -1745,9 +1746,9 @@ Hasło: ${password}` : ''}`}
                   <Download className="w-4 h-4" />
                   Pobierz zdjęcia
                 </button>
-                {code.trim().toUpperCase() === 'TORUNAB' ? (
+                {galleryInfo?.external_download_url ? (
                   <a
-                    href="https://adobe.ly/4vUBLpv"
+                    href={galleryInfo.external_download_url}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-xs text-zinc-500 hover:text-zinc-300 underline underline-offset-4 decoration-zinc-700 hover:decoration-zinc-400 transition-colors"
