@@ -1745,14 +1745,26 @@ Hasło: ${password}` : ''}`}
                   <Download className="w-4 h-4" />
                   Pobierz zdjęcia
                 </button>
-                <button
-                  onClick={handleDownloadAll}
-                  disabled={photos.length === 0}
-                  className="text-xs text-zinc-500 hover:text-zinc-300 underline underline-offset-4 decoration-zinc-700 hover:decoration-zinc-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                  title="Pobierz wszystkie zdjęcia z galerii w pełnej rozdzielczości jako ZIP (większy plik)"
-                >
-                  lub pobierz całą galerię
-                </button>
+                {code.trim().toUpperCase() === 'TORUNAB' ? (
+                  <a
+                    href="https://adobe.ly/4vUBLpv"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-zinc-500 hover:text-zinc-300 underline underline-offset-4 decoration-zinc-700 hover:decoration-zinc-400 transition-colors"
+                    title="Pobierz całą galerię"
+                  >
+                    lub pobierz całą galerię
+                  </a>
+                ) : (
+                  <button
+                    onClick={handleDownloadAll}
+                    disabled={photos.length === 0}
+                    className="text-xs text-zinc-500 hover:text-zinc-300 underline underline-offset-4 decoration-zinc-700 hover:decoration-zinc-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    title="Pobierz wszystkie zdjęcia z galerii w pełnej rozdzielczości jako ZIP (większy plik)"
+                  >
+                    lub pobierz całą galerię
+                  </button>
+                )}
                 {extraPurchaseEnabled && extraCartTotalUnits > 0 && (
                   <div className="flex flex-wrap items-center gap-3 px-4 py-2.5 bg-emerald-900/40 border border-emerald-500/60 rounded-xl">
                     <div className="flex flex-col min-w-[140px]">
