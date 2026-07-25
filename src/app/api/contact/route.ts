@@ -3,10 +3,16 @@ import { NextResponse } from "next/server";
 
 import { getAdminEmail, sendEmail } from "@/lib/email/sender";
 import { logSystem } from "@/lib/logger";
+import { rateLimit, getClientIp } from '@/lib/rate-limit';
+
+const escapeHtml = (value: unknown) => String(value ?? '').replace(/[&<>'"]/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]!));
 
 export async function POST(request: Request) {
     let body: any = {};
     try {
+        if (!rateLimit(`contact:${getClientIp(request)}`, 5, 15 * 60_000).ok) {
+            return NextResponse.json({ error: 'Zbyt wiele wiadomości. Spróbuj ponownie za 15 minut.' }, { status: 429 });
+        }
         body = await request.json();
         const { name, email, message, company, phone, serviceType, lead_source, lead_campaign } = body;
 
@@ -18,6 +24,12 @@ export async function POST(request: Request) {
                 { status: 400 }
             );
         }
+        if (typeof name !== 'string' || typeof email !== 'string' || typeof message !== 'string' ||
+            name.length > 120 || email.length > 254 || message.length > 5_000 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+            return NextResponse.json({ error: 'Nieprawidłowe dane formularza' }, { status: 400 });
+        }
+
+        const safe = { name: escapeHtml(name), email: escapeHtml(email), message: escapeHtml(message), company: escapeHtml(company), phone: escapeHtml(phone), serviceType: escapeHtml(serviceType), leadSource: escapeHtml(lead_source), leadCampaign: escapeHtml(lead_campaign) };
 
         const adminEmail = await getAdminEmail();
         if (!adminEmail) {
@@ -31,7 +43,7 @@ export async function POST(request: Request) {
         const result = await sendEmail({
             to: adminEmail,
             replyTo: email,
-            subject: `${subjectPrefix} ${name} ${company ? `(${company})` : ''}`,
+            subject: `${subjectPrefix} ${name.replace(/[\r\n]/g, '')} ${company ? `(${String(company).replace(/[\r\n]/g, '')})` : ''}`,
             text: `
 Imię: ${name}
 Email: ${email}
@@ -45,16 +57,16 @@ ${message}
             `,
             html: `
 <h3>${isB2B ? 'Nowe zapytanie ofertowe (B2B)' : 'Nowa wiadomość ze strony'}</h3>
-<p><strong>Imię:</strong> ${name}</p>
-<p><strong>Email:</strong> ${email}</p>
-${company ? `<p><strong>Firma:</strong> ${company}</p>` : ''}
-${phone ? `<p><strong>Telefon:</strong> ${phone}</p>` : ''}
-${serviceType ? `<p><strong>Typ usługi:</strong> ${serviceType}</p>` : ''}
-${lead_source && lead_source !== 'direct' ? `<p><strong>🎯 Źródło leadu:</strong> <span style="background: #fbbf24; padding: 2px 8px; border-radius: 4px; font-weight: bold;">${lead_source.toUpperCase()}</span> ${lead_campaign !== 'none' ? `(kampania: ${lead_campaign})` : ''}</p>` : ''}
+<p><strong>Imię:</strong> ${safe.name}</p>
+<p><strong>Email:</strong> ${safe.email}</p>
+${company ? `<p><strong>Firma:</strong> ${safe.company}</p>` : ''}
+${phone ? `<p><strong>Telefon:</strong> ${safe.phone}</p>` : ''}
+${serviceType ? `<p><strong>Typ usługi:</strong> ${safe.serviceType}</p>` : ''}
+${lead_source && lead_source !== 'direct' ? `<p><strong>🎯 Źródło leadu:</strong> <span style="background: #fbbf24; padding: 2px 8px; border-radius: 4px; font-weight: bold;">${safe.leadSource.toUpperCase()}</span> ${lead_campaign !== 'none' ? `(kampania: ${safe.leadCampaign})` : ''}</p>` : ''}
 <hr />
 <p><strong>Wiadomość:</strong></p>
 <blockquote style="border-left: 2px solid #ccc; padding-left: 10px; margin-left: 0; white-space: pre-wrap;">
-    ${message.replace(/\n/g, '<br>')}
+    ${safe.message.replace(/\n/g, '<br>')}
 </blockquote>
             `,
         });

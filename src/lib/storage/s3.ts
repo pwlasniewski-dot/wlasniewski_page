@@ -58,6 +58,7 @@ export async function uploadToS3(fileBuffer: Buffer, fileName: string, mimeType:
                 Key: fileName,
                 Body: fileBuffer,
                 ContentType: mimeType,
+                ACL: 'public-read',
             },
         });
 
@@ -106,6 +107,7 @@ export async function uploadStreamToS3(
             Key: fileName,
             Body: stream,
             ContentType: mimeType,
+            ACL: 'public-read',
             ...(contentDisposition ? { ContentDisposition: contentDisposition } : {}),
         },
         // Trzymaj pamięć w ryzach: 5MB części, max 4 równolegle

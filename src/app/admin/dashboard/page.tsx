@@ -157,16 +157,16 @@ function ActivityFeed() {
         <ul className="divide-y divide-zinc-800">
             {logs.map((log: any) => (
                 <li key={log.id} className="p-4 hover:bg-zinc-800/50 transition-colors">
-                    <div className="flex items-start justify-between">
-                        <div>
-                            <p className="text-sm font-medium text-white">{log.message || log.action}</p>
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="min-w-0 flex-1">
+                            <p className="break-words text-sm font-medium text-white">{log.message || log.action}</p>
                             {log.details && (
-                                <pre className="mt-1 text-xs text-zinc-500 max-w-2xl overflow-hidden text-ellipsis">
+                                <pre className="mt-1 max-w-2xl whitespace-pre-wrap break-words text-xs leading-relaxed text-zinc-400">
                                     {typeof log.details === 'string' ? log.details : JSON.stringify(log.details)}
                                 </pre>
                             )}
                         </div>
-                        <div className="text-xs text-zinc-500 ml-4 whitespace-nowrap">
+                        <div className="text-xs text-zinc-500 sm:ml-4 sm:whitespace-nowrap">
                             {new Date(log.created_at).toLocaleString()}
                         </div>
                     </div>

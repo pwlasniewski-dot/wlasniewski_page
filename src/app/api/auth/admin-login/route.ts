@@ -2,16 +2,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { verifyPassword, generateToken } from '@/lib/auth/jwt';
+import { rateLimit, getClientIp } from '@/lib/rate-limit';
 
 export async function POST(req: NextRequest) {
     try {
         const { email, password } = await req.json();
+        const normalizedEmail = String(email || '').trim().toLowerCase();
 
-        if (!email || !password) {
+        if (!normalizedEmail || !password) {
             return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
         }
 
-        const admin = await prisma.adminUser.findUnique({ where: { email } });
+        const ip = getClientIp(req);
+        if (!rateLimit(`admin-login:ip:${ip}`, 10, 15 * 60_000).ok ||
+            !rateLimit(`admin-login:email:${normalizedEmail}`, 5, 15 * 60_000).ok) {
+            return NextResponse.json({ error: 'Zbyt wiele prób logowania. Spróbuj ponownie za 15 minut.' }, { status: 429 });
+        }
+
+        const admin = await prisma.adminUser.findUnique({ where: { email: normalizedEmail } });
         // Also allow finding by name for flexibility if needed, but email is safer
 
         if (!admin) {
@@ -44,7 +52,7 @@ export async function POST(req: NextRequest) {
 
         // Set HttpOnly cookie for Next.js middleware and direct browser routes (like PDF download)
         response.cookies.set('admin_token', token, {
-            httpOnly: false, // Allow JS access if needed by frontend, or leave true if only backend needs it. Let's make it available
+            httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax',
             path: '/',

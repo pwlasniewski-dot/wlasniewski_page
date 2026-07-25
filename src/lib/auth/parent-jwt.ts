@@ -1,8 +1,12 @@
-import { SignJWT, jwtVerify } from 'jose';
+import { SignJWT, jwtVerify, type JWTPayload } from 'jose';
 
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'your-super-secret-key-change-in-production'
-);
+function getParentJwtSecret(): Uint8Array {
+  const secret = process.env.JWT_SECRET;
+  if (!secret || secret.length < 32) {
+    throw new Error('[SECURITY] JWT_SECRET must be configured and contain at least 32 characters.');
+  }
+  return new TextEncoder().encode(secret);
+}
 
 export interface ParentTokenPayload {
   participant_id: number;
@@ -14,11 +18,11 @@ export interface ParentTokenPayload {
  * Generate JWT token for parent after registration
  */
 export async function generateParentToken(payload: ParentTokenPayload): Promise<string> {
-  const token = await new SignJWT(payload)
+  const token = await new SignJWT({ ...payload } as JWTPayload)
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime('30d') // Token valid for 30 days
-    .sign(JWT_SECRET);
+    .sign(getParentJwtSecret());
 
   return token;
 }
@@ -28,8 +32,11 @@ export async function generateParentToken(payload: ParentTokenPayload): Promise<
  */
 export async function verifyParentToken(token: string): Promise<ParentTokenPayload | null> {
   try {
-    const { payload } = await jwtVerify(token, JWT_SECRET);
-    return payload as ParentTokenPayload;
+    const { payload } = await jwtVerify(token, getParentJwtSecret());
+    if (typeof payload.participant_id !== 'number' || typeof payload.gallery_id !== 'number' || typeof payload.parent_identifier !== 'string') {
+      return null;
+    }
+    return payload as unknown as ParentTokenPayload;
   } catch (error) {
     console.error('Parent token verification failed:', error);
     return null;

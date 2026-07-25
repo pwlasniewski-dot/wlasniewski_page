@@ -1,8 +1,11 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
+import { requireAuth } from '@/lib/auth/middleware';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+    const authError = await requireAuth(request);
+    if (authError) return authError;
     try {
         const goals = await prisma.businessGoal.findMany({
             orderBy: { end_date: 'asc' }
@@ -22,6 +25,8 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+    const authError = await requireAuth(request);
+    if (authError) return authError;
     try {
         const body = await request.json();
         const goal = await prisma.businessGoal.create({

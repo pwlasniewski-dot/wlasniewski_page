@@ -1,23 +1,31 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import { sendEmail } from '@/lib/email/sender';
+import { getAdminEmail, sendEmail } from '@/lib/email/sender';
 import prisma from '@/lib/db/prisma';
 import { requireAuth } from '@/lib/auth/middleware';
+import { z } from 'zod';
+
+const mailingSchema = z.object({
+    recipientEmail: z.string().trim().email().max(254),
+    templateId: z.number().int().positive().optional(),
+    variableData: z.record(z.string().max(64), z.string().max(2_000)).optional(),
+    subject: z.string().trim().min(1).max(180).optional(),
+    content: z.string().trim().min(1).max(100_000).optional(),
+    consentConfirmed: z.literal(true),
+}).refine(value => value.templateId || (value.subject && value.content), { message: 'Wybierz szablon albo wpisz temat i treść.' });
 
 export async function POST(request: NextRequest) {
     const authError = await requireAuth(request);
     if (authError) return authError;
 
     try {
-        const { recipientEmail, templateId, variableData, subject: customSubject, content: customContent } = await request.json();
-
-        if (!recipientEmail || (!templateId && (!customSubject || !customContent))) {
-            return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
-        }
+        const parsed = mailingSchema.safeParse(await request.json());
+        if (!parsed.success) return NextResponse.json({ error: 'Nieprawidłowe dane wysyłki' }, { status: 400 });
+        const { recipientEmail, templateId, variableData, subject: customSubject, content: customContent } = parsed.data;
 
         // Determine subject and content
-        let subject = customSubject;
-        let content = customContent;
+        let subject: string = customSubject || '';
+        let content: string = customContent || '';
         let templateTitle = 'Custom Email';
 
         if (templateId && (!subject || !content)) {
@@ -49,7 +57,7 @@ export async function POST(request: NextRequest) {
             to: recipientEmail,
             subject: subject || 'Oferta',
             html: content || '',
-            bcc: 'kontakt@wlasniewski.pl' // Ensure admin always gets a copy
+            bcc: await getAdminEmail(),
         });
 
         // Log action
@@ -57,7 +65,7 @@ export async function POST(request: NextRequest) {
             data: {
                 client_name: variableData?.client_name || recipientEmail,
                 action_type: 'EMAIL_SENT',
-                notes: `Sent: ${subject} to ${recipientEmail}`
+                notes: `Consent confirmed by administrator. Sent: ${subject} to ${recipientEmail}`
             }
         });
 

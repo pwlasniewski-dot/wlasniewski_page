@@ -1,10 +1,13 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { portfolioCategories } from '@/data/portfolioData';
+import { requireAuth } from '@/lib/auth/middleware';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
+    const authError = await requireAuth(request as NextRequest);
+    if (authError) return authError;
     try {
         // 1. Fetch Dynamic Pages (DB)
         const pages = await prisma.page.findMany({

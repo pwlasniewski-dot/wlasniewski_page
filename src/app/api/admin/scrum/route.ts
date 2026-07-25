@@ -1,8 +1,11 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
+import { requireAuth } from '@/lib/auth/middleware';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+    const authError = await requireAuth(request);
+    if (authError) return authError;
     try {
         const tasks = await prisma.scrumTask.findMany({
             orderBy: { created_at: 'desc' }
@@ -14,6 +17,8 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+    const authError = await requireAuth(request);
+    if (authError) return authError;
     try {
         const body = await request.json();
         const task = await prisma.scrumTask.create({
@@ -32,6 +37,8 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
+    const authError = await requireAuth(request);
+    if (authError) return authError;
     try {
         const body = await request.json();
         const { id, ...updates } = body;
@@ -49,6 +56,8 @@ export async function PATCH(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+    const authError = await requireAuth(request);
+    if (authError) return authError;
     try {
         const { searchParams } = new URL(request.url);
         const id = searchParams.get('id');

@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
+import { requireAuth } from '@/lib/auth/middleware';
 
 export async function GET(req: NextRequest) {
+    const authError = await requireAuth(req);
+    if (authError) return authError;
     try {
         // Get all snapshots
         const snapshots = await prisma.analyticsSnapshot.findMany({
@@ -58,6 +61,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+    const authError = await requireAuth(req);
+    if (authError) return authError;
     try {
         const bookings = await prisma.booking.findMany({
             select: { price: true }

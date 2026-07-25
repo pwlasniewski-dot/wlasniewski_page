@@ -1,8 +1,11 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
+import { requireAuth } from '@/lib/auth/middleware';
 
 export async function POST(request: NextRequest) {
+    const authError = await requireAuth(request);
+    if (authError) return authError;
     try {
         // Clear critical analytics and temporary test data
         // We use deleteMany without where to clear everything in these tables

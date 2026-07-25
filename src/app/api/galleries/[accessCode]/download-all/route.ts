@@ -52,7 +52,7 @@ export async function GET(
 
         // Create a PassThrough stream to pipe the archive into
         const passthrough = new PassThrough();
-        const archive = archiver('zip', { zlib: { level: 9 } });
+        const archive = archiver('zip', { store: true, forceZip64: true });
 
         archive.on('error', (err) => {
             console.error('Archiver error:', err);

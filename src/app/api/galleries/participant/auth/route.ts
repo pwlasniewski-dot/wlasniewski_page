@@ -3,9 +3,13 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
+import { checkRateLimit, getClientIp } from '@/lib/auth/rate-limit';
 
 export async function POST(request: NextRequest) {
     try {
+        if (!checkRateLimit(`participant-auth:${getClientIp(request)}`, 10, 15 * 60 * 1000).allowed) {
+            return NextResponse.json({ error: 'Zbyt wiele prób. Spróbuj ponownie za 15 minut.' }, { status: 429 });
+        }
         const { code, parent_name, parent_email, parent_phone } = await request.json();
 
         if (!code) {
@@ -13,6 +17,12 @@ export async function POST(request: NextRequest) {
                 { error: 'Kod dostępu jest wymagany' },
                 { status: 400 }
             );
+        }
+        if (typeof code !== 'string' || code.length > 80 ||
+            (parent_name && (typeof parent_name !== 'string' || parent_name.length > 100)) ||
+            (parent_email && (typeof parent_email !== 'string' || parent_email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(parent_email))) ||
+            (parent_phone && (typeof parent_phone !== 'string' || parent_phone.length > 30))) {
+            return NextResponse.json({ error: 'Nieprawidłowe dane dostępu' }, { status: 400 });
         }
 
         // Find participant by code

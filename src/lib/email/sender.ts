@@ -71,8 +71,9 @@ async function getTransporter() {
                 user: config.user,
                 pass: config.pass,
             },
+            // Never accept an untrusted SMTP certificate: it could expose client data in transit.
             tls: {
-                rejectUnauthorized: false
+                rejectUnauthorized: true
             }
         });
 

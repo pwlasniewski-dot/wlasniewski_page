@@ -31,7 +31,8 @@ import {
     Cake,
     TrendingUp,
     GraduationCap,
-    MapPin
+    MapPin,
+    Mail
 } from 'lucide-react';
 
 const navigation = [
@@ -109,6 +110,7 @@ const navigation = [
 
     { name: 'Analityka', href: '/admin/analytics', icon: BarChart3 },
     { name: 'Marketing & UTM', href: '/admin/marketing', icon: TrendingUp },
+    { name: 'Mailing', href: '/admin/mailing', icon: Mail },
     {
         name: 'SEO Ops',
         href: '/admin/seo',

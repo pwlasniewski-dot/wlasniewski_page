@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
+import { requireAuth } from '@/lib/auth/middleware';
 
 // PATCH single drone order (update status)
 export async function PATCH(
     req: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
+    const authError = await requireAuth(req);
+    if (authError) return authError;
     try {
         const { id } = await params;
         const { status } = await req.json();
@@ -30,6 +33,8 @@ export async function DELETE(
     req: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
+    const authError = await requireAuth(req);
+    if (authError) return authError;
     try {
         const { id } = await params;
 
