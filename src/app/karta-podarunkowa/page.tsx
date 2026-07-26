@@ -4,8 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import GiftCard from '@/components/GiftCard';
-import { useCart } from '@/context/CartContext';
-import { Check, ShoppingCart } from 'lucide-react';
+import { Check } from 'lucide-react';
 
 interface GiftCardProduct {
     id: number;
@@ -47,7 +46,6 @@ export default function GiftCardShop() {
     const [selectedTheme, setSelectedTheme] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [logoUrl, setLogoUrl] = useState<string | undefined>(undefined);
-    const { addItem } = useCart();
 
     useEffect(() => {
         const fetchCards = async () => {
@@ -218,20 +216,7 @@ export default function GiftCardShop() {
                                             >
                                                 Kup tę kartę
                                             </Link>
-                                            <button
-                                                onClick={() => addItem({
-                                                    type: 'gift_card',
-                                                    productId: card.id.toString(),
-                                                    title: cardName,
-                                                    subtitle: `Karta o wartości ${displayValue} zł`,
-                                                    price: displayPrice * 100,
-                                                    quantity: 1,
-                                                    metadata: { cardId: card.id, theme: card.theme, value: card.value }
-                                                })}
-                                                className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/15 px-6 py-3 text-sm text-stone-300 transition hover:border-white/35 hover:text-white"
-                                            >
-                                                <ShoppingCart className="h-4 w-4" /> Dodaj do koszyka
-                                            </button>
+
                                         </div>
                                     </article>
                                 );
