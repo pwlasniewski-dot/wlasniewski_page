@@ -2,7 +2,7 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import CityPhotoStory, { CityStoryPhoto } from '@/components/CityPhotoStory';
+import CityPhotoStory, { type CityStoryPhoto } from '@/components/CityPhotoStory';
 import { getPortfolioCategories } from '@/lib/portfolio';
 
 // ─── City Data with FAQs ─────────────────────────────────────────
@@ -492,31 +492,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     if (!key) return { title: 'Strona nie znaleziona' };
     const data = CITIES[key];
 
-    const portfolioCategories = await getPortfolioCategories();
-    const allSessions = portfolioCategories.flatMap(category => category.sessions);
-    const cityNeedle = data.city.toLocaleLowerCase('pl-PL');
-    const citySlugNeedle = data.slug.replace('fotograf-', '').toLowerCase();
-    const matchingSessions = allSessions.filter(session => {
-        const haystack = `${session.title} ${session.slug} ${session.location || ''} ${session.description || ''}`.toLocaleLowerCase('pl-PL');
-        return haystack.includes(cityNeedle) || haystack.includes(citySlugNeedle);
-    });
-    const familyFallback = allSessions.filter(session =>
-        ['family', 'rodzinna', 'rodzinne'].includes(session.category.toLowerCase())
-    );
-    const sourceSessions = matchingSessions.length >= 2 ? matchingSessions : [...matchingSessions, ...familyFallback];
 
-    const candidatePhotos: CityStoryPhoto[] = sourceSessions.flatMap(session => {
-        const sources = [session.coverImage, ...(session.highlightedPhotos || [])].filter(Boolean) as string[];
-        return sources.map((src, index) => ({
-            src,
-            alt: `${session.title} — fotografia Przemysława Właśniewskiego`,
-            caption: index === 0 ? session.title : `${session.title} — wybrany kadr z galerii`,
-        }));
-    });
-    const cityGalleryImages = candidatePhotos
-        .filter((photo, index, all) => all.findIndex(candidate => candidate.src === photo.src) === index)
-        .slice(0, 7);
-    const heroPhoto = cityGalleryImages[0]?.src || data.heroImage;
 
     return {
         title: data.metaTitle,
@@ -549,6 +525,48 @@ export default async function CityLandingPage({ params }: PageProps) {
     const key = getCityKey(citySlug);
     if (!key) notFound();
     const data = CITIES[key];
+
+    let cityGalleryImages: CityStoryPhoto[] = [];
+    try {
+        const portfolioCategories = await getPortfolioCategories();
+        const allSessions = portfolioCategories.flatMap(category => category.sessions || []);
+        const cityNeedle = String(data.city || '').toLocaleLowerCase('pl-PL');
+        const citySlugNeedle = String(data.slug || '').replace('fotograf-', '').toLowerCase();
+
+        const matchingSessions = allSessions.filter(session => {
+            const haystack = `${session.title || ''} ${session.slug || ''} ${session.location || ''} ${session.description || ''}`.toLocaleLowerCase('pl-PL');
+            return haystack.includes(cityNeedle) || haystack.includes(citySlugNeedle);
+        });
+        const familyFallback = allSessions.filter(session =>
+            ['family', 'rodzinna', 'rodzinne'].includes(String(session.category || '').toLowerCase())
+        );
+        const sourceSessions = matchingSessions.length >= 2
+            ? matchingSessions
+            : [...matchingSessions, ...familyFallback];
+
+        const candidatePhotos: CityStoryPhoto[] = sourceSessions.flatMap(session => {
+            const highlighted = Array.isArray(session.highlightedPhotos) ? session.highlightedPhotos : [];
+            const sources = [session.coverImage, ...highlighted]
+                .filter((src): src is string => typeof src === 'string' && src.length > 0);
+
+            return sources.map((src, index) => ({
+                src,
+                alt: `${session.title || 'Sesja fotograficzna'} — fotografia Przemysława Właśniewskiego`,
+                caption: index === 0
+                    ? (session.title || 'Sesja fotograficzna')
+                    : `${session.title || 'Sesja fotograficzna'} — wybrany kadr z galerii`,
+            }));
+        });
+
+        cityGalleryImages = candidatePhotos
+            .filter((photo, index, all) => all.findIndex(candidate => candidate.src === photo.src) === index)
+            .slice(0, 7);
+    } catch (error) {
+        console.error('[CityLandingPage] Portfolio gallery fallback:', error);
+    }
+
+    const heroPhoto = cityGalleryImages[0]?.src || data.heroImage;
+
 
     // JSON-LD: FAQPage
     const faqSchema = {
