@@ -279,7 +279,7 @@ export async function POST(request: Request) {
             const payuOrder = await createPayUOrder({
                 description: `Zamówienie ${cartId} (${customer.email})`,
                 currencyCode: 'PLN',
-                totalAmount: verifiedTotalAmount
+                totalAmount: verifiedTotalAmount,
                 extOrderId: cartId, // THIS IS THE KEY
                 buyer: {
                     email: customer.email,
