@@ -33,7 +33,7 @@ interface FooterSettings {
 
 const defaultSettings: FooterSettings = {
     brand_name: 'Przemysław Właśniewski — Fotograf',
-    tagline: 'Naturalne zdjęcia rodzinne, ślubne, portretowe i komunijne. Toruń, Lisewo, Wąbrzeźno, Płużnica i okolice.',
+    tagline: 'Sesje rodzinne, reportaże ślubne i fotografia uroczystości w Toruniu oraz regionie.',
     phone: '+48 530 788 694',
     email: process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'kontakt@wlasniewski.pl',
     facebook_url: 'https://www.facebook.com/przemyslaw.wlasniewski.fotografia',
@@ -43,10 +43,10 @@ const defaultSettings: FooterSettings = {
             title: 'Oferta',
             enabled: true,
             links: [
-                { id: '1', label: 'Fotografia rodzinna', url: '/portfolio/family' },
-                { id: '2', label: 'Fotografia ślubna', url: '/portfolio/wedding' },
-                { id: '3', label: 'Portret i wizerunkowa', url: '/portfolio/portrait' },
-                { id: '4', label: 'Fotografia komunijna', url: '/portfolio/communion' },
+                { id: 'offer-family', label: 'Sesje rodzinne', url: '/sesja-rodzinna' },
+                { id: 'offer-wedding', label: 'Fotografia ślubna', url: '/slub' },
+                { id: 'offer-booking', label: 'Cennik i rezerwacja', url: '/rezerwacja' },
+                { id: 'offer-gift', label: 'Karty podarunkowe', url: '/karta-podarunkowa' },
             ]
         },
         lokalnie: {
@@ -192,13 +192,20 @@ export default function Footer({ isB2B: serverIsB2B }: { isB2B?: boolean }) {
                             }));
 
                             if (dynamicLinks.length > 0) {
+                                const coreLinks = defaultSettings.sections.oferta.links;
+                                const configuredLinks = footerConfig.sections.oferta.links || [];
+                                const links = [...coreLinks, ...configuredLinks, ...dynamicLinks]
+                                    .filter((link, index, all) =>
+                                        all.findIndex(candidate => candidate.url === link.url) === index
+                                    );
+
                                 footerConfig = {
                                     ...footerConfig,
                                     sections: {
                                         ...footerConfig.sections,
                                         oferta: {
                                             ...footerConfig.sections.oferta,
-                                            links: dynamicLinks
+                                            links
                                         }
                                     }
                                 };
@@ -206,6 +213,21 @@ export default function Footer({ isB2B: serverIsB2B }: { isB2B?: boolean }) {
                         }
                     } catch (e) { }
                 }
+
+                const coreLinks = defaultSettings.sections.oferta.links;
+                footerConfig = {
+                    ...footerConfig,
+                    sections: {
+                        ...footerConfig.sections,
+                        oferta: {
+                            ...footerConfig.sections.oferta,
+                            links: [...coreLinks, ...(footerConfig.sections.oferta.links || [])]
+                                .filter((link, index, all) =>
+                                    all.findIndex(candidate => candidate.url === link.url) === index
+                                )
+                        }
+                    }
+                };
 
                 setSettings(footerConfig);
             } catch (error) {
