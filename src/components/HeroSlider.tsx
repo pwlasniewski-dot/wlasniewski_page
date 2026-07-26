@@ -229,7 +229,7 @@ export default function HeroSlider({ slides = [], interval = 6000 }: HeroSliderP
                         transition={variant.transition}
                         className="space-y-3 sm:space-y-4 md:space-y-6 max-w-4xl"
                     >
-                        <h2
+                        <div
                             className="text-3xl sm:text-5xl md:text-6xl lg:text-8xl font-extrabold text-white tracking-tighter drop-shadow-2xl leading-tight"
                             dangerouslySetInnerHTML={{ __html: slide.title || '' }}
                         />
