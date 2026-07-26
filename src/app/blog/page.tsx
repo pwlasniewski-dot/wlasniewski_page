@@ -41,10 +41,10 @@ export default function BlogIndex() {
                 {/* Header */}
                 <div className="text-center mb-16">
                     <h1 className="text-4xl md:text-6xl font-extrabold text-white mb-4 font-display">
-                        Blog Fotografa — Porady i Inspiracje
+                        Porady przed sesją i historie z realizacji
                     </h1>
                     <p className="text-zinc-300 text-lg max-w-2xl mx-auto">
-                        Porady fotograficzne, inspiracje do sesji i kulisy pracy fotografa w Toruniu
+                        Konkretne wskazówki dla rodzin i par oraz krótkie historie ze zdjęć wykonanych w Toruniu, Płużnicy i okolicach
                     </p>
                 </div>
 
@@ -108,13 +108,13 @@ export default function BlogIndex() {
                 {/* Info box */}
                 <div className="text-center bg-white/5 rounded-2xl p-8 border border-zinc-700">
                     <p className="text-zinc-400 mb-4">
-                        Szukasz więcej inspiracji?
+                        Chcesz zobaczyć ceny i dostępne terminy?
                     </p>
                     <Link
-                        href="/portfolio"
+                        href="/rezerwacja?source=blog&service=Sesja"
                         className="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-zinc-900 font-bold px-6 py-3 rounded-xl transition-colors"
                     >
-                        Zobacz portfolio
+                        Sprawdź pakiety i wolne terminy
                     </Link>
                 </div>
             </div>
