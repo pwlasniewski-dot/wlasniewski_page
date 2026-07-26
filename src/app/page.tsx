@@ -26,15 +26,17 @@ const getCachedHomeMetadata = unstable_cache(
 export async function generateMetadata(): Promise<Metadata> {
     const page = await getCachedHomeMetadata();
 
-    const defaultTitle = "Fotograf Toruń – Właśniewski | Śluby, sesje rodzinne";
-    const defaultDescription = "Fotograf Toruń – naturalne sesje ślubne, rodzinne i komunijne. Toruń, Grudziądz, Chełmno, Wąbrzeźno i okolice. Reportaże pełne emocji. ☎ 530 788 694";
-    const defaultKeywords = "fotograf toruń, fotograf grudziądz, fotograf płużnica, zdjęcia ślubne, sesja rodzinna, fotograf komunijny toruń, fotograf biznesowy, dron kujawsko pomorskie";
+    const defaultTitle = "Fotograf Toruń | Sesje rodzinne i śluby — Właśniewski";
+    const defaultDescription = "Fotograf w Toruniu: sesje rodzinne, reportaże ślubne i rodzinne uroczystości. Zobacz pakiety, ceny i wolne terminy. Rezerwacja online z PayU.";
+    const defaultKeywords = "fotograf Toruń, sesja rodzinna Toruń, fotograf ślubny Toruń, fotografia rodzinna Toruń, reportaż ślubny Toruń";
 
     // Use DB values only if they're meaningful (not generic placeholder text)
     const dbTitle = page?.meta_title;
     const dbDesc = page?.meta_description;
-    const isGenericTitle = !dbTitle || dbTitle.length < 35 || dbTitle.toLowerCase().includes('strona główna');
-    const isGenericDesc = !dbDesc || dbDesc.length < 60 || dbDesc.toLowerCase().includes('strona główna');
+    const legacyTitle = "Fotograf Toruń – Właśniewski | Śluby, sesje rodzinne";
+    const legacyDescription = "Fotograf Toruń – naturalne sesje ślubne, rodzinne i komunijne. Toruń, Grudziądz, Chełmno, Wąbrzeźno i okolice. Reportaże pełne emocji. ☎ 530 788 694";
+    const isGenericTitle = !dbTitle || dbTitle.length < 35 || dbTitle.toLowerCase().includes('strona główna') || dbTitle === legacyTitle;
+    const isGenericDesc = !dbDesc || dbDesc.length < 60 || dbDesc.toLowerCase().includes('strona główna') || dbDesc === legacyDescription;
 
     return {
         title: isGenericTitle ? defaultTitle : dbTitle,
@@ -193,11 +195,8 @@ export default async function HomePage() {
     }
     const heroSliderInterval = intervalSetting?.setting_value ? parseInt(intervalSetting.setting_value) : 6000;
 
-    // SEO: deterministic SSR <h1> — guarantees Google sees the primary heading
-    // even when first section uses h2 (magazine_layout, narrative_text, etc.)
-    const heroSection = orderedSections.find((s: any) => s?.type === 'hero' && (s.image || s.data?.image));
-    const seoH1 = (heroSection?.title || heroSection?.data?.title) ||
-                  'Fotograf Toruń, Grudziądz, Chełmno, Płużnica, Wąbrzeźno — Przemysław Właśniewski. Sesje rodzinne, ślubne i komunijne';
+    // One stable primary heading keeps the homepage topic clear for people and search engines.
+    const seoH1 = 'Fotograf Toruń — sesje rodzinne i reportaże ślubne';
 
     return (
         <>
