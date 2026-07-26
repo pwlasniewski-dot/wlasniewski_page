@@ -1,6 +1,5 @@
 'use client';
 
-import React, { useState } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 
@@ -15,136 +14,148 @@ interface GiftCardProps {
     cardTitle?: string;
     cardDescription?: string;
     isPrint?: boolean;
-    hideCode?: boolean; // Hide code until after payment
-    orderId?: string; // Unique reference number
+    hideCode?: boolean;
+    orderId?: string;
 }
 
 type ThemeConfig = {
-    bgGradient: string;
-    accentColor: string;
-    icon: string;
+    backgroundImage: string;
     title: string;
     description: string;
-    borderPattern: string;
-    textColor: string;
+    textClass: string;
+    mutedClass: string;
+    borderClass: string;
+    overlayClass: string;
+    objectPosition: string;
 };
 
 const themeConfigs: Record<string, ThemeConfig> = {
     christmas: {
-        bgGradient: 'from-red-900 via-red-800 to-green-900',
-        accentColor: 'text-red-300',
-        icon: '🎄',
-        title: 'Boże Narodzenie',
-        description: 'Życzenia pięknego świąt',
-        borderPattern: '🎅🎄🎅🎄',
-        textColor: 'text-white'
+        backgroundImage: '/gift-cards/velvet-premium.webp',
+        title: 'Świąteczna sesja',
+        description: 'Czas dla bliskich i wspólne zdjęcia',
+        textClass: 'text-stone-50',
+        mutedClass: 'text-stone-200/80',
+        borderClass: 'border-white/20',
+        overlayClass: 'bg-black/20',
+        objectPosition: 'center'
     },
     wosp: {
-        bgGradient: 'from-red-600 via-red-700 to-gold-700',
-        accentColor: 'text-gold-300',
-        icon: '💛',
-        title: 'Karta Pomocy',
-        description: 'Wspieraj co w Tobie dobre',
-        borderPattern: '✨💫✨💫',
-        textColor: 'text-white'
+        backgroundImage: '/gift-cards/celebration-premium.webp',
+        title: 'Sesja fotograficzna',
+        description: 'Prezent, który zostaje na dłużej',
+        textClass: 'text-stone-50',
+        mutedClass: 'text-stone-200/80',
+        borderClass: 'border-white/20',
+        overlayClass: 'bg-black/15',
+        objectPosition: 'center'
     },
     valentines: {
-        bgGradient: 'from-pink-900 via-pink-700 to-red-900',
-        accentColor: 'text-pink-200',
-        icon: '💝',
-        title: 'Walentynki',
-        description: 'Z miłością',
-        borderPattern: '💕💕💕💕',
-        textColor: 'text-white'
+        backgroundImage: '/gift-cards/wedding-premium.webp',
+        title: 'Sesja dla dwojga',
+        description: 'Wspólny czas przed obiektywem',
+        textClass: 'text-stone-900',
+        mutedClass: 'text-stone-700/80',
+        borderClass: 'border-stone-900/15',
+        overlayClass: 'bg-white/5',
+        objectPosition: 'right center'
     },
     easter: {
-        bgGradient: 'from-gold-600 via-gold-500 to-gold-700',
-        accentColor: 'text-purple-600',
-        icon: '🐰',
-        title: 'Wielkanoc',
-        description: 'Wesołych Świąt',
-        borderPattern: '🐣🐰🐣🐰',
-        textColor: 'text-white'
+        backgroundImage: '/gift-cards/family-premium.webp',
+        title: 'Sesja rodzinna',
+        description: 'Spokojne spotkanie i ważne zdjęcia',
+        textClass: 'text-stone-900',
+        mutedClass: 'text-stone-700/80',
+        borderClass: 'border-stone-900/15',
+        overlayClass: 'bg-white/5',
+        objectPosition: 'right center'
     },
     halloween: {
-        bgGradient: 'from-orange-900 via-black to-orange-900',
-        accentColor: 'text-orange-300',
-        icon: '👻',
-        title: 'Halloween',
-        description: 'Straszna zniżka czeka!',
-        borderPattern: '👻🎃👻🎃',
-        textColor: 'text-white'
+        backgroundImage: '/gift-cards/celebration-premium.webp',
+        title: 'Sesja fotograficzna',
+        description: 'Pomysł na wyjątkowe spotkanie',
+        textClass: 'text-stone-50',
+        mutedClass: 'text-stone-200/80',
+        borderClass: 'border-white/20',
+        overlayClass: 'bg-black/15',
+        objectPosition: 'center'
     },
     'mothers-day': {
-        bgGradient: 'from-purple-700 via-pink-600 to-purple-700',
-        accentColor: 'text-gold-200',
-        icon: '💐',
-        title: 'Dzień Matki',
-        description: 'Dla najwspanialszej mamy',
-        borderPattern: '🌹💐🌹💐',
-        textColor: 'text-white'
+        backgroundImage: '/gift-cards/family-premium.webp',
+        title: 'Sesja dla mamy',
+        description: 'Zdjęcia, na których wreszcie jest cała rodzina',
+        textClass: 'text-stone-900',
+        mutedClass: 'text-stone-700/80',
+        borderClass: 'border-stone-900/15',
+        overlayClass: 'bg-white/5',
+        objectPosition: 'right center'
     },
     'childrens-day': {
-        bgGradient: 'from-blue-600 via-purple-500 to-pink-600',
-        accentColor: 'text-gold-300',
-        icon: '🎈',
-        title: 'Dzień Dziecka',
-        description: 'Dla małego uśmieszku',
-        borderPattern: '🎈🎉🎈🎉',
-        textColor: 'text-white'
+        backgroundImage: '/gift-cards/family-premium.webp',
+        title: 'Sesja rodzinna',
+        description: 'Wspólna przygoda i zdjęcia na lata',
+        textClass: 'text-stone-900',
+        mutedClass: 'text-stone-700/80',
+        borderClass: 'border-stone-900/15',
+        overlayClass: 'bg-white/5',
+        objectPosition: 'right center'
     },
     wedding: {
-        bgGradient: 'from-purple-300 via-pink-200 to-purple-300',
-        accentColor: 'text-purple-700',
-        icon: '💒',
-        title: 'Ślub',
-        description: 'Życzenia szczęścia',
-        borderPattern: '💍💒💍💒',
-        textColor: 'text-gray-800'
+        backgroundImage: '/gift-cards/wedding-premium.webp',
+        title: 'Prezent ślubny',
+        description: 'Sesja, którą para wybierze po swojemu',
+        textClass: 'text-stone-900',
+        mutedClass: 'text-stone-700/80',
+        borderClass: 'border-stone-900/15',
+        overlayClass: 'bg-white/5',
+        objectPosition: 'right center'
     },
     birthday: {
-        bgGradient: 'from-cyan-500 via-blue-500 to-purple-600',
-        accentColor: 'text-gold-200',
-        icon: '🎂',
-        title: 'Urodziny',
-        description: 'Wiele szczęścia!',
-        borderPattern: '🎉🎂🎉🎂',
-        textColor: 'text-white'
+        backgroundImage: '/gift-cards/celebration-premium.webp',
+        title: 'Prezent urodzinowy',
+        description: 'Sesja zamiast kolejnego przedmiotu',
+        textClass: 'text-stone-50',
+        mutedClass: 'text-stone-200/80',
+        borderClass: 'border-white/20',
+        overlayClass: 'bg-black/15',
+        objectPosition: 'center'
     },
-    // Generic Premium Themes
     gold: {
-        bgGradient: 'from-amber-700 via-yellow-600 to-amber-900',
-        accentColor: 'text-yellow-200',
-        icon: '✨',
-        title: 'Wyjątkowy Prezent',
-        description: 'Chwile warte zapamiętania',
-        borderPattern: '✨✨✨✨',
-        textColor: 'text-white'
+        backgroundImage: '/gift-cards/velvet-premium.webp',
+        title: 'Sesja fotograficzna',
+        description: 'Czas, zdjęcia i wspomnienia',
+        textClass: 'text-stone-50',
+        mutedClass: 'text-stone-200/80',
+        borderClass: 'border-white/20',
+        overlayClass: 'bg-black/20',
+        objectPosition: 'center'
     },
     blue: {
-        bgGradient: 'from-blue-900 via-indigo-800 to-slate-900',
-        accentColor: 'text-blue-200',
-        icon: '🌟',
-        title: 'Wyjątkowy Prezent',
-        description: 'Chwile warte zapamiętania',
-        borderPattern: '🌟🌟🌟🌟',
-        textColor: 'text-white'
+        backgroundImage: '/gift-cards/celebration-premium.webp',
+        title: 'Sesja fotograficzna',
+        description: 'Prezent dopasowany do obdarowanej osoby',
+        textClass: 'text-stone-50',
+        mutedClass: 'text-stone-200/80',
+        borderClass: 'border-white/20',
+        overlayClass: 'bg-black/15',
+        objectPosition: 'center'
     },
     green: {
-        bgGradient: 'from-emerald-900 via-green-800 to-teal-900',
-        accentColor: 'text-emerald-200',
-        icon: '🌿',
-        title: 'Wyjątkowy Prezent',
-        description: 'Chwile warte zapamiętania',
-        borderPattern: '🌿🌿🌿🌿',
-        textColor: 'text-white'
+        backgroundImage: '/gift-cards/family-premium.webp',
+        title: 'Sesja rodzinna',
+        description: 'Spokojny czas razem',
+        textClass: 'text-stone-900',
+        mutedClass: 'text-stone-700/80',
+        borderClass: 'border-stone-900/15',
+        overlayClass: 'bg-white/5',
+        objectPosition: 'right center'
     }
 };
 
 export default function GiftCard({
     code,
     value,
-    theme = 'christmas',
+    theme = 'gold',
     logoUrl,
     recipientName,
     senderName,
@@ -155,119 +166,66 @@ export default function GiftCard({
     hideCode = false,
     orderId
 }: GiftCardProps) {
-    const config = themeConfigs[theme] || themeConfigs.christmas;
-    const displayTitle = cardTitle || 'KARTA PODARUNKOWA';
+    const config = themeConfigs[theme] || themeConfigs.gold;
+    const displayTitle = cardTitle || config.title;
     const displayDescription = cardDescription || config.description;
 
     return (
         <motion.div
-            className={`relative overflow-hidden rounded-[2cqw] ${isPrint ? '' : 'shadow-2xl hover:shadow-3xl'} transition-all duration-500 w-full`}
-            style={{
-                aspectRatio: '1.586 / 1',
-                containerType: 'inline-size',
-                maxWidth: isPrint ? 'none' : '800px',
-            }}
-            animate={!isPrint ? {
-                scale: [1, 1.005, 1],
-                filter: ['brightness(1)', 'brightness(1.05)', 'brightness(1)']
-            } : {}}
-            transition={!isPrint ? { duration: 6, repeat: Infinity, ease: "easeInOut" } : {}}
+            className={`relative w-full overflow-hidden rounded-[2cqw] border ${config.borderClass} ${isPrint ? '' : 'shadow-2xl shadow-black/40'}`}
+            style={{ aspectRatio: '1.586 / 1', containerType: 'inline-size', maxWidth: isPrint ? 'none' : '800px' }}
+            whileHover={isPrint ? undefined : { y: -3 }}
+            transition={{ duration: 0.25 }}
         >
-            {/* Main background */}
-            <div className={`absolute inset-0 bg-gradient-to-br ${config.bgGradient}`}></div>
-
-            {/* Premium Texture Overlay */}
-            <div className="absolute inset-0 opacity-10 mix-blend-overlay pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]"></div>
-
-            {/* Pattern overlay */}
-            <div className="absolute inset-0 opacity-[0.03] pointer-events-none">
-                <div className="w-full h-full flex flex-wrap items-center justify-around content-around text-[10cqw] overflow-hidden">
-                    {Array(12).fill(0).map((_, i) => (
-                        <span key={i} className="select-none whitespace-nowrap rotate-12">{config.icon}</span>
-                    ))}
-                </div>
-            </div>
-
-            {/* Shine effect */}
-            <motion.div
-                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent pointer-events-none"
-                animate={{ x: ['-200%', '300%'] }}
-                transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+            <Image
+                src={config.backgroundImage}
+                alt=""
+                fill
+                sizes="(max-width: 768px) 92vw, 640px"
+                className="object-cover"
+                style={{ objectPosition: config.objectPosition }}
+                aria-hidden="true"
+                priority={false}
             />
+            <div className={`absolute inset-0 ${config.overlayClass}`} />
 
-            {/* Content Container */}
-            <div className={`relative h-full w-full p-[4cqw] flex flex-col justify-between ${config.textColor} z-10 overflow-hidden`}>
-                {/* Top section - Logo and theme */}
-                <div className="flex items-start justify-between shrink-0">
+            <div className={`relative z-10 flex h-full flex-col justify-between p-[5cqw] ${config.textClass}`}>
+                <div className="flex items-start justify-between gap-[3cqw]">
                     {logoUrl ? (
-                        <div className="relative w-[12cqw] h-[12cqw]">
-                            <Image
-                                src={logoUrl}
-                                alt="Logo"
-                                fill
-                                className="object-contain"
-                                quality={100}
-                            />
+                        <div className="relative h-[10cqw] w-[18cqw]">
+                            <Image src={logoUrl} alt="Właśniewski Fotografia" fill className="object-contain object-left" />
                         </div>
-                    ) : <div className="w-[12cqw] h-[12cqw]" />}
-                    <div className="text-[6cqw] drop-shadow-lg">{config.icon}</div>
+                    ) : (
+                        <div className="text-[1.9cqw] font-semibold uppercase tracking-[0.28em]">Właśniewski Fotografia</div>
+                    )}
+                    <div className={`text-right text-[1.65cqw] uppercase tracking-[0.28em] ${config.mutedClass}`}>Karta podarunkowa</div>
                 </div>
 
-                {/* Center section - Card title and description */}
-                <div className="flex-1 flex flex-col justify-start items-center text-center px-[2cqw] pt-[1cqw]">
-                    <h2 className="font-bold drop-shadow-2xl leading-tight w-full line-clamp-2 text-[4.5cqw] tracking-tight uppercase">
-                        {displayTitle}
-                    </h2>
-                    <p className="opacity-80 drop-shadow-md leading-relaxed line-clamp-2 max-w-[90%] font-medium mt-[1cqw] text-[2cqw]">
-                        {displayDescription}
-                    </p>
-
+                <div className="max-w-[72%]">
+                    <div className="font-display text-[6.3cqw] font-medium leading-[0.98] tracking-[-0.02em]">{displayTitle}</div>
+                    <p className={`mt-[1.6cqw] text-[2.25cqw] leading-relaxed ${config.mutedClass}`}>{displayDescription}</p>
                     {recipientName && (
-                        <div className="mt-[2cqw] py-[0.5cqw] px-[3cqw] bg-black/20 backdrop-blur-md rounded-full border border-white/10 shadow-inner">
-                            <p className="text-[1.8cqw] italic opacity-100 font-semibold tracking-tight">
-                                Dla: <span className="not-italic text-white">{recipientName}</span>
-                            </p>
-                        </div>
-                    )}
-                </div>
-
-                {/* Bottom section - Value and Code */}
-                <div className="flex flex-col items-center gap-[1.5cqw] mt-auto w-full shrink-0">
-                    {/* Value */}
-                    <div className="text-center">
-                        <p className="text-[1.5cqw] opacity-60 mb-0 uppercase tracking-[0.3em] font-black">Wartość karty</p>
-                        <p className="text-[8cqw] font-black drop-shadow-2xl leading-none tracking-tighter">
-                            {value} PLN
+                        <p className={`mt-[2cqw] text-[1.9cqw] ${config.mutedClass}`}>
+                            Dla <span className="font-semibold">{recipientName}</span>
                         </p>
-                    </div>
-
-                    {/* Code / Payment Notice */}
-                    <div className="w-full max-w-[85%] mx-auto">
-                        {!hideCode ? (
-                            <div className="bg-white/10 backdrop-blur-xl rounded-[1.5cqw] p-[1.5cqw] border border-white/20 shadow-2xl relative group overflow-hidden">
-                                <p className="text-[1.5cqw] opacity-70 text-center mb-[1cqw] uppercase font-bold tracking-[0.4em] leading-none">KOD PROMOCYJNY</p>
-                                <p className="font-mono text-[4.5cqw] font-black text-center tracking-[0.2em] drop-shadow-lg leading-none text-white">
-                                    {code}
-                                </p>
-                            </div>
-                        ) : (
-                            <div className="bg-blue-600/20 backdrop-blur-xl rounded-[1.5cqw] p-[2cqw] border border-blue-400/30 shadow-xl text-center">
-                                <p className="text-[1.8cqw] opacity-90 text-blue-100 uppercase tracking-widest font-black leading-none py-0.5">DOSTĘPNY PO OPŁACENIU</p>
-                            </div>
-                        )}
-                    </div>
-
-                    {orderId && (
-                        <div className="absolute bottom-[2cqw] right-[4cqw] text-[1.2cqw] opacity-30 font-mono font-bold tracking-widest">
-                            REF-{orderId}
-                        </div>
                     )}
+                    {message && <p className={`mt-[1cqw] line-clamp-2 text-[1.7cqw] italic ${config.mutedClass}`}>{message}</p>}
                 </div>
-            </div>
 
-            {/* Background elements */}
-            <div className="absolute -bottom-8 -left-8 w-32 h-32 bg-white/5 blur-3xl rounded-full"></div>
-            <div className="absolute -top-8 -right-8 w-32 h-32 bg-black/20 blur-3xl rounded-full"></div>
+                <div className="flex items-end justify-between gap-[3cqw]">
+                    <div>
+                        <div className={`text-[1.45cqw] uppercase tracking-[0.24em] ${config.mutedClass}`}>Wartość</div>
+                        <div className="mt-[0.4cqw] text-[5.8cqw] font-semibold leading-none">{Math.round(value)} zł</div>
+                    </div>
+                    <div className={`rounded-full border ${config.borderClass} bg-black/10 px-[2.7cqw] py-[1.35cqw] text-right backdrop-blur-sm`}>
+                        <div className={`text-[1.25cqw] uppercase tracking-[0.2em] ${config.mutedClass}`}>{hideCode ? 'Kod po opłaceniu' : 'Kod karty'}</div>
+                        {!hideCode && <div className="mt-[0.35cqw] font-mono text-[2.15cqw] font-semibold tracking-[0.12em]">{code}</div>}
+                    </div>
+                </div>
+
+                {senderName && <span className="sr-only">Od: {senderName}</span>}
+                {orderId && <span className="sr-only">Numer zamówienia: {orderId}</span>}
+            </div>
         </motion.div>
     );
 }
