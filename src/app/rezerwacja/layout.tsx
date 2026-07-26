@@ -1,14 +1,14 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-    title: 'Zarezerwuj Sesję | Fotograf Toruń — Przemysław Właśniewski',
-    description: 'Zarezerwuj sesję fotograficzną online. Wybierz usługę, pakiet i termin. Sesje rodzinne, ślubne i portretowe w Toruniu i okolicach. Płatność bezpieczna przez Stripe.',
+    title: 'Rezerwacja Fotografii | Przemysław Właśniewski',
+    description: 'Sprawdź zakres reportażu, wybierz pakiet i wolny termin. Sesje rodzinne, uroczystości i fotografia ślubna w Toruniu, Grudziądzu i regionie. Bezpieczna płatność online przez PayU.',
     alternates: {
         canonical: 'https://wlasniewski.pl/rezerwacja',
     },
     openGraph: {
-        title: 'Zarezerwuj Sesję | Fotograf Toruń',
-        description: 'Zarezerwuj sesję fotograficzną online. Wybierz usługę, pakiet i termin. Sesje w Toruniu i okolicach.',
+        title: 'Rezerwacja fotografii | Właśniewski',
+        description: 'Wybierz usługę, zakres fotografowania i dogodny termin. Jasne pakiety oraz bezpieczna płatność przez PayU.',
         url: 'https://wlasniewski.pl/rezerwacja',
     },
 };
