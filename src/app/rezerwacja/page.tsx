@@ -201,19 +201,6 @@ export default function RezerwacjaPage() {
         loadPage();
     }, []);
 
-    useEffect(() => {
-        if (serviceTypes.length === 0 || typeof window === 'undefined') return;
-        const requested = new URLSearchParams(window.location.search).get('service');
-        if (!requested) return;
-        const normalize = (value: string) => value.trim().toLocaleLowerCase('pl-PL');
-        const selected = serviceTypes.find((item) => normalize(item.name) === normalize(requested));
-        if (selected && selected.id !== service?.id) {
-            setService(selected);
-            setChosenPackage(null);
-            setSlot(null);
-        }
-    }, [serviceTypes, service?.id]);
-
     // Load available hours when package and date are selected
     useEffect(() => {
         if (!chosenPackage || !slot?.date) {
@@ -604,6 +591,9 @@ export default function RezerwacjaPage() {
                                             setService(svc);
                                             setChosenPackage(null);
                                             setSlot(null);
+                                            const url = new URL(window.location.href);
+                                            url.searchParams.set('service', svc.name);
+                                            window.history.replaceState({}, '', url);
                                             trackBookingEvent('booking_service_select', { service: svc.name });
                                         }}
                                         className={`p-4 rounded-xl border-2 transition-all text-left ${service?.id === svc.id
@@ -969,13 +959,6 @@ export default function RezerwacjaPage() {
 
                 </div>
             </div>
-            <a
-                href="#booking-flow"
-                className="fixed bottom-4 left-4 right-4 z-40 rounded-xl bg-amber-500 px-5 py-4 text-center font-bold text-black shadow-2xl shadow-black/50 md:hidden"
-                onClick={() => trackBookingEvent('booking_sticky_cta_click', { service: service?.name })}
-            >
-                {chosenPackage ? 'Wybierz termin' : 'Zobacz pakiety i wolne terminy'}
-            </a>
         </main>
     );
 }
