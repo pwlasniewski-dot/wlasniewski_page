@@ -560,6 +560,7 @@ export default async function CityLandingPage({ params }: PageProps) {
                     media_ids: true,
                 },
                 orderBy: { session_date: 'desc' },
+                take: 1,
             });
 
             const orderedMediaIds = torunFamilySessions.flatMap(session => {
