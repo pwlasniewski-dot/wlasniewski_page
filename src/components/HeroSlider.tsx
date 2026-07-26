@@ -109,7 +109,7 @@ export default function HeroSlider({ slides = [], interval = 6000 }: HeroSliderP
             <div className="relative h-screen w-full flex items-center justify-center bg-black overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-b from-black/40 to-black/60 z-10" />
                 <div className="relative z-20 text-center px-4 space-y-4">
-                    <h2 className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-extrabold text-white tracking-tight drop-shadow-2xl">
+                    <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-white tracking-tight drop-shadow-2xl">
                         Wspomnienia<br />zapisane światłem
                     </h2>
                     <p className="text-base sm:text-lg md:text-xl text-zinc-200 max-w-2xl mx-auto">
@@ -229,8 +229,8 @@ export default function HeroSlider({ slides = [], interval = 6000 }: HeroSliderP
                         transition={variant.transition}
                         className="space-y-3 sm:space-y-4 md:space-y-6 max-w-4xl"
                     >
-                        <h2
-                            className="text-3xl sm:text-5xl md:text-6xl lg:text-8xl font-extrabold text-white tracking-tighter drop-shadow-2xl leading-tight"
+                        <div
+                            className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-white tracking-tighter drop-shadow-2xl leading-tight"
                             dangerouslySetInnerHTML={{ __html: slide.title || '' }}
                         />
                         <p
