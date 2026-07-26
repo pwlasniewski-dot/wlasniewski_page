@@ -28,69 +28,54 @@ const CITIES: Record<string, CityInfo> = {
         slug: 'fotograf-torun',
         city: 'Toruń',
         region: 'kujawsko-pomorskie',
-        h1: 'Fotograf Toruń — naturalne sesje rodzinne i plenerowe',
-        metaTitle: 'Fotograf Toruń ⭐ Wizerunek, Biznes, Starówka, Ślub',
-        metaDescription: '★ Fotograf Toruń ★ Sesje wizerunkowe i biznesowe od 450 zł, śluby plenerowe, sesje na starówce. Naturalne portrety, galeria online. ☎ 530 788 694',
+        h1: 'Fotograf Toruń — sesje rodzinne i reportaże ślubne',
+        metaTitle: 'Fotograf Toruń | Sesje rodzinne i śluby — Właśniewski',
+        metaDescription: 'Fotograf w Toruniu: sesje rodzinne od 750 zł, ceremonia cywilna od 1900 zł i pełny reportaż ślubny. Zobacz pakiety i wolne terminy online.',
         keywords: ['fotograf toruń', 'fotografia wizerunkowa toruń', 'fotograf portretowy toruń', 'fotograf toruń starówka', 'profesjonalna fotografia toruń', 'fotograf ślubny toruń', 'fotografia ślubna toruń', 'sesja zdjęciowa toruń', 'fotografia biznesowa toruń', 'sesja narzeczeńska toruń', 'sesja rodzinna toruń', 'plener ślubny toruń', 'zdjęcia biznesowe toruń', 'sesja w mieście toruń', 'fotograf bulwar filadelfijski'],
         heroImage: '/assets/portfolio/family/sesja-rodzinna-torun-plener-07.webp',
         lat: 53.0138,
         lng: 18.5984,
         intro: [
-            'Nazywam się Przemek i pracuję jako fotograf w Toruniu. Lubię, gdy zdjęcia są prawdziwe i naturalne. Stawiam na pełną swobodę i często daję Wam możliwość tworzenia własnych pomysłów. Jako fotograf w Toruniu znam miejsca, które pięknie grają z naturalnym światłem i jednocześnie oddają zamierzony efekt na moich zdjęciach.',
-            'Pokrótce opiszę, jak przebiega spotkanie. Po pierwszym kontakcie telefonicznym, mailowym bądź przez WhatsApp i podjęciu decyzji o realizacji sesji umawiamy się na kawę. Przedstawiam i nakreślam, jak będzie przebiegało nasze spotkanie. Dzięki temu atmosfera na sesji w Toruniu jest zawsze swobodna.',
+            'Jestem Przemek. W Toruniu fotografuję rodziny, pary i śluby — od krótkiej ceremonii w urzędzie po całodniowy reportaż. Przed zdjęciami ustalamy miejsce, godzinę i prosty plan. Podczas sesji podpowiadam, co zrobić, ale zostawiam Wam swobodę.',
         ],
         sections: [
             {
-                title: 'Przygotowanie do sesji w Toruniu',
-                icon: '🎨',
-                paragraphs: [
-                    'Przed sesją umawiam się na kawę. Zanim jednak się spotkamy, zachęcam do zapoznania się z moją stroną — tam opisuję, jak najlepiej przygotować się do sesji fotograficznej w Toruniu.',
-                    'Ubrania? W Toruniu świetnie sprawdzają się beże, błękity i zgaszone brązy — kolory korespondujące z cegłą i piaskowcem starówki. Proszę unikać dużych logotypów i krzykliwych wzorów.',
-                    'Gdy umawiamy sesję zdjęciową w Toruniu, proszę też o dwie rzeczy: wygodne buty i odrobinę luzu. Planujemy małe przerwy, jeżeli sesja trwa dłużej niż godzinę.',
-                ],
-            },
-            {
-                title: 'Najlepsze miejsca na sesję zdjęciową w Toruniu',
-                icon: '📍',
-                paragraphs: [
-                    'Nawiązując do realiów z wykonanej sesji w Toruniu z rodziną — nasza sesja rozpoczęła się od kawy w restauracji Manekin. Podczas rozmowy wpadłem na pomysł, by zrobić kilka zdjęć w ogródku.',
-                    'Następnie ruszyliśmy na Starówkę Torunia — ceglane mury i charakterystyczne uliczki dodają urok kadrom. Potem krótki spacer pod Zamek Krzyżacki w Toruniu. Ulice Rynek Staromiejski, Ciasna i Świętego Jana stały się tłem wykorzystanym w naszej sesji.',
-                    'Na koniec Bulwar Filadelfijski i most w Toruniu — szerokie oraz wąskie kadry nad wodą. Zwykle umawiam się na porę złotej godziny, gdy światło jest najbardziej ciepłe i filmowe. Park Miejski to kolejne świetne miejsce na sesje rodzinne i narzeczeńskie w Toruniu.',
-                ],
-            },
-            {
-                title: 'Jak prowadzę sesje fotograficzne',
+                title: 'Jak wygląda sesja w Toruniu',
                 icon: '📷',
                 paragraphs: [
-                    'Działam reportażowo. Nie ustawiam na siłę, ale zależy mi na Waszym uśmiechu — to podstawa sesji rodzinnej w Toruniu. W sesjach portretowych ważne są spojrzenia: głębokie, zanurzone w dal, przenikliwe, delikatne.',
-                    'Spaceruję z Wami i podsuwam krótkie pomysły: łapiemy się za ręce, obejmujemy, śpiewamy, patrzymy się na siebie — albo nie. Z dziećmi robię mikrozadania: biegi do latarni, zabawy w ciepłe i zimne mury, liczenie czerwonych drzwi.',
-                    'Dorosłym zostawiam spokojne momenty: zatrzymanie się w ciekawym świetle przy murze, kilka kroków wzdłuż ściany, rozmowa. Jeśli jest wiatr — wykorzystujemy go. Każda sesja zdjęciowa w Toruniu to szukanie prawdziwych emocji.',
+                    'Najpierw wybierasz pakiet i termin. Przed spotkaniem krótko ustalamy, kto będzie na zdjęciach, jaki klimat lubicie i gdzie się spotykamy. Nie musicie umieć pozować — podczas sesji daję proste wskazówki i dbam o spokojne tempo.',
+                    'Z dziećmi pracuję przez zabawę i ruch. Z parami oraz dorosłymi skupiam się na rozmowie, bliskości i dobrym świetle. Dzięki temu zdjęcia są swobodne, ale nadal uporządkowane i dopracowane.',
                 ],
             },
             {
-                title: 'Co dostajesz po sesji',
+                title: 'Gdzie fotografuję w Toruniu',
+                icon: '📍',
+                paragraphs: [
+                    'Starówka, okolice Zamku Krzyżackiego i Bulwar Filadelfijski dobrze sprawdzają się przy sesjach par i rodzin. Na spokojniejsze zdjęcia wybieram Park Miejski, Bydgoskie Przedmieście albo miejsce ważne właśnie dla Was.',
+                    'Godzinę dopasowuję do światła i charakteru sesji. Jeśli nie macie wybranej lokalizacji, zaproponuję dwie lub trzy konkretne opcje.',
+                ],
+            },
+            {
+                title: 'Co otrzymujesz',
                 icon: '🖼️',
                 paragraphs: [
-                    'W wersji miejskiej oddaję minimum 20 zdjęć po autorskiej obróbce, galerię online oraz eleganckie pudełko na zdjęcia. Odbitki wykonuję w nPhoto — profesjonalny papier i powtarzalna jakość.',
-                    'Realizacja trwa zwykle do 10 dni roboczych. Jeśli planujecie większy zestaw lub album — doradzę i zaproponuję odpowiedni format. Każdy klient z Torunia i okolic otrzymuje też podgląd wybranych ujęć przed ostateczną selekcją.',
+                    'Każdy pakiet obejmuje selekcję i staranną obróbkę zdjęć oraz prywatną galerię internetową. Pakiety rodzinne zawierają od 35 do 80 gotowych fotografii, a wyższy wariant także album nPhoto.',
+                    'Przy ślubach zakres zależy od wybranego pakietu: od ceremonii cywilnej i krótkiej sesji po pełny reportaż od przygotowań do oczepin.',
                 ],
             },
         ],
         services: [
-            { name: 'Sesja rodzinna w Toruniu', description: 'Naturalne zdjęcia rodzinne na starówce, w parku lub dowolnej lokalizacji w Toruniu. Plener lub studio.' },
-            { name: 'Fotografia ślubna Toruń', description: 'Kompleksowa obsługa fotograficzna ślubu i wesela. Reportaż + sesja plenerowa.' },
-            { name: 'Sesja portretowa i wizerunkowa', description: 'Profesjonalne portrety biznesowe, wizerunkowe i artystyczne w klimatycznych lokalizacjach Torunia.' },
-            { name: 'Fotografia komunijna Toruń', description: 'Pamiątkowe zdjęcia z Pierwszej Komunii Świętej — kościół, plener i portret.' },
-            { name: 'Sesja narzeczeńska', description: 'Romantyczne zdjęcia par na toruńskiej starówce, bulwarze lub w plenerze.' },
-            { name: 'Zdjęcia z drona', description: 'Ujęcia z lotu ptaka na Twój ślub, event lub sesję z widokiem na panoramę Torunia.' },
+            { name: 'Sesja rodzinna w Toruniu', description: 'Od 750 zł. Rodzina, para, dzieci albo zdjęcia kilku pokoleń — w mieście lub spokojnym plenerze.' },
+            { name: 'Fotografia ślubna Toruń', description: 'Ceremonia cywilna od 1900 zł, kameralny ślub z przyjęciem lub pełny reportaż ślubny.' },
+            { name: 'Urodziny i rodzinne przyjęcia', description: 'Reportaż z urodzin, jubileuszu i ważnego rodzinnego spotkania, bez odrywania gości od zabawy.' },
+            { name: 'Sesja portretowa i wizerunkowa', description: 'Portrety do pracy, marki osobistej albo po prostu dla siebie — w plenerze lub wybranym wnętrzu.' },
         ],
         faqs: [
-            { question: 'Ile kosztuje sesja zdjęciowa w Toruniu?', answer: 'Ceny sesji zdjęciowych w Toruniu zaczynają się od 400 zł za sesję indywidualną/portretową. Sesje rodzinne i narzeczeńskie od 500 zł. Fotografia ślubna — wycena indywidualna po ustaleniu zakresu. W każdym pakiecie: przygotowanie, prowadzenie, selekcja, obróbka i galeria online.' },
-            { question: 'Gdzie najlepiej zrobić sesję zdjęciową w Toruniu?', answer: 'Najpiękniejsze lokalizacje na sesję w Toruniu to: Starówka (Rynek Staromiejski, ul. Ciasna, Zamek Krzyżacki), Bulwar Filadelfijski nad Wisłą, Park Miejski, Bydgoskie Przedmieście, Fort IV i okolice mostu drogowego. Pomagam dobrać miejsce pod styl sesji.' },
-            { question: 'Jak się przygotować do sesji fotograficznej?', answer: 'Najlepiej ubrać się w spójne, stonowane kolory (beże, błękity, brązy) bez dużych logotypów. W Toruniu świetnie grają kolory pasujące do cegły. Polecam wygodne buty i luz — resztą kieruję ja. Szczegóły na stronie „Jak się ubrać".' },
-            { question: 'Ile trwa sesja zdjęciowa?', answer: 'Standardowa sesja rodzinna lub portretowa trwa 1-1,5 godziny. Sesja narzeczeńska 1-2 godziny. Reportaż ślubny — od przygotowań do pierwszego tańca (8-12 godzin). Zawsze planujemy przerwy, zwłaszcza z dziećmi.' },
-            { question: 'Kiedy dostanę gotowe zdjęcia?', answer: 'Galerię online z gotowymi zdjęciami po obróbce wysyłam do 10 dni roboczych od sesji. Przy większych projektach (ślub, album) termin ustalamy indywidualnie. Każdy klient dostaje podgląd wybranych ujęć.' },
-            { question: 'Czy dojeżdżasz do Torunia? Ile to kosztuje?', answer: 'Tak, regularnie dojeżdżam do Torunia — w ramach większych pakietów dojazd jest w cenie. Baza wypadowa to okolice Płużnicy/Wąbrzeźna, więc Toruń jest bardzo blisko.' },
+            { question: 'Ile kosztuje sesja rodzinna w Toruniu?', answer: 'Pakiety rodzinne kosztują 750 zł, 980 zł lub 1630 zł. Różnią się czasem fotografowania, liczbą gotowych zdjęć i dodatkami. Wszystkie szczegóły oraz wolne terminy są dostępne w rezerwacji online.' },
+            { question: 'Ile kosztuje fotograf na ślub w Toruniu?', answer: 'Ceremonia cywilna z życzeniami i krótką sesją kosztuje 1900 zł. Ślub z kameralnym przyjęciem to 3500 zł, a pełny reportaż do 12 godzin kosztuje 5900 zł.' },
+            { question: 'Gdzie najlepiej zrobić sesję w Toruniu?', answer: 'Najczęściej fotografuję na Starówce, Bulwarze Filadelfijskim, Bydgoskim Przedmieściu i w Parku Miejskim. Miejsce dobieram do pory dnia, wieku dzieci i klimatu, który chcecie uzyskać.' },
+            { question: 'Czy musimy umieć pozować?', answer: 'Nie. Daję proste wskazówki, pokazuję gdzie stanąć i co zrobić, ale nie ustawiam każdej dłoni. Zależy mi na swobodnych zdjęciach, w których nadal dobrze wyglądacie.' },
+            { question: 'Jak zarezerwować termin?', answer: 'Wybierz usługę i pakiet, zaznacz dostępny dzień, uzupełnij dane i potwierdź rezerwację bezpieczną zaliczką przez PayU.' },
         ],
         nearbyLinks: [
             { label: 'Fotograf Grudziądz', href: '/fotograf-grudziadz' },
@@ -653,6 +638,13 @@ export default async function CityLandingPage({ params }: PageProps) {
                             Zobacz portfolio
                         </Link>
                     </div>
+                    {data.city === 'Toruń' && (
+                        <div className="mt-6 flex flex-wrap gap-3 text-sm text-zinc-200">
+                            <span className="rounded-full border border-white/15 bg-black/35 px-4 py-2">Sesje rodzinne od 750 zł</span>
+                            <span className="rounded-full border border-white/15 bg-black/35 px-4 py-2">Bezpieczna zaliczka PayU</span>
+                            <span className="rounded-full border border-white/15 bg-black/35 px-4 py-2">Prywatna galeria online</span>
+                        </div>
+                    )}
                 </div>
             </section>
 
