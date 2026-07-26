@@ -19,18 +19,6 @@ interface GiftCardProduct {
     card_description?: string;
 }
 
-const THEME_INFO: Record<string, { name: string; icon: string }> = {
-    christmas: { name: 'Boże Narodzenie', icon: '🎄' },
-    wosp: { name: 'WOŚP', icon: '💛' },
-    valentines: { name: 'Walentynki', icon: '💝' },
-    easter: { name: 'Wielkanoc', icon: '🐰' },
-    halloween: { name: 'Halloween', icon: '👻' },
-    'mothers-day': { name: 'Dzień Matki', icon: '💐' },
-    'childrens-day': { name: 'Dzień Dziecka', icon: '🎈' },
-    wedding: { name: 'Ślub', icon: '💒' },
-    birthday: { name: 'Urodziny', icon: '🎂' }
-};
-
 export default function BuyGiftCardPage() {
     const params = useParams();
     const router = useRouter();
@@ -95,9 +83,6 @@ export default function BuyGiftCardPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     cardId: card.id,
-                    price: card.price,
-                    value: card.value,
-                    theme: card.theme,
                     customerName,
                     customerEmail,
                     recipientName: recipientName || undefined,
@@ -110,7 +95,7 @@ export default function BuyGiftCardPage() {
             const data = await res.json();
 
             if (data.success && data.checkoutUrl) {
-                // Redirect to Stripe checkout
+                // Przejście do bezpiecznej płatności PayU
                 window.location.href = data.checkoutUrl;
             } else {
                 alert('Błąd przy tworzeniu sesji płatności: ' + (data.details || data.error || 'Nieznany błąd'));
@@ -196,17 +181,11 @@ export default function BuyGiftCardPage() {
                     >
                         {/* Header */}
                         <div>
-                            <div className="flex items-center gap-3 mb-4">
-                                <span className="text-4xl">
-                                    {THEME_INFO[card.theme]?.icon}
-                                </span>
-                                <div>
-                                    <p className="text-sm text-zinc-500">Temat karty</p>
-                                    <h1 className="text-3xl font-display font-bold">
-                                        {THEME_INFO[card.theme]?.name}
-                                    </h1>
-                                </div>
-                            </div>
+                            <p className="text-xs uppercase tracking-[0.28em] text-[#bca36f]">Karta podarunkowa</p>
+                            <h1 className="mt-3 text-3xl font-display font-semibold text-stone-100">
+                                {card.card_title || 'Prezent zapisany w kadrach'}
+                            </h1>
+                            <p className="mt-3 text-zinc-400">Wypełnij dane i przejdź do płatności PayU. Po jej potwierdzeniu karta otrzyma własny kod.</p>
                         </div>
 
                         {/* Value & Price */}
@@ -222,9 +201,11 @@ export default function BuyGiftCardPage() {
                                 <p className="text-sm text-zinc-500 mb-2">Cena do zapłaty</p>
                                 <div className="flex items-baseline gap-2">
                                     <p className="text-4xl font-bold">{Math.round(card.price)} zł</p>
-                                    <p className="text-sm text-green-400">
-                                        Zaoszczędzisz {Math.round(card.value - card.price)} zł!
-                                    </p>
+                                    {card.price < card.value && (
+                                        <p className="text-sm text-emerald-400">
+                                            Korzyść {Math.round(card.value - card.price)} zł
+                                        </p>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -246,11 +227,11 @@ export default function BuyGiftCardPage() {
                                 </li>
                                 <li className="flex items-start gap-3">
                                     <span className="text-green-400 font-bold mt-1">✓</span>
-                                    <span>Możliwość wysłania kartę mailem</span>
+                                    <span>Możliwość wysłania karty mailem</span>
                                 </li>
                                 <li className="flex items-start gap-3">
                                     <span className="text-green-400 font-bold mt-1">✓</span>
-                                    <span>Unikalny kod promocyjny</span>
+                                    <span>Unikalny kod realizacji</span>
                                 </li>
                                 <li className="flex items-start gap-3">
                                     <span className="text-green-400 font-bold mt-1">✓</span>
@@ -258,7 +239,7 @@ export default function BuyGiftCardPage() {
                                 </li>
                                 <li className="flex items-start gap-3">
                                     <span className="text-green-400 font-bold mt-1">✓</span>
-                                    <span>Możliwość udostępniania klientowi tylko po zapłacie</span>
+                                    <span>Aktywację dopiero po potwierdzeniu płatności</span>
                                 </li>
                             </ul>
                         </div>
@@ -316,13 +297,13 @@ export default function BuyGiftCardPage() {
                                 <textarea
                                     placeholder="Wiadomość na karcie..."
                                     value={message}
-                                    onChange={(e) => setMessage(e.target.value.slice(0, 25))}
+                                    onChange={(e) => setMessage(e.target.value.slice(0, 300))}
                                     className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-gold-500"
                                     rows={3}
-                                    maxLength={25}
+                                    maxLength={300}
                                 />
                                 <div className="absolute bottom-2 right-2 text-[10px] text-zinc-500">
-                                    {message.length}/25
+                                    {message.length}/300
                                 </div>
                             </div>
                         </div>
@@ -379,7 +360,7 @@ export default function BuyGiftCardPage() {
 
                         {/* Security badge */}
                         <div className="text-center text-xs text-zinc-500">
-                            🔒 Bezpieczna płatność z szyfrowaniem SSL
+                            Bezpieczna płatność online obsługiwana przez PayU
                         </div>
                     </motion.div>
                 </div>
