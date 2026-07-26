@@ -201,6 +201,19 @@ export default function RezerwacjaPage() {
         loadPage();
     }, []);
 
+    useEffect(() => {
+        if (serviceTypes.length === 0 || typeof window === 'undefined') return;
+        const requested = new URLSearchParams(window.location.search).get('service');
+        if (!requested) return;
+        const normalize = (value: string) => value.trim().toLocaleLowerCase('pl-PL');
+        const selected = serviceTypes.find((item) => normalize(item.name) === normalize(requested));
+        if (selected && selected.id !== service?.id) {
+            setService(selected);
+            setChosenPackage(null);
+            setSlot(null);
+        }
+    }, [serviceTypes, service?.id]);
+
     // Load available hours when package and date are selected
     useEffect(() => {
         if (!chosenPackage || !slot?.date) {
