@@ -235,10 +235,6 @@ export default function BuyGiftCardPage() {
                                 </li>
                                 <li className="flex items-start gap-3">
                                     <span className="text-green-400 font-bold mt-1">✓</span>
-                                    <span>Ważna przez 12 miesięcy</span>
-                                </li>
-                                <li className="flex items-start gap-3">
-                                    <span className="text-green-400 font-bold mt-1">✓</span>
                                     <span>Aktywację dopiero po potwierdzeniu płatności</span>
                                 </li>
                             </ul>
