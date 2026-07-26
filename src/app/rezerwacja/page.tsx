@@ -449,11 +449,22 @@ export default function RezerwacjaPage() {
             <div className="py-20 px-4">
                 <div className="max-w-4xl mx-auto pt-8">
                     <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 text-center">
-                        Zarezerwuj Sesję Fotograficzną w Toruniu
+                        Wybierz fotografię dopasowaną do Waszego dnia
                     </h1>
-                    <p className="text-zinc-400 text-center mb-12">
-                        Wybierz usługę, pakiet i termin. Płatność przejdziesz bezpiecznie poprzez Stripe.
+                    <p className="text-zinc-300 text-center max-w-2xl mx-auto mb-8 leading-relaxed">
+                        Najpierw wybierz rodzaj spotkania i zakres fotografowania. Potem zobaczysz wolne terminy, podasz najważniejsze informacje i przejdziesz do bezpiecznej płatności przez PayU.
                     </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-12 text-sm">
+                        {[
+                            ['1', 'Wybierz usługę i pakiet'],
+                            ['2', 'Zaznacz termin'],
+                            ['3', 'Potwierdź i zapłać przez PayU'],
+                        ].map(([number, label]) => (
+                            <div key={number} className="rounded-xl border border-zinc-800 bg-zinc-900/60 px-4 py-3 text-zinc-300">
+                                <span className="mr-2 font-semibold text-amber-500">{number}.</span>{label}
+                            </div>
+                        ))}
+                    </div>
 
                     {/* NEW: Testimonials moved to top */}
                     <div className="mb-20">
@@ -559,7 +570,7 @@ export default function RezerwacjaPage() {
                             transition={{ duration: 0.5 }}
                             className="bg-zinc-900/50 rounded-2xl p-8 border border-zinc-800"
                         >
-                            <h2 className="text-2xl font-bold text-white mb-6">Krok 1: Wybierz Usługę</h2>
+                            <h2 className="text-2xl font-bold text-white mb-6">Krok 1: Co fotografujemy?</h2>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {serviceTypes.map((svc) => (
                                     <button
@@ -594,7 +605,7 @@ export default function RezerwacjaPage() {
                                 transition={{ duration: 0.5, delay: 0.1 }}
                                 className="bg-zinc-900/50 rounded-2xl p-8 border border-zinc-800"
                             >
-                                <h2 className="text-2xl font-bold text-white mb-6">Krok 2: Wybierz Pakiet</h2>
+                                <h2 className="text-2xl font-bold text-white mb-6">Krok 2: Wybierz zakres</h2>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     {activePackages.map((pkg) => (
                                         <button
@@ -643,7 +654,7 @@ export default function RezerwacjaPage() {
                                 transition={{ duration: 0.5, delay: 0.2 }}
                                 className="bg-zinc-900/50 rounded-2xl p-8 border border-zinc-800"
                             >
-                                <h2 className="text-2xl font-bold text-white mb-6">Krok 3: Wybierz Termin</h2>
+                                <h2 className="text-2xl font-bold text-white mb-6">Krok 3: Wybierz termin</h2>
 
                                 {/* Calendar */}
                                 <div className="mb-8">
@@ -814,9 +825,10 @@ export default function RezerwacjaPage() {
                                         <textarea
                                             rows={3}
                                             value={notes}
-                                            onChange={(e) => setNotes(e.target.value)}
+                                            onChange={(e) => setNotes(e.target.value.slice(0, 500))}
                                             className="w-full px-4 py-2 rounded-lg bg-zinc-800 border border-zinc-700 text-white focus:ring-2 focus:ring-amber-500 outline-none"
-                                            placeholder="Wpisz dodatkowe informacje..."
+                                            maxLength={500}
+                                            placeholder="Napisz krótko, kto będzie na zdjęciach i na czym najbardziej Wam zależy."
                                         />
                                     </div>
 
@@ -912,7 +924,7 @@ export default function RezerwacjaPage() {
                                         } group flex items-center justify-center gap-2`}
                                 >
                                     <ShoppingBag className="w-6 h-6 group-hover:scale-110 transition-transform" />
-                                    <span>Dodaj do Koszyka</span>
+                                    <span>Przejdź do podsumowania</span>
                                 </button>
                             </motion.section>
                         )}
