@@ -497,7 +497,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     const cityNeedle = data.city.toLocaleLowerCase('pl-PL');
     const citySlugNeedle = data.slug.replace('fotograf-', '').toLowerCase();
     const matchingSessions = allSessions.filter(session => {
-        const haystack = `${session.title} ${session.slug}`.toLocaleLowerCase('pl-PL');
+        const haystack = `${session.title} ${session.slug} ${session.location || ''} ${session.description || ''}`.toLocaleLowerCase('pl-PL');
         return haystack.includes(cityNeedle) || haystack.includes(citySlugNeedle);
     });
     const familyFallback = allSessions.filter(session =>

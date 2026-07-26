@@ -81,6 +81,8 @@ function groupSessionsByCategory(sessions: any[]): DynamicCategory[] {
             imageCount: photoCount,
             photos: [], // Loaded on detail page
             highlightedPhotos: session.highlightedPhotos || [],
+            description: session.description || '',
+            location: session.location || '',
             category: finalSlug,
             date: session.date
         });
