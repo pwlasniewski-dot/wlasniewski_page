@@ -640,7 +640,7 @@ export default async function CityLandingPage({ params }: PageProps) {
                         {data.h1}
                     </h1>
                     <p className="mt-4 text-xl text-zinc-300 max-w-2xl">
-                        Profesjonalna fotografia rodzinna, ślubna i portretowa w {data.city === 'Płużnica' ? 'Płużnicy' : data.city === 'Bydgoszcz' ? 'Bydgoszczy' : data.city === 'Lisewo' ? 'Lisewie' : data.city === 'Wąbrzeźno' ? 'Wąbrzeźnie' : data.city === 'Chełmno' ? 'Chełmnie' : data.city === 'Świecie' ? 'Świeciu' : data.city === 'Grudziądz' ? 'Grudziądzu' : `${data.city}u`} i okolicach
+                        Profesjonalna fotografia rodzinna, ślubna i portretowa w {data.city === 'Płużnica' ? 'Płużnicy' : data.city === 'Bydgoszcz' ? 'Bydgoszczy' : data.city === 'Lisewo' ? 'Lisewie' : data.city === 'Wąbrzeźno' ? 'Wąbrzeźnie' : data.city === 'Chełmno' ? 'Chełmnie' : data.city === 'Świecie' ? 'Świeciu' : data.city === 'Grudziądz' ? 'Grudziądzu' : data.city === 'Toruń' ? 'Toruniu' : `${data.city}u`} i okolicach
                     </p>
                     <div className="flex flex-wrap gap-4 mt-8">
                         <Link href={`/rezerwacja?source=city&city=${encodeURIComponent(data.city)}&service=Sesja`} className="bg-amber-500 hover:bg-amber-400 text-black font-bold py-3 px-8 rounded-lg transition-colors text-lg shadow-lg shadow-amber-500/20">
