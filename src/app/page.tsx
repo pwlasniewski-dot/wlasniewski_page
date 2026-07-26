@@ -39,7 +39,9 @@ export async function generateMetadata(): Promise<Metadata> {
     return {
         title: isGenericTitle ? defaultTitle : dbTitle,
         description: isGenericDesc ? defaultDescription : dbDesc,
-        keywords: page?.meta_keywords || defaultKeywords
+        keywords: page?.meta_keywords || defaultKeywords,
+        alternates: { canonical: 'https://wlasniewski.pl/' },
+        robots: { index: true, follow: true },
     };
 }
 

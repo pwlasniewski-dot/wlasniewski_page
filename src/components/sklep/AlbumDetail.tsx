@@ -104,7 +104,13 @@ export default function AlbumDetail({ album, related }: { album: Album; related:
                                         className={`relative aspect-square rounded-lg overflow-hidden border-2 transition ${activeImg === idx ? 'border-gold-500' : 'border-transparent opacity-70 hover:opacity-100'
                                             }`}
                                     >
-                                        <Image src={img} alt="" fill sizes="100px" className="object-cover" />
+                                        <Image
+                                            src={img}
+                                            alt={`${album.title} — podgląd ${idx + 1}`}
+                                            fill
+                                            sizes="100px"
+                                            className="object-cover"
+                                        />
                                     </button>
                                 ))}
                             </div>

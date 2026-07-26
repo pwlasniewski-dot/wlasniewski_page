@@ -139,9 +139,6 @@ const baseMetadata: Metadata = {
             'max-snippet': -1,
         },
     },
-    alternates: {
-        canonical: 'https://wlasniewski.pl',
-    },
     category: 'photography',
     manifest: '/site.webmanifest',
     appleWebApp: {

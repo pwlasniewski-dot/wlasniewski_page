@@ -46,6 +46,10 @@ export async function generateMetadata({ params }: Props) {
         return {
             title: `${session.title} | Portfolio`,
             description: session.description || `Zobacz zdjęcia z sesji: ${session.title}`,
+            alternates: {
+                canonical: `${baseUrl}/portfolio/${session.category}/${slug}`,
+            },
+            robots: { index: true, follow: true },
             openGraph: {
                 title: session.title,
                 description: session.description || `Zobacz zdjęcia z sesji: ${session.title}`,
@@ -159,6 +163,7 @@ export default async function SessionPage({ params }: Props) {
 
     return (
         <main className="min-h-screen bg-black text-white">
+            <h1 className="sr-only">{session.title} — portfolio fotograficzne</h1>
             {/* Hero Section Wrapper for Overlay */}
             <div className="relative">
                 <HeroSlider

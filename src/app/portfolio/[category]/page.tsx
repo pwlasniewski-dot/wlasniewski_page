@@ -19,6 +19,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     return {
         title: `${title} | Portfolio`,
         description: `Galeria zdjęć: ${title}`,
+        alternates: {
+            canonical: `https://wlasniewski.pl/portfolio/${categorySlug}`,
+        },
+        robots: { index: true, follow: true },
     };
 }
 
@@ -87,6 +91,7 @@ export default async function CategoryPage({ params }: Props) {
 
         return (
             <main className="min-h-screen bg-black">
+                <h1 className="sr-only">{category.title} — portfolio fotograficzne</h1>
                 <div className="w-full">
                     <LightboxGallery
                         photos={starredItems}

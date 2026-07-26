@@ -53,9 +53,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         '/historia',
         '/foto-wyzwanie',
         '/foto-match',
-        '/regulamin',
-        '/polityka-prywatnosci',
-        '/reklamacje',
     ];
 
     // City SEO landing pages — priority 1.0 for local SEO
@@ -87,6 +84,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         });
 
         blogPosts = await prisma.blogPost.findMany({
+            where: {
+                status: 'published',
+                published_at: { lte: new Date() },
+            },
             select: { slug: true, updated_at: true }
         });
 
@@ -116,7 +117,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         })),
 
         // ─── B2C: Dynamic pages from database ───
-        ...dbPages.filter(page => !page.slug.startsWith('fotograf-')).map(page => ({
+        ...dbPages.filter(page => {
+            const excludedSlugs = new Set([
+                '',
+                'strona-glowna',
+                'start',
+                'kontakt-',
+                'sklep',
+                'regulamin',
+                'polityka-prywatnosci',
+                'reklamacje',
+            ]);
+            return !page.slug.startsWith('fotograf-') && !excludedSlugs.has(page.slug);
+        }).map(page => ({
             url: `${b2cBase}/${page.slug}`,
             lastModified: page.updated_at,
             changeFrequency: 'monthly' as const,
@@ -154,5 +167,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         })),
     ];
 
-    return sitemap;
+    return Array.from(
+        new Map(sitemap.map(entry => [entry.url, entry] as const)).values()
+    );
 }

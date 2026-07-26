@@ -1,5 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+    async redirects() {
+        return [
+            { source: '/start', destination: '/', permanent: true },
+            { source: '/strona-glowna', destination: '/', permanent: true },
+            { source: '/kontakt-', destination: '/kontakt', permanent: true },
+            { source: '/foto-wyzwania', destination: '/foto-wyzwanie', permanent: true },
+            { source: '/sklep', destination: '/karta-podarunkowa', permanent: true },
+        ];
+    },
     async headers() {
         return [{
             source: '/:path*',

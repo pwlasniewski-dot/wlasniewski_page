@@ -18,6 +18,8 @@ export async function generateMetadata(): Promise<Metadata> {
     return {
         title: page?.meta_title || 'Regulamin | Przemysław Właśniewski',
         description: page?.meta_description || 'Regulamin świadczenia usług fotograficznych i sprzedaży kart podarunkowych przez wlasniewski.pl.',
+        alternates: { canonical: 'https://wlasniewski.pl/regulamin' },
+        robots: { index: false, follow: true },
     };
 }
 

@@ -113,13 +113,16 @@ export default async function PortfolioHome() {
     }
 
     return (
-        <PortfolioContent
-            categories={displayItems}
-            sections={portfolioSections}
-            fallbackHeroSlides={homeData?.hero_slider || []}
-            showFallbackHero={portfolioPage?.hero_subtitle === '1'}
-            customHeroSlides={customHeroSlides}
-            isSessionMode={isSessionMode}
-        />
+        <>
+            <h1 className="sr-only">Portfolio fotograficzne — sesje ślubne, rodzinne i portretowe</h1>
+            <PortfolioContent
+                categories={displayItems}
+                sections={portfolioSections}
+                fallbackHeroSlides={homeData?.hero_slider || []}
+                showFallbackHero={portfolioPage?.hero_subtitle === '1'}
+                customHeroSlides={customHeroSlides}
+                isSessionMode={isSessionMode}
+            />
+        </>
     );
 }

@@ -9,7 +9,9 @@ export async function generateMetadata(): Promise<Metadata> {
     return {
         title: 'Jak się ubrać na sesję? | Poradnik stylizacji',
         description: 'Profesjonalny poradnik jak się ubrać na sesję fotograficzną. Palety kolorów, przykładowe zestawy dla rodzin, par i grup. Porady stylistyczne dla różnych lokalizacji i pór roku.',
-        keywords: ['jak się ubrać na sesję', 'stylizacja sesja rodzinna', 'paleta kolorów sesja', 'co ubrać na zdjęcia', 'poradnik fotograficzny']
+        keywords: ['jak się ubrać na sesję', 'stylizacja sesja rodzinna', 'paleta kolorów sesja', 'co ubrać na zdjęcia', 'poradnik fotograficzny'],
+        alternates: { canonical: 'https://wlasniewski.pl/jak-sie-ubrac' },
+        robots: { index: true, follow: true },
     };
 }
 

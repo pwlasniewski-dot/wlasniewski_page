@@ -18,6 +18,8 @@ export async function generateMetadata(): Promise<Metadata> {
     return {
         title: page?.meta_title || 'Polityka Prywatności | Przemysław Właśniewski',
         description: page?.meta_description || 'Polityka prywatności i ochrony danych osobowych serwisu wlasniewski.pl.',
+        alternates: { canonical: 'https://wlasniewski.pl/polityka-prywatnosci' },
+        robots: { index: false, follow: true },
     };
 }
 

@@ -7,6 +7,8 @@ import { Star, MapPin, Camera } from 'lucide-react';
 export const metadata: Metadata = {
     title: 'Fotografowie — Właśniewski',
     description: 'Poznaj naszych fotografów. Wybierz osobę pasującą do Twojej sesji.',
+    alternates: { canonical: 'https://wlasniewski.pl/fotografowie' },
+    robots: { index: true, follow: true },
 };
 
 export const dynamic = 'force-dynamic';

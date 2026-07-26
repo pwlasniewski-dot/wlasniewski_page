@@ -1,5 +1,13 @@
 import React from "react";
 import Link from "next/link";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+    title: "Reklamacje | Właśniewski Fotografia",
+    description: "Zasady składania i rozpatrywania reklamacji dotyczących usług oraz produktów oferowanych przez wlasniewski.pl.",
+    alternates: { canonical: "https://wlasniewski.pl/reklamacje" },
+    robots: { index: false, follow: true },
+};
 
 export default function ReklamacjePage() {
     return (
