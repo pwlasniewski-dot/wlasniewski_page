@@ -165,24 +165,24 @@ async function main() {
     // 6. Seed packages for each service type
     const packagesData = {
         'Sesja': [
-            { name: 'Ekonomiczny', icon: '💰', hours: 1, price: 29900, subtitle: 'Sesja 1h', features: ['1 godzina', 'do 50 zdjęć', 'edycja podstawowa'] },
-            { name: 'Złoty', icon: '⭐', hours: 2, price: 49900, subtitle: 'Sesja 2h', features: ['2 godziny', 'do 100 zdjęć', 'edycja pełna', 'album cyfrowy'] },
-            { name: 'Platynowy', icon: '👑', hours: 4, price: 79900, subtitle: 'Sesja 4h', features: ['4 godziny', 'do 200 zdjęć', 'edycja premium', 'album drukowany'] },
+            { name: 'Rodzinny Start', icon: '📷', hours: 1, price: 75000, subtitle: 'Spokojna godzina zdjęć', features: ['około 60 minut fotografowania', '35 starannie opracowanych zdjęć', 'prywatna galeria internetowa', 'pendrive z gotowym materiałem'] },
+            { name: 'Rodzinny Komfort', icon: '⭐', hours: 2, price: 98000, subtitle: 'Najczęściej wybierany', features: ['do 2 godzin fotografowania', '55 starannie opracowanych zdjęć', 'ujęcia całej rodziny i mniejszych grup', 'prywatna galeria internetowa', 'pendrive z gotowym materiałem'] },
+            { name: 'Rodzinny Album', icon: '📖', hours: 2.5, price: 163000, subtitle: 'Zdjęcia i album nPhoto', features: ['do 2,5 godziny fotografowania', '80 starannie opracowanych zdjęć', 'prywatna galeria i pendrive', 'album nPhoto w cenie'] },
         ],
         'Ślub': [
-            { name: 'Ekonomiczny', icon: '💰', hours: 6, price: 149900, subtitle: 'Pakiet 6h', features: ['6 godzin', 'do 300 zdjęć', 'edycja standardowa'] },
-            { name: 'Złoty', icon: '⭐', hours: 10, price: 249900, subtitle: 'Pakiet 10h', features: ['10 godzin', 'do 500 zdjęć', 'edycja pełna', 'fotograf + asystent'] },
-            { name: 'Platynowy', icon: '👑', hours: 12, price: 349900, subtitle: 'Pakiet 12h+', features: ['12+ godzin', 'do 700 zdjęć', 'edycja premium', 'fotograf + 2x asystent', 'album drukowany'] },
+            { name: 'Ceremonia cywilna', icon: '🤍', hours: 2, price: 190000, subtitle: 'Urząd, życzenia i krótka sesja', features: ['ceremonia w USC lub plenerze', 'życzenia i zdjęcia z bliskimi', 'krótka sesja Pary Młodej', 'minimum 100 opracowanych zdjęć', 'prywatna galeria internetowa'] },
+            { name: 'Ślub i kameralne przyjęcie', icon: '🥂', hours: 5, price: 350000, subtitle: 'Od ceremonii do najważniejszych chwil przyjęcia', features: ['ceremonia kościelna lub cywilna', 'reportaż z przyjęcia do 5 godzin', 'sesja Pary Młodej w dniu ślubu', 'minimum 250 opracowanych zdjęć', 'prywatna galeria i pendrive'] },
+            { name: 'Pełny reportaż ślubny', icon: '💍', hours: 12, price: 590000, subtitle: 'Przygotowania, ceremonia i wesele', features: ['do 12 godzin obecności fotografa', 'przygotowania i ceremonia kościelna lub cywilna', 'wesele do oczepin', 'minimum 500 opracowanych zdjęć', 'sesja Pary Młodej w dniu ślubu', 'prywatna galeria i pendrive'] },
         ],
         'Przyjęcie': [
-            { name: 'Standard', icon: '📷', hours: 3, price: 39900, subtitle: 'Sesja 3h', features: ['3 godziny', 'do 150 zdjęć'] },
-            { name: 'Złoty', icon: '⭐', hours: 5, price: 59900, subtitle: 'Sesja 5h', features: ['5 godzin', 'do 250 zdjęć', 'edycja pełna'] },
-            { name: 'Platynowy', icon: '👑', hours: 8, price: 89900, subtitle: 'Sesja 8h', features: ['8 godzin', 'do 400 zdjęć', 'fotograf + asystent'] },
+            { name: 'Krótkie przyjęcie', icon: '📷', hours: 3, price: 120000, subtitle: 'Najważniejsze momenty spotkania', features: ['do 3 godzin reportażu', 'minimum 150 opracowanych zdjęć', 'zdjęcia rodzinne i grupowe', 'prywatna galeria internetowa'] },
+            { name: 'Pełna opowieść', icon: '⭐', hours: 5, price: 180000, subtitle: 'Od powitania po zabawę', features: ['do 5 godzin reportażu', 'minimum 250 opracowanych zdjęć', 'portrety gości i zdjęcia grupowe', 'prywatna galeria internetowa'] },
+            { name: 'Cały dzień', icon: '✨', hours: 8, price: 260000, subtitle: 'Rozbudowany reportaż z uroczystości', features: ['do 8 godzin reportażu', 'minimum 400 opracowanych zdjęć', 'pełna historia uroczystości', 'prywatna galeria i pendrive'] },
         ],
         'Urodziny': [
-            { name: 'Standard', icon: '📷', hours: 2, price: 29900, subtitle: 'Sesja 2h', features: ['2 godziny', 'do 80 zdjęć'] },
-            { name: 'Złoty', icon: '⭐', hours: 3, price: 39900, subtitle: 'Sesja 3h', features: ['3 godziny', 'do 120 zdjęć', 'edycja pełna'] },
-            { name: 'Platynowy', icon: '👑', hours: 5, price: 59900, subtitle: 'Sesja 5h', features: ['5 godzin', 'do 200 zdjęć', 'album cyfrowy'] },
+            { name: 'Urodzinowy reportaż', icon: '🎂', hours: 3, price: 110000, subtitle: 'Tort, goście i swobodne kadry', features: ['do 3 godzin fotografowania', 'minimum 150 opracowanych zdjęć', 'zdjęcia solenizanta i gości', 'prywatna galeria internetowa'] },
+            { name: 'Urodziny z historią', icon: '🎈', hours: 5, price: 170000, subtitle: 'Więcej czasu na ludzi i atmosferę', features: ['do 5 godzin fotografowania', 'minimum 250 opracowanych zdjęć', 'portrety i zdjęcia grupowe', 'prywatna galeria internetowa'] },
+            { name: 'Duże urodziny', icon: '🥳', hours: 7, price: 240000, subtitle: 'Reportaż z całego wydarzenia', features: ['do 7 godzin fotografowania', 'minimum 350 opracowanych zdjęć', 'pełny reportaż i zdjęcia grupowe', 'prywatna galeria i pendrive'] },
         ],
     };
 
