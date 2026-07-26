@@ -1053,28 +1053,28 @@ export default function HomeContent({ heroSlides, sections, homeData, orderedSec
             <section className="py-16 px-6 bg-zinc-950 border-t border-white/5">
                 <div className="container mx-auto max-w-5xl">
                     <h2 className="text-2xl md:text-3xl font-bold text-white mb-8 text-center font-display">
-                        Fotograf Toruń, Grudziądz, Chełmno, Płużnica i Wąbrzeźno — sprawdź ofertę
+                        Fotograf w Toruniu i regionie
                     </h2>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         <Link href="/fotograf-torun" className="group block p-5 bg-zinc-900/50 hover:bg-zinc-900 border border-white/5 hover:border-gold-500/30 rounded-lg transition-all">
-                            <div className="text-gold-400 text-xs font-bold tracking-widest uppercase mb-2">Lokalnie</div>
-                            <div className="text-white font-semibold mb-1 group-hover:text-gold-300 transition-colors">Fotograf Toruń i okolice</div>
-                            <p className="text-sm text-zinc-400">Profesjonalne sesje zdjęciowe: Toruń, Grudziądz, Chełmno, Płużnica, Wąbrzeźno.</p>
+                            <div className="text-gold-400 text-xs font-bold tracking-widest uppercase mb-2">Toruń</div>
+                            <div className="text-white font-semibold mb-1 group-hover:text-gold-300 transition-colors">Fotograf Toruń</div>
+                            <p className="text-sm text-zinc-400">Sesje rodzinne, ślubne i portretowe w Toruniu.</p>
+                        </Link>
+                        <Link href="/fotograf-grudziadz" className="group block p-5 bg-zinc-900/50 hover:bg-zinc-900 border border-white/5 hover:border-gold-500/30 rounded-lg transition-all">
+                            <div className="text-gold-400 text-xs font-bold tracking-widest uppercase mb-2">Grudziądz</div>
+                            <div className="text-white font-semibold mb-1 group-hover:text-gold-300 transition-colors">Fotograf Grudziądz</div>
+                            <p className="text-sm text-zinc-400">Sesje i reportaże realizowane w Grudziądzu.</p>
                         </Link>
                         <Link href="/sesja-rodzinna" className="group block p-5 bg-zinc-900/50 hover:bg-zinc-900 border border-white/5 hover:border-gold-500/30 rounded-lg transition-all">
                             <div className="text-gold-400 text-xs font-bold tracking-widest uppercase mb-2">Rodzina</div>
-                            <div className="text-white font-semibold mb-1 group-hover:text-gold-300 transition-colors">Sesja rodzinna Toruń i Grudziądz</div>
-                            <p className="text-sm text-zinc-400">Naturalne sesje rodzinne w Toruniu, Grudziądzu, Chełmnie i okolicach.</p>
+                            <div className="text-white font-semibold mb-1 group-hover:text-gold-300 transition-colors">Sesje rodzinne</div>
+                            <p className="text-sm text-zinc-400">Spokojne zdjęcia w plenerze, domu lub studiu.</p>
                         </Link>
                         <Link href="/slub" className="group block p-5 bg-zinc-900/50 hover:bg-zinc-900 border border-white/5 hover:border-gold-500/30 rounded-lg transition-all">
                             <div className="text-gold-400 text-xs font-bold tracking-widest uppercase mb-2">Ślub</div>
-                            <div className="text-white font-semibold mb-1 group-hover:text-gold-300 transition-colors">Fotograf ślubny Toruń i Chełmno</div>
-                            <p className="text-sm text-zinc-400">Reportaż ślubny pełen emocji: Toruń, Grudziądz, Chełmno, Wąbrzeźno.</p>
-                        </Link>
-                        <Link href="/portfolio" className="group block p-5 bg-zinc-900/50 hover:bg-zinc-900 border border-white/5 hover:border-gold-500/30 rounded-lg transition-all">
-                            <div className="text-gold-400 text-xs font-bold tracking-widest uppercase mb-2">Praca</div>
-                            <div className="text-white font-semibold mb-1 group-hover:text-gold-300 transition-colors">Portfolio</div>
-                            <p className="text-sm text-zinc-400">Wybrane realizacje — sesje, śluby, reportaże.</p>
+                            <div className="text-white font-semibold mb-1 group-hover:text-gold-300 transition-colors">Fotografia ślubna</div>
+                            <p className="text-sm text-zinc-400">Ceremonia, wesele i plener — wybierz potrzebny zakres.</p>
                         </Link>
                     </div>
                 </div>
@@ -1089,12 +1089,10 @@ export default function HomeContent({ heroSlides, sections, homeData, orderedSec
 
                 <div className="relative container mx-auto text-center max-w-3xl">
                     <h2 className="text-4xl md:text-5xl font-bold mb-6 font-display">
-                        Fotograf ślubny i rodzinny — <span className="text-gold-400">Toruń, Grudziądz, Chełmno i okolice</span>
+                        Sprawdź pakiety i <span className="text-gold-400">wybierz termin</span>
                     </h2>
                     <p className="text-xl text-zinc-400 mb-10 leading-relaxed">
-                        Szukasz fotografa z Torunia lub okolic, który uchwyci Twoją historię?
-                        <br />
-                        Napisz do mnie i porozmawiajmy o sesji w Toruniu, Grudziądzu, Chełmnie, Płużnicy lub Wąbrzeźnie.
+                        Wybierz sesję, ślub lub rodzinne przyjęcie. Od razu zobaczysz zakres, cenę i dostępne daty, a rezerwację potwierdzisz online przez PayU.
                     </p>
                     <div className="flex flex-col sm:flex-row gap-5 justify-center">
                         <Link
