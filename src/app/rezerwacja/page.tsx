@@ -304,13 +304,13 @@ export default function RezerwacjaPage() {
                         value: data.discount.value,
                         type: data.discount.type
                     });
-                    setCodeMessage(`✅ Kod "${normalizedCode}" zastosowany!`);
+                    setCodeMessage(`Kod "${normalizedCode}" zastosowany!`);
                 } else if (data.success && data.giftCard) {
                     setGiftCard({
                         code: normalizedCode,
                         amount: data.giftCard.amount
                     });
-                    setCodeMessage(`✅ Karta o wartości ${data.giftCard.amount} zł zastosowana!`);
+                    setCodeMessage(`Karta o wartości ${data.giftCard.amount} zł zastosowana!`);
                 } else {
                     // Fallback to Settings Promo Code
                     checkSettingsCode();
@@ -331,7 +331,7 @@ export default function RezerwacjaPage() {
 
         if (normalizedCode === FALLBACK_RETURNING_PROMO.code) {
             setDiscount(FALLBACK_RETURNING_PROMO);
-            setCodeMessage(`✅ Kod "${normalizedCode}" zastosowany!`);
+            setCodeMessage(`Kod "${normalizedCode}" zastosowany!`);
             return;
         }
 
@@ -344,9 +344,9 @@ export default function RezerwacjaPage() {
                 value: promoSettings!.discount,
                 type: promoSettings!.discountType
             });
-            setCodeMessage(`✅ Kod "${normalizedCode}" zastosowany!`);
+            setCodeMessage(`Kod "${normalizedCode}" zastosowany!`);
         } else {
-            setCodeMessage("❌ Kod nie znaleziony lub wygasł");
+            setCodeMessage("Kod nie znaleziony lub wygasł");
         }
     };
 
@@ -371,17 +371,17 @@ export default function RezerwacjaPage() {
                         code: giftCardCode,
                         amount: data.giftCard.amount
                     });
-                    setGiftCardMessage(`✅ Karta o wartości ${data.giftCard.amount} zł dodana!`);
+                    setGiftCardMessage(`Karta o wartości ${data.giftCard.amount} zł dodana!`);
                 } else if (data.discount) {
-                    setGiftCardMessage("❌ To jest kod rabatowy, wpisz go powyżej");
+                    setGiftCardMessage("To jest kod rabatowy, wpisz go powyżej");
                 } else {
-                    setGiftCardMessage("❌ Karta nie znaleziona lub już użyta");
+                    setGiftCardMessage("Karta nie znaleziona lub już użyta");
                 }
             } else {
-                setGiftCardMessage("❌ Nieprawidłowy kod karty podarunkowej");
+                setGiftCardMessage("Nieprawidłowy kod karty podarunkowej");
             }
         } catch (error) {
-            setGiftCardMessage("❌ Błąd połączenia");
+            setGiftCardMessage("Błąd połączenia");
         } finally {
             setCheckingGiftCard(false);
         }
@@ -447,8 +447,8 @@ export default function RezerwacjaPage() {
 
     if (servicesLoading) {
         return (
-            <main className="min-h-screen bg-gradient-to-b from-zinc-950 via-black to-zinc-950 py-20 px-4">
-                <div className="text-center text-white">
+            <main className="min-h-screen bg-[#f4f1eb] py-20 px-4">
+                <div className="text-center text-[#25221f]">
                     <p className="text-lg">Ładowanie usług...</p>
                 </div>
             </main>
@@ -456,7 +456,7 @@ export default function RezerwacjaPage() {
     }
 
     return (
-        <main className="min-h-screen bg-gradient-to-b from-zinc-950 via-black to-zinc-950">
+        <main className="min-h-screen bg-[#f4f1eb]">
             {/* Dynamic Content from Page Builder */}
             {pageSections && pageSections.length > 0 && (
                 <PageRenderer sections={pageSections} />
@@ -464,10 +464,10 @@ export default function RezerwacjaPage() {
 
             <div className="py-20 px-4">
                 <div className="max-w-4xl mx-auto pt-8">
-                    <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 text-center">
+                    <h1 className="font-display text-4xl md:text-5xl font-medium text-[#25221f] mb-4 text-center">
                         Wybierz fotografię dopasowaną do Waszego dnia
                     </h1>
-                    <p className="text-zinc-300 text-center max-w-2xl mx-auto mb-8 leading-relaxed">
+                    <p className="text-[#514b44] text-center max-w-2xl mx-auto mb-8 leading-relaxed">
                         Najpierw wybierz rodzaj spotkania i zakres fotografowania. Potem zobaczysz wolne terminy, podasz najważniejsze informacje i przejdziesz do bezpiecznej płatności przez PayU.
                     </p>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-12 text-sm">
@@ -476,8 +476,8 @@ export default function RezerwacjaPage() {
                             ['2', 'Zaznacz termin'],
                             ['3', 'Potwierdź i zapłać przez PayU'],
                         ].map(([number, label]) => (
-                            <div key={number} className="rounded-xl border border-zinc-800 bg-zinc-900/60 px-4 py-3 text-zinc-300">
-                                <span className="mr-2 font-semibold text-amber-500">{number}.</span>{label}
+                            <div key={number} className="rounded-xl border border-[#ddd6cc] bg-white/85 px-4 py-3 text-[#514b44]">
+                                <span className="mr-2 font-semibold text-[#766958]">{number}.</span>{label}
                             </div>
                         ))}
                     </div>
@@ -486,13 +486,13 @@ export default function RezerwacjaPage() {
                     <motion.section
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="bg-zinc-900/50 rounded-2xl p-8 border border-amber-500/20 mb-8 overflow-hidden relative"
+                        className="bg-white/80 rounded-2xl p-6 md:p-8 border border-[#b7aa99]/50 mb-8 overflow-hidden relative"
                     >
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 blur-[50px] rounded-full -mr-16 -mt-16" />
-                        <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-2">
-                            🎁 Masz kartę podarunkową?
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-[#8d7f6d]/5 blur-[50px] rounded-full -mr-16 -mt-16" />
+                        <h2 className="text-2xl font-bold text-[#25221f] mb-4 flex items-center gap-2">
+                            Masz kartę podarunkową?
                         </h2>
-                        <p className="text-zinc-400 mb-6 text-sm">
+                        <p className="text-[#6b645c] mb-6 text-sm">
                             Wpisz kod karty, aby od razu naliczyć środki na rezerwację. Jeśli karta pokrywa koszt sesji, rezerwacja będzie natychmiastowa.
                         </p>
 
@@ -502,7 +502,7 @@ export default function RezerwacjaPage() {
                                 value={giftCardCode}
                                 onChange={(e) => setGiftCardCode(e.target.value.toUpperCase())}
                                 disabled={!!giftCard}
-                                className="flex-1 px-4 py-3 rounded-xl bg-zinc-800 border border-zinc-700 text-white uppercase focus:ring-2 focus:ring-amber-500 outline-none disabled:opacity-50 text-lg tracking-widest font-mono"
+                                className="flex-1 px-4 py-3 rounded-xl bg-[#ece7e0] border border-[#d2cabf] text-[#25221f] uppercase focus:ring-2 focus:ring-[#8d7f6d] outline-none disabled:opacity-50 text-lg tracking-widest font-mono"
                                 placeholder="WPISZ KOD KARTY"
                             />
                             {giftCard ? (
@@ -513,7 +513,7 @@ export default function RezerwacjaPage() {
                                         setGiftCardCode("");
                                         setGiftCardMessage("");
                                     }}
-                                    className="px-6 py-3 bg-red-900/40 text-red-200 border border-red-500/30 rounded-xl font-bold hover:bg-red-900/60 transition-colors flex items-center gap-2 justify-center"
+                                    className="px-6 py-3 bg-red-900/40 text-red-200 border border-red-500/30 rounded-full font-semibold hover:bg-red-900/60 transition-colors flex items-center gap-2 justify-center"
                                 >
                                     <span>Usuń Kartę</span>
                                 </button>
@@ -522,7 +522,7 @@ export default function RezerwacjaPage() {
                                     type="button"
                                     onClick={handleCheckGiftCard}
                                     disabled={!giftCardCode || checkingGiftCard}
-                                    className="px-8 py-3 bg-amber-600 text-white rounded-xl font-bold hover:bg-amber-500 disabled:opacity-50 transition-all flex items-center gap-2 justify-center shadow-lg shadow-amber-900/30"
+                                    className="px-8 py-3 bg-[#5b554e] text-white rounded-full font-semibold hover:bg-[#403b36] disabled:opacity-50 transition-all flex items-center gap-2 justify-center shadow-lg shadow-black/10"
                                 >
                                     {checkingGiftCard ? (
                                         <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -538,7 +538,7 @@ export default function RezerwacjaPage() {
                                 animate={{ opacity: 1, x: 0 }}
                                 className={`text-sm mt-3 font-medium flex items-center gap-2 ${giftCard ? "text-green-400" : "text-red-400"}`}
                             >
-                                {giftCard ? "✨" : "❌"} {giftCardMessage}
+                                {giftCardMessage}
                             </motion.p>
                         )}
                         {giftCard && (
@@ -555,19 +555,19 @@ export default function RezerwacjaPage() {
                             <motion.div
                                 initial={{ opacity: 0, y: -10 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className="bg-gradient-to-r from-rose-500/20 to-amber-500/20 border border-rose-400/40 rounded-2xl p-4 flex items-center gap-3"
+                                className="bg-gradient-to-r from-[#c9bfb2]/30 to-[#e7e0d7] border border-rose-400/40 rounded-2xl p-4 flex items-center gap-3"
                             >
-                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-rose-500 to-amber-500 flex items-center justify-center text-white font-bold">
+                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#8d7f6d] to-[#5b554e] flex items-center justify-center text-[#25221f] font-bold">
                                     {preselectedPhotographer.name.charAt(0).toUpperCase()}
                                 </div>
                                 <div className="flex-1">
-                                    <p className="text-white font-bold">Wybrany fotograf: {preselectedPhotographer.name}</p>
-                                    <p className="text-zinc-300 text-xs">Zostanie przypisany do tej rezerwacji.</p>
+                                    <p className="text-[#25221f] font-bold">Wybrany fotograf: {preselectedPhotographer.name}</p>
+                                    <p className="text-[#514b44] text-xs">Zostanie przypisany do tej rezerwacji.</p>
                                 </div>
                                 <button
                                     type="button"
                                     onClick={() => setPreselectedPhotographer(null)}
-                                    className="text-zinc-300 hover:text-white text-xs underline"
+                                    className="text-[#514b44] hover:text-[#25221f] text-xs underline"
                                 >
                                     Zmień
                                 </button>
@@ -579,9 +579,9 @@ export default function RezerwacjaPage() {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.5 }}
-                            className="bg-zinc-900/50 rounded-2xl p-8 border border-zinc-800"
+                            className="bg-white/80 rounded-2xl p-6 md:p-8 border border-[#ddd6cc]"
                         >
-                            <h2 className="text-2xl font-bold text-white mb-6">Krok 1: Co fotografujemy?</h2>
+                            <h2 className="font-display text-3xl font-medium text-[#25221f] mb-6">Wybierz rodzaj fotografii</h2>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {serviceTypes.map((svc) => (
                                     <button
@@ -596,16 +596,15 @@ export default function RezerwacjaPage() {
                                             window.history.replaceState({}, '', url);
                                             trackBookingEvent('booking_service_select', { service: svc.name });
                                         }}
-                                        className={`p-4 rounded-xl border-2 transition-all text-left ${service?.id === svc.id
-                                            ? "border-amber-500 bg-amber-500/10"
-                                            : "border-zinc-700 bg-zinc-800/50 hover:border-zinc-600"
+                                        className={`p-4 rounded-xl border transition-all text-left ${service?.id === svc.id
+                                            ? "border-[#8d7f6d] bg-[#8d7f6d]/10"
+                                            : "border-[#d2cabf] bg-[#f1ede7] hover:border-[#c6bdb1]"
                                             }`}
                                     >
                                         <div className="flex items-center gap-3">
-                                            <span className="text-3xl">{svc.icon || '📸'}</span>
                                             <div>
-                                                <p className="font-bold text-white">{svc.name}</p>
-                                                <p className="text-sm text-zinc-400">{svc.description}</p>
+                                                <p className="font-bold text-[#25221f]">{svc.name}</p>
+                                                <p className="text-sm text-[#6b645c]">{svc.description}</p>
                                             </div>
                                         </div>
                                     </button>
@@ -619,9 +618,9 @@ export default function RezerwacjaPage() {
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ duration: 0.5, delay: 0.1 }}
-                                className="bg-zinc-900/50 rounded-2xl p-8 border border-zinc-800"
+                                className="bg-white/80 rounded-2xl p-6 md:p-8 border border-[#ddd6cc]"
                             >
-                                <h2 className="text-2xl font-bold text-white mb-6">Krok 2: Wybierz zakres</h2>
+                                <h2 className="font-display text-3xl font-medium text-[#25221f] mb-6">Wybierz zakres</h2>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     {activePackages.map((pkg) => (
                                         <button
@@ -631,31 +630,30 @@ export default function RezerwacjaPage() {
                                                 setChosenPackage(pkg);
                                                 trackBookingEvent('booking_package_select', { service: service.name, package: pkg.name, value: pkg.price / 100, currency: 'PLN' });
                                             }}
-                                            className={`p-5 rounded-2xl border-2 transition-all text-left flex flex-col h-full ${chosenPackage?.id === pkg.id
-                                                ? "border-amber-500 bg-amber-500/10 shadow-[0_0_20px_rgba(245,158,11,0.15)]"
-                                                : "border-zinc-800 bg-zinc-900/40 hover:border-zinc-700 hover:bg-zinc-800/50"
+                                            className={`p-5 rounded-2xl border transition-all text-left flex flex-col h-full ${chosenPackage?.id === pkg.id
+                                                ? "border-[#8d7f6d] bg-[#8d7f6d]/10 shadow-[0_0_20px_rgba(245,158,11,0.15)]"
+                                                : "border-[#ddd6cc] bg-white/75 hover:border-[#d2cabf] hover:bg-[#f1ede7]"
                                                 }`}
                                         >
                                             <div className="min-h-[5.5rem] flex flex-col">
                                                 <div className="flex items-center gap-3 mb-2">
-                                                    <span className="text-3xl">{pkg.icon || '📦'}</span>
-                                                    <h3 className="text-xl font-bold text-white leading-tight">{pkg.name}</h3>
+                                                    <h3 className="text-xl font-bold text-[#25221f] leading-tight">{pkg.name}</h3>
                                                 </div>
                                                 {pkg.subtitle && (
-                                                    <p className="text-sm text-zinc-400 mb-2 leading-snug line-clamp-2">
+                                                    <p className="text-sm text-[#6b645c] mb-2 leading-snug line-clamp-2">
                                                         {pkg.subtitle}
                                                     </p>
                                                 )}
                                             </div>
 
-                                            <div className="text-xl text-amber-500 font-extrabold mb-4 flex items-center gap-2">
-                                                <span className="text-sm bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">{pkg.hours}h</span>
+                                            <div className="text-xl text-[#766958] font-extrabold mb-4 flex items-center gap-2">
+                                                <span className="text-sm bg-[#8d7f6d]/10 px-2 py-0.5 rounded border border-[#b7aa99]/50">{pkg.hours}h</span>
                                                 <span>{(pkg.price / 100).toFixed(2)} zł</span>
                                             </div>
 
                                             {pkg.description && (
                                                 <div
-                                                    className="text-[13px] text-zinc-400 mt-2 prose prose-invert prose-sm prose-p:my-0 prose-ul:my-2 prose-li:my-1 opacity-90"
+                                                    className="text-[13px] text-[#6b645c] mt-2 prose prose-sm prose-p:my-0 prose-ul:my-2 prose-li:my-1 opacity-90"
                                                     dangerouslySetInnerHTML={{ __html: pkg.description }}
                                                 />
                                             )}
@@ -671,13 +669,13 @@ export default function RezerwacjaPage() {
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ duration: 0.5, delay: 0.2 }}
-                                className="bg-zinc-900/50 rounded-2xl p-8 border border-zinc-800"
+                                className="bg-white/80 rounded-2xl p-6 md:p-8 border border-[#ddd6cc]"
                             >
-                                <h2 className="text-2xl font-bold text-white mb-6">Krok 3: Wybierz termin</h2>
+                                <h2 className="text-2xl font-bold text-[#25221f] mb-6">Krok 3: Wybierz termin</h2>
 
                                 {/* Calendar */}
                                 <div className="mb-8">
-                                    <h3 className="text-lg font-bold text-white mb-4">Wybierz Dzień</h3>
+                                    <h3 className="text-lg font-bold text-[#25221f] mb-4">Wybierz Dzień</h3>
                                     <BookingCalendar
                                         onSlotSelect={(selected) => {
                                             setSlot(selected);
@@ -690,31 +688,31 @@ export default function RezerwacjaPage() {
 
                                 {/* Hour Selection - shown after date is selected */}
                                 {slot?.date && (
-                                    <div className="mt-8 pt-8 border-t border-zinc-700">
-                                        <h3 className="text-xl font-bold text-white mb-4">
+                                    <div className="mt-8 pt-8 border-t border-[#d2cabf]">
+                                        <h3 className="text-xl font-bold text-[#25221f] mb-4">
                                             {!chosenPackage
-                                                ? '📦 Wybierz pakiet, aby zobaczyć godziny'
+                                                ? 'Wybierz pakiet, aby zobaczyć godziny'
                                                 : loadingAvailability
-                                                    ? '⏳ Ładowanie dostępnych godzin...'
-                                                    : '⏰ Wybierz Godzinę'}
+                                                    ? 'Ładowanie dostępnych godzin...'
+                                                    : 'Wybierz godzinę'}
                                         </h3>
 
                                         {!chosenPackage ? (
-                                            <div className="text-center text-amber-500 py-8 border border-dashed border-zinc-700 rounded-xl bg-zinc-900/50">
+                                            <div className="text-center text-[#766958] py-8 border border-dashed border-[#d2cabf] rounded-xl bg-white/80">
                                                 <p className="mb-2">Najpierw wybierz pakiet powyżej,</p>
-                                                <p className="text-sm text-zinc-400">abyśmy mogli sprawdzić dostępność dla wybranej długości sesji.</p>
+                                                <p className="text-sm text-[#6b645c]">abyśmy mogli sprawdzić dostępność dla wybranej długości sesji.</p>
                                             </div>
                                         ) : loadingAvailability ? (
-                                            <div className="text-center text-zinc-400">
+                                            <div className="text-center text-[#6b645c]">
                                                 <p>Sprawdzam dostępność...</p>
                                             </div>
                                         ) : chosenPackage.blocks_entire_day ? (
-                                            <div className="p-6 bg-zinc-900/80 border border-amber-500/30 rounded-xl text-center">
-                                                <p className="text-amber-500 font-bold mb-1">✨ Pakiet całodniowy (Ślub/Przyjęcie)</p>
-                                                <p className="text-zinc-400 text-sm">Ten pakiet rezerwuje cały dzień. Nie musisz wybierać konkretnych godzin.</p>
+                                            <div className="p-6 bg-[#ebe6de] border border-[#a99b89]/60 rounded-xl text-center">
+                                                <p className="text-[#766958] font-bold mb-1">Pakiet całodniowy (ślub lub przyjęcie)</p>
+                                                <p className="text-[#6b645c] text-sm">Ten pakiet rezerwuje cały dzień. Nie musisz wybierać konkretnych godzin.</p>
                                             </div>
                                         ) : availableHours.length === 0 ? (
-                                            <div className="text-center text-amber-500">
+                                            <div className="text-center text-[#766958]">
                                                 <p>Brak dostępnych godzin na wybrany dzień</p>
                                             </div>
                                         ) : (
@@ -732,9 +730,9 @@ export default function RezerwacjaPage() {
                                                         }}
                                                         className={`py-2 rounded-lg transition-all text-sm font-medium ${hSlot.available
                                                             ? selectedHour === hSlot.hour
-                                                                ? 'bg-amber-500 text-white border border-amber-400'
-                                                                : 'bg-zinc-800 text-white border border-zinc-700 hover:border-amber-400 hover:bg-zinc-700'
-                                                            : 'bg-zinc-900 text-zinc-600 border border-zinc-800 cursor-not-allowed'
+                                                                ? 'bg-[#5b554e] text-white border border-[#8d7f6d]'
+                                                                : 'bg-[#ece7e0] text-[#25221f] border border-[#d2cabf] hover:border-[#8d7f6d] hover:bg-white'
+                                                            : 'bg-[#eee9e2] text-[#9b9287] border border-[#ddd6cc] cursor-not-allowed'
                                                             }`}
                                                         title={
                                                             !hSlot.available
@@ -762,14 +760,14 @@ export default function RezerwacjaPage() {
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ duration: 0.5, delay: 0.3 }}
-                                className="bg-zinc-900/50 rounded-2xl p-8 border border-zinc-800"
+                                className="bg-white/80 rounded-2xl p-6 md:p-8 border border-[#ddd6cc]"
                             >
-                                <h2 className="text-2xl font-bold text-white mb-6">Krok 4: Twoje Dane</h2>
+                                <h2 className="text-2xl font-bold text-[#25221f] mb-6">Krok 4: Twoje Dane</h2>
 
                                 <div className="space-y-4">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div>
-                                            <label className="block text-sm font-medium text-zinc-300 mb-2">
+                                            <label className="block text-sm font-medium text-[#514b44] mb-2">
                                                 Imię i nazwisko *
                                             </label>
                                             <input
@@ -777,12 +775,12 @@ export default function RezerwacjaPage() {
                                                 required
                                                 value={name}
                                                 onChange={(e) => setName(e.target.value)}
-                                                className="w-full px-4 py-2 rounded-lg bg-zinc-800 border border-zinc-700 text-white focus:ring-2 focus:ring-amber-500 outline-none"
+                                                className="w-full px-4 py-2 rounded-lg bg-[#ece7e0] border border-[#d2cabf] text-[#25221f] focus:ring-2 focus:ring-[#8d7f6d] outline-none"
                                                 placeholder="Jan Kowalski"
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-zinc-300 mb-2">
+                                            <label className="block text-sm font-medium text-[#514b44] mb-2">
                                                 Email *
                                             </label>
                                             <input
@@ -790,21 +788,21 @@ export default function RezerwacjaPage() {
                                                 required
                                                 value={email}
                                                 onChange={(e) => setEmail(e.target.value)}
-                                                className="w-full px-4 py-2 rounded-lg bg-zinc-800 border border-zinc-700 text-white focus:ring-2 focus:ring-amber-500 outline-none"
+                                                className="w-full px-4 py-2 rounded-lg bg-[#ece7e0] border border-[#d2cabf] text-[#25221f] focus:ring-2 focus:ring-[#8d7f6d] outline-none"
                                                 placeholder="jan@example.com"
                                             />
                                         </div>
                                     </div>
 
                                     <div>
-                                        <label className="block text-sm font-medium text-zinc-300 mb-2">
+                                        <label className="block text-sm font-medium text-[#514b44] mb-2">
                                             Telefon
                                         </label>
                                         <input
                                             type="tel"
                                             value={phone}
                                             onChange={(e) => setPhone(e.target.value)}
-                                            className="w-full px-4 py-2 rounded-lg bg-zinc-800 border border-zinc-700 text-white focus:ring-2 focus:ring-amber-500 outline-none"
+                                            className="w-full px-4 py-2 rounded-lg bg-[#ece7e0] border border-[#d2cabf] text-[#25221f] focus:ring-2 focus:ring-[#8d7f6d] outline-none"
                                             placeholder="+48 123 456 789"
                                         />
                                     </div>
@@ -812,7 +810,7 @@ export default function RezerwacjaPage() {
                                     {needsVenue && (
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div>
-                                                <label className="block text-sm font-medium text-zinc-300 mb-2">
+                                                <label className="block text-sm font-medium text-[#514b44] mb-2">
                                                     Miasto *
                                                 </label>
                                                 <input
@@ -820,12 +818,12 @@ export default function RezerwacjaPage() {
                                                     required={!!needsVenue}
                                                     value={venueCity}
                                                     onChange={(e) => setVenueCity(e.target.value)}
-                                                    className="w-full px-4 py-2 rounded-lg bg-zinc-800 border border-zinc-700 text-white focus:ring-2 focus:ring-amber-500 outline-none"
+                                                    className="w-full px-4 py-2 rounded-lg bg-[#ece7e0] border border-[#d2cabf] text-[#25221f] focus:ring-2 focus:ring-[#8d7f6d] outline-none"
                                                     placeholder="Toruń"
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block text-sm font-medium text-zinc-300 mb-2">
+                                                <label className="block text-sm font-medium text-[#514b44] mb-2">
                                                     Miejsce *
                                                 </label>
                                                 <input
@@ -833,7 +831,7 @@ export default function RezerwacjaPage() {
                                                     required={!!needsVenue}
                                                     value={venuePlace}
                                                     onChange={(e) => setVenuePlace(e.target.value)}
-                                                    className="w-full px-4 py-2 rounded-lg bg-zinc-800 border border-zinc-700 text-white focus:ring-2 focus:ring-amber-500 outline-none"
+                                                    className="w-full px-4 py-2 rounded-lg bg-[#ece7e0] border border-[#d2cabf] text-[#25221f] focus:ring-2 focus:ring-[#8d7f6d] outline-none"
                                                     placeholder="Pałac Dąbrowski"
                                                 />
                                             </div>
@@ -841,14 +839,14 @@ export default function RezerwacjaPage() {
                                     )}
 
                                     <div>
-                                        <label className="block text-sm font-medium text-zinc-300 mb-2">
+                                        <label className="block text-sm font-medium text-[#514b44] mb-2">
                                             Uwagi (opcjonalnie)
                                         </label>
                                         <textarea
                                             rows={3}
                                             value={notes}
                                             onChange={(e) => setNotes(e.target.value.slice(0, 500))}
-                                            className="w-full px-4 py-2 rounded-lg bg-zinc-800 border border-zinc-700 text-white focus:ring-2 focus:ring-amber-500 outline-none"
+                                            className="w-full px-4 py-2 rounded-lg bg-[#ece7e0] border border-[#d2cabf] text-[#25221f] focus:ring-2 focus:ring-[#8d7f6d] outline-none"
                                             maxLength={500}
                                             placeholder="Napisz krótko, kto będzie na zdjęciach i na czym najbardziej Wam zależy."
                                         />
@@ -856,7 +854,7 @@ export default function RezerwacjaPage() {
 
                                     {/* Promo Code */}
                                     <div>
-                                        <label className="block text-sm font-medium text-zinc-300 mb-2">
+                                        <label className="block text-sm font-medium text-[#514b44] mb-2">
                                             Kod promocyjny
                                         </label>
                                         <div className="flex gap-2">
@@ -865,7 +863,7 @@ export default function RezerwacjaPage() {
                                                 value={promoCode}
                                                 onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
                                                 disabled={!!discount}
-                                                className="flex-1 px-4 py-2 rounded-lg bg-zinc-800 border border-zinc-700 text-white uppercase focus:ring-2 focus:ring-amber-500 outline-none disabled:opacity-50"
+                                                className="flex-1 px-4 py-2 rounded-lg bg-[#ece7e0] border border-[#d2cabf] text-[#25221f] uppercase focus:ring-2 focus:ring-[#8d7f6d] outline-none disabled:opacity-50"
                                                 placeholder="KOD123"
                                             />
                                             {discount ? (
@@ -885,7 +883,7 @@ export default function RezerwacjaPage() {
                                                     type="button"
                                                     onClick={handleCheckPromoCode}
                                                     disabled={!promoCode || checkingCode}
-                                                    className="px-6 py-2 bg-zinc-800 text-white rounded-lg font-medium hover:bg-zinc-700 disabled:opacity-50"
+                                                    className="px-6 py-2 bg-[#ece7e0] text-[#25221f] rounded-lg font-medium hover:bg-white disabled:opacity-50"
                                                 >
                                                     {checkingCode ? "..." : "Zastosuj"}
                                                 </button>
@@ -916,7 +914,7 @@ export default function RezerwacjaPage() {
                                     )}
 
                                     {/* Final Price */}
-                                    <div className="flex justify-between text-2xl font-bold text-white pt-4 border-t border-zinc-800">
+                                    <div className="flex justify-between text-2xl font-bold text-[#25221f] pt-4 border-t border-[#ddd6cc]">
                                         <span>Do zapłaty:</span>
                                         <span>{(finalPrice / 100).toFixed(2)} zł</span>
                                     </div>
@@ -929,9 +927,9 @@ export default function RezerwacjaPage() {
                                         checked={rodo}
                                         onChange={(e) => setRodo(e.target.checked)}
                                         required
-                                        className="mt-1 w-4 h-4 rounded border-zinc-600 bg-zinc-800 text-amber-600 focus:ring-amber-500"
+                                        className="mt-1 w-4 h-4 rounded border-[#c6bdb1] bg-[#ece7e0] text-[#6e6252] focus:ring-[#8d7f6d]"
                                     />
-                                    <span className="text-sm text-zinc-400 group-hover:text-zinc-300 transition-colors">
+                                    <span className="text-sm text-[#6b645c] group-hover:text-[#514b44] transition-colors">
                                         Zgadzam się na przetwarzanie danych osobowych (RODO) w celu realizacji usługi. *
                                     </span>
                                 </label>
@@ -940,9 +938,9 @@ export default function RezerwacjaPage() {
                                 <button
                                     type="submit"
                                     disabled={!isReadyToSubmit || submitting}
-                                    className={`w-full mt-6 py-4 rounded-xl font-bold text-lg transition-all shadow-lg ${isReadyToSubmit
-                                        ? "bg-amber-600 text-white hover:bg-amber-500 shadow-amber-900/20"
-                                        : "bg-zinc-800 text-zinc-500 cursor-not-allowed"
+                                    className={`w-full mt-6 py-4 rounded-full font-semibold text-lg transition-all shadow-lg ${isReadyToSubmit
+                                        ? "bg-[#5b554e] text-white hover:bg-[#403b36] shadow-black/10"
+                                        : "bg-[#ece7e0] text-[#7c746b] cursor-not-allowed"
                                         } group flex items-center justify-center gap-2`}
                                 >
                                     <ShoppingBag className="w-6 h-6 group-hover:scale-110 transition-transform" />
@@ -952,8 +950,8 @@ export default function RezerwacjaPage() {
                         )}
                     </form>
 
-                    <div className="mt-20 border-t border-zinc-800 pt-16">
-                        <h2 className="text-2xl font-bold text-white text-center mb-8">Co mówią osoby, które były już przed obiektywem</h2>
+                    <div className="mt-20 border-t border-[#ddd6cc] pt-16">
+                        <h2 className="text-2xl font-bold text-[#25221f] text-center mb-8">Co mówią osoby, które były już przed obiektywem</h2>
                         <TestimonialsSection />
                     </div>
 
