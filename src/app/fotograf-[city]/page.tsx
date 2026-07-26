@@ -758,7 +758,7 @@ export default async function CityLandingPage({ params }: PageProps) {
             <section className="py-20 px-6 bg-gradient-to-br from-zinc-900 via-black to-zinc-900 border-t border-white/5">
                 <div className="container mx-auto text-center max-w-3xl">
                     <h2 className="text-4xl font-bold font-display mb-6">
-                        Gotowy na sesję w <span className="text-amber-400">{data.city === 'Płużnica' ? 'Płużnicy' : data.city === 'Bydgoszcz' ? 'Bydgoszczy' : data.city === 'Lisewo' ? 'Lisewie' : data.city === 'Wąbrzeźno' ? 'Wąbrzeźnie' : data.city === 'Chełmno' ? 'Chełmnie' : data.city === 'Świecie' ? 'Świeciu' : data.city === 'Grudziądz' ? 'Grudziądzu' : `${data.city}u`}</span>?
+                        Gotowy na sesję w <span className="text-amber-400">{data.city === 'Płużnica' ? 'Płużnicy' : data.city === 'Bydgoszcz' ? 'Bydgoszczy' : data.city === 'Lisewo' ? 'Lisewie' : data.city === 'Wąbrzeźno' ? 'Wąbrzeźnie' : data.city === 'Chełmno' ? 'Chełmnie' : data.city === 'Świecie' ? 'Świeciu' : data.city === 'Grudziądz' ? 'Grudziądzu' : data.city === 'Toruń' ? 'Toruniu' : `${data.city}u`}</span>?
                     </h2>
                     <p className="text-xl text-zinc-400 mb-10">
                         Napisz do mnie i umówmy się na kameralną sesję pełną naturalnych emocji.
