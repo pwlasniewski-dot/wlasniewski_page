@@ -48,6 +48,12 @@ interface GiftCard {
     amount: number;
 }
 
+const trackBookingEvent = (event: string, params: Record<string, unknown> = {}) => {
+    if (typeof window !== 'undefined' && (window as any).gtag) {
+        (window as any).gtag('event', event, params);
+    }
+};
+
 const FALLBACK_RETURNING_PROMO: DiscountCode = {
     code: 'WRACAM15',
     value: 15,
@@ -132,7 +138,10 @@ export default function RezerwacjaPage() {
                     const active = (data.serviceTypes || []).filter((s: ServiceType) => s.is_active);
                     setServiceTypes(active);
                     if (active.length > 0 && !service) {
-                        setService(active[0]);
+                        const requested = new URLSearchParams(window.location.search).get('service');
+                        const selected = active.find((item: ServiceType) => item.name.toLowerCase() === requested?.toLowerCase()) || active[0];
+                        setService(selected);
+                        trackBookingEvent('booking_view', { service: selected.name, source: new URLSearchParams(window.location.search).get('source') || 'direct' });
                     }
                 }
             } catch (error) {
@@ -416,6 +425,13 @@ export default function RezerwacjaPage() {
             (window as any).gtag('event', 'conversion', { 'send_to': 'AW-17548893646/-bm8CJ-3h-YbEM67-69B' });
         }
 
+        trackBookingEvent('add_to_cart', {
+            currency: 'PLN',
+            value: finalPrice / 100,
+            service: service?.name,
+            package: chosenPackage.name,
+        });
+
         addItem({
             type: 'booking',
             productId: chosenPackage.id.toString(),
@@ -464,11 +480,6 @@ export default function RezerwacjaPage() {
                                 <span className="mr-2 font-semibold text-amber-500">{number}.</span>{label}
                             </div>
                         ))}
-                    </div>
-
-                    {/* NEW: Testimonials moved to top */}
-                    <div className="mb-20">
-                        <TestimonialsSection />
                     </div>
 
                     {/* NEW: Early Gift Card Input */}
@@ -539,7 +550,7 @@ export default function RezerwacjaPage() {
                         )}
                     </motion.section>
 
-                    <form onSubmit={handleSubmit} className="space-y-8">
+                    <form id="booking-flow" onSubmit={handleSubmit} className="space-y-8 scroll-mt-24">
                         {preselectedPhotographer && (
                             <motion.div
                                 initial={{ opacity: 0, y: -10 }}
@@ -579,6 +590,8 @@ export default function RezerwacjaPage() {
                                         onClick={() => {
                                             setService(svc);
                                             setChosenPackage(null);
+                                            setSlot(null);
+                                            trackBookingEvent('booking_service_select', { service: svc.name });
                                         }}
                                         className={`p-4 rounded-xl border-2 transition-all text-left ${service?.id === svc.id
                                             ? "border-amber-500 bg-amber-500/10"
@@ -611,7 +624,10 @@ export default function RezerwacjaPage() {
                                         <button
                                             key={pkg.id}
                                             type="button"
-                                            onClick={() => setChosenPackage(pkg)}
+                                            onClick={() => {
+                                                setChosenPackage(pkg);
+                                                trackBookingEvent('booking_package_select', { service: service.name, package: pkg.name, value: pkg.price / 100, currency: 'PLN' });
+                                            }}
                                             className={`p-5 rounded-2xl border-2 transition-all text-left flex flex-col h-full ${chosenPackage?.id === pkg.id
                                                 ? "border-amber-500 bg-amber-500/10 shadow-[0_0_20px_rgba(245,158,11,0.15)]"
                                                 : "border-zinc-800 bg-zinc-900/40 hover:border-zinc-700 hover:bg-zinc-800/50"
@@ -660,7 +676,10 @@ export default function RezerwacjaPage() {
                                 <div className="mb-8">
                                     <h3 className="text-lg font-bold text-white mb-4">Wybierz Dzień</h3>
                                     <BookingCalendar
-                                        onSlotSelect={setSlot}
+                                        onSlotSelect={(selected) => {
+                                            setSlot(selected);
+                                            if (selected?.date) trackBookingEvent('booking_date_select', { service: service?.name, package: chosenPackage?.name, date: selected.date });
+                                        }}
                                         selectedSlot={slot}
                                         service={(service?.name as "Sesja" | "Ślub" | "Przyjęcie" | "Urodziny") || 'Sesja'}
                                     />
@@ -930,8 +949,20 @@ export default function RezerwacjaPage() {
                         )}
                     </form>
 
+                    <div className="mt-20 border-t border-zinc-800 pt-16">
+                        <h2 className="text-2xl font-bold text-white text-center mb-8">Co mówią osoby, które były już przed obiektywem</h2>
+                        <TestimonialsSection />
+                    </div>
+
                 </div>
             </div>
+            <a
+                href="#booking-flow"
+                className="fixed bottom-4 left-4 right-4 z-40 rounded-xl bg-amber-500 px-5 py-4 text-center font-bold text-black shadow-2xl shadow-black/50 md:hidden"
+                onClick={() => trackBookingEvent('booking_sticky_cta_click', { service: service?.name })}
+            >
+                {chosenPackage ? 'Wybierz termin' : 'Zobacz pakiety i wolne terminy'}
+            </a>
         </main>
     );
 }
