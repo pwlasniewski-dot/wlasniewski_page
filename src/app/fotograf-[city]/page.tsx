@@ -528,39 +528,108 @@ export default async function CityLandingPage({ params }: PageProps) {
 
     let cityGalleryImages: CityStoryPhoto[] = [];
     try {
-        const portfolioCategories = await getPortfolioCategories();
-        const allSessions = portfolioCategories.flatMap(category => category.sessions || []);
-        const cityNeedle = String(data.city || '').toLocaleLowerCase('pl-PL');
-        const citySlugNeedle = String(data.slug || '').replace('fotograf-', '').toLowerCase();
+        if (key === 'torun') {
+            const prisma = (await import('@/lib/db/prisma')).default;
+            const torunFamilySessions = await prisma.portfolioSession.findMany({
+                where: {
+                    is_published: true,
+                    AND: [
+                        {
+                            OR: [
+                                { category: { equals: 'family', mode: 'insensitive' } },
+                                { category: { equals: 'rodzina', mode: 'insensitive' } },
+                                { category: { equals: 'rodzinna', mode: 'insensitive' } },
+                                { category: { equals: 'rodzinne', mode: 'insensitive' } },
+                            ],
+                        },
+                        {
+                            OR: [
+                                { location: { contains: 'Toruń', mode: 'insensitive' } },
+                                { location: { contains: 'Torun', mode: 'insensitive' } },
+                                { title: { contains: 'Toruń', mode: 'insensitive' } },
+                                { title: { contains: 'Torun', mode: 'insensitive' } },
+                                { description: { contains: 'Toruń', mode: 'insensitive' } },
+                                { description: { contains: 'Torun', mode: 'insensitive' } },
+                            ],
+                        },
+                    ],
+                },
+                select: {
+                    title: true,
+                    cover_image_id: true,
+                    media_ids: true,
+                },
+                orderBy: { session_date: 'desc' },
+            });
 
-        const matchingSessions = allSessions.filter(session => {
-            const haystack = `${session.title || ''} ${session.slug || ''} ${session.location || ''} ${session.description || ''}`.toLocaleLowerCase('pl-PL');
-            return haystack.includes(cityNeedle) || haystack.includes(citySlugNeedle);
-        });
-        const familyFallback = allSessions.filter(session =>
-            ['family', 'rodzinna', 'rodzinne'].includes(String(session.category || '').toLowerCase())
-        );
-        const sourceSessions = matchingSessions.length >= 2
-            ? matchingSessions
-            : [...matchingSessions, ...familyFallback];
+            const orderedMediaIds = torunFamilySessions.flatMap(session => {
+                let mediaIds: number[] = [];
+                try {
+                    const parsed = session.media_ids ? JSON.parse(session.media_ids) : [];
+                    mediaIds = Array.isArray(parsed)
+                        ? parsed.map(Number).filter(Number.isInteger)
+                        : [];
+                } catch {
+                    mediaIds = [];
+                }
+                return [
+                    ...(session.cover_image_id ? [Number(session.cover_image_id)] : []),
+                    ...mediaIds,
+                ];
+            }).filter((id, index, all) => all.indexOf(id) === index);
 
-        const candidatePhotos: CityStoryPhoto[] = sourceSessions.flatMap(session => {
-            const highlighted = Array.isArray(session.highlightedPhotos) ? session.highlightedPhotos : [];
-            const sources = [session.coverImage, ...highlighted]
-                .filter((src): src is string => typeof src === 'string' && src.length > 0);
+            if (orderedMediaIds.length > 0) {
+                const media = await prisma.mediaLibrary.findMany({
+                    where: { id: { in: orderedMediaIds } },
+                    select: {
+                        id: true,
+                        file_path: true,
+                        alt_text: true,
+                        original_name: true,
+                        tags: true,
+                    },
+                });
+                const mediaById = new Map(media.map(item => [Number(item.id), item]));
 
-            return sources.map((src, index) => ({
-                src,
-                alt: `${session.title || 'Sesja fotograficzna'} — fotografia Przemysława Właśniewskiego`,
-                caption: index === 0
-                    ? (session.title || 'Sesja fotograficzna')
-                    : `${session.title || 'Sesja fotograficzna'} — wybrany kadr z galerii`,
-            }));
-        });
+                cityGalleryImages = orderedMediaIds
+                    .flatMap((id, index) => {
+                        const item = mediaById.get(id);
+                        if (!item?.file_path) return [];
+                        return [{
+                            src: item.file_path,
+                            alt: item.alt_text || `Rodzinna sesja fotograficzna w Toruniu — kadr ${index + 1}`,
+                            caption: item.alt_text || 'Rodzinna sesja w miejskiej przestrzeni Torunia',
+                        }];
+                    })
+                    .slice(0, 7);
+            }
+        } else {
+            const portfolioCategories = await getPortfolioCategories();
+            const allSessions = portfolioCategories.flatMap(category => category.sessions || []);
+            const cityNeedle = String(data.city || '').toLocaleLowerCase('pl-PL');
+            const citySlugNeedle = String(data.slug || '').replace('fotograf-', '').toLowerCase();
+            const matchingSessions = allSessions.filter(session => {
+                const haystack = `${session.title || ''} ${session.slug || ''} ${session.location || ''} ${session.description || ''}`.toLocaleLowerCase('pl-PL');
+                return haystack.includes(cityNeedle) || haystack.includes(citySlugNeedle);
+            });
 
-        cityGalleryImages = candidatePhotos
-            .filter((photo, index, all) => all.findIndex(candidate => candidate.src === photo.src) === index)
-            .slice(0, 7);
+            const candidatePhotos: CityStoryPhoto[] = matchingSessions.flatMap(session => {
+                const highlighted = Array.isArray(session.highlightedPhotos) ? session.highlightedPhotos : [];
+                const sources = [session.coverImage, ...highlighted]
+                    .filter((src): src is string => typeof src === 'string' && src.length > 0);
+                return sources.map((src, index) => ({
+                    src,
+                    alt: `${session.title || 'Sesja fotograficzna'} — fotografia Przemysława Właśniewskiego`,
+                    caption: index === 0
+                        ? (session.title || 'Sesja fotograficzna')
+                        : `${session.title || 'Sesja fotograficzna'} — wybrany kadr z galerii`,
+                }));
+            });
+
+            cityGalleryImages = candidatePhotos
+                .filter((photo, index, all) => all.findIndex(candidate => candidate.src === photo.src) === index)
+                .slice(0, 7);
+        }
     } catch (error) {
         console.error('[CityLandingPage] Portfolio gallery fallback:', error);
     }
