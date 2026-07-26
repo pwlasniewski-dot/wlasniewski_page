@@ -2,7 +2,6 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import CityLeadSection from '@/components/CityLeadSection';
 
 // ─── City Data with FAQs ─────────────────────────────────────────
 interface CityInfo {
@@ -28,7 +27,7 @@ const CITIES: Record<string, CityInfo> = {
         slug: 'fotograf-torun',
         city: 'Toruń',
         region: 'kujawsko-pomorskie',
-        h1: 'Fotograf Toruń — sesje rodzinne i reportaże ślubne',
+        h1: 'Fotograf w Toruniu. Rodzinne historie, śluby i portrety.',
         metaTitle: 'Fotograf Toruń | Sesje rodzinne i śluby — Właśniewski',
         metaDescription: 'Fotograf w Toruniu: sesje rodzinne od 750 zł, ceremonia cywilna od 1900 zł i pełny reportaż ślubny. Zobacz pakiety i wolne terminy online.',
         keywords: ['fotograf toruń', 'fotografia wizerunkowa toruń', 'fotograf portretowy toruń', 'fotograf toruń starówka', 'profesjonalna fotografia toruń', 'fotograf ślubny toruń', 'fotografia ślubna toruń', 'sesja zdjęciowa toruń', 'fotografia biznesowa toruń', 'sesja narzeczeńska toruń', 'sesja rodzinna toruń', 'plener ślubny toruń', 'zdjęcia biznesowe toruń', 'sesja w mieście toruń', 'fotograf bulwar filadelfijski'],
@@ -549,23 +548,14 @@ export default async function CityLandingPage({ params }: PageProps) {
         url: `https://wlasniewski.pl/${data.slug}`,
         address: {
             '@type': 'PostalAddress',
-            addressLocality: data.city,
+            streetAddress: 'Płużnica 47G',
+            postalCode: '87-214',
+            addressLocality: 'Płużnica',
             addressRegion: data.region,
             addressCountry: 'PL',
         },
-        geo: {
-            '@type': 'GeoCoordinates',
-            latitude: data.lat,
-            longitude: data.lng,
-        },
         areaServed: { '@type': 'City', name: data.city },
-        priceRange: '$$',
-        openingHoursSpecification: {
-            '@type': 'OpeningHoursSpecification',
-            dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
-            opens: '08:00',
-            closes: '20:00',
-        },
+        priceRange: '$',
         hasOfferCatalog: {
             '@type': 'OfferCatalog',
             name: `Usługi fotograficzne — ${data.city}`,
@@ -595,208 +585,196 @@ export default async function CityLandingPage({ params }: PageProps) {
     };
 
     return (
-        <main className="min-h-screen bg-zinc-950 text-white">
-            {/* Structured Data */}
+        <main className="min-h-screen bg-[#f4f1eb] text-[#25221f] selection:bg-[#b6a894] selection:text-white">
             <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
             <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessSchema) }} />
             <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
 
-            {/* Hero */}
-            <section className="relative min-h-[60vh] flex items-end overflow-hidden">
-                <div className="absolute inset-0">
-                    <Image
-                        src={data.heroImage}
-                        alt={data.h1}
-                        fill
-                        className="object-cover"
-                        priority
-                        sizes="100vw"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/60 to-transparent" />
-                </div>
-                <div className="relative z-10 container mx-auto px-6 pb-16 pt-32">
-                    {/* Breadcrumb */}
-                    <nav className="flex items-center gap-2 text-sm text-zinc-400 mb-6" aria-label="Breadcrumb">
-                        <Link href="/" className="hover:text-amber-400 transition-colors">Strona główna</Link>
-                        <span>/</span>
-                        <span className="text-amber-400">Fotograf {data.city}</span>
-                    </nav>
-                    <h1 className="text-4xl md:text-6xl font-bold font-display leading-tight max-w-4xl">
-                        {data.h1}
-                    </h1>
-                    <p className="mt-4 text-xl text-zinc-300 max-w-2xl">
-                        Profesjonalna fotografia rodzinna, ślubna i portretowa w {data.city === 'Płużnica' ? 'Płużnicy' : data.city === 'Bydgoszcz' ? 'Bydgoszczy' : data.city === 'Lisewo' ? 'Lisewie' : data.city === 'Wąbrzeźno' ? 'Wąbrzeźnie' : data.city === 'Chełmno' ? 'Chełmnie' : data.city === 'Świecie' ? 'Świeciu' : data.city === 'Grudziądz' ? 'Grudziądzu' : data.city === 'Toruń' ? 'Toruniu' : `${data.city}u`} i okolicach
-                    </p>
-                    <div className="flex flex-wrap gap-4 mt-8">
-                        <Link href={`/rezerwacja?source=city&city=${encodeURIComponent(data.city)}&service=Sesja`} className="bg-amber-500 hover:bg-amber-400 text-black font-bold py-3 px-8 rounded-lg transition-colors text-lg shadow-lg shadow-amber-500/20">
-                            Sprawdź pakiety i wolne terminy
-                        </Link>
-                        <a href="tel:+48530788694" className="border border-amber-400/40 hover:border-amber-400 text-amber-100 font-medium py-3 px-8 rounded-lg transition-colors text-lg inline-flex items-center gap-2">
-                            <span>📞</span> 530 788 694
-                        </a>
-                        <Link href="/portfolio" className="border border-white/30 hover:border-white/60 text-white font-medium py-3 px-8 rounded-lg transition-colors text-lg">
-                            Zobacz portfolio
-                        </Link>
-                    </div>
-                    {data.city === 'Toruń' && (
-                        <div className="mt-6 flex flex-wrap gap-3 text-sm text-zinc-200">
-                            <span className="rounded-full border border-white/15 bg-black/35 px-4 py-2">Sesje rodzinne od 750 zł</span>
-                            <span className="rounded-full border border-white/15 bg-black/35 px-4 py-2">Bezpieczna zaliczka PayU</span>
-                            <span className="rounded-full border border-white/15 bg-black/35 px-4 py-2">Prywatna galeria online</span>
-                        </div>
-                    )}
-                </div>
-            </section>
-
-            {/* Intro */}
-            <section className="py-20 px-6">
-                <div className="container mx-auto max-w-4xl">
-                    {data.intro.map((p, i) => (
-                        <p key={i} className="text-lg text-zinc-300 leading-relaxed mb-6">
-                            {p}
-                        </p>
-                    ))}
-                </div>
-            </section>
-
-            <section className="px-6 pb-20">
-                <div className="container mx-auto max-w-5xl rounded-3xl border border-amber-500/20 bg-zinc-900/70 p-6 md:p-10">
-                    <p className="mb-2 text-xs font-bold uppercase tracking-[0.24em] text-amber-400">Fotografia w {data.city === 'Toruń' ? 'Toruniu' : data.city}</p>
-                    <h2 className="mb-3 text-3xl font-bold md:text-4xl">Wybierz usługę i zobacz konkretną cenę</h2>
-                    <p className="mb-8 max-w-3xl text-zinc-400">Bez czekania na ogólną wycenę. W pakietach zobaczysz czas fotografowania, liczbę gotowych zdjęć i zakres materiału. Termin potwierdzisz bezpieczną zaliczką przez PayU.</p>
-                    <div className="grid gap-4 md:grid-cols-3">
-                        {[
-                            { title: 'Sesja rodzinna', price: 'od 750 zł', service: 'Sesja', text: 'Rodzina, para, dzieci i zdjęcia kilku pokoleń.' },
-                            { title: 'Ślub', price: 'od 1900 zł', service: 'Ślub', text: 'Ceremonia cywilna, kościelna albo pełny reportaż.' },
-                            { title: 'Urodziny i przyjęcia', price: 'od 1100 zł', service: 'Urodziny', text: 'Swobodny reportaż z ważnej rodzinnej uroczystości.' },
-                        ].map((item) => (
-                            <Link
-                                key={item.title}
-                                href={`/rezerwacja?source=city-funnel&city=${encodeURIComponent(data.city)}&service=${encodeURIComponent(item.service)}`}
-                                className="group rounded-2xl border border-zinc-700 bg-black/30 p-5 transition hover:-translate-y-1 hover:border-amber-500/60"
-                            >
-                                <div className="mb-2 flex items-start justify-between gap-3">
-                                    <h3 className="text-lg font-bold text-white group-hover:text-amber-300">{item.title}</h3>
-                                    <span className="whitespace-nowrap text-sm font-bold text-amber-400">{item.price}</span>
-                                </div>
-                                <p className="mb-5 text-sm leading-relaxed text-zinc-400">{item.text}</p>
-                                <span className="font-semibold text-white">Pakiety i wolne terminy →</span>
-                            </Link>
-                        ))}
-                    </div>
-                    <p className="mt-6 text-center text-sm text-zinc-500">Nie wiesz, który zakres wybrać? Zadzwoń: <a href="tel:+48530788694" className="text-amber-400">530 788 694</a></p>
-                </div>
-            </section>
-
-            {/* Content Sections */}
-            {data.sections.map((section, idx) => (
-                <section key={idx} className={`py-16 px-6 ${idx % 2 === 0 ? 'bg-zinc-900/50' : ''}`}>
-                    <div className="container mx-auto max-w-4xl">
-                        <h2 className="text-3xl font-bold font-display mb-8 flex items-center gap-3">
-                            <span className="text-2xl">{section.icon}</span>
-                            {section.title}
-                        </h2>
-                        {section.paragraphs.map((p, i) => (
-                            <p key={i} className="text-lg text-zinc-300 leading-relaxed mb-5">
-                                {p}
+            <section className="border-b border-[#d9d2c8] bg-[#ebe6de]">
+                <div className="mx-auto grid min-h-[calc(100svh-8rem)] max-w-[1500px] lg:grid-cols-[0.9fr_1.1fr]">
+                    <div className="order-2 flex items-center px-6 py-14 sm:px-10 lg:order-1 lg:px-16 xl:px-24">
+                        <div className="max-w-xl">
+                            <nav className="mb-8 flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-[#746d65]" aria-label="Breadcrumb">
+                                <Link href="/" className="transition hover:text-[#25221f]">Strona główna</Link>
+                                <span aria-hidden="true">/</span>
+                                <span>Fotograf {data.city}</span>
+                            </nav>
+                            <p className="mb-5 text-xs font-semibold uppercase tracking-[0.32em] text-[#8d7f6d]">
+                                Przemysław Właśniewski · fotografia
                             </p>
-                        ))}
-                    </div>
-                </section>
-            ))}
-
-            {/* Services */}
-            <section className="py-20 px-6 bg-zinc-900/80">
-                <div className="container mx-auto max-w-5xl">
-                    <h2 className="text-3xl font-bold font-display mb-12 text-center">
-                        Usługi fotograficzne — {data.city}
-                    </h2>
-                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {data.services.map((svc, i) => (
-                            <div key={i} className="bg-zinc-800/60 border border-zinc-700/50 rounded-xl p-6 hover:border-amber-500/30 transition-all">
-                                <div className="w-10 h-10 bg-amber-500/20 rounded-lg flex items-center justify-center mb-4">
-                                    <svg className="w-5 h-5 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                    </svg>
-                                </div>
-                                <h3 className="text-lg font-semibold text-white mb-2">{svc.name}</h3>
-                                <p className="text-zinc-400 text-sm leading-relaxed">{svc.description}</p>
+                            <h1 className="font-display text-5xl font-medium leading-[0.98] tracking-[-0.025em] text-[#201e1b] sm:text-6xl xl:text-7xl">
+                                {data.h1}
+                            </h1>
+                            <div className="mt-8 space-y-5 text-lg leading-relaxed text-[#514b44]">
+                                {data.intro.map((paragraph, index) => (
+                                    <p key={index}>{paragraph}</p>
+                                ))}
                             </div>
+                            <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center">
+                                <Link
+                                    href={`/rezerwacja?source=city&city=${encodeURIComponent(data.city)}&service=Sesja`}
+                                    className="inline-flex items-center justify-center rounded-full bg-[#292622] px-7 py-3.5 text-sm font-semibold text-white transition hover:bg-[#11100f]"
+                                >
+                                    Zobacz pakiety i terminy
+                                </Link>
+                                <Link
+                                    href="/portfolio"
+                                    className="inline-flex items-center justify-center rounded-full border border-[#a9a095] px-7 py-3.5 text-sm font-semibold text-[#292622] transition hover:border-[#292622]"
+                                >
+                                    Obejrzyj fotografie
+                                </Link>
+                            </div>
+                            <div className="mt-10 grid grid-cols-3 gap-4 border-t border-[#cfc7bd] pt-6 text-xs leading-relaxed text-[#6e675f]">
+                                <span>Spokojne prowadzenie</span>
+                                <span>Prywatna galeria</span>
+                                <span>Płatność PayU</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="relative order-1 min-h-[52svh] overflow-hidden lg:order-2 lg:min-h-full">
+                        <Image
+                            src={data.heroImage}
+                            alt={`Fotografia w ${data.city} — Przemysław Właśniewski`}
+                            fill
+                            className="object-cover object-center"
+                            priority
+                            sizes="(max-width: 1024px) 100vw, 55vw"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-black/5" />
+                    </div>
+                </div>
+            </section>
+
+            <section className="px-6 py-20 sm:px-10 lg:py-28">
+                <div className="mx-auto max-w-6xl">
+                    <div className="grid gap-10 lg:grid-cols-[0.75fr_1.25fr] lg:gap-20">
+                        <div>
+                            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#8d7f6d]">Oferta w {data.city}</p>
+                            <h2 className="mt-4 font-display text-4xl font-medium leading-tight text-[#25221f] md:text-5xl">
+                                Wybierz zakres, który pasuje do Waszego dnia
+                            </h2>
+                            <p className="mt-6 max-w-md leading-relaxed text-[#6c655d]">
+                                Cena, czas fotografowania i liczba gotowych zdjęć są widoczne przed rezerwacją. Bez ukrytych etapów i ogólnej wyceny „od”.
+                            </p>
+                        </div>
+                        <div className="grid gap-px overflow-hidden rounded-2xl border border-[#d7d0c6] bg-[#d7d0c6] md:grid-cols-3">
+                            {[
+                                { title: 'Sesja rodzinna', price: 'od 750 zł', service: 'Sesja', text: 'Rodzina, para, dzieci albo kilka pokoleń.' },
+                                { title: 'Ślub', price: 'od 1900 zł', service: 'Ślub', text: 'Ceremonia cywilna, kościelna lub pełny reportaż.' },
+                                { title: 'Przyjęcie', price: 'od 1100 zł', service: 'Urodziny', text: 'Urodziny, rocznica i rodzinne spotkanie.' },
+                            ].map((item, index) => (
+                                <Link
+                                    key={item.title}
+                                    href={`/rezerwacja?source=city-funnel&city=${encodeURIComponent(data.city)}&service=${encodeURIComponent(item.service)}`}
+                                    className="group flex min-h-64 flex-col bg-[#faf8f4] p-7 transition hover:bg-white"
+                                >
+                                    <span className="text-xs tracking-[0.2em] text-[#918577]">0{index + 1}</span>
+                                    <h3 className="mt-8 font-display text-2xl font-medium">{item.title}</h3>
+                                    <p className="mt-3 text-sm leading-relaxed text-[#716a62]">{item.text}</p>
+                                    <div className="mt-auto flex items-end justify-between gap-3 pt-8">
+                                        <span className="font-semibold text-[#413c36]">{item.price}</span>
+                                        <span className="text-[#8d7f6d] transition group-hover:translate-x-1" aria-hidden="true">→</span>
+                                    </div>
+                                </Link>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section className="border-y border-[#d9d2c8] bg-[#e9e4dc] px-6 py-20 sm:px-10 lg:py-28">
+                <div className="mx-auto max-w-6xl">
+                    <div className="grid gap-px overflow-hidden rounded-2xl border border-[#d2cbc1] bg-[#d2cbc1] lg:grid-cols-3">
+                        {data.sections.map((section, index) => (
+                            <article key={section.title} className="bg-[#f7f4ef] p-8 md:p-10">
+                                <span className="text-xs tracking-[0.22em] text-[#948777]">0{index + 1}</span>
+                                <h2 className="mt-6 font-display text-3xl font-medium leading-tight text-[#26231f]">
+                                    {section.title}
+                                </h2>
+                                <div className="mt-6 space-y-5 leading-relaxed text-[#665f57]">
+                                    {section.paragraphs.map((paragraph, paragraphIndex) => (
+                                        <p key={paragraphIndex}>{paragraph}</p>
+                                    ))}
+                                </div>
+                            </article>
                         ))}
                     </div>
                 </div>
             </section>
 
-            {/* FAQ Section */}
-            <section className="py-20 px-6">
-                <div className="container mx-auto max-w-4xl">
-                    <h2 className="text-3xl font-bold font-display mb-12 text-center">
-                        Najczęściej zadawane pytania — Fotograf {data.city}
-                    </h2>
-                    <div className="space-y-4">
-                        {data.faqs.map((faq, i) => (
-                            <details key={i} className="group bg-zinc-900/60 border border-zinc-700/50 rounded-xl overflow-hidden">
-                                <summary className="flex items-center justify-between cursor-pointer px-6 py-5 text-lg font-medium text-white hover:text-amber-400 transition-colors">
+            <section className="px-6 py-20 sm:px-10 lg:py-28">
+                <div className="mx-auto max-w-6xl">
+                    <div className="mx-auto max-w-3xl text-center">
+                        <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#8d7f6d]">Zakres fotografii</p>
+                        <h2 className="mt-4 font-display text-4xl font-medium md:text-5xl">Fotografuję ludzi, nie schematy</h2>
+                        <p className="mt-5 leading-relaxed text-[#6c655d]">Każde spotkanie ma inny rytm. Zakres ustalamy jasno, a sposób pracy dopasowuję do Was i miejsca.</p>
+                    </div>
+                    <div className="mt-14 grid gap-5 md:grid-cols-2">
+                        {data.services.map((service, index) => (
+                            <article key={service.name} className="rounded-2xl border border-[#d8d1c7] bg-[#fbfaf7] p-7 md:p-8">
+                                <span className="text-xs tracking-[0.2em] text-[#948777]">0{index + 1}</span>
+                                <h3 className="mt-5 font-display text-2xl font-medium">{service.name}</h3>
+                                <p className="mt-3 leading-relaxed text-[#6c655d]">{service.description}</p>
+                            </article>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            <section className="border-y border-[#d9d2c8] bg-white/55 px-6 py-20 sm:px-10 lg:py-28">
+                <div className="mx-auto max-w-4xl">
+                    <p className="text-center text-xs font-semibold uppercase tracking-[0.28em] text-[#8d7f6d]">Przed rezerwacją</p>
+                    <h2 className="mt-4 text-center font-display text-4xl font-medium md:text-5xl">Pytania, które pojawiają się najczęściej</h2>
+                    <div className="mt-12 divide-y divide-[#d7d0c6] border-y border-[#d7d0c6]">
+                        {data.faqs.map((faq) => (
+                            <details key={faq.question} className="group">
+                                <summary className="flex cursor-pointer list-none items-center justify-between gap-6 py-6 text-lg font-medium">
                                     <span>{faq.question}</span>
-                                    <svg className="w-5 h-5 text-zinc-500 group-open:rotate-180 transition-transform flex-shrink-0 ml-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                    </svg>
+                                    <span className="text-[#8d7f6d] transition group-open:rotate-45" aria-hidden="true">＋</span>
                                 </summary>
-                                <div className="px-6 pb-5 text-zinc-400 leading-relaxed">
-                                    {faq.answer}
-                                </div>
+                                <p className="max-w-3xl pb-7 leading-relaxed text-[#6c655d]">{faq.answer}</p>
                             </details>
                         ))}
                     </div>
                 </div>
             </section>
 
-            {/* Lead Form — najważniejsza sekcja konwersyjna z REALNYM social proof */}
-            <CityLeadSection city={data.city} citySlug={data.slug.replace('fotograf-', '')} />
-
-            {/* CTA */}
-            <section className="py-20 px-6 bg-gradient-to-br from-zinc-900 via-black to-zinc-900 border-t border-white/5">
-                <div className="container mx-auto text-center max-w-3xl">
-                    <h2 className="text-4xl font-bold font-display mb-6">
-                        Gotowy na sesję w <span className="text-amber-400">{data.city === 'Płużnica' ? 'Płużnicy' : data.city === 'Bydgoszcz' ? 'Bydgoszczy' : data.city === 'Lisewo' ? 'Lisewie' : data.city === 'Wąbrzeźno' ? 'Wąbrzeźnie' : data.city === 'Chełmno' ? 'Chełmnie' : data.city === 'Świecie' ? 'Świeciu' : data.city === 'Grudziądz' ? 'Grudziądzu' : data.city === 'Toruń' ? 'Toruniu' : `${data.city}u`}</span>?
+            <section className="bg-[#26231f] px-6 py-20 text-[#f7f4ef] sm:px-10 lg:py-28">
+                <div className="mx-auto max-w-5xl text-center">
+                    <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#c4b8a8]">Następny krok</p>
+                    <h2 className="mx-auto mt-5 max-w-3xl font-display text-4xl font-medium leading-tight md:text-6xl">
+                        Zobaczcie zakres, cenę i wybierzcie termin
                     </h2>
-                    <p className="text-xl text-zinc-400 mb-10">
-                        Napisz do mnie i umówmy się na kameralną sesję pełną naturalnych emocji.
+                    <p className="mx-auto mt-6 max-w-2xl leading-relaxed text-[#cfc8bf]">
+                        Jeśli przed wyborem chcecie o coś zapytać, zadzwońcie albo napiszcie. Odpowiem konkretnie i pomogę dobrać zakres.
                     </p>
-                    <div className="flex flex-wrap justify-center gap-4">
-                        <Link href={`/rezerwacja?source=city&city=${encodeURIComponent(data.city)}&service=Sesja`} className="bg-amber-500 hover:bg-amber-400 text-black font-bold py-4 px-10 rounded-xl transition-colors text-lg">
-                            Zobacz ceny i wolne terminy
+                    <div className="mt-10 flex flex-col justify-center gap-3 sm:flex-row">
+                        <Link
+                            href={`/rezerwacja?source=city-end&city=${encodeURIComponent(data.city)}&service=Sesja`}
+                            className="rounded-full bg-[#eee8de] px-8 py-4 text-sm font-semibold text-[#26231f] transition hover:bg-white"
+                        >
+                            Pakiety i wolne terminy
                         </Link>
-                        <Link href="/kontakt" className="border border-white/30 hover:border-white/60 text-white font-medium py-4 px-10 rounded-xl transition-colors text-lg">
-                            Kontakt
+                        <Link
+                            href="/kontakt"
+                            className="rounded-full border border-white/30 px-8 py-4 text-sm font-semibold text-white transition hover:border-white/70"
+                        >
+                            Napisz do mnie
                         </Link>
                     </div>
-                    <p className="mt-6 text-zinc-500 text-sm">
-                        tel. <a href="tel:+48530788694" className="text-amber-400 hover:underline">+48 530 788 694</a> · 
-                        Dostępny 7 dni w tygodniu
-                    </p>
+                    <a href="tel:+48530788694" className="mt-8 inline-block text-sm text-[#cfc8bf] hover:text-white">+48 530 788 694</a>
                 </div>
             </section>
 
-            <Link
-                href={`/rezerwacja?source=city-mobile&city=${encodeURIComponent(data.city)}&service=Sesja`}
-                className="fixed bottom-4 left-4 right-4 z-40 rounded-xl bg-amber-500 px-5 py-4 text-center font-bold text-black shadow-2xl shadow-black/50 md:hidden"
-            >
-                Sprawdź cenę i wolny termin
-            </Link>
-
-            {/* Nearby Cities Cross-links */}
-            <section className="py-16 px-6 border-t border-zinc-800">
-                <div className="container mx-auto max-w-4xl">
-                    <h2 className="text-2xl font-bold font-display mb-8 text-center">
-                        Fotograf w okolicach — dojeżdżam także do:
-                    </h2>
-                    <div className="flex flex-wrap justify-center gap-3">
-                        {data.nearbyLinks.map((link, i) => (
+            <section className="border-t border-[#d9d2c8] px-6 py-14 sm:px-10">
+                <div className="mx-auto max-w-5xl">
+                    <h2 className="text-center font-display text-2xl font-medium">Fotografuję również w pobliżu</h2>
+                    <div className="mt-7 flex flex-wrap justify-center gap-2">
+                        {data.nearbyLinks.map((link) => (
                             <Link
-                                key={i}
+                                key={link.href}
                                 href={link.href}
-                                className="bg-zinc-800/60 hover:bg-zinc-700/60 border border-zinc-700/50 hover:border-amber-500/30 px-5 py-3 rounded-full text-sm font-medium transition-all"
+                                className="rounded-full border border-[#cfc7bd] px-5 py-2.5 text-sm text-[#5e574f] transition hover:border-[#5e574f] hover:text-[#25221f]"
                             >
                                 {link.label}
                             </Link>
@@ -807,5 +785,3 @@ export default async function CityLandingPage({ params }: PageProps) {
         </main>
     );
 }
-
-

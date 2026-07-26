@@ -35,13 +35,10 @@ export default function ScrollToTop() {
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.8, y: 20 }}
                     onClick={scrollToTop}
-                    className="fixed bottom-10 left-10 z-[70] p-4 bg-zinc-900/50 backdrop-blur-2xl border border-white/10 text-yellow-500 rounded-2xl hover:bg-yellow-500 hover:text-black transition-all shadow-[0_10px_40px_rgba(0,0,0,0.5)] group"
+                    className="fixed bottom-5 left-5 z-[70] p-3 bg-[#25221f]/88 backdrop-blur-xl border border-white/15 text-[#e9e1d6] rounded-full hover:bg-[#11100f] transition-all shadow-lg group"
                     aria-label="Wróć na górę"
                 >
                     <ArrowUp size={24} className="group-hover:-translate-y-1 transition-transform" />
-
-                    {/* Ghost effect border */}
-                    <div className="absolute inset-0 rounded-2xl border border-yellow-500/0 group-hover:border-yellow-500/50 transition-colors animate-pulse" />
                 </motion.button>
             )}
         </AnimatePresence>
