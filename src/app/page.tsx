@@ -172,8 +172,56 @@ export default async function HomePage() {
     }
 
 
-    // Extract hero_slider explicitly to ensure proper serialization
-    const heroSlides = homeData?.hero_slider || [];
+    // Keep the photographs from the admin panel, but use concise sales copy on every slide.
+    const heroSlides = (homeData?.hero_slider || []).map((slide: any) => {
+        const source = `${slide?.title || ''} ${slide?.subtitle || ''} ${slide?.description || ''}`
+            .replace(/<[^>]+>/g, ' ')
+            .toLocaleLowerCase('pl');
+
+        let copy = {
+            title: 'Zdjęcia, do których chce się wracać',
+            subtitle: 'Sesje rodzinne, śluby i uroczystości. Sprawdź ceny oraz wolne terminy.',
+            buttonText: 'Zobacz pakiety i terminy',
+            buttonLink: '/rezerwacja?source=hero&service=Sesja'
+        };
+
+        if (source.includes('komun')) {
+            copy = {
+                title: 'Fotografia komunijna w Toruniu i regionie',
+                subtitle: 'Spokojny reportaż z ceremonii i rodzinnego spotkania.',
+                buttonText: 'Sprawdź ofertę komunijną',
+                buttonLink: '/rezerwacja?source=hero&service=Przyjęcie'
+            };
+        } else if (source.includes('ślub') || source.includes('slub') || source.includes('wese')) {
+            copy = {
+                title: 'Reportaż ślubny w Toruniu i regionie',
+                subtitle: 'Od ceremonii po wesele — jasny zakres, ceny i rezerwacja online.',
+                buttonText: 'Zobacz pakiety ślubne',
+                buttonLink: '/rezerwacja?source=hero&service=Ślub'
+            };
+        } else if (source.includes('rodzin') || source.includes('dzieci') || source.includes('ciąż')) {
+            copy = {
+                title: 'Sesja rodzinna w Toruniu',
+                subtitle: 'Zdjęcia bez pośpiechu, z gotową galerią dla całej rodziny.',
+                buttonText: 'Zobacz sesje rodzinne',
+                buttonLink: '/rezerwacja?source=hero&service=Sesja'
+            };
+        } else if (source.includes('urodzin') || source.includes('przyję') || source.includes('jubile')) {
+            copy = {
+                title: 'Reportaż z rodzinnej uroczystości',
+                subtitle: 'Urodziny, jubileusz lub przyjęcie — zobacz dostępne warianty.',
+                buttonText: 'Sprawdź pakiety',
+                buttonLink: '/rezerwacja?source=hero&service=Urodziny'
+            };
+        }
+
+        return {
+            ...slide,
+            ...copy,
+            button_text: copy.buttonText,
+            button_link: copy.buttonLink
+        };
+    });
 
     // Extract sections explicitly to ensure proper serialization
     const sections = JSON.parse(JSON.stringify(orderedSections));
@@ -195,21 +243,14 @@ export default async function HomePage() {
     }
     const heroSliderInterval = intervalSetting?.setting_value ? parseInt(intervalSetting.setting_value) : 6000;
 
-    // One stable primary heading keeps the homepage topic clear for people and search engines.
-    const seoH1 = 'Fotograf Toruń — sesje rodzinne i reportaże ślubne';
-
     return (
-        <>
-            {/* Visually hidden but indexed by search engines */}
-            <h1 className="sr-only">{seoH1}</h1>
-            <HomeContent
-                heroSlides={heroSlides}
-                sections={sections}
-                homeData={homeData}
-                orderedSections={orderedSections}
-                testimonials={testimonials}
-                heroSliderInterval={heroSliderInterval}
-            />
-        </>
+        <HomeContent
+            heroSlides={heroSlides}
+            sections={sections}
+            homeData={homeData}
+            orderedSections={orderedSections}
+            testimonials={testimonials}
+            heroSliderInterval={heroSliderInterval}
+        />
     );
 }
