@@ -2,6 +2,8 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
+import CityPhotoStory, { CityStoryPhoto } from '@/components/CityPhotoStory';
+import { getPortfolioCategories } from '@/lib/portfolio';
 
 // ─── City Data with FAQs ─────────────────────────────────────────
 interface CityInfo {
@@ -490,6 +492,32 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     if (!key) return { title: 'Strona nie znaleziona' };
     const data = CITIES[key];
 
+    const portfolioCategories = await getPortfolioCategories();
+    const allSessions = portfolioCategories.flatMap(category => category.sessions);
+    const cityNeedle = data.city.toLocaleLowerCase('pl-PL');
+    const citySlugNeedle = data.slug.replace('fotograf-', '').toLowerCase();
+    const matchingSessions = allSessions.filter(session => {
+        const haystack = `${session.title} ${session.slug}`.toLocaleLowerCase('pl-PL');
+        return haystack.includes(cityNeedle) || haystack.includes(citySlugNeedle);
+    });
+    const familyFallback = allSessions.filter(session =>
+        ['family', 'rodzinna', 'rodzinne'].includes(session.category.toLowerCase())
+    );
+    const sourceSessions = matchingSessions.length >= 2 ? matchingSessions : [...matchingSessions, ...familyFallback];
+
+    const candidatePhotos: CityStoryPhoto[] = sourceSessions.flatMap(session => {
+        const sources = [session.coverImage, ...(session.highlightedPhotos || [])].filter(Boolean) as string[];
+        return sources.map((src, index) => ({
+            src,
+            alt: `${session.title} — fotografia Przemysława Właśniewskiego`,
+            caption: index === 0 ? session.title : `${session.title} — wybrany kadr z galerii`,
+        }));
+    });
+    const cityGalleryImages = candidatePhotos
+        .filter((photo, index, all) => all.findIndex(candidate => candidate.src === photo.src) === index)
+        .slice(0, 7);
+    const heroPhoto = cityGalleryImages[0]?.src || data.heroImage;
+
     return {
         title: data.metaTitle,
         description: data.metaDescription,
@@ -633,7 +661,7 @@ export default async function CityLandingPage({ params }: PageProps) {
                     </div>
                     <div className="relative order-1 min-h-[52svh] overflow-hidden lg:order-2 lg:min-h-full">
                         <Image
-                            src={data.heroImage}
+                            src={heroPhoto}
                             alt={`Fotografia w ${data.city} — Przemysław Właśniewski`}
                             fill
                             className="object-cover object-center"
@@ -681,6 +709,8 @@ export default async function CityLandingPage({ params }: PageProps) {
                     </div>
                 </div>
             </section>
+
+            <CityPhotoStory images={cityGalleryImages} city={data.city} />
 
             <section className="border-y border-[#d9d2c8] bg-[#e9e4dc] px-6 py-20 sm:px-10 lg:py-28">
                 <div className="mx-auto max-w-6xl">
