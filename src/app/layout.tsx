@@ -85,18 +85,11 @@ const baseMetadata: Metadata = {
         'fotograf grudziądz',
         'fotograf chełmno',
         'fotograf wąbrzeźno',
-        'fotograf bydgoszcz',
-        'fotograf świecie',
-        'fotograf lisewo',
         'fotograf kujawsko-pomorskie',
         'sesja narzeczeńska toruń',
         'fotografia komunijna toruń',
         'fotografia wizerunkowa toruń',
-        'zdjęcia plenerowe toruń',
-        'fotograf toruń starówka',
-        'FOTO-DRON Przemysław Właśniewski',
-        'zdjęcia z drona toruń',
-        'Sony A7'
+        'karta podarunkowa sesja zdjęciowa'
     ],
     authors: [{ name: 'Przemysław Właśniewski' }],
     creator: 'Przemysław Właśniewski',
@@ -236,9 +229,9 @@ export default async function RootLayout({
                                         "@type": ["LocalBusiness", "ProfessionalService"],
                                         "@id": "https://wlasniewski.pl/#business",
                                         "name": "Przemysław Właśniewski — Fotograf",
-                                        "alternateName": "FOTO-DRON Przemysław Właśniewski",
+                                        
                                         "image": "https://wlasniewski.pl/og-image.jpg",
-                                        "description": "Profesjonalna fotografia rodzinna, ślubna, portretowa i komunijna w Toruniu, Grudziądzu, Chełmnie, Wąbrzeźnie i okolicach. Usługi dronem i termowizja.",
+                                        "description": "Sesje rodzinne, reportaże ślubne, portrety i fotografia uroczystości w Toruniu oraz województwie kujawsko-pomorskim.",
                                         "url": "https://wlasniewski.pl",
                                         "telephone": "+48530788694",
                                         "email": "kontakt@wlasniewski.pl",
@@ -246,39 +239,20 @@ export default async function RootLayout({
                                         "priceRange": "$$",
                                         "address": {
                                             "@type": "PostalAddress",
+                                            "streetAddress": "Płużnica 47G",
+                                            "postalCode": "87-214",
+                                            "addressLocality": "Płużnica",
                                             "addressRegion": "Kujawsko-Pomorskie",
-                                            "addressLocality": "Toruń",
                                             "addressCountry": "PL"
-                                        },
-                                        "geo": {
-                                            "@type": "GeoCoordinates",
-                                            "latitude": 53.01379,
-                                            "longitude": 18.59844
                                         },
                                         "areaServed": [
                                             { "@type": "City", "name": "Toruń" },
                                             { "@type": "City", "name": "Grudziądz" },
                                             { "@type": "City", "name": "Chełmno" },
                                             { "@type": "City", "name": "Wąbrzeźno" },
-                                            { "@type": "City", "name": "Bydgoszcz" },
-                                            { "@type": "City", "name": "Świecie" },
-                                            { "@type": "City", "name": "Lisewo" },
                                             { "@type": "City", "name": "Płużnica" },
-                                            { "@type": "City", "name": "Brodnica" },
-                                            { "@type": "City", "name": "Inowrocław" },
-                                            { "@type": "City", "name": "Mogilno" },
-                                            { "@type": "City", "name": "Nakło nad Notecią" },
-                                            { "@type": "City", "name": "Golub-Dobrzyń" },
-                                            { "@type": "City", "name": "Kowalewo Pomorskie" },
-                                            { "@type": "City", "name": "Rypin" },
                                             { "@type": "AdministrativeArea", "name": "województwo kujawsko-pomorskie" }
                                         ],
-                                        "openingHoursSpecification": {
-                                            "@type": "OpeningHoursSpecification",
-                                            "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
-                                            "opens": "08:00",
-                                            "closes": "20:00"
-                                        },
                                         "hasOfferCatalog": {
                                             "@type": "OfferCatalog",
                                             "name": "Usługi fotograficzne",
