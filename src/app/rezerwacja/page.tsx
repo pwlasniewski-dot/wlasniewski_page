@@ -48,6 +48,12 @@ interface GiftCard {
     amount: number;
 }
 
+const trackBookingEvent = (event: string, params: Record<string, unknown> = {}) => {
+    if (typeof window !== 'undefined' && (window as any).gtag) {
+        (window as any).gtag('event', event, params);
+    }
+};
+
 const FALLBACK_RETURNING_PROMO: DiscountCode = {
     code: 'WRACAM15',
     value: 15,
@@ -132,7 +138,10 @@ export default function RezerwacjaPage() {
                     const active = (data.serviceTypes || []).filter((s: ServiceType) => s.is_active);
                     setServiceTypes(active);
                     if (active.length > 0 && !service) {
-                        setService(active[0]);
+                        const requested = new URLSearchParams(window.location.search).get('service');
+                        const selected = active.find((item: ServiceType) => item.name.toLowerCase() === requested?.toLowerCase()) || active[0];
+                        setService(selected);
+                        trackBookingEvent('booking_view', { service: selected.name, source: new URLSearchParams(window.location.search).get('source') || 'direct' });
                     }
                 }
             } catch (error) {
@@ -191,6 +200,19 @@ export default function RezerwacjaPage() {
         };
         loadPage();
     }, []);
+
+    useEffect(() => {
+        if (serviceTypes.length === 0 || typeof window === 'undefined') return;
+        const requested = new URLSearchParams(window.location.search).get('service');
+        if (!requested) return;
+        const normalize = (value: string) => value.trim().toLocaleLowerCase('pl-PL');
+        const selected = serviceTypes.find((item) => normalize(item.name) === normalize(requested));
+        if (selected && selected.id !== service?.id) {
+            setService(selected);
+            setChosenPackage(null);
+            setSlot(null);
+        }
+    }, [serviceTypes, service?.id]);
 
     // Load available hours when package and date are selected
     useEffect(() => {
@@ -416,6 +438,13 @@ export default function RezerwacjaPage() {
             (window as any).gtag('event', 'conversion', { 'send_to': 'AW-17548893646/-bm8CJ-3h-YbEM67-69B' });
         }
 
+        trackBookingEvent('add_to_cart', {
+            currency: 'PLN',
+            value: finalPrice / 100,
+            service: service?.name,
+            package: chosenPackage.name,
+        });
+
         addItem({
             type: 'booking',
             productId: chosenPackage.id.toString(),
@@ -449,15 +478,21 @@ export default function RezerwacjaPage() {
             <div className="py-20 px-4">
                 <div className="max-w-4xl mx-auto pt-8">
                     <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 text-center">
-                        Zarezerwuj Sesję Fotograficzną w Toruniu
+                        Wybierz fotografię dopasowaną do Waszego dnia
                     </h1>
-                    <p className="text-zinc-400 text-center mb-12">
-                        Wybierz usługę, pakiet i termin. Płatność przejdziesz bezpiecznie poprzez Stripe.
+                    <p className="text-zinc-300 text-center max-w-2xl mx-auto mb-8 leading-relaxed">
+                        Najpierw wybierz rodzaj spotkania i zakres fotografowania. Potem zobaczysz wolne terminy, podasz najważniejsze informacje i przejdziesz do bezpiecznej płatności przez PayU.
                     </p>
-
-                    {/* NEW: Testimonials moved to top */}
-                    <div className="mb-20">
-                        <TestimonialsSection />
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-12 text-sm">
+                        {[
+                            ['1', 'Wybierz usługę i pakiet'],
+                            ['2', 'Zaznacz termin'],
+                            ['3', 'Potwierdź i zapłać przez PayU'],
+                        ].map(([number, label]) => (
+                            <div key={number} className="rounded-xl border border-zinc-800 bg-zinc-900/60 px-4 py-3 text-zinc-300">
+                                <span className="mr-2 font-semibold text-amber-500">{number}.</span>{label}
+                            </div>
+                        ))}
                     </div>
 
                     {/* NEW: Early Gift Card Input */}
@@ -528,7 +563,7 @@ export default function RezerwacjaPage() {
                         )}
                     </motion.section>
 
-                    <form onSubmit={handleSubmit} className="space-y-8">
+                    <form id="booking-flow" onSubmit={handleSubmit} className="space-y-8 scroll-mt-24">
                         {preselectedPhotographer && (
                             <motion.div
                                 initial={{ opacity: 0, y: -10 }}
@@ -559,7 +594,7 @@ export default function RezerwacjaPage() {
                             transition={{ duration: 0.5 }}
                             className="bg-zinc-900/50 rounded-2xl p-8 border border-zinc-800"
                         >
-                            <h2 className="text-2xl font-bold text-white mb-6">Krok 1: Wybierz Usługę</h2>
+                            <h2 className="text-2xl font-bold text-white mb-6">Krok 1: Co fotografujemy?</h2>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {serviceTypes.map((svc) => (
                                     <button
@@ -568,6 +603,8 @@ export default function RezerwacjaPage() {
                                         onClick={() => {
                                             setService(svc);
                                             setChosenPackage(null);
+                                            setSlot(null);
+                                            trackBookingEvent('booking_service_select', { service: svc.name });
                                         }}
                                         className={`p-4 rounded-xl border-2 transition-all text-left ${service?.id === svc.id
                                             ? "border-amber-500 bg-amber-500/10"
@@ -594,13 +631,16 @@ export default function RezerwacjaPage() {
                                 transition={{ duration: 0.5, delay: 0.1 }}
                                 className="bg-zinc-900/50 rounded-2xl p-8 border border-zinc-800"
                             >
-                                <h2 className="text-2xl font-bold text-white mb-6">Krok 2: Wybierz Pakiet</h2>
+                                <h2 className="text-2xl font-bold text-white mb-6">Krok 2: Wybierz zakres</h2>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     {activePackages.map((pkg) => (
                                         <button
                                             key={pkg.id}
                                             type="button"
-                                            onClick={() => setChosenPackage(pkg)}
+                                            onClick={() => {
+                                                setChosenPackage(pkg);
+                                                trackBookingEvent('booking_package_select', { service: service.name, package: pkg.name, value: pkg.price / 100, currency: 'PLN' });
+                                            }}
                                             className={`p-5 rounded-2xl border-2 transition-all text-left flex flex-col h-full ${chosenPackage?.id === pkg.id
                                                 ? "border-amber-500 bg-amber-500/10 shadow-[0_0_20px_rgba(245,158,11,0.15)]"
                                                 : "border-zinc-800 bg-zinc-900/40 hover:border-zinc-700 hover:bg-zinc-800/50"
@@ -643,13 +683,16 @@ export default function RezerwacjaPage() {
                                 transition={{ duration: 0.5, delay: 0.2 }}
                                 className="bg-zinc-900/50 rounded-2xl p-8 border border-zinc-800"
                             >
-                                <h2 className="text-2xl font-bold text-white mb-6">Krok 3: Wybierz Termin</h2>
+                                <h2 className="text-2xl font-bold text-white mb-6">Krok 3: Wybierz termin</h2>
 
                                 {/* Calendar */}
                                 <div className="mb-8">
                                     <h3 className="text-lg font-bold text-white mb-4">Wybierz Dzień</h3>
                                     <BookingCalendar
-                                        onSlotSelect={setSlot}
+                                        onSlotSelect={(selected) => {
+                                            setSlot(selected);
+                                            if (selected?.date) trackBookingEvent('booking_date_select', { service: service?.name, package: chosenPackage?.name, date: selected.date });
+                                        }}
                                         selectedSlot={slot}
                                         service={(service?.name as "Sesja" | "Ślub" | "Przyjęcie" | "Urodziny") || 'Sesja'}
                                     />
@@ -814,9 +857,10 @@ export default function RezerwacjaPage() {
                                         <textarea
                                             rows={3}
                                             value={notes}
-                                            onChange={(e) => setNotes(e.target.value)}
+                                            onChange={(e) => setNotes(e.target.value.slice(0, 500))}
                                             className="w-full px-4 py-2 rounded-lg bg-zinc-800 border border-zinc-700 text-white focus:ring-2 focus:ring-amber-500 outline-none"
-                                            placeholder="Wpisz dodatkowe informacje..."
+                                            maxLength={500}
+                                            placeholder="Napisz krótko, kto będzie na zdjęciach i na czym najbardziej Wam zależy."
                                         />
                                     </div>
 
@@ -912,14 +956,26 @@ export default function RezerwacjaPage() {
                                         } group flex items-center justify-center gap-2`}
                                 >
                                     <ShoppingBag className="w-6 h-6 group-hover:scale-110 transition-transform" />
-                                    <span>Dodaj do Koszyka</span>
+                                    <span>Przejdź do podsumowania</span>
                                 </button>
                             </motion.section>
                         )}
                     </form>
 
+                    <div className="mt-20 border-t border-zinc-800 pt-16">
+                        <h2 className="text-2xl font-bold text-white text-center mb-8">Co mówią osoby, które były już przed obiektywem</h2>
+                        <TestimonialsSection />
+                    </div>
+
                 </div>
             </div>
+            <a
+                href="#booking-flow"
+                className="fixed bottom-4 left-4 right-4 z-40 rounded-xl bg-amber-500 px-5 py-4 text-center font-bold text-black shadow-2xl shadow-black/50 md:hidden"
+                onClick={() => trackBookingEvent('booking_sticky_cta_click', { service: service?.name })}
+            >
+                {chosenPackage ? 'Wybierz termin' : 'Zobacz pakiety i wolne terminy'}
+            </a>
         </main>
     );
 }

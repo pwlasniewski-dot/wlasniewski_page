@@ -1013,6 +1013,37 @@ export default function HomeContent({ heroSlides, sections, homeData, orderedSec
             {/* Hero Slider - Always First */}
             <HeroSlider slides={heroSlides} interval={heroSliderInterval} />
 
+            <section className="relative z-20 -mt-8 px-4 pb-16 md:-mt-12">
+                <div className="mx-auto max-w-6xl rounded-3xl border border-white/10 bg-zinc-950/95 p-5 shadow-2xl shadow-black/60 backdrop-blur md:p-8">
+                    <div className="mb-7 text-center">
+                        <p className="mb-2 text-xs font-bold uppercase tracking-[0.25em] text-gold-400">Zacznij od tego, czego potrzebujesz</p>
+                        <h2 className="text-2xl font-bold text-white md:text-4xl">Wybierz rodzaj fotografii i od razu zobacz pakiety</h2>
+                        <p className="mx-auto mt-3 max-w-2xl text-zinc-400">Ceny, zakres pracy i wolne terminy są w jednym miejscu. Rezerwację potwierdzasz zaliczką przez PayU.</p>
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-3">
+                        {[
+                            { title: 'Sesja rodzinna', price: 'od 750 zł', copy: 'Dla rodziny, pary albo na spokojne zdjęcia kilku pokoleń.', href: '/rezerwacja?source=home&service=Sesja' },
+                            { title: 'Ślub', price: 'od 1900 zł', copy: 'Od ceremonii w urzędzie po pełny reportaż z wesela.', href: '/rezerwacja?source=home&service=Ślub' },
+                            { title: 'Urodziny i przyjęcia', price: 'od 1100 zł', copy: 'Reportaż z urodzin, jubileuszu lub rodzinnej uroczystości.', href: '/rezerwacja?source=home&service=Urodziny' },
+                        ].map((item) => (
+                            <Link key={item.title} href={item.href} className="group rounded-2xl border border-zinc-800 bg-zinc-900/70 p-5 transition hover:-translate-y-1 hover:border-gold-500/50">
+                                <div className="mb-2 flex items-start justify-between gap-3">
+                                    <h3 className="text-xl font-bold text-white group-hover:text-gold-300">{item.title}</h3>
+                                    <span className="whitespace-nowrap text-sm font-bold text-gold-400">{item.price}</span>
+                                </div>
+                                <p className="mb-5 text-sm leading-relaxed text-zinc-400">{item.copy}</p>
+                                <span className="font-semibold text-white">Zobacz pakiety i terminy →</span>
+                            </Link>
+                        ))}
+                    </div>
+                    <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-zinc-400">
+                        <span>✓ Jasny zakres każdego pakietu</span>
+                        <span>✓ Bezpieczna zaliczka PayU</span>
+                        <span>✓ Potwierdzenie na e-mail</span>
+                    </div>
+                </div>
+            </section>
+
 
             {/* Dynamic Sections */}
             {sections.map(section => renderSection(section))}
@@ -1067,10 +1098,10 @@ export default function HomeContent({ heroSlides, sections, homeData, orderedSec
                     </p>
                     <div className="flex flex-col sm:flex-row gap-5 justify-center">
                         <Link
-                            href="/rezerwacja"
+                            href="/rezerwacja?source=home-bottom&service=Sesja"
                             className="bg-gold-500 hover:bg-gold-400 text-black px-8 py-4 rounded-full font-bold text-lg transition-all transform hover:scale-105 shadow-lg shadow-gold-500/20"
                         >
-                            Zarezerwuj termin
+                            Sprawdź pakiety i terminy
                         </Link>
                         <Link
                             href="/kontakt"
@@ -1081,6 +1112,13 @@ export default function HomeContent({ heroSlides, sections, homeData, orderedSec
                     </div>
                 </div>
             </section>
+
+            <Link
+                href="/rezerwacja?source=home-mobile&service=Sesja"
+                className="fixed bottom-4 left-4 right-4 z-50 rounded-xl bg-gold-500 px-5 py-4 text-center font-bold text-black shadow-2xl shadow-black/60 md:hidden"
+            >
+                Zobacz ceny i wolne terminy
+            </Link>
 
             <div className="bg-black py-20 border-t border-zinc-900">
                 <ContactForm />

@@ -29,6 +29,7 @@ export default function CheckoutPage() {
                 const s = d?.settings || d || {};
                 if (s.split_payment_enabled === true || s.split_payment_enabled === 'true') {
                     setSplitPaymentAvailable(true);
+                    setPaymentPlan('SPLIT');
                     if (s.split_payment_deposit_percent) setDepositPercent(Number(s.split_payment_deposit_percent));
                 }
             })
@@ -148,6 +149,15 @@ export default function CheckoutPage() {
 
         setSubmitting(true);
         try {
+            if (typeof window !== 'undefined' && (window as any).gtag) {
+                (window as any).gtag('event', 'begin_checkout', {
+                    currency: 'PLN',
+                    value: amountNow / 100,
+                    payment_plan: paymentPlan,
+                    items: items.map(item => ({ item_id: item.productId, item_name: item.title, price: item.price / 100, quantity: item.quantity })),
+                });
+            }
+
             const response = await fetch('/api/basket/checkout', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -204,7 +214,7 @@ export default function CheckoutPage() {
                         animate={{ opacity: 1, x: 0 }}
                         className="space-y-8"
                     >
-                        <h1 className="text-4xl font-black tracking-tight mb-2">Finalizacja <span className="text-amber-500">Zamówienia</span></h1>
+                        <h1 className="text-4xl font-black tracking-tight mb-2">Potwierdź <span className="text-amber-500">termin</span></h1>
 
                         <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 flex items-center gap-4">
                             <div className="p-2 bg-amber-500/20 rounded-lg">
@@ -454,7 +464,7 @@ export default function CheckoutPage() {
                                     <label className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer ${paymentPlan === 'SPLIT' ? 'border-amber-500 bg-amber-500/10' : 'border-zinc-700 bg-zinc-800/50'}`}>
                                         <input type="radio" name="plan" checked={paymentPlan === 'SPLIT'} onChange={() => setPaymentPlan('SPLIT')} className="accent-amber-500" />
                                         <div className="flex-1">
-                                            <div className="text-sm font-bold text-white">Zaliczka {depositPercent}%</div>
+                                            <div className="text-sm font-bold text-white">Zaliczka {depositPercent}% — rekomendowana</div>
                                             <div className="text-xs text-zinc-400">
                                                 {(depositAmount / 100).toFixed(2)} zł teraz, dopłata {(remainingAmount / 100).toFixed(2)} zł przed sesją
                                             </div>

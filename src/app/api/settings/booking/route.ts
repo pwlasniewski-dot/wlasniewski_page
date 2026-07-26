@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
                 success: true,
                 settings: {
                     booking_require_payment: false,
-                    booking_payment_method: 'stripe',
+                    booking_payment_method: 'payu',
                     booking_currency: 'PLN',
                     booking_min_days_ahead: 7
                 }
@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
             success: true,
             settings: {
                 booking_require_payment: settings.booking_require_payment || false,
-                booking_payment_method: settings.booking_payment_method || 'stripe',
+                booking_payment_method: settings.booking_payment_method || 'payu',
                 booking_currency: settings.booking_currency || 'PLN',
                 booking_min_days_ahead: settings.booking_min_days_ahead || 7
             }

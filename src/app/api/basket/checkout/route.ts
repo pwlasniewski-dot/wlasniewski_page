@@ -95,9 +95,58 @@ export async function POST(request: Request) {
 
         for (const item of items) {
             if (item.type === 'booking') {
+                const md = (item.metadata || {}) as Record<string, any>;
+                const packageId = Number(item.productId);
+                if (!Number.isInteger(packageId)) {
+                    return NextResponse.json({ ok: false, message: "Nieprawidłowy pakiet." }, { status: 400 });
+                }
+
+                const selectedPackage = await prisma.package.findFirst({
+                    where: { id: packageId, is_active: true },
+                    include: { service: true },
+                });
+                if (!selectedPackage || !selectedPackage.service.is_active) {
+                    return NextResponse.json({ ok: false, message: "Wybrany pakiet nie jest już dostępny." }, { status: 400 });
+                }
+
+                let verifiedPrice = selectedPackage.price;
+
+                if (md.promo_code) {
+                    const promoCode = String(md.promo_code).trim().toUpperCase();
+                    const promo = await prisma.promoCode.findUnique({ where: { code: promoCode } });
+                    const now = new Date();
+                    const valid = promo?.is_active &&
+                        promo.valid_from <= now &&
+                        (!promo.valid_until || promo.valid_until >= now) &&
+                        (!promo.max_usage || promo.usage_count < promo.max_usage);
+                    if (!valid || !promo) {
+                        return NextResponse.json({ ok: false, message: "Kod promocyjny wygasł lub jest nieprawidłowy." }, { status: 400 });
+                    }
+                    verifiedPrice = promo.discount_type === 'percentage'
+                        ? verifiedPrice - Math.floor(verifiedPrice * promo.discount_value / 100)
+                        : verifiedPrice - promo.discount_value * 100;
+                }
+
+                if (md.gift_card_code) {
+                    const giftCode = String(md.gift_card_code).trim().toUpperCase();
+                    const card = await prisma.giftCard.findUnique({ where: { code: giftCode } });
+                    if (!card?.is_active || card.redeemed_at || (card.valid_until && card.valid_until < new Date())) {
+                        return NextResponse.json({ ok: false, message: "Karta podarunkowa wygasła lub została wykorzystana." }, { status: 400 });
+                    }
+                    verifiedPrice -= card.amount * 100;
+                }
+
+                if (voucherRef) {
+                    const voucherDiscount = voucherRef.reward_type === 'PERCENT'
+                        ? Math.floor(verifiedPrice * Number(voucherRef.reward_percent || 0) / 100)
+                        : Number(voucherRef.reward_amount_grosze || 0);
+                    verifiedPrice -= voucherDiscount;
+                }
+                verifiedPrice = Math.max(0, Math.round(verifiedPrice));
+
                 let extraBookingFields: Record<string, any> = {};
                 if (useSplitPayment) {
-                    const totalGrosze = Number(item.price);
+                    const totalGrosze = verifiedPrice;
                     const depositGrosze = Math.round(totalGrosze * depositPercent / 100);
                     const remainingGrosze = totalGrosze - depositGrosze;
                     const dueAt = item.metadata?.date ? new Date(item.metadata.date) : new Date();
@@ -118,7 +167,6 @@ export async function POST(request: Request) {
                 // Whitelist tylko pól które naprawdę istnieją w modelu Booking.
                 // Frontend wysyła m.in. `hours`, `originalPrice`, `photographer_name`,
                 // `pricing_mode` itp. — one nie istnieją w schemacie i wywalały całe checkout (500).
-                const md = (item.metadata || {}) as Record<string, any>;
                 // Date musi być ISO-8601 DateTime — frontend często wysyła "2026-05-01" (samo YYYY-MM-DD)
                 let bookingDate: Date | undefined;
                 if (md.date) {
@@ -132,9 +180,9 @@ export async function POST(request: Request) {
                     return NextResponse.json({ ok: false, message: "Brak lub nieprawidłowa data rezerwacji." }, { status: 400 });
                 }
                 const allowedBookingFields: Record<string, any> = {
-                    service: md.service,
-                    package: md.package,
-                    price: md.price ?? item.price,
+                    service: selectedPackage.service.name,
+                    package: selectedPackage.name,
+                    price: verifiedPrice,
                     date: bookingDate,
                     start_time: md.start_time ?? null,
                     end_time: md.end_time ?? null,
@@ -164,16 +212,21 @@ export async function POST(request: Request) {
                 createdResourceIds.push(`Booking #${booking.id}`);
                 payuProducts.push({
                     name: item.title || 'Rezerwacja',
-                    unitPrice: useSplitPayment ? Math.round(Number(item.price) * depositPercent / 100) : item.price,
+                    unitPrice: useSplitPayment ? Math.round(verifiedPrice * depositPercent / 100) : verifiedPrice,
                     quantity: 1
                 });
             } else if (item.type === 'gift_card') {
+                const giftValuePln = Number(item.metadata?.value);
+                if (!Number.isFinite(giftValuePln) || giftValuePln < 100 || giftValuePln > 10000) {
+                    return NextResponse.json({ ok: false, message: "Nieprawidłowa wartość karty podarunkowej." }, { status: 400 });
+                }
+                const verifiedGiftPrice = Math.round(giftValuePln * 100);
                 // 1. Create the Gift Card (Inactive)
                 const giftCard = await prisma.giftCard.create({
                     data: {
                         code: `GC-${Math.random().toString(36).substr(2, 8).toUpperCase()}`,
-                        value: item.metadata.value,
-                        amount: item.price / 100,
+                        value: giftValuePln,
+                        amount: giftValuePln,
                         theme: item.metadata.theme,
                         is_active: false,
                         recipient_email: customer.email,
@@ -189,7 +242,7 @@ export async function POST(request: Request) {
                         card_id: giftCard.id, // Legacy/Redundant field requirement
                         customer_email: customer.email,
                         customer_name: customer.name,
-                        amount_paid: item.price, // cents
+                        amount_paid: verifiedGiftPrice, // grosze
                         payment_status: 'pending',
                         payu_order_id: cartId, // Link to Cart ID
                         access_token: crypto.randomUUID(),
@@ -205,10 +258,18 @@ export async function POST(request: Request) {
                 createdResourceIds.push(`GiftCard #${giftCard.id}`);
                 payuProducts.push({
                     name: item.title || 'Karta Podarunkowa',
-                    unitPrice: item.price,
+                    unitPrice: verifiedGiftPrice,
                     quantity: 1
                 });
             }
+        }
+
+        const verifiedTotalAmount = payuProducts.reduce(
+            (sum, product) => sum + Number(product.unitPrice) * Number(product.quantity),
+            0
+        );
+        if (verifiedTotalAmount < 0 || !Number.isInteger(verifiedTotalAmount)) {
+            return NextResponse.json({ ok: false, message: "Nie udało się potwierdzić kwoty zamówienia." }, { status: 400 });
         }
 
         // 4. Initiate PayU Payment
@@ -218,7 +279,7 @@ export async function POST(request: Request) {
             const payuOrder = await createPayUOrder({
                 description: `Zamówienie ${cartId} (${customer.email})`,
                 currencyCode: 'PLN',
-                totalAmount: totalAmount, // passed from frontend (verified ideally?)
+                totalAmount: verifiedTotalAmount,
                 extOrderId: cartId, // THIS IS THE KEY
                 buyer: {
                     email: customer.email,
