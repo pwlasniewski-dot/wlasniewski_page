@@ -1,12 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { useEffect, useMemo, useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import GiftCard from '@/components/GiftCard';
-import { ShoppingCart, Heart, Share2, ArrowRight } from 'lucide-react';
-import PageRenderer from '@/components/PageRenderer';
-import { useCart } from '@/context/CartContext';
+import { Check } from 'lucide-react';
 
 interface GiftCardProduct {
     id: number;
@@ -21,384 +19,249 @@ interface GiftCardProduct {
     lowest_price_30d?: number;
 }
 
-const THEME_INFO = {
-    christmas: { name: 'Boże Narodzenie', icon: '🎄' },
-    wosp: { name: 'WOŚP', icon: '💛' },
-    valentines: { name: 'Walentynki', icon: '💝' },
-    easter: { name: 'Wielkanoc', icon: '🐰' },
-    halloween: { name: 'Halloween', icon: '👻' },
-    'mothers-day': { name: 'Dzień Matki', icon: '💐' },
-    'childrens-day': { name: 'Dzień Dziecka', icon: '🎈' },
-    wedding: { name: 'Ślub', icon: '💒' },
-    birthday: { name: 'Urodziny', icon: '🎂' }
+const THEME_NAMES: Record<string, string> = {
+    gold: 'Klasyczna',
+    wedding: 'Ślub',
+    birthday: 'Urodziny',
+    'mothers-day': 'Dla mamy',
+    valentines: 'Dla dwojga',
+    'childrens-day': 'Rodzinna',
+    christmas: 'Świąteczna',
+    easter: 'Rodzinna',
+    blue: 'Wieczorowa',
+    green: 'Rodzinna',
+    wosp: 'Specjalna',
+    halloween: 'Wieczorowa'
+};
+
+const fallbackDescription = (theme: string) => {
+    if (theme === 'wedding') return 'Dla pary, która sama wybierze termin i charakter sesji.';
+    if (theme === 'birthday') return 'Na urodziny, jubileusz albo ważny moment bez kupowania kolejnego przedmiotu.';
+    if (theme === 'mothers-day') return 'Dla mamy, która zwykle robi zdjęcia, ale zbyt rzadko jest razem z rodziną na fotografii.';
+    return 'Wartość do wykorzystania na wybraną sesję fotograficzną.';
 };
 
 export default function GiftCardShop() {
     const [cards, setCards] = useState<GiftCardProduct[]>([]);
-    const [filteredCards, setFilteredCards] = useState<GiftCardProduct[]>([]);
     const [selectedTheme, setSelectedTheme] = useState<string | null>(null);
-    const [favorites, setFavorites] = useState<number[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [heroImage, setHeroImage] = useState<string | null>(null);
     const [logoUrl, setLogoUrl] = useState<string | undefined>(undefined);
-    const [heroOpacity, setHeroOpacity] = useState(0.6);
-    const [pageSections, setPageSections] = useState<any[] | null>(null);
-    const { addItem } = useCart();
 
     useEffect(() => {
         const fetchCards = async () => {
             try {
                 const res = await fetch('/api/gift-cards/shop');
                 const data = await res.json();
-
-                // Handle new response format { cards, settings } or fallback to array
                 const cardsData = Array.isArray(data) ? data : data.cards;
-                const settingsData = !Array.isArray(data) ? data.settings : null;
+                const settingsData = Array.isArray(data) ? null : data.settings;
 
-                setCards(cardsData || []);
-                setFilteredCards(cardsData || []);
-
-                if (settingsData?.heroImage) {
-                    setHeroImage(settingsData.heroImage);
-                }
-                if (settingsData?.logoUrl) {
-                    setLogoUrl(settingsData.logoUrl);
-                }
-                if (settingsData?.heroOpacity !== undefined) {
-                    setHeroOpacity(settingsData.heroOpacity);
-                }
+                setCards((cardsData || []).filter((card: GiftCardProduct) => card.available !== false));
+                if (settingsData?.logoUrl) setLogoUrl(settingsData.logoUrl);
             } catch (error) {
-                console.error('Failed to fetch gift cards');
+                console.error('Failed to fetch gift cards', error);
             } finally {
                 setIsLoading(false);
             }
         };
 
-        const fetchPage = async () => {
-            try {
-                const res = await fetch('/api/pages?slug=karta-podarunkowa');
-                const data = await res.json();
-                if (data.success && data.page?.sections) {
-                    try {
-                        const parsed = JSON.parse(data.page.sections);
-                        if (Array.isArray(parsed) && parsed.length > 0) {
-                            setPageSections(parsed);
-                        }
-                    } catch (e) {
-                        console.error('Failed to parse page sections');
-                    }
-                }
-            } catch (error) {
-                console.error('Failed to fetch page data');
-            }
-        };
-
         fetchCards();
-        fetchPage();
     }, []);
 
-    useEffect(() => {
-        if (selectedTheme) {
-            setFilteredCards(cards.filter(card => card.theme === selectedTheme));
-        } else {
-            setFilteredCards(cards);
-        }
-    }, [selectedTheme, cards]);
+    const themes = useMemo(
+        () => Array.from(new Set(cards.map(card => card.theme))),
+        [cards]
+    );
 
-    const toggleFavorite = (id: number) => {
-        setFavorites(prev =>
-            prev.includes(id) ? prev.filter(fav => fav !== id) : [...prev, id]
-        );
-    };
+    const filteredCards = selectedTheme
+        ? cards.filter(card => card.theme === selectedTheme)
+        : cards;
 
-    const themes = Object.entries(THEME_INFO);
-
-    if (isLoading) {
-        return (
-            <main className="min-h-screen bg-black text-white pt-40">
-                <div className="max-w-7xl mx-auto px-6 py-20">
-                    <div className="flex items-center justify-center min-h-96">
-                        <motion.div
-                            animate={{ rotate: 360 }}
-                            transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
-                            className="w-12 h-12 border-4 border-gold-500/30 border-t-gold-500 rounded-full"
+    return (
+        <main className="min-h-screen bg-[#0b0908] text-stone-100">
+            <section className="relative flex min-h-[620px] items-center overflow-hidden px-6 pb-20 pt-36">
+                <Image
+                    src="/gift-cards/velvet-premium.webp"
+                    alt=""
+                    fill
+                    priority
+                    sizes="100vw"
+                    className="object-cover"
+                    aria-hidden="true"
+                />
+                <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/30 to-black/55" />
+                <div className="relative mx-auto grid w-full max-w-7xl items-center gap-12 lg:grid-cols-[1.05fr_0.95fr]">
+                    <div className="max-w-2xl">
+                        <p className="mb-5 text-xs font-semibold uppercase tracking-[0.32em] text-stone-300">Karta podarunkowa na sesję fotograficzną</p>
+                        <h1 className="font-display text-5xl font-medium leading-[0.98] tracking-tight text-stone-50 md:text-7xl">
+                            Podaruj czas, z którego zostaną zdjęcia
+                        </h1>
+                        <p className="mt-7 max-w-xl text-lg leading-relaxed text-stone-200 md:text-xl">
+                            Wybierasz wartość karty. Obdarowana osoba wybiera rodzaj sesji i dogodny termin. Po płatności PayU otrzymasz elegancką kartę gotową do wysłania lub wydrukowania.
+                        </p>
+                        <div className="mt-8 flex flex-wrap gap-x-6 gap-y-3 text-sm text-stone-200">
+                            <span className="inline-flex items-center gap-2"><Check className="h-4 w-4" /> termin wybierany później</span>
+                            <span className="inline-flex items-center gap-2"><Check className="h-4 w-4" /> karta dostarczana e-mailem</span>
+                            <span className="inline-flex items-center gap-2"><Check className="h-4 w-4" /> płatność online przez PayU</span>
+                        </div>
+                        <a href="#wybierz-karte" className="mt-9 inline-flex rounded-full bg-stone-100 px-7 py-3.5 font-semibold text-stone-950 transition hover:bg-white">
+                            Wybierz kartę
+                        </a>
+                    </div>
+                    <div className="mx-auto w-full max-w-xl">
+                        <GiftCard
+                            code="PREZENT"
+                            value={750}
+                            theme="gold"
+                            logoUrl={logoUrl}
+                            cardTitle="Sesja fotograficzna"
+                            cardDescription="Czas, zdjęcia i wspomnienia"
+                            hideCode
                         />
                     </div>
                 </div>
-            </main>
-        );
-    }
-
-    return (
-        <main className="min-h-screen bg-black text-white">
-            {/* Page Sections from Page Builder (allows adding Hero Slider etc.) */}
-            {pageSections && pageSections.length > 0 ? (
-                <PageRenderer sections={pageSections} />
-            ) : (
-                /* Hero Section with Background - Fallback if no sections in Page Builder */
-                <section className="relative h-[60vh] min-h-[500px] flex items-center justify-center overflow-hidden">
-                    {/* Background Image */}
-                    {heroImage ? (
-                        <>
-                            <div
-                                className="absolute inset-0 bg-cover bg-no-repeat transition-transform duration-[10s] hover:scale-105"
-                                style={{
-                                    backgroundImage: `url(${heroImage})`,
-                                    backgroundPosition: 'center 15%', // Optimized for portraits (faces)
-                                    transformOrigin: 'center 15%'     // Zoom originates from face
-                                }}
-                            />
-                            <div
-                                className="absolute inset-0 bg-black transition-opacity duration-700"
-                                style={{ opacity: heroOpacity }}
-                            />
-                        </>
-                    ) : (
-                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-zinc-900 via-black to-black" />
-                    )}
-
-                    <div className="relative z-10 max-w-7xl mx-auto px-6 text-center pt-20">
-                        <motion.div
-                            initial={{ opacity: 0, y: 30 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 1, ease: "easeOut" }}
-                            className="flex flex-col items-center"
-                        >
-                            <div className="w-px h-16 bg-gradient-to-b from-transparent via-gold-400 to-transparent mb-8" />
-
-                            <h2 className="text-gold-400 tracking-[0.2em] text-sm uppercase mb-4 font-medium">
-                                Premium Gift Cards
-                            </h2>
-
-                            <h1 className="text-5xl md:text-7xl font-display font-light text-white mb-8 tracking-wide">
-                                Karty <span className="italic font-serif text-gold-200">Podarunkowe</span>
-                            </h1>
-
-                            <p className="text-lg md:text-xl text-zinc-300 max-w-xl mx-auto font-light leading-relaxed">
-                                Podaruj bliskim coś więcej niż przedmiot.
-                                <span className="block text-white mt-1">Podaruj niezapomniane wspomnienia.</span>
-                            </p>
-
-                            <div className="w-px h-16 bg-gradient-to-b from-gold-400 via-transparent to-transparent mt-12" />
-                        </motion.div>
-                    </div>
-                </section>
-            )}
-
-            {/* Theme Filter */}
-            <section className="py-12 px-6 border-b border-zinc-800 bg-zinc-950">
-                <div className="max-w-7xl mx-auto">
-                    <h2 className="text-lg font-semibold mb-6 text-zinc-300">Filtruj po temacie:</h2>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-9 gap-2">
-                        <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => setSelectedTheme(null)}
-                            className={`px-4 py-2 rounded-lg font-semibold transition-all ${selectedTheme === null
-                                ? 'bg-gold-500 text-black'
-                                : 'bg-zinc-800 text-white hover:bg-zinc-700'
-                                }`}
-                        >
-                            Wszystkie
-                        </motion.button>
-                        {themes.map(([key, { icon, name }]) => (
-                            <motion.button
-                                key={key}
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
-                                onClick={() => setSelectedTheme(key)}
-                                className={`px-4 py-2 rounded-lg font-semibold transition-all flex items-center justify-center gap-1 text-sm ${selectedTheme === key
-                                    ? 'bg-gold-500 text-black'
-                                    : 'bg-zinc-800 text-white hover:bg-zinc-700'
-                                    }`}
-                                title={name}
-                            >
-                                <span>{icon}</span>
-                                <span className="hidden sm:inline">{name.split(' ')[0]}</span>
-                            </motion.button>
-                        ))}
-                    </div>
-                </div>
             </section>
 
-            {/* Grid of Cards */}
-            <section className="py-20 px-6">
-                <div className="max-w-7xl mx-auto">
-                    {filteredCards.length === 0 ? (
-                        <div className="text-center py-20">
-                            <p className="text-xl text-zinc-400">Brak dostępnych kart dla wybranego tematu</p>
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                            {filteredCards.map((card, idx) => (
-                                <motion.div
-                                    key={card.id}
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ duration: 0.5, delay: idx * 0.1 }}
-                                    className="group"
-                                >
-                                    <div className="relative rounded-2xl overflow-hidden bg-zinc-900 border border-zinc-800 hover:border-gold-500/50 transition-all p-6 h-full flex flex-col">
-                                        {/* Card Preview */}
-                                        <div className="mb-6 rounded-xl overflow-hidden bg-black/40 p-2 sm:p-4 flex items-center justify-center h-48 sm:h-56 group-hover:bg-black/60 transition-colors">
-                                            <div className="w-full max-w-[280px] sm:max-w-[320px]">
-                                                <GiftCard
-                                                    code={card.code}
-                                                    value={Math.round(card.value)}
-                                                    theme={card.theme as any}
-                                                    cardTitle={card.card_title}
-                                                    cardDescription={card.card_description}
-                                                    hideCode={true}
-                                                    logoUrl={logoUrl}
-                                                />
-                                            </div>
-                                        </div>
-
-                                        {/* Theme Badge */}
-                                        <div className="flex items-center gap-2 mb-3">
-                                            <span className="text-2xl">
-                                                {THEME_INFO[card.theme as keyof typeof THEME_INFO]?.icon}
-                                            </span>
-                                            <span className="text-sm text-zinc-400">
-                                                {THEME_INFO[card.theme as keyof typeof THEME_INFO]?.name}
-                                            </span>
-                                        </div>
-
-                                        {/* Price Section */}
-                                        <div className="mb-6 flex-1">
-                                            <div className="flex items-baseline gap-2">
-                                                {card.price < card.value ? (
-                                                    <>
-                                                        <span className="text-sm text-gold-400 font-medium bg-gold-400/10 px-2 py-0.5 rounded">RABAT</span>
-                                                        <span className="text-2xl font-bold text-white">{Math.round(card.price)} zł</span>
-                                                        <span className="text-sm text-zinc-500 line-through">{Math.round(card.value)} zł</span>
-                                                    </>
-                                                ) : (
-                                                    <span className="text-2xl font-bold text-white">{Math.round(card.price)} zł</span>
-                                                )}
-                                            </div>
-
-                                            {card.price < card.value && (
-                                                <p className="text-[10px] text-zinc-500 mt-2 italic leading-tight">
-                                                    Najniższa cena z 30 dni przed obniżką: {card.lowest_price_30d || card.value} zł
-                                                </p>
-                                            )}
-                                        </div>
-
-                                        {/* Description */}
-                                        {card.description && (
-                                            <p className="text-sm text-zinc-400 mb-6">
-                                                {card.description}
-                                            </p>
-                                        )}
-
-                                        {/* Status */}
-                                        {!card.available && (
-                                            <div className="mb-4 px-3 py-2 bg-red-500/20 border border-red-500/50 rounded-lg text-red-400 text-sm">
-                                                Brak dostępu
-                                            </div>
-                                        )}
-
-                                        {/* Action Buttons */}
-                                        <div className="space-y-3">
-                                            <button
-                                                onClick={() => addItem({
-                                                    type: 'gift_card',
-                                                    productId: card.id.toString(),
-                                                    title: `Karta Podarunkowa: ${Math.round(card.value)} zł`,
-                                                    subtitle: `Motyw: ${THEME_INFO[card.theme as keyof typeof THEME_INFO]?.name}`,
-                                                    price: Math.round(card.price) * 100, // item price in cents
-                                                    quantity: 1,
-                                                    metadata: { cardId: card.id, theme: card.theme, value: card.value }
-                                                })}
-                                                disabled={!card.available}
-                                                className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 bg-gold-500 hover:bg-gold-400 text-black font-bold rounded-lg transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-                                            >
-                                                <ShoppingCart className="w-5 h-5" />
-                                                Dodaj do koszyka
-                                            </button>
-
-                                            <div className="flex gap-2">
-                                                <motion.button
-                                                    whileHover={{ scale: 1.05 }}
-                                                    whileTap={{ scale: 0.95 }}
-                                                    onClick={() => toggleFavorite(card.id)}
-                                                    className={`flex-1 px-4 py-2 rounded-lg border transition-all font-semibold flex items-center justify-center gap-2 ${favorites.includes(card.id)
-                                                        ? 'bg-red-500/20 border-red-500 text-red-400'
-                                                        : 'border-zinc-700 text-zinc-400 hover:border-zinc-600'
-                                                        }`}
-                                                >
-                                                    <Heart
-                                                        className="w-4 h-4"
-                                                        fill={favorites.includes(card.id) ? 'currentColor' : 'none'}
-                                                    />
-                                                    <span className="hidden sm:inline">Polub</span>
-                                                </motion.button>
-
-                                                <motion.button
-                                                    whileHover={{ scale: 1.05 }}
-                                                    whileTap={{ scale: 0.95 }}
-                                                    onClick={() => {
-                                                        if (navigator.share) {
-                                                            navigator.share({
-                                                                title: `${THEME_INFO[card.theme as keyof typeof THEME_INFO]?.name} - Karta Podarunkowa`,
-                                                                text: `Karta podarunkowa o wartości ${card.value} zł`,
-                                                                url: window.location.href
-                                                            });
-                                                        }
-                                                    }}
-                                                    className="flex-1 px-4 py-2 rounded-lg border border-zinc-700 text-zinc-400 hover:border-zinc-600 transition-all font-semibold flex items-center justify-center gap-2"
-                                                >
-                                                    <Share2 className="w-4 h-4" />
-                                                    <span className="hidden sm:inline">Udostępnij</span>
-                                                </motion.button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </motion.div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-            </section>
-
-            {/* Info Section */}
-            <section className="py-20 px-6 bg-zinc-950 border-t border-zinc-800">
-                <div className="max-w-4xl mx-auto">
-                    <h2 className="text-3xl font-display font-bold mb-12 text-center">
-                        Jak to działa? 🎁
-                    </h2>
-
-                    <div className="grid md:grid-cols-3 gap-8">
+            <section className="border-y border-white/10 bg-[#100d0b] px-6 py-16">
+                <div className="mx-auto max-w-6xl">
+                    <div className="max-w-3xl">
+                        <p className="text-xs font-semibold uppercase tracking-[0.28em] text-stone-400">Dlaczego ten prezent ma sens</p>
+                        <h2 className="mt-3 font-display text-3xl font-medium text-stone-50 md:text-5xl">Nie musisz znać terminu ani wybierać zdjęć za kogoś</h2>
+                    </div>
+                    <div className="mt-10 grid gap-5 md:grid-cols-3">
                         {[
-                            {
-                                icon: '🛒',
-                                title: 'Wybierz kartę',
-                                description: 'Wybrany temat i wartość karty podarunkowej'
-                            },
-                            {
-                                icon: '💳',
-                                title: 'Zapłać',
-                                description: 'Bezpieczna płatność przez Stripe lub przelew bankowy'
-                            },
-                            {
-                                icon: '📧',
-                                title: 'Udostępnij',
-                                description: 'Wyślij mailem, wydrukuj lub udostępnij klientowi'
-                            }
-                        ].map((item, idx) => (
-                            <motion.div
-                                key={idx}
-                                initial={{ opacity: 0, y: 20 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                transition={{ duration: 0.5, delay: idx * 0.1 }}
-                                className="text-center"
-                            >
-                                <div className="text-5xl mb-4">{item.icon}</div>
-                                <h3 className="text-xl font-bold mb-3">{item.title}</h3>
-                                <p className="text-zinc-400">{item.description}</p>
-                            </motion.div>
+                            ['Swoboda wyboru', 'Osoba, która dostaje kartę, sama wybiera rodzaj sesji, miejsce i dogodną datę.'],
+                            ['Jasna wartość', 'Karta działa jak budżet na sesję. Jej wartość jest czytelna i można ją wykorzystać przy rezerwacji.'],
+                            ['Gotowy prezent', 'Po opłaceniu dostajesz kartę e-mailem. Możesz ją przesłać od razu albo wydrukować.']
+                        ].map(([title, description], index) => (
+                            <article key={title} className="rounded-2xl border border-white/10 bg-white/[0.035] p-6">
+                                <div className="text-sm text-stone-500">0{index + 1}</div>
+                                <h3 className="mt-5 text-xl font-semibold text-stone-50">{title}</h3>
+                                <p className="mt-3 leading-relaxed text-stone-300">{description}</p>
+                            </article>
                         ))}
+                    </div>
+                </div>
+            </section>
+
+            <section id="wybierz-karte" className="scroll-mt-24 px-6 py-20">
+                <div className="mx-auto max-w-7xl">
+                    <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
+                        <div>
+                            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-stone-400">Wybierz wariant</p>
+                            <h2 className="mt-3 font-display text-4xl font-medium text-stone-50">Karty podarunkowe</h2>
+                            <p className="mt-3 max-w-2xl text-stone-300">Wybierz oprawę i wartość. Szczegóły dla obdarowanej osoby uzupełnisz przed płatnością.</p>
+                        </div>
+                        {themes.length > 1 && (
+                            <div className="flex flex-wrap gap-2" aria-label="Filtr wariantów kart">
+                                <button
+                                    onClick={() => setSelectedTheme(null)}
+                                    className={`rounded-full border px-4 py-2 text-sm transition ${selectedTheme === null ? 'border-stone-100 bg-stone-100 text-stone-950' : 'border-white/15 text-stone-300 hover:border-white/35'}`}
+                                >
+                                    Wszystkie
+                                </button>
+                                {themes.map(theme => (
+                                    <button
+                                        key={theme}
+                                        onClick={() => setSelectedTheme(theme)}
+                                        className={`rounded-full border px-4 py-2 text-sm transition ${selectedTheme === theme ? 'border-stone-100 bg-stone-100 text-stone-950' : 'border-white/15 text-stone-300 hover:border-white/35'}`}
+                                    >
+                                        {THEME_NAMES[theme] || 'Klasyczna'}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    {isLoading ? (
+                        <div className="mt-12 grid gap-8 md:grid-cols-2 lg:grid-cols-3" aria-label="Ładowanie kart">
+                            {[0, 1, 2].map(item => <div key={item} className="aspect-[1.1/1] animate-pulse rounded-3xl bg-white/5" />)}
+                        </div>
+                    ) : filteredCards.length === 0 ? (
+                        <div className="mt-12 rounded-2xl border border-white/10 p-8 text-center text-stone-300">
+                            Karty są chwilowo niedostępne. Napisz do mnie, a przygotuję wariant ręcznie.
+                        </div>
+                    ) : (
+                        <div className="mt-12 grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+                            {filteredCards.map(card => {
+                                const displayPrice = Math.round(card.price || card.value);
+                                const displayValue = Math.round(card.value);
+                                const cardName = card.card_title || THEME_NAMES[card.theme] || 'Karta podarunkowa';
+
+                                return (
+                                    <article key={card.id} className="flex flex-col rounded-3xl border border-white/10 bg-white/[0.035] p-5 transition hover:border-white/25">
+                                        <GiftCard
+                                            code={card.code}
+                                            value={displayValue}
+                                            theme={card.theme as GiftCardProduct['theme'] as any}
+                                            logoUrl={logoUrl}
+                                            cardTitle={cardName}
+                                            cardDescription={card.card_description}
+                                            hideCode
+                                        />
+                                        <div className="flex flex-1 flex-col px-1 pb-1 pt-6">
+                                            <h3 className="text-xl font-semibold text-stone-50">{cardName}</h3>
+                                            <p className="mt-2 flex-1 text-sm leading-relaxed text-stone-300">
+                                                {card.description || fallbackDescription(card.theme)}
+                                            </p>
+                                            <div className="mt-5 flex items-end justify-between gap-4">
+                                                <div>
+                                                    <div className="text-xs uppercase tracking-wider text-stone-500">Cena</div>
+                                                    <div className="text-2xl font-semibold text-stone-50">{displayPrice} zł</div>
+                                                </div>
+                                                {displayPrice < displayValue && <div className="text-sm text-stone-500 line-through">{displayValue} zł</div>}
+                                            </div>
+                                            <Link
+                                                href={`/karta-podarunkowa/${card.id}/kup`}
+                                                className="mt-5 inline-flex w-full items-center justify-center rounded-full bg-stone-100 px-6 py-3.5 font-semibold text-stone-950 transition hover:bg-white"
+                                            >
+                                                Kup tę kartę
+                                            </Link>
+
+                                        </div>
+                                    </article>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+            </section>
+
+            <section className="border-t border-white/10 bg-[#100d0b] px-6 py-20">
+                <div className="mx-auto max-w-6xl">
+                    <h2 className="font-display text-4xl font-medium text-stone-50">Jak kupić kartę</h2>
+                    <div className="mt-10 grid gap-6 md:grid-cols-3">
+                        {[
+                            ['1', 'Wybierz wartość', 'Wybierz kartę pasującą do okazji i kwoty, którą chcesz podarować.'],
+                            ['2', 'Dodaj dedykację', 'Wpisz dane kupującego, odbiorcy i krótką wiadomość do umieszczenia przy prezencie.'],
+                            ['3', 'Opłać przez PayU', 'Po potwierdzeniu płatności karta i kod trafią na podany adres e-mail.']
+                        ].map(([number, title, description]) => (
+                            <article key={number} className="border-l border-stone-700 pl-6">
+                                <div className="text-sm text-stone-500">{number}</div>
+                                <h3 className="mt-3 text-xl font-semibold text-stone-50">{title}</h3>
+                                <p className="mt-3 leading-relaxed text-stone-300">{description}</p>
+                            </article>
+                        ))}
+                    </div>
+
+                    <div className="mt-16 grid gap-8 border-t border-white/10 pt-12 md:grid-cols-2">
+                        <div>
+                            <h2 className="font-display text-3xl font-medium text-stone-50">Najczęstsze pytania</h2>
+                            <p className="mt-3 text-stone-300">Jeśli potrzebujesz innej wartości lub indywidualnej wersji, napisz przed zakupem.</p>
+                        </div>
+                        <div className="space-y-6">
+                            <div>
+                                <h3 className="font-semibold text-stone-50">Czy muszę od razu wybierać termin?</h3>
+                                <p className="mt-2 text-stone-300">Nie. Termin ustala później osoba, która otrzyma kartę.</p>
+                            </div>
+                            <div>
+                                <h3 className="font-semibold text-stone-50">Czy kartę można wydrukować?</h3>
+                                <p className="mt-2 text-stone-300">Tak. Otrzymasz ją w formie, którą można wysłać cyfrowo albo przygotować jako drukowany prezent.</p>
+                            </div>
+                            <div>
+                                <h3 className="font-semibold text-stone-50">Co jeśli sesja kosztuje więcej?</h3>
+                                <p className="mt-2 text-stone-300">Wartość karty zostanie odjęta od ceny wybranego pakietu, a różnicę można dopłacić przy rezerwacji.</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>

@@ -216,50 +216,51 @@ export async function POST(request: Request) {
                     quantity: 1
                 });
             } else if (item.type === 'gift_card') {
-                const giftValuePln = Number(item.metadata?.value);
-                if (!Number.isFinite(giftValuePln) || giftValuePln < 100 || giftValuePln > 10000) {
-                    return NextResponse.json({ ok: false, message: "Nieprawidłowa wartość karty podarunkowej." }, { status: 400 });
+                const templateId = Number(item.productId);
+                if (!Number.isInteger(templateId)) {
+                    return NextResponse.json({ ok: false, message: "Nieprawidłowa karta podarunkowa." }, { status: 400 });
                 }
-                const verifiedGiftPrice = Math.round(giftValuePln * 100);
-                // 1. Create the Gift Card (Inactive)
-                const giftCard = await prisma.giftCard.create({
-                    data: {
-                        code: `GC-${Math.random().toString(36).substr(2, 8).toUpperCase()}`,
-                        value: giftValuePln,
-                        amount: giftValuePln,
-                        theme: item.metadata.theme,
-                        is_active: false,
-                        recipient_email: customer.email,
-                        recipient_name: customer.name,
-                        owner_id: userId
-                    }
+
+                const template = await prisma.giftCard.findFirst({
+                    where: {
+                        id: templateId,
+                        code: { startsWith: 'TPL-' },
+                        status: 'available',
+                        card_template: 'product',
+                    },
                 });
 
-                // 2. Create the Gift Card Order (Critical for Email & Notification)
+                if (!template) {
+                    return NextResponse.json({ ok: false, message: "Wybrana karta nie jest już dostępna." }, { status: 400 });
+                }
+
+                const giftValuePln = template.value || template.amount;
+                const verifiedGiftPrice = Math.round(giftValuePln * 100);
+
                 await prisma.giftCardOrder.create({
                     data: {
-                        gift_card_id: giftCard.id,
-                        card_id: giftCard.id, // Legacy/Redundant field requirement
+                        gift_card_id: template.id,
+                        card_id: template.id,
+                        template_id: template.id,
                         customer_email: customer.email,
                         customer_name: customer.name,
-                        amount_paid: verifiedGiftPrice, // grosze
+                        amount_paid: verifiedGiftPrice,
                         payment_status: 'pending',
-                        payu_order_id: cartId, // Link to Cart ID
+                        payu_order_id: cartId,
                         access_token: crypto.randomUUID(),
                         user_id: userId,
-                        // Fix: Map metadata from cart to order
-                        recipient_name: item.metadata.recipient_name,
-                        recipient_email: item.metadata.recipient_email, // If we add this to UI later
-                        message: item.metadata.message,
-                        sender_name: item.metadata.sender_name
-                    }
+                        recipient_name: item.metadata?.recipient_name,
+                        recipient_email: item.metadata?.recipient_email,
+                        message: String(item.metadata?.message || '').slice(0, 300) || undefined,
+                        sender_name: item.metadata?.sender_name,
+                    },
                 });
 
-                createdResourceIds.push(`GiftCard #${giftCard.id}`);
+                createdResourceIds.push(`GiftCard template #${template.id}`);
                 payuProducts.push({
-                    name: item.title || 'Karta Podarunkowa',
+                    name: template.card_title || 'Karta podarunkowa',
                     unitPrice: verifiedGiftPrice,
-                    quantity: 1
+                    quantity: 1,
                 });
             }
         }

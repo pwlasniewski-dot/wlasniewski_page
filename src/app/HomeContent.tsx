@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Camera, ChevronDown, Facebook, Instagram, Mail, MapPin, Phone, Send, User, X, Maximize2, Image as ImageIcon, ArrowLeft, ArrowRight, Star, Check } from 'lucide-react';
 import HeroSlider from '@/components/HeroSlider';
 import ContactForm from '@/components/ContactForm';
+import GiftCard from '@/components/GiftCard';
 
 // Lazy-loaded below-the-fold components
 const ParallaxSection = dynamic(() => import('@/components/ParallaxSection'), { ssr: false });
@@ -1017,8 +1018,8 @@ export default function HomeContent({ heroSlides, sections, homeData, orderedSec
                 <div className="mx-auto max-w-6xl rounded-3xl border border-white/10 bg-zinc-950/95 p-5 shadow-2xl shadow-black/60 backdrop-blur md:p-8">
                     <div className="mb-7 text-center">
                         <p className="mb-2 text-xs font-bold uppercase tracking-[0.25em] text-gold-400">Zacznij od tego, czego potrzebujesz</p>
-                        <h2 className="text-2xl font-bold text-white md:text-4xl">Wybierz rodzaj fotografii i od razu zobacz pakiety</h2>
-                        <p className="mx-auto mt-3 max-w-2xl text-zinc-400">Ceny, zakres pracy i wolne terminy są w jednym miejscu. Rezerwację potwierdzasz zaliczką przez PayU.</p>
+                        <h1 className="text-2xl font-bold text-white md:text-4xl">Fotograf Toruń — sesje rodzinne i reportaże ślubne</h1>
+                        <p className="mx-auto mt-3 max-w-2xl text-zinc-400">Wybierz rodzaj fotografii, sprawdź pełny zakres i wolne terminy. Rezerwację potwierdzisz zaliczką przez PayU.</p>
                     </div>
                     <div className="grid gap-4 md:grid-cols-3">
                         {[
@@ -1047,6 +1048,39 @@ export default function HomeContent({ heroSlides, sections, homeData, orderedSec
 
             {/* Dynamic Sections */}
             {sections.map(section => renderSection(section))}
+
+            <section className="border-y border-white/5 bg-black px-6 py-20">
+                <div className="mx-auto grid max-w-6xl items-center gap-12 lg:grid-cols-2">
+                    <div>
+                        <p className="mb-3 text-xs font-bold uppercase tracking-[0.25em] text-gold-400">Karta podarunkowa na sesję</p>
+                        <h2 className="text-3xl font-bold text-white md:text-5xl">Prezent, który zamienia się we wspólny czas</h2>
+                        <p className="mt-5 max-w-xl text-lg leading-relaxed text-zinc-300">
+                            Obdarowana osoba sama wybiera termin i rodzaj zdjęć. Ty wybierasz wartość karty, dopisujesz kilka słów i opłacasz ją online.
+                        </p>
+                        <div className="mt-7 grid gap-3 text-sm text-zinc-300 sm:grid-cols-3">
+                            <div className="rounded-xl border border-white/10 bg-white/5 p-4">Termin wybierany później</div>
+                            <div className="rounded-xl border border-white/10 bg-white/5 p-4">Dostawa karty e-mailem</div>
+                            <div className="rounded-xl border border-white/10 bg-white/5 p-4">Bezpieczna płatność PayU</div>
+                        </div>
+                        <Link
+                            href="/karta-podarunkowa?source=home"
+                            className="mt-8 inline-flex rounded-full bg-gold-500 px-7 py-3.5 font-bold text-black transition hover:bg-gold-400"
+                        >
+                            Wybierz kartę podarunkową
+                        </Link>
+                    </div>
+                    <div className="mx-auto w-full max-w-xl">
+                        <GiftCard
+                            code="PREZENT"
+                            value={750}
+                            theme="gold"
+                            cardTitle="Sesja fotograficzna"
+                            cardDescription="Czas, zdjęcia i wspomnienia"
+                            hideCode={true}
+                        />
+                    </div>
+                </div>
+            </section>
 
             {/* SEO: internal links to landing pages — descriptive anchor text helps Google
                 map keywords ("fotograf toruń", "sesja rodzinna") to dedicated pages. */}
@@ -1110,13 +1144,6 @@ export default function HomeContent({ heroSlides, sections, homeData, orderedSec
                     </div>
                 </div>
             </section>
-
-            <Link
-                href="/rezerwacja?source=home-mobile&service=Sesja"
-                className="fixed bottom-4 left-4 right-4 z-50 rounded-xl bg-gold-500 px-5 py-4 text-center font-bold text-black shadow-2xl shadow-black/60 md:hidden"
-            >
-                Zobacz ceny i wolne terminy
-            </Link>
 
             <div className="bg-black py-20 border-t border-zinc-900">
                 <ContactForm />

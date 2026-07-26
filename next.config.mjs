@@ -7,6 +7,7 @@ const nextConfig = {
             { source: '/kontakt-', destination: '/kontakt', permanent: true },
             { source: '/foto-wyzwania', destination: '/foto-wyzwanie', permanent: true },
             { source: '/sklep', destination: '/karta-podarunkowa', permanent: true },
+            { source: '/sklep-karty-podarunkowe', destination: '/karta-podarunkowa', permanent: true },
         ];
     },
     async headers() {

@@ -4,62 +4,43 @@ import { withAuth } from '@/lib/auth/middleware';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
         const { id } = await params;
+        const cardId = Number(id);
 
-        if (!id) {
-            return NextResponse.json({ error: 'Gift card ID is required' }, { status: 400 });
+        if (!Number.isInteger(cardId)) {
+            return NextResponse.json({ error: 'Nieprawidłowa karta.' }, { status: 400 });
         }
 
-        const card = await prisma.giftCard.findUnique({
-            where: { id: parseInt(id) }
+        const card = await prisma.giftCard.findFirst({
+            where: {
+                id: cardId,
+                code: { startsWith: 'TPL-' },
+                status: 'available',
+                card_template: 'product',
+            },
         });
 
         if (!card) {
-            return NextResponse.json({ error: 'Gift card not found' }, { status: 404 });
+            return NextResponse.json({ error: 'Karta nie jest dostępna.' }, { status: 404 });
         }
 
-        // Calculate price based on Global Discount Settings
-        const settings = await prisma.setting.findMany({
-            where: {
-                setting_key: { in: ['gift_card_global_discount_enabled', 'gift_card_global_discount_value', 'gift_card_global_discount_type'] }
-            }
-        });
-
-        const getSetting = (key: string) => settings.find(s => s.setting_key === key)?.setting_value;
-
-        const discountEnabled = getSetting('gift_card_global_discount_enabled') === 'true';
-        const discountValue = parseInt(getSetting('gift_card_global_discount_value') || '0');
-        const discountType = getSetting('gift_card_global_discount_type') || 'percentage';
-
-        let basePrice = card.value || 0;
-
-        if (discountEnabled && basePrice > 0) {
-            if (discountType === 'percentage') {
-                basePrice = Math.round(basePrice * (1 - discountValue / 100));
-            } else {
-                basePrice = Math.max(0, basePrice - discountValue);
-            }
-        }
-
-        const response = {
+        const value = card.value || card.amount;
+        return NextResponse.json({
             id: card.id,
-            code: card.code,
-            value: card.value || card.amount,
-            theme: card.theme || card.card_template || 'christmas',
-            price: basePrice,
-            description: card.card_description || `Karta podarunkowa o wartości ${card.value || card.amount} zł`,
-            available: ['active', 'available', 'sent'].includes(card.status),
+            code: 'PREVIEW',
+            value,
+            theme: card.theme || 'gold',
+            price: value,
+            description: card.card_description || card.notes,
+            available: true,
             card_title: card.card_title,
-            card_description: card.card_description
-        };
-
-        return NextResponse.json(response);
-
+            card_description: card.card_description,
+        });
     } catch (error) {
         console.error('[Gift Card API] Error:', error);
-        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+        return NextResponse.json({ error: 'Nie udało się pobrać karty.' }, { status: 500 });
     }
 }
 
@@ -83,3 +64,4 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
         }
     });
 }
+

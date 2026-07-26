@@ -183,7 +183,7 @@ export default function GiftCardPromoBar() {
                                                 </>
                                             )}
                                             <Link
-                                                href="/sklep-karty-podarunkowe"
+                                                href="/karta-podarunkowa"
                                                 className="flex-1 bg-gold-500 hover:bg-gold-400 text-black font-semibold py-2 px-4 rounded-lg text-xs flex items-center justify-center gap-2 transition-transform hover:scale-105"
                                             >
                                                 Wybierz
