@@ -667,6 +667,35 @@ export default async function CityLandingPage({ params }: PageProps) {
                 </div>
             </section>
 
+            <section className="px-6 pb-20">
+                <div className="container mx-auto max-w-5xl rounded-3xl border border-amber-500/20 bg-zinc-900/70 p-6 md:p-10">
+                    <p className="mb-2 text-xs font-bold uppercase tracking-[0.24em] text-amber-400">Fotografia w {data.city === 'Toruń' ? 'Toruniu' : data.city}</p>
+                    <h2 className="mb-3 text-3xl font-bold md:text-4xl">Wybierz usługę i zobacz konkretną cenę</h2>
+                    <p className="mb-8 max-w-3xl text-zinc-400">Bez czekania na ogólną wycenę. W pakietach zobaczysz czas fotografowania, liczbę gotowych zdjęć i zakres materiału. Termin potwierdzisz bezpieczną zaliczką przez PayU.</p>
+                    <div className="grid gap-4 md:grid-cols-3">
+                        {[
+                            { title: 'Sesja rodzinna', price: 'od 750 zł', service: 'Sesja', text: 'Rodzina, para, dzieci i zdjęcia kilku pokoleń.' },
+                            { title: 'Ślub', price: 'od 1900 zł', service: 'Ślub', text: 'Ceremonia cywilna, kościelna albo pełny reportaż.' },
+                            { title: 'Urodziny i przyjęcia', price: 'od 1100 zł', service: 'Urodziny', text: 'Swobodny reportaż z ważnej rodzinnej uroczystości.' },
+                        ].map((item) => (
+                            <Link
+                                key={item.title}
+                                href={`/rezerwacja?source=city-funnel&city=${encodeURIComponent(data.city)}&service=${encodeURIComponent(item.service)}`}
+                                className="group rounded-2xl border border-zinc-700 bg-black/30 p-5 transition hover:-translate-y-1 hover:border-amber-500/60"
+                            >
+                                <div className="mb-2 flex items-start justify-between gap-3">
+                                    <h3 className="text-lg font-bold text-white group-hover:text-amber-300">{item.title}</h3>
+                                    <span className="whitespace-nowrap text-sm font-bold text-amber-400">{item.price}</span>
+                                </div>
+                                <p className="mb-5 text-sm leading-relaxed text-zinc-400">{item.text}</p>
+                                <span className="font-semibold text-white">Pakiety i wolne terminy →</span>
+                            </Link>
+                        ))}
+                    </div>
+                    <p className="mt-6 text-center text-sm text-zinc-500">Nie wiesz, który zakres wybrać? Zadzwoń: <a href="tel:+48530788694" className="text-amber-400">530 788 694</a></p>
+                </div>
+            </section>
+
             {/* Content Sections */}
             {data.sections.map((section, idx) => (
                 <section key={idx} className={`py-16 px-6 ${idx % 2 === 0 ? 'bg-zinc-900/50' : ''}`}>
