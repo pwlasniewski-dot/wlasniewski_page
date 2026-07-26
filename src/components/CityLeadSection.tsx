@@ -13,6 +13,17 @@ interface CityLeadSectionProps {
  */
 export default async function CityLeadSection({ city, citySlug }: CityLeadSectionProps) {
     const proof = await getCityProof(city);
+    const cityLocative: Record<string, string> = {
+        'Toruń': 'Toruniu',
+        'Grudziądz': 'Grudziądzu',
+        'Chełmno': 'Chełmnie',
+        'Płużnica': 'Płużnicy',
+        'Wąbrzeźno': 'Wąbrzeźnie',
+        'Bydgoszcz': 'Bydgoszczy',
+        'Świecie': 'Świeciu',
+        'Lisewo': 'Lisewie',
+    };
+    const cityIn = cityLocative[city] || city;
 
     // Buduj wiarygodne, ale prawdziwe stwierdzenia
     const trustBadges: Array<{ icon: string; text: string; highlight?: boolean }> = [];
@@ -61,7 +72,7 @@ export default async function CityLeadSection({ city, citySlug }: CityLeadSectio
                 {/* Nagłówek z REALNYMI badges */}
                 <div className="text-center mb-10">
                     <h2 className="text-3xl md:text-4xl font-bold font-display mb-4">
-                        Sprawdź wolne terminy w <span className="text-amber-400">{city}</span>
+                        Sprawdź wolne terminy w <span className="text-amber-400">{cityIn}</span>
                     </h2>
                     <p className="text-zinc-400 text-lg mb-6">
                         Zostaw kontakt — odezwę się z propozycją terminu i wyceną.
