@@ -643,9 +643,9 @@ export default async function CityLandingPage({ params }: PageProps) {
                         Profesjonalna fotografia rodzinna, ślubna i portretowa w {data.city === 'Płużnica' ? 'Płużnicy' : data.city === 'Bydgoszcz' ? 'Bydgoszczy' : data.city === 'Lisewo' ? 'Lisewie' : data.city === 'Wąbrzeźno' ? 'Wąbrzeźnie' : data.city === 'Chełmno' ? 'Chełmnie' : data.city === 'Świecie' ? 'Świeciu' : data.city === 'Grudziądz' ? 'Grudziądzu' : `${data.city}u`} i okolicach
                     </p>
                     <div className="flex flex-wrap gap-4 mt-8">
-                        <a href="#szybki-kontakt" className="bg-amber-500 hover:bg-amber-400 text-black font-bold py-3 px-8 rounded-lg transition-colors text-lg shadow-lg shadow-amber-500/20">
-                            Sprawdź wolne terminy
-                        </a>
+                        <Link href={`/rezerwacja?source=city&city=${encodeURIComponent(data.city)}&service=Sesja`} className="bg-amber-500 hover:bg-amber-400 text-black font-bold py-3 px-8 rounded-lg transition-colors text-lg shadow-lg shadow-amber-500/20">
+                            Sprawdź pakiety i wolne terminy
+                        </Link>
                         <a href="tel:+48530788694" className="border border-amber-400/40 hover:border-amber-400 text-amber-100 font-medium py-3 px-8 rounded-lg transition-colors text-lg inline-flex items-center gap-2">
                             <span>📞</span> 530 788 694
                         </a>
@@ -743,8 +743,8 @@ export default async function CityLandingPage({ params }: PageProps) {
                         Napisz do mnie i umówmy się na kameralną sesję pełną naturalnych emocji.
                     </p>
                     <div className="flex flex-wrap justify-center gap-4">
-                        <Link href="/rezerwacja" className="bg-amber-500 hover:bg-amber-400 text-black font-bold py-4 px-10 rounded-xl transition-colors text-lg">
-                            Zarezerwuj termin
+                        <Link href={`/rezerwacja?source=city&city=${encodeURIComponent(data.city)}&service=Sesja`} className="bg-amber-500 hover:bg-amber-400 text-black font-bold py-4 px-10 rounded-xl transition-colors text-lg">
+                            Zobacz ceny i wolne terminy
                         </Link>
                         <Link href="/kontakt" className="border border-white/30 hover:border-white/60 text-white font-medium py-4 px-10 rounded-xl transition-colors text-lg">
                             Kontakt
@@ -756,6 +756,13 @@ export default async function CityLandingPage({ params }: PageProps) {
                     </p>
                 </div>
             </section>
+
+            <Link
+                href={`/rezerwacja?source=city-mobile&city=${encodeURIComponent(data.city)}&service=Sesja`}
+                className="fixed bottom-4 left-4 right-4 z-40 rounded-xl bg-amber-500 px-5 py-4 text-center font-bold text-black shadow-2xl shadow-black/50 md:hidden"
+            >
+                Sprawdź cenę i wolny termin
+            </Link>
 
             {/* Nearby Cities Cross-links */}
             <section className="py-16 px-6 border-t border-zinc-800">
