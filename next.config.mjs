@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+    poweredByHeader: false,
     async redirects() {
         return [
             { source: '/start', destination: '/', permanent: true },
@@ -18,6 +19,8 @@ const nextConfig = {
                 { key: 'X-Frame-Options', value: 'DENY' },
                 { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
                 { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), payment=()' },
+                { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains; preload' },
+                { key: 'X-DNS-Prefetch-Control', value: 'on' },
             ],
         }];
     },
@@ -44,12 +47,6 @@ const nextConfig = {
         '/api/offers/[id]/pdf': ['./node_modules/pdfkit/js/data/**/*'],
     },
     
-    // Skip database dependency during build
-    experimental: {
-        serverActions: {
-            bodySizeLimit: '50mb',
-        },
-    },
     // Dla statycznego eksportu (jeśli chcesz wrzucić na zwykły hosting)
     // output: 'export',
     output: 'standalone',

@@ -82,7 +82,10 @@ export default function GiftCardShopPage() {
 
     const fetchSettings = async () => {
         try {
-            const res = await fetch('/api/settings');
+            const token = localStorage.getItem('admin_token');
+            const res = await fetch('/api/settings', {
+                headers: token ? { Authorization: `Bearer ${token}` } : {},
+            });
             if (res.ok) {
                 const data = await res.json();
                 if (data.settings?.logo_url) {

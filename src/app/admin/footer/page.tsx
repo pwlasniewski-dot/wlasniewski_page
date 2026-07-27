@@ -35,7 +35,7 @@ const defaultSettings: FooterSettings = {
     brand_name: 'Przemysław Właśniewski — Fotograf',
     tagline: 'Naturalne zdjęcia rodzinne, ślubne, portretowe i komunijne. Toruń, Lisewo, Wąbrzeźno, Płużnica i okolice.',
     phone: '+48 530 788 694',
-    email: process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'kontakt@wlasniewski.pl',
+    email: process.env.NEXT_PUBLIC_CONTACT_EMAIL || '',
     facebook_url: 'https://www.facebook.com/przemyslaw.wlasniewski.fotografia',
     instagram_url: 'https://www.instagram.com/wlasniewski.pl/',
     sections: {
@@ -74,7 +74,7 @@ const defaultB2BSettings: FooterSettings = {
     brand_name: 'FOTO-DRON Solutions',
     tagline: 'Zaawansowana termowizja i inspekcje techniczne z powietrza. Kompleksowa dokumentacja dla przemysłu, OZE i budownictwa.',
     phone: '+48 530 788 694',
-    email: 'biuro@wlasniewski.pl',
+    email: process.env.NEXT_PUBLIC_CONTACT_EMAIL || '',
     facebook_url: '',
     instagram_url: '',
     sections: {
@@ -125,7 +125,10 @@ export default function FooterSettingsPage() {
 
     const fetchSettings = async () => {
         try {
-            const res = await fetch(getApiUrl('settings'));
+            const token = localStorage.getItem('admin_token');
+            const res = await fetch(getApiUrl('settings'), {
+                headers: token ? { Authorization: `Bearer ${token}` } : {},
+            });
             const data = await res.json();
             if (data.success && data.settings) {
                 if (data.settings.footer_config) {

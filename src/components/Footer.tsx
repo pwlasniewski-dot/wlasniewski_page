@@ -35,7 +35,7 @@ const defaultSettings: FooterSettings = {
     brand_name: 'Przemysław Właśniewski — Fotograf',
     tagline: 'Sesje rodzinne, reportaże ślubne i fotografia uroczystości w Toruniu oraz regionie.',
     phone: '+48 530 788 694',
-    email: process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'kontakt@wlasniewski.pl',
+    email: process.env.NEXT_PUBLIC_CONTACT_EMAIL || '',
     facebook_url: 'https://www.facebook.com/przemyslaw.wlasniewski.fotografia',
     instagram_url: 'https://www.instagram.com/wlasniewski.pl/',
     sections: {
@@ -79,7 +79,7 @@ const defaultB2BSettings: FooterSettings = {
     brand_name: 'FOTO-DRON Solutions',
     tagline: 'Zaawansowana termowizja i inspekcje techniczne z powietrza. Kompleksowa dokumentacja dla przemysłu, OZE i budownictwa.',
     phone: '+48 530 788 694',
-    email: 'biuro@wlasniewski.pl',
+    email: process.env.NEXT_PUBLIC_CONTACT_EMAIL || '',
     facebook_url: '',
     instagram_url: '',
     sections: {
@@ -144,7 +144,7 @@ export default function Footer({ isB2B: serverIsB2B }: { isB2B?: boolean }) {
 
             try {
                 // Fetch footer settings
-                const res = await fetch(getApiUrl('settings'));
+                const res = await fetch('/api/settings/public');
                 const data = await res.json();
                 const type = activeIsB2B ? 'b2b' : 'b2c';
                 let footerConfig = activeIsB2B ? defaultB2BSettings : defaultSettings;

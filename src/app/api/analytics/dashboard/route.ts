@@ -226,8 +226,8 @@ export async function GET(request: NextRequest) {
             totalViews,
             todayViews,
             uniqueVisitors: uniqueSessions,
-            avgSessionDuration: '2:34', // Would need session tracking
-            bounceRate: 42.3, // Would need session tracking
+            avgSessionDuration: null,
+            bounceRate: null,
             viewsChart,
             sources,
             devices,

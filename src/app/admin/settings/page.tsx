@@ -12,8 +12,8 @@ export default function SettingsPage() {
         urgency_enabled: 'false',
         urgency_slots_remaining: '5',
         urgency_month: 'Styczeń',
-        social_proof_enabled: 'true',
-        social_proof_total_clients: '100',
+        social_proof_enabled: 'false',
+        social_proof_total_clients: '0',
         promo_code_discount_enabled: 'false',
         promo_code_discount_amount: '10',
         promo_code_discount_type: 'percentage',
@@ -882,7 +882,7 @@ export default function SettingsPage() {
                             type="email"
                             value={settings.smtp_from || ''}
                             onChange={e => setSettings(s => ({ ...s, smtp_from: e.target.value }))}
-                            placeholder="kontakt@wlasniewski.pl"
+                            placeholder="nadawca@twoja-domena.pl"
                             className="block w-full rounded-md border-zinc-700 bg-zinc-800 text-white shadow-sm focus:border-gold-500 focus:ring-gold-500 sm:text-sm px-3 py-2"
                         />
                         <p className="mt-1 text-xs text-zinc-500">Adres email który będzie widoczny jako nadawca wiadomości</p>

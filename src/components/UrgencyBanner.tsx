@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Clock } from 'lucide-react';
-import { getApiUrl } from '@/lib/api-config';
 
 export default function UrgencyBanner() {
     const [settings, setSettings] = useState({
@@ -21,17 +20,17 @@ export default function UrgencyBanner() {
     useEffect(() => {
         const fetchSettings = async () => {
             try {
-                const res = await fetch(getApiUrl('settings'));
+                const res = await fetch('/api/settings/public');
                 const data = await res.json();
                 if (data.success && data.settings) {
                     const expiryDate = data.settings.promo_code_expiry;
                     const isExpired = expiryDate ? new Date(expiryDate) < new Date() : false;
 
                     setSettings({
-                        enabled: data.settings.urgency_enabled === 'true',
+                        enabled: data.settings.urgency_enabled === true || data.settings.urgency_enabled === 'true',
                         slots: parseInt(data.settings.urgency_slots_remaining || '0'),
                         month: data.settings.urgency_month || '',
-                        promoEnabled: data.settings.promo_code_discount_enabled === 'true' && !isExpired,
+                        promoEnabled: (data.settings.promo_code_discount_enabled === true || data.settings.promo_code_discount_enabled === 'true') && !isExpired,
                         promoAmount: data.settings.promo_code_discount_amount || '10',
                         promoType: data.settings.promo_code_discount_type || 'percentage',
                         promoCode: data.settings.promo_code || '',

@@ -1,10 +1,12 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { cityData } from '@/lib/cityData';
 import { PageSection } from '@/components/admin/PageBuilder';
+import { withAuth } from '@/lib/auth/middleware';
 
-export async function GET() {
-    try {
+export async function POST(request: NextRequest) {
+    return withAuth(request, async () => {
+      try {
         const results = [];
 
         for (const [key, data] of Object.entries(cityData)) {
@@ -76,5 +78,6 @@ export async function GET() {
     } catch (error) {
         console.error('Migration failed:', error);
         return NextResponse.json({ error: 'Migration failed' }, { status: 500 });
-    }
+      }
+    });
 }

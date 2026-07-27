@@ -39,10 +39,23 @@ export async function generateToken(payload: { id: number; email: string; role?:
 }
 
 // Verify JWT token
-export async function verifyToken(token: string): Promise<{ id: number; email: string } | null> {
+export async function verifyToken(token: string): Promise<{
+    id: number;
+    email: string;
+    role?: string;
+    type?: string;
+} | null> {
     try {
         const { payload } = await jwtVerify(token, getSecret());
-        return payload as unknown as { id: number; email: string };
+        if (typeof payload.id !== 'number' || typeof payload.email !== 'string') {
+            return null;
+        }
+        return {
+            id: payload.id,
+            email: payload.email,
+            role: typeof payload.role === 'string' ? payload.role : undefined,
+            type: typeof payload.type === 'string' ? payload.type : undefined,
+        };
     } catch (error) {
         console.error('JWT Verification failed:', error);
         return null;

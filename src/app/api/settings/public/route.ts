@@ -13,6 +13,14 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ success: true, settings: {} });
         }
 
+        const [promoCode, promoExpiry, b2bFooterConfig, footerConfig, challenge] = await Promise.all([
+            getSetting('promo_code'),
+            getSetting('promo_code_expiry'),
+            getSetting('b2b_footer_config'),
+            getSetting('footer_config'),
+            getChallengeSettings(),
+        ]);
+
         // Only return public settings
         const publicSettings = {
             navbar_layout: settings.navbar_layout,
@@ -26,6 +34,7 @@ export async function GET(request: NextRequest) {
             logo_url: settings.logo_url,
             logo_dark_url: settings.logo_dark_url,
             logo_size: settings.logo_size || 140,
+            about_me_portrait: settings.about_me_portrait,
             // Seasonal Effects
             seasonal_effect: settings.seasonal_effect || 'none',
             // Urgency
@@ -45,14 +54,17 @@ export async function GET(request: NextRequest) {
             promo_code_discount_enabled: settings.promo_code_discount_enabled,
             promo_code_discount_amount: settings.promo_code_discount_amount,
             promo_code_discount_type: settings.promo_code_discount_type,
-            promo_code: "WYZWANIE20", // Hardcode for now as it's missing from schema but expected
+            promo_code: promoCode,
+            promo_code_expiry: promoExpiry,
+            promo_code_expiry_date: promoExpiry,
             // Social Proof
             social_proof_enabled: settings.social_proof_enabled,
             social_proof_total_clients: settings.social_proof_total_clients,
             // B2B Branding
-            b2b_footer_config: await getSetting('b2b_footer_config'),
+            b2b_footer_config: b2bFooterConfig,
+            footer_config: footerConfig,
             // Photo Challenge
-            challenge: await getChallengeSettings(),
+            challenge,
             // Split payment (zaliczka + dopłata)
             split_payment_enabled: settings.split_payment_enabled ?? false,
             split_payment_deposit_percent: settings.split_payment_deposit_percent ?? 50,
@@ -61,9 +73,8 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json({ success: true, settings: publicSettings });
     } catch (error) {
-        console.error('--- DEBUG: Failed to fetch public settings ---');
-        console.error('Error stack:', error instanceof Error ? error.stack : error);
-        return NextResponse.json({ error: 'Failed to fetch settings', message: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 });
+        console.error('Failed to fetch public settings:', error);
+        return NextResponse.json({ error: 'Failed to fetch settings' }, { status: 500 });
     }
 }
 

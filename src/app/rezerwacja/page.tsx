@@ -156,7 +156,7 @@ export default function RezerwacjaPage() {
         // Load promo settings
         const loadPromoSettings = async () => {
             try {
-                const res = await fetch(getApiUrl('settings'));
+                const res = await fetch('/api/settings/public');
                 if (res.ok) {
                     const data = await res.json();
                     if (data.settings) {

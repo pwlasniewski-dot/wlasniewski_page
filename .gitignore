@@ -41,7 +41,6 @@ next-env.d.ts
 
 # backups (must never be tracked)
 backups/
-prisma/migrations/
 
 # IDE
 .vscode/
@@ -79,4 +78,3 @@ build_*.log
 test-results/
 playwright-report/
 playwright/.cache/
-

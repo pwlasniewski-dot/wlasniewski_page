@@ -40,6 +40,7 @@ export default function MediaPicker({ isOpen, onClose, onSelect, multiple = fals
     const [uploading, setUploading] = useState(false);
     const [page, setPage] = useState(1);
     const [hasMore, setHasMore] = useState(false);
+    const [previewItem, setPreviewItem] = useState<MediaItem | null>(null);
     const limit = 50;
 
     // Bulk Edit State
@@ -224,6 +225,7 @@ export default function MediaPicker({ isOpen, onClose, onSelect, multiple = fals
                     body: JSON.stringify({
                         fileName: fileName,
                         fileType: resolvedType,
+                        fileSize: fileToUpload.size,
                         folder: targetFolder
                     }),
                 });
@@ -515,7 +517,7 @@ export default function MediaPicker({ isOpen, onClose, onSelect, multiple = fals
             <div className={contentClasses}>
 
                 {/* --- Left Sidebar: Folders --- */}
-                <div className="w-16 md:w-64 bg-zinc-950 border-r border-zinc-800 flex flex-col transition-all duration-300">
+                <div className="hidden sm:flex sm:w-16 md:w-64 bg-zinc-950 border-r border-zinc-800 flex-col transition-all duration-300">
                     <div className="p-4 border-b border-zinc-800 flex justify-center md:justify-between items-center">
                         <span className="font-medium text-zinc-400 hidden md:block">Foldery</span>
                         <button onClick={handleCreateFolder} className="p-1 hover:bg-zinc-800 rounded" title="Nowy folder">
@@ -563,7 +565,7 @@ export default function MediaPicker({ isOpen, onClose, onSelect, multiple = fals
                 <div className="flex-1 flex flex-col min-w-0 bg-zinc-900 relative">
 
                     {/* Header */}
-                    <div className="flex items-center justify-between p-4 border-b border-zinc-800">
+                    <div className="flex items-center justify-between p-3 sm:p-4 border-b border-zinc-800 gap-2">
                         <h2 className="text-lg font-bold text-white flex items-center gap-2 truncate">
                             {currentFolder || 'Biblioteka'}
                             {uploading && <span className="text-xs font-normal text-gold-500 animate-pulse ml-2">• Wgrywanie...</span>}
@@ -590,6 +592,29 @@ export default function MediaPicker({ isOpen, onClose, onSelect, multiple = fals
 
                     {/* Toolbar */}
                     <div className="p-3 bg-zinc-900/50 flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800/50">
+                        <select
+                            value={currentFolder}
+                            onChange={(event) => setCurrentFolder(event.target.value)}
+                            className="sm:hidden w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white"
+                            aria-label="Wybierz folder"
+                        >
+                            <option value="">Wszystkie foldery</option>
+                            {folders.map(folder => (
+                                <option key={folder.name} value={folder.name}>
+                                    {folder.name} ({folder.count})
+                                </option>
+                            ))}
+                        </select>
+                        <div className="relative sm:hidden w-full">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                            <input
+                                type="search"
+                                placeholder="Szukaj zdjęć i plików..."
+                                value={searchTerm}
+                                onChange={(event) => setSearchTerm(event.target.value)}
+                                className="w-full bg-zinc-950 border border-zinc-700 rounded-lg pl-10 pr-4 py-2 text-sm text-white focus:border-gold-500 focus:outline-none"
+                            />
+                        </div>
                         <div className="flex items-center gap-2">
                             <button
                                 onClick={handleSelectAll}
@@ -631,6 +656,7 @@ export default function MediaPicker({ isOpen, onClose, onSelect, multiple = fals
                                             isSelected={selectedItems.some(i => i.id === item.id)}
                                             onToggle={toggleSelection}
                                             onClick={handleItemClick} // Changed: pass the main handler
+                                            onPreview={setPreviewItem}
                                             onDelete={handleDelete}
                                             onDragStart={startDragMedia}
                                             selectionMode={isSelectionMode}
@@ -660,7 +686,7 @@ export default function MediaPicker({ isOpen, onClose, onSelect, multiple = fals
                                 initial={{ y: 100 }}
                                 animate={{ y: 0 }}
                                 exit={{ y: 100 }}
-                                className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-zinc-800 border border-zinc-700 shadow-2xl rounded-full px-6 py-3 flex items-center gap-4 z-50 min-w-[340px]"
+                                className="absolute bottom-2 sm:bottom-6 left-1/2 -translate-x-1/2 bg-zinc-800 border border-zinc-700 shadow-2xl rounded-2xl sm:rounded-full px-3 sm:px-6 py-3 flex items-center gap-2 sm:gap-4 z-50 w-[calc(100%-1rem)] max-w-md"
                             >
                                 <span className="text-zinc-300 text-sm font-medium mr-2">{selectedItems.length} wybrano</span>
 
@@ -741,6 +767,46 @@ export default function MediaPicker({ isOpen, onClose, onSelect, multiple = fals
                             <button onClick={() => setShowAltModal(false)} className="px-4 py-2 text-zinc-400 hover:text-white">Anuluj</button>
                             <button onClick={handleBulkAltSave} className="px-6 py-2 bg-gold-500 text-black rounded-lg font-medium hover:bg-gold-400">Zapisz</button>
                         </div>
+                    </div>
+                </div>
+            )}
+            {previewItem && (
+                <div
+                    className="fixed inset-0 z-[10000] bg-black/95 flex flex-col"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label={`Podgląd: ${previewItem.alt_text || previewItem.file_name}`}
+                >
+                    <div className="flex items-center justify-between gap-4 p-3 sm:p-4 border-b border-white/10">
+                        <div className="min-w-0">
+                            <p className="text-white font-semibold truncate">{previewItem.file_name}</p>
+                            <p className="text-xs text-zinc-400 truncate">{previewItem.alt_text || 'Brak opisu ALT'}</p>
+                        </div>
+                        <button
+                            onClick={() => setPreviewItem(null)}
+                            className="shrink-0 min-w-11 min-h-11 inline-flex items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20"
+                            aria-label="Zamknij podgląd"
+                        >
+                            <X className="w-6 h-6" />
+                        </button>
+                    </div>
+                    <div className="relative flex-1 min-h-0 p-3 sm:p-6 flex items-center justify-center">
+                        {previewItem.mime_type?.startsWith('video/') ? (
+                            <video src={previewItem.file_path} controls className="max-w-full max-h-full" />
+                        ) : previewItem.mime_type === 'application/pdf' ? (
+                            <iframe src={previewItem.file_path} title={previewItem.file_name} className="w-full h-full bg-white rounded-lg" />
+                        ) : previewItem.mime_type?.startsWith('image/') ? (
+                            <Image
+                                src={previewItem.file_path}
+                                alt={previewItem.alt_text || previewItem.file_name}
+                                fill
+                                className="object-contain p-3 sm:p-6"
+                                sizes="100vw"
+                                quality={90}
+                            />
+                        ) : (
+                            <p className="text-zinc-400">Podgląd tego typu pliku nie jest dostępny.</p>
+                        )}
                     </div>
                 </div>
             )}

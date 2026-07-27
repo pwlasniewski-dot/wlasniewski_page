@@ -5,28 +5,33 @@ const prisma = new PrismaClient();
 async function main() {
     console.log('🌱 Starting database seed...');
 
-    // 1. Create default admin user if not exists
-    const adminEmail = 'pwlasniewski@gmail.com';
-    let admin = await prisma.adminUser.findUnique({ where: { email: adminEmail } });
+    // 1. Create an admin only when deployment-specific credentials are supplied.
+    // Never keep real or default credentials in source control.
+    const adminEmail = process.env.SEED_ADMIN_EMAIL?.trim().toLowerCase();
+    const adminPassword = process.env.SEED_ADMIN_PASSWORD;
 
-    if (!admin) {
-        // Real bcrypt hash for password: "admin123"
-        // UWAGA: ZMIEŃ TO HASŁO PO PIERWSZYM LOGOWANIU!
-        const bcrypt = require('bcryptjs');
-        const passwordHash = await bcrypt.hash('admin123', 10);
+    if (adminEmail && adminPassword) {
+        if (adminPassword.length < 12) {
+            throw new Error('SEED_ADMIN_PASSWORD must contain at least 12 characters');
+        }
 
-        admin = await prisma.adminUser.create({
-            data: {
-                email: adminEmail,
-                password_hash: passwordHash,
-                name: 'Przemysław Właśniewski',
-                role: 'ADMIN'
-            }
-        });
-        console.log('✅ Admin user created');
-        console.log('   📧 Email: pwlasniewski@gmail.com');
-        console.log('   🔑 Password: admin123');
-        console.log('   ⚠️  ZMIEŃ HASŁO po pierwszym logowaniu!');
+        const existingAdmin = await prisma.adminUser.findUnique({ where: { email: adminEmail } });
+        if (!existingAdmin) {
+            const bcrypt = require('bcryptjs');
+            const passwordHash = await bcrypt.hash(adminPassword, 10);
+
+            await prisma.adminUser.create({
+                data: {
+                    email: adminEmail,
+                    password_hash: passwordHash,
+                    name: 'Administrator',
+                    role: 'ADMIN'
+                }
+            });
+            console.log('✅ Admin user created from environment configuration');
+        }
+    } else {
+        console.log('ℹ️  Admin seed skipped (SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD not set)');
     }
 
     // 2. Create essential pages for menu
@@ -78,10 +83,10 @@ async function main() {
                 seasonal_effect: 'none',
 
                 // Email SMTP (Defaults)
-                smtp_host: process.env.SMTP_HOST || 'mail.wlasniewski.pl',
-                smtp_port: parseInt(process.env.SMTP_PORT || '465'),
-                smtp_user: process.env.SMTP_USER || 'noreply@wlasniewski.pl',
-                smtp_from: process.env.SMTP_FROM || 'noreply@wlasniewski.pl',
+                smtp_host: process.env.SMTP_HOST || null,
+                smtp_port: process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : null,
+                smtp_user: process.env.SMTP_USER || null,
+                smtp_from: process.env.SMTP_FROM || null,
 
                 // Payment P24
                 p24_test_mode: true,
@@ -101,8 +106,8 @@ async function main() {
                 // Marketing
                 urgency_enabled: false,
                 urgency_slots_remaining: 5,
-                social_proof_enabled: true,
-                social_proof_total_clients: 100,
+                social_proof_enabled: false,
+                social_proof_total_clients: 0,
                 promo_code_discount_enabled: false,
                 promo_code_discount_amount: 10,
                 promo_code_discount_type: 'percentage',

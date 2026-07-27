@@ -39,7 +39,10 @@ export default function PromoCodesPage() {
 
     const fetchCodes = async () => {
         try {
-            const res = await fetch('/api/promo-codes');
+            const token = localStorage.getItem('admin_token');
+            const res = await fetch('/api/promo-codes', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
             const data = await res.json();
             if (data.success) {
                 setCodes(data.codes);

@@ -180,7 +180,6 @@ export async function POST(
                 {
                     success: false,
                     error: `Nie udało się wgrać zdjęć. ID: ${uploadErrorId}`,
-                    details: error?.message || 'Internal upload error',
                 },
                 { status: 500 }
             );

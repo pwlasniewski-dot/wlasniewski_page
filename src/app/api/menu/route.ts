@@ -1,7 +1,18 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import prisma from '@/lib/db/prisma';
+import { requireAdminAuth } from '@/lib/auth/middleware';
+import { z } from 'zod';
 
 export const dynamic = 'force-dynamic';
+
+const menuUpdateSchema = z.object({
+    items: z.array(z.object({
+        id: z.number().int().positive(),
+        menu_order: z.number().int().min(0).max(1000),
+        is_in_menu: z.boolean(),
+        menu_title: z.string().trim().min(1).max(80),
+    })).max(100),
+});
 
 // UPROSZCZONE MENU - tylko z tabeli pages (is_in_menu = true)
 // UPROSZCZONE MENU - tylko z tabeli pages (is_in_menu = true)
@@ -100,13 +111,18 @@ export async function GET(request: Request) {
     }
 }
 
-export async function PUT(request: Request) {
-    try {
-        const body = await request.json();
-        const { items } = body; // Expecting array of { id, menu_order, is_in_menu, menu_title }
+export async function PUT(request: NextRequest) {
+    const authError = await requireAdminAuth(request);
+    if (authError) return authError;
 
-        if (!Array.isArray(items)) {
+    try {
+        const parsed = menuUpdateSchema.safeParse(await request.json());
+        if (!parsed.success) {
             return NextResponse.json({ error: "Invalid data format" }, { status: 400 });
+        }
+        const { items } = parsed.data;
+        if (new Set(items.map(item => item.id)).size !== items.length) {
+            return NextResponse.json({ error: "Duplicate menu item IDs" }, { status: 400 });
         }
 
         // Transaction to update all items

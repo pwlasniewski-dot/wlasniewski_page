@@ -489,7 +489,7 @@ function ImageDualAdder(props: {
                 const presRes = await fetch('/api/media/upload/presigned', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({ fileName: file.name, fileType: file.type, folder: 'albums' }),
+                    body: JSON.stringify({ fileName: file.name, fileType: file.type, fileSize: file.size, folder: 'albums' }),
                 });
                 const pres = await presRes.json();
                 if (!pres.success) {
@@ -604,7 +604,7 @@ function VideoUploader({ onUploaded }: { onUploaded: (url: string) => void }) {
             const presRes = await fetch('/api/media/upload/presigned', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ fileName: file.name, fileType: file.type, folder: 'videos' }),
+                body: JSON.stringify({ fileName: file.name, fileType: file.type, fileSize: file.size, folder: 'videos' }),
             });
             const presData = await presRes.json();
             if (!presData.success) throw new Error(presData.error || 'Brak presigned URL');

@@ -46,7 +46,10 @@ export default function GalleryAdminPage({ params }: { params: Promise<{ challen
 
     const fetchGallery = async (id: string) => {
         try {
-            const res = await fetch(`/api/photo-challenge/gallery/admin/${id}`);
+            const token = localStorage.getItem('admin_token');
+            const res = await fetch(`/api/photo-challenge/gallery/admin/${id}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
             const data = await res.json();
             if (data.success) {
                 setGallery(data.gallery);
@@ -78,6 +81,7 @@ export default function GalleryAdminPage({ params }: { params: Promise<{ challen
 
                 const res = await fetch(`/api/photo-challenge/gallery/${challengeId}/upload`, {
                     method: 'POST',
+                    headers: { Authorization: `Bearer ${localStorage.getItem('admin_token')}` },
                     body: formData
                 });
 
@@ -98,7 +102,8 @@ export default function GalleryAdminPage({ params }: { params: Promise<{ challen
 
         try {
             const res = await fetch(`/api/photo-challenge/gallery/${challengeId}/photos/${photoId}`, {
-                method: 'DELETE'
+                method: 'DELETE',
+                headers: { Authorization: `Bearer ${localStorage.getItem('admin_token')}` }
             });
 
             if (res.ok) {
@@ -113,7 +118,10 @@ export default function GalleryAdminPage({ params }: { params: Promise<{ challen
         try {
             const res = await fetch(`/api/photo-challenge/gallery/admin/${challengeId}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${localStorage.getItem('admin_token')}`
+                },
                 body: JSON.stringify(galleryData)
             });
 

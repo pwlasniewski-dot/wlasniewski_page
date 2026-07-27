@@ -17,12 +17,13 @@ export default function AdminLayout({
     const [sidebarOpen, setSidebarOpen] = useState(false);
 
     useEffect(() => {
+        let cancelled = false;
+
         // Pages that don't require authentication
         const publicPages = [
             '/admin/login',
             '/admin/forgot-password',
-            '/admin/reset-password',
-            '/admin/emergency-reset'
+            '/admin/reset-password'
         ];
 
         // Skip auth check for public pages
@@ -33,10 +34,25 @@ export default function AdminLayout({
 
         const token = localStorage.getItem('admin_token');
         if (!token) {
-            router.push('/admin/login');
+            router.replace('/admin/login');
         } else {
-            setAuthorized(true);
+            fetch('/api/auth/me', {
+                headers: { Authorization: `Bearer ${token}` },
+                cache: 'no-store'
+            })
+                .then((response) => {
+                    if (!response.ok) throw new Error('Invalid admin session');
+                    if (!cancelled) setAuthorized(true);
+                })
+                .catch(() => {
+                    localStorage.removeItem('admin_token');
+                    if (!cancelled) router.replace('/admin/login');
+                });
         }
+
+        return () => {
+            cancelled = true;
+        };
     }, [pathname, router]);
 
     if (!authorized) {
@@ -48,7 +64,6 @@ export default function AdminLayout({
         '/admin/login',
         '/admin/forgot-password',
         '/admin/reset-password',
-        '/admin/emergency-reset',
         '/admin/offers/create',
         '/admin/generator-umow'
     ];

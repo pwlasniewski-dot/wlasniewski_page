@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
+import { requireAuth } from '@/lib/auth/middleware';
 
 export async function GET(
     request: NextRequest,
     { params }: { params: Promise<{ challenge_id: string }> }
 ) {
+    const authError = await requireAuth(request);
+    if (authError) return authError;
+
     try {
         const { challenge_id } = await params;
         const challengeId = parseInt(challenge_id);
@@ -70,6 +74,9 @@ export async function PUT(
     request: NextRequest,
     { params }: { params: Promise<{ challenge_id: string }> }
 ) {
+    const authError = await requireAuth(request);
+    if (authError) return authError;
+
     try {
         const { challenge_id } = await params;
         const body = await request.json();

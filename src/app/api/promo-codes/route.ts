@@ -1,8 +1,12 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
+import { requireAuth } from '@/lib/auth/middleware';
 
 // GET: List all promo codes
-export async function GET() {
+export async function GET(request: NextRequest) {
+    const authError = await requireAuth(request);
+    if (authError) return authError;
+
     try {
         const codes = await prisma.promoCode.findMany({
             orderBy: { created_at: 'desc' },
@@ -18,7 +22,10 @@ export async function GET() {
 }
 
 // POST: Create new promo code
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+    const authError = await requireAuth(request);
+    if (authError) return authError;
+
     try {
         const body = await request.json();
         const { code, discount_value, discount_type, valid_from, valid_until, max_usage } = body;

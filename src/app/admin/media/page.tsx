@@ -48,8 +48,8 @@ export default function MediaPage() {
     };
 
     return (
-        <div className="h-[calc(100vh-100px)] -m-8 relative">
-            <div className="absolute top-4 right-8 z-50">
+        <div className="h-[calc(100dvh-4rem)] md:h-[calc(100dvh-3rem)] -mx-4 -my-6 sm:-mx-6 md:-mx-8 flex flex-col">
+            <div className="shrink-0 flex justify-end px-3 sm:px-6 py-2 border-b border-zinc-800 bg-zinc-950">
                 <button
                     onClick={handleSync}
                     disabled={syncing}
@@ -60,13 +60,15 @@ export default function MediaPage() {
                 </button>
             </div>
 
-            <MediaPicker
-                isOpen={true}
-                onClose={() => { }}
-                onSelect={handleSelect}
-                inline={true}
-                multiple={true}
-            />
+            <div className="flex-1 min-h-0">
+                <MediaPicker
+                    isOpen={true}
+                    onClose={() => { }}
+                    onSelect={handleSelect}
+                    inline={true}
+                    multiple={true}
+                />
+            </div>
         </div>
     );
 }

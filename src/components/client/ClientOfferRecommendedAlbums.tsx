@@ -56,6 +56,13 @@ function asMediaUrl(value: unknown): string | null {
     return trimmed.length > 0 ? trimmed : null;
 }
 
+function clientAuthHeaders(): Record<string, string> {
+    const token = typeof window !== 'undefined'
+        ? localStorage.getItem('client_token') || localStorage.getItem('user_token')
+        : null;
+    return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 export default function ClientOfferRecommendedAlbums({
     offerId,
     onAddonsChange,
@@ -78,7 +85,9 @@ export default function ClientOfferRecommendedAlbums({
             try {
                 const [albRes, addRes] = await Promise.all([
                     fetch(`/api/offers/${offerId}/recommended-albums`),
-                    fetch(`/api/client/offer-addons?offer_id=${offerId}`),
+                    fetch(`/api/client/offer-addons?offer_id=${offerId}`, {
+                        headers: clientAuthHeaders()
+                    }),
                 ]);
                 const albJson = await albRes.json();
                 const addJson = await addRes.json();
@@ -139,7 +148,7 @@ export default function ClientOfferRecommendedAlbums({
                                 onRemove={async () => {
                                     const res = await fetch('/api/client/offer-addons', {
                                         method: 'DELETE',
-                                        headers: { 'Content-Type': 'application/json' },
+                                        headers: { 'Content-Type': 'application/json', ...clientAuthHeaders() },
                                         body: JSON.stringify({ offer_id: offerId, addon_id: a.id }),
                                     });
                                     const j = await res.json();
@@ -532,9 +541,13 @@ function InterestForm({ albumId, offerId, albumTitle, albumPrice, onClose }: { a
         setSubmitting(true);
         setError('');
         try {
+            const token = localStorage.getItem('client_token') || localStorage.getItem('user_token');
             const res = await fetch('/api/client/album-interest', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                },
                 body: JSON.stringify({
                     offer_id: offerId,
                     album_id: albumId,
@@ -620,7 +633,7 @@ function AddonConfigurator({ album, offerId, onClose, onAdded }: { album: Album;
         try {
             const res = await fetch('/api/client/offer-addons', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...clientAuthHeaders() },
                 body: JSON.stringify({
                     offer_id: offerId,
                     album_id: album.id,

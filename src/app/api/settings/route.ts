@@ -28,13 +28,9 @@ const SENSITIVE_KEYS = [
 
 export async function GET(request: NextRequest) {
     try {
-        // Public GET is allowed, but admin-only fields require real token validation.
-        let isAdmin = false;
-        const authHeader = request.headers.get('authorization') || request.headers.get('Authorization');
-        if (authHeader?.startsWith('Bearer ')) {
-            const authError = await requireAuth(request);
-            isAdmin = !authError;
-        }
+        const authError = await requireAuth(request);
+        if (authError) return authError;
+        const isAdmin = true;
 
         // Ensure we always fetch the SAME 'first' record
         const settings = await prisma.setting.findMany({
@@ -97,7 +93,6 @@ export async function POST(request: NextRequest) {
     return withAuth(request, async (req) => {
         try {
             const body = await request.json();
-            console.log('[API] Settings POST received body:', JSON.stringify(body, null, 2));
 
             // Separate specific columns from generic key/value pairs
             const columnFields = [
@@ -213,10 +208,6 @@ export async function POST(request: NextRequest) {
                 }
             }
 
-            // ✅ FIX: Moved console.log OUTSIDE the for loop
-            console.log('[API] Computed columnUpdates:', JSON.stringify(columnUpdates, null, 2));
-
-
             // 1. Update columns on the first record (or create if none)
             const firstSetting = await prisma.setting.findFirst({
                 orderBy: { id: 'asc' }
@@ -241,10 +232,10 @@ export async function POST(request: NextRequest) {
                     console.log('[API] Settings record created. ID:', created.id);
                 }
             } catch (error: any) {
-                console.error('[API] Failed to update settings in database:', error);
+                console.error('[API] Failed to update settings in database');
                 return NextResponse.json({
                     success: false,
-                    error: `Database update failed: ${error.message}`
+                    error: 'Database update failed'
                 }, { status: 500 });
             }
 

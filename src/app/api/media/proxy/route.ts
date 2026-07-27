@@ -12,9 +12,11 @@ export async function GET(request: NextRequest) {
     }
 
     // Only allow proxying from our S3 bucket
+    const bucketName = process.env.S3_BUCKET || 'wlasniewski-photo-storage';
+    const region = process.env.S3_REGION || 'eu-north-1';
     const allowedHosts = [
-        'wlasniewski-photo-storage.s3.eu-north-1.amazonaws.com',
-        'wlasniewski-photo-storage.s3.amazonaws.com',
+        `${bucketName}.s3.${region}.amazonaws.com`,
+        `${bucketName}.s3.amazonaws.com`,
     ];
     
     try {
@@ -56,12 +58,9 @@ export async function GET(request: NextRequest) {
                 'Access-Control-Allow-Methods': 'GET, OPTIONS',
             },
         });
-    } catch (error: any) {
-        console.error('[MEDIA PROXY] Error:', error.message);
-        return NextResponse.json(
-            { error: 'Failed to fetch from S3', details: error.message },
-            { status: 502 }
-        );
+    } catch (error) {
+        console.error('[MEDIA PROXY] Error:', error);
+        return NextResponse.json({ error: 'Failed to fetch from S3' }, { status: 502 });
     }
 }
 

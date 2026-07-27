@@ -55,7 +55,10 @@ export default function PromocodeBar({
                         return; // Expired
                     }
 
-                    const codeToUse = settings.promo_code || 'WYZWANIE20';
+                    const codeToUse = typeof settings.promo_code === 'string'
+                        ? settings.promo_code.trim()
+                        : '';
+                    if (!codeToUse) return;
 
                     setFetchedSettings({
                         code: codeToUse,

@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { unlink } from 'fs/promises';
+import { requireAuth } from '@/lib/auth/middleware';
 
 export async function DELETE(
     request: NextRequest,
     { params }: { params: Promise<{ challenge_id: string; photoId: string }> }
 ) {
+    const authError = await requireAuth(request);
+    if (authError) return authError;
+
     try {
         const { challenge_id, photoId } = await params;
         const photoIdNum = parseInt(photoId);
@@ -19,6 +23,16 @@ export async function DELETE(
         });
 
         if (!photo) {
+            return NextResponse.json(
+                { success: false, error: 'Photo not found' },
+                { status: 404 }
+            );
+        }
+        const gallery = await prisma.challengeGallery.findUnique({
+            where: { id: photo.gallery_id },
+            select: { challenge_id: true }
+        });
+        if (gallery?.challenge_id !== parseInt(challenge_id)) {
             return NextResponse.json(
                 { success: false, error: 'Photo not found' },
                 { status: 404 }

@@ -50,19 +50,11 @@ export async function POST(
             if (!type) type = due && due < now ? 'overdue' : 'upcoming';
             if (!['upcoming', 'overdue'].includes(type)) type = 'upcoming';
 
-            const settings = await prisma.setting.findFirst({
-                select: {
-                    bank_account_number: true,
-                    bank_account_holder: true,
-                    bank_name: true,
-                },
-            }).catch(() => null);
-
             const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL || 'https://wlasniewski.pl';
             const landingUrl = `${baseUrl}/warsztaty/${workshop.slug}`;
             const dueStr = due ? due.toLocaleDateString('pl-PL') : null;
-            const startStr = workshop.start_date
-                ? new Date(workshop.start_date).toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' })
+            const startStr = workshop.starts_at
+                ? new Date(workshop.starts_at).toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' })
                 : null;
 
             const formatPrice = (amount: number) => {
@@ -77,18 +69,6 @@ export async function POST(
             const intro = type === 'overdue'
                 ? `Niestety <strong>termin wpłaty zaliczki${dueStr ? ` (${dueStr})` : ''} minął</strong>${startStr ? `, a warsztaty rozpoczynają się <strong>${startStr}</strong>` : ''}. Bez wpłaty nie mogę dłużej blokować dla Ciebie miejsca — <strong>rezerwacja jest zagrożona</strong>. Proszę o pilną reakcję.`
                 : `Przypominam o zaliczce rezerwującej miejsce na warsztatach <strong>${workshop.title}</strong>${startStr ? ` (${startStr})` : ''}${dueStr ? `. Termin wpłaty: <strong>${dueStr}</strong>` : ''}.`;
-
-            const bankBlock = settings?.bank_account_number ? `
-                <div style="margin:18px 0; padding:16px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; font-size:13px; color:#1f2937;">
-                    <div style="font-weight:bold; margin-bottom:8px; color:#0f172a;">Dane do przelewu:</div>
-                    ${settings.bank_account_holder ? `<div><span style="color:#64748b;">Odbiorca:</span> ${settings.bank_account_holder}</div>` : ''}
-                    <div style="font-family: 'Courier New', monospace; font-size:14px; margin:6px 0; padding:8px; background:#fff; border:1px dashed #94a3b8; border-radius:4px; letter-spacing:1px;">
-                        ${settings.bank_account_number}
-                    </div>
-                    ${settings.bank_name ? `<div><span style="color:#64748b;">Bank:</span> ${settings.bank_name}</div>` : ''}
-                    <div style="margin-top:6px;"><span style="color:#64748b;">Tytuł:</span> <strong>Zaliczka warsztaty ${workshop.title}${offer.participant_name ? ` — ${offer.participant_name}` : ''}</strong></div>
-                    ${offer.deposit_amount ? `<div style="margin-top:6px;"><span style="color:#64748b;">Kwota:</span> <strong>${formatPrice(offer.deposit_amount)} PLN</strong></div>` : ''}
-                </div>` : '';
 
             const html = `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><title>${subject}</title></head>
@@ -105,7 +85,6 @@ export async function POST(
             ${offer.deposit_amount ? `<strong>Zaliczka:</strong> ${formatPrice(offer.deposit_amount)} PLN<br>` : ''}
             ${dueStr ? `<strong>Termin wpłaty:</strong> ${dueStr}${type === 'overdue' ? ' <span style="color:#dc2626;">(MINĄŁ)</span>' : ''}` : ''}
         </div>
-        ${bankBlock}
         <p style="text-align:center;margin:28px 0;">
             <a href="${landingUrl}" style="display:inline-block;background:${type === 'overdue' ? '#dc2626' : '#f59e0b'};color:#fff;text-decoration:none;padding:14px 28px;border-radius:6px;font-weight:bold;font-size:14px;letter-spacing:0.5px;">Otwórz stronę warsztatów →</a>
         </p>

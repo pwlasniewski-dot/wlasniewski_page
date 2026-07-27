@@ -1,6 +1,6 @@
 import React, { memo } from 'react';
 import Image from 'next/image';
-import { Check, Trash2, PlayCircle, FileVideo, FileText } from 'lucide-react';
+import { Check, Trash2, PlayCircle, FileVideo, FileText, Eye } from 'lucide-react';
 
 interface MediaItem {
     id: number;
@@ -18,12 +18,13 @@ interface MediaItemCardProps {
     isSelected: boolean;
     onToggle: (item: MediaItem) => void;
     onClick: (item: MediaItem) => void;
+    onPreview: (item: MediaItem) => void;
     onDelete?: (ids: number[]) => void;
     onDragStart: (e: React.DragEvent, item: MediaItem) => void;
     selectionMode: boolean; // Helps decide click behavior
 }
 
-const MediaItemCard = memo(({ item, isSelected, onToggle, onClick, onDelete, onDragStart, selectionMode }: MediaItemCardProps) => {
+const MediaItemCard = memo(({ item, isSelected, onToggle, onClick, onPreview, onDelete, onDragStart, selectionMode }: MediaItemCardProps) => {
 
     const handleClick = (e: React.MouseEvent) => {
         // If selection mode is active, click always toggles selection
@@ -85,18 +86,27 @@ const MediaItemCard = memo(({ item, isSelected, onToggle, onClick, onDelete, onD
                 <Check className="w-3.5 h-3.5" />
             </div>
 
-            {/* Hover Actions (Delete) */}
-            {onDelete && (
-                <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            {/* Touch/hover actions */}
+            <div className="absolute top-2 right-2 flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                <button
+                    onClick={(e) => { e.stopPropagation(); onPreview(item); }}
+                    className="p-2 sm:p-1.5 bg-black/75 hover:bg-gold-500 hover:text-black rounded-md text-white"
+                    title="Podgląd"
+                    aria-label={`Podgląd: ${item.alt_text || item.file_name}`}
+                >
+                    <Eye className="w-4 h-4" />
+                </button>
+                {onDelete && (
                     <button
                         onClick={(e) => { e.stopPropagation(); onDelete([item.id]); }}
-                        className="p-1 bg-red-900/80 hover:bg-red-600 rounded text-white"
+                        className="p-2 sm:p-1.5 bg-red-900/85 hover:bg-red-600 rounded-md text-white"
                         title="Usuń"
+                        aria-label={`Usuń: ${item.alt_text || item.file_name}`}
                     >
-                        <Trash2 className="w-3 h-3" />
+                        <Trash2 className="w-4 h-4" />
                     </button>
-                </div>
-            )}
+                )}
+            </div>
 
             {/* Meta badges */}
             {item.folder && item.folder !== 'uploads' && (
