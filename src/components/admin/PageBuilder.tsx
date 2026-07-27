@@ -315,6 +315,9 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove, openMedia
                 {/* HERO PARALLAX */}
                 {section.type === 'hero_parallax' && (
                     <div className="space-y-4">
+                        <p className="rounded-lg border border-zinc-700 bg-zinc-950/60 px-3 py-2 text-xs leading-relaxed text-zinc-400">
+                            Na stronach miejskich ten moduł tworzy szeroki kadr z subtelnym ruchem parallax. Najlepiej użyć zdjęcia poziomego i krótkiego tytułu.
+                        </p>
                         <div>
                             <label className="block text-xs text-zinc-400 mb-1">Tytuł (H1)</label>
                             <input
@@ -505,6 +508,16 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove, openMedia
                 {/* GALLERY */}
                 {section.type === 'gallery' && (
                     <div>
+                        <div className="mb-4">
+                            <label className="mb-1 block text-xs text-zinc-400">Tytuł galerii (opcjonalnie)</label>
+                            <input
+                                type="text"
+                                value={section.title || ''}
+                                onChange={(e) => onUpdate(section.id, { title: e.target.value })}
+                                className="w-full rounded border border-zinc-700 bg-zinc-800 px-3 py-2 text-white"
+                                placeholder="np. Rodzinny spacer po Toruniu"
+                            />
+                        </div>
                         <div className="flex flex-wrap gap-2 mb-4">
                             {section.images?.map((img, idx) => (
                                 <div key={idx} className="relative group w-24 h-24">
@@ -4245,7 +4258,7 @@ export default function PageBuilder({ sections, onChange, pageType }: PageBuilde
 
             <div className="flex gap-2 flex-wrap">
                 <button onClick={() => addSection('hero_parallax')} className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded text-sm text-white transition-colors">
-                    <ImageIcon className="w-4 h-4" /> Hero Parallax
+                    <ImageIcon className="w-4 h-4" /> Zdjęcie Parallax
                 </button>
                 <button onClick={() => addSection('rich_text')} className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded text-sm text-white transition-colors">
                     <Type className="w-4 h-4" /> Tekst
