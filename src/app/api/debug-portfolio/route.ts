@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPortfolioCategories } from '@/lib/portfolio';
 import prisma from '@/lib/db/prisma';
+import { requireAuth } from '@/lib/auth/middleware';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
+    const authError = await requireAuth(request);
+    if (authError) return authError;
+
     try {
         const categories = await getPortfolioCategories();
 
@@ -29,7 +33,8 @@ export async function GET(request: NextRequest) {
             rawHeroSessionsCount: heroSessions.length,
             rawHeroSessions: heroSessions
         });
-    } catch (error: any) {
-        return NextResponse.json({ error: error.message, stack: error.stack }, { status: 500 });
+    } catch (error) {
+        console.error('Portfolio debug failed:', error);
+        return NextResponse.json({ error: 'Portfolio debug failed' }, { status: 500 });
     }
 }

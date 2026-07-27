@@ -2,17 +2,29 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import crypto from 'crypto';
 import { sendEmail } from '@/lib/email/sender';
+import { getClientIp, rateLimit } from '@/lib/rate-limit';
 
 export async function POST(req: NextRequest) {
     try {
         const { email } = await req.json();
+        const normalizedEmail = String(email || '').trim().toLowerCase();
 
-        if (!email) {
+        if (!normalizedEmail) {
             return NextResponse.json({ error: 'Email jest wymagany' }, { status: 400 });
+        }
+        const ip = getClientIp(req);
+        if (
+            !rateLimit(`forgot-password:ip:${ip}`, 5, 15 * 60_000).ok ||
+            !rateLimit(`forgot-password:email:${normalizedEmail}`, 3, 15 * 60_000).ok
+        ) {
+            return NextResponse.json(
+                { success: true, message: 'Jeśli adres istnieje, wysłano instrukcje resetowania' },
+                { status: 200 }
+            );
         }
 
         const user = await prisma.user.findUnique({
-            where: { email }
+            where: { email: normalizedEmail }
         });
 
         if (!user) {

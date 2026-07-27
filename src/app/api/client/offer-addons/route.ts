@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { logSystem } from '@/lib/logger';
+import { extractToken, verifyToken } from '@/lib/auth/jwt';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,6 +29,35 @@ type Addon = {
     selected_at: string;
     status: 'pending';             // czeka na potwierdzenie fotografa
 };
+
+async function getAuthorizedOffer(request: NextRequest, offerId: number) {
+    const token = extractToken(request.headers.get('authorization'))
+        || request.cookies.get('client_token')?.value
+        || request.cookies.get('user_token')?.value;
+    const decoded = token ? await verifyToken(token) : null;
+    if (!decoded) {
+        return {
+            response: NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        };
+    }
+
+    const offer = await prisma.offer.findUnique({
+        where: { id: offerId },
+        include: { user: true }
+    });
+    if (!offer) {
+        return {
+            response: NextResponse.json({ error: 'Not found' }, { status: 404 })
+        };
+    }
+    if (offer.client_id !== decoded.id && offer.client_email !== decoded.email) {
+        return {
+            response: NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+        };
+    }
+
+    return { offer, decoded };
+}
 
 // Format (z bazy: NphotoAlbum.format_options) → rabat (discount_pct)
 
@@ -82,13 +112,12 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Missing offer_id or album_id' }, { status: 400 });
         }
 
+        const authorized = await getAuthorizedOffer(request, Number(offer_id));
+        if ('response' in authorized) return authorized.response;
+        const { offer } = authorized;
         const album = await prisma.nphotoAlbum.findUnique({ where: { id: Number(album_id) } });
-        const offer = await prisma.offer.findUnique({
-            where: { id: Number(offer_id) },
-            include: { user: true }
-        });
 
-        if (!album || !offer) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+        if (!album) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
         // Bezpieczenstwo: na zatwierdzonych ofertach NIE wolno juz nic zmieniac
         if (offer.status === 'accepted' || offer.status === 'signed' || offer.status === 'completed') {
@@ -171,8 +200,9 @@ export async function DELETE(request: NextRequest) {
         const { offer_id, addon_id } = body;
         if (!offer_id || !addon_id) return NextResponse.json({ error: 'Missing params' }, { status: 400 });
 
-        const offer = await prisma.offer.findUnique({ where: { id: Number(offer_id) }, include: { user: true } });
-        if (!offer) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+        const authorized = await getAuthorizedOffer(request, Number(offer_id));
+        if ('response' in authorized) return authorized.response;
+        const { offer } = authorized;
         if (offer.status === 'accepted' || offer.status === 'signed' || offer.status === 'completed') {
             return NextResponse.json({ error: 'Oferta jest juz zatwierdzona - nie mozna usunac dodatku.' }, { status: 403 });
         }
@@ -207,7 +237,8 @@ export async function GET(request: NextRequest) {
     const url = new URL(request.url);
     const offerId = url.searchParams.get('offer_id');
     if (!offerId) return NextResponse.json({ error: 'Missing offer_id' }, { status: 400 });
-    const offer = await prisma.offer.findUnique({ where: { id: Number(offerId) }, select: { selected_addons: true } });
-    if (!offer) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    const authorized = await getAuthorizedOffer(request, Number(offerId));
+    if ('response' in authorized) return authorized.response;
+    const { offer } = authorized;
     return NextResponse.json({ success: true, addons: Array.isArray(offer.selected_addons) ? offer.selected_addons : [] });
 }

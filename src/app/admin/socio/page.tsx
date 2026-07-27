@@ -10,7 +10,7 @@ export default function SocioPage() {
         urgency_enabled: 'false',
         urgency_slots_remaining: '5',
         urgency_month: 'Styczeń',
-        social_proof_total_clients: '100',
+        social_proof_total_clients: '0',
         promo_code_discount_enabled: 'false',
         promo_code_discount_amount: '10',
         promo_code_discount_type: 'percentage',
@@ -26,7 +26,10 @@ export default function SocioPage() {
 
     const fetchSettings = async () => {
         try {
-            const res = await fetch(getApiUrl('settings'));
+            const token = localStorage.getItem('admin_token');
+            const res = await fetch(getApiUrl('settings'), {
+                headers: token ? { Authorization: `Bearer ${token}` } : {},
+            });
             const data = await res.json();
             if (data.success) {
                 setSettings(prev => ({ ...prev, ...data.settings }));

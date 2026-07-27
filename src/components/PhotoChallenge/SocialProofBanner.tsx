@@ -21,7 +21,7 @@ export default function SocialProofBanner({ stats, message }: SocialProofBannerP
     });
     const [localStats, setLocalStats] = useState<any>(null);
     const [isVisible, setIsVisible] = useState(true);
-    const [isEnabled, setIsEnabled] = useState(true);
+    const [isEnabled, setIsEnabled] = useState(Boolean(stats));
 
     useEffect(() => {
         // Check if user dismissed this banner
@@ -43,16 +43,20 @@ export default function SocialProofBanner({ stats, message }: SocialProofBannerP
                     const data = await res.json();
                     if (data.success && data.settings) {
                         // Check if enabled in settings
-                        const enabled = data.settings.social_proof_enabled !== 'false';
+                        const enabled = data.settings.social_proof_enabled === true
+                            || data.settings.social_proof_enabled === 'true';
                         setIsEnabled(enabled);
 
-                        const total = parseInt(data.settings.social_proof_total_clients || '100');
-                        const slots = parseInt(data.settings.urgency_slots_remaining || '5');
+                        const total = Number(data.settings.social_proof_total_clients);
+                        const slots = Number(data.settings.urgency_slots_remaining);
+                        if (!enabled || !Number.isFinite(total) || total <= 0) return;
 
                         const fetchedStats = {
-                            accepted_this_month: Math.floor(total / 12) + 2, // Approximate
+                            accepted_this_month: 0,
                             completed_sessions: total,
-                            remaining_monthly_slots: slots
+                            remaining_monthly_slots: Number.isFinite(slots) && slots >= 0
+                                ? slots
+                                : undefined,
                         };
                         animateStats(fetchedStats);
                     }
@@ -95,7 +99,7 @@ export default function SocialProofBanner({ stats, message }: SocialProofBannerP
     const activeStats = stats || localStats;
     if (!activeStats || !isVisible || !isEnabled) return null;
 
-    const defaultMessage = `W tym miesiącu ${displayStats.accepted} par przyjęło wyzwanie`;
+    const defaultMessage = `${displayStats.completed} zakończonych sesji`;
     const displayMessage = message?.replace('{count}', String(displayStats.accepted)) || defaultMessage;
 
     const handleClose = () => {

@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { getApiUrl } from "@/lib/api-config";
 
 export default function AboutMeBand() {
     const [portraitSrc, setPortraitSrc] = useState<string>("");
@@ -11,7 +10,7 @@ export default function AboutMeBand() {
     useEffect(() => {
         const fetchSettings = async () => {
             try {
-                const res = await fetch(getApiUrl('settings'));
+                const res = await fetch('/api/settings/public');
                 const data = await res.json();
                 if (data.success && data.settings.about_me_portrait) {
                     setPortraitSrc(data.settings.about_me_portrait);

@@ -3,6 +3,12 @@ import prisma from '@/lib/db/prisma';
 import { withAuth } from '@/lib/auth/middleware';
 import { uploadToS3 } from '@/lib/storage/s3';
 import { logSystem } from '@/lib/logger';
+import {
+    createMediaKey,
+    isAllowedMedia,
+    MAX_SERVER_UPLOAD_BYTES,
+    normalizeMediaFolder,
+} from '@/lib/storage/media-validation';
 
 export async function POST(request: NextRequest) {
     return withAuth(request, async (req) => {
@@ -14,53 +20,48 @@ export async function POST(request: NextRequest) {
                 const parseErr = e instanceof Error ? e.message : String(e);
                 console.error('FormData parse error:', parseErr);
                 await logSystem('ERROR', 'MEDIA_UPLOAD', 'Failed to parse FormData', { error: parseErr });
-                return NextResponse.json(
-                    { error: 'Invalid form data (FormData parse error)', details: parseErr },
-                    { status: 400 }
-                );
+                return NextResponse.json({ error: 'Invalid form data' }, { status: 400 });
             }
 
             const folder = (formData.get('folder') as string) || 'uploads';
             const file = formData.get('file') as File | null;
+            const normalizedFolder = normalizeMediaFolder(folder);
 
-            if (!file) {
+            if (!file || !normalizedFolder) {
                 await logSystem('WARN', 'MEDIA_UPLOAD', 'Upload attempt without file');
-                return NextResponse.json(
-                    { error: 'No file uploaded' },
-                    { status: 400 }
-                );
+                return NextResponse.json({ error: 'Invalid upload data' }, { status: 400 });
             }
 
             // Check file size early (Max 50MB for 3D models)
-            if (file.size > 50 * 1024 * 1024) {
+            if (file.size <= 0 || file.size > MAX_SERVER_UPLOAD_BYTES) {
                 await logSystem('WARN', 'MEDIA_UPLOAD', 'File too large', { name: file.name, size: file.size });
                 return NextResponse.json(
                     { error: 'File too large (max 50MB)' },
                     { status: 413 }
                 );
             }
+            if (!isAllowedMedia(file.name, file.type)) {
+                return NextResponse.json({ error: 'Unsupported file type' }, { status: 415 });
+            }
 
             await logSystem('INFO', 'MEDIA_UPLOAD', `Starting upload for: ${file.name}`, {
                 size: file.size,
                 type: file.type,
-                folder
+                folder: normalizedFolder,
             });
 
             const buffer = Buffer.from(await file.arrayBuffer());
-            const filename = file.name.replace(/\s+/g, '-').toLowerCase();
-            const uniqueName = `${Date.now()}-${filename}`;
+            const uniqueName = createMediaKey(file.name);
 
             // Upload to AWS S3
             let publicUrl;
             try {
                 publicUrl = await uploadToS3(buffer, uniqueName, file.type);
-            } catch (s3Error: any) {
+            } catch (s3Error) {
                 console.error('S3 Upload Error:', s3Error);
-                await logSystem('ERROR', 'MEDIA_UPLOAD', 'S3 Upload Failed', { error: s3Error.message });
-                return NextResponse.json(
-                    { error: 'S3 storage error', details: s3Error.message },
-                    { status: 502 }
-                );
+                const message = s3Error instanceof Error ? s3Error.message : String(s3Error);
+                await logSystem('ERROR', 'MEDIA_UPLOAD', 'S3 Upload Failed', { error: message });
+                return NextResponse.json({ error: 'S3 storage error' }, { status: 502 });
             }
 
             // Save to database
@@ -71,7 +72,7 @@ export async function POST(request: NextRequest) {
                     file_path: publicUrl,
                     file_size: file.size,
                     mime_type: file.type,
-                    folder: folder,
+                    folder: normalizedFolder,
                     uploaded_by: req.user?.id,
                 },
             });
@@ -94,10 +95,7 @@ export async function POST(request: NextRequest) {
             console.error('CRITICAL Upload error:', error);
             const errorMessage = error instanceof Error ? error.message : String(error);
             await logSystem('ERROR', 'MEDIA_UPLOAD', 'Critical unhandled error during upload', { error: errorMessage });
-            return NextResponse.json(
-                { error: 'Internal Server Error during upload', details: errorMessage },
-                { status: 500 }
-            );
+            return NextResponse.json({ error: 'Internal Server Error during upload' }, { status: 500 });
         }
     });
 }

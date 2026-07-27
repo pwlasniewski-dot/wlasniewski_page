@@ -1,22 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
-
-// Helper to check admin authentication (optional - for future use)
-async function checkAuth(request: NextRequest) {
-    const authHeader = request.headers.get('authorization');
-    const token = authHeader?.replace('Bearer ', '');
-
-    if (!token) {
-        return { isValid: false };
-    }
-
-    try {
-        // Could verify token here in future if needed
-        return { isValid: true, token };
-    } catch (error) {
-        return { isValid: false };
-    }
-}
+import { requireAuth } from '@/lib/auth/middleware';
 
 // GET packages by service (public endpoint)
 export async function GET(request: NextRequest) {
@@ -64,6 +48,9 @@ export async function GET(request: NextRequest) {
 
 // POST - Create or update package (accessible from admin)
 export async function POST(request: NextRequest) {
+    const authError = await requireAuth(request);
+    if (authError) return authError;
+
     try {
         const body = await request.json();
         const {
@@ -137,8 +124,10 @@ export async function POST(request: NextRequest) {
 }
 
 
-// DELETE package (NO AUTH)
 export async function DELETE(request: NextRequest) {
+    const authError = await requireAuth(request);
+    if (authError) return authError;
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 

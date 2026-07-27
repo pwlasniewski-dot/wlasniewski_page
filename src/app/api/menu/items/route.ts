@@ -1,7 +1,26 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import prisma from '@/lib/db/prisma';
-import { withAuth } from "@/lib/auth/middleware";
+import { requireAdminAuth, withAdminAuth } from "@/lib/auth/middleware";
+import { z } from 'zod';
+
+const menuTypeSchema = z.enum(['b2c', 'b2b']);
+const menuUrlSchema = z.string().trim().max(500).refine(
+    value => value.startsWith('/') || /^https:\/\//i.test(value),
+    'Menu URL must be a relative path or HTTPS URL'
+);
+const createMenuItemSchema = z.object({
+    title: z.string().trim().min(1).max(80),
+    url: menuUrlSchema.nullish(),
+    page_id: z.number().int().positive().nullish(),
+    parent_id: z.number().int().positive().nullish(),
+    order: z.number().int().min(0).max(1000).optional(),
+    menu_type: menuTypeSchema.optional(),
+});
+const updateMenuItemSchema = createMenuItemSchema.partial().extend({
+    id: z.number().int().positive(),
+    is_active: z.boolean().optional(),
+});
 
 // GET: Fetch menu tree
 export async function GET(request: NextRequest) {
@@ -9,9 +28,10 @@ export async function GET(request: NextRequest) {
         const { searchParams } = new URL(request.url);
         const type = searchParams.get("type") || "b2c";
 
-        // Simple token check for GET (public but show more to admins)
-        const authHeader = request.headers.get('Authorization');
-        const isAdmin = authHeader && authHeader.startsWith('Bearer ') && authHeader.length > 20;
+        const authHeader = request.headers.get('authorization');
+        const isAdmin = authHeader?.startsWith('Bearer ')
+            ? (await requireAdminAuth(request)) === null
+            : false;
 
         const where: any = {
             parent_id: null, // Only fetch top-level items
@@ -91,10 +111,13 @@ export async function GET(request: NextRequest) {
 
 // POST: Create menu item
 export async function POST(request: NextRequest) {
-    return withAuth(request, async (req) => {
+    return withAdminAuth(request, async (req) => {
         try {
-            const body = await req.json();
-            const { title, url, page_id, parent_id, order, menu_type } = body;
+            const parsed = createMenuItemSchema.safeParse(await req.json());
+            if (!parsed.success) {
+                return NextResponse.json({ error: "Invalid menu item data" }, { status: 400 });
+            }
+            const { title, url, page_id, parent_id, order, menu_type } = parsed.data;
 
             const menuItem = await prisma.menuItem.create({
                 data: {
@@ -117,13 +140,15 @@ export async function POST(request: NextRequest) {
 
 // PUT: Update menu item
 export async function PUT(request: NextRequest) {
-    return withAuth(request, async (req) => {
+    return withAdminAuth(request, async (req) => {
         try {
-            const body = await req.json();
-            const { id, title, url, page_id, parent_id, order, is_active, menu_type } = body;
-
-            if (!id) {
-                return NextResponse.json({ error: "ID is required" }, { status: 400 });
+            const parsed = updateMenuItemSchema.safeParse(await req.json());
+            if (!parsed.success) {
+                return NextResponse.json({ error: "Invalid menu item data" }, { status: 400 });
+            }
+            const { id, title, url, page_id, parent_id, order, is_active, menu_type } = parsed.data;
+            if (parent_id === id) {
+                return NextResponse.json({ error: "Item cannot be its own parent" }, { status: 400 });
             }
 
             const menuItem = await prisma.menuItem.update({
@@ -149,16 +174,14 @@ export async function PUT(request: NextRequest) {
 
 // DELETE: Remove menu item
 export async function DELETE(request: NextRequest) {
-    return withAuth(request, async (req) => {
+    return withAdminAuth(request, async () => {
         try {
             const { searchParams } = new URL(request.url);
-            const id = searchParams.get("id");
-
-            if (!id) {
-                return NextResponse.json({ error: "ID is required" }, { status: 400 });
+            const parsedId = z.coerce.number().int().positive().safeParse(searchParams.get("id"));
+            if (!parsedId.success) {
+                return NextResponse.json({ error: "Valid ID is required" }, { status: 400 });
             }
-
-            const numericId = Number(id);
+            const numericId = parsedId.data;
 
             // If a menuItem exists with this id, delete it (and its children)
             const existing = await prisma.menuItem.findUnique({ where: { id: numericId } });

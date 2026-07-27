@@ -35,7 +35,12 @@ export async function GET(request: NextRequest) {
         where: { OR: [{ from_profile_id: profile.id }, { to_profile_id: profile.id }] },
     }) : [];
     const referrals = await prisma.fotoMatchReferral.findMany({
-        where: { OR: [{ inviter_user_id: user.id }, { invited_user_id: user.id }] },
+        where: {
+            OR: [
+                ...(profile ? [{ referrer_profile_id: profile.id }] : []),
+                { invited_user_id: user.id }
+            ]
+        },
     }).catch(() => []);
 
     const data = {

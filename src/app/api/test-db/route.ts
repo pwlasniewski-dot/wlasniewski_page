@@ -1,29 +1,28 @@
 // Test database connection - GET /api/test-db
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
+import { requireAuth } from '@/lib/auth/middleware';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+    const authError = await requireAuth(request);
+    if (authError) return authError;
+
     try {
-        // Test query
         const userCount = await prisma.adminUser.count();
-
-        // Get all settings
-        const settings = await prisma.setting.findMany();
+        const settingsCount = await prisma.setting.count();
 
         return NextResponse.json({
             success: true,
-            message: 'Database connection successful (Prisma + SQLite)',
+            message: 'Database connection successful',
             userCount,
-            settingsCount: settings.length,
-            settings,
+            settingsCount,
         });
-    } catch (error: any) {
+    } catch (error) {
         console.error('Database test error:', error);
         return NextResponse.json(
             {
                 success: false,
                 error: 'Database connection failed',
-                details: error.message,
             },
             { status: 500 }
         );

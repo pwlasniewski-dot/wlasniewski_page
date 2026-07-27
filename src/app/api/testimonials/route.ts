@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import prisma from '@/lib/db/prisma';
+import { requireAuth } from '@/lib/auth/middleware';
 
 export async function GET() {
     try {
@@ -23,7 +24,10 @@ export async function GET() {
     }
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+    const authError = await requireAuth(request);
+    if (authError) return authError;
+
     try {
         const body = await request.json();
         const { client_name, testimonial_text, client_photo_id, rating, source, photo_size, is_featured, show_on_booking_page, display_order } = body;
@@ -49,7 +53,10 @@ export async function POST(request: Request) {
     }
 }
 
-export async function PUT(request: Request) {
+export async function PUT(request: NextRequest) {
+    const authError = await requireAuth(request);
+    if (authError) return authError;
+
     try {
         const body = await request.json();
         const { id, client_name, testimonial_text, client_photo_id, rating, source, photo_size, is_featured, show_on_booking_page, display_order } = body;
@@ -80,7 +87,10 @@ export async function PUT(request: Request) {
     }
 }
 
-export async function DELETE(request: Request) {
+export async function DELETE(request: NextRequest) {
+    const authError = await requireAuth(request);
+    if (authError) return authError;
+
     try {
         const { searchParams } = new URL(request.url);
         const id = searchParams.get("id");

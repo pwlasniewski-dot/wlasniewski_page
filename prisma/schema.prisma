@@ -85,7 +85,7 @@ model Setting {
   promo_code_discount_amount        Int?     @default(10)
   promo_code_discount_enabled       Boolean  @default(false)
   promo_code_discount_type          String?  @default("percentage")
-  social_proof_total_clients        Int?     @default(100)
+  social_proof_total_clients        Int?     @default(0)
   urgency_enabled                   Boolean  @default(false)
   urgency_month                     String?
   urgency_slots_remaining           Int?
@@ -95,7 +95,7 @@ model Setting {
   gift_card_hero_image              String?
   portfolio_layout                  String?  @default("slider")
   gift_card_hero_opacity            Float?   @default(0.6)
-  social_proof_enabled              Boolean  @default(true)
+  social_proof_enabled              Boolean  @default(false)
   theme_mode                        String   @default("dark")
   b2b_google_analytics_id           String?
   b2b_google_tag_manager_id         String?

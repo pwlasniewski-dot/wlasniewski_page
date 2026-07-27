@@ -23,7 +23,9 @@ async function resolveAuthenticatedUser(request: NextRequest, queryTokenParam?: 
     }
 
     const queryToken = queryTokenParam ? request.nextUrl.searchParams.get(queryTokenParam) : null;
-    const token = extractToken(authHeader) || queryToken;
+    const token = extractToken(authHeader)
+        || request.cookies.get('admin_token')?.value
+        || queryToken;
 
     if (!token) {
         return {
@@ -46,14 +48,23 @@ async function resolveAuthenticatedUser(request: NextRequest, queryTokenParam?: 
             ),
         };
     }
+    if (payload.type !== 'admin' || payload.role !== 'ADMIN') {
+        return {
+            user: null,
+            error: NextResponse.json(
+                { error: 'Forbidden - Admin token required' },
+                { status: 403 }
+            ),
+        };
+    }
 
     // Verify user exists in database
     const user = await prisma.adminUser.findUnique({
         where: { id: payload.id },
-        select: { id: true, email: true, name: true }
+        select: { id: true, email: true, name: true, role: true }
     });
 
-    if (!user) {
+    if (!user || user.email.toLowerCase() !== payload.email.toLowerCase() || user.role !== 'ADMIN') {
         return {
             user: null,
             error: NextResponse.json(
@@ -63,10 +74,13 @@ async function resolveAuthenticatedUser(request: NextRequest, queryTokenParam?: 
         };
     }
 
-    return { user, error: null };
+    return {
+        user: { id: user.id, email: user.email, name: user.name },
+        error: null
+    };
 }
-// Middleware to check authentication
-export async function requireAuth(request: NextRequest) {
+// Explicit administrator authorization guard.
+export async function requireAdminAuth(request: NextRequest) {
     try {
         const { user, error } = await resolveAuthenticatedUser(request);
 
@@ -85,6 +99,11 @@ export async function requireAuth(request: NextRequest) {
             { status: 500 }
         );
     }
+}
+
+// Backward-compatible name for existing admin-only API routes.
+export async function requireAuth(request: NextRequest) {
+    return requireAdminAuth(request);
 }
 
 export async function requireAuthWithQueryToken(
@@ -114,7 +133,14 @@ export async function withAuth(
     request: NextRequest,
     handler: (request: AuthenticatedRequest) => Promise<NextResponse>
 ) {
-    const authError = await requireAuth(request);
+    return withAdminAuth(request, handler);
+}
+
+export async function withAdminAuth(
+    request: NextRequest,
+    handler: (request: AuthenticatedRequest) => Promise<NextResponse>
+) {
+    const authError = await requireAdminAuth(request);
     if (authError) {
         return authError;
     }

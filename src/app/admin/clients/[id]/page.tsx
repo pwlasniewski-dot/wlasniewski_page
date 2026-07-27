@@ -700,19 +700,19 @@ function ClientDetailsContent({ id }: { id: string }) {
                 }}
             />
             {/* Header / Hero */}
-            <div className="bg-zinc-900 border-b border-zinc-800 sticky top-0 z-30">
-                <div className="max-w-7xl mx-auto px-6 py-6">
+            <div className="bg-zinc-900 border-b border-zinc-800 sticky top-16 md:top-0 z-30">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
                     <div className="flex flex-wrap items-start gap-4 mb-6">
                         <NextLink href="/admin/clients" className="p-2 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-white transition-colors">
                             <ChevronLeft className="w-6 h-6" />
                         </NextLink>
-                        <div className="min-w-0">
-                            <h1 className="text-3xl font-display font-bold text-white mb-1 flex items-center gap-3">
+                        <div className="min-w-0 flex-1 sm:flex-initial">
+                            <h1 className="text-2xl sm:text-3xl font-display font-bold text-white mb-1 flex flex-wrap items-center gap-2 sm:gap-3 break-words">
                                 {client.name}
                                 {!client.is_active && <span className="px-2 py-0.5 bg-red-500/20 text-red-500 text-xs rounded-full uppercase tracking-wider font-bold">Nieaktywny</span>}
                             </h1>
                             <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-zinc-400">
-                                <span className="flex items-center gap-2"><Mail className="w-4 h-4" /> {client.email}</span>
+                                <span className="flex min-w-0 items-center gap-2 break-all"><Mail className="w-4 h-4 shrink-0" /> {client.email}</span>
                                 {client.phone && <span className="flex items-center gap-2"><Phone className="w-4 h-4" /> {client.phone}</span>}
                                 <span className="flex items-center gap-2"><Shield className="w-4 h-4" /> ID: {client.id}</span>
                             </div>
@@ -758,7 +758,7 @@ function ClientDetailsContent({ id }: { id: string }) {
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id as any)}
-                                className={`flex items-center gap-2 px-6 py-3 text-sm font-medium rounded-t-lg transition-all border-b-2 ${activeTab === tab.id
+                                className={`shrink-0 flex items-center gap-2 px-4 sm:px-6 py-3 text-sm font-medium rounded-t-lg transition-all border-b-2 ${activeTab === tab.id
                                     ? 'border-gold-500 text-gold-400 bg-zinc-800/50'
                                     : 'border-transparent text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/30'
                                     }`}
@@ -772,7 +772,7 @@ function ClientDetailsContent({ id }: { id: string }) {
             </div>
 
             {/* Content Area */}
-            <div className="max-w-7xl mx-auto px-6 py-8">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 min-w-0">
 
                 {/* OVERVIEW TAB */}
                 {activeTab === 'overview' && (
@@ -805,13 +805,13 @@ function ClientDetailsContent({ id }: { id: string }) {
                         {/* Recent Activity / Bookings */}
                         <div className="lg:col-span-2 space-y-8">
                             <div className="bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden">
-                                <div className="p-6 border-b border-zinc-800 flex justify-between items-center">
+                                <div className="p-4 sm:p-6 border-b border-zinc-800 flex justify-between items-center">
                                     <h3 className="text-lg font-bold text-white">Ostatnie Rezerwacje</h3>
                                 </div>
-                                <div className="p-6 space-y-4">
+                                <div className="p-4 sm:p-6 space-y-4">
                                     {client.assigned_bookings?.length > 0 ? (
                                         client.assigned_bookings.map((booking: any) => (
-                                            <div key={booking.id} className="bg-zinc-950/50 p-4 rounded-lg flex justify-between items-center border border-zinc-800/50">
+                                            <div key={booking.id} className="bg-zinc-950/50 p-4 rounded-lg flex flex-col sm:flex-row justify-between sm:items-center gap-3 border border-zinc-800/50">
                                                 <div>
                                                     <p className="font-bold text-white">{booking.package}</p>
                                                     <p className="text-xs text-zinc-500">{new Date(booking.date).toLocaleDateString()} • {booking.city}</p>
@@ -829,11 +829,11 @@ function ClientDetailsContent({ id }: { id: string }) {
                             </div>
 
                             <div className="bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden">
-                                <div className="p-6 border-b border-zinc-800 flex justify-between items-center">
+                                <div className="p-4 sm:p-6 border-b border-zinc-800 flex flex-col sm:flex-row justify-between sm:items-center gap-2">
                                     <h3 className="text-lg font-bold text-white">Foto Wyzwania klienta {client.challenges?.length ? `(${client.challenges.length})` : ''}</h3>
                                     <NextLink href="/admin/challenges" className="text-xs text-zinc-400 hover:text-gold-400">Wszystkie wyzwania →</NextLink>
                                 </div>
-                                <div className="p-6 space-y-3">
+                                <div className="p-4 sm:p-6 space-y-3">
                                     {client.challenges && client.challenges.length > 0 ? (
                                         client.challenges.map((ch: any) => {
                                             const isInvitee = ch.invitee_user_id === client.id || ch.invitee_contact === client.email;
@@ -1019,13 +1019,13 @@ function ClientDetailsContent({ id }: { id: string }) {
                             </div>
 
                             <div className="bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden">
-                                <div className="p-6 border-b border-zinc-800 flex justify-between items-center">
+                                <div className="p-4 sm:p-6 border-b border-zinc-800 flex justify-between items-center">
                                     <h3 className="text-lg font-bold text-white">Historia Zamówień</h3>
                                 </div>
-                                <div className="p-6 space-y-4">
+                                <div className="p-4 sm:p-6 space-y-4">
                                     {client.orders?.length > 0 ? (
                                         client.orders.map((order: any) => (
-                                            <div key={order.id} className="bg-zinc-950/50 p-4 rounded-lg flex justify-between items-center border border-zinc-800/50">
+                                            <div key={order.id} className="bg-zinc-950/50 p-4 rounded-lg flex flex-col sm:flex-row justify-between sm:items-center gap-3 border border-zinc-800/50">
                                                 <div>
                                                     <p className="font-bold text-white">{order.gift_card ? `Karta Podarunkowa #${order.id}` : `Zamówienie #${order.id}`}</p>
                                                     <p className="text-xs text-zinc-500">{new Date(order.created_at).toLocaleDateString()}</p>
@@ -1047,7 +1047,7 @@ function ClientDetailsContent({ id }: { id: string }) {
                                 <div className="space-y-4">
                                     <div>
                                         <label className="text-xs text-zinc-500 block mb-1">Adres Email</label>
-                                        <div className="flex items-center gap-3 text-white">
+                                        <div className="flex min-w-0 items-center gap-3 text-white break-all">
                                             <Mail className="w-4 h-4 text-gold-500" />
                                             {client.email}
                                         </div>
@@ -1111,14 +1111,14 @@ function ClientDetailsContent({ id }: { id: string }) {
                             </div>
                         ) : (
                             <>
-                                <div className="flex justify-between items-center bg-zinc-900 p-6 rounded-xl border border-zinc-800">
+                                <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 bg-zinc-900 p-4 sm:p-6 rounded-xl border border-zinc-800">
                                     <div>
                                         <h2 className="text-xl font-bold text-white">Galerie Zdjęć</h2>
                                         <p className="text-zinc-500">Zarządzaj dostępem klienta do zdjęć.</p>
                                     </div>
                                     <button
                                         onClick={() => setIsCreatingGallery(true)}
-                                        className="px-6 py-3 bg-gold-600 hover:bg-gold-500 text-black font-bold rounded-lg flex items-center gap-2 transition-all"
+                                        className="w-full sm:w-auto justify-center px-6 py-3 bg-gold-600 hover:bg-gold-500 text-black font-bold rounded-lg flex items-center gap-2 transition-all"
                                     >
                                         <ImageIcon className="w-5 h-5" /> Nowa Galeria
                                     </button>
@@ -1214,12 +1214,12 @@ function ClientDetailsContent({ id }: { id: string }) {
                 {/* OFFERS TAB */}
                 {activeTab === 'offers' && (
                     <div className="space-y-6">
-                        <div className="flex justify-between items-center bg-zinc-900 p-6 rounded-xl border border-zinc-800">
+                        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 bg-zinc-900 p-4 sm:p-6 rounded-xl border border-zinc-800">
                             <div>
                                 <h2 className="text-xl font-bold text-white">Oferty Handlowe</h2>
                                 <p className="text-zinc-500">Historia propozycji i wycen.</p>
                             </div>
-                            <div className="flex gap-3">
+                            <div className="w-full sm:w-auto flex flex-col sm:flex-row gap-3">
                                 <button
                                     onClick={() => standaloneOfferPdfRef.current?.click()}
                                     disabled={uploadingStandaloneOffer}
@@ -1429,12 +1429,12 @@ function ClientDetailsContent({ id }: { id: string }) {
                 {/* CONTRACTS TAB */}
                 {activeTab === 'contracts' && (
                     <div className="space-y-6">
-                        <div className="flex justify-between items-center bg-zinc-900 p-6 rounded-xl border border-zinc-800">
+                        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 bg-zinc-900 p-4 sm:p-6 rounded-xl border border-zinc-800">
                             <div>
                                 <h2 className="text-xl font-bold text-white">Umowy</h2>
                                 <p className="text-zinc-500">Podpisane dokumenty i szablony.</p>
                             </div>
-                            <div className="flex gap-3">
+                            <div className="w-full sm:w-auto flex flex-col sm:flex-row gap-3">
                                 <button
                                     onClick={() => standaloneContractPdfRef.current?.click()}
                                     disabled={uploadingStandaloneContract}
@@ -1618,10 +1618,10 @@ function ClientDetailsContent({ id }: { id: string }) {
                 {/* SETTINGS TAB */}
                 {activeTab === 'settings' && (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div className="bg-zinc-900 p-8 rounded-xl border border-zinc-800 space-y-6">
+                        <div className="bg-zinc-900 p-4 sm:p-8 rounded-xl border border-zinc-800 space-y-6">
                             <h2 className="text-xl font-bold text-white mb-6">Edycja Danych Klienta</h2>
 
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div className="col-span-2">
                                     <label className="text-xs text-zinc-500 block mb-2 font-bold uppercase tracking-wider">Imię i Nazwisko</label>
                                     <input
@@ -1649,7 +1649,7 @@ function ClientDetailsContent({ id }: { id: string }) {
                             </div>
                         </div>
 
-                        <div className="bg-zinc-900 p-8 rounded-xl border border-zinc-800 space-y-6">
+                        <div className="bg-zinc-900 p-4 sm:p-8 rounded-xl border border-zinc-800 space-y-6">
                             <h2 className="text-xl font-bold text-white mb-6">Adres Korespondencyjny</h2>
 
                             <div className="space-y-4">
@@ -1661,7 +1661,7 @@ function ClientDetailsContent({ id }: { id: string }) {
                                         className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-3 text-white outline-none focus:border-gold-500 transition-colors"
                                     />
                                 </div>
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div>
                                         <label className="text-xs text-zinc-500 block mb-2 font-bold uppercase tracking-wider">Kod Pocztowy</label>
                                         <input
@@ -1682,7 +1682,7 @@ function ClientDetailsContent({ id }: { id: string }) {
                             </div>
                         </div>
 
-                        <div className="bg-zinc-900 p-8 rounded-xl border border-zinc-800 space-y-6 md:col-span-2">
+                        <div className="bg-zinc-900 p-4 sm:p-8 rounded-xl border border-zinc-800 space-y-6 md:col-span-2">
                             <h2 className="text-xl font-bold text-white mb-2">Plan Sesji (do umowy)</h2>
                             <p className="text-sm text-zinc-500">Ta data i godzina będą użyte przy tworzeniu nowej umowy dla klienta, bez ponownej akceptacji oferty.</p>
 
@@ -1718,14 +1718,14 @@ function ClientDetailsContent({ id }: { id: string }) {
                         </div>
 
                         {/* DANGER ZONE */}
-                        <div className="bg-red-900/10 p-8 rounded-xl border border-red-900/20 space-y-6">
+                        <div className="bg-red-900/10 p-4 sm:p-8 rounded-xl border border-red-900/20 space-y-6">
                             <h2 className="text-xl font-bold text-red-500 flex items-center gap-2">
                                 <AlertTriangle className="w-6 h-6" /> Strefa Zagrożenia
                             </h2>
                             <p className="text-sm text-zinc-500">Te akcje są nieodwracalne i mają wpływ na dostęp klienta do jego danych.</p>
 
                             <div className="space-y-4 pt-4">
-                                <div className="p-4 bg-zinc-900/50 rounded-lg border border-zinc-800 flex items-center justify-between">
+                                <div className="p-4 bg-zinc-900/50 rounded-lg border border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                     <div>
                                         <p className="font-bold text-white text-sm">Anonimizuj Klienta (RODO)</p>
                                         <p className="text-xs text-zinc-500 mt-1">Zamienia dane na losowe ciągi znaków. Konto pozostaje w bazie, ale staje się nieaktywne.</p>
@@ -1738,7 +1738,7 @@ function ClientDetailsContent({ id }: { id: string }) {
                                     </button>
                                 </div>
 
-                                <div className="p-4 bg-zinc-900/50 rounded-lg border border-zinc-800 flex items-center justify-between">
+                                <div className="p-4 bg-zinc-900/50 rounded-lg border border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                     <div>
                                         <p className="font-bold text-red-500 text-sm">Usuń Całkowicie (Hard Delete)</p>
                                         <p className="text-xs text-zinc-500 mt-1">Całkowicie usuwa rekord użytkownika i powiązane rezerwacje z bazy danych.</p>

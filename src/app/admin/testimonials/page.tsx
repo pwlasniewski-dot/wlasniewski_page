@@ -99,9 +99,13 @@ export default function AdminTestimonialsPage() {
         const body = editingId ? { ...formData, id: editingId } : formData;
 
         try {
+            const token = localStorage.getItem('admin_token');
             const res = await fetch(url, {
                 method,
-                headers: { "Content-Type": "application/json" },
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`
+                },
                 body: JSON.stringify(body),
             });
 
@@ -122,8 +126,10 @@ export default function AdminTestimonialsPage() {
         if (!confirm("Czy na pewno chcesz usunąć tę opinię?")) return;
 
         try {
+            const token = localStorage.getItem('admin_token');
             const res = await fetch(`/api/testimonials?id=${id}`, {
                 method: "DELETE",
+                headers: { Authorization: `Bearer ${token}` }
             });
 
             if (res.ok) {

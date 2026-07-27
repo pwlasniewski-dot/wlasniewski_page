@@ -13,10 +13,7 @@ export async function POST(request: NextRequest) {
             } catch (e) {
                 const parseErr = e instanceof Error ? e.message : String(e);
                 console.error('FormData parse error:', parseErr);
-                return NextResponse.json(
-                    { error: 'Invalid form data', details: parseErr },
-                    { status: 400 }
-                );
+                return NextResponse.json({ error: 'Invalid form data' }, { status: 400 });
             }
 
             const file = formData.get('file') as File;
@@ -26,16 +23,24 @@ export async function POST(request: NextRequest) {
             }
 
             // Validate file type
-            const validTypes = ['image/x-icon', 'image/png', 'image/svg+xml', 'image/jpeg'];
+            const validTypes = ['image/x-icon', 'image/png', 'image/jpeg'];
             if (!validTypes.includes(file.type)) {
-                return NextResponse.json({ error: 'Invalid file type. Use .ico, .png, .svg, or .jpg' }, { status: 400 });
+                return NextResponse.json({ error: 'Invalid file type. Use .ico, .png, or .jpg' }, { status: 400 });
+            }
+            if (file.size <= 0 || file.size > 1024 * 1024) {
+                return NextResponse.json({ error: 'Invalid file size (max 1MB)' }, { status: 413 });
             }
 
             const bytes = await file.arrayBuffer();
             const buffer = Buffer.from(bytes);
 
             // Determine extension
-            const ext = file.name.split('.').pop() || 'ico';
+            const extensionByType: Record<string, string> = {
+                'image/x-icon': 'ico',
+                'image/png': 'png',
+                'image/jpeg': 'jpg',
+            };
+            const ext = extensionByType[file.type];
             const fileName = `favicon/favicon_${Date.now()}.${ext}`;
 
             // Save to S3
@@ -48,11 +53,7 @@ export async function POST(request: NextRequest) {
             });
         } catch (error) {
             console.error('Favicon upload error:', error);
-            const errorMessage = error instanceof Error ? error.message : String(error);
-            return NextResponse.json(
-                { error: 'Upload failed', details: errorMessage },
-                { status: 500 }
-            );
+            return NextResponse.json({ error: 'Upload failed' }, { status: 500 });
         }
     });
 }

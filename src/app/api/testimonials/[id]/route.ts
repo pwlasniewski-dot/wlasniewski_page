@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
+import { requireAuth } from '@/lib/auth/middleware';
 
 // PUT - Update testimonial
 export async function PUT(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
+    const authError = await requireAuth(request);
+    if (authError) return authError;
+
     try {
         const { id } = await params;
         const body = await request.json();
@@ -46,6 +50,9 @@ export async function DELETE(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
+    const authError = await requireAuth(request);
+    if (authError) return authError;
+
     try {
         const { id } = await params;
 

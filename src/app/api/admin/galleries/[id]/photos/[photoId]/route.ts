@@ -141,11 +141,13 @@ export async function POST(
             const timestamp = Date.now();
             const folderPath = `galleries/${galleryId}`;
             const updateData: any = {};
+            let downloadKey: string | null = null;
+            let thumbnailKey: string | null = null;
 
             // Upload to SEPARATE S3 keys — do not modify original files
             if (shouldReplaceDownload) {
                 const downloadFilename = `download-${timestamp}-${hash}.${file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg'}`;
-                const downloadKey = `${folderPath}/${downloadFilename}`;
+                downloadKey = `${folderPath}/${downloadFilename}`;
                 const sourceMimeType = (file.type || 'application/octet-stream').toLowerCase();
                 const downloadUrl = await uploadToS3(buffer, downloadKey, sourceMimeType);
                 
@@ -156,7 +158,7 @@ export async function POST(
 
             if (shouldReplacePreview) {
                 const thumbFilename = `preview-thumb-${timestamp}-${hash}.webp`;
-                const thumbKey = `${folderPath}/${thumbFilename}`;
+                thumbnailKey = `${folderPath}/${thumbFilename}`;
                 const thumbnailBuffer = await sharp(buffer)
                     .rotate()
                     .resize(400, 400, {
@@ -166,7 +168,7 @@ export async function POST(
                     .webp({ quality: 80 })
                     .toBuffer();
 
-                const thumbnailUrl = await uploadToS3(thumbnailBuffer, thumbKey, 'image/webp');
+                const thumbnailUrl = await uploadToS3(thumbnailBuffer, thumbnailKey, 'image/webp');
                 updateData.thumbnail_source_url = thumbnailUrl;
             }
 
@@ -180,8 +182,8 @@ export async function POST(
                 gallery_id: galleryId,
                 photo_id: parsedPhotoId,
                 mode,
-                file_key: fileKey,
-                thumbnail_key: thumbKey,
+                file_key: downloadKey,
+                thumbnail_key: thumbnailKey,
                 old: {
                     file_size: existingPhoto.file_size,
                     width: existingPhoto.width,

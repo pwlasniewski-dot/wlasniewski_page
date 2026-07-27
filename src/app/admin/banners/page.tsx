@@ -18,7 +18,7 @@ export default function BannersManagementPage() {
 
         // SocialProofBanner
         social_proof_enabled: false,
-        social_proof_total_clients: 100,
+        social_proof_total_clients: 0,
         urgency_slots_remaining: 5,
     });
 

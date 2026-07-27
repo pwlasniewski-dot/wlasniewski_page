@@ -14,28 +14,11 @@ const s3Client = new S3Client({
     },
 });
 
-console.log("[S3 INIT]", {
-    hasAccessKey: !!accessKeyId,
-    accessKeyType: process.env.MY_AWS_ACCESS_KEY_ID ? 'MY_AWS' : (process.env.AWS_ACCESS_KEY_ID ? 'AWS' : 'NONE'),
-    keyLength: accessKeyId.length,
-    hasSecret: !!secretAccessKey,
-    region: process.env.S3_REGION || 'default(eu-north-1)',
-});
-
 export async function uploadToS3(fileBuffer: Buffer, fileName: string, mimeType: string): Promise<string> {
     const bucketName = process.env.S3_BUCKET || 'wlasniewski-photo-storage';
     const region = process.env.S3_REGION || 'eu-north-1';
 
     try {
-        // Helper to debug environment in logs
-        const debugEnv = {
-            MY_AWS_KEY: !!process.env.MY_AWS_ACCESS_KEY_ID,
-            AWS_KEY: !!process.env.AWS_ACCESS_KEY_ID,
-            BUCKET: !!bucketName,
-            REGION: region,
-        };
-        console.log("[UPLOAD_START]", { fileName, fileSize: fileBuffer.length, mimeType, debugEnv });
-
         if (!bucketName) {
             const msg = "Missing S3_BUCKET environment variable";
             console.error("[S3_UPLOAD] ERROR:", msg);

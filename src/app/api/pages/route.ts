@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
-import { withAuth } from '@/lib/auth/middleware';
+import { requireAuth, withAuth } from '@/lib/auth/middleware';
 import { revalidatePath } from 'next/cache';
 
 // GET all pages or specific page by slug or id
@@ -10,9 +10,11 @@ export async function GET(request: NextRequest) {
     const id = searchParams.get('id');
 
     try {
-        // Simple token check to allow admins to see all/draft pages
-        const authHeader = request.headers.get('Authorization');
-        const isAdmin = authHeader && authHeader.startsWith('Bearer ') && authHeader.length > 20;
+        // Drafts are visible only after cryptographic token verification.
+        const authHeader = request.headers.get('authorization');
+        const isAdmin = authHeader?.startsWith('Bearer ')
+            ? (await requireAuth(request)) === null
+            : false;
 
         // If id param exists, fetch by id
         if (id) {
@@ -146,11 +148,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ success: true, page });
         } catch (error) {
             console.error('Error in POST /api/pages:', error);
-            // Return more details in dev
-            return NextResponse.json({
-                error: 'Internal Server Error',
-                details: error instanceof Error ? error.message : String(error)
-            }, { status: 500 });
+            return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
         }
     });
 }

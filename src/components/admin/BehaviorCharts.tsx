@@ -34,8 +34,8 @@ interface BehaviorData {
     totalViews: number;
     todayViews: number;
     uniqueVisitors: number;
-    avgSessionDuration: string;
-    bounceRate: number;
+    avgSessionDuration: string | null;
+    bounceRate: number | null;
     viewsChart: any[];
     sources: any[];
     devices: any[];
@@ -88,8 +88,12 @@ export default function BehaviorCharts({ data }: { data: BehaviorData }) {
                         </div>
                         <span className="text-[10px] text-zinc-500 font-bold uppercase">Bounces Rate</span>
                     </div>
-                    <h3 className="text-2xl font-bold">{data.bounceRate}%</h3>
-                    <p className="text-[10px] text-zinc-500 mt-1">Single page sessions</p>
+                    <h3 className="text-2xl font-bold">
+                        {data.bounceRate === null ? 'Brak danych' : `${data.bounceRate}%`}
+                    </h3>
+                    <p className="text-[10px] text-zinc-500 mt-1">
+                        {data.bounceRate === null ? 'Wymaga śledzenia sesji' : 'Single page sessions'}
+                    </p>
                 </div>
             </div>
 
@@ -109,7 +113,11 @@ export default function BehaviorCharts({ data }: { data: BehaviorData }) {
                                 <div className="w-full h-8 bg-zinc-800/50 rounded-lg overflow-hidden flex">
                                     <div
                                         className="h-full bg-gradient-to-r from-yellow-600/40 to-yellow-500/60 transition-all duration-1000"
-                                        style={{ width: `${(step.count / data.funnel[0].count) * 100}%` }}
+                                        style={{
+                                            width: `${data.funnel[0]?.count > 0
+                                                ? (step.count / data.funnel[0].count) * 100
+                                                : 0}%`
+                                        }}
                                     />
                                 </div>
                                 {index < data.funnel.length - 1 && (

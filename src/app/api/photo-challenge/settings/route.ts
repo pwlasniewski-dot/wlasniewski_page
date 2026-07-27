@@ -3,6 +3,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
+import { requireAuth } from '@/lib/auth/middleware';
 
 export async function GET(request: NextRequest) {
     try {
@@ -43,6 +44,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+    const authError = await requireAuth(request);
+    if (authError) return authError;
+
     try {
         const body = await request.json();
 

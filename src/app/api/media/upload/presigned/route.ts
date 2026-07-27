@@ -3,6 +3,13 @@ import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { withAuth } from '@/lib/auth/middleware';
 import { logSystem } from '@/lib/logger';
+import {
+    createMediaKey,
+    expectedPublicMediaUrl,
+    isAllowedMedia,
+    MAX_DIRECT_UPLOAD_BYTES,
+    normalizeMediaFolder,
+} from '@/lib/storage/media-validation';
 
 const s3Client = new S3Client({
     region: process.env.S3_REGION || 'eu-north-1',
@@ -15,21 +22,35 @@ const s3Client = new S3Client({
 export async function POST(request: NextRequest) {
     return withAuth(request, async (req) => {
         try {
-            const { fileName, fileType, folder = 'uploads' } = await req.json();
+            const { fileName, fileType, fileSize, folder = 'uploads' } = await req.json();
 
-            if (!fileName || !fileType) {
-                return NextResponse.json({ error: 'Missing fileName or fileType' }, { status: 400 });
+            if (
+                typeof fileName !== 'string'
+                || typeof fileType !== 'string'
+                || !Number.isSafeInteger(fileSize)
+                || fileSize <= 0
+            ) {
+                return NextResponse.json({ error: 'Invalid upload metadata' }, { status: 400 });
+            }
+            if (fileSize > MAX_DIRECT_UPLOAD_BYTES) {
+                return NextResponse.json({ error: 'File too large (max 200MB)' }, { status: 413 });
+            }
+            if (!isAllowedMedia(fileName, fileType)) {
+                return NextResponse.json({ error: 'Unsupported file type' }, { status: 415 });
+            }
+            const normalizedFolder = normalizeMediaFolder(folder);
+            if (!normalizedFolder) {
+                return NextResponse.json({ error: 'Invalid folder' }, { status: 400 });
             }
 
             const bucketName = process.env.S3_BUCKET || 'wlasniewski-photo-storage';
-            const cleanFileName = fileName.replace(/\s+/g, '-').toLowerCase();
-            const uniqueName = `${Date.now()}-${cleanFileName}`;
-            const key = uniqueName; // We can add folder prefix if desired, but current system uses unique names in root or specific folders are in DB
+            const key = createMediaKey(fileName);
 
             const command = new PutObjectCommand({
                 Bucket: bucketName,
                 Key: key,
                 ContentType: fileType,
+                ContentLength: fileSize,
             });
 
             // URL expires in 15 minutes
@@ -37,18 +58,20 @@ export async function POST(request: NextRequest) {
 
             await logSystem('INFO', 'MEDIA_UPLOAD', `Generated Presigned URL for: ${fileName}`, {
                 key,
-                fileType
+                fileType,
+                fileSize,
+                folder: normalizedFolder,
             });
 
             return NextResponse.json({
                 success: true,
                 uploadUrl,
                 key,
-                publicUrl: `https://${bucketName}.s3.${process.env.S3_REGION || 'eu-north-1'}.amazonaws.com/${key}`
+                publicUrl: expectedPublicMediaUrl(key),
             });
-        } catch (error: any) {
+        } catch (error) {
             console.error('Presigned URL error:', error);
-            return NextResponse.json({ error: 'Failed to generate presigned URL', details: error.message }, { status: 500 });
+            return NextResponse.json({ error: 'Failed to generate presigned URL' }, { status: 500 });
         }
     });
 }

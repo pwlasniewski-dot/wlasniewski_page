@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
-import { withAuth } from '@/lib/auth/middleware';
+import { requireAuth, withAuth } from '@/lib/auth/middleware';
 
 // Helper to normalize Polish characters in slugs
 function slugify(text: string) {
@@ -21,10 +21,13 @@ function slugify(text: string) {
 
 // GET all sessions with cover images
 export async function GET(request: NextRequest) {
-    console.log('📥 GET /api/portfolio started');
     try {
-        console.log('🔍 Fetching sessions from Prisma...');
+        const authHeader = request.headers.get('authorization');
+        const isAdmin = authHeader?.startsWith('Bearer ')
+            ? (await requireAuth(request)) === null
+            : false;
         const sessions = await prisma.portfolioSession.findMany({
+            where: isAdmin ? {} : { is_published: true },
             include: {
                 cover_image: {
                     select: { file_path: true }
@@ -35,8 +38,6 @@ export async function GET(request: NextRequest) {
             },
             orderBy: { session_date: 'desc' },
         });
-        console.log(`✅ Found ${sessions.length} sessions`);
-
         // Convert BigInt to Number and add cover_image_url
         const serializedSessions = sessions.map(s => {
             try {
@@ -62,12 +63,10 @@ export async function GET(request: NextRequest) {
                 };
             }
         });
-        console.log('✅ Serialization complete');
-
         return NextResponse.json({ success: true, sessions: serializedSessions });
     } catch (error) {
-        console.error('💥 GET sessions error details:', error);
-        return NextResponse.json({ error: 'Failed to fetch sessions', details: String(error) }, { status: 500 });
+        console.error('GET portfolio sessions error:', error);
+        return NextResponse.json({ error: 'Failed to fetch sessions' }, { status: 500 });
     }
 }
 
@@ -189,7 +188,7 @@ export async function PUT(request: NextRequest) {
             return NextResponse.json({ success: true, session: serializedSession });
         } catch (error: any) {
             console.error('Update session error:', error);
-            return NextResponse.json({ error: 'Failed to update session', details: error.message || String(error) }, { status: 500 });
+            return NextResponse.json({ error: 'Failed to update session' }, { status: 500 });
         }
     });
 }

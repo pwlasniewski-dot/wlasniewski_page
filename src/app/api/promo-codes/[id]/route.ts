@@ -1,12 +1,16 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
+import { requireAuth } from '@/lib/auth/middleware';
 
 interface RouteParams {
     params: Promise<{ id: string }>;
 }
 
 // PATCH: Update promo code (toggle active, etc.)
-export async function PATCH(request: Request, { params }: RouteParams) {
+export async function PATCH(request: NextRequest, { params }: RouteParams) {
+    const authError = await requireAuth(request);
+    if (authError) return authError;
+
     try {
         const { id } = await params;
         const body = await request.json();
@@ -27,7 +31,10 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 }
 
 // DELETE: Remove promo code
-export async function DELETE(request: Request, { params }: RouteParams) {
+export async function DELETE(request: NextRequest, { params }: RouteParams) {
+    const authError = await requireAuth(request);
+    if (authError) return authError;
+
     try {
         const { id } = await params;
 
