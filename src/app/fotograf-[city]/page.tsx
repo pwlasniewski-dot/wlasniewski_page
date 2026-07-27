@@ -525,7 +525,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 function CityManagedMedia({ sections, city }: { sections: PageSection[]; city: string }) {
     return (
         <div className="bg-[#f4f1eb]">
-            {sections.map((section, sectionIndex) => {
+            {sections.map((section) => {
                 const data = { ...section, ...(section.data || {}) } as PageSection & Record<string, any>;
 
                 if (section.type === 'hero_parallax' || section.type === 'parallax') {
