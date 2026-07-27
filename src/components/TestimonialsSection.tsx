@@ -54,9 +54,9 @@ export default function TestimonialsSection() {
             <h2 className="text-2xl font-bold text-[var(--wedding-brown)] text-center mb-12 uppercase tracking-widest font-serif">
                 Zaufali mi
             </h2>
-            <div className="grid md:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 items-stretch">
                 {testimonials.map((t) => (
-                    <div key={t.id} className="bg-zinc-900/50 p-8 rounded-sm shadow-lg hover:transform hover:-translate-y-1 transition-all duration-300">
+                    <article key={t.id} className="h-full bg-zinc-800/75 border border-zinc-700/70 p-6 rounded-xl shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col">
                         <div className="flex items-center gap-4 mb-6">
                             <div
                                 className="relative shrink-0 rounded-full overflow-hidden border border-gold-500/30"
@@ -74,16 +74,16 @@ export default function TestimonialsSection() {
                                 )}
                             </div>
                             <div>
-                                <div className="font-bold text-zinc-100 font-serif text-lg">{t.client_name}</div>
+                                <div className="font-bold text-zinc-50 font-serif text-lg">{t.client_name}</div>
                                 <div className="flex text-gold-500 text-xs gap-0.5">
                                     {"★".repeat(t.rating)}
                                 </div>
                             </div>
                         </div>
-                        <p className="text-zinc-400 text-sm italic leading-relaxed font-serif">
+                        <p className="mt-auto text-zinc-200 text-base italic leading-relaxed font-serif">
                             "{t.testimonial_text}"
                         </p>
-                    </div>
+                    </article>
                 ))}
             </div>
         </section>

@@ -169,11 +169,11 @@ export default function BookingCalendar(props: Props) {
   }, [service, effectiveValue, durationHours, availability]);
 
   return (
-    <div className="rounded-xl border p-4">
+    <div className="rounded-xl border border-zinc-300 bg-white p-4 text-zinc-900 shadow-sm">
       <div className="mb-3 flex items-center justify-between">
         <button
           type="button"
-          className="rounded-md border px-3 py-1 hover:bg-zinc-800 text-gold-400 border-gold-900/50"
+          className="rounded-md border border-zinc-300 px-3 py-1 text-zinc-900 hover:bg-zinc-100"
           onClick={() => setCursor((d) => new Date(d.getFullYear(), d.getMonth() - 1, 1))}
           aria-label="Poprzedni miesiąc"
         >
@@ -184,7 +184,7 @@ export default function BookingCalendar(props: Props) {
         </div>
         <button
           type="button"
-          className="rounded-md border px-3 py-1 hover:bg-zinc-800 text-gold-400 border-gold-900/50"
+          className="rounded-md border border-zinc-300 px-3 py-1 text-zinc-900 hover:bg-zinc-100"
           onClick={() => setCursor((d) => new Date(d.getFullYear(), d.getMonth() + 1, 1))}
           aria-label="Następny miesiąc"
         >
@@ -194,7 +194,7 @@ export default function BookingCalendar(props: Props) {
 
       <div className="grid grid-cols-7 gap-1 text-center text-sm">
         {["Pn", "Wt", "Śr", "Cz", "Pt", "So", "Nd"].map((d) => (
-          <div key={d} className="py-1 text-zinc-500">
+          <div key={d} className="py-1 text-zinc-600">
             {d}
           </div>
         ))}
@@ -212,8 +212,10 @@ export default function BookingCalendar(props: Props) {
               disabled={disabled}
               className={[
                 "h-9 rounded-md border",
-                isSelected ? "bg-gold-500 text-black border-gold-500 font-bold shadow-lg shadow-gold-500/20" : "hover:bg-zinc-800 border-zinc-700",
-                disabled ? "opacity-40 cursor-not-allowed" : "",
+                isSelected
+                  ? "bg-gold-500 text-black border-gold-500 font-bold shadow-lg shadow-gold-500/20"
+                  : "bg-white text-black border-zinc-300 hover:bg-zinc-100",
+                disabled ? "bg-zinc-100 text-zinc-400 cursor-not-allowed" : "",
               ].join(" ")}
               title={
                 disabled
