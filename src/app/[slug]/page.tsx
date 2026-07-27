@@ -88,9 +88,22 @@ export default async function DynamicPage({ params }: PageProps) {
         notFound();
     }
 
-    // Delegate city landing pages to the rich CityLandingPage component
+    // City landing keeps its bespoke editorial layout, while media sections
+    // configured in Admin (gallery / parallax) are passed through to the template.
     if (page!.page_type === 'city_landing') {
-        return CityLandingPage({ params: Promise.resolve({ city: slug.replace('fotograf-', '') }) });
+        let citySections: PageSection[] = [];
+        if (page!.sections) {
+            try {
+                citySections = JSON.parse(page!.sections);
+            } catch (error) {
+                console.error('Failed to parse city landing sections', error);
+            }
+        }
+
+        return CityLandingPage({
+            params: Promise.resolve({ city: slug.replace('fotograf-', '') }),
+            sections: citySections,
+        });
     }
 
     // Redirect B2B pages to their proper path

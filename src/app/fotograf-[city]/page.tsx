@@ -3,6 +3,8 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import CityPhotoStory, { type CityStoryPhoto } from '@/components/CityPhotoStory';
+import ParallaxSection from '@/components/ParallaxSection';
+import type { PageSection } from '@/components/admin/PageBuilder';
 import { getPortfolioCategories } from '@/lib/portfolio';
 
 // ─── City Data with FAQs ─────────────────────────────────────────
@@ -484,6 +486,7 @@ export async function generateStaticParams() {
 // ─── Metadata ────────────────────────────────────────────────────
 interface PageProps {
     params: Promise<{ city: string }>;
+    sections?: PageSection[];
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -519,8 +522,97 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     };
 }
 
+function CityManagedMedia({ sections, city }: { sections: PageSection[]; city: string }) {
+    return (
+        <div className="bg-[#f4f1eb]">
+            {sections.map((section) => {
+                const data = { ...section, ...(section.data || {}) } as PageSection & Record<string, any>;
+
+                if (section.type === 'hero_parallax' || section.type === 'parallax') {
+                    const image = data.image || data.imageSrc;
+                    if (!image) return null;
+
+                    return (
+                        <ParallaxSection
+                            key={section.id}
+                            image={image}
+                            title={data.title || ''}
+                            height="min-h-[56svh] md:min-h-[72vh]"
+                            fontFamily="serif"
+                            textAnimation={data.textAnimation || 'fade'}
+                        />
+                    );
+                }
+
+                if (section.type === 'gallery') {
+                    const images = (data.images || []).filter(Boolean);
+                    if (!images.length) return null;
+
+                    return (
+                        <section key={section.id} className="px-5 py-14 sm:px-10 md:py-20">
+                            <div className="mx-auto max-w-7xl">
+                                {data.title && (
+                                    <h2 className="mb-9 max-w-3xl font-serif text-3xl font-medium leading-tight tracking-[-0.025em] text-[#25221f] sm:text-4xl">
+                                        {data.title}
+                                    </h2>
+                                )}
+                                <div className="grid grid-cols-2 gap-2.5 md:grid-cols-3 md:gap-4">
+                                    {images.map((image: string, imageIndex: number) => (
+                                        <figure
+                                            key={`${section.id}-${imageIndex}`}
+                                            className={`relative overflow-hidden bg-[#e8e2d9] ${
+                                                imageIndex % 5 === 0 ? 'col-span-2 aspect-[16/10] md:col-span-2' : 'aspect-[4/5]'
+                                            }`}
+                                        >
+                                            <Image
+                                                src={image}
+                                                alt={`Fotografia z sesji w ${city} — kadr ${imageIndex + 1}`}
+                                                fill
+                                                sizes={imageIndex % 5 === 0 ? '(max-width: 768px) 100vw, 66vw' : '(max-width: 768px) 50vw, 33vw'}
+                                                className="object-cover transition-transform duration-700 hover:scale-[1.025]"
+                                            />
+                                        </figure>
+                                    ))}
+                                </div>
+                            </div>
+                        </section>
+                    );
+                }
+
+                if (section.type === 'mini_gallery') {
+                    const items = (data.mini_gallery_items || []).filter((item: any) => item?.image);
+                    if (!items.length) return null;
+
+                    return (
+                        <section key={section.id} className="px-5 py-14 sm:px-10 md:py-20">
+                            <div className="mx-auto grid max-w-7xl grid-cols-2 gap-3 md:grid-cols-4 md:gap-5">
+                                {items.map((item: any, imageIndex: number) => (
+                                    <figure key={item.id || imageIndex} className="group">
+                                        <div className="relative aspect-[4/5] overflow-hidden bg-[#e8e2d9]">
+                                            <Image
+                                                src={item.image}
+                                                alt={item.title || `Sesja fotograficzna w ${city}`}
+                                                fill
+                                                sizes="(max-width: 768px) 50vw, 25vw"
+                                                className="object-cover transition-transform duration-700 group-hover:scale-[1.025]"
+                                            />
+                                        </div>
+                                        {item.title && <figcaption className="mt-3 font-serif text-lg text-[#35302b]">{item.title}</figcaption>}
+                                    </figure>
+                                ))}
+                            </div>
+                        </section>
+                    );
+                }
+
+                return null;
+            })}
+        </div>
+    );
+}
+
 // ─── Page Component ──────────────────────────────────────────────
-export default async function CityLandingPage({ params }: PageProps) {
+export default async function CityLandingPage({ params, sections = [] }: PageProps) {
     const { city: citySlug } = await params;
     const key = getCityKey(citySlug);
     if (!key) notFound();
@@ -700,8 +792,12 @@ export default async function CityLandingPage({ params }: PageProps) {
         ],
     };
 
+    const managedMediaSections = sections.filter(section =>
+        ['hero_parallax', 'parallax', 'gallery', 'mini_gallery'].includes(section.type)
+    );
+
     return (
-        <main className="min-h-screen bg-[#f4f1eb] text-[#25221f] selection:bg-[#b6a894] selection:text-white">
+        <main className="min-h-screen bg-[#f4f1eb] font-sans text-[#25221f] selection:bg-[#b6a894] selection:text-white">
             <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
             <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessSchema) }} />
             <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
@@ -718,7 +814,7 @@ export default async function CityLandingPage({ params }: PageProps) {
                             <p className="mb-5 text-xs font-semibold uppercase tracking-[0.32em] text-[#8d7f6d]">
                                 Przemysław Właśniewski · fotografia
                             </p>
-                            <h1 className="font-display text-5xl font-medium leading-[0.98] tracking-[-0.025em] text-[#201e1b] sm:text-6xl xl:text-7xl">
+                            <h1 className="font-serif text-[2.6rem] font-medium leading-[1.02] tracking-[-0.025em] text-[#201e1b] sm:text-6xl xl:text-7xl">
                                 {data.h1}
                             </h1>
                             <div className="mt-8 space-y-5 text-lg leading-relaxed text-[#514b44]">
@@ -766,7 +862,7 @@ export default async function CityLandingPage({ params }: PageProps) {
                     <div className="grid gap-10 lg:grid-cols-[0.75fr_1.25fr] lg:gap-20">
                         <div>
                             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#8d7f6d]">Oferta w {data.city}</p>
-                            <h2 className="mt-4 font-display text-4xl font-medium leading-tight text-[#25221f] md:text-5xl">
+                            <h2 className="mt-4 font-serif text-3xl font-medium leading-tight text-[#25221f] md:text-5xl">
                                 Wybierz zakres, który pasuje do Waszego dnia
                             </h2>
                             <p className="mt-6 max-w-md leading-relaxed text-[#6c655d]">
@@ -785,7 +881,7 @@ export default async function CityLandingPage({ params }: PageProps) {
                                     className="group flex min-h-64 flex-col bg-[#faf8f4] p-7 transition hover:bg-white"
                                 >
                                     <span className="text-xs tracking-[0.2em] text-[#918577]">0{index + 1}</span>
-                                    <h3 className="mt-8 font-display text-2xl font-medium">{item.title}</h3>
+                                    <h3 className="mt-8 font-serif text-2xl font-medium">{item.title}</h3>
                                     <p className="mt-3 text-sm leading-relaxed text-[#716a62]">{item.text}</p>
                                     <div className="mt-auto flex items-end justify-between gap-3 pt-8">
                                         <span className="font-semibold text-[#413c36]">{item.price}</span>
@@ -798,7 +894,11 @@ export default async function CityLandingPage({ params }: PageProps) {
                 </div>
             </section>
 
-            <CityPhotoStory images={cityGalleryImages} city={data.city} />
+            {managedMediaSections.length > 0 ? (
+                <CityManagedMedia sections={managedMediaSections} city={data.city} />
+            ) : (
+                <CityPhotoStory images={cityGalleryImages} city={data.city} />
+            )}
 
             <section className="border-y border-[#d9d2c8] bg-[#e9e4dc] px-6 py-20 sm:px-10 lg:py-28">
                 <div className="mx-auto max-w-6xl">
@@ -806,7 +906,7 @@ export default async function CityLandingPage({ params }: PageProps) {
                         {data.sections.map((section, index) => (
                             <article key={section.title} className="bg-[#f7f4ef] p-8 md:p-10">
                                 <span className="text-xs tracking-[0.22em] text-[#948777]">0{index + 1}</span>
-                                <h2 className="mt-6 font-display text-3xl font-medium leading-tight text-[#26231f]">
+                                <h2 className="mt-6 font-serif text-[1.8rem] font-medium leading-tight text-[#26231f]">
                                     {section.title}
                                 </h2>
                                 <div className="mt-6 space-y-5 leading-relaxed text-[#665f57]">
@@ -824,14 +924,14 @@ export default async function CityLandingPage({ params }: PageProps) {
                 <div className="mx-auto max-w-6xl">
                     <div className="mx-auto max-w-3xl text-center">
                         <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#8d7f6d]">Zakres fotografii</p>
-                        <h2 className="mt-4 font-display text-4xl font-medium md:text-5xl">Fotografuję ludzi, nie schematy</h2>
+                        <h2 className="mt-4 font-serif text-3xl font-medium md:text-5xl">Fotografuję ludzi, nie schematy</h2>
                         <p className="mt-5 leading-relaxed text-[#6c655d]">Każde spotkanie ma inny rytm. Zakres ustalamy jasno, a sposób pracy dopasowuję do Was i miejsca.</p>
                     </div>
                     <div className="mt-14 grid gap-5 md:grid-cols-2">
                         {data.services.map((service, index) => (
                             <article key={service.name} className="rounded-2xl border border-[#d8d1c7] bg-[#fbfaf7] p-7 md:p-8">
                                 <span className="text-xs tracking-[0.2em] text-[#948777]">0{index + 1}</span>
-                                <h3 className="mt-5 font-display text-2xl font-medium">{service.name}</h3>
+                                <h3 className="mt-5 font-serif text-2xl font-medium">{service.name}</h3>
                                 <p className="mt-3 leading-relaxed text-[#6c655d]">{service.description}</p>
                             </article>
                         ))}
@@ -842,7 +942,7 @@ export default async function CityLandingPage({ params }: PageProps) {
             <section className="border-y border-[#d9d2c8] bg-white/55 px-6 py-20 sm:px-10 lg:py-28">
                 <div className="mx-auto max-w-4xl">
                     <p className="text-center text-xs font-semibold uppercase tracking-[0.28em] text-[#8d7f6d]">Przed rezerwacją</p>
-                    <h2 className="mt-4 text-center font-display text-4xl font-medium md:text-5xl">Pytania, które pojawiają się najczęściej</h2>
+                    <h2 className="mt-4 text-center font-serif text-3xl font-medium md:text-5xl">Pytania, które pojawiają się najczęściej</h2>
                     <div className="mt-12 divide-y divide-[#d7d0c6] border-y border-[#d7d0c6]">
                         {data.faqs.map((faq) => (
                             <details key={faq.question} className="group">
@@ -860,7 +960,7 @@ export default async function CityLandingPage({ params }: PageProps) {
             <section className="bg-[#26231f] px-6 py-20 text-[#f7f4ef] sm:px-10 lg:py-28">
                 <div className="mx-auto max-w-5xl text-center">
                     <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#c4b8a8]">Następny krok</p>
-                    <h2 className="mx-auto mt-5 max-w-3xl font-display text-4xl font-medium leading-tight md:text-6xl">
+                    <h2 className="mx-auto mt-5 max-w-3xl font-serif text-3xl font-medium leading-tight md:text-6xl">
                         Zobaczcie zakres, cenę i wybierzcie termin
                     </h2>
                     <p className="mx-auto mt-6 max-w-2xl leading-relaxed text-[#cfc8bf]">
@@ -886,7 +986,7 @@ export default async function CityLandingPage({ params }: PageProps) {
 
             <section className="border-t border-[#d9d2c8] px-6 py-14 sm:px-10">
                 <div className="mx-auto max-w-5xl">
-                    <h2 className="text-center font-display text-2xl font-medium">Fotografuję również w pobliżu</h2>
+                    <h2 className="text-center font-serif text-2xl font-medium">Fotografuję również w pobliżu</h2>
                     <div className="mt-7 flex flex-wrap justify-center gap-2">
                         {data.nearbyLinks.map((link) => (
                             <Link
