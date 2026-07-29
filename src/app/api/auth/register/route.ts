@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { hashPassword, generateToken } from '@/lib/auth/jwt';
+import { grantNewsletterConsent } from '@/lib/newsletter';
 
 export async function POST(req: NextRequest) {
     try {
@@ -52,6 +53,14 @@ export async function POST(req: NextRequest) {
                 // Admin must explicitly grant offers/contracts access.
             } as any,
         });
+
+        if (accept_marketing === true) {
+            await grantNewsletterConsent(prisma, {
+                email: user.email,
+                source: 'account-registration',
+                request: req,
+            });
+        }
 
         // Set default permissions for self-registered user (no offers/contracts by default)
         const defaultPerms = JSON.stringify({ galleries: true, bookings: true, gift_cards: true, offers: false, contracts: false });

@@ -3,14 +3,18 @@ import prisma from '@/lib/db/prisma';
 import { logSystem } from '@/lib/logger';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
+import { grantNewsletterConsent } from '@/lib/newsletter';
 
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { items, customer, totalAmount, createAccount, password, fm_voucher_code, payment_plan } = body;
+        const { items, customer, totalAmount, createAccount, password, marketingConsent, fm_voucher_code, payment_plan } = body;
 
         if (!items || !customer || items.length === 0) {
             return NextResponse.json({ ok: false, message: "Brak danych zamówienia" }, { status: 400 });
+        }
+        if (marketingConsent !== undefined && typeof marketingConsent !== 'boolean') {
+            return NextResponse.json({ ok: false, message: "Nieprawidłowa wartość zgody marketingowej" }, { status: 400 });
         }
 
         const clientIp = (request.headers.get("x-forwarded-for") ?? "127.0.0.1").split(",")[0];
@@ -77,11 +81,26 @@ export async function POST(request: Request) {
                         name: customer.name,
                         phone: customer.phone,
                         role: 'CLIENT',
+                        marketing_consent_at: marketingConsent === true ? new Date() : null,
                     }
                 });
                 userId = newUser.id;
             } else {
                 userId = existingUser.id;
+            }
+        }
+
+        if (marketingConsent === true) {
+            await grantNewsletterConsent(prisma, {
+                email: customer.email,
+                source: 'checkout',
+                request,
+            });
+            if (userId) {
+                await prisma.user.update({
+                    where: { id: userId },
+                    data: { marketing_consent_at: new Date() },
+                });
             }
         }
 

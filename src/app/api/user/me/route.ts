@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
         }
 
         // Parallel independent queries for core user data
-        const [giftCards, orders, bookings, offers, photoOrders] = await Promise.all([
+        const [giftCards, orders, bookings, offers, photoOrders, newsletterSubscription] = await Promise.all([
             prisma.giftCard.findMany({ where: { owner_id: userResult.id } }).catch(() => []),
             prisma.giftCardOrder.findMany({
                 where: { user_id: userResult.id },
@@ -70,7 +70,11 @@ export async function GET(req: NextRequest) {
                         select: { client_name: true, access_code: true }
                     }
                 }
-            }).catch(() => [])
+            }).catch(() => []),
+            prisma.emailSubscriber.findUnique({
+                where: { email: userResult.email },
+                select: { is_active: true },
+            }).catch(() => null)
         ]);
 
         // Ultra-resilient contract fetching: 
@@ -135,7 +139,10 @@ export async function GET(req: NextRequest) {
                 id: userResult.id,
                 email: userResult.email,
                 name: userResult.name,
+                phone: userResult.phone,
                 role: userResult.role,
+                marketing_consent_at: userResult.marketing_consent_at,
+                newsletter_active: newsletterSubscription?.is_active === true,
                 permissions: (userResult as any).permissions ?? null,
                 gift_cards: giftCards,
                 orders: orders,

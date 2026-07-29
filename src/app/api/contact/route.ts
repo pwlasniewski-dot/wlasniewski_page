@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/db/prisma";
 import { getAdminEmail, sendEmail } from "@/lib/email/sender";
 import { logSystem } from "@/lib/logger";
+import { grantNewsletterConsent } from "@/lib/newsletter";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -41,6 +42,7 @@ export async function POST(request: Request) {
         const leadSource = optionalString(body.lead_source, 120);
         const leadCampaign = optionalString(body.lead_campaign, 120);
         const formContext = optionalString(body.form_context, 20);
+        const marketingConsent = body.marketing_consent === true;
 
         if ([name, email, message, company, phone, serviceType, leadSource, leadCampaign, formContext].includes(null)) {
             return NextResponse.json({ error: "Nieprawidłowe dane formularza" }, { status: 400 });
@@ -62,6 +64,12 @@ export async function POST(request: Request) {
         if (email && !EMAIL_PATTERN.test(email)) {
             return NextResponse.json({ error: "Nieprawidłowy adres email" }, { status: 400 });
         }
+        if (marketingConsent && !email) {
+            return NextResponse.json(
+                { error: "Adres email jest wymagany do zapisu na newsletter" },
+                { status: 400 },
+            );
+        }
 
         const isB2B = formContext === "b2b";
         const source = leadSource || (isB2B ? "b2b-contact" : "website-contact");
@@ -71,17 +79,29 @@ export async function POST(request: Request) {
         ].filter(Boolean).join("\n") || null;
 
         // Najpierw zapisujemy lead. Awaria SMTP nie może powodować utraty klienta.
-        const inquiry = await prisma.inquiry.create({
-            data: {
-                name,
-                email: email || "",
-                phone: phone || null,
-                message,
-                session_type: serviceType || null,
-                source,
-                notes,
-                status: "new",
-            },
+        const inquiry = await prisma.$transaction(async transaction => {
+            const savedInquiry = await transaction.inquiry.create({
+                data: {
+                    name,
+                    email: email || "",
+                    phone: phone || null,
+                    message,
+                    session_type: serviceType || null,
+                    source,
+                    notes,
+                    status: "new",
+                },
+            });
+
+            if (marketingConsent && email) {
+                await grantNewsletterConsent(transaction, {
+                    email,
+                    source: `${source}-form`,
+                    request,
+                });
+            }
+
+            return savedInquiry;
         });
 
         const adminEmail = await getAdminEmail();
@@ -101,6 +121,7 @@ export async function POST(request: Request) {
             serviceType: escapeHtml(serviceType),
             source: escapeHtml(source),
             campaign: escapeHtml(leadCampaign),
+            marketingConsent: marketingConsent ? "tak" : "nie",
         };
 
         try {
@@ -116,6 +137,7 @@ ${company ? `<p><strong>Firma:</strong> ${safe.company}</p>` : ""}
 ${phone ? `<p><strong>Telefon:</strong> ${safe.phone}</p>` : ""}
 ${serviceType ? `<p><strong>Usługa:</strong> ${safe.serviceType}</p>` : ""}
 <p><strong>Źródło:</strong> ${safe.source}${leadCampaign && leadCampaign !== "none" ? ` (${safe.campaign})` : ""}</p>
+<p><strong>Newsletter:</strong> ${safe.marketingConsent}</p>
 <hr />
 <p><strong>Wiadomość:</strong></p>
 <blockquote style="border-left:2px solid #ccc;padding-left:10px;margin-left:0;white-space:pre-wrap">

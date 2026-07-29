@@ -1,5 +1,18 @@
 # PROJECT_HISTORIA & VADEMECUM STABILNOŚCI
 
+## [2026-07-29] PEŁNY AUDYT + NEWSLETTER + DOKUMENTY JAKO BRAMKA
+
+- Przebudowano `ARCHITECTURE.md` i `FUNCTIONAL_SPECIFICATION.md` na zgodny z kodem punkt wejścia i wyjścia każdej zmiany.
+- Dodano `docs/AUDIT_2026-07-29.md` oraz obowiązkową checklistę PR.
+- Zidentyfikowano: Health Score 86, nieprawidłowy URL sitemap, dynamiczny publiczny HTML/no-store, zimne odpowiedzi 4–10 s, przejściowe 502, dług typów i 18 podatności produkcyjnych.
+- Formularze, rejestracja, checkout i konto otrzymały oddzielną zgodę newsletterową; CRM pokazuje stan; klient może ją wycofać.
+- `EmailSubscriber` otrzymał wersję/źródło/dowód zgody, token i czas rezygnacji. Wymagana migracja `20260729193000_add_newsletter_consent_evidence`.
+- Blog listy i wpisu renderuje się serwerowo; dodano JSON-LD, jeden H1 i `next/image`.
+- Sitemap koduje dynamiczne segmenty i nie publikuje stron B2B w mapie B2C.
+- Prisma validate/generate: PASS. Pełny TypeScript: FAIL z powodu istniejącego długu opisanego w audycie.
+- Build: PASS (kod 0, atrapa `DATABASE_URL`); wcześniejsze ostrzeżenia `archiver`, typy/lint pomijane przez konfigurację.
+- Status: kod gotowy do preview; wdrożenie produkcyjne oczekuje na migrację i smoke test.
+
 ## [2026-07-29] CRM LEADÓW + SEO I WYDAJNOŚĆ
 
 - Formularze zapisują każde poprawne zapytanie w `Inquiry` przed próbą wysyłki e-maila, więc awaria SMTP nie powoduje utraty leada.

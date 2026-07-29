@@ -11,7 +11,8 @@ export default function ContactForm() {
     const [formData, setFormData] = useState({
         name: '',
         email: '',
-        message: ''
+        message: '',
+        marketing_consent: false
     });
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -41,7 +42,7 @@ export default function ContactForm() {
             }
 
             setStatus('success');
-            setFormData({ name: '', email: '', message: '' });
+            setFormData({ name: '', email: '', message: '', marketing_consent: false });
 
             // Event snippet for Przesłanie formularza kontaktowego conversion page
             if (typeof window !== 'undefined' && (window as any).gtag) {
@@ -116,6 +117,20 @@ export default function ContactForm() {
                         placeholder="O co chcesz zapytać?"
                     />
                 </div>
+
+                <label className="mb-8 flex items-start gap-3 text-sm text-zinc-400">
+                    <input
+                        type="checkbox"
+                        checked={formData.marketing_consent}
+                        onChange={e => setFormData({ ...formData, marketing_consent: e.target.checked })}
+                        className="mt-1 h-4 w-4 accent-gold-400"
+                    />
+                    <span>
+                        Chcę otrzymywać e-mailowo inspiracje, oferty i informacje o wolnych terminach.
+                        Zgoda jest dobrowolna i mogę ją wycofać w każdej chwili.{' '}
+                        <a href="/polityka-prywatnosci" className="text-gold-400 hover:underline">Polityka prywatności</a>.
+                    </span>
+                </label>
 
                 <div className="text-center">
                     <button

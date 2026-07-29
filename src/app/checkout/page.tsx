@@ -171,6 +171,7 @@ export default function CheckoutPage() {
                     totalAmount: amountNow,
                     createAccount,
                     password: createAccount ? password : null,
+                    marketingConsent: formData.agreements.marketing,
                     fm_voucher_code: voucherInfo?.valid ? voucherCode.trim().toUpperCase() : null,
                     payment_plan: (paymentPlan === 'SPLIT' && hasOnlyOneBooking && splitPaymentAvailable) ? 'SPLIT' : 'FULL',
                 })

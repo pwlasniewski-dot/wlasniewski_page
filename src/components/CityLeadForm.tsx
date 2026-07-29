@@ -26,6 +26,7 @@ export default function CityLeadForm({ city, citySlug }: CityLeadFormProps) {
         email: '',
         serviceType: 'wizerunek-biznes',
         message: '',
+        marketingConsent: false,
     });
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -45,11 +46,12 @@ export default function CityLeadForm({ city, citySlug }: CityLeadFormProps) {
                     serviceType: data.serviceType,
                     lead_source: `landing-${citySlug}`,
                     lead_campaign: 'city-page-form',
+                    marketing_consent: data.marketingConsent,
                 }),
             });
             if (!res.ok) throw new Error('fail');
             setStatus('success');
-            setData({ name: '', phone: '', email: '', serviceType: 'wizerunek-biznes', message: '' });
+            setData({ name: '', phone: '', email: '', serviceType: 'wizerunek-biznes', message: '', marketingConsent: false });
             if (typeof window !== 'undefined' && (window as any).gtag) {
                 (window as any).gtag('event', 'conversion', { send_to: 'AW-17548893646/mNauCJy3h-YbEM67-69B' });
                 (window as any).gtag('event', 'generate_lead', { city: citySlug, service: data.serviceType });
@@ -144,8 +146,24 @@ export default function CityLeadForm({ city, citySlug }: CityLeadFormProps) {
                 </div>
 
                 <p className="text-xs text-zinc-500 mb-4">
-                    Podaj telefon <strong>lub</strong> email — wystarczy jedno. Nie wysyłam spamu, nie udostępniam danych.
+                    Podaj telefon <strong>lub</strong> email — wystarczy jedno. Dane wykorzystam do obsługi tego zapytania.
                 </p>
+
+                <label className={`mb-5 flex items-start gap-3 text-xs ${data.email ? 'text-zinc-400' : 'text-zinc-600'}`}>
+                    <input
+                        type="checkbox"
+                        checked={data.marketingConsent}
+                        disabled={!data.email}
+                        onChange={e => setData({ ...data, marketingConsent: e.target.checked })}
+                        className="mt-0.5 h-4 w-4 accent-amber-400 disabled:opacity-40"
+                    />
+                    <span>
+                        Chcę otrzymywać e-mailowo inspiracje, oferty i informacje o wolnych terminach.
+                        Zgoda jest dobrowolna i możliwa do wycofania.{' '}
+                        {!data.email && 'Podaj e-mail, aby ją zaznaczyć. '}
+                        <a href="/polityka-prywatnosci" className="text-amber-400 hover:underline">Polityka prywatności</a>.
+                    </span>
+                </label>
 
                 <button
                     type="submit"
