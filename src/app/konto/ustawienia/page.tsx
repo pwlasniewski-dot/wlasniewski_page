@@ -13,7 +13,8 @@ import {
     Save,
     ShieldCheck,
     AlertCircle,
-    CheckCircle2
+    CheckCircle2,
+    Newspaper
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -29,7 +30,8 @@ export default function ProfileSettingsPage() {
         phone: '',
         currentPassword: '',
         newPassword: '',
-        confirmPassword: ''
+        confirmPassword: '',
+        marketingConsent: false
     });
 
     useEffect(() => {
@@ -43,7 +45,8 @@ export default function ProfileSettingsPage() {
                 ...prev,
                 name: user.name || '',
                 email: user.email || '',
-                phone: user.phone || ''
+                phone: user.phone || '',
+                marketingConsent: user.newsletter_active === true || Boolean(user.marketing_consent_at)
             }));
         }
     }, [user, token, authLoading, router]);
@@ -175,6 +178,29 @@ export default function ProfileSettingsPage() {
                                 placeholder="jan@kowalski.pl"
                             />
                         </div>
+                    </section>
+
+                    <section className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-8 space-y-4">
+                        <h2 className="text-lg font-bold flex items-center gap-2">
+                            <Newspaper className="w-5 h-5 text-gold-500" />
+                            Newsletter i oferty
+                        </h2>
+                        <label className="flex items-start gap-3 text-sm text-zinc-300">
+                            <input
+                                type="checkbox"
+                                checked={formData.marketingConsent}
+                                onChange={e => setFormData({ ...formData, marketingConsent: e.target.checked })}
+                                className="mt-1 h-4 w-4 accent-gold-500"
+                            />
+                            <span>
+                                Chcę otrzymywać e-mailowo inspiracje, oferty i informacje o wolnych terminach.
+                                Zgoda jest dobrowolna. Odznaczenie pola i zapisanie zmian wycofa zgodę.
+                            </span>
+                        </label>
+                        <p className="text-xs text-zinc-500">
+                            Wycofanie zgody nie wpływa na wiadomości niezbędne do realizacji rezerwacji lub zamówienia.{' '}
+                            <Link href="/polityka-prywatnosci" className="text-gold-500 hover:underline">Dowiedz się więcej</Link>.
+                        </p>
                     </section>
 
                     {/* Password Change */}

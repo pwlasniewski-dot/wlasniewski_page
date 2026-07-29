@@ -154,6 +154,27 @@ export default async function PolitykaPrywatnosciPage() {
                         </div>
                     </>
                 )}
+
+                <section className="mt-12 rounded-2xl border border-gold-400/25 bg-zinc-900 p-6 text-zinc-300 md:p-8">
+                    <h2 className="mb-4 font-display text-2xl font-semibold text-white">
+                        Newsletter i komunikacja marketingowa
+                    </h2>
+                    <p className="mb-4">
+                        Newsletter wysyłamy wyłącznie po zaznaczeniu oddzielnej, dobrowolnej zgody.
+                        Brak zgody nie ogranicza możliwości wysłania zapytania, rezerwacji ani zakupu.
+                    </p>
+                    <ul className="mb-4 list-disc space-y-2 pl-6">
+                        <li>Zakres danych: adres e-mail oraz techniczny dowód udzielenia zgody.</li>
+                        <li>Cel: inspiracje fotograficzne, informacje o ofertach i wolnych terminach.</li>
+                        <li>Podstawa: zgoda — art. 6 ust. 1 lit. a RODO.</li>
+                        <li>Okres: do chwili wycofania zgody, a dowód jej historii zgodnie z terminami obrony roszczeń.</li>
+                    </ul>
+                    <p>
+                        Zgodę można wycofać w ustawieniach konta lub przez odnośnik „Wypisz mnie”
+                        w wiadomości. Wycofanie zgody nie wpływa na zgodność wcześniejszego przetwarzania
+                        ani na wiadomości transakcyjne dotyczące zamówień, rezerwacji i umów.
+                    </p>
+                </section>
             </div>
         </main>
     );

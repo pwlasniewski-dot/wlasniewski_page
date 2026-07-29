@@ -7,6 +7,8 @@ interface User {
     email: string;
     name?: string;
     phone?: string;
+    marketing_consent_at?: string | null;
+    newsletter_active?: boolean;
     role: 'CLIENT' | 'PHOTOGRAPHER' | 'ADMIN';
 }
 

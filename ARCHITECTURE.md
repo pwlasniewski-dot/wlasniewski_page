@@ -1,249 +1,288 @@
-# ARCHITEKTURA SYSTEMU - wlasniewski.pl
+# Architektura platformy wlasniewski.pl
 
-Ten dokument stanowi techniczny blueprint platformy fotograficznej wlasniewski.pl. Jest on przeznaczony dla senior deweloperów i architektów systemowych, opisując strukturę, wzorce projektowe oraz krytyczne protokoły bezpieczeństwa.
+Stan dokumentu: 2026-07-29
 
-## Aktualizacja 2026-07-29 — trwałość leadów i warstwa publiczna
+Właściciel biznesowy: FOTO-DRON Przemysław Właśniewski
 
-- `POST /api/contact`: walidacja → zapis `Inquiry` → próba powiadomienia SMTP.
-- `PATCH /api/inquiries`: chroniona zmiana statusu z zamkniętą listą wartości.
-- Ustawienia analityki korzystają z `unstable_cache` z rewalidacją 3600 s.
-- `next/image` negocjuje AVIF/WebP, a CSS Swipera jest bundlowany lokalnie.
+Gałąź bazowa audytu: `main` / `c0fd4e5`
 
----
+Powiązane dokumenty: `FUNCTIONAL_SPECIFICATION.md`, `docs/AUDIT_2026-07-29.md`, `PROJECT_HISTORIA.md`, `task.md`
 
-## 1. System Overview & Tech Stack
+## 1. Kontrakt dokumentacyjny — wejście i wyjście każdej zmiany
 
-Platforma jest nowoczesną aplikacją webową zbudowaną w architekturze **Serverless First**, kładącą nacisk na wydajność (Core Web Vitals) oraz stabilność danych.
+Te dokumenty są częścią produktu, a nie opisem dodatkowym.
 
-### 1.1. Core Stack
-*   **Framework**: [Next.js 15 (App Router)](https://nextjs.org/) - wykorzystanie Server Components (RSC) dla optymalizacji LCP.
-*   **Język**: TypeScript (Strict Mode) - gwarancja bezpieczeństwa typów w całym przepływie danych.
-*   **Baza Danych**: PostgreSQL (Neon.tech) - relacyjna baza danych z obsługą Serverless Driver.
-*   **ORM**: Prisma - warstwa abstrakcji danych z silnym typowaniem modeli.
-*   **Storage**: AWS S3 - magazyn binarny dla mediów wysokiej rozdzielczości.
-*   **UI/UX**: Tailwind CSS + Framer Motion - system mikro-animacji i responsywnego stylowania.
-*   **Płatności**: Integracja REST API z Przelewy24 oraz PayU (obsługa webhooków).
+Przed rozpoczęciem zmiany należy:
 
----
+1. przeczytać `ARCHITECTURE.md` i `FUNCTIONAL_SPECIFICATION.md`;
+2. sprawdzić `task.md`, ostatni wpis w `PROJECT_HISTORIA.md` i właściwy raport audytu;
+3. wskazać dotknięte domeny, modele, endpointy, integracje, SEO, CRM, wydajność i prywatność;
+4. ustalić sposób wdrożenia, migracji, testu i wycofania.
 
-## 2. Architektura Wysokiego Poziomu (High-Level Design)
+Przed zakończeniem zmiany należy:
 
-```mermaid
-graph TD
-    User((Klient)) -- HTTP/S --> FE[Frontend: Next.js App Router]
-    FE -- Server Components --> DB[(PostgreSQL: Neon.tech)]
-    FE -- API Routes --> DB
-    FE -- Authentication --> JWT[JWT / LocalStorage]
-    FE -- Storage Access --> S3[AWS S3 Cloud Storage]
-    
-    subgraph "External Services"
-        P24[Przelewy24]
-        PayU[PayU Gateway]
-        SMTP[Mail Server: wlasniewski.pl]
-    end
-    
-    FE -- Payments --> P24
-    FE -- Payments --> PayU
+1. zaktualizować architekturę, jeżeli zmieniły się zależności, dane, bezpieczeństwo lub wdrożenie;
+2. zaktualizować specyfikację, jeżeli zmieniło się zachowanie użytkownika lub administratora;
+3. dopisać wykonane testy, migracje, ryzyka i wynik wdrożenia do historii oraz `task.md`;
+4. przejść checklistę `.github/pull_request_template.md`;
+5. nie używać określeń „bezpieczne”, „100%” ani „production-ready” bez aktualnego dowodu.
 
-    FE -- Notifications --> SMTP
+Każdy wpis zmiany powinien podać: datę, zakres, pliki, modele, endpointy, testy, wpływ na SEO/CRM/wydajność, migrację, wdrożenie i rollback.
+
+## 2. Cel i granice systemu
+
+Jedno repozytorium obsługuje:
+
+- serwis B2C fotografa na `wlasniewski.pl`;
+- serwis B2B na `aeroanaliza.pl`;
+- publiczny lejek sprzedażowy i rezerwacje;
+- konto oraz portal klienta;
+- panel administracyjny i CRM;
+- galerie, oferty, umowy, płatności, produkty i kampanie;
+- treści CMS, blog, portfolio oraz strony lokalnego SEO.
+
+System nie jest obecnie bezwarunkowo „w pełni zoptymalizowany”. Audyt wykazał działający szeroki produkt, ale także dług typów, zależności, cache, uwierzytelniania i wielkości modułów. Szczegóły są w raporcie audytu.
+
+## 3. Stos technologiczny
+
+- Next.js 15.5, App Router, React 18, TypeScript.
+- Tailwind CSS, Framer Motion i komponenty React.
+- PostgreSQL, Prisma 5.22; schemat ma 81 modeli.
+- Netlify i `@netlify/plugin-nextjs`.
+- AWS S3 dla mediów.
+- PayU jako aktywny tor płatności w checkout; w schemacie pozostają pola legacy P24/Stripe.
+- SMTP/Nodemailer dla wiadomości.
+- Google Analytics, Google Tag Manager i Meta Pixel konfigurowane z panelu.
+- Playwright dla E2E; pełna bramka testowa nie obejmuje jeszcze wszystkich ścieżek.
+
+Wymagany runtime: Node.js 20 lub nowszy.
+
+## 4. Topologia i routing domen
+
+```text
+Internet
+  ├─ wlasniewski.pl ─┐
+  └─ aeroanaliza.pl ─┴─ Netlify → Next.js App Router
+                                   ├─ Server Components / HTML
+                                   ├─ Route Handlers / API
+                                   ├─ Prisma → PostgreSQL
+                                   ├─ AWS S3
+                                   ├─ PayU
+                                   └─ SMTP / analityka
 ```
 
-### 2.1. Client Portal Architecture (v3.0 Add-on)
-Architektura serwisu została rozszerzona o bezpieczny portal klienta:
-- **Route**: `${domain}/konto` (Ujednolicony dostęp).
-- **Auth**: Niezależny system logowania dla klientów (User Role: `CLIENT`).
-- **Data Access**: Klient ma dostęp wyłącznie do rekordów (`Offer`, `Contract`, `Booking`, `ClientGallery`) powiązanych z jego `UserId` lub e-mailem.
-- **Interakcja**: Portal wykorzystuje Server Components i API Routes do bezpiecznej komunikacji z klientem.
-- **Safety**: Wszystkie interakcje w dashboardzie (`konto/page.tsx`) są zabezpieczone przed `null pointers` przy dostępie do nieistniejących jeszcze ofert czy umów.
+Root `middleware.ts` rozpoznaje host:
 
----
+- ruch `aeroanaliza.pl` przepisuje wewnętrznie do `/b2b`;
+- panel, API i galerie są wyłączone z tego przepisywania;
+- `wlasniewski.pl` korzysta ze standardowego drzewa B2C;
+- middleware nie uwierzytelnia panelu ani API.
 
-## 3. Kluczowe Wzorce i Protokoły (The "Holy" Principles)
+Bezpieczeństwo tras jest egzekwowane w handlerach API przez `withAuth`, `requireAuth`, weryfikację JWT lub dedykowany mechanizm portalu. Nie wolno opisywać `localStorage` jako mechanizmu ochrony serwera.
 
-Projekt opiera się na trzech autorskich protokołach gwarantujących niezawodność systemu.
+## 5. Warstwy aplikacji
 
-### 3.1. Protokół "Zero Flower" (Dynamic Fallback Strategy)
-Każda podstrona zarządzana przez CMS (tabela `Page`) musi posiadać mechanizm fallbacku. Jeśli rekord w bazie danych zostanie usunięty lub nie zawiera sekcji, `PageRenderer` wstrzykuje statyczną treść awaryjną („Anti-Flower”), zapobiegając renderowaniu pustych stron. Przykładem dynamicznej kontroli UI jest sekcja **Info Band**, gdzie linki "Szczegóły operacyjne" renderowane są warunkowo (tylko gdy zdefiniowano URL).
+### 5.1. Prezentacja
 
-### 3.2. "Holy Logic" (Business Integrity)
-Zbiór reguł krytycznych dla operacji biznesowych:
-*   **Płatności**: Żaden status rezerwacji/zamówienia nie może zostać zmieniony na `confirmed` przed otrzymaniem poprawnego podpisu Webhooka z bramki płatniczej.
-*   **Security**: Wszystkie trasy `/admin/*` są chronione przez autorski Middleware sprawdzający `admin_token` z `localStorage` oraz nagłówki `Authorization`.
+- `src/app`: około 170 stron App Router.
+- `src/components`: 114 komponentów.
+- `PageRenderer` renderuje treść CMS.
+- Publiczne strony powinny preferować Server Components i `next/image`.
+- Interakcje, formularze i rozbudowane edytory pozostają Client Components.
 
-### 3.3. Protokół "Zero Loss" (Data Persistence & Versioning) [UPDATE: 2025-12-30]
-Wdrożono zaawansowany system kopii zapasowych oparty na dwóch skryptach:
-- **`scripts/backup-docs.js`**: Monitoruje zmiany w dokumentacji i tworzy automatyczne backupy w `backups/documentation/` przed każdym buildem.
-- **`scripts/backup-full.ts`**: Eksportuje stan wszystkich 40 tabel bazy danych (Modele Prisma) do sformatowanych plików JSON. Backupy są kategoryzowane czasowo (`backups/[TIMESTAMP]/`), co pozwala na atomowe przywracanie konkretnych punktów w czasie.
-- **`scripts/restore-full.ts`**: Skrypt przywracający, realizujący logikę **TRUNCATE CASCADE** (czyszczenie) oraz **UPSERT** (bezpieczne wstrzykiwanie danych).
-- **Zasada "File vs Folder"**: Backupem jest wyłącznie plik JSON. Kopiowanie folderów jest zabronione.
-- **Holy File**: Referencyjny backup "Holy Backup" znajduje się zawsze w `backups/data/[TIMESTAMP]_HOLY_BACKUP`.
-- **Cel**: Ochrona „świętej treści” (Blog, Portfolio, Ustawienia, B2B) przed destrukcyjnymi operacjami schematu lub awariami dostawcy bazy danych. Służy również jako mechanizm bezpiecznego deployu ("Backup-Before-Push").
+### 5.2. API
 
-### 3.5. Protokół "GDPR Safe Harbor" (Soft Anonymization) [NEW: 2026-01-11]
-W odpowiedzi na wymogi RODO (prawo do bycia zapomnianym) przy jednoczesnym zachowaniu wymogów księgowych, wdrożono hybrydowy system usuwania danych.
-- **Problem**: Tradycyjne `DELETE FROM users` narusza integralność relacyjną zamówień (Gift Cards) i historii rezerwacji, uniemożliwiając raportowanie przychodów.
-- **Rozwiązanie**: Funkcja `anonymizeClient` w API wykonuje "Soft Delete":
-    1. Pola PII (`name`, `email`, `phone`, `recipient_name`, `sender_name`, `message`) są nadpisywane pseudonimami (np. `REMOVED-GDPR`).
-    2. Identyfikator `email` (Unique) zmieniany jest na losowy hash (np. `deleted-uuid@deleted.local`) aby zwolnić adres dla nowej rejestracji.
-    3. Konto otrzymuje flagę `is_active: false`.
-    4. Rekordy w tabelach finansowych (`GiftCardOrder`, `Booking`) pozostają, ale bez danych osobowych.
+- `src/app/api`: około 300 handlerów.
+- Największe domeny: admin, galerie, foto-wyzwanie, Foto-Match, klient, karty podarunkowe i płatności.
+- Publiczne wejścia muszą mieć walidację, limit prób i neutralne komunikaty błędów.
+- Operacja biznesowa ma najpierw utrwalić dane krytyczne, a dopiero potem wykonywać zawodne skutki uboczne, np. SMTP.
 
-### 3.4. "Scope Isolation" (Atomic Integrity) [NEW: 2025-12-25]
-Zasada nienaruszalności modułów niezwiązanych z bieżącym zadaniem. Agent/Deweloper ma obowiązek wykonywania zmian **wyłącznie** w zakresie wskazanym przez USERA. 
-*   **Zakaz Rewritu**: Zabrania się przesyłania całych plików tam, gdzie zmiana dotyczy tylko konkretnej sekcji.
-*   **Zakaz Ingerencji Po Buildzie**: Absolutny zakaz modyfikacji danych produkcyjnych lub konfiguracyjnych wykraczających poza zlecony zakres operacji.
-*   **Verification First**: Każda zmiana w krytycznych plikach (np. `settings/page.tsx`) musi być poprzedzona analizą `view_file`.
+### 5.3. Dane
 
----
+Kluczowe grupy modeli:
 
-## 4. Przepływ Danych (Data Flow Diagrams)
+- tożsamość: `AdminUser`, `User`, role i uprawnienia;
+- sprzedaż: `Inquiry`, `Booking`, `Offer`, `Contract`, `Cart`, zamówienia;
+- marketing: `EmailSubscriber`, `AnalyticsEvent`, kody promocyjne;
+- treści: `Page`, `BlogPost`, `PortfolioSession`, biblioteka mediów;
+- galerie i zdjęcia: galerie klienta/grupowe, zdjęcia i zamówienia;
+- produkty: karty podarunkowe, albumy NPhoto;
+- programy: Foto-Wyzwanie i Foto-Match;
+- konfiguracja i audyt: `Setting`, logi systemowe.
 
+Zmiany produkcyjnego schematu wykonuje się wyłącznie migracją Prisma:
 
-### 4.2. Offer & Contract Flow (Client Portal) [IMPLEMENTED: 2026-02-19]
-Logika biznesowa dokumentów została ujednolicona w ramach v3.0:
-- **Standalone Contracts**: Model `Contract` pozwala na tworzenie dokumentów niezależnych od ofert (`offer_id` is Optional).
-- **Server-Side Placeholder System**: System automatycznie zamienia tagi `{{contractNumber}}`, `{{clientName}}`, `{{currentDate}}` na realne dane podczas:
-    1. Zapisu/Aktualizacji (`POST /api/admin/contracts`)
-    2. Pobierania pojedynczego dokumentu (`GET /api/client/portal/contracts/[id]`)
-    3. Pobierania profilu użytkownika (`GET /api/user/me`)
-- **Mandatory Signature Logic**: System weryfikuje obecność `signature` administratora przed commitowaniem zmian do bazy.
-- **Status Management**: Synchronizacja statusów między Ofertą a Umową (Accepted Offer -> Trigger Contract Creation).
-
----
-
-## 5. Drzewo Zależności i Cykl Życia Modułów (Dependency Tree)
-
-Poniżej przedstawiono graficzną reprezentację zależności systemowych oraz kategoryzację stosu technologicznego.
-
-### 5.1. Graf Zależności Internal (Mermaid)
-```mermaid
-graph LR
-    subgraph "Frontend Layer (Next.js App Router)"
-        P[Pages /app] --> PR[PageRenderer]
-        PR --> SC[Shared Components]
-        SC --> F[Framer Motion / Tailwind]
-    end
-
-    subgraph "Logic & Domain Layer (Lib)"
-        API[API Routes /api] --> AUTH[lib/auth]
-        API --> PAY[lib/payu]
-        API --> EM[lib/email]
-        API --> ANALY[lib/analytics-tracker]
-        API --> S3_LIB[lib/storage/s3]
-    end
-
-    subgraph "Data Persistence Layer"
-        AUTH --> PRISMA[Prisma ORM]
-        PAY --> PRISMA
-        EM --> PRISMA
-        ANALY --> PRISMA
-        PRISMA --> DB[(Neon PostgreSQL)]
-    end
-
-    subgraph "Infrastructure"
-        S3_LIB --> S3_BUCKET[AWS S3 Bucket]
-        EM --> SMTP_SRV[SMTP Server]
-    end
+```bash
+npx prisma migrate deploy
 ```
 
-### 5.2. Kategoryzacja Zależności Zewnętrznych (package.json)
+`prisma db push` jest zarezerwowane dla świadomego użycia lokalnego. Migracja musi zostać wykonana przed uruchomieniem kodu zależnego od nowych kolumn.
 
-| Kategoria | Biblioteki | Cel |
-| :--- | :--- | :--- |
-| **Rdzeń** | `next`, `react`, `react-dom` | Framework i biblioteka UI. |
-| **Data Engine** | `prisma`, `@prisma/client` | ORM i generowanie typów DB. |
-| **Bezpieczeństwo** | `jose`, `bcryptjs` | Obsługa JWT i hashowanie haseł. |
-| **Infrastruktura** | `@aws-sdk/client-s3`, `nodemailer` | Przechowywanie plików i wysyłka e-mail. |
-| **E-commerce** | `stripe`, `payu.ts` (custom lib) | Obsługa płatności kartowych i przelewów. |
-| **UI/UX** | `framer-motion`, `lucide-react`, `tailwind-merge`, `sonner` | Animacje, ikony, stylowanie i powiadomienia. |
-| **Analityka** | `recharts`, `date-fns` | Wykresy BI i manipulacja czasem. |
-| **Walidacja** | `zod`, `react-hook-form` | Schematy danych i obsługa formularzy. |
+## 6. Lejek sprzedażowy i CRM
 
----
+### 6.1. Wejścia
 
-## 6. Model Danych (Schema Design)
+- formularz główny B2C;
+- formularze lokalnych stron miast;
+- formularz B2B;
+- checkout i rejestracja;
+- kampanie oraz parametry źródła.
 
-System wykorzystuje znormalizowany model danych z silnymi relacjami.
+`POST /api/contact`:
 
-| Moduł | Kluczowe Modele | Charakterystyka |
-| :--- | :--- | :--- |
-| **Identity** | `User` | Role: ADMIN/CLIENT. Dane profilowe + adresowe. |
-| **CMS** | `Page`, `MenuItem` | Hierarchiczna nawigacja, JSON Sections. |
-| **E-commerce** | `Booking`, `GiftCard`, `Offer`, `Contract` | Flow sprzedażowy i dokumentacyjny. |
-| **Media** | `MediaLibrary` | Metadane S3, optymalizacja formatów. |
-| **Analytics** | `AnalyticsEvent` | Śledzenie konwersji, BI Dashboard. |
+1. ogranicza częstotliwość;
+2. waliduje imię, wiadomość oraz telefon lub e-mail;
+3. zapisuje `Inquiry` w bazie;
+4. zapisuje zgodę newsletterową tylko po jawnym zaznaczeniu;
+5. próbuje wysłać powiadomienie administratorowi;
+6. nie usuwa leada, gdy SMTP zawiedzie.
 
----
+CRM `/admin/inquiries` pokazuje kontakt, źródło, usługę, wiadomość, status procesu i aktywność zgody newsletterowej. Statusy: `new`, `contacted`, `qualified`, `won`, `lost`.
 
-## 7. Topologia API i Infrastruktura Runtime
+Dowodem skuteczności lejka są konwersje i zamówienia, ale pojedyncze zamówienie nie jest jeszcze statystycznym potwierdzeniem. Należy mierzyć: źródło → lead → kontakt → oferta → zamówienie → przychód.
 
-Architektura oparta na **Edge-ready API Routes**, zapewniająca minimalne opóźnienia w komunikacji klient-serwer.
+## 7. Newsletter, zgoda i prywatność
 
-### 7.1. Przepływ Autoryzacji i Middleware (Twin-Engine Routing)
-System wykorzystuje `middleware.ts` do inteligentnego routingu ruchu:
-1. **Domain Detection**: Sprawdza nagłówek `Host`.
-2. **Context Switching**: Rewriting URL do `/b2b` dla odpowiednich hostów.
-3. **Auth Check**: Weryfikacja tokenów dla ścieżek `/admin` oraz `/api/client/portal`.
+Newsletter jest opcjonalny i niezależny od realizacji zapytania lub umowy.
 
-```mermaid
-sequenceDiagram
-    participant U as User Browser
-    participant M as Next.js Middleware
-    participant A as Admin API
-    participant D as Database
+Jedynym źródłem stanu wysyłkowego jest `EmailSubscriber.is_active`. Model przechowuje:
 
-    U->>M: Request /admin/* (Header API-Key)
-    M->>M: Verify admin_token
-    alt Valid Token
-        M->>A: Forward Request
-        A->>D: CRUD Operation
-        D-->>A: Data
-        A-->>U: JSON Response (200 OK)
-    else Invalid Token
-        M-->>U: Error (401 Unauthorized)
-    end
-```
+- znormalizowany e-mail;
+- źródło i wersję zgody;
+- czas udzielenia oraz wycofania;
+- skrócony adres IP i user-agent jako dowód techniczny;
+- losowy token rezygnacji;
+- czas aktualizacji.
 
-### 7.2. Zależności Infrastrukturalne (Platform Overlays)
-- **Database Engine**: PostgreSQL 16+ na Neon.tech (z obsługą połączeń poolingowych).
-- **Edge Runtime**: Netlify Functions (Node.js runtime z limitem bundla 250MB).
-- **Blob Storage**: AWS S3 Cluster (region eu-north-1) z polityką Public Read dla mediów.
-- **SMTP Gateway**: mail.wlasniewski.pl (obsługa TLS z flagą `rejectUnauthorized: false` dla serwerów self-signed).
+`User.marketing_consent_at` odzwierciedla stan zgody na koncie klienta. Helper `src/lib/newsletter.ts` synchronizuje oba modele.
 
-### 7.3. Modular Settings API
-System przechodzi na architekturę rozproszonej konfiguracji:
-- **/api/settings**: Zarządza globalnymi ustawieniami (Płatności, SEO, SMTP).
-- **/api/photo-challenge/settings**: Dedykowany endpoint dla modułu wyzwań (HQ, Radius, FOMO).
-Zapewnia to lepszą izolację kodu i mniejsze ryzyko regresji podczas edycji panelu administratora.
+Punkty zapisu:
 
----
+- formularze kontaktowe;
+- rejestracja;
+- checkout;
+- ustawienia konta;
+- `POST /api/newsletter/subscribe`.
 
-## 8. Bezpieczeństwo i Infrastruktura
+Wycofanie:
 
-### 6.1. Deployment Pipeline
-Proces wdrożenia oparty na Netlify CI/CD. Kluczowym elementem jest oddzielenie środowisk (Staging vs Production) poprzez `DATABASE_URL`.
-> [!CAUTION]
-> Zakaz używania `prisma db push` na produkcji. Wszystkie zmiany schematu muszą przechodzić przez `prisma migrate deploy`.
+- ustawienia konta;
+- `POST /api/newsletter/unsubscribe`;
+- publiczna, nieindeksowana strona `/newsletter/wypisz?token=...`.
 
-### 6.2. Optymalizacja Mediów
-Wszystkie zdjęcia w portfolio przechodzą przez proces optymalizacji:
-1. Upload do S3 (Original).
-2. Serwowanie przez Next.js `Image` component z filtrem `WebP/AVIF`.
-3. Leniwe ładowanie (Lazy Loading) dla galerii masowych.
+Każdy przyszły szablon newslettera musi dodawać indywidualny link rezygnacji. Wiadomości transakcyjne dotyczące zamówień, rezerwacji i umów nie zależą od zgody marketingowej.
 
----
+## 8. Uwierzytelnianie i autoryzacja
 
-### 7.2. Runtime Optimization & Caching [UPDATE: 2026-02-19]
-- **Vercel S3 Redirect**: `GET /api/offers/[id]/pdf` przekierowuje bezpośrednio do S3, unikając blokowania runtime'u serverless przez ciężkie procesy generowania PDF.
-- **Edge-Ready JWT**: Wykorzystanie `jose` do weryfikacji tokenów w Middleware.
+Istnieją oddzielne konteksty administratora, klienta i fotografa. Serwer zawsze sprawdza token/cookie i powiązanie rekordu z użytkownikiem.
 
----
+Aktualny dług:
 
-## 8. Status Produkcyjny
+- część interfejsów przechowuje token JWT w `localStorage`;
+- zwiększa to skutek ewentualnego XSS;
+- docelowo interfejs powinien używać krótkiej sesji w `HttpOnly`, `Secure`, `SameSite` cookie oraz ochrony CSRF dla mutacji;
+- migracja musi objąć wszystkie klienty API i testy regresji, dlatego jest osobnym zadaniem P1.
 
-System jest oceniony jako **100% Ready for Production**. Wszystkie krytyczne błędy (w tym błędy zapisu ustawień, limity rozmiaru bundli na Netlify oraz opóźnienia synchronizacji analityki) zostały wyeliminowane w grudniu 2025 r.
+Wszystkie endpointy administracyjne zostały objęte audytem heurystycznym. Eksport `/api/admin/seo/headings` prowadzi do chronionego handlera; nie jest publicznym wyjątkiem.
 
----
+## 9. SEO
 
-*Opracowane przez: Senior Architect Antigravity*
-*Ostatnia aktualizacja: 2026-02-19*
+### 9.1. Zasady
+
+- każda indeksowalna strona ma jeden H1, unikalny title, opis i canonical;
+- sitemap zawiera wyłącznie kanoniczne, indeksowalne adresy;
+- segmenty ścieżek pochodzące z bazy muszą być kodowane;
+- strony prywatne, konto, rezygnacja i narzędzia administracyjne są `noindex`;
+- B2B i B2C nie powinny tworzyć indeksowalnych duplikatów między domenami;
+- obrazy publiczne powinny używać `next/image`, właściwego `alt`, rozmiarów i nowoczesnego formatu.
+
+Blog listy i wpisu jest renderowany serwerowo. Wpis zawiera canonical, Open Graph, jeden H1 oraz JSON-LD `BlogPosting`.
+
+### 9.2. Dane bazowe audytu Ahrefs
+
+Raport z 2026-07-28: Health Score 86, 145 crawlowanych URL, 328 zgłoszeń, w tym 21 błędów. Część zgłoszeń dotyczy stron nieindeksowalnych i nie powinna być naprawiana przez ich indeksowanie.
+
+Naprawiono w bieżącej gałęzi:
+
+- surową spację w adresie portfolio w sitemapie;
+- kodowanie segmentów dynamicznych;
+- wykluczenie stron B2B z mapy B2C;
+- serwerowy rendering bloga i hierarchię H1;
+- zdjęcia bloga przez `next/image`.
+
+Pozostaje migracja dwóch historycznie uszkodzonych slugów bloga oraz kontrola linkowania wewnętrznego.
+
+## 10. Wydajność
+
+Statyczne zasoby mają długie cache w Netlify, a obrazy negocjują AVIF/WebP. Ustawienia analityki są cache’owane.
+
+Główna anomalia:
+
+- root layout oraz rozpoznawanie hosta używają `headers()`;
+- publiczny HTML jest przez to dynamiczny i produkcja zwraca `private, no-cache, no-store`;
+- zimne odpowiedzi z audytu miały około 4–10 s, a dwa adresy zwróciły przejściowe 502;
+- samo `revalidate = 3600` nie daje ISR, jeśli nadrzędny layout wymusza dynamiczne renderowanie.
+
+Docelowa zmiana P0/P1:
+
+1. rozdzielić zależność od hosta od publicznego layoutu;
+2. wydzielić layouty B2C/B2B albo przekazać kontekst bez dynamicznego odczytu na każdej stronie;
+3. mierzyć TTFB, LCP, INP i błędy funkcji przed i po zmianie;
+4. nie cache’ować spersonalizowanych paneli i API.
+
+Inny dług: 133 pliki z `force-dynamic`, duże edytory administracyjne, około 68 plików z surowym `<img>`, 12 kopii `.bak/backup`, około 943 użycia `any` i 160 `console.log/debug`.
+
+## 11. Bezpieczeństwo
+
+Aktywne zabezpieczenia:
+
+- TLS/HSTS, `nosniff`, `DENY` dla ramek, polityka referrera i ograniczenia uprawnień;
+- walidacja krytycznych wejść;
+- rate limiting wybranych publicznych endpointów;
+- autoryzacja API po stronie serwera;
+- weryfikacja ceny i zasobów checkout po stronie serwera;
+- unikatowe tokeny rezygnacji bez ujawniania istnienia subskrybenta.
+
+Otwarte ryzyka:
+
+- 18 podatności produkcyjnych z `npm audit --omit=dev`: 13 high i 5 low, bez critical;
+- ignorowanie błędów TypeScript i ESLint w buildzie;
+- tokeny w `localStorage`;
+- publiczne API bloga wymaga dalszego rozdzielenia widoku publikacji od panelu;
+- brak jednolitej CSP;
+- kopie źródeł wewnątrz `src` zwiększają powierzchnię utrzymania.
+
+Szczegóły i definicje ukończenia są w `docs/AUDIT_2026-07-29.md`.
+
+## 12. Wdrożenie i rollback
+
+Standard:
+
+1. mała gałąź funkcjonalna;
+2. migracja przejrzana osobno;
+3. `npm ci`;
+4. Prisma validate/generate;
+5. typecheck, lint, testy i build;
+6. Deploy Preview oraz test krytycznych ścieżek;
+7. migracja produkcyjna;
+8. wdrożenie aplikacji;
+9. smoke test i monitoring;
+10. dopisanie wyniku do dokumentacji.
+
+Obecnie typecheck i lint nie są zieloną bramką — jest to jawny blocker jakości, a nie akceptowalny sukces. Do czasu usunięcia długu należy co najmniej porównywać listę błędów i upewniać się, że zmiana nie dodaje nowych.
+
+Rollback aplikacji wykonuje się przez poprzedni artefakt/commit. Migracji danych nie cofa się automatycznie, jeżeli grozi to utratą zapisanych zgód; przygotowuje się migrację naprawczą.
+
+## 13. Rejestr bieżącej zmiany
+
+### 2026-07-29 — pełny audyt, newsletter, CRM i SEO
+
+- modele: rozszerzenie `EmailSubscriber`;
+- migracja: `20260729193000_add_newsletter_consent_evidence`;
+- API: kontakt, zapytania, newsletter, rejestracja, checkout, profil;
+- UI: formularze B2C/B2B/lokalne, CRM, ustawienia konta, polityka prywatności;
+- SEO/wydajność: serwerowy blog, JSON-LD, `next/image`, poprawiona sitemap;
+- dokumentacja: pełne zastąpienie architektury i specyfikacji, raport audytu, checklista PR;
+- walidacja: Prisma schema PASS; pełny TypeScript FAIL przez istniejący dług opisany w audycie;
+- walidacja build: PASS (kod 0) z atrapą `DATABASE_URL`; pozostały wcześniejsze ostrzeżenia `archiver` i brak danych z bazy;
+- wdrożenie: oczekuje na migrację, preview, smoke test i zatwierdzenie.

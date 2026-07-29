@@ -68,7 +68,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         '/fotograf-pluznica',
     ];
 
-    let dbPages: Array<{ slug: string; updated_at: Date }> = [];
+    let dbPages: Array<{ slug: string; page_type: string; updated_at: Date }> = [];
     let portfolioSessions: Array<{ slug: string; category: string; updated_at: Date }> = [];
     let blogPosts: Array<{ slug: string; updated_at: Date }> = [];
     let nphotoAlbums: Array<{ slug: string; updated_at: Date }> = [];
@@ -76,7 +76,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     try {
         dbPages = await prisma.page.findMany({
             where: { is_published: true, NOT: { slug: { startsWith: 'b2b' } } },
-            select: { slug: true, updated_at: true }
+            select: { slug: true, page_type: true, updated_at: true }
         });
 
         portfolioSessions = await prisma.portfolioSession.findMany({
@@ -126,10 +126,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
                 'regulamin',
                 'polityka-prywatnosci',
                 'reklamacje',
+                'inspekcje',
+                'termowizja',
+                'monitoring',
             ]);
-            return !page.slug.startsWith('fotograf-') && !excludedSlugs.has(page.slug);
+            return page.page_type !== 'b2b' &&
+                !page.slug.startsWith('fotograf-') &&
+                !excludedSlugs.has(page.slug);
         }).map(page => ({
-            url: `${b2cBase}/${page.slug}`,
+            url: `${b2cBase}/${page.slug.split('/').map(encodeURIComponent).join('/')}`,
             lastModified: page.updated_at,
             changeFrequency: 'monthly' as const,
             priority: 0.7,
@@ -137,7 +142,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
         // ─── B2C: Portfolio sessions ───
         ...portfolioSessions.map(session => ({
-            url: `${b2cBase}/portfolio/${session.category}/${session.slug}`,
+            url: `${b2cBase}/portfolio/${encodeURIComponent(session.category)}/${encodeURIComponent(session.slug)}`,
             lastModified: session.updated_at,
             changeFrequency: 'monthly' as const,
             priority: 0.6,
@@ -145,7 +150,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
         // ─── B2C: Blog posts ───
         ...blogPosts.map(post => ({
-            url: `${b2cBase}/blog/${post.slug}`,
+            url: `${b2cBase}/blog/${encodeURIComponent(post.slug)}`,
             lastModified: post.updated_at,
             changeFrequency: 'weekly' as const,
             priority: 0.7,
@@ -158,7 +163,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             priority: 0.85,
         },
         ...nphotoAlbums.map(album => ({
-            url: `${b2cBase}/sklep/albumy/${album.slug}`,
+            url: `${b2cBase}/sklep/albumy/${encodeURIComponent(album.slug)}`,
             lastModified: album.updated_at,
             changeFrequency: 'monthly' as const,
             priority: 0.75,

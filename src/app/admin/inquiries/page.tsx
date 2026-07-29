@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Mail, MapPin, Phone } from 'lucide-react';
+import { Mail, MapPin, Newspaper, Phone } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import { getApiUrl } from '@/lib/api-config';
@@ -16,6 +16,12 @@ interface Inquiry {
     source: string | null;
     status: string;
     created_at: string;
+    newsletter: {
+        is_active: boolean;
+        subscribed_at: string;
+        unsubscribed_at: string | null;
+        source: string;
+    } | null;
 }
 
 const STATUS_OPTIONS = [
@@ -133,6 +139,21 @@ export default function InquiriesPage() {
                                                 <span className="text-zinc-500">Usługa:</span> {inquiry.session_type}
                                             </p>
                                         )}
+                                        <div className="mb-3 flex flex-wrap items-center gap-2 text-xs">
+                                            <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 ${
+                                                inquiry.newsletter?.is_active
+                                                    ? 'bg-emerald-500/15 text-emerald-300'
+                                                    : 'bg-zinc-800 text-zinc-400'
+                                            }`}>
+                                                <Newspaper className="h-3.5 w-3.5" />
+                                                {inquiry.newsletter?.is_active ? 'Newsletter: zgoda aktywna' : 'Newsletter: brak aktywnej zgody'}
+                                            </span>
+                                            {inquiry.newsletter?.is_active && (
+                                                <span className="text-zinc-500">
+                                                    od {new Date(inquiry.newsletter.subscribed_at).toLocaleDateString('pl-PL')}
+                                                </span>
+                                            )}
+                                        </div>
                                         <p className="break-words whitespace-pre-wrap rounded-lg border border-zinc-800 bg-zinc-950 p-3 text-sm leading-relaxed text-zinc-300">
                                             {inquiry.message}
                                         </p>

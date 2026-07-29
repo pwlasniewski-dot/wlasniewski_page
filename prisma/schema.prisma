@@ -278,12 +278,18 @@ model Inquiry {
 }
 
 model EmailSubscriber {
-  id              Int      @id @default(autoincrement())
-  email           String   @unique
-  source          String
-  promo_code_sent String?
-  is_active       Boolean  @default(true)
-  subscribed_at   DateTime @default(now())
+  id                 Int       @id @default(autoincrement())
+  email              String    @unique
+  source             String
+  promo_code_sent    String?
+  is_active          Boolean   @default(true)
+  subscribed_at      DateTime  @default(now())
+  consent_version    String    @default("legacy-unknown")
+  consent_ip         String?   @db.VarChar(64)
+  consent_user_agent String?   @db.VarChar(255)
+  unsubscribe_token  String    @unique @db.VarChar(64)
+  unsubscribed_at    DateTime?
+  updated_at         DateTime  @default(now()) @updatedAt
 
   @@map("email_subscribers")
 }

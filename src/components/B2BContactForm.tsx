@@ -15,7 +15,8 @@ export default function B2BContactForm() {
         message: '',
         lead_source: 'direct',
         lead_campaign: 'none',
-        form_context: 'b2b'
+        form_context: 'b2b',
+        marketing_consent: false
     });
 
     // Detect lead source from URL (UTM tracking)
@@ -68,7 +69,8 @@ export default function B2BContactForm() {
                 message: '',
                 lead_source: prev.lead_source, // Keep tracking
                 lead_campaign: prev.lead_campaign, // Keep tracking
-                form_context: 'b2b'
+                form_context: 'b2b',
+                marketing_consent: false
             }));
         } catch (error) {
             console.error('Contact form error:', error);
@@ -183,6 +185,20 @@ export default function B2BContactForm() {
                         placeholder="Opisz krótko, czego potrzebujesz (lokalizacja, termin, zakres prac)..."
                     />
                 </div>
+
+                <label className="flex items-start gap-3 text-xs text-zinc-400">
+                    <input
+                        type="checkbox"
+                        checked={formData.marketing_consent}
+                        onChange={e => setFormData({ ...formData, marketing_consent: e.target.checked })}
+                        className="mt-0.5 h-4 w-4 accent-yellow-500"
+                    />
+                    <span>
+                        Chcę otrzymywać e-mailowo informacje branżowe, oferty i aktualności.
+                        Zgoda jest dobrowolna i mogę ją wycofać w każdej chwili.{' '}
+                        <a href="/polityka-prywatnosci" className="text-yellow-500 hover:underline">Polityka prywatności</a>.
+                    </span>
+                </label>
 
                 <div className="pt-4">
                     <button

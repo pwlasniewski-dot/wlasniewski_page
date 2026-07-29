@@ -11,7 +11,36 @@ export async function GET(request: NextRequest) {
             const inquiries = await prisma.inquiry.findMany({
                 orderBy: { created_at: 'desc' },
             });
-            return NextResponse.json({ success: true, inquiries });
+            const emails = Array.from(new Set(
+                inquiries
+                    .map(inquiry => inquiry.email.trim().toLowerCase())
+                    .filter(Boolean),
+            ));
+            const subscriptions = emails.length > 0
+                ? await prisma.emailSubscriber.findMany({
+                    where: { email: { in: emails } },
+                    select: {
+                        email: true,
+                        is_active: true,
+                        subscribed_at: true,
+                        unsubscribed_at: true,
+                        source: true,
+                    },
+                })
+                : [];
+            const subscriptionByEmail = new Map(
+                subscriptions.map(subscription => [subscription.email.toLowerCase(), subscription]),
+            );
+
+            return NextResponse.json({
+                success: true,
+                inquiries: inquiries.map(inquiry => ({
+                    ...inquiry,
+                    newsletter: inquiry.email
+                        ? subscriptionByEmail.get(inquiry.email.trim().toLowerCase()) || null
+                        : null,
+                })),
+            });
         } catch (error) {
             return NextResponse.json({ error: 'Failed to fetch inquiries' }, { status: 500 });
         }

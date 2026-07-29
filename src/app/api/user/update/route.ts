@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { verifyToken, extractToken } from '@/lib/auth/jwt';
 import bcrypt from 'bcryptjs';
+import { grantNewsletterConsent, withdrawNewsletterConsent } from '@/lib/newsletter';
 
 export async function PUT(req: NextRequest) {
     try {
@@ -18,7 +19,10 @@ export async function PUT(req: NextRequest) {
         }
 
         const body = await req.json();
-        const { name, email, phone, currentPassword, newPassword } = body;
+        const { name, email, phone, currentPassword, newPassword, marketingConsent } = body;
+        if (marketingConsent !== undefined && typeof marketingConsent !== 'boolean') {
+            return NextResponse.json({ error: 'Nieprawidłowa wartość zgody marketingowej' }, { status: 400 });
+        }
 
         // Find user
         const user = await prisma.user.findUnique({
@@ -32,6 +36,9 @@ export async function PUT(req: NextRequest) {
         const updateData: any = {};
         if (name) updateData.name = name;
         if (phone) updateData.phone = phone;
+        if (typeof marketingConsent === 'boolean') {
+            updateData.marketing_consent_at = marketingConsent ? (user?.marketing_consent_at || new Date()) : null;
+        }
 
         // If email is changing, check if unique
         if (email && email !== user.email) {
@@ -84,6 +91,24 @@ export async function PUT(req: NextRequest) {
                 });
             }
 
+            const finalEmail = updateData.email || user.email;
+            const shouldSubscribe = typeof marketingConsent === 'boolean'
+                ? marketingConsent
+                : Boolean(user.marketing_consent_at);
+
+            if (updateData.email && updateData.email !== user.email) {
+                await withdrawNewsletterConsent(tx, { email: user.email });
+            }
+            if (shouldSubscribe) {
+                await grantNewsletterConsent(tx, {
+                    email: finalEmail,
+                    source: 'account-settings',
+                    request: req,
+                });
+            } else if (typeof marketingConsent === 'boolean') {
+                await withdrawNewsletterConsent(tx, { email: finalEmail });
+            }
+
             return updated;
         });
 
@@ -93,7 +118,9 @@ export async function PUT(req: NextRequest) {
                 id: updatedUser.id,
                 email: updatedUser.email,
                 name: updatedUser.name,
-                phone: updatedUser.phone
+                phone: updatedUser.phone,
+                marketing_consent_at: updatedUser.marketing_consent_at,
+                newsletter_active: marketingConsent === true
             }
         });
 
