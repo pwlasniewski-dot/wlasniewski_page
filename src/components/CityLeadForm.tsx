@@ -39,7 +39,7 @@ export default function CityLeadForm({ city, citySlug }: CityLeadFormProps) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     name: data.name,
-                    email: data.email || `brak@lead-${citySlug}.pl`,
+                    email: data.email,
                     phone: data.phone,
                     message,
                     serviceType: data.serviceType,

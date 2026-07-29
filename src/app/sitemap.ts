@@ -49,6 +49,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         '/rezerwacja',
         '/portfolio',
         '/blog',
+        '/kontakt',
         '/karta-podarunkowa',
         '/historia',
         '/foto-wyzwanie',
@@ -103,7 +104,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         // ─── B2C: Static pages ───
         ...staticPages.map(route => ({
             url: `${b2cBase}${route}`,
-            lastModified: new Date(),
             changeFrequency: 'monthly' as const,
             priority: route === '' ? 1.0 : 0.8,
         })),
@@ -111,7 +111,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         // ─── B2C: City SEO Landing Pages (highest priority for local SEO) ───
         ...cityPages.map(route => ({
             url: `${b2cBase}${route}`,
-            lastModified: new Date(),
             changeFrequency: 'weekly' as const,
             priority: 0.95,
         })),
@@ -155,7 +154,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         // ─── B2C: Albums catalog (SEO boost via product pages) ───
         {
             url: `${b2cBase}/sklep/albumy`,
-            lastModified: new Date(),
             changeFrequency: 'weekly' as const,
             priority: 0.85,
         },

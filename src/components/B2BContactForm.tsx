@@ -14,7 +14,8 @@ export default function B2BContactForm() {
         serviceType: 'Inne',
         message: '',
         lead_source: 'direct',
-        lead_campaign: 'none'
+        lead_campaign: 'none',
+        form_context: 'b2b'
     });
 
     // Detect lead source from URL (UTM tracking)
@@ -66,7 +67,8 @@ export default function B2BContactForm() {
                 serviceType: 'Inne', 
                 message: '',
                 lead_source: prev.lead_source, // Keep tracking
-                lead_campaign: prev.lead_campaign   // Keep tracking
+                lead_campaign: prev.lead_campaign, // Keep tracking
+                form_context: 'b2b'
             }));
         } catch (error) {
             console.error('Contact form error:', error);

@@ -2,6 +2,13 @@
 
 Ten dokument stanowi techniczny blueprint platformy fotograficznej wlasniewski.pl. Jest on przeznaczony dla senior deweloperów i architektów systemowych, opisując strukturę, wzorce projektowe oraz krytyczne protokoły bezpieczeństwa.
 
+## Aktualizacja 2026-07-29 — trwałość leadów i warstwa publiczna
+
+- `POST /api/contact`: walidacja → zapis `Inquiry` → próba powiadomienia SMTP.
+- `PATCH /api/inquiries`: chroniona zmiana statusu z zamkniętą listą wartości.
+- Ustawienia analityki korzystają z `unstable_cache` z rewalidacją 3600 s.
+- `next/image` negocjuje AVIF/WebP, a CSS Swipera jest bundlowany lokalnie.
+
 ---
 
 ## 1. System Overview & Tech Stack

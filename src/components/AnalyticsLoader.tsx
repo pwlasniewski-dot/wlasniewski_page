@@ -1,10 +1,24 @@
 import AnalyticsIntegration from './AnalyticsIntegration';
 import prisma from '@/lib/db/prisma';
 import { headers } from 'next/headers';
+import { unstable_cache } from 'next/cache';
 import { isB2BContext } from '@/lib/context';
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+const getAnalyticsSettings = unstable_cache(
+    () => prisma.setting.findFirst({
+        orderBy: { id: 'asc' },
+        select: {
+            google_analytics_id: true,
+            google_tag_manager_id: true,
+            facebook_pixel_id: true,
+            b2b_google_analytics_id: true,
+            b2b_google_tag_manager_id: true,
+            b2b_facebook_pixel_id: true,
+        },
+    }),
+    ['public-analytics-settings'],
+    { revalidate: 3600, tags: ['settings', 'analytics'] },
+);
 
 export default async function AnalyticsLoader() {
     // Skip database access during build time
@@ -17,9 +31,7 @@ export default async function AnalyticsLoader() {
         const host = headersList.get('host') || '';
         const isB2B = isB2BContext({ hostname: host.split(':')[0] });
 
-        const settings = await prisma.setting.findFirst({
-            orderBy: { id: 'asc' }
-        });
+        const settings = await getAnalyticsSettings();
 
         if (!settings) return null;
 

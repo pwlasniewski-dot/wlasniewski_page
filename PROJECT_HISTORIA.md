@@ -1,5 +1,15 @@
 # PROJECT_HISTORIA & VADEMECUM STABILNOŚCI
 
+## [2026-07-29] CRM LEADÓW + SEO I WYDAJNOŚĆ
+
+- Formularze zapisują każde poprawne zapytanie w `Inquiry` przed próbą wysyłki e-maila, więc awaria SMTP nie powoduje utraty leada.
+- Formularze miejskie przyjmują telefon bez sztucznego e-maila; B2B ma jawny kontekst.
+- Panel `/admin/inquiries` ma mobilne karty kontaktowe i statusy procesu sprzedaży.
+- Poprawiono sitemapę, robots.txt, AVIF/WebP, cache analityki, ładowanie Google Tag i lokalny CSS Swipera.
+- `npm run build` zakończony powodzeniem. Pełny typecheck nadal wykazuje wcześniejszy dług typów poza tym zakresem, a ESLint 9 nie ma konfiguracji flat config.
+
+---
+
 ## [2026-04-28] FOTO-WYZWANIE — PŁATNOŚĆ PRODUCTION-READY (PayU webhook fix)
 
 **Problem:** Cały tor płatności PayU dla Foto-Wyzwania działał tylko **przypadkiem**:
