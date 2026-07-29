@@ -24,7 +24,17 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
             {
                 userAgent: '*',
                 allow: '/',
-                disallow: ['/admin/', '/api/', '/galeria/*/'],
+                disallow: [
+                    '/admin/',
+                    '/api/',
+                    '/galeria/',
+                    '/strefa-klienta/',
+                    '/konto/',
+                    '/logowanie/',
+                    '/rejestracja/',
+                    '/checkout/',
+                    '/invite/',
+                ],
             },
         ],
         sitemap: ['https://wlasniewski.pl/sitemap.xml'],

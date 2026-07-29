@@ -1,6 +1,5 @@
 'use client';
 
-import { useEffect } from 'react';
 import Script from 'next/script';
 
 interface AnalyticsIntegrationProps {
@@ -26,38 +25,22 @@ export default function AnalyticsIntegration({
     const activeGAId = isB2B ? (b2bGoogleAnalyticsId || googleAnalyticsId) : googleAnalyticsId;
     const activeGTMId = isB2B ? (b2bGoogleTagManagerId || googleTagManagerId) : googleTagManagerId;
     const activePixelId = isB2B ? (b2bFacebookPixelId || facebookPixelId) : facebookPixelId;
+    const googleAdsId = 'AW-17548893646';
+    const googleLoaderId = activeGAId || googleAdsId;
 
     return (
         <>
-            {/* Google Analytics 4 */}
-            {activeGAId && (
-                <>
-                    <Script
-                        src={`https://www.googletagmanager.com/gtag/js?id=${activeGAId}`}
-                        strategy="afterInteractive"
-                    />
-                    <Script id="google-analytics" strategy="afterInteractive">
-                        {`
-                            window.dataLayer = window.dataLayer || [];
-                            function gtag(){dataLayer.push(arguments);}
-                            gtag('js', new Date());
-                            gtag('config', '${activeGAId}');
-                        `}
-                    </Script>
-                </>
-            )}
-
-            {/* Google Ads Tag AW-17548893646 */}
             <Script
-                src="https://www.googletagmanager.com/gtag/js?id=AW-17548893646"
+                src={`https://www.googletagmanager.com/gtag/js?id=${googleLoaderId}`}
                 strategy="afterInteractive"
             />
-            <Script id="google-ads-tag" strategy="afterInteractive">
+            <Script id="google-analytics-ads" strategy="afterInteractive">
                 {`
                     window.dataLayer = window.dataLayer || [];
                     function gtag(){dataLayer.push(arguments);}
                     gtag('js', new Date());
-                    gtag('config', 'AW-17548893646');
+                    ${activeGAId ? `gtag('config', '${activeGAId}');` : ''}
+                    gtag('config', '${googleAdsId}');
                 `}
             </Script>
 

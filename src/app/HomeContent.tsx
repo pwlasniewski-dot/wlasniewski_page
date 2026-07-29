@@ -744,10 +744,14 @@ export default function HomeContent({ heroSlides, sections, homeData, orderedSec
                                                 >
                                                     <div className={`relative overflow-hidden w-full h-full ${cornerClass} ${aspectRatio} bg-zinc-900 border border-white/5`}>
                                                         {item.image ? (
-                                                            <img
+                                                            <Image
                                                                 src={item.image}
                                                                 alt={item.title || ''}
-                                                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                                                                fill
+                                                                sizes={config.mobileColumns === 2
+                                                                    ? '(max-width: 768px) 50vw, 33vw'
+                                                                    : '(max-width: 768px) 100vw, 33vw'}
+                                                                className="object-cover transition-transform duration-700 group-hover:scale-105"
                                                             />
                                                         ) : (
                                                             <div className="w-full h-full flex items-center justify-center text-zinc-800"><ImageIcon /></div>

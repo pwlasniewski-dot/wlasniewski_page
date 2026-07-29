@@ -50,6 +50,7 @@ const outfit = Outfit({
 
 import AppShell from "@/components/AppShell";
 import "./globals.css";
+import "swiper/css/bundle";
 import { Suspense } from "react";
 import { headers } from "next/headers";
 import { AnalyticsTracker } from "@/hooks/useAnalytics";
@@ -215,9 +216,6 @@ export default async function RootLayout({
                 {/* Preconnect to speed up critical resources */}
                 <link rel="preconnect" href="https://wlasniewski-photo-storage.s3.eu-north-1.amazonaws.com" crossOrigin="anonymous" />
                 <link rel="dns-prefetch" href="https://wlasniewski-photo-storage.s3.eu-north-1.amazonaws.com" />
-                <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-                <link rel="dns-prefetch" href="https://cdn.jsdelivr.net" />
-                <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@12/swiper-bundle.min.css" />
                 {!isB2B && (
                     <script
                         type="application/ld+json"

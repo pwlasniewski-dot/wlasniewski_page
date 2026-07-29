@@ -2,6 +2,14 @@
 
 Ten dokument stanowi kompleksowy opis funkcjonalności oraz logiki biznesowej platformy **FOTO-DRON Przemysław Właśniewski**. Dokumentacja została opracowana na podstawie audytu technicznego przeprowadzonego w grudniu 2025 r. Szczegóły techniczne dotyczące infrastruktury i wzorców projektowych znajdują się w dokumencie [ARCHITECTURE.md](file:///c:/Strona-fotografa/ARCHITECTURE.md).
 
+## Aktualizacja 2026-07-29 — zapytania sprzedażowe
+
+- Formularze B2C, lokalne i B2B zapisują dane w tabeli `Inquiry`.
+- Wymagane są imię, wiadomość oraz telefon albo e-mail.
+- Awaria SMTP nie anuluje trwałego zapisu leada.
+- Źródło, kampania, typ usługi i kontekst B2B trafiają do analityki.
+- Administrator może zmieniać status leada na mobilnej liście zapytań.
+
 ---
 
 ## 1. Architektura Systemu i Stack Techniczny

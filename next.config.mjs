@@ -24,13 +24,12 @@ const nextConfig = {
             ],
         }];
     },
-    // transpilePackages: ['swiper', 'ssr-window', 'dom7'], // CDN Fallback used
-    
     // CRITICAL: Mark pdfkit as external so Webpack doesn't bundle it and break font file paths
     serverExternalPackages: ['pdfkit', '@aws-sdk/client-s3', '@aws-sdk/lib-storage'],
     
     images: {
-        unoptimized: true,
+        formats: ['image/avif', 'image/webp'],
+        minimumCacheTTL: 86400,
         remotePatterns: [
             {
                 protocol: 'https',
