@@ -6,7 +6,7 @@ import * as Icons from 'lucide-react';
 
 interface TipCardProps {
     tip: {
-        id: number;
+        id: number | string;
         title: string;
         content: string;
         tip_type?: string | null;

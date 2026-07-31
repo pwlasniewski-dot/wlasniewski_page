@@ -26,11 +26,13 @@ import {
     Sparkles,
     Heart,
     GraduationCap,
+    BookOpen,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ClientOfferRecommendedAlbums from '@/components/client/ClientOfferRecommendedAlbums';
+import ClientStyleGuidePanel from '@/components/StyleGuide/ClientStyleGuidePanel';
 
-type Tab = 'overview' | 'sessions' | 'bookings' | 'documents' | 'gift_cards' | 'workshops' | 'settings' | 'partner';
+type Tab = 'overview' | 'sessions' | 'bookings' | 'documents' | 'gift_cards' | 'workshops' | 'preparation' | 'settings' | 'partner';
 
 export default function AccountPage() {
     const router = useRouter();
@@ -247,6 +249,14 @@ export default function AccountPage() {
                             })}
                         />
 
+                        <TabButton
+                            id="preparation"
+                            label="Przygotowanie"
+                            active={activeTab === 'preparation'}
+                            onClick={() => setActiveTab('preparation')}
+                            icon={<BookOpen className="w-4 h-4" />}
+                        />
+
                         <TabButton id="settings" label="Ustawienia" active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} icon={<UserIcon className="w-4 h-4" />} />
                         {user?.role === 'PHOTOGRAPHER' && (
                             <TabButton id="partner" label="Strefa Partnera" active={activeTab === 'partner'} onClick={() => setActiveTab('partner')} icon={<Star className="w-4 h-4 text-gold-500" />} />
@@ -278,6 +288,11 @@ export default function AccountPage() {
                         {activeTab === 'documents' && renderDocumentsTab()}
                         {activeTab === 'gift_cards' && renderGiftCards()}
                         {activeTab === 'workshops' && renderWorkshopsTab()}
+                        {activeTab === 'preparation' && (
+                            <ClientStyleGuidePanel
+                                offerId={(offers.find((offer: any) => offer.status === 'accepted' || offer.status === 'sent') || offers[0])?.id}
+                            />
+                        )}
                         {activeTab === 'settings' && renderSettingsTab()}
                         {activeTab === 'partner' && renderPartnerTab()}
                     </motion.div>

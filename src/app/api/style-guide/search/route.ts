@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import prisma from '@/lib/db/prisma';
+import { publicStyleGuideCategoryFilter } from '@/lib/styleGuideAccess';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,31 +12,80 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET(request: NextRequest) {
     try {
-        const { searchParams } = new URL(request.url);
-        const query = searchParams.get('q');
-        const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : 20;
+        const parsed = z.object({
+            q: z.string().trim().min(2).max(100),
+            limit: z.coerce.number().int().positive().max(30).default(20),
+        }).safeParse(Object.fromEntries(request.nextUrl.searchParams.entries()));
 
-        if (!query || query.trim().length < 2) {
+        if (!parsed.success) {
             return NextResponse.json({
                 success: false,
-                error: 'Query must be at least 2 characters'
+                error: 'Query must contain 2–100 characters'
             }, { status: 400 });
         }
 
-        // Use optimized full-text search function
-        const results = await prisma.$queryRaw`
-            SELECT * FROM search_style_guide(
-                ${query}::TEXT,
-                ${limit}::INTEGER
-            )
-        `;
+        const { q, limit } = parsed.data;
+        const perTypeLimit = Math.max(1, Math.ceil(limit / 3));
+        const [outfits, tips, faqs] = await Promise.all([
+            prisma.outfitSet.findMany({
+                where: {
+                    is_active: true,
+                    AND: [
+                        publicStyleGuideCategoryFilter(),
+                        { OR: [
+                            { title: { contains: q, mode: 'insensitive' } },
+                            { description: { contains: q, mode: 'insensitive' } },
+                        ] },
+                    ],
+                },
+                select: { id: true, slug: true, title: true, description: true, category: true },
+                take: perTypeLimit,
+                orderBy: { display_order: 'asc' },
+            }),
+            prisma.styleGuideTip.findMany({
+                where: {
+                    is_active: true,
+                    AND: [
+                        publicStyleGuideCategoryFilter(),
+                        { OR: [
+                            { title: { contains: q, mode: 'insensitive' } },
+                            { content: { contains: q, mode: 'insensitive' } },
+                        ] },
+                    ],
+                },
+                select: { id: true, slug: true, title: true, content: true, category: true },
+                take: perTypeLimit,
+                orderBy: { display_order: 'asc' },
+            }),
+            prisma.styleGuideFaq.findMany({
+                where: {
+                    is_active: true,
+                    AND: [
+                        publicStyleGuideCategoryFilter(),
+                        { OR: [
+                            { question: { contains: q, mode: 'insensitive' } },
+                            { answer: { contains: q, mode: 'insensitive' } },
+                        ] },
+                    ],
+                },
+                select: { id: true, question: true, answer: true, category: true },
+                take: perTypeLimit,
+                orderBy: { display_order: 'asc' },
+            }),
+        ]);
+
+        const results = [
+            ...outfits.map((item: { id: number; slug: string; title: string; description: string | null; category: string | null }) => ({ type: 'outfit', ...item })),
+            ...tips.map((item: { id: number; slug: string; title: string; content: string; category: string | null }) => ({ type: 'tip', ...item })),
+            ...faqs.map((item: { id: number; question: string; answer: string; category: string | null }) => ({ type: 'faq', ...item })),
+        ].slice(0, limit);
 
         return NextResponse.json({
             success: true,
             data: results,
-            query: query
+            query: q
         });
-    } catch (error: any) {
+    } catch (error) {
         console.error('[Style Guide API] Error searching:', error);
         return NextResponse.json(
             { success: false, error: 'Search failed' },

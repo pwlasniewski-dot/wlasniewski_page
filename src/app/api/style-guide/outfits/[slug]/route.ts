@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
+import { isPrivateStyleGuideCategory } from '@/lib/styleGuideAccess';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,7 +32,7 @@ export async function GET(
             }
         });
 
-        if (!outfit || !outfit.is_active) {
+        if (!outfit || !outfit.is_active || isPrivateStyleGuideCategory(outfit.category)) {
             return NextResponse.json(
                 { success: false, error: 'Outfit not found' },
                 { status: 404 }

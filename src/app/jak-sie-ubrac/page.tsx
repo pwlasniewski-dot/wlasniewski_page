@@ -2,6 +2,7 @@ import React from 'react';
 import { Metadata } from 'next';
 import StyleGuideContent from './StyleGuideContent';
 import prisma from '@/lib/db/prisma';
+import { publicStyleGuideCategoryFilter } from '@/lib/styleGuideAccess';
 
 export const revalidate = 3600; // Cache for 1 hour
 
@@ -38,7 +39,8 @@ export default async function JakSieUbracPage() {
         prisma.outfitSet.findMany({
             where: { 
                 is_active: true,
-                is_featured: true 
+                is_featured: true,
+                ...publicStyleGuideCategoryFilter(),
             },
             include: {
                 palette: {
@@ -55,7 +57,8 @@ export default async function JakSieUbracPage() {
         prisma.styleGuideTip.findMany({
             where: { 
                 is_active: true,
-                is_featured: true 
+                is_featured: true,
+                ...publicStyleGuideCategoryFilter(),
             },
             select: {
                 id: true,
@@ -70,7 +73,7 @@ export default async function JakSieUbracPage() {
         }),
         
         prisma.styleGuideFaq.findMany({
-            where: { is_active: true },
+            where: { is_active: true, ...publicStyleGuideCategoryFilter() },
             select: {
                 id: true,
                 question: true,

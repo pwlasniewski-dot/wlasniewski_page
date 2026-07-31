@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
+import { publicStyleGuideCategoryFilter } from '@/lib/styleGuideAccess';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,7 +19,7 @@ export async function GET(
             where: { slug },
             include: {
                 outfit_sets: {
-                    where: { is_active: true },
+                    where: { is_active: true, ...publicStyleGuideCategoryFilter() },
                     select: {
                         id: true,
                         title: true,

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
+import { isPrivateStyleGuideCategory, publicStyleGuideCategoryFilter } from '@/lib/styleGuideAccess';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,12 +16,18 @@ export async function GET(request: NextRequest) {
         const category = searchParams.get('category');
         const featuredOnly = searchParams.get('featured') === 'true';
         const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : 50;
+        if (isPrivateStyleGuideCategory(category)) {
+            return NextResponse.json(
+                { success: false, error: 'Pose content is available only in the authenticated client guide' },
+                { status: 403 }
+            );
+        }
 
         const tips = await prisma.styleGuideTip.findMany({
             where: {
                 is_active: true,
                 ...(type && { tip_type: type }),
-                ...(category && { category }),
+                ...(category ? { category } : publicStyleGuideCategoryFilter()),
                 ...(featuredOnly && { is_featured: true })
             },
             select: {

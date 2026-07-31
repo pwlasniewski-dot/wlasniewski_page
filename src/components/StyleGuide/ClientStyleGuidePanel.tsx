@@ -1,14 +1,13 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { Palette, Shirt, Lightbulb, Heart } from 'lucide-react';
-import ColorPaletteCard from '@/components/StyleGuide/ColorPaletteCard';
-import OutfitCollageCard from '@/components/StyleGuide/OutfitCollageCard';
-import TipCard from '@/components/StyleGuide/TipCard';
+import { useCallback, useEffect, useState } from 'react';
+import { AlertCircle, Loader2 } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
+import PreparationGuide from './PreparationGuide';
+import type { ClientPreparationGuideData } from '@/types/preparation-guide';
 
 interface ClientStyleGuidePanelProps {
-    offerId: number;
+    offerId?: number;
     serviceType?: string;
     groupSize?: number;
     location?: string;
@@ -18,162 +17,86 @@ export default function ClientStyleGuidePanel({
     offerId,
     serviceType,
     groupSize,
-    location
+    location,
 }: ClientStyleGuidePanelProps) {
-    const [styleGuide, setStyleGuide] = useState<any>(null);
+    const { token } = useAuth();
+    const [data, setData] = useState<ClientPreparationGuideData | null>(null);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [retry, setRetry] = useState(0);
+
+    const load = useCallback(async (signal: AbortSignal) => {
+        if (!token) {
+            setLoading(false);
+            setError('Zaloguj się ponownie, aby otworzyć poradnik.');
+            return;
+        }
+        setLoading(true);
+        setError(null);
+        try {
+            const query = offerId ? `?offerId=${encodeURIComponent(offerId)}` : '';
+            const response = await fetch(`/api/style-guide/client${query}`, {
+                headers: { Authorization: `Bearer ${token}` },
+                signal,
+            });
+            const payload = await response.json().catch(() => null);
+            if (!response.ok || !payload?.success) {
+                throw new Error(response.status === 403
+                    ? 'Ta oferta nie jest przypisana do Twojego konta.'
+                    : 'Nie udało się teraz pobrać poradnika.');
+            }
+            setData(payload.data);
+        } catch (fetchError) {
+            if ((fetchError as Error).name !== 'AbortError') {
+                setError((fetchError as Error).message);
+            }
+        } finally {
+            if (!signal.aborted) setLoading(false);
+        }
+    }, [offerId, token]);
 
     useEffect(() => {
-        async function fetchStyleGuide() {
-            try {
-                const res = await fetch(`/api/style-guide/client?offerId=${offerId}`);
-                const data = await res.json();
-                if (data.success) {
-                    setStyleGuide(data.data);
-                }
-            } catch (error) {
-                console.error('Error loading style guide:', error);
-            } finally {
-                setLoading(false);
-            }
-        }
-        fetchStyleGuide();
-    }, [offerId]);
+        const controller = new AbortController();
+        load(controller.signal);
+        return () => controller.abort();
+    }, [load, retry]);
 
     if (loading) {
         return (
-            <div className="animate-pulse space-y-6">
-                <div className="h-64 bg-zinc-900/50 rounded-2xl" />
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="h-48 bg-zinc-900/50 rounded-2xl" />
-                    <div className="h-48 bg-zinc-900/50 rounded-2xl" />
+            <div className="flex min-h-64 items-center justify-center rounded-3xl border border-zinc-800 bg-zinc-900/50 text-zinc-300" role="status">
+                <Loader2 className="mr-3 h-5 w-5 animate-spin text-gold-500" aria-hidden />
+                Ładuję poradnik…
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="rounded-3xl border border-amber-500/30 bg-amber-500/10 p-6 text-amber-50" role="alert">
+                <div className="flex gap-3">
+                    <AlertCircle className="h-5 w-5 shrink-0" aria-hidden />
+                    <div>
+                        <p>{error}</p>
+                        <button
+                            onClick={() => setRetry((value) => value + 1)}
+                            className="mt-4 min-h-11 rounded-xl bg-amber-400 px-5 py-2 font-bold text-black outline-none focus-visible:ring-2 focus-visible:ring-white"
+                        >
+                            Spróbuj ponownie
+                        </button>
+                    </div>
                 </div>
             </div>
         );
     }
 
-    if (!styleGuide) return null;
-
-    const { recommended_palettes = [], recommended_outfits = [], tips = [] } = styleGuide;
-    const safeGroupSize = Number.isFinite(groupSize) && Number(groupSize) > 0 ? Number(groupSize) : null;
-    const safeLocation = typeof location === 'string' && location.trim() ? location.trim() : null;
-    const normalizedLocation = safeLocation && !['do uzupelnienia', 'do uzupełnienia', 'do ustalenia', 'lokalizacja do uzgodnienia'].includes(safeLocation.toLowerCase())
-        ? safeLocation
-        : null;
+    if (!data) {
+        return <p className="rounded-2xl border border-zinc-800 p-6 text-zinc-300">Poradnik nie ma jeszcze treści.</p>;
+    }
 
     return (
-        <div className="space-y-12">
-            {/* Hero Card */}
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="relative overflow-hidden bg-gradient-to-br from-white via-amber-50/70 to-zinc-50 border border-amber-200/70 rounded-3xl p-8 shadow-[0_20px_60px_rgba(15,23,42,0.08)]"
-            >
-                <div className="relative z-10">
-                    <div className="flex items-center gap-3 mb-4">
-                        <div className="w-14 h-14 bg-amber-100 rounded-xl flex items-center justify-center border border-amber-200/80">
-                            <Heart className="w-7 h-7 text-amber-700" />
-                        </div>
-                        <div>
-                            <h2 className="text-2xl font-display font-bold text-zinc-900">
-                                Jak się ubrać na sesję?
-                            </h2>
-                            <p className="text-zinc-600">Specjalnie dobrane dla Ciebie</p>
-                        </div>
-                    </div>
-                    <p className="text-zinc-700 mb-6 leading-relaxed">
-                        Przygotowaliśmy dla Ciebie profesjonalny poradnik stylizacji. 
-                        Sprawdź palety kolorów, przykładowe zestawy i porady, które pomogą Ci 
-                        wyglądać perfekcyjnie na zdjęciach. 
-                        {safeGroupSize && ` Rekomendacje dostosowane dla grupy ${safeGroupSize} osób.`}
-                        {normalizedLocation && ` Wskazówki uwzględniają też lokalizację sesji: ${normalizedLocation}.`}
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                        {safeGroupSize && (
-                            <span className="px-3 py-1 bg-white text-zinc-700 text-sm rounded-full border border-zinc-200">
-                                {safeGroupSize} osób
-                            </span>
-                        )}
-                    </div>
-                </div>
-
-                {/* Background Decoration */}
-                <div className="absolute top-0 right-0 w-64 h-64 bg-amber-200/40 rounded-full blur-3xl" />
-            </motion.div>
-
-            {/* Recommended Color Palettes */}
-            {recommended_palettes && recommended_palettes.length > 0 && (
-                <section>
-                    <div className="flex items-center gap-3 mb-6">
-                        <div className="w-12 h-12 bg-gold-400/10 rounded-xl flex items-center justify-center">
-                            <Palette className="w-6 h-6 text-gold-400" />
-                        </div>
-                        <div>
-                            <h3 className="text-2xl font-display font-bold text-white">
-                                Rekomendowane Palety Kolorów
-                            </h3>
-                            <p className="text-zinc-400 text-sm">
-                                Harmonijne zestawienia idealnie pasujące do Twojej sesji
-                            </p>
-                        </div>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {recommended_palettes.slice(0, 3).map((palette: any) => (
-                            <ColorPaletteCard key={palette.id} palette={palette} />
-                        ))}
-                    </div>
-                </section>
-            )}
-
-            {/* Recommended Outfits */}
-            {recommended_outfits && recommended_outfits.length > 0 && (
-                <section>
-                    <div className="flex items-center gap-3 mb-6">
-                        <div className="w-12 h-12 bg-gold-400/10 rounded-xl flex items-center justify-center">
-                            <Shirt className="w-6 h-6 text-gold-400" />
-                        </div>
-                        <div>
-                            <h3 className="text-2xl font-display font-bold text-white">
-                                Przykładowe Stylizacje
-                            </h3>
-                            <p className="text-zinc-400 text-sm">
-                                Gotowe zestawy odzieżowe dla Twojej grupy
-                            </p>
-                        </div>
-                    </div>
-                    <div className="space-y-8">
-                        {recommended_outfits.slice(0, 3).map((outfit: any) => (
-                            <div key={outfit.id} className="bg-white rounded-2xl py-6">
-                                <OutfitCollageCard outfit={outfit} showSubtitle={false} />
-                            </div>
-                        ))}
-                    </div>
-                </section>
-            )}
-
-            {/* Quick Tips */}
-            {tips && tips.length > 0 && (
-                <section>
-                    <div className="flex items-center gap-3 mb-6">
-                        <div className="w-12 h-12 bg-gold-400/10 rounded-xl flex items-center justify-center">
-                            <Lightbulb className="w-6 h-6 text-gold-400" />
-                        </div>
-                        <div>
-                            <h3 className="text-2xl font-display font-bold text-white">
-                                Przydatne Porady
-                            </h3>
-                            <p className="text-zinc-400 text-sm">
-                                Najważniejsze wskazówki dla perfekcyjnych zdjęć
-                            </p>
-                        </div>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {tips.slice(0, 4).map((tip: any) => (
-                            <TipCard key={tip.id} tip={tip} compact />
-                        ))}
-                    </div>
-                </section>
-            )}
-        </div>
+        <PreparationGuide
+            data={data}
+            fallbackContext={{ serviceType, groupSize, location }}
+        />
     );
 }
