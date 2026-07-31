@@ -8,6 +8,9 @@
 
 - Dodano chronioną zakładkę „Przygotowanie” w `/konto` oraz kartę wejściową na ekranie „Przegląd”.
 - Poradnik „Jak się ubrać” zawiera 15 kart z własnymi ilustracjami, w tym dobór kolorów do miasta, cegły, betonu, szkła, zieleni i neonów.
+- Rekordy porad z CMS bez obrazu otrzymują adekwatne, lokalne ilustracje; częściowy zestaw palet CMS jest uzupełniany o brakujące zastosowania bez duplikatów.
+- Każda paleta ma ilustrowany przykład stylizacji, a kanoniczna karta „Miasto: cegła, beton i szkło” pozostaje dostępna niezależnie od treści CMS.
+- Zwiększono kontrast i rozmiary zakładek, opisów oraz próbek kolorów; układ nie ma poziomego przewijania przy 320 px ani przy powiększeniu 200%.
 - Poradnik pozowania zawiera 30 kompletnych kart z ilustracjami WebP.
 - Treści kategorii `pose` zostały odseparowane od publicznych list, szczegółów, relacji i wyszukiwania; prywatna treść jest pobierana po uwierzytelnieniu.
 - Produkcyjny build nie pobiera już Google Fonts: osiem rodzin jest obsługiwanych przez `next/font/local` i oficjalne pliki w `public/fonts`.
@@ -16,8 +19,8 @@
 
 ### Weryfikacja
 
-- `npm run build`: PASS, 230/230 stron.
-- Testy przygotowania: 19/19 PASS.
+- `npm run build`: PASS, 228/228 stron.
+- Testy przygotowania: 24/24 PASS.
 - Smoke test produkcyjny: `/logowanie`, `/konto` oraz przykładowe obrazy zwracają HTTP 200.
 - Targetowany ESLint i `git diff --check`: PASS.
 

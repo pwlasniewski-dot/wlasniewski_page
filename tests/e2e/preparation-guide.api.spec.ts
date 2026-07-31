@@ -20,6 +20,7 @@ import {
     type PreparationGuideOffer,
     type PreparationGuideUser,
 } from '../../src/lib/clientPreparationGuideHandler';
+import type { PreparationGuidePalette, PreparationGuideTip } from '../../src/types/preparation-guide';
 
 const activeUser: PreparationGuideUser = {
     id: 7,
@@ -99,7 +100,7 @@ test.describe('preparation guide fallback content', () => {
     });
 
     test('provides complete wardrobe fallback content', () => {
-        expect(WARDROBE_FALLBACK_PALETTES).toHaveLength(6);
+        expect(WARDROBE_FALLBACK_PALETTES).toHaveLength(7);
         expect(WARDROBE_FALLBACK_FAQS).toHaveLength(12);
         expect(WARDROBE_FALLBACK_TIPS).toHaveLength(15);
 
@@ -128,6 +129,12 @@ test.describe('preparation guide fallback content', () => {
 
         for (const palette of WARDROBE_FALLBACK_PALETTES) {
             expect(palette.colors).toHaveLength(4);
+            expect(palette.example_images).toHaveLength(1);
+            const image = palette.example_images[0];
+            expect(image.src).toMatch(/^\/images\/client-guides\/wardrobe\/[a-z0-9-]+\.webp$/);
+            expect(image.alt.length).toBeGreaterThan(20);
+            expect(image.caption.length).toBeGreaterThan(20);
+            expect(existsSync(join(process.cwd(), 'public', image.src))).toBe(true);
             for (const color of palette.colors) {
                 expect(color.hex).toMatch(/^#[0-9A-F]{6}$/);
             }
@@ -328,12 +335,252 @@ test.describe('client preparation guide route contract', () => {
             personalized: true,
         });
         expect(payload.data.poses.cards).toHaveLength(30);
-        expect(payload.data.wardrobe.palettes).toHaveLength(6);
+        expect(payload.data.wardrobe.palettes).toHaveLength(7);
         expect(payload.data.wardrobe.checklists).toHaveLength(3);
         expect(payload.data.wardrobe.faqs).toHaveLength(12);
         expect(payload.data.recommended_palettes).toEqual(payload.data.wardrobe.palettes);
         expect(payload.data.recommended_outfits).toEqual(payload.data.wardrobe.outfits);
         expect(payload.data.tips).toEqual(payload.data.wardrobe.tips);
+    });
+
+    test('adds semantic fallback illustrations to CMS wardrobe tips without images', async () => {
+        const handler = createClientPreparationGuideGetHandler(dependencies({
+            findWardrobeTips: async () => [
+                {
+                    id: 1,
+                    slug: 'zasada-trzech-kolorow',
+                    title: 'Zasada Trzech Kolorów',
+                    content: 'Wybierz trzy główne kolory dla całej rodziny.',
+                    tip_type: 'color',
+                    category: 'general',
+                },
+                {
+                    id: 2,
+                    slug: 'warstwy-dodaja-glebi',
+                    title: 'Warstwy Dodają Głębi',
+                    content: 'Kardigany, kamizelki i szaliki dają więcej możliwości.',
+                    category: 'general',
+                },
+                {
+                    id: 3,
+                    slug: 'unikaj-logotypow',
+                    title: 'Unikaj Wielkich Logotypów',
+                    content: 'Duże logo odwraca uwagę od twarzy.',
+                    category: 'general',
+                },
+                {
+                    id: 4,
+                    slug: 'dopasowanie-kluczowe',
+                    title: 'Dopasowanie Jest Kluczowe',
+                    content: 'Unikaj zbyt ciasnych i za luźnych ubrań.',
+                    category: 'general',
+                },
+                {
+                    id: 5,
+                    slug: 'wybierz-wygode',
+                    title: 'Zamiast sztywnej zasady wybierz wygodę',
+                    content: 'Swobodny strój pomaga czuć się komfortowo.',
+                    image: '   ',
+                    category: 'general',
+                },
+                {
+                    id: 6,
+                    slug: 'wlasna-porada-z-obrazem',
+                    title: 'Własna porada fotografa',
+                    content: 'Ta porada ma własny obraz z CMS.',
+                    image: '  /images/client-guides/wardrobe/season.webp  ',
+                    imageAlt: '  Własny opis alternatywny obrazu z CMS.  ',
+                    category: 'general',
+                },
+            ],
+        }));
+
+        const response = await handler(request('', { authorization: 'Bearer valid-token' }));
+        const payload = await response.json();
+        const tips = payload.data.wardrobe.tips;
+
+        expect(response.status).toBe(200);
+        expect(tips.map((tip: PreparationGuideTip) => tip.image)).toEqual([
+            '/images/client-guides/wardrobe/palette.webp',
+            '/images/client-guides/wardrobe/layers.webp',
+            '/images/client-guides/wardrobe/avoid.webp',
+            '/images/client-guides/wardrobe/fitting.webp',
+            '/images/client-guides/wardrobe/comfort.webp',
+            '/images/client-guides/wardrobe/season.webp',
+        ]);
+        expect(tips[4].image).not.toBe('/images/client-guides/wardrobe/city.webp');
+        expect(tips[5]).toMatchObject({
+            image: '/images/client-guides/wardrobe/season.webp',
+            imageAlt: 'Własny opis alternatywny obrazu z CMS.',
+        });
+        for (const tip of tips as PreparationGuideTip[]) {
+            expect(tip.image).toBeTruthy();
+            expect(tip.imageAlt).toBeTruthy();
+            expect(tip.image).not.toMatch(/^\s*$/);
+        }
+    });
+
+    test('merges a partial CMS palette set with missing visual use cases and a dedicated city environment', async () => {
+        const colors = [
+            { name: 'Pierwszy', hex: '#334455' },
+            { name: 'Drugi', hex: '#667788' },
+            { name: 'Trzeci', hex: '#99AABB' },
+            { name: 'Czwarty', hex: '#CCDDEE' },
+        ];
+        const cmsPalettes: PreparationGuidePalette[] = [
+            { id: 101, slug: 'miekka-natura', name: 'Miękka Natura', description: 'Zgaszona zieleń i beże.', colors },
+            {
+                id: 102,
+                slug: 'elegancka-miejska',
+                name: 'Elegancka Miejska',
+                description: 'Eleganckie zestawy na miejski spacer.',
+                colors,
+                example_images: ['https://unsafe.example/image.jpg'],
+            },
+            { id: 103, slug: 'letnia-lekkosc', name: 'Letnia Lekkość', description: 'Jasne letnie kolory.', colors },
+            { id: 104, slug: 'zimowa-elegancja', name: 'Zimowa Elegancja', description: 'Chłodne zimowe kolory.', colors },
+        ];
+        const handler = createClientPreparationGuideGetHandler(dependencies({
+            findPalettes: async () => cmsPalettes,
+        }));
+
+        const response = await handler(request('', { authorization: 'Bearer valid-token' }));
+        const payload = await response.json();
+        const palettes = payload.data.wardrobe.palettes as PreparationGuidePalette[];
+
+        expect(response.status).toBe(200);
+        expect(palettes).toHaveLength(8);
+        expect(palettes.map((palette) => palette.name)).toEqual(expect.arrayContaining([
+            'Miękka Natura',
+            'Elegancka Miejska',
+            'Letnia Lekkość',
+            'Zimowa Elegancja',
+            'Ciepła ziemia',
+            'Przygaszony zachód',
+            'Las i kamień',
+            'Miasto: cegła, beton i szkło',
+        ]));
+        expect(palettes.map((palette) => palette.name)).not.toContain('Spokojna natura');
+        expect(palettes.map((palette) => palette.name)).not.toContain('Nad wodą');
+        expect(palettes.map((palette) => palette.name)).not.toContain('Chłodna elegancja');
+
+        const genericCity = palettes.find((palette) => palette.name === 'Elegancka Miejska');
+        const environmentCity = palettes.find((palette) => palette.name === 'Miasto: cegła, beton i szkło');
+        expect(genericCity?.example_images).toEqual([
+            expect.objectContaining({ src: '/images/client-guides/wardrobe/city.webp' }),
+        ]);
+        expect(environmentCity?.description).toContain('cegły');
+        expect(environmentCity?.description).toContain('betonu');
+        expect(environmentCity?.description).toContain('szkła');
+        expect(environmentCity?.description).toContain('zieleni miejskiej');
+        expect(environmentCity?.description).toContain('neonów');
+
+        for (const palette of palettes) {
+            const images = palette.example_images as Array<{ src: string; alt: string; caption: string }>;
+            expect(images).toHaveLength(1);
+            expect(images[0].src).toMatch(/^\/images\/client-guides\/wardrobe\/[a-z0-9-]+\.webp$/);
+            expect(images[0].alt.length).toBeGreaterThan(10);
+            expect(images[0].caption.length).toBeGreaterThan(10);
+            expect(images[0].src).not.toContain('unsafe.example');
+        }
+    });
+
+    test('does not classify the word "zamiast" as a city palette', async () => {
+        const handler = createClientPreparationGuideGetHandler(dependencies({
+            findPalettes: async () => [{
+                id: 105,
+                slug: 'wygodny-wybor',
+                name: 'Wygodny wybór',
+                description: 'Zamiast sztywnej zasady wybierz własny komfort.',
+                colors: [
+                    { name: 'Krem', hex: '#F3E8D5' },
+                    { name: 'Piasek', hex: '#D8C7A6' },
+                    { name: 'Szałwia', hex: '#A8B29A' },
+                    { name: 'Oliwka', hex: '#74785A' },
+                ],
+            }],
+        }));
+
+        const response = await handler(request('', { authorization: 'Bearer valid-token' }));
+        const payload = await response.json();
+        const palettes = payload.data.wardrobe.palettes as PreparationGuidePalette[];
+        const customPalette = palettes.find((palette) => palette.name === 'Wygodny wybór');
+
+        expect(response.status).toBe(200);
+        expect(customPalette?.example_images).toEqual([
+            expect.objectContaining({ src: '/images/client-guides/wardrobe/palette.webp' }),
+        ]);
+        expect(customPalette?.example_images).not.toEqual([
+            expect.objectContaining({ src: '/images/client-guides/wardrobe/city.webp' }),
+        ]);
+        expect(palettes.some((palette) => palette.id === 'city-light')).toBe(true);
+    });
+
+    test('keeps the canonical city environment when a CMS palette collides with its name and slug', async () => {
+        const handler = createClientPreparationGuideGetHandler(dependencies({
+            findPalettes: async () => [{
+                id: 999,
+                slug: 'miasto-cegla-beton-i-szklo',
+                name: 'Miasto: cegła, beton i szkło',
+                description: 'Krótki opis z CMS.',
+                colors: [
+                    { name: 'Krem', hex: '#F3E8D5' },
+                    { name: 'Piasek', hex: '#D8C7A6' },
+                    { name: 'Szałwia', hex: '#A8B29A' },
+                    { name: 'Oliwka', hex: '#74785A' },
+                ],
+                example_images: [{ src: '/images/client-guides/wardrobe/women.webp' }],
+            }],
+        }));
+
+        const response = await handler(request('', { authorization: 'Bearer valid-token' }));
+        const payload = await response.json();
+        const palettes = payload.data.wardrobe.palettes as PreparationGuidePalette[];
+        const cityPalettes = palettes.filter((palette) => palette.id === 'city-light');
+
+        expect(response.status).toBe(200);
+        expect(cityPalettes).toHaveLength(1);
+        expect(cityPalettes[0].description).toContain('cegły');
+        expect(cityPalettes[0].description).toContain('betonu');
+        expect(cityPalettes[0].description).toContain('szkła');
+        expect(cityPalettes[0].description).toContain('stali');
+        expect(cityPalettes[0].description).toContain('zieleni miejskiej');
+        expect(cityPalettes[0].description).toContain('neonów');
+        expect(cityPalettes[0].example_images).toEqual([
+            expect.objectContaining({ src: '/images/client-guides/wardrobe/city.webp' }),
+        ]);
+        expect(palettes.some((palette) => palette.id === 999)).toBe(false);
+    });
+
+    test('rejects an unknown local wardrobe image and uses an existing fallback asset', async () => {
+        const handler = createClientPreparationGuideGetHandler(dependencies({
+            findPalettes: async () => [{
+                id: 106,
+                slug: 'wygodna-paleta',
+                name: 'Wygodna paleta',
+                description: 'Spokojny, komfortowy zestaw.',
+                colors: [
+                    { name: 'Krem', hex: '#F3E8D5' },
+                    { name: 'Piasek', hex: '#D8C7A6' },
+                    { name: 'Szałwia', hex: '#A8B29A' },
+                    { name: 'Oliwka', hex: '#74785A' },
+                ],
+                example_images: [{ src: '/images/client-guides/wardrobe/missing.webp' }],
+            }],
+        }));
+
+        const response = await handler(request('', { authorization: 'Bearer valid-token' }));
+        const payload = await response.json();
+        const palette = (payload.data.wardrobe.palettes as PreparationGuidePalette[])
+            .find((entry) => entry.id === 106);
+
+        expect(response.status).toBe(200);
+        expect(palette?.example_images).toEqual([
+            expect.objectContaining({ src: '/images/client-guides/wardrobe/palette.webp' }),
+        ]);
+        expect(palette?.example_images).not.toEqual([
+            expect.objectContaining({ src: '/images/client-guides/wardrobe/missing.webp' }),
+        ]);
     });
 
     test('converts unexpected dependency errors into a stable 500 response', async () => {

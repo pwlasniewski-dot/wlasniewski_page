@@ -4,10 +4,11 @@ import {
     POSE_GUIDE_CARDS,
     WARDROBE_CHECKLISTS,
     WARDROBE_FALLBACK_FAQS,
-    WARDROBE_FALLBACK_PALETTES,
     WARDROBE_FALLBACK_TIPS,
 } from '@/data/preparationGuides';
 import { canAccessGuideOffer } from '@/lib/styleGuideAccess';
+import { addWardrobeTipImages } from '@/lib/wardrobeTipImages';
+import { mergeWardrobePalettes } from '@/lib/wardrobePaletteImages';
 import type {
     ClientPreparationGuideData,
     PreparationGuideFaq,
@@ -104,8 +105,10 @@ export function createClientPreparationGuideGetHandler(
                     dependencies.findPoseFaqs(),
                 ]);
 
-            const wardrobePalettes = palettes.length ? palettes : WARDROBE_FALLBACK_PALETTES;
-            const wardrobeTipsResolved = wardrobeTips.length ? wardrobeTips : WARDROBE_FALLBACK_TIPS;
+            const wardrobePalettes = mergeWardrobePalettes(palettes);
+            const wardrobeTipsResolved = addWardrobeTipImages(
+                wardrobeTips.length ? wardrobeTips : WARDROBE_FALLBACK_TIPS
+            );
             const wardrobeFaqsResolved = wardrobeFaqs.length ? wardrobeFaqs : WARDROBE_FALLBACK_FAQS;
 
             const data: ClientPreparationGuideData = {

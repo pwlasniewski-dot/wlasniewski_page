@@ -7,6 +7,9 @@
 - [x] Chroniona zakładka „Przygotowanie” w Panelu Klienta.
 - [x] Karta wejściowa na ekranie „Przegląd”.
 - [x] 15 ilustrowanych porad „Jak się ubrać”, w tym sesja miejska.
+- [x] Obrazy dopinane również do aktywnych porad pochodzących z CMS.
+- [x] Ilustrowane palety uzupełniające częściowy zestaw CMS, w tym kanoniczne „Miasto: cegła, beton i szkło”.
+- [x] Wyeksponowane zakładki, większe opisy i próbki kolorów.
 - [x] 30 ilustrowanych kart pozowania.
 - [x] Zamknięcie publicznych dróg dostępu do kategorii `pose`.
 - [x] Testy API, autoryzacji, responsywności 320 px i powiększenia 200%.
@@ -15,8 +18,8 @@
 
 ### Weryfikacja
 
-- [x] `npm run build` — PASS, 230/230 stron.
-- [x] `npm run test:preparation-guide` — 19/19 PASS.
+- [x] `npm run build` — PASS, 228/228 stron.
+- [x] `npm run test:preparation-guide` — 24/24 PASS.
 - [x] Targetowany ESLint — PASS.
 - [x] Produkcyjny smoke test `/logowanie` i `/konto` — HTTP 200.
 - [x] Niezależny QA — GO.
@@ -25,7 +28,8 @@
 
 - [x] Właściciel zaakceptował commit i push.
 - [x] Wszystkie fonty, obrazy WebP, testy, helpery i skrypt Prisma dodano do zakresu.
-- [ ] Publikacja na GitHub `main` i weryfikacja buildu Netlify.
+- [x] Pierwsza publikacja modułu na GitHub `main` i Netlify.
+- [ ] Commit i publikacja poprawek ilustracji, palet oraz czytelności po akceptacji właściciela.
 
 ## 2026-07-29
 

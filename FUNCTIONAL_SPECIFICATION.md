@@ -17,6 +17,9 @@ Ten dokument stanowi kompleksowy opis funkcjonalności oraz logiki biznesowej pl
 - Ekran `/konto` udostępnia osobną zakładkę „Przygotowanie” oraz skrót na głównym widoku klienta.
 - Moduł ma dwa obszary: „Jak się ubrać” i „Pozy”.
 - Część garderobiana obejmuje zasady, palety kolorów, checklisty, FAQ i 15 ilustrowanych kart, w tym przygotowanie do sesji miejskiej.
+- Dane garderobiane z CMS są łączone z kuratorowanymi materiałami: brakujące ilustracje i palety są uzupełniane, a osobna karta miejska obejmuje cegłę, beton, szkło, stal, zieleń i neony.
+- Każda paleta pokazuje obraz kompletnej stylizacji, podpis efektu, opis zastosowania oraz czytelne próbki z nazwami i kodami kolorów.
+- Zakładki, opisy i próbki zachowują czytelność przy szerokości 320 px oraz powiększeniu 200%.
 - Część pozowania obejmuje 30 ilustrowanych ustawień z instrukcją, wariantem, błędem do skorygowania i wersją dostępną.
 - Dane są personalizowane kontekstem oferty i miejsca sesji. Dostęp do poradnika pozy wymaga aktywnej sesji klienta oraz prawa do wskazanej oferty.
 - Publiczne endpointy poradnika stylu wykluczają prywatną kategorię `pose`.

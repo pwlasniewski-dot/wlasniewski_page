@@ -77,10 +77,10 @@ export default function TipCard({ tip, compact = false, imagePriority = false }:
                     </div>
                 )}
                 <div className="flex-1 min-w-0">
-                    <h3 className="text-lg font-semibold text-slate-900 mb-2">
+                    <h3 className="text-xl font-bold text-slate-900 mb-2">
                         {tip.title}
                     </h3>
-                    <p className="text-sm text-slate-600 leading-relaxed">
+                    <p className="text-base text-slate-700 leading-relaxed">
                         {tip.content}
                     </p>
                     {tip.tip_type && (

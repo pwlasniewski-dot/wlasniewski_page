@@ -111,6 +111,7 @@ export const WARDROBE_FALLBACK_PALETTES = [
         id: 'warm-earth',
         name: 'Ciepła ziemia',
         description: 'Spokojne, ciepłe kolory do wnętrz i plenerów.',
+        example_images: [{ src: '/images/client-guides/wardrobe/outdoor.webp', alt: 'Osoby w ciepłych beżach, karmelu i terakocie.', caption: 'Ciepłe kolory dobrze łączą się z naturalnym plenerem i miękkim światłem.' }],
         colors: [
             { name: 'Krem', hex: '#F3E8D5' },
             { name: 'Karmel', hex: '#B7794B' },
@@ -122,6 +123,7 @@ export const WARDROBE_FALLBACK_PALETTES = [
         id: 'calm-nature',
         name: 'Spokojna natura',
         description: 'Zgaszone zielenie i neutralne beże.',
+        example_images: [{ src: '/images/client-guides/wardrobe/palette.webp', alt: 'Rodzina w strojach w kolorach szałwii, oliwki, piasku i ecru.', caption: 'Różne fasony pozostają spójne dzięki powtarzającym się naturalnym kolorom.' }],
         colors: [
             { name: 'Szałwia', hex: '#A8B29A' },
             { name: 'Oliwka', hex: '#74785A' },
@@ -133,6 +135,7 @@ export const WARDROBE_FALLBACK_PALETTES = [
         id: 'cool-elegance',
         name: 'Chłodna elegancja',
         description: 'Granaty i szarości z łagodnym jasnym akcentem.',
+        example_images: [{ src: '/images/client-guides/wardrobe/black-white.webp', alt: 'Eleganckie stylizacje łączące granat, stalową szarość i jasne akcenty.', caption: 'Chłodne barwy zyskują głębię dzięki fakturom i łagodnemu jasnemu akcentowi.' }],
         colors: [
             { name: 'Granat', hex: '#26354A' },
             { name: 'Stal', hex: '#718096' },
@@ -144,6 +147,7 @@ export const WARDROBE_FALLBACK_PALETTES = [
         id: 'muted-sunset',
         name: 'Przygaszony zachód',
         description: 'Ciepła, delikatna paleta bez jaskrawych kontrastów.',
+        example_images: [{ src: '/images/client-guides/wardrobe/women.webp', alt: 'Stylizacje w pudrowym różu, moreli, śliwce i wanilii.', caption: 'Przygaszone ciepłe barwy tworzą delikatny efekt bez mocnych kontrastów.' }],
         colors: [
             { name: 'Pudrowy róż', hex: '#D8AAA4' },
             { name: 'Morela', hex: '#D69A73' },
@@ -155,6 +159,7 @@ export const WARDROBE_FALLBACK_PALETTES = [
         id: 'forest-stone',
         name: 'Las i kamień',
         description: 'Głębsze odcienie do zielonych i miejskich plenerów.',
+        example_images: [{ src: '/images/client-guides/wardrobe/layers.webp', alt: 'Warstwowe stylizacje w zieleni, kolorze kamienia i lnu.', caption: 'Zgaszona zieleń i neutralne warstwy współgrają z roślinnością i kamiennym tłem.' }],
         colors: [
             { name: 'Las', hex: '#344C3D' },
             { name: 'Mech', hex: '#68745B' },
@@ -166,11 +171,24 @@ export const WARDROBE_FALLBACK_PALETTES = [
         id: 'by-water',
         name: 'Nad wodą',
         description: 'Miękkie błękity, piasek i ciepły brąz.',
+        example_images: [{ src: '/images/client-guides/wardrobe/season.webp', alt: 'Lekkie stylizacje w błękitach, piasku i ciepłym brązie.', caption: 'Błękit i piasek nawiązują do otoczenia, a koniakowy detal ociepla zestaw.' }],
         colors: [
             { name: 'Błękit', hex: '#9FB8C5' },
             { name: 'Morski', hex: '#547782' },
             { name: 'Piasek', hex: '#D9C7A2' },
             { name: 'Konjak', hex: '#9A623C' },
+        ],
+    },
+    {
+        id: 'city-light',
+        name: 'Miasto: cegła, beton i szkło',
+        description: 'Kolory dobrane do cegły, betonu, szkła, stali, zieleni miejskiej i neonów.',
+        example_images: [{ src: '/images/client-guides/wardrobe/city.webp', alt: 'Miejskie stylizacje dopasowane do cegły, betonu oraz szkła i stali.', caption: 'Krem i oliwka równoważą cegłę, karmel ociepla beton, a granat porządkuje odbicia szkła i światła neonów.' }],
+        colors: [
+            { name: 'Krem', hex: '#E9DFCF' },
+            { name: 'Oliwka', hex: '#68705A' },
+            { name: 'Karmel', hex: '#A66A3F' },
+            { name: 'Granat', hex: '#27364B' },
         ],
     },
 ];
