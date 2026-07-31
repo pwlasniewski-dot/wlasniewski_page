@@ -11,6 +11,16 @@ Ten dokument stanowi techniczny blueprint platformy fotograficznej wlasniewski.p
 
 ---
 
+## Aktualizacja 2026-07-31 — Przygotowanie klienta i stabilność buildu
+
+- Prywatny poradnik jest wystawiany przez `/api/style-guide/client`; handler weryfikuje token, aktywność użytkownika oraz własność oferty.
+- Statyczne treści zastępcze pozostają po stronie serwera i nie są importowane przez komponent kliencki.
+- Wspólna reguła `styleGuideAccess` wyklucza kategorię `pose` ze wszystkich publicznych ścieżek odczytu.
+- Ilustracje poradnika są zoptymalizowanymi zasobami WebP w `public/images/client-guides`.
+- Fonty aplikacji są self-hosted przez `next/font/local`, więc build nie zależy od Google Fonts.
+- `scripts/prisma-generate-local.js` wykrywa lokalne silniki Prisma dla bieżącej platformy i propaguje błędy generatora.
+- `outputFileTracingRoot` wskazuje bieżący katalog projektu, stabilizując standalone build w środowiskach z nadrzędnymi lockfile'ami.
+
 ## 1. System Overview & Tech Stack
 
 Platforma jest nowoczesną aplikacją webową zbudowaną w architekturze **Serverless First**, kładącą nacisk na wydajność (Core Web Vitals) oraz stabilność danych.

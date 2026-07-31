@@ -1,6 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
     poweredByHeader: false,
+    // Keep standalone tracing inside this project even when a parent folder
+    // contains an unrelated lockfile.
+    outputFileTracingRoot: process.cwd(),
     async redirects() {
         return [
             { source: '/start', destination: '/', permanent: true },

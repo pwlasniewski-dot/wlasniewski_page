@@ -1,11 +1,18 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import Image from 'next/image';
 import { Check, ChevronDown, Heart, Palette, ShieldCheck, Shirt } from 'lucide-react';
 import OutfitCollageCard from './OutfitCollageCard';
 import TipCard from './TipCard';
-import type { ClientPreparationGuideData, PoseGuideCard } from '@/types/preparation-guide';
+import type {
+    ClientPreparationGuideData,
+    PoseGuideCard,
+    PreparationGuideFaq,
+    PreparationGuidePalette,
+    PreparationGuidePaletteColor,
+    PreparationGuideTip,
+} from '@/types/preparation-guide';
 
 type FallbackContext = {
     serviceType?: string;
@@ -75,8 +82,8 @@ function WardrobeGuide({ data }: { data: ClientPreparationGuideData['wardrobe'] 
             <section>
                 <SectionTitle icon={<Shirt className="h-5 w-5" />} title="Najważniejsze zasady" />
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    {tips.map((tip: any) => (
-                        <TipCard key={tip.id} tip={tip} />
+                    {tips.map((tip: PreparationGuideTip, index) => (
+                        <TipCard key={tip.id} tip={tip} imagePriority={index < 2} />
                     ))}
                 </div>
             </section>
@@ -85,7 +92,7 @@ function WardrobeGuide({ data }: { data: ClientPreparationGuideData['wardrobe'] 
                 <section>
                     <SectionTitle icon={<Palette className="h-5 w-5" />} title="Palety kolorów" />
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                        {palettes.map((palette: any) => <PaletteGuideCard key={palette.id} palette={palette} />)}
+                        {palettes.map((palette) => <PaletteGuideCard key={palette.id} palette={palette} />)}
                     </div>
                 </section>
             )}
@@ -94,7 +101,7 @@ function WardrobeGuide({ data }: { data: ClientPreparationGuideData['wardrobe'] 
                 <section>
                     <SectionTitle icon={<Shirt className="h-5 w-5" />} title="Przykładowe zestawy" />
                     <div className="space-y-5">
-                        {outfits.map((outfit: any) => (
+                        {outfits.map((outfit) => (
                             <div key={outfit.id} className="overflow-hidden rounded-2xl bg-white py-4">
                                 <OutfitCollageCard outfit={outfit} showSubtitle={false} />
                             </div>
@@ -126,7 +133,7 @@ function WardrobeGuide({ data }: { data: ClientPreparationGuideData['wardrobe'] 
                 <section>
                     <SectionTitle icon={<Heart className="h-5 w-5" />} title="Najczęstsze pytania" />
                     <div className="space-y-3">
-                        {faqs.map((faq: any) => (
+                        {faqs.map((faq: PreparationGuideFaq) => (
                             <details key={faq.id} className="group rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5">
                                 <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-4 font-semibold text-white outline-none focus-visible:ring-2 focus-visible:ring-gold-400">
                                     {faq.question}
@@ -174,15 +181,25 @@ function PoseGuide({ cards, cmsTips }: { cards: PoseGuideCard[]; cmsTips: Client
     );
 }
 
-function PaletteGuideCard({ palette }: { palette: any }) {
-    const colors = Array.isArray(palette.colors) ? palette.colors : [];
+function isPaletteColor(value: unknown): value is PreparationGuidePaletteColor {
+    if (!value || typeof value !== 'object') return false;
+    const color = value as Record<string, unknown>;
+    return typeof color.name === 'string'
+        && typeof color.hex === 'string'
+        && /^#[0-9a-f]{6}$/i.test(color.hex);
+}
+
+function PaletteGuideCard({ palette }: { palette: PreparationGuidePalette }) {
+    const colors = Array.isArray(palette.colors)
+        ? palette.colors.filter(isPaletteColor)
+        : [];
 
     return (
         <article className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5">
             <h4 className="text-lg font-bold text-white">{palette.name}</h4>
             {palette.description && <p className="mt-2 text-sm leading-relaxed text-zinc-400">{palette.description}</p>}
             <ul className="mt-4 grid grid-cols-2 gap-3">
-                {colors.map((color: any) => (
+                {colors.map((color) => (
                     <li key={`${color.name}-${color.hex}`} className="min-w-0 rounded-xl border border-zinc-700 bg-zinc-950/60 p-3">
                         <span
                             className="mb-2 block h-10 w-full rounded-lg border border-white/20"

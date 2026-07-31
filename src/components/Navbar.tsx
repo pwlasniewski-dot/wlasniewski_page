@@ -123,20 +123,22 @@ export default function Navbar({ isB2B: serverIsB2B }: { isB2B?: boolean }) {
 
                 const data = await res.json();
 
-                if (Array.isArray(data) && data.length > 0) {
-                    const dynamicMenuItems = data.map((item: any) => ({
-                        id: item.id,
-                        label: item.title,
-                        href: item.url || '#',
-                        children: item.children && item.children.length > 0 ? item.children.map((child: any) => ({
-                            id: child.id,
-                            label: child.title,
-                            href: child.url || '#'
-                        })) : undefined
-                    }));
-                    setMenuItems(dynamicMenuItems);
-                } else if (Array.isArray(data) && data.length === 0 && isB2BContextActive) {
-                    setMenuItems(B2B_MENU_ITEMS);
+                if (Array.isArray(data)) {
+                    if (data.length > 0) {
+                        const dynamicMenuItems = data.map((item: any) => ({
+                            id: item.id,
+                            label: item.title,
+                            href: item.url || '#',
+                            children: item.children && item.children.length > 0 ? item.children.map((child: any) => ({
+                                id: child.id,
+                                label: child.title,
+                                href: child.url || '#'
+                            })) : undefined
+                        }));
+                        setMenuItems(dynamicMenuItems);
+                    } else {
+                        setMenuItems(isB2BContextActive ? B2B_MENU_ITEMS : MENU_ITEMS);
+                    }
                 } else {
                     console.error('Menu data is not an array:', data);
                     setMenuItems(isB2BContextActive ? B2B_MENU_ITEMS : MENU_ITEMS);

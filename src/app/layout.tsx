@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Cormorant_Garamond, Montserrat, Playfair_Display, Lato, Great_Vibes, Cinzel, Inter, Outfit } from "next/font/google";
+import localFont from "next/font/local";
 import prisma from '@/lib/db/prisma'; // Added fonts
 
 // PERFORMANCE: Enable ISR (Incremental Static Regeneration)
@@ -8,41 +8,48 @@ export const revalidate = 3600;
 
 // ... existing fonts ...
 
-const playfair = Playfair_Display({
-    subsets: ["latin"],
+const playfair = localFont({
+    src: "../../public/fonts/PlayfairDisplay-Variable.ttf",
     variable: "--font-playfair",
+    weight: "400 900",
     display: "swap",
 });
 
-const lato = Lato({
-    subsets: ["latin"],
+const lato = localFont({
+    src: [
+        { path: "../../public/fonts/Lato-Light.ttf", weight: "300", style: "normal" },
+        { path: "../../public/fonts/Lato-Regular.ttf", weight: "400", style: "normal" },
+        { path: "../../public/fonts/Lato-Bold.ttf", weight: "700", style: "normal" },
+    ],
     variable: "--font-lato",
-    weight: ["300", "400", "700"],
     display: "swap",
 });
 
-const greatVibes = Great_Vibes({
-    subsets: ["latin"],
+const greatVibes = localFont({
+    src: "../../public/fonts/GreatVibes-Regular.ttf",
     variable: "--font-great-vibes",
-    weight: ["400"],
+    weight: "400",
     display: "swap",
 });
 
-const cinzel = Cinzel({
-    subsets: ["latin"],
+const cinzel = localFont({
+    src: "../../public/fonts/Cinzel-Variable.ttf",
     variable: "--font-cinzel",
+    weight: "400 900",
     display: "swap",
 });
 
-const inter = Inter({
-    subsets: ["latin"],
+const inter = localFont({
+    src: "../../public/fonts/Inter-Variable.ttf",
     variable: "--font-inter",
+    weight: "100 900",
     display: "swap",
 });
 
-const outfit = Outfit({
-    subsets: ["latin"],
+const outfit = localFont({
+    src: "../../public/fonts/Outfit-Variable.ttf",
     variable: "--font-outfit",
+    weight: "100 900",
     display: "swap",
 });
 
@@ -59,16 +66,17 @@ import DeferredClientChrome from "@/components/DeferredClientChrome";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 import { isB2BContext } from "@/lib/context";
 
-const cormorant = Cormorant_Garamond({
-    subsets: ["latin"],
+const cormorant = localFont({
+    src: "../../public/fonts/CormorantGaramond-Variable.ttf",
     variable: "--font-display",
-    weight: ["300", "400", "500", "600", "700"],
+    weight: "300 700",
     display: "swap",
 });
 
-const montserrat = Montserrat({
-    subsets: ["latin"],
+const montserrat = localFont({
+    src: "../../public/fonts/Montserrat-Variable.ttf",
     variable: "--font-sans",
+    weight: "100 900",
     display: "swap",
 });
 

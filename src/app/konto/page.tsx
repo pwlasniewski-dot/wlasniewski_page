@@ -460,6 +460,29 @@ export default function AccountPage() {
                     </div>
                 )}
 
+                <button
+                    type="button"
+                    onClick={() => setActiveTab('preparation')}
+                    aria-label="Otwórz poradnik Przygotowanie do sesji"
+                    className="group relative w-full overflow-hidden rounded-3xl border border-gold-500/30 bg-gradient-to-br from-gold-500/15 via-zinc-900/80 to-zinc-950 p-5 text-left shadow-lg shadow-black/20 transition-all hover:border-gold-400/60 hover:shadow-xl hover:shadow-gold-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-400 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 sm:p-7"
+                >
+                    <div className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-gold-500/10 blur-3xl transition-colors group-hover:bg-gold-500/20" aria-hidden />
+                    <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center">
+                        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gold-500 text-black shadow-lg shadow-gold-500/20" aria-hidden>
+                            <BookOpen className="h-7 w-7" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                            <p className="text-xs font-bold uppercase tracking-[0.18em] text-gold-400">Poradnik klienta</p>
+                            <h2 className="mt-1 text-xl font-bold text-white sm:text-2xl">Przygotowanie do sesji</h2>
+                            <p className="mt-2 text-sm leading-relaxed text-zinc-300 sm:text-base">Jak się ubrać i jak pozować przed sesją</p>
+                        </div>
+                        <span className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-gold-500 px-5 py-3 text-sm font-bold text-black transition-colors group-hover:bg-gold-400 sm:w-auto">
+                            Otwórz poradnik
+                            <ChevronRight className="h-4 w-4" aria-hidden />
+                        </span>
+                    </div>
+                </button>
+
                 {/* Foto-Match block (tylko gdy enabled lub klient ma profil) */}
                 {(fotoMatchEnabled || fotoMatchProfile) && (
                     <FotoMatchOverviewBlock profile={fotoMatchProfile} />

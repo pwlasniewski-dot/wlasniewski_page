@@ -1,5 +1,28 @@
 # PROJECT_HISTORIA & VADEMECUM STABILNOŚCI
 
+## [2026-07-31] PANEL KLIENTA „PRZYGOTOWANIE” I POWTARZALNY BUILD
+
+**Cel biznesowy:** ograniczyć liczbę pytań przed sesją i lepiej przygotować klientów do zdjęć.
+
+### Zrealizowano
+
+- Dodano chronioną zakładkę „Przygotowanie” w `/konto` oraz kartę wejściową na ekranie „Przegląd”.
+- Poradnik „Jak się ubrać” zawiera 15 kart z własnymi ilustracjami, w tym dobór kolorów do miasta, cegły, betonu, szkła, zieleni i neonów.
+- Poradnik pozowania zawiera 30 kompletnych kart z ilustracjami WebP.
+- Treści kategorii `pose` zostały odseparowane od publicznych list, szczegółów, relacji i wyszukiwania; prywatna treść jest pobierana po uwierzytelnieniu.
+- Produkcyjny build nie pobiera już Google Fonts: osiem rodzin jest obsługiwanych przez `next/font/local` i oficjalne pliki w `public/fonts`.
+- `scripts/prisma-generate-local.js` wykorzystuje lokalne silniki Prisma na Windows, Linux i macOS, bez wyłączania TLS.
+- `next.config.mjs` ogranicza tracing standalone do katalogu projektu, dzięki czemu nadrzędny `package-lock.json` nie zmienia rootu buildu.
+
+### Weryfikacja
+
+- `npm run build`: PASS, 230/230 stron.
+- Testy przygotowania: 19/19 PASS.
+- Smoke test produkcyjny: `/logowanie`, `/konto` oraz przykładowe obrazy zwracają HTTP 200.
+- Targetowany ESLint i `git diff --check`: PASS.
+
+---
+
 ## [2026-07-29] CRM LEADÓW + SEO I WYDAJNOŚĆ
 
 - Formularze zapisują każde poprawne zapytanie w `Inquiry` przed próbą wysyłki e-maila, więc awaria SMTP nie powoduje utraty leada.

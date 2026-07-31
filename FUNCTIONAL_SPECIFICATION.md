@@ -12,6 +12,15 @@ Ten dokument stanowi kompleksowy opis funkcjonalności oraz logiki biznesowej pl
 
 ---
 
+## Aktualizacja 2026-07-31 — Panel Klienta „Przygotowanie”
+
+- Ekran `/konto` udostępnia osobną zakładkę „Przygotowanie” oraz skrót na głównym widoku klienta.
+- Moduł ma dwa obszary: „Jak się ubrać” i „Pozy”.
+- Część garderobiana obejmuje zasady, palety kolorów, checklisty, FAQ i 15 ilustrowanych kart, w tym przygotowanie do sesji miejskiej.
+- Część pozowania obejmuje 30 ilustrowanych ustawień z instrukcją, wariantem, błędem do skorygowania i wersją dostępną.
+- Dane są personalizowane kontekstem oferty i miejsca sesji. Dostęp do poradnika pozy wymaga aktywnej sesji klienta oraz prawa do wskazanej oferty.
+- Publiczne endpointy poradnika stylu wykluczają prywatną kategorię `pose`.
+
 ## 1. Architektura Systemu i Stack Techniczny
 
 System został zaprojektowany jako nowoczesna aplikacja webowa typu Fullstack, kładąca nacisk na szybkość ładowania, SEO oraz interaktywny panel administracyjny.

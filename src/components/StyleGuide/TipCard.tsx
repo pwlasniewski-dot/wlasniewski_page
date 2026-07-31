@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
 import * as Icons from 'lucide-react';
 
@@ -9,14 +10,17 @@ interface TipCardProps {
         id: number | string;
         title: string;
         content: string;
+        image?: string;
+        imageAlt?: string;
         tip_type?: string | null;
         icon?: string | null;
         is_featured?: boolean;
     };
     compact?: boolean;
+    imagePriority?: boolean;
 }
 
-export default function TipCard({ tip, compact = false }: TipCardProps) {
+export default function TipCard({ tip, compact = false, imagePriority = false }: TipCardProps) {
     // Dynamically get icon from lucide-react
     const IconComponent = tip.icon && (Icons as any)[tip.icon] 
         ? (Icons as any)[tip.icon] 
@@ -51,13 +55,27 @@ export default function TipCard({ tip, compact = false }: TipCardProps) {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             whileHover={{ y: -4 }}
-            className="p-8 bg-white border border-slate-200 rounded-2xl hover:shadow-lg transition-all group"
+            className="overflow-hidden bg-white border border-slate-200 rounded-2xl hover:shadow-lg transition-all group"
         >
-            <div className="flex items-start gap-4">
-                {/* Small subtle icon */}
-                <div className="w-10 h-10 flex-shrink-0 bg-slate-50 rounded-lg flex items-center justify-center group-hover:bg-slate-100 transition-colors">
-                    <IconComponent className="w-5 h-5 text-slate-400" />
+            {tip.image && (
+                <div className="relative aspect-[16/10] overflow-hidden bg-[#f7eee3]">
+                    <Image
+                        src={tip.image}
+                        alt={tip.imageAlt || tip.title}
+                        fill
+                        priority={imagePriority}
+                        sizes="(max-width: 768px) 100vw, 50vw"
+                        className="object-contain"
+                    />
                 </div>
+            )}
+            <div className="flex items-start gap-4 p-6 sm:p-7">
+                {/* Small subtle icon */}
+                {!tip.image && (
+                    <div className="w-10 h-10 flex-shrink-0 bg-slate-50 rounded-lg flex items-center justify-center group-hover:bg-slate-100 transition-colors">
+                        <IconComponent className="w-5 h-5 text-slate-400" />
+                    </div>
+                )}
                 <div className="flex-1 min-w-0">
                     <h3 className="text-lg font-semibold text-slate-900 mb-2">
                         {tip.title}

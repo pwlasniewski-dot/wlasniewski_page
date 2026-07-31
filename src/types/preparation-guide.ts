@@ -2,6 +2,8 @@ export type PreparationGuideTip = {
     id: number | string;
     title: string;
     content: string;
+    image?: string;
+    imageAlt?: string;
     tip_type?: string | null;
     category?: string | null;
     icon?: string | null;
@@ -25,6 +27,27 @@ export type PreparationGuidePalette = {
     mood?: string | null;
     colors: unknown;
     example_images?: unknown;
+};
+
+export type PreparationGuideOutfit = {
+    id: number;
+    title: string;
+    slug?: string;
+    description?: string | null;
+    season?: string | null;
+    location_type?: string | null;
+    category?: string | null;
+    outfit_details?: unknown;
+    palette?: {
+        id?: number;
+        name?: string;
+        colors?: unknown;
+    } | null;
+};
+
+export type PreparationGuidePaletteColor = {
+    name: string;
+    hex: string;
 };
 
 export type PoseGuideCard = {
@@ -54,7 +77,7 @@ export type ClientPreparationGuideData = {
     };
     wardrobe: {
         palettes: PreparationGuidePalette[];
-        outfits: unknown[];
+        outfits: PreparationGuideOutfit[];
         tips: PreparationGuideTip[];
         faqs: PreparationGuideFaq[];
         checklists: WardrobeChecklist[];
@@ -65,6 +88,6 @@ export type ClientPreparationGuideData = {
         faqs: PreparationGuideFaq[];
     };
     recommended_palettes: PreparationGuidePalette[];
-    recommended_outfits: unknown[];
+    recommended_outfits: PreparationGuideOutfit[];
     tips: PreparationGuideTip[];
 };
