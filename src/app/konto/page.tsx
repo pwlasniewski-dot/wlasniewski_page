@@ -31,6 +31,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import ClientOfferRecommendedAlbums from '@/components/client/ClientOfferRecommendedAlbums';
 import ClientStyleGuidePanel from '@/components/StyleGuide/ClientStyleGuidePanel';
+import AccountTabButton from '@/components/client/AccountTabButton';
 
 type Tab = 'overview' | 'sessions' | 'bookings' | 'documents' | 'gift_cards' | 'workshops' | 'preparation' | 'settings' | 'partner';
 
@@ -199,48 +200,45 @@ export default function AccountPage() {
                     </div>
 
                     {/* Tab Navigation — filtered by permissions */}
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:flex md:flex-wrap gap-2 bg-zinc-900/50 p-2 rounded-2xl border border-zinc-800 backdrop-blur-xl">
-                        <TabButton id="overview" label="Przegląd" active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} icon={<Star className="w-4 h-4" />} />
+                    <nav aria-label="Sekcje konta" className="grid grid-cols-1 min-[360px]:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 bg-zinc-900/50 p-2 rounded-2xl border border-zinc-700 backdrop-blur-xl">
+                        <AccountTabButton label="Przegląd" active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} icon={<Star className="h-6 w-6" />} />
 
                         {userPermissions?.galleries !== false && (
-                            <TabButton 
-                                id="sessions" 
+                            <AccountTabButton
                                 label="Galerie" 
                                 active={activeTab === 'sessions'} 
                                 onClick={() => setActiveTab('sessions')} 
-                                icon={<ImageIcon className="w-4 h-4" />} 
+                                icon={<ImageIcon className="h-6 w-6" />}
                                 count={galleries.length + challenges.length}
                                 hasAlert={challenges.some((c: any) => c.role === 'invitee' && (c.status === 'sent' || c.status === 'viewed'))}
                             />
                         )}
 
                         {userPermissions?.bookings !== false && (
-                            <TabButton id="bookings" label="Rezerwacje" active={activeTab === 'bookings'} onClick={() => setActiveTab('bookings')} icon={<Calendar className="w-4 h-4" />} count={bookings.length} />
+                            <AccountTabButton label="Rezerwacje" active={activeTab === 'bookings'} onClick={() => setActiveTab('bookings')} icon={<Calendar className="h-6 w-6" />} count={bookings.length} />
                         )}
 
                         {(userPermissions?.offers !== false || userPermissions?.contracts !== false) && (
-                            <TabButton 
-                                id="documents" 
+                            <AccountTabButton
                                 label="Oferty i Umowy" 
                                 active={activeTab === 'documents'} 
                                 onClick={() => setActiveTab('documents')} 
-                                icon={<FileText className="w-4 h-4" />} 
+                                icon={<FileText className="h-6 w-6" />}
                                 count={offers.length + contracts.length}
                                 hasAlert={offers.some((o: any) => o.status === 'sent' || o.status === 'pending' || o.status === 'draft' || o.status === 'unlock_requested')}
                             />
                         )}
 
                         {userPermissions?.gift_cards !== false && (
-                            <TabButton id="gift_cards" label="Karty Podarunkowe" active={activeTab === 'gift_cards'} onClick={() => setActiveTab('gift_cards')} icon={<Gift className="w-4 h-4" />} count={giftCards.length} />
+                            <AccountTabButton label="Karty Podarunkowe" active={activeTab === 'gift_cards'} onClick={() => setActiveTab('gift_cards')} icon={<Gift className="h-6 w-6" />} count={giftCards.length} />
                         )}
 
                         {/* Warsztaty — zawsze widoczna jako bajer; jesli brak dostepu -> zablokowany widok */}
-                        <TabButton 
-                            id="workshops" 
+                        <AccountTabButton
                             label="Warsztaty" 
                             active={activeTab === 'workshops'} 
                             onClick={() => setActiveTab('workshops')} 
-                            icon={<GraduationCap className="w-4 h-4" />} 
+                            icon={<GraduationCap className="h-6 w-6" />}
                             count={workshops.length || undefined}
                             hasAlert={workshops.some((w: any) => {
                                 const isDepositOverdue = w.deposit_due_at && !w.deposit_paid_at && new Date(w.deposit_due_at) < new Date();
@@ -249,27 +247,26 @@ export default function AccountPage() {
                             })}
                         />
 
-                        <TabButton
-                            id="preparation"
+                        <AccountTabButton
                             label="Przygotowanie"
                             active={activeTab === 'preparation'}
                             onClick={() => setActiveTab('preparation')}
-                            icon={<BookOpen className="w-4 h-4" />}
+                            icon={<BookOpen className="h-6 w-6" />}
                         />
 
-                        <TabButton id="settings" label="Ustawienia" active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} icon={<UserIcon className="w-4 h-4" />} />
+                        <AccountTabButton label="Ustawienia" active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} icon={<UserIcon className="h-6 w-6" />} />
                         {user?.role === 'PHOTOGRAPHER' && (
-                            <TabButton id="partner" label="Strefa Partnera" active={activeTab === 'partner'} onClick={() => setActiveTab('partner')} icon={<Star className="w-4 h-4 text-gold-500" />} />
+                            <AccountTabButton label="Strefa Partnera" active={activeTab === 'partner'} onClick={() => setActiveTab('partner')} icon={<Star className="h-6 w-6" />} />
                         )}
                         {(user?.role === 'PHOTOGRAPHER' || user?.role === 'ADMIN') && (
                             <Link
                                 href="/panel-fotografa"
-                                className="flex items-center justify-center gap-2 px-4 md:px-6 py-3 rounded-xl transition-all bg-gradient-to-r from-rose-500 to-amber-500 text-white font-bold shadow-lg hover:shadow-xl col-span-2 sm:col-span-1"
+                                className="flex min-h-16 min-w-0 items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-rose-500 to-amber-500 px-4 py-3 font-bold text-white shadow-lg transition-all hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
                             >
                                 <Calendar className="w-4 h-4" /> <span className="hidden sm:inline">Mój kalendarz</span><span className="sm:hidden">Kalendarz</span>
                             </Link>
                         )}
-                    </div>
+                    </nav>
                 </div>
             </div>
 
@@ -302,35 +299,6 @@ export default function AccountPage() {
     );
 
     // --- Sub-renderers ---
-
-    function TabButton({ id, label, active, onClick, icon, count, hasAlert }: { id: Tab, label: string, active: boolean, onClick: () => void, icon: React.ReactNode, count?: number, hasAlert?: boolean }) {
-        return (
-            <button
-                onClick={onClick}
-                className={`relative flex items-center justify-center gap-2 px-3 md:px-6 py-3 rounded-xl transition-all text-sm ${
-                    active 
-                        ? 'bg-gold-600 text-black font-bold' 
-                        : hasAlert
-                        ? 'bg-gradient-to-br from-gold-500/20 via-gold-500/5 to-transparent border-2 border-gold-500/70 text-gold-200 hover:text-white animate-pulse-soft shadow-[0_0_20px_rgba(212,175,55,0.2)]'
-                        : 'bg-zinc-900/30 backdrop-blur-xl text-zinc-400 hover:text-white hover:bg-zinc-800'
-                }`}
-            >
-                {hasAlert && !active && (
-                    <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-gold-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-3 w-3 bg-gold-500"></span>
-                    </span>
-                )}
-                {icon}
-                <span className="hidden sm:inline">{label}</span>
-                {count !== undefined && count > 0 && (
-                    <span className={`hidden sm:inline px-2 py-0.5 rounded-full text-[10px] ${active ? 'bg-black/20 text-black' : hasAlert ? 'bg-gold-500/30 text-gold-200' : 'bg-zinc-800 text-zinc-500'}`}>
-                        {count}
-                    </span>
-                )}
-            </button>
-        );
-    }
 
     function renderOverview() {
         const activeOffer = offers.find((o: any) => o.status !== 'rejected') || offers[0];

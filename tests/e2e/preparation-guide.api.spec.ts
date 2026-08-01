@@ -74,10 +74,47 @@ test.describe('preparation guide fallback content', () => {
             expect(card.steps.length).toBeGreaterThanOrEqual(3);
             expect(card.body.length).toBeGreaterThan(10);
             expect(card.variant.length).toBeGreaterThan(10);
-            expect(card.mistake.length).toBeGreaterThan(10);
             expect(card.mobility.length).toBeGreaterThan(10);
             expect(card.imageAlt.length).toBeGreaterThan(10);
+            expect('mistake' in card).toBe(false);
         }
+    });
+
+    test('uses natural language in every pose card and removes technical sections', () => {
+        const forbiddenLanguage = [
+            /gdy pojawia się napięcie/i,
+            /wersja dostępna/i,
+            /transfer/i,
+            /dostępnym zakresie/i,
+            /komunikacj[aę] wspomag/i,
+        ];
+
+        for (const card of POSE_GUIDE_CARDS) {
+            const clientCopy = [
+                card.title,
+                card.purpose,
+                ...card.steps,
+                card.body,
+                card.variant,
+                card.mobility,
+            ].join(' ');
+
+            for (const forbidden of forbiddenLanguage) {
+                expect(clientCopy).not.toMatch(forbidden);
+            }
+        }
+
+        const sittingPose = POSE_GUIDE_CARDS.find((card) => card.id === 'P02');
+        expect(sittingPose?.steps.join(' ')).toContain('siedzisz wygodnie i pewnie');
+
+        const componentSource = readFileSync(
+            join(process.cwd(), 'src', 'components', 'StyleGuide', 'PreparationGuide.tsx'),
+            'utf8'
+        );
+        expect(componentSource).not.toContain('Gdy pojawia się napięcie');
+        expect(componentSource).not.toContain('Wersja dostępna');
+        expect(componentSource).toContain('label="Inny pomysł"');
+        expect(componentSource).toContain('label="Możesz też"');
     });
 
     test('provides an optimized illustration for every pose card', () => {
@@ -198,6 +235,37 @@ test.describe('preparation guide fallback content', () => {
         expect(accountSource.slice(preparationButton, lowerTiles)).toContain("onClick={() => setActiveTab('preparation')}");
         expect(accountSource.slice(preparationButton, lowerTiles)).toContain('Jak się ubrać i jak pozować przed sesją');
         expect(accountSource.slice(preparationButton, lowerTiles)).not.toContain('href=');
+    });
+
+    test('keeps account navigation labels visible and touch-friendly on mobile', () => {
+        const accountSource = readFileSync(
+            join(process.cwd(), 'src', 'app', 'konto', 'page.tsx'),
+            'utf8'
+        );
+        const tabButtonSource = readFileSync(
+            join(process.cwd(), 'src', 'components', 'client', 'AccountTabButton.tsx'),
+            'utf8'
+        );
+
+        for (const label of [
+            'Przegląd',
+            'Galerie',
+            'Rezerwacje',
+            'Oferty i Umowy',
+            'Karty Podarunkowe',
+            'Warsztaty',
+            'Przygotowanie',
+            'Ustawienia',
+        ]) {
+            expect(accountSource).toContain(`label="${label}"`);
+        }
+
+        expect(accountSource).toContain('grid-cols-1 min-[360px]:grid-cols-2');
+        expect(tabButtonSource).toContain('data-account-tab');
+        expect(tabButtonSource).toContain('min-h-16');
+        expect(tabButtonSource).toContain('h-10 w-10');
+        expect(tabButtonSource).toContain('{label}');
+        expect(tabButtonSource).not.toContain('hidden sm:inline');
     });
 
     test('applies the public pose filter to every public read path', () => {

@@ -59,6 +59,16 @@ test('preparation guide reflows at 320 px and keeps full color labels', async ({
     await expect(page.getByText('#D8AAA4', { exact: true })).toBeVisible();
     await expect(page.getByText('Toruń — Stare Miasto', { exact: true })).toBeVisible();
     await expect(page.getByText('4 osób', { exact: true })).toBeVisible();
+    const accountTabs = page.locator('[data-account-tab]');
+    await expect(accountTabs).toHaveCount(4);
+    for (const label of ['Przegląd', 'Galerie', 'Oferty i Umowy', 'Przygotowanie']) {
+        await expect(page.getByRole('button', { name: label, exact: true })).toBeVisible();
+    }
+    const accountTabBoxes = await accountTabs.evaluateAll((elements) => elements.map((element) => {
+        const bounds = element.getBoundingClientRect();
+        return { width: bounds.width, height: bounds.height };
+    }));
+    expect(accountTabBoxes.every((box) => box.height >= 64 && box.width <= 288)).toBe(true);
     const wardrobeTab = page.getByRole('button', { name: 'Jak się ubrać' });
     const posesTab = page.getByRole('button', { name: 'Pozy' });
     await expect(wardrobeTab).toBeVisible();
@@ -114,6 +124,7 @@ test('preparation guide has no horizontal overflow at 200% zoom', async ({ page 
 
     await expect(page.getByRole('button', { name: 'Jak się ubrać' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Pozy' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Oferty i Umowy', exact: true })).toBeVisible();
     await expect(page.locator('[data-palette-card] img')).toHaveCount(7);
     const colorLabel = page.getByText('Pudrowy róż', { exact: true });
     await expect(colorLabel).toBeAttached();

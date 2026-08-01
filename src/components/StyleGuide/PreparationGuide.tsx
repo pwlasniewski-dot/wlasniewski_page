@@ -281,9 +281,8 @@ function PoseCard({ card }: { card: PoseGuideCard }) {
                     </ol>
                 </div>
                 <p className="text-sm leading-relaxed text-zinc-300">{card.body}</p>
-                <Info label="Wariant" value={card.variant} />
-                <Info label="Gdy pojawia się napięcie" value={card.mistake} />
-                <Info label="Wersja dostępna" value={card.mobility} />
+                <Info label="Inny pomysł" value={card.variant} />
+                <Info label="Możesz też" value={card.mobility} />
             </div>
         </details>
     );

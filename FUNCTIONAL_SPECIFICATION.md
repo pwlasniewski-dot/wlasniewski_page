@@ -2,6 +2,13 @@
 
 Ten dokument stanowi kompleksowy opis funkcjonalności oraz logiki biznesowej platformy **FOTO-DRON Przemysław Właśniewski**. Dokumentacja została opracowana na podstawie audytu technicznego przeprowadzonego w grudniu 2025 r. Szczegóły techniczne dotyczące infrastruktury i wzorców projektowych znajdują się w dokumencie [ARCHITECTURE.md](file:///c:/Strona-fotografa/ARCHITECTURE.md).
 
+## Aktualizacja 2026-08-01 — mobilna strefa klienta i język poradnika
+
+- Kafelki nawigacji w `/konto` zawsze pokazują ikonę i pełną nazwę sekcji także na telefonie.
+- Każdy kafelek ma duży obszar dotykowy, czytelny kontrast oraz jednoznaczny stan aktywny.
+- Karty pozowania zawierają kroki, krótką wskazówkę, „Inny pomysł” i „Możesz też”; usunięto sekcję o napięciu.
+- Wszystkie teksty pozowania używają codziennego języka bez technicznego i medycznego żargonu.
+
 ## Aktualizacja 2026-07-29 — zapytania sprzedażowe
 
 - Formularze B2C, lokalne i B2B zapisują dane w tabeli `Inquiry`.

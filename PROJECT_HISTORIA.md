@@ -1,5 +1,14 @@
 # PROJECT_HISTORIA & VADEMECUM STABILNOŚCI
 
+## [2026-08-01] CZYTELNY PANEL MOBILNY I NATURALNE OPISY POZOWANIA
+
+- Mobilna nawigacja `/konto` pokazuje teraz nazwy wszystkich sekcji, większe ikony i wyraźne stany aktywne.
+- Usunięto z kart pozowania sekcję „Gdy pojawia się napięcie” oraz techniczne określenia w rodzaju „Wersja dostępna” i „transfer”.
+- Wszystkie 30 kart pozowania przepisano prostym, naturalnym językiem skierowanym do klienta.
+- Testy przygotowania: 26/26 PASS; build produkcyjny: 228/228 stron.
+
+---
+
 ## [2026-07-31] PANEL KLIENTA „PRZYGOTOWANIE” I POWTARZALNY BUILD
 
 **Cel biznesowy:** ograniczyć liczbę pytań przed sesją i lepiej przygotować klientów do zdjęć.

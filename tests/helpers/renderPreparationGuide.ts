@@ -1,6 +1,7 @@
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import PreparationGuide from '../../src/components/StyleGuide/PreparationGuide';
+import AccountTabButton from '../../src/components/client/AccountTabButton';
 import {
     POSE_GUIDE_CARDS,
     WARDROBE_CHECKLISTS,
@@ -34,9 +35,34 @@ const guideData: ClientPreparationGuideData = {
     tips: WARDROBE_FALLBACK_TIPS,
 };
 
+const navigation = React.createElement(
+    'nav',
+    {
+        'aria-label': 'Sekcje konta',
+        'data-account-nav': true,
+        className: 'mb-8 grid grid-cols-1 min-[360px]:grid-cols-2 gap-2 rounded-2xl border border-zinc-700 bg-zinc-900/50 p-2',
+    },
+    [
+        ['Przegląd', true, '★'],
+        ['Galerie', false, '▧'],
+        ['Oferty i Umowy', false, '▤'],
+        ['Przygotowanie', false, '▣'],
+    ].map(([label, active, icon]) => React.createElement(AccountTabButton, {
+        key: String(label),
+        label: String(label),
+        active: Boolean(active),
+        icon: React.createElement('span', { 'aria-hidden': true }, String(icon)),
+    }))
+);
+
 process.stdout.write(renderToStaticMarkup(
-    React.createElement(PreparationGuide, {
-        data: guideData,
-        fallbackContext: { groupSize: 4 },
-    })
+    React.createElement(
+        React.Fragment,
+        null,
+        navigation,
+        React.createElement(PreparationGuide, {
+            data: guideData,
+            fallbackContext: { groupSize: 4 },
+        })
+    )
 ));

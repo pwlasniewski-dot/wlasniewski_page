@@ -1,5 +1,14 @@
 # Aktualny plan prac
 
+## 2026-08-01 — Czytelność mobilna i teksty pozowania
+
+- [x] Widoczne nazwy wszystkich sekcji Panelu Klienta na telefonie.
+- [x] Większe kafelki, ikony, kontrast i obszary dotykowe.
+- [x] Usunięta sekcja „Gdy pojawia się napięcie”.
+- [x] Wszystkie 30 kart przepisane naturalnym językiem.
+- [x] Testy 26/26, targetowany lint i build 228/228 PASS.
+- [ ] Commit i publikacja po akceptacji właściciela.
+
 ## 2026-07-31 — Panel Klienta „Przygotowanie”
 
 ### Zakończone

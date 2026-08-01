@@ -2,6 +2,12 @@
 
 Ten dokument stanowi techniczny blueprint platformy fotograficznej wlasniewski.pl. Jest on przeznaczony dla senior deweloperów i architektów systemowych, opisując strukturę, wzorce projektowe oraz krytyczne protokoły bezpieczeństwa.
 
+## Aktualizacja 2026-08-01 — komponenty mobilnego panelu i model pozy
+
+- `AccountTabButton` jest wspólnym komponentem nawigacji klienta z widoczną etykietą, ikoną, licznikiem i stanem aktywnym.
+- `PoseGuideCard` nie zawiera już pola `mistake`; interfejs renderuje wyłącznie krótkie instrukcje i naturalne alternatywy.
+- Testy przeglądarkowe kontrolują etykiety nawigacji, minimalną wysokość dotykową, szerokość 320 px i powiększenie 200%.
+
 ## Aktualizacja 2026-07-29 — trwałość leadów i warstwa publiczna
 
 - `POST /api/contact`: walidacja → zapis `Inquiry` → próba powiadomienia SMTP.

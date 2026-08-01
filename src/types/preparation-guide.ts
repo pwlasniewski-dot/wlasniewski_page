@@ -58,7 +58,6 @@ export type PoseGuideCard = {
     steps: string[];
     body: string;
     variant: string;
-    mistake: string;
     mobility: string;
     image?: string;
     imageAlt: string;
