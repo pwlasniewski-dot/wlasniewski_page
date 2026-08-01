@@ -1,5 +1,6 @@
 import { WARDROBE_FALLBACK_PALETTES, WARDROBE_FALLBACK_TIPS } from '@/data/preparationGuides';
 import type { PreparationGuidePalette } from '@/types/preparation-guide';
+import { isAllowedPublicMediaUrl } from '@/lib/publicMediaUrl';
 
 export type WardrobePaletteImage = {
     src: string;
@@ -85,7 +86,8 @@ function semanticKey(palette: PreparationGuidePalette): string {
 }
 
 export function isSafeWardrobeImage(value: unknown): value is string {
-    return typeof value === 'string' && knownWardrobeImages.has(value.trim());
+    return typeof value === 'string'
+        && (knownWardrobeImages.has(value.trim()) || isAllowedPublicMediaUrl(value));
 }
 
 function parseImages(palette: PreparationGuidePalette): WardrobePaletteImage[] {

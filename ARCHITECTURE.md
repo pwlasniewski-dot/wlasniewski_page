@@ -2,6 +2,15 @@
 
 Ten dokument stanowi techniczny blueprint platformy fotograficznej wlasniewski.pl. Jest on przeznaczony dla senior deweloperów i architektów systemowych, opisując strukturę, wzorce projektowe oraz krytyczne protokoły bezpieczeństwa.
 
+## Aktualizacja 2026-08-01 — CMS poradnika klienta
+
+- `PreparationGuideEditor` obsługuje wersjonowany dokument `PreparationGuideCmsData` i wykorzystuje istniejący `MediaPicker`.
+- `GET/POST /api/pages/preparation-guide` są chronione przez `withAdminAuth`; zapis wykonuje `Page.upsert` dla slugu `przygotowanie-klienta`.
+- `preparationGuideCmsSchema` wymusza dokładnie 15/7/3/12/30 elementów, unikalne ID, limity treści, kolory `#RRGGBB` i bezpieczne adresy obrazów.
+- Wspólny `isAllowedPublicMediaUrl` dopuszcza ścieżki aplikacji i HTTPS z właściwego zasobnika S3; używają go zapis CMS, scalanie palet i `PaletteGuideCard`.
+- `/api/style-guide/client` odczytuje dokument serwerowo i przekazuje go dopiero po autoryzacji klienta; uszkodzony lub nieistniejący dokument nie przerywa działania, tylko uruchamia fallback.
+- Rozwiązanie wykorzystuje istniejącą tabelę `pages`, dlatego wdrożenie nie wymaga migracji Prisma.
+
 ## Aktualizacja 2026-08-01 — komponenty mobilnego panelu i model pozy
 
 - `AccountTabButton` jest wspólnym komponentem nawigacji klienta z widoczną etykietą, ikoną, licznikiem i stanem aktywnym.

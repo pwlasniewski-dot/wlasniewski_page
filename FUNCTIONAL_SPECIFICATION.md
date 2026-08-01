@@ -2,6 +2,15 @@
 
 Ten dokument stanowi kompleksowy opis funkcjonalności oraz logiki biznesowej platformy **FOTO-DRON Przemysław Właśniewski**. Dokumentacja została opracowana na podstawie audytu technicznego przeprowadzonego w grudniu 2025 r. Szczegóły techniczne dotyczące infrastruktury i wzorców projektowych znajdują się w dokumencie [ARCHITECTURE.md](file:///c:/Strona-fotografa/ARCHITECTURE.md).
 
+## Aktualizacja 2026-08-01 — edytor przygotowania w Pages
+
+- Lista `/admin/pages` zawiera systemową pozycję „Przygotowanie do sesji”.
+- Edytor ma pięć czytelnych zakładek: „Jak się ubrać”, „Palety kolorów”, „Checklisty”, „FAQ” i „Pozy”.
+- Można zmienić wszystkie teksty, opisy alternatywne obrazów, podpisy palet, kolory oraz obrazy wybrane z Media.
+- Przy każdym obrazie dostępna jest operacja „Usuń obraz”.
+- Zapis wymaga administratora i odrzuca puste pola, błędne kody kolorów, nieprawidłowe adresy obrazów, niepełny katalog oraz powtórzone identyfikatory.
+- Niezalogowany użytkownik nie otrzymuje treści poradnika; klient otrzymuje zapis CMS dopiero po weryfikacji aktywnej sesji.
+
 ## Aktualizacja 2026-08-01 — mobilna strefa klienta i język poradnika
 
 - Kafelki nawigacji w `/konto` zawsze pokazują ikonę i pełną nazwę sekcji także na telefonie.

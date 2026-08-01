@@ -21,6 +21,12 @@ import {
     type PreparationGuideUser,
 } from '../../src/lib/clientPreparationGuideHandler';
 import type { PreparationGuidePalette, PreparationGuideTip } from '../../src/types/preparation-guide';
+import {
+    defaultPreparationGuideCmsData,
+    parsePreparationGuideCmsData,
+    removePreparationGuideCmsImage,
+} from '../../src/lib/preparationGuideCms';
+import { isAllowedPublicMediaUrl } from '../../src/lib/publicMediaUrl';
 
 const activeUser: PreparationGuideUser = {
     id: 7,
@@ -64,6 +70,115 @@ function request(
 }
 
 test.describe('preparation guide fallback content', () => {
+    test('creates and validates the full CMS document', () => {
+        const cms = defaultPreparationGuideCmsData();
+
+        expect(cms.wardrobeTips).toHaveLength(15);
+        expect(cms.wardrobePalettes).toHaveLength(7);
+        expect(cms.wardrobeChecklists).toHaveLength(3);
+        expect(cms.wardrobeFaqs).toHaveLength(12);
+        expect(cms.poseCards).toHaveLength(30);
+        expect(parsePreparationGuideCmsData(JSON.stringify(cms))).toEqual(cms);
+        expect(parsePreparationGuideCmsData({ ...cms, poseCards: [] })).toBeNull();
+    });
+
+    test('rejects partial catalogs and duplicate identifiers', () => {
+        const partial = defaultPreparationGuideCmsData();
+        partial.wardrobeTips.pop();
+        expect(parsePreparationGuideCmsData(partial)).toBeNull();
+
+        const duplicate = defaultPreparationGuideCmsData();
+        duplicate.poseCards[1].id = duplicate.poseCards[0].id;
+        expect(parsePreparationGuideCmsData(duplicate)).toBeNull();
+
+        const duplicateFaq = defaultPreparationGuideCmsData();
+        duplicateFaq.wardrobeFaqs[1].id = duplicateFaq.wardrobeFaqs[0].id;
+        expect(parsePreparationGuideCmsData(duplicateFaq)).toBeNull();
+    });
+
+    test('accepts Media paths and configured S3 images but rejects foreign hosts', () => {
+        expect(isAllowedPublicMediaUrl('/uploads/sesja.webp')).toBe(true);
+        expect(isAllowedPublicMediaUrl('/api/media/file?id=12')).toBe(true);
+        expect(isAllowedPublicMediaUrl('/images/client-guides/wardrobe/city.webp')).toBe(true);
+        expect(isAllowedPublicMediaUrl('https://wlasniewski-photo-storage.s3.eu-north-1.amazonaws.com/sesja.webp')).toBe(true);
+        expect(isAllowedPublicMediaUrl('https://evil.example/sesja.webp')).toBe(false);
+        expect(isAllowedPublicMediaUrl('https://wlasniewski-photo-storage.s3.amazonaws.com/sesja.webp')).toBe(false);
+        expect(isAllowedPublicMediaUrl('//evil.example/sesja.webp')).toBe(false);
+        expect(isAllowedPublicMediaUrl('/admin/pages')).toBe(false);
+    });
+
+    test('removes images without changing the remaining CMS catalog', () => {
+        const cms = defaultPreparationGuideCmsData();
+        const withoutTipImage = removePreparationGuideCmsImage(cms, 'wardrobe', 0);
+        const withoutPaletteImage = removePreparationGuideCmsImage(cms, 'palettes', 0);
+        const withoutPoseImage = removePreparationGuideCmsImage(cms, 'poses', 0);
+
+        expect(withoutTipImage.wardrobeTips[0].image).toBeUndefined();
+        expect(withoutPaletteImage.wardrobePalettes[0].example_images).toEqual([]);
+        expect(withoutPoseImage.poseCards[0].image).toBeUndefined();
+        expect(parsePreparationGuideCmsData(withoutTipImage)).not.toBeNull();
+        expect(parsePreparationGuideCmsData(withoutPaletteImage)).not.toBeNull();
+        expect(parsePreparationGuideCmsData(withoutPoseImage)).not.toBeNull();
+        expect(cms.wardrobeTips[0].image).toBeTruthy();
+        expect(cms.wardrobePalettes[0].example_images).not.toEqual([]);
+        expect(cms.poseCards[0].image).toBeTruthy();
+    });
+
+    test('serves CMS texts and images only through the authenticated client endpoint', async () => {
+        const cms = defaultPreparationGuideCmsData();
+        cms.wardrobeTips[0].title = 'Tekst zapisany w Pages';
+        cms.wardrobeTips[0].image = 'https://wlasniewski-photo-storage.s3.eu-north-1.amazonaws.com/ubranie.webp';
+        cms.poseCards[0].title = 'Poza zapisana w Pages';
+        cms.poseCards[0].image = '/uploads/poza.webp';
+        cms.wardrobeChecklists[0].title = 'Checklista zapisana w Pages';
+        cms.wardrobeFaqs[0].question = 'FAQ zapisane w Pages?';
+
+        const handler = createClientPreparationGuideGetHandler(dependencies({
+            findCmsGuide: async () => JSON.stringify(cms),
+        }));
+
+        const unauthorized = await handler(request());
+        const authorized = await handler(request('', { authorization: 'Bearer valid-token' }));
+        const payload = await authorized.json();
+
+        expect(unauthorized.status).toBe(401);
+        expect(authorized.status).toBe(200);
+        expect(payload.data.wardrobe.tips[0]).toEqual(expect.objectContaining({
+            title: 'Tekst zapisany w Pages',
+            image: 'https://wlasniewski-photo-storage.s3.eu-north-1.amazonaws.com/ubranie.webp',
+        }));
+        expect(payload.data.poses.cards[0]).toEqual(expect.objectContaining({
+            title: 'Poza zapisana w Pages',
+            image: '/uploads/poza.webp',
+        }));
+        expect(payload.data.wardrobe.checklists[0].title).toBe('Checklista zapisana w Pages');
+        expect(payload.data.wardrobe.faqs[0].question).toBe('FAQ zapisane w Pages?');
+    });
+
+    test('keeps the Pages editor and persistence endpoint administrator-only', () => {
+        const adminRoute = readFileSync(join(
+            process.cwd(), 'src', 'app', 'api', 'pages', 'preparation-guide', 'route.ts'
+        ), 'utf8');
+        const editor = readFileSync(join(
+            process.cwd(), 'src', 'components', 'admin', 'PreparationGuideEditor.tsx'
+        ), 'utf8');
+        const pagesList = readFileSync(join(
+            process.cwd(), 'src', 'app', 'admin', 'pages', 'page.tsx'
+        ), 'utf8');
+        const clientGuide = readFileSync(join(
+            process.cwd(), 'src', 'components', 'StyleGuide', 'PreparationGuide.tsx'
+        ), 'utf8');
+
+        expect(adminRoute).toContain('withAdminAuth');
+        expect(adminRoute).toContain('prisma.page.upsert');
+        expect(editor).toContain('MediaPicker');
+        expect(editor).toContain('Usuń obraz');
+        expect(editor).toContain("'checklists'");
+        expect(editor).toContain("'faqs'");
+        expect(pagesList).toContain('/admin/pages/przygotowanie-klienta');
+        expect(clientGuide).toContain('isAllowedPublicMediaUrl(src)');
+    });
+
     test('contains 30 unique and complete pose cards', () => {
         expect(POSE_GUIDE_CARDS).toHaveLength(30);
         expect(new Set(POSE_GUIDE_CARDS.map((card) => card.id)).size).toBe(30);
@@ -620,7 +735,7 @@ test.describe('client preparation guide route contract', () => {
         expect(palettes.some((palette) => palette.id === 999)).toBe(false);
     });
 
-    test('rejects an unknown local wardrobe image and uses an existing fallback asset', async () => {
+    test('rejects a foreign wardrobe image host and uses an existing fallback asset', async () => {
         const handler = createClientPreparationGuideGetHandler(dependencies({
             findPalettes: async () => [{
                 id: 106,
@@ -633,7 +748,7 @@ test.describe('client preparation guide route contract', () => {
                     { name: 'Szałwia', hex: '#A8B29A' },
                     { name: 'Oliwka', hex: '#74785A' },
                 ],
-                example_images: [{ src: '/images/client-guides/wardrobe/missing.webp' }],
+                example_images: [{ src: 'https://evil.example/missing.webp' }],
             }],
         }));
 
@@ -647,7 +762,7 @@ test.describe('client preparation guide route contract', () => {
             expect.objectContaining({ src: '/images/client-guides/wardrobe/palette.webp' }),
         ]);
         expect(palette?.example_images).not.toEqual([
-            expect.objectContaining({ src: '/images/client-guides/wardrobe/missing.webp' }),
+            expect.objectContaining({ src: 'https://evil.example/missing.webp' }),
         ]);
     });
 

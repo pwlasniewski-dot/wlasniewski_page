@@ -1,5 +1,17 @@
 # Aktualny plan prac
 
+## 2026-08-01 — Edycja „Przygotowania” w Pages
+
+- [x] Systemowa pozycja poradnika na liście `/admin/pages`.
+- [x] Edycja 15 porad garderobowych, 7 palet, 3 checklist, 12 FAQ i 30 kart pozowania.
+- [x] Wybór obrazów z istniejącej biblioteki Media.
+- [x] Usuwanie obrazów porad, palet i póz.
+- [x] Pełny katalog i unikalność identyfikatorów wymuszane przez backend.
+- [x] Walidowany zapis po stronie serwera bez migracji bazy.
+- [x] Odczyt CMS przez chronione API klienta z fallbackiem obecnych treści.
+- [x] Testy API 26/26, targetowany lint i build 229/229 PASS.
+- [ ] Commit i publikacja po akceptacji właściciela.
+
 ## 2026-08-01 — Czytelność mobilna i teksty pozowania
 
 - [x] Widoczne nazwy wszystkich sekcji Panelu Klienta na telefonie.

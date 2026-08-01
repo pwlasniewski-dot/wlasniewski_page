@@ -9,6 +9,7 @@ import {
 import { canAccessGuideOffer } from '@/lib/styleGuideAccess';
 import { addWardrobeTipImages } from '@/lib/wardrobeTipImages';
 import { mergeWardrobePalettes } from '@/lib/wardrobePaletteImages';
+import { parsePreparationGuideCmsData } from '@/lib/preparationGuideCms';
 import type {
     ClientPreparationGuideData,
     PreparationGuideFaq,
@@ -42,6 +43,7 @@ export type ClientPreparationGuideDependencies = {
     findPoseTips: () => Promise<PreparationGuideTip[]>;
     findWardrobeFaqs: () => Promise<PreparationGuideFaq[]>;
     findPoseFaqs: () => Promise<PreparationGuideFaq[]>;
+    findCmsGuide?: () => Promise<unknown>;
 };
 
 const querySchema = z.object({
@@ -95,7 +97,7 @@ export function createClientPreparationGuideGetHandler(
                 return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
             }
 
-            const [palettes, outfits, wardrobeTips, poseTips, wardrobeFaqs, poseFaqs] =
+            const [palettes, outfits, wardrobeTips, poseTips, wardrobeFaqs, poseFaqs, rawCmsGuide] =
                 await Promise.all([
                     dependencies.findPalettes(),
                     dependencies.findOutfits(),
@@ -103,13 +105,17 @@ export function createClientPreparationGuideGetHandler(
                     dependencies.findPoseTips(),
                     dependencies.findWardrobeFaqs(),
                     dependencies.findPoseFaqs(),
+                    dependencies.findCmsGuide?.() ?? Promise.resolve(null),
                 ]);
 
-            const wardrobePalettes = mergeWardrobePalettes(palettes);
-            const wardrobeTipsResolved = addWardrobeTipImages(
+            const cmsGuide = parsePreparationGuideCmsData(rawCmsGuide);
+
+            const wardrobePalettes = cmsGuide?.wardrobePalettes ?? mergeWardrobePalettes(palettes);
+            const wardrobeTipsResolved = cmsGuide?.wardrobeTips ?? addWardrobeTipImages(
                 wardrobeTips.length ? wardrobeTips : WARDROBE_FALLBACK_TIPS
             );
-            const wardrobeFaqsResolved = wardrobeFaqs.length ? wardrobeFaqs : WARDROBE_FALLBACK_FAQS;
+            const wardrobeFaqsResolved = cmsGuide?.wardrobeFaqs
+                ?? (wardrobeFaqs.length ? wardrobeFaqs : WARDROBE_FALLBACK_FAQS);
 
             const data: ClientPreparationGuideData = {
                 context: {
@@ -123,9 +129,9 @@ export function createClientPreparationGuideGetHandler(
                     outfits,
                     tips: wardrobeTipsResolved,
                     faqs: wardrobeFaqsResolved,
-                    checklists: WARDROBE_CHECKLISTS,
+                    checklists: cmsGuide?.wardrobeChecklists ?? WARDROBE_CHECKLISTS,
                 },
-                poses: { cards: POSE_GUIDE_CARDS, tips: poseTips, faqs: poseFaqs },
+                poses: { cards: cmsGuide?.poseCards ?? POSE_GUIDE_CARDS, tips: poseTips, faqs: poseFaqs },
                 recommended_palettes: wardrobePalettes,
                 recommended_outfits: outfits,
                 tips: wardrobeTipsResolved,

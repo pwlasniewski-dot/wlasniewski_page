@@ -13,6 +13,7 @@ import type {
     PreparationGuidePaletteColor,
     PreparationGuideTip,
 } from '@/types/preparation-guide';
+import { isAllowedPublicMediaUrl } from '@/lib/publicMediaUrl';
 
 type FallbackContext = {
     serviceType?: string;
@@ -199,8 +200,7 @@ function PaletteGuideCard({ palette }: { palette: PreparationGuidePalette }) {
         ? palette.example_images.find((entry) => {
             if (!entry || typeof entry !== 'object') return false;
             const src = (entry as Record<string, unknown>).src;
-            return typeof src === 'string'
-                && /^\/images\/client-guides\/wardrobe\/[a-z0-9-]+\.webp$/i.test(src);
+            return isAllowedPublicMediaUrl(src);
         }) as Record<string, unknown> | undefined
         : undefined;
     const imageSrc = typeof image?.src === 'string' ? image.src : null;

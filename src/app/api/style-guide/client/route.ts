@@ -2,6 +2,7 @@ import prisma from '@/lib/db/prisma';
 import { verifyToken } from '@/lib/auth/jwt';
 import { publicStyleGuideCategoryFilter } from '@/lib/styleGuideAccess';
 import { createClientPreparationGuideGetHandler } from '@/lib/clientPreparationGuideHandler';
+import { PREPARATION_GUIDE_PAGE_SLUG } from '@/lib/preparationGuideCms';
 
 export const dynamic = 'force-dynamic';
 
@@ -69,4 +70,11 @@ export const GET = createClientPreparationGuideGetHandler({
         select: { id: true, question: true, answer: true, category: true },
         orderBy: { display_order: 'asc' },
     }),
+    findCmsGuide: async () => {
+        const page = await prisma.page.findUnique({
+            where: { slug: PREPARATION_GUIDE_PAGE_SLUG },
+            select: { content: true },
+        });
+        return page?.content ?? null;
+    },
 });

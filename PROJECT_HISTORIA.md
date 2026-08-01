@@ -1,5 +1,17 @@
 # PROJECT_HISTORIA & VADEMECUM STABILNOŚCI
 
+## [2026-08-01] EDYCJA PORADNIKA „PRZYGOTOWANIE” W PAGES
+
+- W `/admin/pages` dodano wyróżnioną pozycję „Przygotowanie do sesji” z osobnym, prostym edytorem.
+- Właściciel może edytować wszystkie 15 porad garderobowych, 7 palet, 3 checklisty, 12 FAQ i 30 kart pozowania oraz wybierać ich obrazy z biblioteki Media.
+- Każdy obraz można również usunąć; widok klienta obsługuje obrazy lokalne i pliki z właściwego zasobnika S3.
+- Backend nie przyjmuje niepełnego katalogu ani powtórzonych identyfikatorów, dzięki czemu omyłkowy zapis nie kasuje części poradnika.
+- Dane są walidowane i zapisywane jako wersjonowany dokument JSON w systemowym rekordzie `Page`; nie była potrzebna migracja bazy.
+- Prywatna treść nadal trafia do klienta wyłącznie przez uwierzytelnione `/api/style-guide/client`, a brak rekordu CMS uruchamia dotychczasowy fallback.
+- Build produkcyjny: PASS, 229/229 stron; testy API poradnika: 26/26 PASS.
+
+---
+
 ## [2026-08-01] CZYTELNY PANEL MOBILNY I NATURALNE OPISY POZOWANIA
 
 - Mobilna nawigacja `/konto` pokazuje teraz nazwy wszystkich sekcji, większe ikony i wyraźne stany aktywne.

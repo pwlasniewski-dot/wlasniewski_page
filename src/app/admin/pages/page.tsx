@@ -202,6 +202,7 @@ export default function PagesListPage() {
     };
 
     const filteredPages = pages.filter(page => {
+        if (page.slug === 'przygotowanie-klienta') return false;
         if (activeTabId === 'b2c') {
             const isB2B = page.page_type === 'b2b' || page.slug.startsWith('b2b') || page.slug.includes('dron');
             const matchesCustom = pageTabs.filter(t => !t.isSystem).some(t =>
@@ -283,6 +284,24 @@ export default function PagesListPage() {
                     Dodaj stronę
                 </button>
             </div>
+
+            {activeTabId === 'b2c' && (
+                <div className="mb-6 rounded-xl border border-gold-500/30 bg-gradient-to-r from-gold-500/10 to-zinc-900 p-6">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                            <div className="mb-2 flex items-center gap-2">
+                                <span className="rounded bg-gold-500 px-2 py-0.5 text-xs font-bold uppercase text-black">Panel Klienta</span>
+                                <span className="text-xs text-zinc-500">Treść prywatna</span>
+                            </div>
+                            <h2 className="text-lg font-semibold text-white">Przygotowanie do sesji</h2>
+                            <p className="mt-1 text-sm text-zinc-400">Jak się ubrać, palety kolorów i 30 instrukcji pozowania.</p>
+                        </div>
+                        <Link href="/admin/pages/przygotowanie-klienta" className="inline-flex min-h-11 items-center justify-center rounded-lg border border-gold-500/40 bg-gold-500 px-4 text-sm font-semibold text-black hover:bg-gold-400">
+                            <Edit className="mr-2 h-4 w-4" /> Edytuj poradnik
+                        </Link>
+                    </div>
+                </div>
+            )}
 
             {loading ? (
                 <div className="text-center py-12 text-zinc-400">Ładowanie...</div>
