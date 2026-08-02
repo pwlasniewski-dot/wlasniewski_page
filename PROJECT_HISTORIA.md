@@ -1,5 +1,30 @@
 # PROJECT_HISTORIA & VADEMECUM STABILNOŚCI
 
+## 2026-08-02 — Galeria ustawień, publiczny dostęp i czyste fallbacki
+
+- Dodano 10 kart naturalnych ustawień rodzinnych z krótkimi opisami HTML; zoptymalizowane WebP zajmują łącznie około 0,75 MB.
+- Wygasła sesja użytkownika jest czyszczona bez wyrzucania odwiedzającego z publicznego poradnika do logowania; przekierowanie pozostaje wyłącznie przy świadomym wylogowaniu.
+- Niedostępne menu dynamiczne, analityka i ustawienie interwału hero korzystają z bezpiecznych fallbacków bez czerwonej nakładki błędu.
+- Build produkcyjny przechodzi bez połączenia z lokalną bazą, a publiczny poradnik i strona główna zostały sprawdzone wizualnie na desktopie i telefonie.
+
+## 2026-08-01 — Strona główna: SSR hero, odporność CMS i ścieżka rezerwacji
+
+- Hero renderuje prawdziwą treść, obraz responsywny i główny nagłówek już w HTML, bez czekania na JavaScript.
+- Pierwszy obraz otrzymuje wysoki priorytet, kolejne są ładowane oszczędnie; animacja respektuje preferencję ograniczenia ruchu.
+- Brak połączenia z CMS nie powoduje pustej ani błędnej strony: działają domyślne metadata, hero i ścieżka do rezerwacji.
+- Dodano pełne Open Graph/Twitter oraz jeden logiczny H1 na stronie.
+- Hero ma 68svh, więc wybór usługi pojawia się szybciej; karty mają czytelny fokus i kierują do aktualnych pakietów zamiast utrwalać kwoty w kodzie.
+- Nie zmieniono cen, oferty, danych CMS ani bazy.
+
+## 2026-08-01 — Publiczny poradnik SEO i zapowiedź produktu
+
+- Przebudowano `/jak-sie-ubrac` na niezależny od bazy, renderowany po stronie serwera poradnik o ubiorze i naturalnym pozowaniu.
+- Dodano odpowiedź w 60 sekund, dobór kolorów do miasta/natury/domu, wskazówki dla rodzin/par/dzieci, dostępność, trzy scenariusze, checklistę, FAQ i notę autora.
+- Publiczny artykuł używa dziesięciu wybranych ilustracji, w tym sześciu nowych realistycznych przykładów; siódmy nowy przykład trafia na stronę zapowiedzi produktu. Pełne 30 kart oraz treści Panelu Klienta pozostają prywatne.
+- Dodano uczciwą zapowiedź produktu `/sklep/poradnik-jak-sie-ubrac-i-pozowac` bez fikcyjnej ceny, oferty i checkoutu.
+- Dodano skrót „Przygotowanie klienta” w globalnym Sidebarze administratora.
+- Dodano metadata, canonical, Open Graph, JSON-LD i wpis w sitemapie.
+
 ## [2026-08-01] EDYCJA PORADNIKA „PRZYGOTOWANIE” W PAGES
 
 - W `/admin/pages` dodano wyróżnioną pozycję „Przygotowanie do sesji” z osobnym, prostym edytorem.

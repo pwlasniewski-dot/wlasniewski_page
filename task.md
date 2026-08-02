@@ -1,5 +1,41 @@
 # Aktualny plan prac
 
+## 2026-08-02 — Finalny recheck przed akceptacją
+
+- [x] Dodane 10 zoptymalizowanych kart naturalnych ustawień rodzinnych.
+- [x] Osobne opisy HTML, tekst alternatywny i rozwijanie czterech dodatkowych kart.
+- [x] Publiczny poradnik nie przekierowuje do logowania po wygaśnięciu sesji.
+- [x] Usunięte widoczne nakładki błędów menu, analityki i ustawienia hero przy niedostępnej bazie.
+- [x] Publiczny poradnik: 9/9 testów; strona główna/Local SEO/ceny: 8/8; API przygotowania: 30/30.
+- [x] Build produkcyjny PASS bez działającej lokalnej bazy.
+- [x] Kontrola w działającej przeglądarce: desktop 1440 px i telefon 390 px.
+- [ ] Commit i push dopiero po akceptacji właściciela.
+
+## 2026-08-01 — Nocny przegląd strony głównej
+
+- [x] SSR hero zamiast czarnego ekranu do czasu hydratacji.
+- [x] Responsywny obraz LCP, jeden H1 i obsługa ograniczonego ruchu.
+- [x] Fallback strony i metadata przy niedostępnym CMS/Prisma.
+- [x] Open Graph, Twitter i canonical strony głównej.
+- [x] Hero 68svh i mobilne karty usług z widocznym fokusem.
+- [x] Usunięcie sztywnych kwot z kart; ceny pozostają w aktualnym procesie rezerwacji.
+- [x] Bez zmian cen, ofert, CMS i bazy.
+- [x] Testy kontraktowe SSR/fallback/SEO.
+- [ ] Commit i push po odbiorze właściciela.
+
+## 2026-08-01 — Profesjonalny poradnik „Jak się ubrać i pozować”
+
+- [x] Publiczny poradnik SSR/HTML z pełną strukturą people-first.
+- [x] Ubiór, kolory do miasta/natury/domu, rodziny, pary, dzieci i naturalne pozowanie.
+- [x] Trzy gotowe scenariusze, checklista, FAQ, autor i data aktualizacji.
+- [x] CTA do rezerwacji i zapowiedź pełnego poradnika.
+- [x] Bezpieczna strona produktu w statusie „w przygotowaniu”, bez fikcyjnej ceny i checkoutu.
+- [x] Metadata, canonical, Open Graph, JSON-LD, sitemap i linkowanie wewnętrzne.
+- [x] Publicznie 17 zoptymalizowanych ilustracji, w tym 10 kart inspiracyjnych; bez ujawnienia prywatnych 30 kart.
+- [x] Skrót „Przygotowanie klienta” w globalnym Sidebarze admina.
+- [x] Testy kontraktowe i renderowe.
+- [ ] Commit i push po odbiorze właściciela.
+
 ## 2026-08-01 — Edycja „Przygotowania” w Pages
 
 - [x] Systemowa pozycja poradnika na liście `/admin/pages`.

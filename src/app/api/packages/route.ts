@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { requireAuth } from '@/lib/auth/middleware';
+import { findActivePublicPackages } from '@/lib/publicPackagePricing';
 
 // GET packages by service (public endpoint)
 export async function GET(request: NextRequest) {
@@ -9,35 +10,10 @@ export async function GET(request: NextRequest) {
     const serviceName = searchParams.get('serviceName');
 
     try {
-        let packages;
-
-        if (serviceId) {
-            packages = await prisma.package.findMany({
-                where: {
-                    service_id: parseInt(serviceId),
-                    is_active: true
-                },
-                orderBy: { order: 'asc' }
-            });
-        } else if (serviceName) {
-            packages = await prisma.package.findMany({
-                where: {
-                    service: {
-                        name: serviceName
-                    },
-                    is_active: true
-                },
-                include: { service: true },
-                orderBy: { order: 'asc' }
-            });
-        } else {
-            // Get all packages with service info
-            packages = await prisma.package.findMany({
-                where: { is_active: true },
-                include: { service: true },
-                orderBy: [{ service_id: 'asc' }, { order: 'asc' }]
-            });
-        }
+        const packages = await findActivePublicPackages({
+            ...(serviceId ? { serviceId: parseInt(serviceId, 10) } : {}),
+            ...(serviceName ? { serviceName } : {}),
+        });
 
         return NextResponse.json({ success: true, packages });
     } catch (error) {

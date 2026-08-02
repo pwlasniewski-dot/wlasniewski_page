@@ -140,11 +140,11 @@ export default function Navbar({ isB2B: serverIsB2B }: { isB2B?: boolean }) {
                         setMenuItems(isB2BContextActive ? B2B_MENU_ITEMS : MENU_ITEMS);
                     }
                 } else {
-                    console.error('Menu data is not an array:', data);
+                    console.warn('Dynamic menu unavailable; using the built-in navigation.');
                     setMenuItems(isB2BContextActive ? B2B_MENU_ITEMS : MENU_ITEMS);
                 }
             } catch (error) {
-                console.error('Failed to fetch menu:', error);
+                console.warn('Dynamic menu unavailable; using the built-in navigation.');
                 setMenuItems(isB2BContextActive ? B2B_MENU_ITEMS : MENU_ITEMS);
             }
         };

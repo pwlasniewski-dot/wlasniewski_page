@@ -151,9 +151,9 @@ export default function BeforeAfterSlide({
                         <span>Realizacja</span>
                     </div>
 
-                    <h2 className="text-4xl md:text-6xl font-bold text-white drop-shadow-2xl">
+                    <h1 className="text-4xl md:text-6xl font-bold text-white drop-shadow-2xl">
                         {title}
-                    </h2>
+                    </h1>
 
                     {subtitle && (
                         <p className="text-lg md:text-xl text-zinc-200 font-light max-w-2xl mx-auto drop-shadow-lg">

@@ -256,6 +256,9 @@ export default async function RootLayout({
                                             { "@type": "City", "name": "Grudziądz" },
                                             { "@type": "City", "name": "Chełmno" },
                                             { "@type": "City", "name": "Wąbrzeźno" },
+                                            { "@type": "City", "name": "Bydgoszcz" },
+                                            { "@type": "City", "name": "Świecie" },
+                                            { "@type": "City", "name": "Lisewo" },
                                             { "@type": "City", "name": "Płużnica" },
                                             { "@type": "AdministrativeArea", "name": "województwo kujawsko-pomorskie" }
                                         ],
