@@ -32,7 +32,8 @@ import {
     TrendingUp,
     GraduationCap,
     MapPin,
-    Mail
+    Mail,
+    BookOpen
 } from 'lucide-react';
 
 const navigation = [
@@ -41,6 +42,7 @@ const navigation = [
     { name: 'Portfolio', href: '/admin/portfolio', icon: Camera },
     { name: 'Strony', href: '/admin/pages', icon: FileText },
     { name: 'Jak się ubrać', href: '/admin/style-guide/outfits', icon: Sparkles },
+    { name: 'Przygotowanie klienta', href: '/admin/pages/przygotowanie-klienta', icon: BookOpen },
     {
         name: 'Rezerwacje',
         href: '/admin/bookings',
@@ -191,7 +193,10 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                 <div className="flex flex-1 flex-col overflow-y-auto pt-5 pb-4">
                     <nav className="mt-2 flex-1 space-y-1 px-2">
                         {navigation.map((item) => {
-                            const isActive = pathname.startsWith(item.href);
+                            const isPreparationEditor = pathname.startsWith('/admin/pages/przygotowanie-klienta');
+                            const isActive = item.href === '/admin/pages'
+                                ? pathname.startsWith(item.href) && !isPreparationEditor
+                                : pathname.startsWith(item.href);
                             const hasChildren = 'children' in item && item.children;
                             const isExpanded = expandedMenu === item.name;
 

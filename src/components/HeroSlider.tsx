@@ -1,8 +1,10 @@
 'use client';
 
+import React from 'react';
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import Link from 'next/link';
+import Image from 'next/image';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import BeforeAfterSlide from './BeforeAfterSlide';
 
@@ -73,53 +75,45 @@ const animationVariants = {
 
 export default function HeroSlider({ slides = [], interval = 6000 }: HeroSliderProps & { interval?: number }) {
     const [currentSlide, setCurrentSlide] = useState(0);
-    const [isMobile, setIsMobile] = useState(false);
-    const [mounted, setMounted] = useState(false);
     const [autoplay, setAutoplay] = useState(true);
+    const prefersReducedMotion = useReducedMotion();
 
     // Filter enabled slides
     const enabledSlides = slides.filter(s => s.enabled !== false).sort((a, b) => (a.order || 0) - (b.order || 0));
 
-    useEffect(() => {
-        if (mounted) console.log('[HeroSlider] Slides:', slides.length, 'Enabled:', enabledSlides.length);
-    }, [mounted, slides.length, enabledSlides.length]);
-
-    // Detect mobile
-    useEffect(() => {
-        setMounted(true);
-        const checkMobile = () => setIsMobile(window.innerWidth < 768);
-        checkMobile();
-        window.addEventListener('resize', checkMobile);
-        return () => window.removeEventListener('resize', checkMobile);
-    }, []);
-
     // Autoplay
     useEffect(() => {
-        if (!autoplay || enabledSlides.length <= 1 || !mounted) return;
+        if (!autoplay || enabledSlides.length <= 1 || prefersReducedMotion) return;
         const timer = setInterval(() => {
             setCurrentSlide((prev) => (prev + 1) % enabledSlides.length);
         }, interval);
         return () => clearInterval(timer);
-    }, [autoplay, enabledSlides.length, mounted, interval]);
-
-    if (!mounted) return <div className="h-screen w-full bg-black" />;
+    }, [autoplay, enabledSlides.length, interval, prefersReducedMotion]);
 
     if (!enabledSlides || enabledSlides.length === 0) {
         return (
-            <div className="relative h-screen w-full flex items-center justify-center bg-black overflow-hidden">
+            <div className="relative flex h-[68svh] min-h-[520px] w-full items-center justify-center overflow-hidden bg-black md:min-h-[620px]">
+                <Image
+                    src="/assets/slider/fotografia-rodzinna-grudziadz-01.webp"
+                    alt="Naturalna sesja rodzinna w plenerze"
+                    fill
+                    priority
+                    sizes="100vw"
+                    className="object-cover"
+                />
                 <div className="absolute inset-0 bg-gradient-to-b from-black/40 to-black/60 z-10" />
                 <div className="relative z-20 text-center px-4 space-y-4">
-                    <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-white tracking-tight drop-shadow-2xl">
-                        Wspomnienia<br />zapisane światłem
-                    </h2>
+                    <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-white tracking-tight drop-shadow-2xl">
+                        Fotograf Toruń — zdjęcia, do których chce się wracać
+                    </h1>
                     <p className="text-base sm:text-lg md:text-xl text-zinc-200 max-w-2xl mx-auto">
-                        Fotografia ślubna i rodzinna pełna naturalnych emocji.
+                        Sesje rodzinne, śluby i uroczystości. Sprawdź pakiety oraz wolne terminy.
                     </p>
                     <Link
-                        href="/portfolio"
-                        className="inline-block px-6 sm:px-8 py-2 sm:py-3 bg-gold-500 text-black font-semibold rounded hover:bg-gold-400 transition-colors shadow-lg"
+                        href="/rezerwacja?source=hero-fallback&amp;service=Sesja"
+                        className="inline-flex min-h-12 items-center px-7 sm:px-8 py-3 bg-gold-500 text-black font-semibold rounded-lg hover:bg-gold-400 transition-colors shadow-lg"
                     >
-                        Zobacz Portfolio
+                        Zobacz pakiety i terminy
                     </Link>
                 </div>
             </div>
@@ -128,7 +122,8 @@ export default function HeroSlider({ slides = [], interval = 6000 }: HeroSliderP
 
     const slide = enabledSlides[currentSlide];
     const mainImage = typeof slide.image === 'string' ? slide.image : slide.image?.file_path;
-    const slideImage = isMobile && slide.image_mobile ? slide.image_mobile : slide.image_desktop || mainImage;
+    const desktopImage = slide.image_desktop || mainImage;
+    const mobileImage = slide.image_mobile || desktopImage;
     const textAnim = (slide.textAnimation || 'slide-up') as keyof typeof animationVariants;
     const variant = animationVariants[textAnim] || animationVariants['slide-up'];
 
@@ -146,7 +141,7 @@ export default function HeroSlider({ slides = [], interval = 6000 }: HeroSliderP
 
     if (currentSlideData?.is_before_after && currentSlideData.image && currentSlideData.before_image) {
         return (
-            <div className="relative w-full h-[100vh] bg-black">
+            <div className="relative h-[68svh] min-h-[520px] w-full bg-black md:min-h-[620px]">
                 <BeforeAfterSlide
                     beforeImage={typeof currentSlideData.before_image === 'string' ? currentSlideData.before_image : currentSlideData.before_image.file_path}
                     afterImage={typeof currentSlideData.image === 'string' ? currentSlideData.image : currentSlideData.image.file_path}
@@ -181,7 +176,7 @@ export default function HeroSlider({ slides = [], interval = 6000 }: HeroSliderP
     }
 
     return (
-        <div className="relative w-full bg-black overflow-hidden" style={{ height: '90vh', minHeight: '600px' }}>
+        <div className="relative h-[68svh] min-h-[520px] w-full overflow-hidden bg-black md:min-h-[620px]">
             {/* Background Images */}
             <AnimatePresence mode="popLayout">
                 <motion.div
@@ -193,23 +188,29 @@ export default function HeroSlider({ slides = [], interval = 6000 }: HeroSliderP
                     className="absolute inset-0 w-full h-full overflow-hidden"
                 >
                     <motion.div
-                        className="w-full h-full bg-cover bg-no-repeat"
+                        className="w-full h-full"
                         initial={{ scale: 1 }}
-                        animate={{ scale: 1.02 }}
+                        animate={{ scale: prefersReducedMotion ? 1 : 1.02 }}
                         transition={{
-                            duration: 15,
+                            duration: prefersReducedMotion ? 0 : 15,
                             ease: "linear",
                             repeat: 0
                         }}
-                        // [UPDATED: 2026-01-10] POPRAWA KADROWANIA (FRAMING)
-                        // center 30% na desktop oraz center center na mobile
-                        // lepiej eksponuje postacie, nie ucinając głów.
-                        style={{
-                            backgroundImage: `url("${slideImage}")`,
-                            backgroundPosition: isMobile ? 'center center' : 'center 30%',
-                            transformOrigin: isMobile ? 'center center' : 'center 30%'
-                        }}
-                    />
+                    >
+                        <picture className="block h-full w-full">
+                            {mobileImage && <source media="(max-width: 767px)" srcSet={mobileImage} />}
+                            {/* The browser chooses one responsive source; the first visible image is requested with high priority for LCP. */}
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                                src={desktopImage || mobileImage}
+                                alt=""
+                                aria-hidden="true"
+                                {...({ fetchpriority: currentSlide === 0 ? 'high' : 'auto' } as React.ImgHTMLAttributes<HTMLImageElement>)}
+                                loading={currentSlide === 0 ? 'eager' : 'lazy'}
+                                className="h-full w-full object-cover object-center md:object-[center_30%]"
+                            />
+                        </picture>
+                    </motion.div>
                 </motion.div>
             </AnimatePresence>
 
@@ -229,8 +230,8 @@ export default function HeroSlider({ slides = [], interval = 6000 }: HeroSliderP
                         transition={variant.transition}
                         className="space-y-3 sm:space-y-4 md:space-y-6 max-w-4xl"
                     >
-                        <div
-                            className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-white tracking-tighter drop-shadow-2xl leading-tight"
+                        <h1
+                            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-white tracking-tighter drop-shadow-2xl leading-tight"
                             dangerouslySetInnerHTML={{ __html: slide.title || '' }}
                         />
                         <p
@@ -251,7 +252,7 @@ export default function HeroSlider({ slides = [], interval = 6000 }: HeroSliderP
                             >
                                 <Link
                                     href={slide.buttonLink || '/portfolio'}
-                                    className={`inline-block px-6 sm:px-8 py-2 sm:py-3 font-semibold rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 ${(slide.buttonStyle === 'white')
+                                    className={`inline-flex min-h-12 items-center px-7 sm:px-8 py-3 font-semibold rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 ${(slide.buttonStyle === 'white')
                                         ? 'bg-transparent border-2 border-white text-white hover:bg-white/10'
                                         : (slide.buttonStyle === 'transparent')
                                             ? 'bg-transparent border-2 border-transparent text-white hover:bg-white/10 hover:border-white/20'
@@ -272,7 +273,7 @@ export default function HeroSlider({ slides = [], interval = 6000 }: HeroSliderP
                     <button
                         onClick={prevSlide}
                         onMouseEnter={() => setAutoplay(false)}
-                        className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 p-2 sm:p-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all z-30 backdrop-blur-sm"
+                        className="absolute left-2 sm:left-4 top-1/2 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-black/35 hover:bg-black/55 text-white transition-all z-30 backdrop-blur-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-400"
                         aria-label="Poprzedni slajd"
                     >
                         <ChevronLeft className="w-6 h-6 sm:w-8 sm:h-8" />
@@ -280,7 +281,7 @@ export default function HeroSlider({ slides = [], interval = 6000 }: HeroSliderP
                     <button
                         onClick={nextSlide}
                         onMouseEnter={() => setAutoplay(false)}
-                        className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 p-2 sm:p-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all z-30 backdrop-blur-sm"
+                        className="absolute right-2 sm:right-4 top-1/2 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-black/35 hover:bg-black/55 text-white transition-all z-30 backdrop-blur-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-400"
                         aria-label="Następny slajd"
                     >
                         <ChevronRight className="w-6 h-6 sm:w-8 sm:h-8" />

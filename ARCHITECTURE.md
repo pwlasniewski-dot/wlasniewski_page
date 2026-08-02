@@ -2,6 +2,31 @@
 
 Ten dokument stanowi techniczny blueprint platformy fotograficznej wlasniewski.pl. Jest on przeznaczony dla senior deweloperów i architektów systemowych, opisując strukturę, wzorce projektowe oraz krytyczne protokoły bezpieczeństwa.
 
+## Aktualizacja 2026-08-02 — zasoby kart i nieblokujące integracje
+
+- Dziesięć kart póz znajduje się w `public/images/public-guide/pose-cards/`; każda ma format WebP, szerokość 800 px i mniej niż 100 KB.
+- Opisy kart pozostają w HTML Server Componentu, więc tekst nie zależy od odczytu treści osadzonej w rastrze.
+- `AuthContext` oddziela pasywne czyszczenie nieważnej sesji od jawnej operacji `logout`, która nadal przekierowuje do `/logowanie`.
+- `Navbar`, `AnalyticsLoader` i strona główna traktują brak opcjonalnych danych jako stan fallbacku, a nie błąd renderowania publicznej strony.
+
+## Aktualizacja 2026-08-01 — krytyczna ścieżka strony głównej
+
+- `HeroSlider` nie blokuje już SSR flagą `mounted`; pierwszy slajd lub fallback powstaje w serwerowym HTML.
+- Responsywne `<picture>` pozwala przeglądarce pobrać jeden właściwy wariant obrazu, a `fetchpriority=high` wspiera LCP pierwszego slajdu.
+- `prefers-reduced-motion` zatrzymuje autoplay i skalowanie hero.
+- Wysokość hero wynosi 68svh z bezpiecznym minimum, bez poprzedniego pełnoekranowego 90–100vh.
+- `generateMetadata` i `getHomePageData` izolują awarię Prisma i zwracają statyczne wartości domyślne bez zmiany schematu lub danych.
+- Kontrakty regresji znajdują się w `tests/e2e/homepage.contract.spec.ts`; helper sprawdza rzeczywisty SSR komponentu.
+
+## Aktualizacja 2026-08-01 — publiczny poradnik SEO
+
+- `src/app/jak-sie-ubrac/page.tsx` jest statycznym Server Componentem, dzięki czemu pełna treść trafia do HTML i nie zależy od PostgreSQL.
+- Strona ma własne metadata oraz graf JSON-LD: `Article`/`WebPage`, `Person`, `BreadcrumbList` i `FAQPage`.
+- Publiczny kod nie importuje `preparationGuides`, `POSE_GUIDE_CARDS`, klientowego endpointu ani Prisma.
+- Warstwa artykułu odwołuje się do dziesięciu wybranych zasobów WebP przez `next/image`; siedem nowych zoptymalizowanych przykładów znajduje się w `public/images/public-guide/` i jest współdzielonych z zapowiedzią produktu. Pełna biblioteka pozostaje w chronionym module klienta.
+- Strona zapowiedzi produktu ma wyłącznie schemat `WebPage`. `Product`/`Offer` należy dodać dopiero wraz z prawdziwą ceną i dostępnością.
+- Kontrakt renderowania i separacji prywatnych danych: `tests/e2e/public-guide.render.spec.tsx`.
+
 ## Aktualizacja 2026-08-01 — CMS poradnika klienta
 
 - `PreparationGuideEditor` obsługuje wersjonowany dokument `PreparationGuideCmsData` i wykorzystuje istniejący `MediaPicker`.

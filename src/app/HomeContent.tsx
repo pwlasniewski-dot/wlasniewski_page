@@ -85,30 +85,13 @@ interface HomeContentProps {
     orderedSections: Section[];
     testimonials: Testimonial[];
     heroSliderInterval?: number;
+    publicPriceLabels: Record<string, string>;
 }
 
-export default function HomeContent({ heroSlides, sections, homeData, orderedSections, testimonials, heroSliderInterval = 6000 }: HomeContentProps) {
+export default function HomeContent({ heroSlides, sections, homeData, orderedSections, testimonials, heroSliderInterval = 6000, publicPriceLabels }: HomeContentProps) {
+    const fallbackPublicPriceLabel = 'Aktualne pakiety i ceny';
     const [currentTestimonial, setCurrentTestimonial] = useState(0);
     const [selectedGalleryImage, setSelectedGalleryImage] = useState<string | null>(null);
-
-    // Preload first hero image for faster LCP
-    useEffect(() => {
-        const firstSlide = heroSlides?.find((s: any) => s.enabled !== false);
-        if (firstSlide) {
-            const imageUrl = typeof firstSlide.image === 'string' 
-                ? firstSlide.image 
-                : firstSlide.image?.file_path;
-            
-            if (imageUrl && typeof window !== 'undefined') {
-                const link = document.createElement('link');
-                link.rel = 'preload';
-                link.as = 'image';
-                link.href = imageUrl;
-                link.fetchPriority = 'high';
-                document.head.appendChild(link);
-            }
-        }
-    }, [heroSlides]);
 
     // Auto-rotate testimonials
     useEffect(() => {
@@ -1022,22 +1005,22 @@ export default function HomeContent({ heroSlides, sections, homeData, orderedSec
                 <div className="mx-auto max-w-6xl rounded-3xl border border-white/10 bg-zinc-950/95 p-5 shadow-2xl shadow-black/60 backdrop-blur md:p-8">
                     <div className="mb-7 text-center">
                         <p className="mb-2 text-xs font-bold uppercase tracking-[0.25em] text-gold-400">Zacznij od tego, czego potrzebujesz</p>
-                        <h1 className="text-2xl font-bold text-white md:text-4xl">Fotograf Toruń — sesje rodzinne i reportaże ślubne</h1>
+                        <h2 className="text-2xl font-bold text-white md:text-4xl">Wybierz sesję i sprawdź wolne terminy</h2>
                         <p className="mx-auto mt-3 max-w-2xl text-zinc-400">Wybierz rodzaj fotografii, sprawdź pełny zakres i wolne terminy. Rezerwację potwierdzisz zaliczką przez PayU.</p>
                     </div>
                     <div className="grid gap-4 md:grid-cols-3">
                         {[
-                            { title: 'Sesja rodzinna', price: 'od 750 zł', copy: 'Dla rodziny, pary albo na spokojne zdjęcia kilku pokoleń.', href: '/rezerwacja?source=home&service=Sesja' },
-                            { title: 'Ślub', price: 'od 1900 zł', copy: 'Od ceremonii w urzędzie po pełny reportaż z wesela.', href: '/rezerwacja?source=home&service=Ślub' },
-                            { title: 'Urodziny i przyjęcia', price: 'od 1100 zł', copy: 'Reportaż z urodzin, jubileuszu lub rodzinnej uroczystości.', href: '/rezerwacja?source=home&service=Urodziny' },
+                            { title: 'Sesja rodzinna', label: 'Sesja', service: 'Sesja', copy: 'Dla rodziny, pary albo na spokojne zdjęcia kilku pokoleń.', href: '/rezerwacja?source=home&service=Sesja' },
+                            { title: 'Ślub', label: 'Reportaż', service: 'Ślub', copy: 'Od ceremonii w urzędzie po pełny reportaż z wesela.', href: '/rezerwacja?source=home&service=Ślub' },
+                            { title: 'Urodziny i przyjęcia', label: 'Uroczystość', service: 'Urodziny', copy: 'Reportaż z urodzin, jubileuszu lub rodzinnej uroczystości.', href: '/rezerwacja?source=home&service=Urodziny' },
                         ].map((item) => (
-                            <Link key={item.title} href={item.href} className="group rounded-2xl border border-zinc-800 bg-zinc-900/70 p-5 transition hover:-translate-y-1 hover:border-gold-500/50">
+                            <Link key={item.title} href={item.href} className="group min-h-[180px] rounded-2xl border border-zinc-800 bg-zinc-900/70 p-5 transition hover:-translate-y-1 hover:border-gold-500/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-400">
                                 <div className="mb-2 flex items-start justify-between gap-3">
                                     <h3 className="text-xl font-bold text-white group-hover:text-gold-300">{item.title}</h3>
-                                    <span className="whitespace-nowrap text-sm font-bold text-gold-400">{item.price}</span>
+                                    <span className="whitespace-nowrap text-xs font-bold uppercase tracking-wider text-gold-400">{item.label}</span>
                                 </div>
                                 <p className="mb-5 text-sm leading-relaxed text-zinc-400">{item.copy}</p>
-                                <span className="font-semibold text-white">Zobacz pakiety i terminy →</span>
+                                <span className="font-semibold text-white">{publicPriceLabels[item.service] || fallbackPublicPriceLabel} →</span>
                             </Link>
                         ))}
                     </div>
