@@ -20,7 +20,8 @@
     "test:e2e:ui": "playwright test --ui",
     "test:preparation-guide": "playwright test --config=playwright.preparation.config.ts",
     "test:public-guide": "playwright test --config=playwright.public-guide.config.ts",
-    "test:homepage": "playwright test --config=playwright.homepage.config.ts"
+    "test:homepage": "playwright test --config=playwright.homepage.config.ts",
+    "test:client-portal": "playwright test --config=playwright.client-portal.config.ts"
   },
   "prisma": {
     "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
@@ -50,7 +51,7 @@
     "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.3",
     "browser-image-compression": "^2.0.2",
-    "canvas-confetti": "^1.9.4",
+    "canvas-confetti": "^1.4.1",
     "client-zip": "^2.5.0",
     "clsx": "^2.1.1",
     "cookie": "^1.1.1",
@@ -81,7 +82,7 @@
     "recharts": "^3.5.1",
     "sharp": "^0.35.3",
     "sonner": "^2.0.7",
-    "streamsaver": "^2.0.6",
+    "streamsaver": "^2.5.0",
     "stripe": "^20.0.0",
     "swiper": "^12.1.2",
     "tailwind-merge": "^2.6.0",
@@ -100,7 +101,7 @@
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@types/react-dropzone": "^4.2.2",
-    "@types/streamsaver": "^2.0.5",
+    "@types/streamsaver": "^2.5.0",
     "autoprefixer": "^10.4.21",
     "eslint": "^9",
     "eslint-config-next": "^15.1.4",
