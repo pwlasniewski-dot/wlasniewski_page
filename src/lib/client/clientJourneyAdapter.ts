@@ -30,9 +30,6 @@ export interface ClientPortalBookingRecord {
     created_at?: DateInput;
     deposit_amount?: unknown;
     deposit_paid_at?: DateInput;
-    remaining_amount?: unknown;
-    remaining_paid_at?: DateInput;
-    remaining_due_at?: DateInput;
 }
 
 export interface ClientPortalGalleryRecord {
@@ -56,15 +53,6 @@ export interface ClientJourneySourceData {
     now?: Date;
 }
 
-const OFFER_ACTION_STATUSES = new Set([
-    'draft',
-    'sent',
-    'pending',
-    'negotiating',
-    'unlock_requested',
-]);
-
-const CONTRACT_ACTION_STATUSES = new Set(['pending', 'sent']);
 const CANCELLED_SESSION_STATUSES = new Set([
     'cancelled',
     'canceled',
@@ -113,9 +101,9 @@ function newestFirst<T>(items: readonly T[], getDate: (item: T) => DateInput): T
 function selectOffer(offers: readonly ClientPortalOfferRecord[]): ClientPortalOfferRecord | null {
     const ordered = newestFirst(offers, (offer) => offer.created_at);
 
-    return ordered.find((offer) => OFFER_ACTION_STATUSES.has(normalizeStatus(offer.status)))
-        ?? ordered.find((offer) => normalizeStatus(offer.status) === 'accepted')
-        ?? ordered.find((offer) => normalizeStatus(offer.status) !== 'rejected')
+    // A global panel cannot safely combine several unrelated sessions.
+    // Use the newest non-rejected offer instead of reviving an older draft.
+    return ordered.find((offer) => normalizeStatus(offer.status) !== 'rejected')
         ?? ordered[0]
         ?? null;
 }
@@ -123,9 +111,7 @@ function selectOffer(offers: readonly ClientPortalOfferRecord[]): ClientPortalOf
 function selectContract(contracts: readonly ClientPortalContractRecord[]): ClientPortalContractRecord | null {
     const ordered = newestFirst(contracts, (contract) => contract.created_at);
 
-    return ordered.find((contract) => CONTRACT_ACTION_STATUSES.has(normalizeStatus(contract.status)))
-        ?? ordered.find((contract) => normalizeStatus(contract.status) === 'signed')
-        ?? ordered.find((contract) => normalizeStatus(contract.status) !== 'rejected')
+    return ordered.find((contract) => normalizeStatus(contract.status) !== 'rejected')
         ?? ordered[0]
         ?? null;
 }
@@ -171,7 +157,7 @@ function mapDepositState(
             ? {
                 amount: booking.deposit_amount,
                 paidAt: booking.deposit_paid_at,
-                dueAt: booking.remaining_due_at,
+                dueAt: null,
             }
             : null;
 
@@ -230,7 +216,6 @@ function mapSessionState(
     const booking = selectRelevantBooking(bookings, now);
     if (booking) {
         const status = normalizeStatus(booking.status);
-        if (CANCELLED_SESSION_STATUSES.has(status)) return 'cancelled';
         if (COMPLETED_SESSION_STATUSES.has(status)) return 'completed';
 
         const date = toDate(booking.date);
@@ -258,7 +243,7 @@ function selectLatestOrder(
 function mapOrderState(order: ClientPortalPhotoOrderRecord | null): ClientOrderState {
     const status = normalizeStatus(order?.payment_status);
 
-    if (!order) return 'none';
+    if (!order || ['cancelled', 'canceled', 'refunded'].includes(status)) return 'none';
     if (['ready', 'completed', 'delivered'].includes(status)) return 'ready';
     if (['processing', 'in_progress'].includes(status)) return 'processing';
     if (status === 'paid' || toDate(order.paid_at)) return 'paid';
@@ -294,7 +279,7 @@ export function createClientJourneySnapshot(
     const contract = selectContract(contracts);
     const booking = selectRelevantBooking(bookings, now);
     const latestOrder = selectLatestOrder(photoOrders);
-    const hasGallery = galleries.length > 0;
+    const hasGallery = galleries.length > 0 || Boolean(latestOrder);
 
     return {
         offer: mapOfferState(offer),
