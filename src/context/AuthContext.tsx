@@ -27,6 +27,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [token, setToken] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
+    const clearSession = () => {
+        localStorage.removeItem('user_token');
+        localStorage.removeItem('user_info');
+        setToken(null);
+        setUser(null);
+    };
+
     const refreshUser = async (manualToken?: string) => {
         const storedToken = manualToken || token || localStorage.getItem('user_token');
         if (!storedToken) {
@@ -47,7 +54,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 setToken(storedToken);
                 localStorage.setItem('user_info', JSON.stringify(data.user));
             } else {
-                logout();
+                // An expired session must not throw visitors off public pages.
+                // Only an explicit logout action redirects to the login screen.
+                clearSession();
             }
         } catch (error) {
             console.error('Auth refresh error:', error);
@@ -68,10 +77,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     const logout = () => {
-        localStorage.removeItem('user_token');
-        localStorage.removeItem('user_info');
-        setToken(null);
-        setUser(null);
+        clearSession();
         window.location.href = '/logowanie';
     };
 

@@ -6,6 +6,7 @@ import CityPhotoStory, { type CityStoryPhoto } from '@/components/CityPhotoStory
 import ParallaxSection from '@/components/ParallaxSection';
 import type { PageSection } from '@/components/admin/PageBuilder';
 import { getPortfolioCategories } from '@/lib/portfolio';
+import { loadPublicMinimumPrices, publicPriceLabel } from '@/lib/publicPackagePricing';
 
 // ─── City Data with FAQs ─────────────────────────────────────────
 interface CityInfo {
@@ -33,7 +34,7 @@ const CITIES: Record<string, CityInfo> = {
         region: 'kujawsko-pomorskie',
         h1: 'Fotograf w Toruniu. Rodzinne historie, śluby i portrety.',
         metaTitle: 'Fotograf Toruń | Sesje rodzinne i śluby — Właśniewski',
-        metaDescription: 'Fotograf w Toruniu: sesje rodzinne od 750 zł, ceremonia cywilna od 1900 zł i pełny reportaż ślubny. Zobacz pakiety i wolne terminy online.',
+        metaDescription: 'Fotograf w Toruniu: naturalne sesje rodzinne, ceremonie i pełne reportaże ślubne. Zobacz aktualne pakiety oraz wolne terminy online.',
         keywords: ['fotograf toruń', 'fotografia wizerunkowa toruń', 'fotograf portretowy toruń', 'fotograf toruń starówka', 'profesjonalna fotografia toruń', 'fotograf ślubny toruń', 'fotografia ślubna toruń', 'sesja zdjęciowa toruń', 'fotografia biznesowa toruń', 'sesja narzeczeńska toruń', 'sesja rodzinna toruń', 'plener ślubny toruń', 'zdjęcia biznesowe toruń', 'sesja w mieście toruń', 'fotograf bulwar filadelfijski'],
         heroImage: '/assets/portfolio/family/sesja-rodzinna-torun-plener-07.webp',
         lat: 53.0138,
@@ -68,14 +69,14 @@ const CITIES: Record<string, CityInfo> = {
             },
         ],
         services: [
-            { name: 'Sesja rodzinna w Toruniu', description: 'Od 750 zł. Rodzina, para, dzieci albo zdjęcia kilku pokoleń — w mieście lub spokojnym plenerze.' },
-            { name: 'Fotografia ślubna Toruń', description: 'Ceremonia cywilna od 1900 zł, kameralny ślub z przyjęciem lub pełny reportaż ślubny.' },
+            { name: 'Sesja rodzinna w Toruniu', description: 'Rodzina, para, dzieci albo zdjęcia kilku pokoleń — w mieście lub spokojnym plenerze. Aktualne pakiety znajdziesz w rezerwacji.' },
+            { name: 'Fotografia ślubna Toruń', description: 'Ceremonia cywilna, kameralny ślub z przyjęciem lub pełny reportaż ślubny. Aktualny zakres i ceny są widoczne w rezerwacji.' },
             { name: 'Urodziny i rodzinne przyjęcia', description: 'Reportaż z urodzin, jubileuszu i ważnego rodzinnego spotkania, bez odrywania gości od zabawy.' },
             { name: 'Sesja portretowa i wizerunkowa', description: 'Portrety do pracy, marki osobistej albo po prostu dla siebie — w plenerze lub wybranym wnętrzu.' },
         ],
         faqs: [
-            { question: 'Ile kosztuje sesja rodzinna w Toruniu?', answer: 'Pakiety rodzinne kosztują 750 zł, 980 zł lub 1630 zł. Różnią się czasem fotografowania, liczbą gotowych zdjęć i dodatkami. Wszystkie szczegóły oraz wolne terminy są dostępne w rezerwacji online.' },
-            { question: 'Ile kosztuje fotograf na ślub w Toruniu?', answer: 'Ceremonia cywilna z życzeniami i krótką sesją kosztuje 1900 zł. Ślub z kameralnym przyjęciem to 3500 zł, a pełny reportaż do 12 godzin kosztuje 5900 zł.' },
+            { question: 'Ile kosztuje sesja rodzinna w Toruniu?', answer: 'Cena zależy od czasu fotografowania, liczby gotowych zdjęć i dodatków. Aktualne pakiety, ich pełny zakres oraz wolne terminy sprawdzisz w rezerwacji online.' },
+            { question: 'Ile kosztuje fotograf na ślub w Toruniu?', answer: 'Zakres może obejmować krótką ceremonię, kameralne przyjęcie albo pełny reportaż. Aktualne warianty i ceny są zawsze widoczne przed wyborem terminu w rezerwacji online.' },
             { question: 'Gdzie najlepiej zrobić sesję w Toruniu?', answer: 'Najczęściej fotografuję na Starówce, Bulwarze Filadelfijskim, Bydgoskim Przedmieściu i w Parku Miejskim. Miejsce dobieram do pory dnia, wieku dzieci i klimatu, który chcecie uzyskać.' },
             { question: 'Czy musimy umieć pozować?', answer: 'Nie. Daję proste wskazówki, pokazuję gdzie stanąć i co zrobić, ale nie ustawiam każdej dłoni. Zależy mi na swobodnych zdjęciach, w których nadal dobrze wyglądacie.' },
             { question: 'Jak zarezerwować termin?', answer: 'Wybierz usługę i pakiet, zaznacz dostępny dzień, uzupełnij dane i potwierdź rezerwację bezpieczną zaliczką przez PayU.' },
@@ -94,7 +95,7 @@ const CITIES: Record<string, CityInfo> = {
         region: 'kujawsko-pomorskie',
         h1: 'Fotograf Grudziądz — sesje rodzinne, ślubne i biznesowe',
         metaTitle: 'Fotograf Grudziądz ⭐ Sesje rodzinne, ślubne, biznesowe',
-        metaDescription: '★ Fotograf Grudziądz ★ Sesje rodzinne od 450 zł, śluby, portrety. Spichrze, bulwary nad Wisłą, Góra Zamkowa. ✓ Galeria online ✓ Dojazd w cenie ☎ 530 788 694',
+        metaDescription: 'Fotograf Grudziądz: sesje rodzinne, śluby i portrety przy spichlerzach, bulwarach nad Wisłą oraz Górze Zamkowej. Sprawdź galerię i terminy.',
         keywords: ['fotograf grudziądz', 'fotograf ślubny grudziądz', 'sesja rodzinna grudziądz', 'fotografia portretowa grudziądz', 'zdjęcia plenerowe grudziądz', 'sesja narzeczeńska grudziądz'],
         heroImage: '/assets/portfolio/family/sesja-rodzinna-torun-plener-07.webp',
         lat: 53.4837,
@@ -138,7 +139,7 @@ const CITIES: Record<string, CityInfo> = {
             { name: 'Zdjęcia z drona', description: 'Ujęcia panoramy spichlerzy i Wisły z lotu ptaka — na ślub, event lub sesję.' },
         ],
         faqs: [
-            { question: 'Ile kosztuje sesja zdjęciowa w Grudziądzu?', answer: 'Sesja portretowa od 400 zł, rodzinna od 500 zł. Dojazd do Grudziądza w cenie pakietu. Fotografia ślubna wyceniana indywidualnie. W pakiecie: prowadzenie, selekcja, obróbka i galeria online.' },
+            { question: 'Ile kosztuje sesja zdjęciowa w Grudziądzu?', answer: 'Cena zależy od wybranego rodzaju sesji i zakresu pakietu. Aktualne ceny, zawartość pakietów oraz wolne terminy sprawdzisz w rezerwacji online.' },
             { question: 'Gdzie najlepiej zrobić sesję w Grudziądzu?', answer: 'Najpiękniejsze lokalizacje: panorama spichlerzy nad Wisłą, Góra Zamkowa, Park Miejski, stare miasto i bulwary. Pomagam dobrać miejsce pod charakter sesji.' },
             { question: 'Czy dojeżdżasz do Grudziądza?', answer: 'Tak, regularnie. Baza w Płużnicy — do Grudziądza mam 25 minut. Dojazd w ramach pakietu.' },
             { question: 'Jak się przygotować do sesji?', answer: 'Stonowane, spójne kolory bez dużych logotypów. Wygodne buty na spacer. Szczegóły na stronie „Jak się ubrać".' },
@@ -156,7 +157,7 @@ const CITIES: Record<string, CityInfo> = {
         region: 'kujawsko-pomorskie',
         h1: 'Fotograf Chełmno — Miasto Zakochanych w kadrze',
         metaTitle: 'Fotograf Chełmno ⭐ Śluby plenerowe, narzeczeńskie, rodzinne',
-        metaDescription: '★ Fotograf Chełmno ★ Śluby w plenerze, sesje narzeczeńskie w Mieście Zakochanych, biznesowe i rodzinne. Rynek, mury, Wisła. ☎ 530 788 694',
+        metaDescription: 'Fotograf Chełmno: śluby w plenerze oraz sesje narzeczeńskie, biznesowe i rodzinne w Mieście Zakochanych, na rynku, murach i nad Wisłą.',
         keywords: ['fotograf chełmno', 'fotograf ślubny chełmno', 'sesja narzeczeńska chełmno', 'sesja rodzinna chełmno', 'miasto zakochanych zdjęcia', 'fotografia chełmno'],
         heroImage: '/assets/portfolio/family/sesja-rodzinna-torun-plener-07.webp',
         lat: 53.3490,
@@ -199,7 +200,7 @@ const CITIES: Record<string, CityInfo> = {
             { name: 'Fotografia komunijna', description: 'Pamiątkowe zdjęcia z Pierwszej Komunii Świętej w Chełmnie.' },
         ],
         faqs: [
-            { question: 'Ile kosztuje sesja zdjęciowa w Chełmnie?', answer: 'Sesja narzeczeńska/portretowa od 400 zł, rodzinna od 500 zł. Dojazd do Chełmna w cenie. Ślub wyceniany indywidualnie.' },
+            { question: 'Ile kosztuje sesja zdjęciowa w Chełmnie?', answer: 'Cena zależy od rodzaju sesji i wybranego zakresu. Aktualne pakiety, ceny i zasady dojazdu sprawdzisz bezpośrednio w rezerwacji online.' },
             { question: 'Dlaczego sesja w Chełmnie to dobry pomysł?', answer: 'Chełmno to oficjalne Miasto Zakochanych z piękną starówką, murami obronnymi i klimatem. Idealne na sesje narzeczeńskie i ślubne.' },
             { question: 'Gdzie najlepiej zrobić sesję w Chełmnie?', answer: 'Rynek z ratuszem, mury obronne (Brama Grudziądzka), park nad Wisłą, Fosa Miejska. Pomagam dobrać lokalizację.' },
             { question: 'Czy dojeżdżasz do Chełmna?', answer: 'Tak, Chełmno jest blisko mojej bazy. Dojazd w ramach pakietu, bez dodatkowych kosztów.' },
@@ -217,7 +218,7 @@ const CITIES: Record<string, CityInfo> = {
         region: 'kujawsko-pomorskie',
         h1: 'Fotograf Wąbrzeźno — rodzinna, ślubna i portretowa',
         metaTitle: 'Fotograf Wąbrzeźno ⭐ Śluby, wizerunek, sesje plenerowe',
-        metaDescription: '★ Fotograf Wąbrzeźno ★ Śluby plenerowe, sesje wizerunkowe i biznesowe, rodzinne nad Jeziorem Zamkowym. Lokalny fotograf, dojazd gratis. ☎ 530 788 694',
+        metaDescription: 'Fotograf Wąbrzeźno: śluby plenerowe oraz sesje wizerunkowe, biznesowe i rodzinne nad Jeziorem Zamkowym. Poznaj lokalizacje i wolne terminy.',
         keywords: ['fotograf wąbrzeźno', 'fotograf wabrzeźno', 'sesja rodzinna wąbrzeźno', 'fotografia ślubna wąbrzeźno', 'sesja narzeczeńska wąbrzeźno', 'zdjęcia wąbrzeźno'],
         heroImage: '/assets/portfolio/family/sesja-rodzinna-torun-plener-07.webp',
         lat: 53.2860,
@@ -260,7 +261,7 @@ const CITIES: Record<string, CityInfo> = {
             { name: 'Fotografia komunijna', description: 'Sesje komunijne — kościół, plener i portret.' },
         ],
         faqs: [
-            { question: 'Ile kosztuje sesja zdjęciowa w Wąbrzeźnie?', answer: 'Sesja portretowa od 400 zł, rodzinna od 500 zł. Dojazd wliczony — mieszkam w okolicy. Ślub wyceniany indywidualnie.' },
+            { question: 'Ile kosztuje sesja zdjęciowa w Wąbrzeźnie?', answer: 'Cena zależy od rodzaju sesji i zakresu pakietu. Aktualne pakiety, ceny oraz informacje o dojeździe są dostępne w rezerwacji online.' },
             { question: 'Gdzie najlepiej zrobić sesję w Wąbrzeźnie?', answer: 'Jezioro Zamkowe, Frydek, park miejski, okoliczne łąki i lasy. Znam tu mnóstwo ukrytych lokalizacji.' },
             { question: 'Jak szybko dostanę zdjęcia?', answer: 'Galeria online do 10 dni roboczych od sesji. Odbitki i albumy w dodatkowym terminie, ustalonym indywidualnie.' },
         ],
@@ -278,7 +279,7 @@ const CITIES: Record<string, CityInfo> = {
         region: 'kujawsko-pomorskie',
         h1: 'Fotograf Lisewo — naturalne sesje rodzinne i ślubne',
         metaTitle: 'Fotograf Lisewo ⭐ Śluby plenerowe, sesje rodzinne',
-        metaDescription: '★ Fotograf Lisewo ★ Śluby w plenerze, sesje rodzinne i wizerunkowe z dala od miejskiego zgiełku. Naturalna fotografia. ☎ 530 788 694',
+        metaDescription: 'Fotograf Lisewo: naturalne śluby w plenerze oraz spokojne sesje rodzinne i wizerunkowe z dala od miejskiego zgiełku. Sprawdź dostępne terminy.',
         keywords: ['fotograf lisewo', 'sesja rodzinna lisewo', 'fotografia ślubna lisewo', 'zdjęcia lisewo'],
         heroImage: '/assets/portfolio/family/sesja-rodzinna-torun-plener-07.webp',
         lat: 53.3147,
@@ -311,7 +312,7 @@ const CITIES: Record<string, CityInfo> = {
             { name: 'Fotografia komunijna', description: 'Sesje komunijne w naturalnej, spokojnej scenerii.' },
         ],
         faqs: [
-            { question: 'Ile kosztuje sesja w Lisewie?', answer: 'Sesja rodzinna od 500 zł, portretowa od 400 zł. Dojazd wliczony — jestem stąd.' },
+            { question: 'Ile kosztuje sesja w Lisewie?', answer: 'Cena zależy od wybranego rodzaju sesji i pakietu. Aktualne ceny, zakres oraz zasady dojazdu sprawdzisz w rezerwacji online.' },
             { question: 'Gdzie robisz sesje w Lisewie?', answer: 'Okolice centrum, polne ścieżki, łąki i lasy w okolicy. Znam tu mnóstwo miejsc.' },
         ],
         nearbyLinks: [
@@ -328,7 +329,7 @@ const CITIES: Record<string, CityInfo> = {
         region: 'kujawsko-pomorskie',
         h1: 'Fotograf Płużnica — sesje rodzinne i komunijne',
         metaTitle: 'Fotograf Płużnica ⭐ Śluby plenerowe, sesje rodzinne',
-        metaDescription: '★ Fotograf Płużnica ★ Śluby w plenerze, sesje rodzinne, biznesowe. Lokalny fotograf — dojazd w cenie. Galeria online. ☎ 530 788 694',
+        metaDescription: 'Fotograf Płużnica: śluby w plenerze oraz lokalne sesje rodzinne i biznesowe. Naturalne kadry, galeria online i prosta rezerwacja terminu.',
         keywords: ['fotograf płużnica', 'sesja rodzinna płużnica', 'fotografia komunijna płużnica', 'zdjęcia płużnica'],
         heroImage: '/assets/portfolio/family/sesja-rodzinna-torun-plener-07.webp',
         lat: 53.3543,
@@ -353,7 +354,7 @@ const CITIES: Record<string, CityInfo> = {
             { name: 'Fotografia ślubna', description: 'Reportaż ślubny z dojazdem do kościoła i wesela.' },
         ],
         faqs: [
-            { question: 'Ile kosztuje sesja w Płużnicy?', answer: 'Sesja rodzinna od 500 zł, portretowa od 400 zł. Bez kosztów dojazdu — mieszkam tutaj.' },
+            { question: 'Ile kosztuje sesja w Płużnicy?', answer: 'Cena zależy od rodzaju sesji i zawartości pakietu. Aktualne warianty, ceny oraz zasady dojazdu sprawdzisz w rezerwacji online.' },
             { question: 'Gdzie robisz sesje w Płużnicy?', answer: 'Polne ścieżki, łąki, ogrody, zagajniki. Mam tu kilkanaście ulubionych lokalizacji.' },
         ],
         nearbyLinks: [
@@ -369,7 +370,7 @@ const CITIES: Record<string, CityInfo> = {
         region: 'kujawsko-pomorskie',
         h1: 'Fotograf Świecie — sesje rodzinne, ślubne i portretowe',
         metaTitle: 'Fotograf Świecie ⭐ Śluby, wizerunek, sesje miejskie',
-        metaDescription: '★ Fotograf Świecie ★ Śluby plenerowe przy Zamku Krzyżackim, sesje wizerunkowe, biznesowe i rodzinne nad Wdą. ☎ 530 788 694',
+        metaDescription: 'Fotograf Świecie: śluby plenerowe przy Zamku Krzyżackim oraz sesje wizerunkowe, biznesowe i rodzinne nad Wdą. Sprawdź galerię i terminy.',
         keywords: ['fotograf świecie', 'sesja rodzinna świecie', 'fotografia ślubna świecie', 'zdjęcia świecie', 'fotograf świecie nad wisłą'],
         heroImage: '/assets/portfolio/family/sesja-rodzinna-torun-plener-07.webp',
         lat: 53.4100,
@@ -394,7 +395,7 @@ const CITIES: Record<string, CityInfo> = {
             { name: 'Sesja portretowa', description: 'Portrety wizerunkowe i artystyczne w świeckich plenerach.' },
         ],
         faqs: [
-            { question: 'Ile kosztuje sesja zdjęciowa w Świeciu?', answer: 'Sesja portretowa od 400 zł, rodzinna od 500 zł. Dojazd do Świecia wliczony w pakiet.' },
+            { question: 'Ile kosztuje sesja zdjęciowa w Świeciu?', answer: 'Cena zależy od rodzaju sesji i wybranego pakietu. Aktualne ceny, zakres oraz zasady dojazdu są dostępne w rezerwacji online.' },
             { question: 'Gdzie robisz sesje w Świeciu?', answer: 'Zamek Krzyżacki, okolice Wdy i Wisły, parki miejskie. Pomagam wybrać lokalizację.' },
         ],
         nearbyLinks: [
@@ -410,7 +411,7 @@ const CITIES: Record<string, CityInfo> = {
         region: 'kujawsko-pomorskie',
         h1: 'Fotograf Bydgoszcz — sesje rodzinne, ślubne i biznesowe',
         metaTitle: 'Fotograf Bydgoszcz ⭐ Biznes, wizerunek, śluby, miasto',
-        metaDescription: '★ Fotograf Bydgoszcz ★ Sesje wizerunkowe i biznesowe od 450 zł, śluby plenerowe, sesje na Wyspie Młyńskiej i kanałach. ☎ 530 788 694',
+        metaDescription: 'Fotograf Bydgoszcz: sesje wizerunkowe, biznesowe i rodzinne, śluby plenerowe oraz zdjęcia na Wyspie Młyńskiej i przy kanałach.',
         keywords: ['fotograf bydgoszcz', 'fotograf ślubny bydgoszcz', 'sesja rodzinna bydgoszcz', 'fotografia wizerunkowa bydgoszcz', 'zdjęcia bydgoszcz', 'sesja narzeczeńska bydgoszcz'],
         heroImage: '/assets/portfolio/family/sesja-rodzinna-torun-plener-07.webp',
         lat: 53.1235,
@@ -445,7 +446,7 @@ const CITIES: Record<string, CityInfo> = {
             { name: 'Sesja narzeczeńska', description: 'Romantyczne zdjęcia par na Wyspie Młyńskiej i wenecji bydgoskiej.' },
         ],
         faqs: [
-            { question: 'Ile kosztuje sesja zdjęciowa w Bydgoszczy?', answer: 'Sesja portretowa od 450 zł, rodzinna od 550 zł (z dojazdem). Fotografia ślubna — wycena indywidualna.' },
+            { question: 'Ile kosztuje sesja zdjęciowa w Bydgoszczy?', answer: 'Cena zależy od rodzaju sesji, zakresu i dojazdu. Aktualne pakiety i ceny sprawdzisz w rezerwacji online przed wyborem terminu.' },
             { question: 'Gdzie najlepiej zrobić sesję w Bydgoszczy?', answer: 'Wyspa Młyńska, kanał bydgoski, okolice Opery Nova, Myślęcinek, Stary Rynek. Pomagam dobrać lokalizację.' },
             { question: 'Czy dojeżdżasz do Bydgoszczy?', answer: 'Tak, regularnie. Dojazd wliczony w pakiety ślubne i większe sesje. Dla sesji indywidualnych — mała dopłata.' },
         ],
@@ -617,6 +618,7 @@ export default async function CityLandingPage({ params, sections = [] }: PagePro
     const key = getCityKey(citySlug);
     if (!key) notFound();
     const data = CITIES[key];
+    const publicMinimumPrices = await loadPublicMinimumPrices();
 
     let cityGalleryImages: CityStoryPhoto[] = [];
     try {
@@ -744,26 +746,18 @@ export default async function CityLandingPage({ params, sections = [] }: PagePro
         })),
     };
 
-    // JSON-LD: LocalBusiness
-    const localBusinessSchema = {
+    // JSON-LD: the city page describes a service area of the one global business.
+    const serviceSchema = {
         '@context': 'https://schema.org',
-        '@type': ['LocalBusiness', 'ProfessionalService'],
-        '@id': `https://wlasniewski.pl/${data.slug}#business`,
-        name: 'Przemysław Właśniewski — Fotograf',
+        '@type': 'Service',
+        '@id': `https://wlasniewski.pl/${data.slug}#service`,
+        name: `Usługi fotograficzne — ${data.city}`,
+        serviceType: 'Fotografia rodzinna, ślubna i portretowa',
         description: data.metaDescription,
-        image: `https://wlasniewski.pl${data.heroImage}`,
-        telephone: '+48530788694',
+        image: heroPhoto.startsWith('http') ? heroPhoto : `https://wlasniewski.pl${heroPhoto}`,
         url: `https://wlasniewski.pl/${data.slug}`,
-        address: {
-            '@type': 'PostalAddress',
-            streetAddress: 'Płużnica 47G',
-            postalCode: '87-214',
-            addressLocality: 'Płużnica',
-            addressRegion: data.region,
-            addressCountry: 'PL',
-        },
+        provider: { '@id': 'https://wlasniewski.pl/#business' },
         areaServed: { '@type': 'City', name: data.city },
-        priceRange: '$',
         hasOfferCatalog: {
             '@type': 'OfferCatalog',
             name: `Usługi fotograficzne — ${data.city}`,
@@ -773,13 +767,11 @@ export default async function CityLandingPage({ params, sections = [] }: PagePro
                     '@type': 'Service',
                     name: s.name,
                     description: s.description,
+                    provider: { '@id': 'https://wlasniewski.pl/#business' },
+                    areaServed: { '@type': 'City', name: data.city },
                 },
             })),
         },
-        sameAs: [
-            'https://www.facebook.com/przemyslaw.wlasniewski.fotografia',
-            'https://www.instagram.com/wlasniewski.pl/',
-        ],
     };
 
     // JSON-LD: BreadcrumbList
@@ -799,7 +791,7 @@ export default async function CityLandingPage({ params, sections = [] }: PagePro
     return (
         <main className="min-h-screen bg-[#f4f1eb] font-sans text-[#25221f] selection:bg-[#b6a894] selection:text-white">
             <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
-            <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessSchema) }} />
+            <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(serviceSchema) }} />
             <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
 
             <section className="border-b border-[#d9d2c8] bg-[#ebe6de]">
@@ -871,9 +863,9 @@ export default async function CityLandingPage({ params, sections = [] }: PagePro
                         </div>
                         <div className="grid gap-px overflow-hidden rounded-2xl border border-[#d7d0c6] bg-[#d7d0c6] md:grid-cols-3">
                             {[
-                                { title: 'Sesja rodzinna', price: 'od 750 zł', service: 'Sesja', text: 'Rodzina, para, dzieci albo kilka pokoleń.' },
-                                { title: 'Ślub', price: 'od 1900 zł', service: 'Ślub', text: 'Ceremonia cywilna, kościelna lub pełny reportaż.' },
-                                { title: 'Przyjęcie', price: 'od 1100 zł', service: 'Urodziny', text: 'Urodziny, rocznica i rodzinne spotkanie.' },
+                                { title: 'Sesja rodzinna', service: 'Sesja', text: 'Rodzina, para, dzieci albo kilka pokoleń.' },
+                                { title: 'Ślub', service: 'Ślub', text: 'Ceremonia cywilna, kościelna lub pełny reportaż.' },
+                                { title: 'Przyjęcie', service: 'Urodziny', text: 'Urodziny, rocznica i rodzinne spotkanie.' },
                             ].map((item, index) => (
                                 <Link
                                     key={item.title}
@@ -884,7 +876,7 @@ export default async function CityLandingPage({ params, sections = [] }: PagePro
                                     <h3 className="mt-8 font-serif text-2xl font-medium">{item.title}</h3>
                                     <p className="mt-3 text-sm leading-relaxed text-[#716a62]">{item.text}</p>
                                     <div className="mt-auto flex items-end justify-between gap-3 pt-8">
-                                        <span className="font-semibold text-[#413c36]">{item.price}</span>
+                                        <span className="font-semibold text-[#413c36]">{publicPriceLabel(publicMinimumPrices, item.service)}</span>
                                         <span className="text-[#8d7f6d] transition group-hover:translate-x-1" aria-hidden="true">→</span>
                                     </div>
                                 </Link>

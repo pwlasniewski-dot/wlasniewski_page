@@ -2,6 +2,30 @@
 
 Ten dokument stanowi kompleksowy opis funkcjonalności oraz logiki biznesowej platformy **FOTO-DRON Przemysław Właśniewski**. Dokumentacja została opracowana na podstawie audytu technicznego przeprowadzonego w grudniu 2025 r. Szczegóły techniczne dotyczące infrastruktury i wzorców projektowych znajdują się w dokumencie [ARCHITECTURE.md](file:///c:/Strona-fotografa/ARCHITECTURE.md).
 
+## Aktualizacja 2026-08-02 — wizualne inspiracje i odporność publicznych stron
+
+- Poradnik zawiera 10 rozwijanych inspiracji ustawień rodzinnych z obrazem, nagłówkiem i tekstowym opisem dostępnym dla użytkownika oraz wyszukiwarki.
+- Pierwszych sześć kart jest widocznych od razu, cztery kolejne rozwija użytkownik, dzięki czemu strona pozostaje czytelna na telefonie.
+- Nieważny token konta nie przekierowuje już automatycznie z publicznej strony do logowania.
+- Brak menu z CMS, ustawień analityki lub ustawienia hero uruchamia wbudowane wartości domyślne bez widocznej nakładki błędu.
+
+## Aktualizacja 2026-08-01 — odporna i sprzedażowa strona główna
+
+- Pierwszy ekran zawiera indeksowalny H1, opis oraz CTA do aktualnego procesu rezerwacji jeszcze przed hydratacją.
+- Przy braku slajdów lub CMS wyświetla się bezpieczny wariant domyślny, bez wymyślania oferty i ceny.
+- Hero zajmuje 68svh, dzięki czemu mobilny użytkownik szybciej widzi wybór istniejących kategorii przez duże karty z widocznym fokusem.
+- Karty nie utrwalają kwot w komponencie; aktualne ceny użytkownik sprawdza w istniejącym procesie rezerwacji.
+- Autoodtwarzanie hero wyłącza się dla użytkowników preferujących ograniczony ruch.
+
+## Aktualizacja 2026-08-01 — publiczny poradnik przygotowania
+
+- `/jak-sie-ubrac` jest publicznym, indeksowalnym poradnikiem pozyskującym ruch na frazy związane z ubiorem i pozowaniem do zdjęć.
+- Artykuł zawiera pełną bezpłatną wartość: skrót, siedem rozdziałów, trzy scenariusze, checklistę, FAQ, autora i datę aktualizacji.
+- CTA prowadzą do `/rezerwacja`, `/kontakt` i uczciwej zapowiedzi rozszerzonego poradnika.
+- `/sklep/poradnik-jak-sie-ubrac-i-pozowac` nie umożliwia zakupu, dopóki nie istnieją gotowy produkt, cena i checkout.
+- Edytor prywatnej sekcji klienta pozostaje dostępny pod `/admin/pages/przygotowanie-klienta`; skrót znajduje się w globalnym menu admina.
+- Publiczny artykuł nie korzysta z prywatnego API i nie publikuje pełnych danych CMS kategorii `pose`.
+
 ## Aktualizacja 2026-08-01 — edytor przygotowania w Pages
 
 - Lista `/admin/pages` zawiera systemową pozycję „Przygotowanie do sesji”.
@@ -1056,4 +1080,5 @@ Niniejsza specyfikacja techniczna odzwierciedla stan faktyczny systemu na dzień
 ---
 
 *Dokumentacja sporządzona przez system Antigravity dla Przemysława Właśniewskiego.*
+
 ```

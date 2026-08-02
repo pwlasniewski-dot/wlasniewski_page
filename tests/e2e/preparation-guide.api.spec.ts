@@ -384,8 +384,12 @@ test.describe('preparation guide fallback content', () => {
     });
 
     test('applies the public pose filter to every public read path', () => {
+        const publicGuideSource = readFileSync(join(process.cwd(), 'src', 'app', 'jak-sie-ubrac', 'page.tsx'), 'utf8');
+        expect(publicGuideSource).not.toContain('prisma.');
+        expect(publicGuideSource).not.toContain('POSE_GUIDE_CARDS');
+        expect(publicGuideSource).not.toContain('/api/style-guide/client');
+
         const guardedPaths = [
-            ['src', 'app', 'jak-sie-ubrac', 'page.tsx'],
             ['src', 'app', 'api', 'style-guide', 'outfits', 'route.ts'],
             ['src', 'app', 'api', 'style-guide', 'outfits', '[slug]', 'route.ts'],
             ['src', 'app', 'api', 'style-guide', 'palettes', '[slug]', 'route.ts'],

@@ -46,6 +46,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         '',
         '/o-mnie',
         '/jak-sie-ubrac',
+        '/sklep/poradnik-jak-sie-ubrac-i-pozowac',
         '/rezerwacja',
         '/portfolio',
         '/blog',
