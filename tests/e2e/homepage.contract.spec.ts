@@ -43,3 +43,17 @@ test('falls back safely when homepage CMS is unavailable and exposes social meta
     expect(pageSource).toContain("alternates: { canonical: 'https://wlasniewski.pl/' }");
     expect(pageSource).not.toContain("console.error('Failed to fetch hero slider interval'");
 });
+
+test('promotes the public guide with a canonical internal link and a dedicated lightweight image', () => {
+    const dynamicSectionsPosition = contentSource.indexOf('{sections.map(section => renderSection(section))}');
+    const guidePosition = contentSource.indexOf('Bezpłatny poradnik przed sesją');
+    const giftCardPosition = contentSource.indexOf('Karta podarunkowa na sesję');
+
+    expect(pageSource).toContain("/images/home/session-guide-family-v2.webp");
+    expect(contentSource).toContain('bg-[#f5efe5]');
+    expect(contentSource).toContain('href="/jak-sie-ubrac"');
+    expect(contentSource).not.toContain('/jak-sie-ubrac?source=home-guide');
+    expect(dynamicSectionsPosition).toBeGreaterThan(-1);
+    expect(guidePosition).toBeGreaterThan(dynamicSectionsPosition);
+    expect(giftCardPosition).toBeGreaterThan(guidePosition);
+});

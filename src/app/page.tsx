@@ -7,7 +7,7 @@ export const revalidate = 3600; // Cache for 1 hour
 
 import prisma from "@/lib/db/prisma";
 import { unstable_cache } from 'next/cache';
-import { defaultPublicGuideCmsData, parsePublicGuideCmsData } from '@/lib/publicGuideCms';
+import { parsePublicGuideCmsData } from '@/lib/publicGuideCms';
 
 // Cached function for homepage metadata
 const getCachedHomeMetadata = unstable_cache(
@@ -140,7 +140,8 @@ async function getHomePageData() {
 }
 
 async function getPublicGuidePromo() {
-    const fallback = defaultPublicGuideCmsData();
+    const homepageImage = '/images/home/session-guide-family-v2.webp';
+    const homepageImageAlt = 'Rodzina w skoordynowanych, jasnych ubraniach podczas sesji w Toruniu';
     try {
         const page = await prisma.page.findUnique({
             where: { slug: 'jak-sie-ubrac' },
@@ -150,11 +151,11 @@ async function getPublicGuidePromo() {
         if (data && !page?.is_published) return null;
         return {
             title: page?.title || 'Jak się ubrać i pozować do sesji?',
-            image: (data ?? fallback).hero.src,
-            imageAlt: (data ?? fallback).hero.alt,
+            image: homepageImage,
+            imageAlt: homepageImageAlt,
         };
     } catch {
-        return { title: 'Jak się ubrać i pozować do sesji?', image: fallback.hero.src, imageAlt: fallback.hero.alt };
+        return { title: 'Jak się ubrać i pozować do sesji?', image: homepageImage, imageAlt: homepageImageAlt };
     }
 }
 

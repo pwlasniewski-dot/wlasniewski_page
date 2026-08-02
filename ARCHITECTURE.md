@@ -2,6 +2,13 @@
 
 Ten dokument stanowi techniczny blueprint platformy fotograficznej wlasniewski.pl. Jest on przeznaczony dla senior deweloperów i architektów systemowych, opisując strukturę, wzorce projektowe oraz krytyczne protokoły bezpieczeństwa.
 
+## Aktualizacja 2026-08-02 — moduł promocji poradnika na homepage
+
+- `HomeContent` renderuje jasny, responsywny moduł poradnika po sekcjach CMS i przed kartą podarunkową.
+- Dedykowany zasób `public/images/home/session-guide-family-v2.webp` ma 1536×1024 px i około 160 KB; `next/image` dobiera wariant do viewportu.
+- Wszystkie trzy powierzchnie linkujące prowadzą do kanonicznego `/jak-sie-ubrac` bez parametrów zapytania.
+- `HeroSlider` utrzymuje jeden stały H1 dokumentu, a zmienne tytuły slajdów i wariant before/after są H2.
+
 ## Aktualizacja 2026-08-02 — CMS publicznego poradnika
 
 - Dedykowany renderer `app/jak-sie-ubrac` zachowuje wygląd i schema Article/FAQ, ale pobiera walidowany JSON z rekordu `Page.slug=jak-sie-ubrac`.

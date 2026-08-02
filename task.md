@@ -1,5 +1,16 @@
 # Aktualny plan prac
 
+## 2026-08-02 — korekta strony głównej po odbiorze właściciela
+
+- [x] Usunięta ciężka czarna karta poradnika i podwójne obramowanie.
+- [x] Nowa dedykowana grafika rodzinna, zoptymalizowana do WebP.
+- [x] Jasny moduł redakcyjny przeniesiony za sekcje budujące zaufanie.
+- [x] Zachowane istniejące teksty, poprawione kadrowanie i wysokość na telefonie.
+- [x] Czyste linkowanie do `/jak-sie-ubrac` z obrazu, H2 i CTA.
+- [x] Jeden stabilny H1 strony głównej; slajdy używają H2.
+- [x] Test strony głównej 8/8, poradnika 9/9, build produkcyjny PASS.
+- [ ] Odbiór wizualny i akceptacja właściciela przed commitem.
+
 ## 2026-08-02 — Pages, menu i promocja publicznego poradnika
 
 - [x] Jedna karta systemowa publicznego poradnika w Pages; zwykły legacy szkic nie jest dublowany na liście.

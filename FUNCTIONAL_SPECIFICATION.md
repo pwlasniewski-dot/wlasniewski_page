@@ -2,6 +2,14 @@
 
 Ten dokument stanowi kompleksowy opis funkcjonalności oraz logiki biznesowej platformy **FOTO-DRON Przemysław Właśniewski**. Dokumentacja została opracowana na podstawie audytu technicznego przeprowadzonego w grudniu 2025 r. Szczegóły techniczne dotyczące infrastruktury i wzorców projektowych znajdują się w dokumencie [ARCHITECTURE.md](file:///c:/Strona-fotografa/ARCHITECTURE.md).
 
+## Aktualizacja 2026-08-02 — profesjonalna promocja poradnika na stronie głównej
+
+- Promocja poradnika jest jasnym modułem redakcyjnym, a nie kolejną czarną kartą sprzedażową.
+- Dedykowana fotografia pokazuje efekt koordynowania ubrań; nie zawiera tekstu ani plakatu osadzonego w obrazie.
+- Moduł znajduje się po treściach dynamicznych i przed kartą podarunkową, dzięki czemu nie konkuruje z pierwszym wyborem usługi.
+- Zachowano dotychczasowy tekst, czysty adres `/jak-sie-ubrac`, klikalny obraz i tytuł oraz widoczny fokus klawiatury.
+- Strona główna utrzymuje jeden stabilny H1, a tytuły rotujących slajdów używają H2.
+
 ## Aktualizacja 2026-08-02 — publikacja poradnika z Pages
 
 - W Pages widoczne są dwie jednoznaczne karty: publiczny poradnik i prywatne przygotowanie klienta.

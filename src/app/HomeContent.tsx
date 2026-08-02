@@ -1033,31 +1033,42 @@ export default function HomeContent({ heroSlides, sections, homeData, orderedSec
                 </div>
             </section>
 
+            {/* Dynamic Sections */}
+            {sections.map(section => renderSection(section))}
+
             {publicGuidePromo && (
-                <section className="border-y border-white/5 bg-gradient-to-br from-zinc-950 via-black to-amber-950/20 px-5 py-16 md:px-8 md:py-24">
-                    <div className="mx-auto grid max-w-6xl overflow-hidden rounded-[2rem] border border-gold-500/25 bg-zinc-950 shadow-2xl shadow-black/50 lg:grid-cols-[.85fr_1.15fr]">
-                        <div className="relative min-h-[360px] bg-[#f3eee5] lg:min-h-[520px]">
-                            <Image src={publicGuidePromo.image} alt={publicGuidePromo.imageAlt} fill sizes="(max-width: 1024px) 100vw, 42vw" className="object-contain" />
-                        </div>
-                        <div className="flex flex-col justify-center p-7 md:p-12">
-                            <p className="text-xs font-bold uppercase tracking-[.25em] text-gold-400">Bezpłatny poradnik przed sesją</p>
-                            <h2 className="mt-4 text-3xl font-bold leading-tight text-white md:text-5xl">{publicGuidePromo.title}</h2>
-                            <p className="mt-6 max-w-xl text-lg leading-8 text-zinc-300">Zobacz gotowe zestawy kolorów do miasta, natury i domu oraz rodzinne ustawienia pokazane na zdjęciach. Każdy przykład ma prosty opis — bez fotograficznego żargonu.</p>
-                            <div className="mt-7 grid gap-3 text-sm text-zinc-300 sm:grid-cols-2">
-                                <span className="flex gap-2"><Check size={18} className="shrink-0 text-gold-400"/> Kolory dopasowane do otoczenia</span>
-                                <span className="flex gap-2"><Check size={18} className="shrink-0 text-gold-400"/> 10 rodzinnych ustawień</span>
-                                <span className="flex gap-2"><Check size={18} className="shrink-0 text-gold-400"/> Wskazówki dla dzieci i par</span>
-                                <span className="flex gap-2"><Check size={18} className="shrink-0 text-gold-400"/> Checklista przed wyjściem</span>
+                <section className="border-y border-[#d8cdbd] bg-[#f5efe5] px-4 py-14 text-[#211e1a] sm:px-6 md:py-20">
+                    <div className="mx-auto grid max-w-6xl items-center gap-8 lg:grid-cols-[1.05fr_.95fr] lg:gap-16">
+                        <Link
+                            href="/jak-sie-ubrac"
+                            aria-label={`Przejdź do poradnika: ${publicGuidePromo.title}`}
+                            className="group relative block aspect-[4/3] overflow-hidden rounded-[1.5rem] bg-[#e9dfd0] shadow-[0_24px_70px_rgba(67,50,31,.16)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#9b7415] sm:aspect-[3/2] lg:aspect-[4/3]"
+                        >
+                            <Image
+                                src={publicGuidePromo.image}
+                                alt={publicGuidePromo.imageAlt}
+                                fill
+                                sizes="(max-width: 1024px) 100vw, 52vw"
+                                className="object-cover transition duration-700 group-hover:scale-[1.02]"
+                            />
+                        </Link>
+                        <div className="lg:py-4">
+                            <p className="text-xs font-bold uppercase tracking-[.25em] text-[#9b7415]">Bezpłatny poradnik przed sesją</p>
+                            <Link href="/jak-sie-ubrac" className="group mt-4 block w-fit rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#9b7415]">
+                                <h2 className="max-w-xl text-3xl font-semibold leading-[1.12] tracking-[-0.025em] text-[#211e1a] transition group-hover:text-[#76570d] md:text-5xl">{publicGuidePromo.title}</h2>
+                            </Link>
+                            <p className="mt-5 max-w-xl text-base leading-7 text-[#655e55] md:text-lg md:leading-8">Zobacz gotowe zestawy kolorów do miasta, natury i domu oraz rodzinne ustawienia pokazane na zdjęciach. Każdy przykład ma prosty opis — bez fotograficznego żargonu.</p>
+                            <div className="mt-6 grid gap-3 text-sm font-medium text-[#4c463f] sm:grid-cols-2">
+                                <span className="flex gap-2"><Check size={18} className="shrink-0 text-[#9b7415]"/> Kolory dopasowane do otoczenia</span>
+                                <span className="flex gap-2"><Check size={18} className="shrink-0 text-[#9b7415]"/> 10 rodzinnych ustawień</span>
+                                <span className="flex gap-2"><Check size={18} className="shrink-0 text-[#9b7415]"/> Wskazówki dla dzieci i par</span>
+                                <span className="flex gap-2"><Check size={18} className="shrink-0 text-[#9b7415]"/> Checklista przed wyjściem</span>
                             </div>
-                            <Link href="/jak-sie-ubrac?source=home-guide" className="mt-9 inline-flex min-h-12 w-fit items-center gap-2 rounded-full bg-gold-500 px-7 py-3 font-bold text-black transition hover:bg-gold-400">Zobacz poradnik <ArrowRight size={18}/></Link>
+                            <Link href="/jak-sie-ubrac" className="mt-8 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-[#211e1a] px-7 py-3 font-bold text-white transition hover:bg-[#3a332b] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#9b7415] sm:w-fit">Zobacz poradnik <ArrowRight size={18}/></Link>
                         </div>
                     </div>
                 </section>
             )}
-
-
-            {/* Dynamic Sections */}
-            {sections.map(section => renderSection(section))}
 
             <section className="border-y border-white/5 bg-black px-6 py-20">
                 <div className="mx-auto grid max-w-6xl items-center gap-12 lg:grid-cols-2">
