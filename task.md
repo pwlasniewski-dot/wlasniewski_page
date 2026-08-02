@@ -1,5 +1,27 @@
 # Aktualny plan prac
 
+## 2026-08-02 — korekta strony głównej po odbiorze właściciela
+
+- [x] Usunięta ciężka czarna karta poradnika i podwójne obramowanie.
+- [x] Nowa dedykowana grafika rodzinna, zoptymalizowana do WebP.
+- [x] Jasny moduł redakcyjny przeniesiony za sekcje budujące zaufanie.
+- [x] Zachowane istniejące teksty, poprawione kadrowanie i wysokość na telefonie.
+- [x] Czyste linkowanie do `/jak-sie-ubrac` z obrazu, H2 i CTA.
+- [x] Jeden stabilny H1 strony głównej; slajdy używają H2.
+- [x] Test strony głównej 8/8, poradnika 9/9, build produkcyjny PASS.
+- [ ] Odbiór wizualny i akceptacja właściciela przed commitem.
+
+## 2026-08-02 — Pages, menu i promocja publicznego poradnika
+
+- [x] Jedna karta systemowa publicznego poradnika w Pages; zwykły legacy szkic nie jest dublowany na liście.
+- [x] Edycja wszystkich używanych zdjęć, ALT, podpisów i opisów publicznych kart.
+- [x] Publikacja, menu i SEO w tym samym edytorze.
+- [x] Realistyczne rodzinne karty zamiast wcześniejszych ilustracji bez twarzy na publicznym poradniku.
+- [x] Pozycja „Jak się ubrać” w menu oraz wizualny kafel na stronie głównej.
+- [x] Dynamiczne Article/OG/Twitter metadata, canonical i pojedynczy wpis sitemap.
+- [x] Test poradnika 9/9, test strony głównej 8/8, build produkcyjny PASS.
+- [ ] Niezależny recheck QA i akceptacja właściciela przed commitem.
+
 ## 2026-08-02 — Finalny recheck przed akceptacją
 
 - [x] Dodane 10 zoptymalizowanych kart naturalnych ustawień rodzinnych.

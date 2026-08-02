@@ -45,7 +45,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const staticPages = [
         '',
         '/o-mnie',
-        '/jak-sie-ubrac',
         '/sklep/poradnik-jak-sie-ubrac-i-pozowac',
         '/rezerwacja',
         '/portfolio',
@@ -73,6 +72,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     let portfolioSessions: Array<{ slug: string; category: string; updated_at: Date }> = [];
     let blogPosts: Array<{ slug: string; updated_at: Date }> = [];
     let nphotoAlbums: Array<{ slug: string; updated_at: Date }> = [];
+    let publicGuidePage: { page_type: string; is_published: boolean; updated_at: Date } | null = null;
 
     try {
         dbPages = await prisma.page.findMany({
@@ -97,6 +97,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             where: { is_active: true },
             select: { slug: true, updated_at: true }
         });
+        publicGuidePage = await prisma.page.findUnique({
+            where: { slug: 'jak-sie-ubrac' },
+            select: { page_type: true, is_published: true, updated_at: true },
+        });
     } catch (error) {
         console.error('[sitemap] Failed to load dynamic entries:', error);
     }
@@ -108,6 +112,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             changeFrequency: 'monthly' as const,
             priority: route === '' ? 1.0 : 0.8,
         })),
+        ...(!publicGuidePage || publicGuidePage.page_type !== 'public-guide' || publicGuidePage.is_published ? [{
+            url: `${b2cBase}/jak-sie-ubrac`,
+            lastModified: publicGuidePage?.updated_at,
+            changeFrequency: 'monthly' as const,
+            priority: 0.85,
+        }] : []),
 
         // ─── B2C: City SEO Landing Pages (highest priority for local SEO) ───
         ...cityPages.map(route => ({
@@ -127,6 +137,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
                 'regulamin',
                 'polityka-prywatnosci',
                 'reklamacje',
+                'jak-sie-ubrac',
             ]);
             return !page.slug.startsWith('fotograf-') && !excludedSlugs.has(page.slug);
         }).map(page => ({

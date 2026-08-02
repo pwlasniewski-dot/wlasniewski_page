@@ -2,6 +2,22 @@
 
 Ten dokument stanowi kompleksowy opis funkcjonalności oraz logiki biznesowej platformy **FOTO-DRON Przemysław Właśniewski**. Dokumentacja została opracowana na podstawie audytu technicznego przeprowadzonego w grudniu 2025 r. Szczegóły techniczne dotyczące infrastruktury i wzorców projektowych znajdują się w dokumencie [ARCHITECTURE.md](file:///c:/Strona-fotografa/ARCHITECTURE.md).
 
+## Aktualizacja 2026-08-02 — profesjonalna promocja poradnika na stronie głównej
+
+- Promocja poradnika jest jasnym modułem redakcyjnym, a nie kolejną czarną kartą sprzedażową.
+- Dedykowana fotografia pokazuje efekt koordynowania ubrań; nie zawiera tekstu ani plakatu osadzonego w obrazie.
+- Moduł znajduje się po treściach dynamicznych i przed kartą podarunkową, dzięki czemu nie konkuruje z pierwszym wyborem usługi.
+- Zachowano dotychczasowy tekst, czysty adres `/jak-sie-ubrac`, klikalny obraz i tytuł oraz widoczny fokus klawiatury.
+- Strona główna utrzymuje jeden stabilny H1, a tytuły rotujących slajdów używają H2.
+
+## Aktualizacja 2026-08-02 — publikacja poradnika z Pages
+
+- W Pages widoczne są dwie jednoznaczne karty: publiczny poradnik i prywatne przygotowanie klienta.
+- Publiczny edytor umożliwia podmianę każdego używanego obrazu z Media oraz edycję ALT, podpisu i opisu widocznego pod zdjęciem.
+- Zakładka publikacji obejmuje widoczność strony, widoczność i nazwę w menu, kolejność, tytuł SEO, opis SEO i frazy.
+- Publiczny poradnik jest promowany profesjonalnym kaflem na stronie głównej; jego obraz pochodzi z tego samego źródła CMS.
+- Prywatne 30 instrukcji nie jest kopiowane do publicznego rekordu ani publicznego API.
+
 ## Aktualizacja 2026-08-02 — wizualne inspiracje i odporność publicznych stron
 
 - Poradnik zawiera 10 rozwijanych inspiracji ustawień rodzinnych z obrazem, nagłówkiem i tekstowym opisem dostępnym dla użytkownika oraz wyszukiwarki.

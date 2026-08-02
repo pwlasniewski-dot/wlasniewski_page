@@ -1,5 +1,19 @@
 # PROJECT_HISTORIA & VADEMECUM STABILNOŚCI
 
+## 2026-08-02 — Redakcyjna promocja poradnika na stronie głównej
+
+- Zastąpiono ciężką czarną kartę jasnym, pełnoszerokim pasem redakcyjnym umieszczonym po dynamicznych sekcjach budujących zaufanie.
+- Wygenerowano dedykowany poziomy kadr rodziny w skoordynowanych ubraniach i zoptymalizowano go do WebP o rozmiarze około 160 KB.
+- Zachowano wszystkie teksty promocji, a obraz, tytuł i CTA prowadzą teraz czystym linkiem do `/jak-sie-ubrac`.
+- Ustabilizowano pojedynczy H1 strony głównej; zmienne tytuły slajdów są nagłówkami H2, co ogranicza kanibalizację fraz usługowych.
+
+## 2026-08-02 — Publiczny poradnik sterowany z Pages
+
+- Połączono dedykowaną stronę `/jak-sie-ubrac` z jednym rekordem Pages; ręcznie utworzony legacy szkic jest odzyskiwany i przekształcany bez tworzenia duplikatu.
+- Dodano edytor publicznego poradnika: obrazy, ALT, podpisy, opisy kart, publikacja, menu i SEO.
+- Domyślne ilustracje publicznej strony korzystają z realistycznych kart rodzinnych; prywatne 30 instrukcji Panelu Klienta pozostaje osobnym, chronionym źródłem.
+- Poradnik otrzymał pozycję w menu, duży kafel na stronie głównej oraz pojedynczy wpis sitemap z datą modyfikacji CMS.
+
 ## 2026-08-02 — Galeria ustawień, publiczny dostęp i czyste fallbacki
 
 - Dodano 10 kart naturalnych ustawień rodzinnych z krótkimi opisami HTML; zoptymalizowane WebP zajmują łącznie około 0,75 MB.

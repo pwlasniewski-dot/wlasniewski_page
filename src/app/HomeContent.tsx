@@ -86,9 +86,10 @@ interface HomeContentProps {
     testimonials: Testimonial[];
     heroSliderInterval?: number;
     publicPriceLabels: Record<string, string>;
+    publicGuidePromo: { title: string; image: string; imageAlt: string } | null;
 }
 
-export default function HomeContent({ heroSlides, sections, homeData, orderedSections, testimonials, heroSliderInterval = 6000, publicPriceLabels }: HomeContentProps) {
+export default function HomeContent({ heroSlides, sections, homeData, orderedSections, testimonials, heroSliderInterval = 6000, publicPriceLabels, publicGuidePromo }: HomeContentProps) {
     const fallbackPublicPriceLabel = 'Aktualne pakiety i ceny';
     const [currentTestimonial, setCurrentTestimonial] = useState(0);
     const [selectedGalleryImage, setSelectedGalleryImage] = useState<string | null>(null);
@@ -1032,9 +1033,42 @@ export default function HomeContent({ heroSlides, sections, homeData, orderedSec
                 </div>
             </section>
 
-
             {/* Dynamic Sections */}
             {sections.map(section => renderSection(section))}
+
+            {publicGuidePromo && (
+                <section className="border-y border-[#d8cdbd] bg-[#f5efe5] px-4 py-14 text-[#211e1a] sm:px-6 md:py-20">
+                    <div className="mx-auto grid max-w-6xl items-center gap-8 lg:grid-cols-[1.05fr_.95fr] lg:gap-16">
+                        <Link
+                            href="/jak-sie-ubrac"
+                            aria-label={`Przejdź do poradnika: ${publicGuidePromo.title}`}
+                            className="group relative block aspect-[4/3] overflow-hidden rounded-[1.5rem] bg-[#e9dfd0] shadow-[0_24px_70px_rgba(67,50,31,.16)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#9b7415] sm:aspect-[3/2] lg:aspect-[4/3]"
+                        >
+                            <Image
+                                src={publicGuidePromo.image}
+                                alt={publicGuidePromo.imageAlt}
+                                fill
+                                sizes="(max-width: 1024px) 100vw, 52vw"
+                                className="object-cover transition duration-700 group-hover:scale-[1.02]"
+                            />
+                        </Link>
+                        <div className="lg:py-4">
+                            <p className="text-xs font-bold uppercase tracking-[.25em] text-[#9b7415]">Bezpłatny poradnik przed sesją</p>
+                            <Link href="/jak-sie-ubrac" className="group mt-4 block w-fit rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#9b7415]">
+                                <h2 className="max-w-xl text-3xl font-semibold leading-[1.12] tracking-[-0.025em] text-[#211e1a] transition group-hover:text-[#76570d] md:text-5xl">{publicGuidePromo.title}</h2>
+                            </Link>
+                            <p className="mt-5 max-w-xl text-base leading-7 text-[#655e55] md:text-lg md:leading-8">Zobacz gotowe zestawy kolorów do miasta, natury i domu oraz rodzinne ustawienia pokazane na zdjęciach. Każdy przykład ma prosty opis — bez fotograficznego żargonu.</p>
+                            <div className="mt-6 grid gap-3 text-sm font-medium text-[#4c463f] sm:grid-cols-2">
+                                <span className="flex gap-2"><Check size={18} className="shrink-0 text-[#9b7415]"/> Kolory dopasowane do otoczenia</span>
+                                <span className="flex gap-2"><Check size={18} className="shrink-0 text-[#9b7415]"/> 10 rodzinnych ustawień</span>
+                                <span className="flex gap-2"><Check size={18} className="shrink-0 text-[#9b7415]"/> Wskazówki dla dzieci i par</span>
+                                <span className="flex gap-2"><Check size={18} className="shrink-0 text-[#9b7415]"/> Checklista przed wyjściem</span>
+                            </div>
+                            <Link href="/jak-sie-ubrac" className="mt-8 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-[#211e1a] px-7 py-3 font-bold text-white transition hover:bg-[#3a332b] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#9b7415] sm:w-fit">Zobacz poradnik <ArrowRight size={18}/></Link>
+                        </div>
+                    </div>
+                </section>
+            )}
 
             <section className="border-y border-white/5 bg-black px-6 py-20">
                 <div className="mx-auto grid max-w-6xl items-center gap-12 lg:grid-cols-2">

@@ -142,6 +142,7 @@ export default function HeroSlider({ slides = [], interval = 6000 }: HeroSliderP
     if (currentSlideData?.is_before_after && currentSlideData.image && currentSlideData.before_image) {
         return (
             <div className="relative h-[68svh] min-h-[520px] w-full bg-black md:min-h-[620px]">
+                <h1 className="sr-only">Fotograf Toruń — zdjęcia, do których chce się wracać</h1>
                 <BeforeAfterSlide
                     beforeImage={typeof currentSlideData.before_image === 'string' ? currentSlideData.before_image : currentSlideData.before_image.file_path}
                     afterImage={typeof currentSlideData.image === 'string' ? currentSlideData.image : currentSlideData.image.file_path}
@@ -177,6 +178,7 @@ export default function HeroSlider({ slides = [], interval = 6000 }: HeroSliderP
 
     return (
         <div className="relative h-[68svh] min-h-[520px] w-full overflow-hidden bg-black md:min-h-[620px]">
+            <h1 className="sr-only">Fotograf Toruń — zdjęcia, do których chce się wracać</h1>
             {/* Background Images */}
             <AnimatePresence mode="popLayout">
                 <motion.div
@@ -230,7 +232,7 @@ export default function HeroSlider({ slides = [], interval = 6000 }: HeroSliderP
                         transition={variant.transition}
                         className="space-y-3 sm:space-y-4 md:space-y-6 max-w-4xl"
                     >
-                        <h1
+                        <h2
                             className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-white tracking-tighter drop-shadow-2xl leading-tight"
                             dangerouslySetInnerHTML={{ __html: slide.title || '' }}
                         />
