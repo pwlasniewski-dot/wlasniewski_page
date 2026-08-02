@@ -47,7 +47,9 @@ export default async function AnalyticsLoader() {
             />
         );
     } catch (error) {
-        console.error('Failed to load analytics settings:', error);
+        // Analytics are optional. A temporary database outage must not surface
+        // as a visible application error on otherwise healthy public pages.
+        console.warn('Analytics settings unavailable; continuing without trackers.');
         return null;
     }
 }

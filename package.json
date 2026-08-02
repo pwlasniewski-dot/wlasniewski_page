@@ -18,7 +18,9 @@
     "prisma:push-LOCAL-ONLY-DANGEROUS": "node scripts/guard-db.js push && node scripts/prisma-generate-local.js && prisma db push",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "test:preparation-guide": "playwright test --config=playwright.preparation.config.ts"
+    "test:preparation-guide": "playwright test --config=playwright.preparation.config.ts",
+    "test:public-guide": "playwright test --config=playwright.public-guide.config.ts",
+    "test:homepage": "playwright test --config=playwright.homepage.config.ts"
   },
   "prisma": {
     "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"

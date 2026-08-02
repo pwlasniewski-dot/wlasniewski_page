@@ -1,5 +1,6 @@
 
 import HomeContent from "./HomeContent";
+import { loadPublicMinimumPrices, publicPriceLabel } from '@/lib/publicPackagePricing';
 import { Metadata } from "next";
 
 export const revalidate = 3600; // Cache for 1 hour
@@ -24,7 +25,12 @@ const getCachedHomeMetadata = unstable_cache(
 );
 
 export async function generateMetadata(): Promise<Metadata> {
-    const page = await getCachedHomeMetadata();
+    let page: Awaited<ReturnType<typeof getCachedHomeMetadata>> = null;
+    try {
+        page = await getCachedHomeMetadata();
+    } catch (error) {
+        console.warn('[home] Metadata CMS unavailable, using defaults.');
+    }
 
     const defaultTitle = "Fotograf Toruń | Sesje rodzinne i śluby — Właśniewski";
     const defaultDescription = "Fotograf w Toruniu: sesje rodzinne, reportaże ślubne i rodzinne uroczystości. Zobacz pakiety, ceny i wolne terminy. Rezerwacja online z PayU.";
@@ -38,17 +44,39 @@ export async function generateMetadata(): Promise<Metadata> {
     const isGenericTitle = !dbTitle || dbTitle.length < 35 || dbTitle.toLowerCase().includes('strona główna') || dbTitle === legacyTitle;
     const isGenericDesc = !dbDesc || dbDesc.length < 60 || dbDesc.toLowerCase().includes('strona główna') || dbDesc === legacyDescription;
 
+    const title = isGenericTitle ? defaultTitle : dbTitle;
+    const description = isGenericDesc ? defaultDescription : dbDesc;
+
     return {
-        title: isGenericTitle ? defaultTitle : dbTitle,
-        description: isGenericDesc ? defaultDescription : dbDesc,
+        title,
+        description,
         keywords: page?.meta_keywords || defaultKeywords,
         alternates: { canonical: 'https://wlasniewski.pl/' },
         robots: { index: true, follow: true },
+        openGraph: {
+            type: 'website',
+            locale: 'pl_PL',
+            url: 'https://wlasniewski.pl/',
+            siteName: 'Przemysław Właśniewski — Fotograf',
+            title,
+            description,
+            images: [{
+                url: '/assets/slider/fotografia-rodzinna-grudziadz-01.webp',
+                alt: 'Naturalna fotografia rodzinna — Przemysław Właśniewski',
+            }],
+        },
+        twitter: {
+            card: 'summary_large_image',
+            title,
+            description,
+            images: ['/assets/slider/fotografia-rodzinna-grudziadz-01.webp'],
+        },
     };
 }
 
 async function getHomePageData() {
-    const page = await prisma.page.findUnique({
+    try {
+        const page = await prisma.page.findUnique({
         where: { slug: 'strona-glowna' },
         select: {
             home_sections: true,
@@ -57,7 +85,7 @@ async function getHomePageData() {
     });
 
     // Testimonials - optimized query with select instead of include
-    const testimonials = await prisma.testimonial.findMany({
+        const testimonials = await prisma.testimonial.findMany({
         where: {
             is_featured: true // Only get featured testimonials
         },
@@ -81,9 +109,9 @@ async function getHomePageData() {
     });
 
     // If no featured testimonials, get the latest 5
-    const finalTestimonials = testimonials.length > 0 
-        ? testimonials 
-        : await prisma.testimonial.findMany({
+        const finalTestimonials = testimonials.length > 0
+            ? testimonials
+            : await prisma.testimonial.findMany({
             select: {
                 id: true,
                 client_name: true,
@@ -103,11 +131,18 @@ async function getHomePageData() {
             take: 5
         });
 
-    return { page, testimonials: finalTestimonials };
+        return { page, testimonials: finalTestimonials };
+    } catch (error) {
+        console.warn('[home] CMS unavailable, rendering resilient homepage fallback.');
+        return { page: null, testimonials: [] };
+    }
 }
 
 export default async function HomePage() {
-    const { page, testimonials } = await getHomePageData();
+    const [{ page, testimonials }, publicMinimumPrices] = await Promise.all([
+        getHomePageData(),
+        loadPublicMinimumPrices(),
+    ]);
 
     let homeData: any = null;
     let orderedSections: any[] = [];
@@ -117,7 +152,7 @@ export default async function HomePage() {
         try {
             homeData = JSON.parse(page.home_sections);
         } catch (e) {
-            console.error('Failed to parse home_sections', e);
+            console.warn('[home] Invalid home_sections; using the resilient fallback.');
         }
     }
 
@@ -129,7 +164,7 @@ export default async function HomePage() {
                 orderedSections = parsedSections;
             }
         } catch (e) {
-            console.error('Failed to parse page.sections', e);
+            console.warn('[home] Invalid page.sections; using the resilient fallback.');
         }
     }
 
@@ -238,7 +273,7 @@ export default async function HomePage() {
         if (e.code === 'P2022') {
             console.warn('Settings column missing (theme_mode?), using default interval.');
         } else {
-            console.error('Failed to fetch hero slider interval', e);
+            console.warn('[home] Hero interval unavailable; using the default value.');
         }
     }
     const heroSliderInterval = intervalSetting?.setting_value ? parseInt(intervalSetting.setting_value) : 6000;
@@ -251,6 +286,11 @@ export default async function HomePage() {
             orderedSections={orderedSections}
             testimonials={testimonials}
             heroSliderInterval={heroSliderInterval}
+            publicPriceLabels={{
+                Sesja: publicPriceLabel(publicMinimumPrices, 'Sesja'),
+                'Ślub': publicPriceLabel(publicMinimumPrices, 'Ślub'),
+                Urodziny: publicPriceLabel(publicMinimumPrices, 'Urodziny'),
+            }}
         />
     );
 }
