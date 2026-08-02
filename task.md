@@ -1,5 +1,16 @@
 # Aktualny plan prac
 
+## 2026-08-02 — Pages, menu i promocja publicznego poradnika
+
+- [x] Jedna karta systemowa publicznego poradnika w Pages; zwykły legacy szkic nie jest dublowany na liście.
+- [x] Edycja wszystkich używanych zdjęć, ALT, podpisów i opisów publicznych kart.
+- [x] Publikacja, menu i SEO w tym samym edytorze.
+- [x] Realistyczne rodzinne karty zamiast wcześniejszych ilustracji bez twarzy na publicznym poradniku.
+- [x] Pozycja „Jak się ubrać” w menu oraz wizualny kafel na stronie głównej.
+- [x] Dynamiczne Article/OG/Twitter metadata, canonical i pojedynczy wpis sitemap.
+- [x] Test poradnika 9/9, test strony głównej 8/8, build produkcyjny PASS.
+- [ ] Niezależny recheck QA i akceptacja właściciela przed commitem.
+
 ## 2026-08-02 — Finalny recheck przed akceptacją
 
 - [x] Dodane 10 zoptymalizowanych kart naturalnych ustawień rodzinnych.

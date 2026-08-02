@@ -2,11 +2,12 @@ import { test, expect } from '@playwright/test';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { metadata as guideMetadata } from '../../src/app/jak-sie-ubrac/page';
+import { generateMetadata } from '../../src/app/jak-sie-ubrac/page';
 import { metadata as productMetadata } from '../../src/app/sklep/poradnik-jak-sie-ubrac-i-pozowac/page';
 
 const root = join(__dirname, '../..');
 const guideSource = readFileSync(join(root, 'src/app/jak-sie-ubrac/page.tsx'), 'utf8');
+const guideCmsSource = readFileSync(join(root, 'src/lib/publicGuideCms.ts'), 'utf8');
 const rendered = JSON.parse(execFileSync(
     process.execPath,
     [join(root, 'node_modules/tsx/dist/cli.mjs'), join(root, 'tests/helpers/renderPublicGuides.ts')],
@@ -29,7 +30,8 @@ test('renders an indexable people-first guide with required sections', () => {
     expect(html).toContain('href="/rezerwacja"');
 });
 
-test('has complete metadata and public structured data', () => {
+test('has complete metadata and public structured data', async () => {
+    const guideMetadata = await generateMetadata();
     expect(guideMetadata.title).toContain('Jak się ubrać i pozować');
     expect(guideMetadata.description).toContain('Kompletny poradnik');
     expect(guideMetadata.alternates?.canonical).toBe('https://wlasniewski.pl/jak-sie-ubrac');
@@ -43,16 +45,13 @@ test('does not expose the private guide data or API', () => {
     expect(guideSource).not.toContain('preparationGuides');
     expect(guideSource).not.toContain('/api/style-guide/client');
     expect(guideSource).not.toContain('POSE_GUIDE_CARDS');
-    expect(guideSource).not.toContain('prisma.');
+    expect(guideSource).toContain('parsePublicGuideCmsData');
 
-    const publicGuideImages = new Set(
-        [...guideSource.matchAll(/\/images\/(?:public-guide|client-guides\/(?:wardrobe|poses))\/[^'"\s)]+/g)].map(match => match[0])
-    );
-    expect(publicGuideImages.size).toBeGreaterThanOrEqual(7);
-    expect(publicGuideImages.size).toBeLessThanOrEqual(20);
+    expect(guideCmsSource).toContain('/images/public-guide/pose-cards/');
+    expect([...guideCmsSource.matchAll(/\.webp/g)].length).toBeGreaterThanOrEqual(10);
     expect(rendered.guide).toContain('10 naturalnych ustawień dla rodziny');
-    expect(guideSource).toContain('/images/public-guide/hero-family-walk.webp');
-    expect(guideSource).toContain('/images/public-guide/family-playful-lift.webp');
+    expect(guideSource).toContain('data.hero');
+    expect(guideSource).toContain('data.poseGallery');
     expect(guideSource).not.toContain('Wygenerowany obraz');
 });
 

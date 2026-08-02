@@ -2,6 +2,14 @@
 
 Ten dokument stanowi techniczny blueprint platformy fotograficznej wlasniewski.pl. Jest on przeznaczony dla senior deweloperów i architektów systemowych, opisując strukturę, wzorce projektowe oraz krytyczne protokoły bezpieczeństwa.
 
+## Aktualizacja 2026-08-02 — CMS publicznego poradnika
+
+- Dedykowany renderer `app/jak-sie-ubrac` zachowuje wygląd i schema Article/FAQ, ale pobiera walidowany JSON z rekordu `Page.slug=jak-sie-ubrac`.
+- Kontrakt danych i bezpieczny fallback znajdują się w `src/lib/publicGuideCms.ts`; prywatny `preparationGuideCms` pozostaje całkowicie oddzielony.
+- Chroniony endpoint administratora `/api/pages/public-guide` waliduje dane, aktualizuje istniejący rekord przez upsert i odświeża stronę oraz sitemapę.
+- Dedykowany edytor ma pierwszeństwo przed ogólną trasą edycji Pages i korzysta z MediaPicker oraz istniejących pól SEO modelu Page, bez migracji bazy.
+- Niekompatybilny legacy content nie steruje stroną publiczną do czasu pierwszego bezpiecznego zapisu; wtedy zostaje zastąpiony wersjonowanym JSON-em.
+
 ## Aktualizacja 2026-08-02 — zasoby kart i nieblokujące integracje
 
 - Dziesięć kart póz znajduje się w `public/images/public-guide/pose-cards/`; każda ma format WebP, szerokość 800 px i mniej niż 100 KB.

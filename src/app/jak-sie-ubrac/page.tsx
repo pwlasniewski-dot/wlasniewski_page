@@ -2,6 +2,9 @@ import type { Metadata } from 'next';
 import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { notFound } from 'next/navigation';
+import prisma from '@/lib/db/prisma';
+import { defaultPublicGuideCmsData, parsePublicGuideCmsData, PUBLIC_GUIDE_PAGE_SLUG } from '@/lib/publicGuideCms';
 import {
     ArrowRight,
     Check,
@@ -14,43 +17,46 @@ import {
 } from 'lucide-react';
 
 const canonical = 'https://wlasniewski.pl/jak-sie-ubrac';
-const updatedAt = '2026-08-01';
+const publishedAt = '2026-08-01T08:00:00+02:00';
+const fallbackTitle = 'Jak się ubrać i pozować do sesji zdjęciowej? Poradnik';
+const fallbackDescription = 'Kompletny poradnik fotografa: ubiór, kolory do miasta, natury i domu oraz naturalne pozowanie par, rodzin i dzieci. Checklista przed sesją.';
 
-export const metadata: Metadata = {
-    title: 'Jak się ubrać i pozować do sesji zdjęciowej? Poradnik',
-    description: 'Kompletny poradnik fotografa: ubiór, kolory do miasta, natury i domu oraz naturalne pozowanie par, rodzin i dzieci. Checklista przed sesją.',
-    keywords: [
-        'jak się ubrać na sesję zdjęciową',
-        'jak pozować do zdjęć',
-        'co ubrać na sesję rodzinną',
-        'kolory ubrań do sesji zdjęciowej',
-        'jak pozować do sesji rodzinnej',
-    ],
-    alternates: { canonical },
-    authors: [{ name: 'Przemysław Właśniewski', url: 'https://wlasniewski.pl/o-mnie' }],
-    openGraph: {
-        type: 'article',
-        locale: 'pl_PL',
-        url: canonical,
-        title: 'Jak się ubrać i pozować do sesji zdjęciowej?',
-        description: 'Praktyczny poradnik fotografa: strój, kolory, pozowanie i gotowe scenariusze na spokojną sesję.',
-        publishedTime: '2026-08-01T08:00:00+02:00',
-        modifiedTime: '2026-08-01T08:00:00+02:00',
-        authors: ['Przemysław Właśniewski'],
-        images: [{
-            url: '/images/public-guide/hero-family-walk.webp',
-            width: 1122,
-            height: 1402,
-            alt: 'Ilustracyjny przykład skoordynowanych ubrań rodziny na sesję zdjęciową',
-        }],
-    },
-    twitter: {
-        card: 'summary_large_image',
-        title: 'Jak się ubrać i pozować do sesji zdjęciowej?',
-        description: 'Ubiór, kolory, pozowanie i checklista od fotografa.',
-        images: ['/images/public-guide/hero-family-walk.webp'],
-    },
-};
+async function loadGuide() {
+    if (!process.env.DATABASE_URL) {
+        return { data: defaultPublicGuideCmsData(), isCms: false, isPublished: true, title: 'Jak się ubrać i pozować do sesji zdjęciowej?', metaTitle: fallbackTitle, metaDescription: fallbackDescription, keywords: 'jak się ubrać na sesję zdjęciową, jak pozować do zdjęć, sesja rodzinna', updatedAt: new Date(publishedAt) };
+    }
+    try {
+        const page = await prisma.page.findUnique({ where: { slug: PUBLIC_GUIDE_PAGE_SLUG } });
+        const data = parsePublicGuideCmsData(page?.content);
+        return {
+            data: data ?? defaultPublicGuideCmsData(),
+            isCms: Boolean(data),
+            isPublished: data ? Boolean(page?.is_published) : true,
+            title: page?.title || 'Jak się ubrać i pozować do sesji zdjęciowej?',
+            metaTitle: page?.meta_title || fallbackTitle,
+            metaDescription: page?.meta_description || fallbackDescription,
+            keywords: page?.meta_keywords || 'jak się ubrać na sesję zdjęciową, jak pozować do zdjęć, sesja rodzinna',
+            updatedAt: page?.updated_at || new Date(publishedAt),
+        };
+    } catch (error) {
+        console.error('[public-guide] CMS fallback:', error);
+        return { data: defaultPublicGuideCmsData(), isCms: false, isPublished: true, title: 'Jak się ubrać i pozować do sesji zdjęciowej?', metaTitle: fallbackTitle, metaDescription: fallbackDescription, keywords: 'jak się ubrać na sesję zdjęciową, jak pozować do zdjęć, sesja rodzinna', updatedAt: new Date(publishedAt) };
+    }
+}
+
+export async function generateMetadata(): Promise<Metadata> {
+    const guide = await loadGuide();
+    if (!guide.isPublished) return { robots: { index: false, follow: false } };
+    return {
+        title: guide.metaTitle,
+        description: guide.metaDescription,
+        keywords: guide.keywords.split(',').map(value => value.trim()).filter(Boolean),
+        alternates: { canonical },
+        authors: [{ name: 'Przemysław Właśniewski', url: 'https://wlasniewski.pl/o-mnie' }],
+        openGraph: { type: 'article', locale: 'pl_PL', url: canonical, title: guide.metaTitle, description: guide.metaDescription, publishedTime: publishedAt, modifiedTime: guide.updatedAt.toISOString(), authors: ['Przemysław Właśniewski'], images: [{ url: guide.data.hero.src, alt: guide.data.hero.alt }] },
+        twitter: { card: 'summary_large_image', title: guide.metaTitle, description: guide.metaDescription, images: [guide.data.hero.src] },
+    };
+}
 
 const faq = [
     ['Czy na sesję trzeba kupować nowe ubrania?', 'Nie. Najlepszy zestaw zwykle da się zbudować z rzeczy, które już dobrze leżą i w których swobodnie się poruszasz. Nowy element ma sens tylko wtedy, gdy naprawdę będziesz go nosić.'],
@@ -61,35 +67,12 @@ const faq = [
     ['Co, jeśli pogoda lub miejsce zmienią się w ostatniej chwili?', 'Przygotuj jedną dodatkową warstwę i wygodne obuwie. Przed sesją potwierdzamy warunki oraz w razie potrzeby wybieramy plan zapasowy.'],
 ] as const;
 
-const poseGallery = [
-    ['piknik-na-trawie.webp', 'Piknik na trawie', 'Usiądźcie blisko, ale nie w równym szeregu. Rozmowa i drobne spojrzenia dają naturalniejszy efekt niż patrzenie cały czas w aparat.'],
-    ['smiech-na-lawce.webp', 'Śmiech na ławce', 'Część rodziny może usiąść, a pozostali miękko domknąć kadr z boków. Najważniejsza jest wspólna reakcja.'],
-    ['przy-stawie.webp', 'Przy stawie', 'Barierka daje dłoniom proste zadanie. Stańcie lekko po skosie i zostawcie między sobą trochę oddechu.'],
-    ['przy-kwiatach.webp', 'Przy kwiatach', 'Jedna osoba może zainteresować się otoczeniem, a reszta spokojnie skupić uwagę na niej.'],
-    ['ruch-na-polanie.webp', 'Ruch na polanie', 'Nie zatrzymujcie kroku idealnie w tym samym momencie. Swobodny ruch i reakcja na dziecko budują energię kadru.'],
-    ['rozne-wysokosci.webp', 'Różne wysokości', 'Schodki, murek lub krawędź rabaty pomagają ustawić osoby na kilku poziomach i dodać zdjęciu głębi.'],
-    ['miedzy-drzewami.webp', 'Między drzewami', 'Nie stójcie wszyscy w jednej linii. Drzewa naturalnie dzielą plan i pomagają stworzyć luźniejszą kompozycję.'],
-    ['bliski-uscisk.webp', 'Bliski uścisk', 'Podejdźcie naprawdę blisko i oprzyjcie głowę lub dłoń o kogoś bliskiego. Po przytuleniu zostańcie tak jeszcze chwilę.'],
-    ['z-psem.webp', 'Z psem', 'Zejdźcie do poziomu pupila i skupcie się na kontakcie z nim. Nie oczekujcie, że będzie idealnie patrzył w aparat.'],
-    ['szeroki-kadr-z-otoczeniem.webp', 'Szeroki kadr z otoczeniem', 'Zostawcie wokół siebie przestrzeń i idźcie spokojnie. Taki kadr pokazuje również klimat miejsca.'],
-] as const;
-
-const jsonLd = {
-    '@context': 'https://schema.org',
-    '@graph': [
-        {
-            '@type': ['Article', 'WebPage'],
-            '@id': `${canonical}#article`,
-            url: canonical,
-            headline: 'Jak się ubrać i pozować do sesji zdjęciowej?',
-            description: metadata.description,
-            inLanguage: 'pl-PL',
-            datePublished: updatedAt,
-            dateModified: updatedAt,
-            image: 'https://wlasniewski.pl/images/public-guide/hero-family-walk.webp',
-            author: { '@id': 'https://wlasniewski.pl/o-mnie#author' },
-            publisher: { '@id': 'https://wlasniewski.pl/#photographer' },
-            mainEntityOfPage: canonical,
+function jsonLdFor(guide: Awaited<ReturnType<typeof loadGuide>>) {
+    return { '@context': 'https://schema.org', '@graph': [{
+            '@type': ['Article', 'WebPage'], '@id': `${canonical}#article`, url: canonical,
+            headline: guide.title, description: guide.metaDescription, inLanguage: 'pl-PL',
+            datePublished: publishedAt, dateModified: guide.updatedAt.toISOString(),
+            image: new URL(guide.data.hero.src, canonical).toString(), author: { '@id': 'https://wlasniewski.pl/o-mnie#author' }, publisher: { '@id': 'https://wlasniewski.pl/#photographer' }, mainEntityOfPage: canonical,
         },
         {
             '@type': 'Person',
@@ -113,8 +96,8 @@ const jsonLd = {
                 acceptedAnswer: { '@type': 'Answer', text: answer },
             })),
         },
-    ],
-};
+    ] };
+}
 
 function Figure({ src, alt, caption, priority = false }: { src: string; alt: string; caption: string; priority?: boolean }) {
     return (
@@ -137,7 +120,11 @@ function SectionHeading({ eyebrow, title, intro, dark = false }: { eyebrow: stri
     );
 }
 
-export default function JakSieUbracPage() {
+export default async function JakSieUbracPage() {
+    const guide = await loadGuide();
+    if (!guide.isPublished) notFound();
+    const { data } = guide;
+    const jsonLd = jsonLdFor(guide);
     return (
         <main className="bg-[#fbfaf7] text-stone-900">
             <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
@@ -152,7 +139,7 @@ export default function JakSieUbracPage() {
                         </nav>
                         <p className="mb-5 text-xs font-bold uppercase tracking-[0.28em] text-amber-700">Poradnik fotografa · 12 minut czytania</p>
                         <h1 className="font-playfair text-4xl font-semibold leading-[1.08] text-stone-950 sm:text-6xl lg:text-7xl">
-                            Jak się ubrać i&nbsp;pozować do sesji zdjęciowej?
+                            {guide.title}
                         </h1>
                         <p className="mt-7 max-w-2xl text-lg leading-8 text-stone-600 md:text-xl">
                             Bez sztywnego dress code’u i uczenia się póz. Dobierz strój do miejsca, przygotuj rodzinę i poznaj proste ruchy, dzięki którym na zdjęciach będziesz wyglądać jak Ty — tylko spokojniej.
@@ -170,7 +157,7 @@ export default function JakSieUbracPage() {
                             <Link href="/o-mnie" className="underline-offset-4 hover:underline">Autor: Przemysław Właśniewski</Link>
                         </div>
                     </div>
-                    <Figure src="/images/public-guide/hero-family-walk.webp" alt="Ilustracyjny przykład rodziny w skoordynowanych pastelowych ubraniach" caption="Ilustracja: ubrania nie są identyczne, ale łączy je spokojna paleta błękitu, beżu, pudrowego różu i szałwii." priority />
+                    <Figure {...data.hero} priority />
                 </div>
             </section>
 
@@ -196,7 +183,7 @@ export default function JakSieUbracPage() {
                     <div className="mx-auto max-w-7xl">
                         <SectionHeading eyebrow="01 · Ubiór" title="Zacznij od wygody, dopiero potem buduj styl" intro="Aparat szybko pokazuje, kiedy marynarka ciągnie, koszula się roluje albo buty zmieniają sposób chodzenia. Dobry strój pozwala usiąść, przytulić dziecko i zrobić kilka kroków bez ciągłego poprawiania." />
                         <div className="mt-12 grid gap-10 lg:grid-cols-2 lg:items-center">
-                            <Figure src="/images/public-guide/coordinated-family-pastels.webp" alt="Ilustracyjny przykład spójnych pastelowych stylizacji całej rodziny" caption="Ilustracja: każda osoba ma inny zestaw, a wspólne jasne odcienie tworzą spokojną całość." />
+                            <Figure {...data.wardrobe} />
                             <div className="grid gap-5 sm:grid-cols-2">
                                 {[
                                     ['Najpierw baza', 'Gładka koszula, sukienka, spodnie lub dzianina w spokojnym kolorze dają najwięcej możliwości.'],
@@ -219,14 +206,10 @@ export default function JakSieUbracPage() {
                     <div className="mx-auto max-w-7xl">
                         <SectionHeading eyebrow="02 · Kolory i otoczenie" title="Nie wybieraj palety w oderwaniu od miejsca" intro="Ten sam beż zachowa się inaczej przy ceglanej kamienicy, w zielonym parku i w jasnym salonie. Najpierw wybierz lokalizację, potem dwa kolory bazowe i jeden mały akcent." />
                         <div className="mt-12 grid gap-8 md:grid-cols-3">
-                            {[
-                                ['/images/client-guides/wardrobe/city.webp', 'Miasto', 'Krem, grafit, granat, karmel i bordo dobrze współpracują z kamieniem, szkłem i cegłą. Przy kolorowym muralu uprość ubrania.'],
-                                ['/images/client-guides/wardrobe/outdoor.webp', 'Natura', 'Oliwka, piaskowy beż, rdza, błękit i przygaszony róż łączą się z zielenią, trawą i wodą bez efektu kamuflażu.'],
-                                ['/images/client-guides/wardrobe/home.webp', 'Dom', 'Powtórz 1–2 odcienie z wnętrza, ale nie zlewaj się z kanapą. Miękkie faktury i jasne warstwy budują spokojny, bliski klimat.'],
-                            ].map(([src, title, text]) => (
-                                <div key={title} className="overflow-hidden rounded-[2rem] bg-white shadow-sm">
-                                    <div className="relative aspect-square"><Image src={src} alt={`Stylizacja dopasowana do sesji: ${title.toLowerCase()}`} fill sizes="(max-width: 768px) 100vw, 33vw" className="object-contain bg-[#f7f2e9]" /></div>
-                                    <div className="p-6"><h3 className="font-playfair text-2xl font-semibold">{title}</h3><p className="mt-3 leading-7 text-stone-600">{text}</p></div>
+                            {data.environments.map(card => (
+                                <div key={card.title} className="overflow-hidden rounded-[2rem] bg-white shadow-sm">
+                                    <div className="relative aspect-square"><Image src={card.image.src} alt={card.image.alt} fill sizes="(max-width: 768px) 100vw, 33vw" className="object-contain bg-[#f7f2e9]" /></div>
+                                    <div className="p-6"><h3 className="font-playfair text-2xl font-semibold">{card.title}</h3><p className="mt-3 leading-7 text-stone-600">{card.description}</p><p className="mt-3 text-sm leading-6 text-stone-500">{card.image.caption}</p></div>
                                 </div>
                             ))}
                         </div>
@@ -240,7 +223,7 @@ export default function JakSieUbracPage() {
                     <div className="mx-auto max-w-7xl">
                         <SectionHeading eyebrow="03 · Ludzie" title="Rodzina ma wyglądać spójnie, nie identycznie" intro="Wspólny kolor może pojawić się raz w swetrze, raz w drobnym wzorze, a raz tylko w dodatku. Dzięki temu zdjęcie ma rytm, ale każdy zachowuje swój styl." />
                         <div className="mt-12 grid gap-8 lg:grid-cols-[.8fr_1.2fr]">
-                            <Figure src="/images/public-guide/family-seated-close.webp" alt="Ilustracyjny przykład rodziny siedzącej blisko siebie w wygodnych ubraniach" caption="Ilustracja: siad i bliskość pozwalają dziecku oprzeć się o rodziców, a ubrania nie ograniczają ruchu." />
+                            <Figure {...data.people} />
                             <div className="space-y-5">
                                 {[
                                     ['Rodzina', 'Zacznij od stroju osoby, której najtrudniej coś dobrać. Pozostałym przypisz kolory z tej samej palety. Rozłóż wszystko obok siebie — łatwiej zauważyć nadmiar wzorów.'],
@@ -262,16 +245,10 @@ export default function JakSieUbracPage() {
                     <div className="mx-auto max-w-7xl">
                         <SectionHeading dark eyebrow="04 · Pozowanie" title="Naturalna poza zaczyna się od małego ruchu" intro="Nie zamrażaj ciała na komendę. Ustaw stabilną bazę, zostaw przestrzeń między barkami a uszami i daj dłoniom proste zadanie. Resztę zrobi rozmowa, oddech i drobne zmiany." />
                         <div className="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-                            {[
-                                ['/images/public-guide/hero-family-walk.webp', 'Stanie', 'Ustaw stopy lekko po skosie, przenieś ciężar na dalszą nogę i odsuń łokcie od tułowia o kilka centymetrów.'],
-                                ['/images/public-guide/family-seated-neutral.webp', 'Siedzenie', 'Usiądź wygodnie, oprzyj jedną stopę nieco bliżej i skieruj twarz do światła. Bliskość osób porządkuje kadr.'],
-                                ['/images/client-guides/poses/p05-dlon-oparta.webp', 'Dłonie', 'Oprzyj dłoń lekko o udo, kieszeń, ubranie albo ramię bliskiej osoby. Palce pozostaw miękkie.'],
-                                ['/images/client-guides/poses/p08-jeden-bark-blizej.webp', 'Barki i głowa', 'Jeden bark skieruj odrobinę bliżej aparatu, brodę wysuń minimalnie do przodu i opuść. Bez przesadnego przechylenia.'],
-                                ['/images/public-guide/family-playful-lift.webp', 'Pary i rodziny', 'Idźcie wolno, spójrzcie na siebie albo pobawcie się z dzieckiem. Kontakt i wspólne zadanie wyglądają naturalniej niż równy szereg.'],
-                            ].map(([src, title, text]) => (
-                                <div key={title} className="overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.06]">
-                                        <div className="relative aspect-[4/5] bg-black/20"><Image src={src} alt={`Ilustracyjny przykład naturalnego pozowania: ${title.toLowerCase()}`} fill sizes="(max-width: 640px) 100vw, 33vw" className="object-contain" /></div>
-                                    <div className="p-6"><h3 className="font-playfair text-2xl font-semibold">{title}</h3><p className="mt-3 leading-7 text-stone-300">{text}</p></div>
+                            {data.posing.map(card => (
+                                <div key={card.title} className="overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.06]">
+                                    <div className="relative aspect-[4/5] bg-black/20"><Image src={card.image.src} alt={card.image.alt} fill sizes="(max-width: 640px) 100vw, 33vw" className="object-contain" /></div>
+                                    <div className="p-6"><h3 className="font-playfair text-2xl font-semibold">{card.title}</h3><p className="mt-3 leading-7 text-stone-300">{card.description}</p>{card.image.caption !== card.description && <p className="mt-3 text-sm leading-6 text-stone-400">{card.image.caption}</p>}</div>
                                 </div>
                             ))}
                             <div className="flex flex-col justify-center rounded-[2rem] border border-amber-400/30 bg-amber-400/10 p-7">
@@ -288,14 +265,15 @@ export default function JakSieUbracPage() {
                         <SectionHeading eyebrow="05 · Inspiracje" title="10 naturalnych ustawień dla rodziny" intro="Nie uczcie się ich na pamięć. Potraktujcie te karty jak prostą podpowiedź: wybierzcie wygodne miejsce, dajcie dłoniom zajęcie i skupcie się na sobie. Podczas sesji to fotograf dopasuje ustawienie do Waszej rodziny." />
                         <p className="mt-5 max-w-3xl text-sm leading-6 text-stone-500">Ilustracje poglądowe pokazują kierunek ustawienia i kolorystykę. Nie są obietnicą identycznego kadru ani zastępstwem dla indywidualnego prowadzenia podczas sesji.</p>
                         <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                            {poseGallery.slice(0, 6).map(([file, title, description]) => (
-                                <figure key={file} className="overflow-hidden rounded-[2rem] border border-stone-200 bg-white shadow-sm">
+                            {data.poseGallery.slice(0, 6).map(card => (
+                                <figure key={card.title} className="overflow-hidden rounded-[2rem] border border-stone-200 bg-white shadow-sm">
                                     <div className="relative aspect-[4/5] bg-[#f7f2e9]">
-                                        <Image src={`/images/public-guide/pose-cards/${file}`} alt={`Ilustracyjna karta pozy rodzinnej: ${title.toLowerCase()}`} fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" className="object-contain" />
+                                        <Image src={card.image.src} alt={card.image.alt} fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" className="object-contain" />
                                     </div>
                                     <figcaption className="border-t border-stone-200 p-6">
-                                        <h3 className="font-playfair text-2xl font-semibold text-stone-950">{title}</h3>
-                                        <p className="mt-3 leading-7 text-stone-600">{description}</p>
+                                        <h3 className="font-playfair text-2xl font-semibold text-stone-950">{card.title}</h3>
+                                        <p className="mt-3 leading-7 text-stone-600">{card.description}</p>
+                                        {card.image.caption !== card.description && <p className="mt-3 text-sm leading-6 text-stone-500">{card.image.caption}</p>}
                                     </figcaption>
                                 </figure>
                             ))}
@@ -306,14 +284,15 @@ export default function JakSieUbracPage() {
                                 <span className="hidden group-open:inline">Ukryj dodatkowe inspiracje</span>
                             </summary>
                             <div className="mt-8 grid gap-6 text-left sm:grid-cols-2 lg:grid-cols-3">
-                                {poseGallery.slice(6).map(([file, title, description]) => (
-                                    <figure key={file} className="overflow-hidden rounded-[2rem] border border-stone-200 bg-white shadow-sm">
+                                {data.poseGallery.slice(6).map(card => (
+                                    <figure key={card.title} className="overflow-hidden rounded-[2rem] border border-stone-200 bg-white shadow-sm">
                                         <div className="relative aspect-[4/5] bg-[#f7f2e9]">
-                                            <Image src={`/images/public-guide/pose-cards/${file}`} alt={`Ilustracyjna karta pozy rodzinnej: ${title.toLowerCase()}`} fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" className="object-contain" />
+                                            <Image src={card.image.src} alt={card.image.alt} fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" className="object-contain" />
                                         </div>
                                         <figcaption className="border-t border-stone-200 p-6">
-                                            <h3 className="font-playfair text-2xl font-semibold text-stone-950">{title}</h3>
-                                            <p className="mt-3 leading-7 text-stone-600">{description}</p>
+                                            <h3 className="font-playfair text-2xl font-semibold text-stone-950">{card.title}</h3>
+                                            <p className="mt-3 leading-7 text-stone-600">{card.description}</p>
+                                            {card.image.caption !== card.description && <p className="mt-3 text-sm leading-6 text-stone-500">{card.image.caption}</p>}
                                         </figcaption>
                                     </figure>
                                 ))}

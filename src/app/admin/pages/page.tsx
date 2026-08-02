@@ -202,7 +202,7 @@ export default function PagesListPage() {
     };
 
     const filteredPages = pages.filter(page => {
-        if (page.slug === 'przygotowanie-klienta') return false;
+        if (page.slug === 'przygotowanie-klienta' || page.slug === 'jak-sie-ubrac') return false;
         if (activeTabId === 'b2c') {
             const isB2B = page.page_type === 'b2b' || page.slug.startsWith('b2b') || page.slug.includes('dron');
             const matchesCustom = pageTabs.filter(t => !t.isSystem).some(t =>
@@ -286,7 +286,23 @@ export default function PagesListPage() {
             </div>
 
             {activeTabId === 'b2c' && (
-                <div className="mb-6 rounded-xl border border-gold-500/30 bg-gradient-to-r from-gold-500/10 to-zinc-900 p-6">
+                <div className="mb-6 grid gap-4 lg:grid-cols-2">
+                <div className="rounded-xl border border-emerald-500/30 bg-gradient-to-r from-emerald-500/10 to-zinc-900 p-6">
+                    <div className="flex h-full flex-col justify-between gap-4">
+                        <div>
+                            <div className="mb-2 flex flex-wrap items-center gap-2">
+                                <span className="rounded bg-emerald-500 px-2 py-0.5 text-xs font-bold uppercase text-black">Strona publiczna</span>
+                                <span className="text-xs text-zinc-400">SEO · menu · strona główna</span>
+                            </div>
+                            <h2 className="text-lg font-semibold text-white">Jak się ubrać i pozować</h2>
+                            <p className="mt-1 text-sm leading-6 text-zinc-400">Publiczny poradnik ze zdjęciami, opisami, kartami póz i ustawieniami widoczności.</p>
+                        </div>
+                        <Link href="/admin/pages/jak-sie-ubrac" className="inline-flex min-h-11 items-center justify-center rounded-lg bg-emerald-500 px-4 text-sm font-semibold text-black hover:bg-emerald-400">
+                            <Edit className="mr-2 h-4 w-4" /> Edytuj stronę publiczną
+                        </Link>
+                    </div>
+                </div>
+                <div className="rounded-xl border border-gold-500/30 bg-gradient-to-r from-gold-500/10 to-zinc-900 p-6">
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                             <div className="mb-2 flex items-center gap-2">
@@ -300,6 +316,7 @@ export default function PagesListPage() {
                             <Edit className="mr-2 h-4 w-4" /> Edytuj poradnik
                         </Link>
                     </div>
+                </div>
                 </div>
             )}
 
@@ -454,7 +471,6 @@ export default function PagesListPage() {
                                     )}
                                     <option value="about">O mnie</option>
                                     <option value="portfolio">Portfolio</option>
-                                    <option value="jak-sie-ubrac">Jak się ubrać (paleta kolorów)</option>
                                     <option value="offer">Oferta</option>
                                     <option value="shop">Sklep (Karty Podarunkowe)</option>
                                     <option value="reviews">Opinie i Recenzje</option>

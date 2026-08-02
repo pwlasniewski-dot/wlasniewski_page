@@ -20,6 +20,24 @@ export async function GET(request: Request) {
     try {
         const { searchParams } = new URL(request.url);
         const type = searchParams.get("type") || "b2c"; // Default to b2c
+        const guidePage = type === 'b2c' ? await prisma.page.findUnique({
+            where: { slug: 'jak-sie-ubrac' },
+            select: { id: true, page_type: true, is_published: true, is_in_menu: true, menu_title: true, menu_order: true },
+        }) : null;
+        const shouldShowGuide = type === 'b2c' && (
+            !guidePage || guidePage.page_type !== 'public-guide' || (guidePage.is_published && guidePage.is_in_menu)
+        );
+        const withPublicGuide = (items: any[]) => {
+            const withoutGuide = items.filter(item => item.url !== '/jak-sie-ubrac');
+            if (!shouldShowGuide) return withoutGuide;
+            return [...withoutGuide, {
+                id: guidePage?.id || -101,
+                title: guidePage?.menu_title || 'Jak się ubrać',
+                url: '/jak-sie-ubrac',
+                order: guidePage?.menu_order || 65,
+                children: [],
+            }].sort((a, b) => (a.order || 0) - (b.order || 0));
+        };
 
         // 1. Try to fetch from custom menu_items table first
         const menuItems = await prisma.menuItem.findMany({
@@ -64,7 +82,7 @@ export async function GET(request: Request) {
                 children: item.children ? item.children.map(mapItem) : []
             });
 
-            return NextResponse.json(menuItems.map(mapItem));
+            return NextResponse.json(withPublicGuide(menuItems.map(mapItem)));
         }
 
         // 2. FALLBACK: If menu_items is empty AND type is b2c, fetch pages (Old Logic)
@@ -101,7 +119,7 @@ export async function GET(request: Request) {
                 }))
             }));
 
-            return NextResponse.json(menu);
+            return NextResponse.json(withPublicGuide(menu));
         }
 
         return NextResponse.json([]);

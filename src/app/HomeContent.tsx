@@ -86,9 +86,10 @@ interface HomeContentProps {
     testimonials: Testimonial[];
     heroSliderInterval?: number;
     publicPriceLabels: Record<string, string>;
+    publicGuidePromo: { title: string; image: string; imageAlt: string } | null;
 }
 
-export default function HomeContent({ heroSlides, sections, homeData, orderedSections, testimonials, heroSliderInterval = 6000, publicPriceLabels }: HomeContentProps) {
+export default function HomeContent({ heroSlides, sections, homeData, orderedSections, testimonials, heroSliderInterval = 6000, publicPriceLabels, publicGuidePromo }: HomeContentProps) {
     const fallbackPublicPriceLabel = 'Aktualne pakiety i ceny';
     const [currentTestimonial, setCurrentTestimonial] = useState(0);
     const [selectedGalleryImage, setSelectedGalleryImage] = useState<string | null>(null);
@@ -1031,6 +1032,28 @@ export default function HomeContent({ heroSlides, sections, homeData, orderedSec
                     </div>
                 </div>
             </section>
+
+            {publicGuidePromo && (
+                <section className="border-y border-white/5 bg-gradient-to-br from-zinc-950 via-black to-amber-950/20 px-5 py-16 md:px-8 md:py-24">
+                    <div className="mx-auto grid max-w-6xl overflow-hidden rounded-[2rem] border border-gold-500/25 bg-zinc-950 shadow-2xl shadow-black/50 lg:grid-cols-[.85fr_1.15fr]">
+                        <div className="relative min-h-[360px] bg-[#f3eee5] lg:min-h-[520px]">
+                            <Image src={publicGuidePromo.image} alt={publicGuidePromo.imageAlt} fill sizes="(max-width: 1024px) 100vw, 42vw" className="object-contain" />
+                        </div>
+                        <div className="flex flex-col justify-center p-7 md:p-12">
+                            <p className="text-xs font-bold uppercase tracking-[.25em] text-gold-400">Bezpłatny poradnik przed sesją</p>
+                            <h2 className="mt-4 text-3xl font-bold leading-tight text-white md:text-5xl">{publicGuidePromo.title}</h2>
+                            <p className="mt-6 max-w-xl text-lg leading-8 text-zinc-300">Zobacz gotowe zestawy kolorów do miasta, natury i domu oraz rodzinne ustawienia pokazane na zdjęciach. Każdy przykład ma prosty opis — bez fotograficznego żargonu.</p>
+                            <div className="mt-7 grid gap-3 text-sm text-zinc-300 sm:grid-cols-2">
+                                <span className="flex gap-2"><Check size={18} className="shrink-0 text-gold-400"/> Kolory dopasowane do otoczenia</span>
+                                <span className="flex gap-2"><Check size={18} className="shrink-0 text-gold-400"/> 10 rodzinnych ustawień</span>
+                                <span className="flex gap-2"><Check size={18} className="shrink-0 text-gold-400"/> Wskazówki dla dzieci i par</span>
+                                <span className="flex gap-2"><Check size={18} className="shrink-0 text-gold-400"/> Checklista przed wyjściem</span>
+                            </div>
+                            <Link href="/jak-sie-ubrac?source=home-guide" className="mt-9 inline-flex min-h-12 w-fit items-center gap-2 rounded-full bg-gold-500 px-7 py-3 font-bold text-black transition hover:bg-gold-400">Zobacz poradnik <ArrowRight size={18}/></Link>
+                        </div>
+                    </div>
+                </section>
+            )}
 
 
             {/* Dynamic Sections */}

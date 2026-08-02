@@ -7,6 +7,7 @@ export const revalidate = 3600; // Cache for 1 hour
 
 import prisma from "@/lib/db/prisma";
 import { unstable_cache } from 'next/cache';
+import { defaultPublicGuideCmsData, parsePublicGuideCmsData } from '@/lib/publicGuideCms';
 
 // Cached function for homepage metadata
 const getCachedHomeMetadata = unstable_cache(
@@ -138,10 +139,30 @@ async function getHomePageData() {
     }
 }
 
+async function getPublicGuidePromo() {
+    const fallback = defaultPublicGuideCmsData();
+    try {
+        const page = await prisma.page.findUnique({
+            where: { slug: 'jak-sie-ubrac' },
+            select: { title: true, content: true, is_published: true },
+        });
+        const data = parsePublicGuideCmsData(page?.content);
+        if (data && !page?.is_published) return null;
+        return {
+            title: page?.title || 'Jak się ubrać i pozować do sesji?',
+            image: (data ?? fallback).hero.src,
+            imageAlt: (data ?? fallback).hero.alt,
+        };
+    } catch {
+        return { title: 'Jak się ubrać i pozować do sesji?', image: fallback.hero.src, imageAlt: fallback.hero.alt };
+    }
+}
+
 export default async function HomePage() {
-    const [{ page, testimonials }, publicMinimumPrices] = await Promise.all([
+    const [{ page, testimonials }, publicMinimumPrices, publicGuidePromo] = await Promise.all([
         getHomePageData(),
         loadPublicMinimumPrices(),
+        getPublicGuidePromo(),
     ]);
 
     let homeData: any = null;
@@ -291,6 +312,7 @@ export default async function HomePage() {
                 'Ślub': publicPriceLabel(publicMinimumPrices, 'Ślub'),
                 Urodziny: publicPriceLabel(publicMinimumPrices, 'Urodziny'),
             }}
+            publicGuidePromo={publicGuidePromo}
         />
     );
 }
