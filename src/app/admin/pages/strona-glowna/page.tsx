@@ -47,6 +47,23 @@ interface HeroSlide {
     shader?: 'subtle' | 'cinematic' | 'deep';
 }
 
+interface HomepageServiceCard {
+    title: string;
+    label: string;
+    service: string;
+    copy: string;
+    href: string;
+    image: string;
+    image_mobile?: string;
+    image_position?: string;
+}
+
+const DEFAULT_SERVICE_CARDS: HomepageServiceCard[] = [
+    { title: 'Sesja rodzinna', label: 'Bliskość', service: 'Sesja', copy: 'Dla rodziny, pary albo na spokojne zdjęcia kilku pokoleń.', href: '/rezerwacja?source=home&service=Sesja', image: '/assets/slider/fotografia-rodzinna-grudziadz-01.webp', image_position: 'center center' },
+    { title: 'Ślub', label: 'Reportaż', service: 'Ślub', copy: 'Od ceremonii w urzędzie po pełny reportaż z wesela.', href: '/rezerwacja?source=home&service=Ślub', image: '/assets/slider/fotografia-slubna-torun-16.webp', image_position: 'center center' },
+    { title: 'Urodziny i przyjęcia', label: 'Emocje', service: 'Urodziny', copy: 'Reportaż z urodzin, jubileuszu lub rodzinnej uroczystości.', href: '/rezerwacja?source=home&service=Urodziny', image: '/assets/slider/naturalne-zdjecia-rodzinne-lisewo-03.webp', image_position: 'center center' },
+];
+
 interface Feature {
     id: string;
     title: string;
@@ -139,13 +156,14 @@ type SeoAudit = {
 export default function HomepageManager() {
     const router = useRouter();
     const [heroSlides, setHeroSlides] = useState<HeroSlide[]>([]);
+    const [serviceCards, setServiceCards] = useState<HomepageServiceCard[]>(DEFAULT_SERVICE_CARDS);
     const [sections, setSections] = useState<EditorSection[]>([]);
     const [pageId, setPageId] = useState<number | null>(null);
 
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
-    const [currentPickerTarget, setCurrentPickerTarget] = useState<{ type: 'hero' | 'section' | 'advanced' | 'advanced_challenge' | 'rte' | 'mini_gallery_item' | 'story_cover' | 'chronological_gallery' | 'masonry_gallery' | 'featured_carousel_slide', index: number, field?: string, subIndex?: number } | null>(null);
+    const [currentPickerTarget, setCurrentPickerTarget] = useState<{ type: 'hero' | 'service_card' | 'section' | 'advanced' | 'advanced_challenge' | 'rte' | 'mini_gallery_item' | 'story_cover' | 'chronological_gallery' | 'masonry_gallery' | 'featured_carousel_slide' | 'cube_face', index: number, field?: string, subIndex?: number } | null>(null);
 
     const [seoCategory, setSeoCategory] = useState<SeoCategory>('ogolna');
     const [seoCities, setSeoCities] = useState<string[]>(['Toruń', 'Grudziądz', 'Chełmno', 'Płużnica', 'Wąbrzeźno']);
@@ -471,6 +489,9 @@ export default function HomepageManager() {
 
                 // Load Hero Slides
                 if (parsed.hero_slider) setHeroSlides(parsed.hero_slider);
+                if (Array.isArray(parsed.service_cards) && parsed.service_cards.length === 3) {
+                    setServiceCards(DEFAULT_SERVICE_CARDS.map((fallback, index) => ({ ...fallback, ...parsed.service_cards[index] })));
+                }
 
                 // Load Sections - check if using new structure or migrate old one
                 if (parsed.sections && Array.isArray(parsed.sections)) {
@@ -605,6 +626,7 @@ export default function HomepageManager() {
             const token = localStorage.getItem('admin_token');
             const homeSections = {
                 hero_slider: heroSlides,
+                service_cards: serviceCards,
                 sections: sections
             };
 
@@ -802,7 +824,7 @@ export default function HomepageManager() {
 
     // --- Media Picker ---
 
-    const openMediaPicker = (type: 'hero' | 'section' | 'advanced' | 'advanced_challenge' | 'rte' | 'mini_gallery_item' | 'story_cover' | 'chronological_gallery' | 'masonry_gallery' | 'featured_carousel_slide' | 'cube_face', index: number, field?: string, subIndex?: number) => {
+    const openMediaPicker = (type: 'hero' | 'service_card' | 'section' | 'advanced' | 'advanced_challenge' | 'rte' | 'mini_gallery_item' | 'story_cover' | 'chronological_gallery' | 'masonry_gallery' | 'featured_carousel_slide' | 'cube_face', index: number, field?: string, subIndex?: number) => {
         setCurrentPickerTarget({ type, index, field, subIndex });
         setMediaPickerOpen(true);
     };
@@ -850,6 +872,10 @@ export default function HomepageManager() {
                 updated[currentPickerTarget.index].image = filePath;
             }
             setHeroSlides(updated);
+        } else if (currentPickerTarget.type === 'service_card') {
+            setServiceCards(current => current.map((card, index) => index === currentPickerTarget.index
+                ? { ...card, [currentPickerTarget.field === 'image_mobile' ? 'image_mobile' : 'image']: filePath }
+                : card));
         } else if (currentPickerTarget.type === 'advanced') {
             const updated = [...sections];
             const section = updated[currentPickerTarget.index] as ChallengeBannerSection;
@@ -1407,6 +1433,86 @@ export default function HomepageManager() {
             </div>
 
             <div className="space-y-8">
+                <div className="rounded-lg border border-amber-500/30 bg-zinc-900 p-6 space-y-5">
+                    <div>
+                        <h2 className="flex items-center gap-2 text-lg font-semibold text-white">
+                            <ImageIcon className="h-5 w-5 text-amber-400" />
+                            Kafle oferty pod Hero
+                        </h2>
+                        <p className="mt-1 text-xs leading-5 text-zinc-400">Osobne kadry dla komputera i telefonu. Dla szerokiego kafla „Urodziny i przyjęcia” użyj na desktopie proporcji 5:2 (najlepiej 3000 × 1200 px), a na telefonie 4:5.</p>
+                    </div>
+
+                    <div className="grid gap-4 xl:grid-cols-3">
+                        {serviceCards.map((card, index) => (
+                            <div key={`${card.service}-${index}`} className="space-y-4 rounded-lg border border-zinc-700 bg-black/30 p-4">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs font-bold uppercase tracking-[.18em] text-amber-300">Kafel {index + 1}</span>
+                                    <span className="text-[10px] text-zinc-500">{index === 2 ? 'desktop 5:2' : 'desktop pionowy'}</span>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="mb-1 block text-[11px] text-zinc-400">Desktop</label>
+                                        <div className="relative h-24 overflow-hidden rounded border border-zinc-700 bg-zinc-950">
+                                            {card.image && <img src={card.image} alt="" className="h-full w-full object-cover" style={{ objectPosition: card.image_position || 'center center' }} />}
+                                            <button type="button" onClick={() => openMediaPicker('service_card', index, 'image')} className="absolute inset-0 flex items-center justify-center bg-black/45 text-xs font-semibold text-white opacity-0 transition hover:opacity-100">Zmień zdjęcie</button>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="mb-1 block text-[11px] text-zinc-400">Telefon (4:5)</label>
+                                        <div className="relative h-24 overflow-hidden rounded border border-zinc-700 bg-zinc-950">
+                                            <img src={card.image_mobile || card.image} alt="" className="h-full w-full object-cover" />
+                                            <button type="button" onClick={() => openMediaPicker('service_card', index, 'image_mobile')} className="absolute inset-0 flex items-center justify-center bg-black/45 text-xs font-semibold text-white opacity-0 transition hover:opacity-100">{card.image_mobile ? 'Zmień zdjęcie' : 'Dodaj zdjęcie'}</button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="mb-1 block text-[11px] text-zinc-400">Nazwa</label>
+                                        <input value={card.title} onChange={event => setServiceCards(current => current.map((item, cardIndex) => cardIndex === index ? { ...item, title: event.target.value } : item))} className="w-full rounded border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white" />
+                                    </div>
+                                    <div>
+                                        <label className="mb-1 block text-[11px] text-zinc-400">Mała etykieta</label>
+                                        <input value={card.label} onChange={event => setServiceCards(current => current.map((item, cardIndex) => cardIndex === index ? { ...item, label: event.target.value } : item))} className="w-full rounded border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white" />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="mb-1 block text-[11px] text-zinc-400">Opis</label>
+                                    <textarea rows={2} value={card.copy} onChange={event => setServiceCards(current => current.map((item, cardIndex) => cardIndex === index ? { ...item, copy: event.target.value } : item))} className="w-full rounded border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white" />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="mb-1 block text-[11px] text-zinc-400">Kategoria ceny</label>
+                                        <select value={card.service} onChange={event => setServiceCards(current => current.map((item, cardIndex) => cardIndex === index ? { ...item, service: event.target.value } : item))} className="w-full rounded border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white">
+                                            <option value="Sesja">Sesja</option>
+                                            <option value="Ślub">Ślub</option>
+                                            <option value="Urodziny">Urodziny</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="mb-1 block text-[11px] text-zinc-400">Link po kliknięciu</label>
+                                        <input value={card.href} onChange={event => setServiceCards(current => current.map((item, cardIndex) => cardIndex === index ? { ...item, href: event.target.value } : item))} className="w-full rounded border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white" placeholder="/rezerwacja?..." />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="mb-1 block text-[11px] text-zinc-400">Punkt kadrowania desktop</label>
+                                    <select value={card.image_position || 'center center'} onChange={event => setServiceCards(current => current.map((item, cardIndex) => cardIndex === index ? { ...item, image_position: event.target.value } : item))} className="w-full rounded border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white">
+                                        <option value="center top">Góra</option>
+                                        <option value="center 35%">Lekko powyżej środka</option>
+                                        <option value="center center">Środek</option>
+                                        <option value="center 65%">Lekko poniżej środka</option>
+                                        <option value="center bottom">Dół</option>
+                                    </select>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
                 {/* HERO SLIDER (Always First) */}
                 <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6 space-y-4">
                     <div className="flex items-center justify-between">

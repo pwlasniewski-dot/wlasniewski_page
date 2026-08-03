@@ -8,6 +8,10 @@ export const revalidate = 3600; // Cache for 1 hour
 import prisma from "@/lib/db/prisma";
 import { unstable_cache } from 'next/cache';
 import { parsePublicGuideCmsData } from '@/lib/publicGuideCms';
+import {
+    HOMEPAGE_PRODUCTION_FALLBACK_SECTIONS,
+    HOMEPAGE_PRODUCTION_FALLBACK_TESTIMONIALS,
+} from '@/data/homepageProductionFallback';
 
 // Cached function for homepage metadata
 const getCachedHomeMetadata = unstable_cache(
@@ -76,43 +80,25 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 async function getHomePageData() {
+    let page: { home_sections: string | null; sections: string | null } | null = null;
+    let cmsUnavailable = false;
+    let testimonialsUnavailable = false;
+
     try {
-        const page = await prisma.page.findUnique({
-        where: { slug: 'strona-glowna' },
-        select: {
-            home_sections: true,
-            sections: true
-        }
-    });
+        page = await prisma.page.findUnique({
+            where: { slug: 'strona-glowna' },
+            select: { home_sections: true, sections: true },
+        });
+        cmsUnavailable = page === null;
+    } catch {
+        cmsUnavailable = true;
+        console.warn('[home] CMS unavailable, rendering resilient homepage fallback.');
+    }
 
-    // Testimonials - optimized query with select instead of include
+    let finalTestimonials: any[] = [];
+    try {
         const testimonials = await prisma.testimonial.findMany({
-        where: {
-            is_featured: true // Only get featured testimonials
-        },
-        select: {
-            id: true,
-            client_name: true,
-            testimonial_text: true,
-            rating: true,
-            is_featured: true,
-            display_order: true,
-            created_at: true,
-            client_photo: {
-                select: {
-                    id: true,
-                    file_path: true
-                }
-            }
-        },
-        orderBy: { display_order: 'asc' },
-        take: 10 // Limit to max 10 testimonials
-    });
-
-    // If no featured testimonials, get the latest 5
-        const finalTestimonials = testimonials.length > 0
-            ? testimonials
-            : await prisma.testimonial.findMany({
+            where: { is_featured: true },
             select: {
                 id: true,
                 client_name: true,
@@ -121,22 +107,34 @@ async function getHomePageData() {
                 is_featured: true,
                 display_order: true,
                 created_at: true,
-                client_photo: {
-                    select: {
-                        id: true,
-                        file_path: true
-                    }
-                }
+                client_photo: { select: { id: true, file_path: true } },
             },
-            orderBy: { created_at: 'desc' },
-            take: 5
+            orderBy: { display_order: 'asc' },
+            take: 10,
         });
 
-        return { page, testimonials: finalTestimonials };
-    } catch (error) {
-        console.warn('[home] CMS unavailable, rendering resilient homepage fallback.');
-        return { page: null, testimonials: [] };
+        finalTestimonials = testimonials.length > 0
+            ? testimonials
+            : await prisma.testimonial.findMany({
+                select: {
+                    id: true,
+                    client_name: true,
+                    testimonial_text: true,
+                    rating: true,
+                    is_featured: true,
+                    display_order: true,
+                    created_at: true,
+                    client_photo: { select: { id: true, file_path: true } },
+                },
+                orderBy: { created_at: 'desc' },
+                take: 5,
+            });
+    } catch {
+        testimonialsUnavailable = true;
+        console.warn('[home] Testimonials unavailable; using preview fallback only.');
     }
+
+    return { page, testimonials: finalTestimonials, cmsUnavailable, testimonialsUnavailable };
 }
 
 async function getPublicGuidePromo() {
@@ -160,7 +158,7 @@ async function getPublicGuidePromo() {
 }
 
 export default async function HomePage() {
-    const [{ page, testimonials }, publicMinimumPrices, publicGuidePromo] = await Promise.all([
+    const [{ page, testimonials, cmsUnavailable, testimonialsUnavailable }, publicMinimumPrices, publicGuidePromo] = await Promise.all([
         getHomePageData(),
         loadPublicMinimumPrices(),
         getPublicGuidePromo(),
@@ -168,12 +166,14 @@ export default async function HomePage() {
 
     let homeData: any = null;
     let orderedSections: any[] = [];
+    let sectionParseFailed = false;
 
     // Always parse legacy home_sections when present (it contains hero_slider used on the homepage).
     if (page?.home_sections) {
         try {
             homeData = JSON.parse(page.home_sections);
         } catch (e) {
+            sectionParseFailed = true;
             console.warn('[home] Invalid home_sections; using the resilient fallback.');
         }
     }
@@ -186,6 +186,7 @@ export default async function HomePage() {
                 orderedSections = parsedSections;
             }
         } catch (e) {
+            sectionParseFailed = true;
             console.warn('[home] Invalid page.sections; using the resilient fallback.');
         }
     }
@@ -228,8 +229,15 @@ export default async function HomePage() {
         }
     }
 
+    // Keep the full director preview useful when the local database is unavailable.
+    // Published CMS data always wins, so every production block remains editable in admin.
+    if (orderedSections.length === 0 && (cmsUnavailable || sectionParseFailed)) {
+        orderedSections = JSON.parse(JSON.stringify(HOMEPAGE_PRODUCTION_FALLBACK_SECTIONS));
+    }
 
-    // Keep the photographs from the admin panel, but use concise sales copy on every slide.
+
+    // Preserve the photographs and copy authored in the admin panel. The concise copy
+    // below is only a resilient fallback for incomplete legacy slides.
     const heroSlides = (homeData?.hero_slider || []).map((slide: any) => {
         const source = `${slide?.title || ''} ${slide?.subtitle || ''} ${slide?.description || ''}`
             .replace(/<[^>]+>/g, ' ')
@@ -274,9 +282,13 @@ export default async function HomePage() {
 
         return {
             ...slide,
-            ...copy,
-            button_text: copy.buttonText,
-            button_link: copy.buttonLink
+            title: slide?.title?.trim() || copy.title,
+            subtitle: slide?.subtitle?.trim() || copy.subtitle,
+            description: slide?.description || '',
+            buttonText: slide?.buttonText?.trim() || slide?.button_text?.trim() || copy.buttonText,
+            buttonLink: slide?.buttonLink?.trim() || slide?.button_link?.trim() || copy.buttonLink,
+            button_text: slide?.buttonText?.trim() || slide?.button_text?.trim() || copy.buttonText,
+            button_link: slide?.buttonLink?.trim() || slide?.button_link?.trim() || copy.buttonLink
         };
     });
 
@@ -306,7 +318,9 @@ export default async function HomePage() {
             sections={sections}
             homeData={homeData}
             orderedSections={orderedSections}
-            testimonials={testimonials}
+            testimonials={testimonialsUnavailable
+                ? JSON.parse(JSON.stringify(HOMEPAGE_PRODUCTION_FALLBACK_TESTIMONIALS))
+                : testimonials}
             heroSliderInterval={heroSliderInterval}
             publicPriceLabels={{
                 Sesja: publicPriceLabel(publicMinimumPrices, 'Sesja'),

@@ -2,6 +2,18 @@
 
 Ten dokument stanowi techniczny blueprint platformy fotograficznej wlasniewski.pl. Jest on przeznaczony dla senior deweloperów i architektów systemowych, opisując strukturę, wzorce projektowe oraz krytyczne protokoły bezpieczeństwa.
 
+## Aktualizacja 2026-08-03 — warstwa wizualna homepage 2026
+
+- `page.tsx` preferuje `Page.sections`, następnie legacy `home_sections`, a dopiero przy braku obu używa `homepageProductionFallback`; ta kolejność gwarantuje nadrzędność edytowalnych danych CMS.
+- `MagazineLayout`, `NarrativeText` i `StoriesGrid` zachowują istniejące kontrakty pól panelu. Warstwa renderująca normalizuje wyłącznie wygląd i hierarchię nagłówków, bez przepisywania zapisanej treści; kopia awaryjna korzysta z już zoptymalizowanych wariantów zdjęć produkcyjnych.
+- `HeroSlider` współdzieli pełnoekranową kompozycję, shadery, typografię i CTA pomiędzy slajdami CMS oraz odpornym fallbackiem.
+- `HomeContent` porządkuje publiczną ścieżkę: hero → wybór usług → moduły CMS → poradnik → karta podarunkowa → Local SEO → CTA → kontakt.
+- Klasa `.home-editorial` izoluje typografię strony, a `.home-cms-flow` harmonizuje istniejące moduły bez modyfikacji ich kontraktów danych i bez wpływu na pozostałe podstrony.
+- Responsywne obrazy, jeden ukryty H1, semantyczne H2/H3, reduced motion i fokus klawiatury pozostają częścią kontraktu dostępności oraz SEO.
+- Opcjonalne `home_sections.service_cards` przechowuje trzy konfiguracje kafli (`image`, `image_mobile`, `image_position` i teksty); brak pola uruchamia bezpieczne wartości domyślne.
+- Flagi `cmsUnavailable`, `sectionParseFailed` i `testimonialsUnavailable` odróżniają awarię danych od świadomie pustej konfiguracji, więc fallback nie nadpisuje decyzji administratora.
+- `.home-dark-section` wyłącza wybrane moduły z jasnej normalizacji `.home-cms-flow`; opinie zachowują kontrast, a ich wysokość wynika z treści zamiast stałego kontenera.
+
 ## Aktualizacja 2026-08-02 — moduł promocji poradnika na homepage
 
 - `HomeContent` renderuje jasny, responsywny moduł poradnika po sekcjach CMS i przed kartą podarunkową.

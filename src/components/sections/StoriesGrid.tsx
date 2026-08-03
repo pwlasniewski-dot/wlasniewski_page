@@ -29,22 +29,22 @@ export default function StoriesGrid({
     const demoteTitle = plainTitle.length > 110 || plainTitle.split(' ').filter(Boolean).length > 16;
 
     return (
-        <section className="py-24 px-4 bg-white">
-            <div className="max-w-7xl mx-auto">
+        <section className="home-editorial-section bg-[#ebe4da] px-5 py-24 sm:px-8 md:py-32">
+            <div className="mx-auto max-w-[1380px]">
                 {/* Header */}
-                <div className="text-center mb-16">
+                <div className="mb-14 text-center md:mb-20">
                     {subtitle && (
-                        <span className="text-[var(--wedding-taupe)] text-xs font-medium uppercase tracking-[0.3em] block mb-4">
+                        <span className="mb-5 block text-[10px] font-bold uppercase tracking-[.32em] text-[#94733d] sm:text-xs">
                             {subtitle}
                         </span>
                     )}
                     {title && (
                         demoteTitle ? (
-                            <p className="text-4xl md:text-6xl text-[var(--wedding-brown)] italic" style={{ fontFamily: 'var(--font-editorial-heading)', fontWeight: 400 }}>
+                            <p className="font-display text-5xl font-normal leading-none tracking-[-.035em] text-[#28221c] md:text-7xl">
                                 {title}
                             </p>
                         ) : (
-                            <h2 className="text-4xl md:text-6xl text-[var(--wedding-brown)] italic" style={{ fontFamily: 'var(--font-editorial-heading)', fontWeight: 400 }}>
+                            <h2 className="font-display text-5xl font-normal leading-none tracking-[-.035em] text-[#28221c] md:text-7xl">
                                 {title}
                             </h2>
                         )
@@ -52,19 +52,22 @@ export default function StoriesGrid({
                 </div>
 
                 {/* Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-12">
-                    {items.map((item, index) => (
-                        <Link href={item.link} key={item.id} className="group block" target="_blank" rel="noopener noreferrer">
+                <div className="grid grid-cols-1 gap-x-6 gap-y-14 md:grid-cols-2 lg:grid-cols-3 lg:gap-y-20">
+                    {items.map((item) => {
+                        const href = item.link.replace(/^https?:\/\/(?:www\.)?wlasniewski\.pl/i, '') || '/';
+                        return (
+                        <Link href={href} key={item.id} className="group block">
                             <div className="relative mb-6">
                                 {/* Shadow Effect - Light gray shadow */}
-                                <div className="absolute top-4 left-4 w-full h-full bg-zinc-100 border border-zinc-200 -z-10 transition-transform duration-500 group-hover:translate-x-2 group-hover:translate-y-2" />
+                                <div className="absolute left-4 top-4 -z-10 h-full w-full border border-[#cbbdab] bg-[#f6f1e9] transition-transform duration-500 group-hover:translate-x-1 group-hover:translate-y-1" />
 
-                                <div className="aspect-[3/4] overflow-hidden bg-zinc-100 relative border border-zinc-200">
+                                <div className="relative aspect-[4/5] overflow-hidden border border-[#d2c6b6] bg-[#ded4c7]">
                                     {item.image ? (
                                         <Image
                                             src={item.image}
                                             alt={item.title}
                                             fill
+                                            unoptimized={item.image.startsWith('https://wlasniewski.pl/_next/image')}
                                             className="object-cover transition-transform duration-700 group-hover:scale-105"
                                             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                                         />
@@ -79,22 +82,22 @@ export default function StoriesGrid({
                                 </div>
                             </div>
 
-                            <div className="space-y-4 text-center md:text-left">
+                            <div className="space-y-3 text-left">
                                 {item.category && (
-                                    <span className="text-[10px] text-[var(--wedding-gold)] font-medium uppercase tracking-widest">
+                                    <span className="text-[10px] font-bold uppercase tracking-[.24em] text-[#94733d]">
                                         {item.category}
                                     </span>
                                 )}
-                                <h3 className="text-2xl text-[var(--wedding-brown)] italic group-hover:text-[var(--wedding-gold)] transition-colors" style={{ fontFamily: 'var(--font-editorial-heading)', fontWeight: 400 }}>
+                                <h3 className="font-display text-3xl font-normal leading-none text-[#28221c] transition-colors group-hover:text-[#94733d]">
                                     {item.title}
                                 </h3>
-                                <div className="flex items-center gap-2 text-sm text-[var(--wedding-taupe)] group-hover:text-[var(--wedding-brown)] transition-colors mt-2" style={{ fontFamily: 'var(--font-editorial-body)' }}>
+                                <div className="mt-3 flex items-center gap-2 text-xs font-bold uppercase tracking-[.14em] text-[#786b5d] transition-colors group-hover:text-[#28221c]">
                                     <span>Zobacz historię</span>
                                     <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
                                 </div>
                             </div>
                         </Link>
-                    ))}
+                    )})}
                 </div>
             </div>
         </section>

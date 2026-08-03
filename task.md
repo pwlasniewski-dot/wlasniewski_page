@@ -1,5 +1,25 @@
 # Aktualny plan prac
 
+## 2026-08-03 — pełny redesign strony głównej
+
+- [x] Pełne treści z produkcji wplecione w redakcyjny układ przez istniejące, edytowalne bloki CMS.
+- [x] Nadrzędność `sections`/`home_sections`; kompletna kopia awaryjna działa wyłącznie bez danych CMS.
+- [x] Zdjęcia kopii awaryjnej działają w lokalnym podglądzie mimo lokalnego problemu z certyfikatem optymalizatora.
+- [x] Pełnoekranowe, filmowe Hero z redakcyjną typografią oraz odpornym fallbackiem.
+- [x] Fotograficzna galeria usług zamiast czarnego bloku cennikowego.
+- [x] Spójna paleta, rytm i typografia dla modułów sterowanych z CMS.
+- [x] Nowy wygląd poradnika, karty podarunkowej, Local SEO i końcowego CTA.
+- [x] Zachowane menu, aktualne ceny, linki, teksty CMS i logika rezerwacji.
+- [x] Build produkcyjny PASS; błędy braku lokalnego `DATABASE_URL` obsłużone istniejącymi fallbackami.
+- [x] Testy kontraktowe strony głównej, Local SEO i cen: 10/10 PASS.
+- [x] Kontrola wizualna: desktop i telefon 390 px, bez poziomego przewijania.
+- [x] Zachowanie tekstów Hero z CMS; fallback wyłącznie dla pustych pól.
+- [x] Edycja desktop/mobile i kadrowania trzech kafli oferty w panelu strony głównej.
+- [x] Edycja kategorii ceny i linku docelowego każdego kafla oferty.
+- [x] Rozróżnienie awarii CMS od świadomie pustych sekcji i opinii.
+- [x] Mobilny moduł opinii w naturalnej wysokości i z poprawnym kontrastem.
+- [ ] Odbiór wizualny właściciela przed commitem i pushem.
+
 ## 2026-08-02 — korekta strony głównej po odbiorze właściciela
 
 - [x] Usunięta ciężka czarna karta poradnika i podwójne obramowanie.

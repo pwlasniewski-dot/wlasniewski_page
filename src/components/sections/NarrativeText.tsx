@@ -24,37 +24,40 @@ export default function NarrativeText({
 }: NarrativeTextProps) {
     const plainTitle = (title || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
     const demoteTitle = plainTitle.length > 110 || plainTitle.split(' ').filter(Boolean).length > 16;
+    const semanticContent = (content || '')
+        .replace(/<h1(\s[^>]*)?>/gi, '<h3$1>')
+        .replace(/<\/h1>/gi, '</h3>')
+        .replace(/<h2(\s[^>]*)?>/gi, '<h3$1>')
+        .replace(/<\/h2>/gi, '</h3>');
 
     return (
-        <section className="narrative-spacing" style={{ backgroundColor }}>
-            <div className={`container mx-auto px-6 ${columns === 1 ? 'max-w-3xl' : 'max-w-5xl'}`}>
+        <section className="home-editorial-section narrative-spacing" style={{ backgroundColor }}>
+            <div className={`container mx-auto px-5 sm:px-8 ${columns === 1 ? 'max-w-4xl' : 'max-w-6xl'}`}>
 
                 {/* Header */}
                 {(title || subtitle) && (
-                    <div className="text-center mb-16 space-y-4">
+                    <div className="mb-14 space-y-4 text-center md:mb-20">
                         {subtitle && (
-                            <p className="text-sm uppercase tracking-[0.4em] text-[var(--wedding-taupe)] font-medium">
+                            <p className="text-[10px] font-bold uppercase tracking-[.32em] text-[#94733d] sm:text-xs">
                                 {subtitle}
                             </p>
                         )}
                         {title && (
                             demoteTitle ? (
                                 <p
-                                    className="text-3xl md:text-5xl text-[var(--wedding-brown)]"
-                                    style={{ fontFamily: 'var(--font-editorial-heading)' }}
+                                    className="font-display text-4xl font-normal leading-[.95] tracking-[-.035em] text-[#28221c] md:text-6xl"
                                 >
                                     {title}
                                 </p>
                             ) : (
                                 <h2
-                                    className="text-3xl md:text-5xl text-[var(--wedding-brown)]"
-                                    style={{ fontFamily: 'var(--font-editorial-heading)' }}
+                                    className="font-display text-4xl font-normal leading-[.95] tracking-[-.035em] text-[#28221c] md:text-6xl"
                                 >
                                     {title}
                                 </h2>
                             )
                         )}
-                        <div className="w-12 h-[1px] bg-[var(--wedding-gold)] mx-auto mt-6" />
+                        <div className="mx-auto mt-7 h-px w-16 bg-[#b08a4c]" />
                     </div>
                 )}
 
@@ -73,8 +76,8 @@ export default function NarrativeText({
                     } as any}
                 >
                     <div
-                        className={dropCap ? 'narrative-dropcap' : ''}
-                        dangerouslySetInnerHTML={{ __html: content }}
+                        className={`home-editorial-richtext ${dropCap ? 'narrative-dropcap' : ''}`}
+                        dangerouslySetInnerHTML={{ __html: semanticContent }}
                     />
                 </motion.div>
 

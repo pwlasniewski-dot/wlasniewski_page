@@ -2,6 +2,19 @@
 
 Ten dokument stanowi kompleksowy opis funkcjonalności oraz logiki biznesowej platformy **FOTO-DRON Przemysław Właśniewski**. Dokumentacja została opracowana na podstawie audytu technicznego przeprowadzonego w grudniu 2025 r. Szczegóły techniczne dotyczące infrastruktury i wzorców projektowych znajdują się w dokumencie [ARCHITECTURE.md](file:///c:/Strona-fotografa/ARCHITECTURE.md).
 
+## Aktualizacja 2026-08-03 — artystyczna strona główna
+
+- Teksty produkcyjne pozostają rozdzielone na edytowalne bloki: wstęp i historia w `magazine_layout`, komunia w `narrative_text`, reportaże w `stories_grid`, opinie w osobnym module oraz cytat fotograficzny w `parallax`.
+- Dane zapisane przez panel są źródłem nadrzędnym. Kopia awaryjna jest wyświetlana wyłącznie wtedy, gdy CMS/baza nie zwraca żadnej sekcji, dzięki czemu podgląd bez bazy jest kompletny, ale nigdy nie nadpisuje pracy administratora.
+- Hero zajmuje cały ekran, zachowuje rotację zdjęć i konfigurację shaderów z panelu oraz ma pełnowartościowy wariant awaryjny bez CMS.
+- Kategorie Sesja rodzinna, Ślub i Urodziny są prezentowane jako fotograficzne karty redakcyjne prowadzące do istniejącej rezerwacji i aktualnych cen.
+- Dynamiczne moduły administratora nadal renderują treści i media zapisane w CMS, ale na stronie głównej otrzymują spójne tło, typografię, obramowania i rytm pionowy.
+- Menu, linki SEO, poradnik, karta podarunkowa, formularz kontaktowy oraz publiczne ścieżki sprzedażowe pozostają funkcjonalnie niezmienione.
+- Trzy kafle oferty obsługują niezależny obraz desktopowy i mobilny, tekst oraz punkt kadrowania zapisane w `home_sections.service_cards`.
+- Treść Hero z CMS nie jest automatycznie nadpisywana; fallback uzupełnia tylko brakujące pola.
+- Każdy kafel usługi ma w panelu obraz desktopowy, obraz mobilny, kadr, tytuł, etykietę, opis, kategorię ceny oraz link docelowy.
+- Puste sekcje i pusta lista opinii są respektowane jako świadoma decyzja administratora; treść awaryjna nie pojawia się bez błędu CMS.
+
 ## Aktualizacja 2026-08-02 — profesjonalna promocja poradnika na stronie głównej
 
 - Promocja poradnika jest jasnym modułem redakcyjnym, a nie kolejną czarną kartą sprzedażową.

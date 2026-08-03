@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import BeforeAfterSlide from './BeforeAfterSlide';
 
 interface HeroSlide {
@@ -93,31 +93,38 @@ export default function HeroSlider({ slides = [], interval = 6000 }: HeroSliderP
 
     if (!enabledSlides || enabledSlides.length === 0) {
         return (
-            <div className="relative flex h-[68svh] min-h-[520px] w-full items-center justify-center overflow-hidden bg-black md:min-h-[620px]">
+            <section className="home-hero relative h-[100svh] min-h-[640px] w-full overflow-hidden bg-[#151310]" aria-label="Fotografia rodzinna i ślubna">
+                <h1 className="sr-only">Fotograf Toruń — zdjęcia, do których chce się wracać</h1>
                 <Image
                     src="/assets/slider/fotografia-rodzinna-grudziadz-01.webp"
-                    alt="Naturalna sesja rodzinna w plenerze"
+                    alt=""
                     fill
                     priority
                     sizes="100vw"
-                    className="object-cover"
+                    className="object-cover object-center md:object-[center_30%]"
                 />
-                <div className="absolute inset-0 bg-gradient-to-b from-black/40 to-black/60 z-10" />
-                <div className="relative z-20 text-center px-4 space-y-4">
-                    <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-white tracking-tight drop-shadow-2xl">
+                <div className="absolute inset-0 z-10 bg-[linear-gradient(90deg,rgba(12,10,8,.72)_0%,rgba(12,10,8,.38)_42%,rgba(12,10,8,.08)_70%,rgba(12,10,8,.18)_100%)] max-md:bg-[linear-gradient(180deg,rgba(12,10,8,.12)_10%,rgba(12,10,8,.28)_48%,rgba(12,10,8,.9)_100%)]" />
+                <div className="absolute inset-x-0 bottom-0 z-10 h-[60%] bg-gradient-to-t from-black/80 via-black/25 to-transparent" />
+                <div className="absolute inset-x-0 top-0 z-10 h-40 bg-gradient-to-b from-black/55 to-transparent" />
+                <div className="relative z-20 mx-auto flex h-full w-full max-w-[1480px] items-end px-6 pb-24 sm:px-10 sm:pb-28 lg:px-16 lg:pb-24 xl:px-24">
+                  <div className="max-w-[760px] text-left max-md:text-center">
+                    <div className="mb-5 flex items-center gap-4 text-[10px] font-semibold uppercase tracking-[.32em] text-[#e6d4b0] max-md:justify-center sm:text-xs"><span className="h-px w-10 bg-[#d7b978]"/>Przemysław Właśniewski · fotografia</div>
+                    <h2 className="font-display text-[clamp(2.8rem,6.2vw,6.7rem)] font-normal leading-[.86] tracking-[-.045em] text-[#fffdf8] drop-shadow-2xl">
                         Fotograf Toruń — zdjęcia, do których chce się wracać
-                    </h1>
-                    <p className="text-base sm:text-lg md:text-xl text-zinc-200 max-w-2xl mx-auto">
+                    </h2>
+                    <p className="mt-6 max-w-2xl text-sm font-medium leading-7 text-white/85 drop-shadow-lg max-md:mx-auto sm:text-base md:text-lg">
                         Sesje rodzinne, śluby i uroczystości. Sprawdź pakiety oraz wolne terminy.
                     </p>
                     <Link
                         href="/rezerwacja?source=hero-fallback&amp;service=Sesja"
-                        className="inline-flex min-h-12 items-center px-7 sm:px-8 py-3 bg-gold-500 text-black font-semibold rounded-lg hover:bg-gold-400 transition-colors shadow-lg"
+                        className="mt-8 inline-flex min-h-12 items-center rounded-full border border-[#ead5ab] bg-[#ead5ab] px-7 py-3 text-xs font-bold uppercase tracking-[.16em] text-[#211c16] shadow-xl transition-all hover:border-white hover:bg-white sm:px-8"
                     >
                         Zobacz pakiety i terminy
                     </Link>
+                  </div>
                 </div>
-            </div>
+                <div className="absolute bottom-7 right-7 z-30 hidden items-center gap-3 text-[10px] font-semibold uppercase tracking-[.28em] text-white/65 lg:flex">przewiń <ArrowDown size={15} strokeWidth={1.4}/></div>
+            </section>
         );
     }
 
@@ -129,12 +136,12 @@ export default function HeroSlider({ slides = [], interval = 6000 }: HeroSliderP
     const variant = animationVariants[textAnim] || animationVariants['slide-up'];
     const shaderPresets = {
         subtle: {
-            veil: 'bg-black/10',
-            gradient: 'from-black/65 via-black/30 to-transparent'
+            veil: 'bg-black/5',
+            gradient: 'from-black/60 via-black/20 to-transparent'
         },
         cinematic: {
-            veil: 'bg-black/20',
-            gradient: 'from-black/85 via-black/55 to-transparent'
+            veil: 'bg-black/10',
+            gradient: 'from-black/80 via-black/35 to-transparent'
         },
         deep: {
             veil: 'bg-black/35',
@@ -193,7 +200,7 @@ export default function HeroSlider({ slides = [], interval = 6000 }: HeroSliderP
     }
 
     return (
-        <div className="relative h-[100svh] min-h-[600px] w-full overflow-hidden bg-black">
+        <section className="home-hero relative h-[100svh] min-h-[640px] w-full overflow-hidden bg-[#151310]" aria-label="Najważniejsze oferty fotograficzne">
             <h1 className="sr-only">Fotograf Toruń — zdjęcia, do których chce się wracać</h1>
             {/* Background Images */}
             <AnimatePresence mode="popLayout">
@@ -234,11 +241,12 @@ export default function HeroSlider({ slides = [], interval = 6000 }: HeroSliderP
 
             {/* Gradient Overlays */}
             <div className={`absolute inset-0 z-10 ${shaderClasses.veil}`} />
-            {/* Strong bottom fade for seamless transition */}
-            <div className={`absolute bottom-0 left-0 w-full h-[62%] bg-gradient-to-t z-10 ${shaderClasses.gradient}`} />
+            <div className="absolute inset-0 z-10 bg-[linear-gradient(90deg,rgba(12,10,8,.72)_0%,rgba(12,10,8,.42)_35%,rgba(12,10,8,.08)_68%,rgba(12,10,8,.18)_100%)] max-md:bg-[linear-gradient(180deg,rgba(12,10,8,.12)_10%,rgba(12,10,8,.28)_48%,rgba(12,10,8,.9)_100%)]" />
+            <div className={`absolute bottom-0 left-0 z-10 h-[58%] w-full bg-gradient-to-t ${shaderClasses.gradient}`} />
+            <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-40 bg-gradient-to-b from-black/55 to-transparent" />
 
             {/* Content */}
-            <div className="relative z-20 w-full h-full flex flex-col items-center justify-end pb-24 sm:pb-32 md:pb-40 px-4 sm:px-6 text-center">
+            <div className="relative z-20 mx-auto flex h-full w-full max-w-[1480px] items-end px-6 pb-24 sm:px-10 sm:pb-28 lg:px-16 lg:pb-24 xl:px-24">
                 <AnimatePresence mode="wait">
                     <motion.div
                         key={`content-${currentSlide}`}
@@ -246,35 +254,39 @@ export default function HeroSlider({ slides = [], interval = 6000 }: HeroSliderP
                         animate={variant.animate}
                         exit={variant.exit}
                         transition={variant.transition}
-                        className="space-y-3 sm:space-y-4 md:space-y-6 max-w-4xl"
+                        className="max-w-[760px] text-left max-md:text-center"
                     >
+                        <div className="mb-5 flex items-center gap-4 text-[10px] font-semibold uppercase tracking-[.32em] text-[#e6d4b0] max-md:justify-center sm:text-xs">
+                            <span className="h-px w-10 bg-[#d7b978]" />
+                            Przemysław Właśniewski · fotografia
+                        </div>
                         <h2
-                            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-white tracking-tighter drop-shadow-2xl leading-tight"
+                            className="font-display text-[clamp(2.8rem,6.2vw,6.7rem)] font-normal leading-[.86] tracking-[-.045em] text-[#fffdf8] drop-shadow-2xl"
                             dangerouslySetInnerHTML={{ __html: slide.title || '' }}
                         />
                         <p
-                            className="text-sm sm:text-base md:text-lg lg:text-xl text-zinc-200 drop-shadow-lg"
+                            className="mt-6 max-w-2xl text-sm font-medium leading-7 text-white/85 drop-shadow-lg max-md:mx-auto sm:text-base md:text-lg"
                             dangerouslySetInnerHTML={{ __html: slide.subtitle || '' }}
                         />
                         {slide.description && (
                             <p
-                                className="text-xs sm:text-sm md:text-base text-zinc-300 max-w-xl mx-auto drop-shadow-md"
+                                className="mt-3 max-w-xl text-xs leading-6 text-white/65 drop-shadow-md max-md:mx-auto sm:text-sm"
                                 dangerouslySetInnerHTML={{ __html: slide.description }}
                             />
                         )}
                         {slide.buttonText && (
-                            <motion.div
+                            <motion.div className="mt-8"
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.3 }}
                             >
                                 <Link
                                     href={slide.buttonLink || '/portfolio'}
-                                    className={`inline-flex min-h-12 items-center px-7 sm:px-8 py-3 font-semibold rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 ${(slide.buttonStyle === 'white')
-                                        ? 'bg-transparent border-2 border-white text-white hover:bg-white/10'
+                                    className={`inline-flex min-h-12 items-center rounded-full px-7 py-3 text-xs font-bold uppercase tracking-[.16em] transition-all duration-300 shadow-xl sm:px-8 ${(slide.buttonStyle === 'white')
+                                        ? 'border border-white/70 bg-white/5 text-white backdrop-blur-md hover:bg-white/15'
                                         : (slide.buttonStyle === 'transparent')
-                                            ? 'bg-transparent border-2 border-transparent text-white hover:bg-white/10 hover:border-white/20'
-                                            : 'bg-gold-500 text-black hover:bg-gold-400'
+                                            ? 'border border-white/25 bg-transparent text-white hover:border-white/60 hover:bg-white/10'
+                                            : 'border border-[#ead5ab] bg-[#ead5ab] text-[#211c16] hover:border-white hover:bg-white'
                                         }`}
                                 >
                                     {slide.buttonText}
@@ -285,13 +297,17 @@ export default function HeroSlider({ slides = [], interval = 6000 }: HeroSliderP
                 </AnimatePresence>
             </div>
 
+            <div className="absolute bottom-7 right-7 z-30 hidden items-center gap-3 text-[10px] font-semibold uppercase tracking-[.28em] text-white/65 lg:flex">
+                przewiń <ArrowDown size={15} strokeWidth={1.4} />
+            </div>
+
             {/* Navigation Arrows */}
             {enabledSlides.length > 1 && (
                 <>
                     <button
                         onClick={prevSlide}
                         onMouseEnter={() => setAutoplay(false)}
-                        className="absolute left-2 sm:left-4 top-1/2 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-black/35 hover:bg-black/55 text-white transition-all z-30 backdrop-blur-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-400"
+                        className="absolute left-3 top-1/2 z-30 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-black/15 text-white/80 backdrop-blur-md transition-all hover:border-white/50 hover:bg-black/35 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ead5ab] sm:left-6"
                         aria-label="Poprzedni slajd"
                     >
                         <ChevronLeft className="w-6 h-6 sm:w-8 sm:h-8" />
@@ -299,7 +315,7 @@ export default function HeroSlider({ slides = [], interval = 6000 }: HeroSliderP
                     <button
                         onClick={nextSlide}
                         onMouseEnter={() => setAutoplay(false)}
-                        className="absolute right-2 sm:right-4 top-1/2 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-black/35 hover:bg-black/55 text-white transition-all z-30 backdrop-blur-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-400"
+                        className="absolute right-3 top-1/2 z-30 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-black/15 text-white/80 backdrop-blur-md transition-all hover:border-white/50 hover:bg-black/35 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ead5ab] sm:right-6"
                         aria-label="Następny slajd"
                     >
                         <ChevronRight className="w-6 h-6 sm:w-8 sm:h-8" />
@@ -309,7 +325,7 @@ export default function HeroSlider({ slides = [], interval = 6000 }: HeroSliderP
 
             {/* Dots Navigation */}
             {enabledSlides.length > 1 && (
-                <div className="absolute bottom-6 sm:bottom-8 left-1/2 -translate-x-1/2 flex gap-2 z-30">
+                <div className="absolute bottom-7 left-1/2 z-30 flex -translate-x-1/2 gap-2 md:left-auto md:right-16 md:translate-x-0">
                     {enabledSlides.map((_, index) => (
                         <motion.button
                             key={index}
@@ -317,7 +333,7 @@ export default function HeroSlider({ slides = [], interval = 6000 }: HeroSliderP
                                 setCurrentSlide(index);
                                 setAutoplay(false);
                             }}
-                            className={`rounded-full transition-all ${index === currentSlide ? 'bg-gold-500' : 'bg-white/40 hover:bg-white/60'
+                            className={`rounded-full transition-all ${index === currentSlide ? 'bg-[#ead5ab]' : 'bg-white/35 hover:bg-white/60'
                                 }`}
                             animate={{
                                 width: index === currentSlide ? 32 : 10,
@@ -328,6 +344,6 @@ export default function HeroSlider({ slides = [], interval = 6000 }: HeroSliderP
                     ))}
                 </div>
             )}
-        </div>
+        </section>
     );
 }

@@ -1,5 +1,20 @@
 # PROJECT_HISTORIA & VADEMECUM STABILNOŚCI
 
+## 2026-08-03 — Pełny redakcyjny redesign strony głównej
+
+- Pełne teksty i fotografie opublikowanej strony zostały wplecione w nowy układ przez istniejące typy bloków CMS: Magazine Layout, Narrative Text, Stories Grid, Opinie i Parallax; administrator nadal edytuje każde pole w przypisanym edytorze.
+- Lokalny podgląd bez bazy korzysta z wiernej kopii awaryjnej treści, natomiast zapisane `home_sections` zawsze mają pierwszeństwo. Zdjęcia kopii awaryjnej używają gotowych wariantów WebP z produkcyjnego optymalizatora, co omija lokalny problem certyfikatu bez zmiany danych CMS.
+- Zastąpiono serię niespójnych czarnych modułów jedną fotograficzną kompozycją w palecie atramentu, kości słoniowej, piasku i starego złota.
+- Hero oraz jego wariant awaryjny są pełnoekranowe, mają filmowe shadery, redakcyjną typografię i czytelny tekst bez zasłaniania głównego motywu zdjęcia.
+- Wybór usług stał się dużą galerią fotografii z aktualnymi cenami pobieranymi z istniejącego źródła; nie zmieniono oferty ani treści CMS.
+- Poradnik, karta podarunkowa, sekcja lokalna i końcowe CTA otrzymały wspólny język wizualny, a moduły CMS są harmonizowane przez ograniczony do homepage system stylów.
+- Menu i jego dane pozostały bez zmian; build produkcyjny przechodzi również w trybie bez lokalnego `DATABASE_URL`.
+- Zaktualizowano kontrakt nowego hero; testy strony głównej, Local SEO i cen przechodzą 10/10, a widok 390 px nie ma poziomego przewijania.
+- Teksty Hero wpisane w CMS ponownie mają pierwszeństwo; treści sprzedażowe są używane wyłącznie jako fallback pustych pól.
+- Edytor strony głównej pozwala podmienić osobne zdjęcia desktopowe i mobilne trzech kafli usług oraz ustawić punkt kadrowania.
+- Edytor kafli obsługuje także kategorię ceny i link docelowy. Celowo pusta lista sekcji lub opinii pozostaje pusta; fallback uruchamia się wyłącznie po faktycznej awarii CMS albo błędzie danych.
+- Moduł opinii działa w naturalnym przepływie dokumentu, dzięki czemu dłuższe cytaty nie nachodzą na kolejne sekcje; jego ciemny wariant zachowuje poprawny kontrast także na telefonie.
+
 ## 2026-08-02 — Redakcyjna promocja poradnika na stronie głównej
 
 - Zastąpiono ciężką czarną kartę jasnym, pełnoszerokim pasem redakcyjnym umieszczonym po dynamicznych sekcjach budujących zaufanie.

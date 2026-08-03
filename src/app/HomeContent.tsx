@@ -65,6 +65,7 @@ interface Section {
 
 interface HomeData {
     hero_slider: any[];
+    service_cards?: HomepageServiceCard[];
     sections?: Section[];
     // Legacy fields for backward compatibility
     about_section?: any;
@@ -75,6 +76,17 @@ interface HomeData {
     challenge_banner?: any;
     foto_wyzwanie_effect?: any;
     foto_wyzwanie_photos?: any;
+}
+
+interface HomepageServiceCard {
+    title: string;
+    label: string;
+    service: string;
+    copy: string;
+    href: string;
+    image: string;
+    image_mobile?: string;
+    image_position?: string;
 }
 
 // Interfaces
@@ -505,36 +517,32 @@ export default function HomeContent({ heroSlides, sections, homeData, orderedSec
                     />
                 );
 
-            case 'testimonials':
-                return testimonials.length > 0 ? (
-                    <section key={section.id} className="py-20 px-6 bg-black">
-                        <div className="max-w-4xl mx-auto text-center">
-                            <h2 className="text-3xl font-display font-bold text-gold-400 mb-2">
+            case 'testimonials': {
+                const testimonial = testimonials[currentTestimonial] || testimonials[0];
+                return testimonial ? (
+                    <section key={section.id} className="home-dark-section border-y border-[#6b5a46] bg-[#211d19] px-5 py-24 text-[#f7f1e8] sm:px-8 md:py-32">
+                        <div className="mx-auto max-w-5xl text-center">
+                            <p className="mb-5 text-[10px] font-bold uppercase tracking-[.32em] text-[#d4b77c] sm:text-xs">
+                                {section.data.subtitle || 'Poznaj opinie'}
+                            </p>
+                            <h2 className="mb-12 font-display text-5xl font-normal leading-none tracking-[-.035em] text-[#fffaf1] md:text-7xl">
                                 {section.data.title || 'Co mówią klienci'}
                             </h2>
-                            {section.data.subtitle && (
-                                <p className="text-zinc-400 mb-12">{section.data.subtitle}</p>
-                            )}
-                            <div className="relative min-h-[300px]">
-                                {testimonials.map((testimonial, index) => (
-                                    <div
-                                        key={testimonial.id}
-                                        className={`absolute inset-0 transition-opacity duration-500 ${index === currentTestimonial ? 'opacity-100 z-10' : 'opacity-0 z-0'
-                                            }`}
-                                    >
-                                        <div className="bg-zinc-900 p-8 rounded-2xl border border-zinc-800">
-                                            <div className="flex justify-center mb-6">
+                            <div key={testimonial.id} className="relative">
+                                    <div>
+                                        <div className="border-y border-[#6b5a46] px-3 py-10 sm:px-10 md:py-14">
+                                            <div className="mb-7 flex justify-center">
                                                 {[...Array(5)].map((_, i) => (
                                                     <Star
                                                         key={i}
                                                         className={`w-5 h-5 ${i < (testimonial.rating || 5)
-                                                            ? 'text-gold-500 fill-gold-500'
-                                                            : 'text-zinc-700'
+                                                            ? 'fill-[#d4b77c] text-[#d4b77c]'
+                                                            : 'text-[#5d5247]'
                                                             }`}
                                                     />
                                                 ))}
                                             </div>
-                                            <p className="text-xl text-zinc-300 italic mb-6">
+                                            <p className="mx-auto mb-8 max-w-4xl font-display text-3xl font-normal italic leading-tight text-[#f6eee4] md:text-4xl">
                                                 &quot;{testimonial.testimonial_text}&quot;
                                             </p>
                                             <div className="flex items-center justify-center gap-4">
@@ -549,19 +557,19 @@ export default function HomeContent({ heroSlides, sections, homeData, orderedSec
                                                     </div>
                                                 )}
                                                 <div>
-                                                    <p className="font-semibold text-white">{testimonial.client_name}</p>
+                                                    <p className="text-xs font-bold uppercase tracking-[.18em] text-white">{testimonial.client_name}</p>
                                                     {testimonial.source && (
-                                                        <p className="text-sm text-zinc-500">{testimonial.source}</p>
+                                                        <p className="mt-1 text-xs text-[#a99e91]">{testimonial.source}</p>
                                                     )}
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-                                ))}
                             </div>
                         </div>
                     </section>
                 ) : null;
+            }
 
             case 'creative_slider':
                 return section.data.slides && section.data.slides.length > 0 ? (
@@ -995,52 +1003,72 @@ export default function HomeContent({ heroSlides, sections, homeData, orderedSec
         }
     };
 
+    const defaultServiceCards: HomepageServiceCard[] = [
+        { title: 'Sesja rodzinna', label: 'Bliskość', service: 'Sesja', copy: 'Dla rodziny, pary albo na spokojne zdjęcia kilku pokoleń.', href: '/rezerwacja?source=home&service=Sesja', image: '/assets/slider/fotografia-rodzinna-grudziadz-01.webp' },
+        { title: 'Ślub', label: 'Reportaż', service: 'Ślub', copy: 'Od ceremonii w urzędzie po pełny reportaż z wesela.', href: '/rezerwacja?source=home&service=Ślub', image: '/assets/slider/fotografia-slubna-torun-16.webp' },
+        { title: 'Urodziny i przyjęcia', label: 'Emocje', service: 'Urodziny', copy: 'Reportaż z urodzin, jubileuszu lub rodzinnej uroczystości.', href: '/rezerwacja?source=home&service=Urodziny', image: '/assets/slider/naturalne-zdjecia-rodzinne-lisewo-03.webp' },
+    ];
+    const serviceCards = Array.isArray(homeData?.service_cards) && homeData.service_cards.length === 3
+        ? defaultServiceCards.map((fallback, index) => ({ ...fallback, ...homeData.service_cards![index] }))
+        : defaultServiceCards;
+
     return (
-        <main className="min-h-screen bg-black text-white">
+        <main className="home-editorial min-h-screen bg-[#f3efe8] text-[#27221c]">
             {/* Hero Slider - Always First */}
             <HeroSlider slides={heroSlides} interval={heroSliderInterval} />
 
-            <section className="relative z-20 -mt-8 px-4 pb-16 md:-mt-12">
-                <div className="mx-auto max-w-6xl rounded-3xl border border-white/10 bg-zinc-950/95 p-5 shadow-2xl shadow-black/60 backdrop-blur md:p-8">
-                    <div className="mb-7 text-center">
-                        <p className="mb-2 text-xs font-bold uppercase tracking-[0.25em] text-gold-400">Zacznij od tego, czego potrzebujesz</p>
-                        <h2 className="text-2xl font-bold text-white md:text-4xl">Wybierz sesję i sprawdź wolne terminy</h2>
-                        <p className="mx-auto mt-3 max-w-2xl text-zinc-400">Wybierz rodzaj fotografii, sprawdź pełny zakres i wolne terminy. Rezerwację potwierdzisz zaliczką przez PayU.</p>
+            <section className="relative overflow-hidden bg-[#f3efe8] px-5 py-20 sm:px-8 md:py-28">
+                <div className="mx-auto max-w-[1380px]">
+                    <div className="mb-12 grid items-end gap-8 lg:grid-cols-[1fr_.72fr]">
+                        <div>
+                            <p className="mb-5 text-[10px] font-bold uppercase tracking-[.34em] text-[#94733d] sm:text-xs">Zacznij od swojej historii</p>
+                            <h2 className="max-w-4xl font-display text-[clamp(3rem,6vw,6.5rem)] font-normal leading-[.88] tracking-[-.045em] text-[#28221c]">Wybierz sesję.<br/><em className="font-light text-[#8a7459]">Resztą zajmę się ja.</em></h2>
+                        </div>
+                        <div className="max-w-xl border-l border-[#bcae9a] pl-6 lg:pb-2">
+                            <p className="text-sm leading-7 text-[#686057] sm:text-base">Wybierz rodzaj fotografii, sprawdź pełny zakres i wolne terminy. Rezerwację potwierdzisz zaliczką przez PayU.</p>
+                            <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-[10px] font-bold uppercase tracking-[.14em] text-[#7a6c5d]">
+                                <span>Jasny zakres</span><span>Bezpieczna płatność</span><span>Potwierdzenie e-mail</span>
+                            </div>
+                        </div>
                     </div>
-                    <div className="grid gap-4 md:grid-cols-3">
-                        {[
-                            { title: 'Sesja rodzinna', label: 'Sesja', service: 'Sesja', copy: 'Dla rodziny, pary albo na spokojne zdjęcia kilku pokoleń.', href: '/rezerwacja?source=home&service=Sesja' },
-                            { title: 'Ślub', label: 'Reportaż', service: 'Ślub', copy: 'Od ceremonii w urzędzie po pełny reportaż z wesela.', href: '/rezerwacja?source=home&service=Ślub' },
-                            { title: 'Urodziny i przyjęcia', label: 'Uroczystość', service: 'Urodziny', copy: 'Reportaż z urodzin, jubileuszu lub rodzinnej uroczystości.', href: '/rezerwacja?source=home&service=Urodziny' },
-                        ].map((item) => (
-                            <Link key={item.title} href={item.href} className="group min-h-[180px] rounded-2xl border border-zinc-800 bg-zinc-900/70 p-5 transition hover:-translate-y-1 hover:border-gold-500/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-400">
-                                <div className="mb-2 flex items-start justify-between gap-3">
-                                    <h3 className="text-xl font-bold text-white group-hover:text-gold-300">{item.title}</h3>
-                                    <span className="whitespace-nowrap text-xs font-bold uppercase tracking-wider text-gold-400">{item.label}</span>
+                    <div className="grid gap-4 md:grid-cols-12 md:gap-5">
+                        {serviceCards.map((item, index) => (
+                            <Link key={item.title} href={item.href} className={`group relative min-h-[420px] overflow-hidden rounded-[2px] bg-[#28221c] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#94733d] ${index === 0 ? 'md:col-span-5 md:min-h-[620px]' : index === 1 ? 'md:col-span-7 md:min-h-[620px]' : 'md:col-span-12 md:min-h-[480px]'}`}>
+                                <picture className="absolute inset-0 block">
+                                    {item.image_mobile && <source media="(max-width: 767px)" srcSet={item.image_mobile} />}
+                                    <img
+                                        src={item.image}
+                                        alt={`${item.title} — fotograf Toruń`}
+                                        loading="lazy"
+                                        decoding="async"
+                                        className="h-full w-full object-cover transition duration-[1200ms] ease-out group-hover:scale-[1.035]"
+                                        style={{ objectPosition: item.image_position || 'center center' }}
+                                    />
+                                </picture>
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-black/5" />
+                                <div className="absolute inset-x-0 bottom-0 p-7 text-white sm:p-9 lg:p-11">
+                                    <div className="mb-4 flex items-center gap-3 text-[10px] font-bold uppercase tracking-[.25em] text-[#ead5ab]"><span>{String(index + 1).padStart(2, '0')}</span><span className="h-px w-8 bg-[#ead5ab]/60"/><span>{item.label}</span></div>
+                                    <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
+                                        <div><h3 className="font-display text-4xl font-normal leading-none sm:text-5xl lg:text-6xl">{item.title}</h3><p className="mt-4 max-w-lg text-sm leading-6 text-white/70">{item.copy}</p></div>
+                                        <span className="shrink-0 text-xs font-bold uppercase tracking-[.14em] text-[#ead5ab]">{publicPriceLabels[item.service] || fallbackPublicPriceLabel} <ArrowRight className="ml-2 inline" size={16}/></span>
+                                    </div>
                                 </div>
-                                <p className="mb-5 text-sm leading-relaxed text-zinc-400">{item.copy}</p>
-                                <span className="font-semibold text-white">{publicPriceLabels[item.service] || fallbackPublicPriceLabel} →</span>
                             </Link>
                         ))}
-                    </div>
-                    <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-zinc-400">
-                        <span>✓ Jasny zakres każdego pakietu</span>
-                        <span>✓ Bezpieczna zaliczka PayU</span>
-                        <span>✓ Potwierdzenie na e-mail</span>
                     </div>
                 </div>
             </section>
 
             {/* Dynamic Sections */}
-            {sections.map(section => renderSection(section))}
+            <div className="home-cms-flow">{sections.map(section => renderSection(section))}</div>
 
             {publicGuidePromo && (
-                <section className="border-y border-[#d8cdbd] bg-[#f5efe5] px-4 py-14 text-[#211e1a] sm:px-6 md:py-20">
-                    <div className="mx-auto grid max-w-6xl items-center gap-8 lg:grid-cols-[1.05fr_.95fr] lg:gap-16">
+                <section className="overflow-hidden border-y border-[#443a30] bg-[#211d19] px-4 py-16 text-[#f5efe5] sm:px-6 md:py-28">
+                    <div className="mx-auto grid max-w-[1320px] items-center gap-10 lg:grid-cols-[1.12fr_.88fr] lg:gap-20">
                         <Link
                             href="/jak-sie-ubrac"
                             aria-label={`Przejdź do poradnika: ${publicGuidePromo.title}`}
-                            className="group relative block aspect-[4/3] overflow-hidden rounded-[1.5rem] bg-[#e9dfd0] shadow-[0_24px_70px_rgba(67,50,31,.16)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#9b7415] sm:aspect-[3/2] lg:aspect-[4/3]"
+                            className="group relative block aspect-[4/3] overflow-hidden bg-[#e9dfd0] shadow-[0_30px_90px_rgba(0,0,0,.3)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#d4b77c] sm:aspect-[3/2] lg:aspect-[4/3]"
                         >
                             <Image
                                 src={publicGuidePromo.image}
@@ -1051,39 +1079,39 @@ export default function HomeContent({ heroSlides, sections, homeData, orderedSec
                             />
                         </Link>
                         <div className="lg:py-4">
-                            <p className="text-xs font-bold uppercase tracking-[.25em] text-[#9b7415]">Bezpłatny poradnik przed sesją</p>
+                            <p className="text-xs font-bold uppercase tracking-[.3em] text-[#d4b77c]">Bezpłatny poradnik przed sesją</p>
                             <Link href="/jak-sie-ubrac" className="group mt-4 block w-fit rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#9b7415]">
-                                <h2 className="max-w-xl text-3xl font-semibold leading-[1.12] tracking-[-0.025em] text-[#211e1a] transition group-hover:text-[#76570d] md:text-5xl">{publicGuidePromo.title}</h2>
+                                <h2 className="max-w-xl font-display text-5xl font-normal leading-[.95] tracking-[-.035em] text-[#fffaf1] transition group-hover:text-[#ead5ab] md:text-7xl">{publicGuidePromo.title}</h2>
                             </Link>
-                            <p className="mt-5 max-w-xl text-base leading-7 text-[#655e55] md:text-lg md:leading-8">Zobacz gotowe zestawy kolorów do miasta, natury i domu oraz rodzinne ustawienia pokazane na zdjęciach. Każdy przykład ma prosty opis — bez fotograficznego żargonu.</p>
-                            <div className="mt-6 grid gap-3 text-sm font-medium text-[#4c463f] sm:grid-cols-2">
+                            <p className="mt-6 max-w-xl text-base leading-8 text-[#c9c0b4] md:text-lg">Zobacz gotowe zestawy kolorów do miasta, natury i domu oraz rodzinne ustawienia pokazane na zdjęciach. Każdy przykład ma prosty opis — bez fotograficznego żargonu.</p>
+                            <div className="mt-7 grid gap-3 text-sm font-medium text-[#ddd5ca] sm:grid-cols-2">
                                 <span className="flex gap-2"><Check size={18} className="shrink-0 text-[#9b7415]"/> Kolory dopasowane do otoczenia</span>
                                 <span className="flex gap-2"><Check size={18} className="shrink-0 text-[#9b7415]"/> 10 rodzinnych ustawień</span>
                                 <span className="flex gap-2"><Check size={18} className="shrink-0 text-[#9b7415]"/> Wskazówki dla dzieci i par</span>
                                 <span className="flex gap-2"><Check size={18} className="shrink-0 text-[#9b7415]"/> Checklista przed wyjściem</span>
                             </div>
-                            <Link href="/jak-sie-ubrac" className="mt-8 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-[#211e1a] px-7 py-3 font-bold text-white transition hover:bg-[#3a332b] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#9b7415] sm:w-fit">Zobacz poradnik <ArrowRight size={18}/></Link>
+                            <Link href="/jak-sie-ubrac" className="mt-9 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full border border-[#d4b77c] bg-[#d4b77c] px-7 py-3 text-xs font-bold uppercase tracking-[.15em] text-[#211d19] transition hover:border-white hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#d4b77c] sm:w-fit">Zobacz poradnik <ArrowRight size={18}/></Link>
                         </div>
                     </div>
                 </section>
             )}
 
-            <section className="border-y border-white/5 bg-black px-6 py-20">
+            <section className="border-b border-[#d8cdbd] bg-[#f3efe8] px-6 py-24 text-[#28221c] md:py-32">
                 <div className="mx-auto grid max-w-6xl items-center gap-12 lg:grid-cols-2">
                     <div>
-                        <p className="mb-3 text-xs font-bold uppercase tracking-[0.25em] text-gold-400">Karta podarunkowa na sesję</p>
-                        <h2 className="text-3xl font-bold text-white md:text-5xl">Prezent, który zamienia się we wspólny czas</h2>
-                        <p className="mt-5 max-w-xl text-lg leading-relaxed text-zinc-300">
+                        <p className="mb-5 text-xs font-bold uppercase tracking-[0.3em] text-[#94733d]">Karta podarunkowa na sesję</p>
+                        <h2 className="font-display text-5xl font-normal leading-[.95] tracking-[-.035em] text-[#28221c] md:text-7xl">Prezent, który zamienia się we wspólny czas</h2>
+                        <p className="mt-7 max-w-xl text-lg leading-8 text-[#686057]">
                             Obdarowana osoba sama wybiera termin i rodzaj zdjęć. Ty wybierasz wartość karty, dopisujesz kilka słów i opłacasz ją online.
                         </p>
-                        <div className="mt-7 grid gap-3 text-sm text-zinc-300 sm:grid-cols-3">
-                            <div className="rounded-xl border border-white/10 bg-white/5 p-4">Termin wybierany później</div>
-                            <div className="rounded-xl border border-white/10 bg-white/5 p-4">Dostawa karty e-mailem</div>
-                            <div className="rounded-xl border border-white/10 bg-white/5 p-4">Bezpieczna płatność PayU</div>
+                        <div className="mt-8 grid gap-0 border-y border-[#cfc2b1] text-sm text-[#514a42] sm:grid-cols-3 sm:divide-x sm:divide-[#cfc2b1]">
+                            <div className="py-4 sm:px-4">Termin wybierany później</div>
+                            <div className="py-4 sm:px-4">Dostawa karty e-mailem</div>
+                            <div className="py-4 sm:px-4">Bezpieczna płatność PayU</div>
                         </div>
                         <Link
                             href="/karta-podarunkowa?source=home"
-                            className="mt-8 inline-flex rounded-full bg-gold-500 px-7 py-3.5 font-bold text-black transition hover:bg-gold-400"
+                            className="mt-9 inline-flex rounded-full bg-[#28221c] px-7 py-3.5 text-xs font-bold uppercase tracking-[.15em] text-white transition hover:bg-[#4a4036]"
                         >
                             Wybierz kartę podarunkową
                         </Link>
@@ -1103,60 +1131,60 @@ export default function HomeContent({ heroSlides, sections, homeData, orderedSec
 
             {/* SEO: internal links to landing pages — descriptive anchor text helps Google
                 map keywords ("fotograf toruń", "sesja rodzinna") to dedicated pages. */}
-            <section className="py-16 px-6 bg-zinc-950 border-t border-white/5">
-                <div className="container mx-auto max-w-5xl">
-                    <h2 className="text-2xl md:text-3xl font-bold text-white mb-8 text-center font-display">
+            <section className="border-t border-[#d8cdbd] bg-[#ebe4da] px-6 py-20 text-[#28221c] md:py-28">
+                <div className="container mx-auto max-w-6xl">
+                    <p className="mb-4 text-center text-[10px] font-bold uppercase tracking-[.3em] text-[#94733d]">Pracuję blisko Was</p>
+                    <h2 className="mb-12 text-center font-display text-4xl font-normal tracking-[-.03em] text-[#28221c] md:text-6xl">
                         Fotograf w Toruniu i regionie
                     </h2>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <Link href="/fotograf-torun" className="group block p-5 bg-zinc-900/50 hover:bg-zinc-900 border border-white/5 hover:border-gold-500/30 rounded-lg transition-all">
-                            <div className="text-gold-400 text-xs font-bold tracking-widest uppercase mb-2">Toruń</div>
-                            <div className="text-white font-semibold mb-1 group-hover:text-gold-300 transition-colors">Fotograf Toruń</div>
-                            <p className="text-sm text-zinc-400">Sesje rodzinne, ślubne i portretowe w Toruniu.</p>
+                    <div className="grid grid-cols-1 border-y border-[#c8bbab] sm:grid-cols-2 lg:grid-cols-4 lg:divide-x lg:divide-[#c8bbab]">
+                        <Link href="/fotograf-torun" className="group block border-b border-[#c8bbab] p-7 transition hover:bg-white/50 sm:border-r lg:border-b-0 lg:border-r-0">
+                            <div className="mb-3 text-[10px] font-bold uppercase tracking-[.25em] text-[#94733d]">Toruń</div>
+                            <div className="mb-2 font-display text-2xl text-[#28221c] transition-colors group-hover:text-[#94733d]">Fotograf Toruń</div>
+                            <p className="text-sm leading-6 text-[#6f665d]">Sesje rodzinne, ślubne i portretowe w Toruniu.</p>
                         </Link>
-                        <Link href="/fotograf-grudziadz" className="group block p-5 bg-zinc-900/50 hover:bg-zinc-900 border border-white/5 hover:border-gold-500/30 rounded-lg transition-all">
-                            <div className="text-gold-400 text-xs font-bold tracking-widest uppercase mb-2">Grudziądz</div>
-                            <div className="text-white font-semibold mb-1 group-hover:text-gold-300 transition-colors">Fotograf Grudziądz</div>
-                            <p className="text-sm text-zinc-400">Sesje i reportaże realizowane w Grudziądzu.</p>
+                        <Link href="/fotograf-grudziadz" className="group block border-b border-[#c8bbab] p-7 transition hover:bg-white/50 lg:border-b-0">
+                            <div className="mb-3 text-[10px] font-bold uppercase tracking-[.25em] text-[#94733d]">Grudziądz</div>
+                            <div className="mb-2 font-display text-2xl text-[#28221c] transition-colors group-hover:text-[#94733d]">Fotograf Grudziądz</div>
+                            <p className="text-sm leading-6 text-[#6f665d]">Sesje i reportaże realizowane w Grudziądzu.</p>
                         </Link>
-                        <Link href="/sesja-rodzinna" className="group block p-5 bg-zinc-900/50 hover:bg-zinc-900 border border-white/5 hover:border-gold-500/30 rounded-lg transition-all">
-                            <div className="text-gold-400 text-xs font-bold tracking-widest uppercase mb-2">Rodzina</div>
-                            <div className="text-white font-semibold mb-1 group-hover:text-gold-300 transition-colors">Sesje rodzinne</div>
-                            <p className="text-sm text-zinc-400">Spokojne zdjęcia w plenerze, domu lub studiu.</p>
+                        <Link href="/sesja-rodzinna" className="group block border-b border-[#c8bbab] p-7 transition hover:bg-white/50 sm:border-b-0 sm:border-r lg:border-r-0">
+                            <div className="mb-3 text-[10px] font-bold uppercase tracking-[.25em] text-[#94733d]">Rodzina</div>
+                            <div className="mb-2 font-display text-2xl text-[#28221c] transition-colors group-hover:text-[#94733d]">Sesje rodzinne</div>
+                            <p className="text-sm leading-6 text-[#6f665d]">Spokojne zdjęcia w plenerze, domu lub studiu.</p>
                         </Link>
-                        <Link href="/slub" className="group block p-5 bg-zinc-900/50 hover:bg-zinc-900 border border-white/5 hover:border-gold-500/30 rounded-lg transition-all">
-                            <div className="text-gold-400 text-xs font-bold tracking-widest uppercase mb-2">Ślub</div>
-                            <div className="text-white font-semibold mb-1 group-hover:text-gold-300 transition-colors">Fotografia ślubna</div>
-                            <p className="text-sm text-zinc-400">Ceremonia, wesele i plener — wybierz potrzebny zakres.</p>
+                        <Link href="/slub" className="group block p-7 transition hover:bg-white/50">
+                            <div className="mb-3 text-[10px] font-bold uppercase tracking-[.25em] text-[#94733d]">Ślub</div>
+                            <div className="mb-2 font-display text-2xl text-[#28221c] transition-colors group-hover:text-[#94733d]">Fotografia ślubna</div>
+                            <p className="text-sm leading-6 text-[#6f665d]">Ceremonia, wesele i plener — wybierz potrzebny zakres.</p>
                         </Link>
                     </div>
                 </div>
             </section>
 
             {/* CTA Section and Contact Form */}
-            <section className="py-24 px-6 bg-gradient-to-br from-zinc-900 via-black to-zinc-900 border-t border-white/5 relative overflow-hidden group">
-                <div className="absolute inset-0 bg-[url('/noise.png')] opacity-20 mix-blend-overlay" />
-
-                {/* Animated background glow */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-gold-500/10 rounded-full blur-[100px] group-hover:bg-gold-500/20 transition-all duration-1000" />
+            <section className="group relative overflow-hidden bg-[#211d19] px-6 py-28 text-white md:py-40">
+                <Image src="/assets/slider/sesja-rodzinna-torun-plener-07.webp" alt="Rodzinna sesja fotograficzna w Toruniu" fill sizes="100vw" className="object-cover opacity-25 transition duration-[1600ms] group-hover:scale-[1.02]" />
+                <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(25,21,17,.94),rgba(25,21,17,.72),rgba(25,21,17,.88))]" />
 
                 <div className="relative container mx-auto text-center max-w-3xl">
-                    <h2 className="text-4xl md:text-5xl font-bold mb-6 font-display">
-                        Sprawdź pakiety i <span className="text-gold-400">wybierz termin</span>
+                    <p className="mb-5 text-xs font-bold uppercase tracking-[.32em] text-[#d4b77c]">Zróbmy pierwszy krok</p>
+                    <h2 className="mb-7 font-display text-5xl font-normal leading-[.9] tracking-[-.04em] md:text-8xl">
+                        Sprawdź pakiety<br />{' '}i <em className="font-light text-[#d4b77c]">wybierz termin</em>
                     </h2>
-                    <p className="text-xl text-zinc-400 mb-10 leading-relaxed">
+                    <p className="mx-auto mb-10 max-w-2xl text-base leading-8 text-white/70 md:text-lg">
                         Wybierz sesję, ślub lub rodzinne przyjęcie. Od razu zobaczysz zakres, cenę i dostępne daty, a rezerwację potwierdzisz online przez PayU.
                     </p>
                     <div className="flex flex-col sm:flex-row gap-5 justify-center">
                         <Link
                             href="/rezerwacja?source=home-bottom&service=Sesja"
-                            className="bg-gold-500 hover:bg-gold-400 text-black px-8 py-4 rounded-full font-bold text-lg transition-all transform hover:scale-105 shadow-lg shadow-gold-500/20"
+                            className="rounded-full border border-[#d4b77c] bg-[#d4b77c] px-8 py-4 text-xs font-bold uppercase tracking-[.15em] text-[#211d19] transition-all hover:border-white hover:bg-white"
                         >
                             Sprawdź pakiety i terminy
                         </Link>
                         <Link
                             href="/kontakt"
-                            className="bg-white/5 hover:bg-white/10 text-white px-8 py-4 rounded-full font-bold text-lg border border-white/10 hover:border-white/20 transition-all backdrop-blur-sm"
+                            className="rounded-full border border-white/35 bg-white/5 px-8 py-4 text-xs font-bold uppercase tracking-[.15em] text-white backdrop-blur-sm transition-all hover:border-white hover:bg-white/15"
                         >
                             Napisz do mnie
                         </Link>
@@ -1164,7 +1192,7 @@ export default function HomeContent({ heroSlides, sections, homeData, orderedSec
                 </div>
             </section>
 
-            <div className="bg-black py-20 border-t border-zinc-900">
+            <div className="home-contact border-t border-[#3a332b] bg-[#211d19] py-20">
                 <ContactForm />
             </div>
 

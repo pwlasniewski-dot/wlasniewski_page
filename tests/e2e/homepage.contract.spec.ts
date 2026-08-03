@@ -7,6 +7,7 @@ const root = join(__dirname, '../..');
 const pageSource = readFileSync(join(root, 'src/app/page.tsx'), 'utf8');
 const contentSource = readFileSync(join(root, 'src/app/HomeContent.tsx'), 'utf8');
 const heroSource = readFileSync(join(root, 'src/components/HeroSlider.tsx'), 'utf8');
+const homepageAdminSource = readFileSync(join(root, 'src/app/admin/pages/strona-glowna/page.tsx'), 'utf8');
 
 test('renders meaningful hero HTML before client hydration', () => {
     const html = execFileSync(
@@ -28,7 +29,7 @@ test('keeps one semantic homepage heading and honors reduced motion', () => {
     expect(heroSource).toContain('useReducedMotion');
     expect(heroSource).not.toContain('if (!mounted)');
     expect(contentSource).not.toContain('<h1');
-    expect(heroSource).toContain('h-[68svh]');
+    expect(heroSource).toContain('h-[100svh]');
     expect(heroSource).toContain('/assets/slider/fotografia-rodzinna-grudziadz-01.webp');
     expect(contentSource).not.toMatch(/od \d+ zł/);
     expect(contentSource).toContain('Aktualne pakiety i ceny');
@@ -37,7 +38,10 @@ test('keeps one semantic homepage heading and honors reduced motion', () => {
 test('falls back safely when homepage CMS is unavailable and exposes social metadata', () => {
     expect(pageSource).toContain('Metadata CMS unavailable, using defaults');
     expect(pageSource).toContain('CMS unavailable, rendering resilient homepage fallback');
-    expect(pageSource).toContain("return { page: null, testimonials: [] }");
+    expect(pageSource).toContain('cmsUnavailable = true');
+    expect(pageSource).toContain('testimonialsUnavailable = true');
+    expect(pageSource).toContain('orderedSections.length === 0 && (cmsUnavailable || sectionParseFailed)');
+    expect(pageSource).toContain('testimonials={testimonialsUnavailable');
     expect(pageSource).toContain('openGraph:');
     expect(pageSource).toContain('twitter:');
     expect(pageSource).toContain("alternates: { canonical: 'https://wlasniewski.pl/' }");
@@ -50,10 +54,25 @@ test('promotes the public guide with a canonical internal link and a dedicated l
     const giftCardPosition = contentSource.indexOf('Karta podarunkowa na sesję');
 
     expect(pageSource).toContain("/images/home/session-guide-family-v2.webp");
-    expect(contentSource).toContain('bg-[#f5efe5]');
+    expect(contentSource).toContain('bg-[#211d19]');
     expect(contentSource).toContain('href="/jak-sie-ubrac"');
     expect(contentSource).not.toContain('/jak-sie-ubrac?source=home-guide');
     expect(dynamicSectionsPosition).toBeGreaterThan(-1);
     expect(guidePosition).toBeGreaterThan(dynamicSectionsPosition);
     expect(giftCardPosition).toBeGreaterThan(guidePosition);
+});
+
+test('keeps CMS copy authoritative and lets editors provide responsive service-card images', () => {
+    expect(pageSource).toContain('slide?.title?.trim() || copy.title');
+    expect(pageSource).toContain('slide?.subtitle?.trim() || copy.subtitle');
+    expect(pageSource).toContain('slide?.description ||');
+    expect(pageSource).toContain('slide?.buttonText?.trim() || slide?.button_text?.trim() || copy.buttonText');
+
+    expect(contentSource).toContain('homeData?.service_cards');
+    expect(contentSource).toContain('<source media="(max-width: 767px)" srcSet={item.image_mobile}');
+    expect(contentSource).toContain('objectPosition: item.image_position ||');
+
+    expect(homepageAdminSource).toContain('service_cards: serviceCards');
+    expect(homepageAdminSource).toContain("openMediaPicker('service_card', index, 'image_mobile')");
+    expect(homepageAdminSource).toContain('Kafle oferty pod Hero');
 });
