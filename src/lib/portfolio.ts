@@ -84,7 +84,8 @@ function groupSessionsByCategory(sessions: any[]): DynamicCategory[] {
             description: session.description || '',
             location: session.location || '',
             category: finalSlug,
-            date: session.date
+            date: session.date,
+            isCategoryHero: Boolean(session.isCategoryHero),
         });
 
         category.imageCount += photoCount;

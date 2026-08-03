@@ -1,5 +1,12 @@
 # PROJECT_HISTORIA & VADEMECUM STABILNOŚCI
 
+## 2026-08-03 — Dwa przełączane układy strony Portfolio
+
+- Publiczne `/portfolio` otrzymało dwa kompletne warianty: jasne „Edytorskie rozdziały” oraz ciemny „Kontakt filmowy”. Administrator przełącza je w panelu Portfolio bez kopiowania sesji ani plików Amazon S3.
+- Strona główna prowadzi teraz z każdej karty usługi zarówno do wybranych historii Portfolio, jak i do właściwego cennika/rezerwacji.
+- Uszczelniono publiczne adresy sesji: szkice nie są renderowane, kategoria musi odpowiadać sesji, a canonical i Open Graph wskazują jeden właściwy URL.
+- Zmiany sesji i układu odświeżają cache Portfolio natychmiast; istniejące oznaczenie okładki kategorii ponownie jest zachowywane przez mapper danych.
+
 ## 2026-08-03 — Pełny redakcyjny redesign strony głównej
 
 - Pełne teksty i fotografie opublikowanej strony zostały wplecione w nowy układ przez istniejące typy bloków CMS: Magazine Layout, Narrative Text, Stories Grid, Opinie i Parallax; administrator nadal edytuje każde pole w przypisanym edytorze.

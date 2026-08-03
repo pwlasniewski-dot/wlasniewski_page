@@ -2,6 +2,13 @@
 
 Ten dokument stanowi kompleksowy opis funkcjonalności oraz logiki biznesowej platformy **FOTO-DRON Przemysław Właśniewski**. Dokumentacja została opracowana na podstawie audytu technicznego przeprowadzonego w grudniu 2025 r. Szczegóły techniczne dotyczące infrastruktury i wzorców projektowych znajdują się w dokumencie [ARCHITECTURE.md](file:///c:/Strona-fotografa/ARCHITECTURE.md).
 
+## Aktualizacja 2026-08-03 — wybieralny wygląd Portfolio
+
+- Panel `/admin/portfolio` udostępnia dwa globalne wyglądy strony głównej Portfolio: „Edytorskie rozdziały” i „Kontakt filmowy”. Aktywny wariant jest jednoznacznie oznaczony, a zmiana działa jednym kliknięciem.
+- Oba warianty używają tej samej listy opublikowanych sesji, okładek i plików S3. Przełączenie wyglądu nie duplikuje ani nie usuwa zdjęć.
+- Sesja publiczna jest dostępna tylko po opublikowaniu i pod własną kategorią. Tytuł oraz opis SEO sesji korzystają z pól `meta_title` i `meta_description`.
+- Karty usług strony głównej mają osobne wejście do zdjęć Portfolio oraz zachowany link do pakietów i rezerwacji.
+
 ## Aktualizacja 2026-08-03 — artystyczna strona główna
 
 - Teksty produkcyjne pozostają rozdzielone na edytowalne bloki: wstęp i historia w `magazine_layout`, komunia w `narrative_text`, reportaże w `stories_grid`, opinie w osobnym module oraz cytat fotograficzny w `parallax`.

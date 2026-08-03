@@ -1033,7 +1033,7 @@ export default function HomeContent({ heroSlides, sections, homeData, orderedSec
                     </div>
                     <div className="grid gap-4 md:grid-cols-12 md:gap-5">
                         {serviceCards.map((item, index) => (
-                            <Link key={item.title} href={item.href} className={`group relative min-h-[420px] overflow-hidden rounded-[2px] bg-[#28221c] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#94733d] ${index === 0 ? 'md:col-span-5 md:min-h-[620px]' : index === 1 ? 'md:col-span-7 md:min-h-[620px]' : 'md:col-span-12 md:min-h-[480px]'}`}>
+                            <article key={item.title} className={`group relative min-h-[420px] overflow-hidden rounded-[2px] bg-[#28221c] ${index === 0 ? 'md:col-span-5 md:min-h-[620px]' : index === 1 ? 'md:col-span-7 md:min-h-[620px]' : 'md:col-span-12 md:min-h-[480px]'}`}>
                                 <picture className="absolute inset-0 block">
                                     {item.image_mobile && <source media="(max-width: 767px)" srcSet={item.image_mobile} />}
                                     <img
@@ -1048,12 +1048,20 @@ export default function HomeContent({ heroSlides, sections, homeData, orderedSec
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-black/5" />
                                 <div className="absolute inset-x-0 bottom-0 p-7 text-white sm:p-9 lg:p-11">
                                     <div className="mb-4 flex items-center gap-3 text-[10px] font-bold uppercase tracking-[.25em] text-[#ead5ab]"><span>{String(index + 1).padStart(2, '0')}</span><span className="h-px w-8 bg-[#ead5ab]/60"/><span>{item.label}</span></div>
-                                    <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
-                                        <div><h3 className="font-display text-4xl font-normal leading-none sm:text-5xl lg:text-6xl">{item.title}</h3><p className="mt-4 max-w-lg text-sm leading-6 text-white/70">{item.copy}</p></div>
-                                        <span className="shrink-0 text-xs font-bold uppercase tracking-[.14em] text-[#ead5ab]">{publicPriceLabels[item.service] || fallbackPublicPriceLabel} <ArrowRight className="ml-2 inline" size={16}/></span>
+                                    <div className="flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
+                                        <div>
+                                            <Link href="/portfolio#wybrane-historie" className="rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#ead5ab]">
+                                                <h3 className="font-display text-4xl font-normal leading-none transition group-hover:text-[#f4dfb6] sm:text-5xl lg:text-6xl">{item.title}</h3>
+                                            </Link>
+                                            <p className="mt-4 max-w-lg text-sm leading-6 text-white/70">{item.copy}</p>
+                                        </div>
+                                        <div className="flex shrink-0 flex-col items-start gap-3 sm:items-end">
+                                            <Link href="/portfolio#wybrane-historie" className="text-[10px] font-bold uppercase tracking-[.16em] text-white/75 transition hover:text-white">Zobacz zdjęcia <ArrowRight className="ml-1 inline" size={14}/></Link>
+                                            <Link href={item.href} className="text-xs font-bold uppercase tracking-[.14em] text-[#ead5ab] transition hover:text-white">{publicPriceLabels[item.service] || fallbackPublicPriceLabel} <ArrowRight className="ml-2 inline" size={16}/></Link>
+                                        </div>
                                     </div>
                                 </div>
-                            </Link>
+                            </article>
                         ))}
                     </div>
                 </div>

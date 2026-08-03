@@ -125,7 +125,11 @@ export default function EditSessionPage() {
 
     const fetchSession = async () => {
         try {
-            const res = await fetch(`${getApiUrl('portfolio')}`);
+            const token = localStorage.getItem('admin_token');
+            const res = await fetch(`${getApiUrl('portfolio')}`, {
+                headers: token ? { 'Authorization': `Bearer ${token}` } : undefined,
+                cache: 'no-store',
+            });
             const data = await res.json();
 
             if (data.success) {

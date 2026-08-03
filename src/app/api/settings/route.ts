@@ -94,6 +94,16 @@ export async function POST(request: NextRequest) {
         try {
             const body = await request.json();
 
+            if (
+                Object.prototype.hasOwnProperty.call(body, 'portfolio_index_layout') &&
+                !['chapters', 'cinematic_contact'].includes(body.portfolio_index_layout)
+            ) {
+                return NextResponse.json(
+                    { success: false, error: 'Nieobsługiwany układ strony Portfolio' },
+                    { status: 400 }
+                );
+            }
+
             // Separate specific columns from generic key/value pairs
             const columnFields = [
                 'parallax_home_1', 'parallax_home_2',
@@ -259,6 +269,7 @@ export async function POST(request: NextRequest) {
             // Revalidate everything since layout includes analytics, logo, etc.
             const { revalidatePath } = await import('next/cache');
             revalidatePath('/', 'layout');
+            revalidatePath('/portfolio', 'layout');
 
             return NextResponse.json({ success: true, message: 'Settings updated' });
         } catch (error) {

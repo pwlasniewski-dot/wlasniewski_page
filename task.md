@@ -1,5 +1,16 @@
 # Aktualny plan prac
 
+## 2026-08-03 — dwa warianty Portfolio zarządzane z admina
+
+- [x] Wariant 01 „Edytorskie rozdziały” spójny z nową stroną główną.
+- [x] Wariant 02 „Kontakt filmowy” dla dynamicznego reportażu.
+- [x] Globalny przełącznik wyglądu w `/admin/portfolio`, bez duplikacji zdjęć S3.
+- [x] Połączenie kart usług strony głównej z Portfolio i zachowanie linków sprzedażowych.
+- [x] Ochrona szkiców, poprawne kategorie, canonical i metadata sesji.
+- [x] Natychmiastowe odświeżanie cache po zmianach sesji i wyglądu.
+- [x] Lint zmienionych ekranów oraz pełny build produkcyjny PASS.
+- [ ] Niezależny odbiór QA i akceptacja właściciela przed commitem.
+
 ## 2026-08-03 — pełny redesign strony głównej
 
 - [x] Pełne treści z produkcji wplecione w redakcyjny układ przez istniejące, edytowalne bloki CMS.

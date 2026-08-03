@@ -27,6 +27,7 @@ export default function CategoryFullSlider({ sessions, title, description }: Cat
                 image: photo,
                 title: s.title,
                 slug: s.slug,
+                category: s.category,
                 date: s.date,
                 photoCount: s.photos?.length || 0,
                 isHighlight: true
@@ -38,6 +39,7 @@ export default function CategoryFullSlider({ sessions, title, description }: Cat
             image: s.coverImage,
             title: s.title,
             slug: s.slug,
+            category: s.category,
             date: s.date,
             photoCount: s.photos?.length || 0,
             isHighlight: false
@@ -88,7 +90,7 @@ export default function CategoryFullSlider({ sessions, title, description }: Cat
                     className="absolute inset-0 w-full h-full overflow-hidden"
                 >
                     {/* The Clickable Link Wrapper */}
-                    <Link href={`/portfolio/sesja/${slide.slug}`} className="block w-full h-full cursor-pointer relative">
+                    <Link href={`/portfolio/${encodeURIComponent(slide.category)}/${encodeURIComponent(slide.slug)}`} className="block w-full h-full cursor-pointer relative">
 
                         {/* Layer 1: Blurred Background (Visible if contain mode, or if cover mode doesn't load/fill perfectly) */}
                         <div
@@ -149,7 +151,7 @@ export default function CategoryFullSlider({ sessions, title, description }: Cat
 
                         <div className="flex items-center gap-6 mt-6 pointer-events-auto">
                             <Link
-                                href={`/portfolio/sesja/${slide.slug}`}
+                                href={`/portfolio/${encodeURIComponent(slide.category)}/${encodeURIComponent(slide.slug)}`}
                                 className="inline-flex items-center gap-2 px-8 py-3 bg-white text-black font-bold uppercase tracking-wide text-sm hover:bg-gold-400 transition-all duration-300 transform hover:scale-105"
                             >
                                 <Camera className="w-4 h-4" />

@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { requireAuth, withAuth } from '@/lib/auth/middleware';
+import { revalidatePath, revalidateTag } from 'next/cache';
+
+function revalidatePortfolio() {
+    revalidateTag('portfolio');
+    revalidateTag('portfolio-sessions');
+    revalidatePath('/portfolio', 'layout');
+}
 
 // Helper to normalize Polish characters in slugs
 function slugify(text: string) {
@@ -122,6 +129,8 @@ export async function POST(request: NextRequest) {
                 updated_at: session.updated_at.toISOString(),
             };
 
+            revalidatePortfolio();
+
             return NextResponse.json({ success: true, session: serializedSession });
         } catch (error: any) {
             console.error('Create session error:', error);
@@ -185,6 +194,8 @@ export async function PUT(request: NextRequest) {
                 updated_at: session.updated_at.toISOString(),
             };
 
+            revalidatePortfolio();
+
             return NextResponse.json({ success: true, session: serializedSession });
         } catch (error: any) {
             console.error('Update session error:', error);
@@ -207,6 +218,8 @@ export async function DELETE(request: NextRequest) {
             await prisma.portfolioSession.delete({
                 where: { id: parseInt(id) }
             });
+
+            revalidatePortfolio();
 
             return NextResponse.json({ success: true });
         } catch (error: any) {

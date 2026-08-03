@@ -20,9 +20,10 @@ interface PortfolioContentProps {
     showFallbackHero?: boolean;
     customHeroSlides?: any[];
     isSessionMode?: boolean;
+    sectionsOnly?: boolean;
 }
 
-export default function PortfolioContent({ categories, sections, fallbackHeroSlides, showFallbackHero = false, customHeroSlides = [], isSessionMode = false }: PortfolioContentProps) {
+export default function PortfolioContent({ categories, sections, fallbackHeroSlides, showFallbackHero = false, customHeroSlides = [], isSessionMode = false, sectionsOnly = false }: PortfolioContentProps) {
 
     // Helper to render dynamic sections (reused logic)
     const renderSection = (section: any) => {
@@ -94,6 +95,10 @@ export default function PortfolioContent({ categories, sections, fallbackHeroSli
     // Check if there are any "Hero" like sections
     const hasHero = sections.some(s => s.type === 'hero_parallax' || s.type === 'parallax' || s.type === 'creative_slider');
 
+    if (sectionsOnly) {
+        return <div className="portfolio-cms-sections">{sections.map(section => renderSection(section))}</div>;
+    }
+
     return (
         <main className="min-h-screen bg-black text-white selection:bg-gold-500 selection:text-black relative z-0">
 
@@ -137,7 +142,9 @@ export default function PortfolioContent({ categories, sections, fallbackHeroSli
                     {categories.map((category, index) => (
                         <Link
                             key={category.slug}
-                            href={isSessionMode ? `/portfolio/sesja/${category.slug}` : `/portfolio/${category.slug}`}
+                            href={isSessionMode
+                                ? `/portfolio/${encodeURIComponent(category.category || 'sesja')}/${encodeURIComponent(category.slug)}`
+                                : `/portfolio/${encodeURIComponent(category.slug)}`}
                             className="group relative block w-full overflow-hidden"
                         >
                             {/* Wrapper for aspect ratio / sizing */}

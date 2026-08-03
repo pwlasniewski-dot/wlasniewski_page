@@ -2,6 +2,13 @@
 
 Ten dokument stanowi techniczny blueprint platformy fotograficznej wlasniewski.pl. Jest on przeznaczony dla senior deweloperów i architektów systemowych, opisując strukturę, wzorce projektowe oraz krytyczne protokoły bezpieczeństwa.
 
+## Aktualizacja 2026-08-03 — architektura indeksu Portfolio
+
+- `PortfolioIndexViews` jest wspólnym rendererem dwóch układów indeksu; otrzymuje ten sam kontrakt danych kategorii/sesji i nie ingeruje w źródła mediów.
+- Wybrany wariant przechowuje rekord KV `Setting.setting_key=portfolio_index_layout` z walidowanymi wartościami `chapters` albo `cinematic_contact`; brak ustawienia bezpiecznie wybiera `chapters`.
+- Zapis przez chronione `/api/settings` unieważnia `/portfolio`. Operacje CRUD sesji unieważniają tagi `portfolio`, `portfolio-sessions` oraz ścieżkę indeksu.
+- Trasa szczegółu filtruje po `slug`, kategorii bez rozróżnienia wielkości znaków oraz `is_published=true`, co usuwa alternatywne adresy i publiczne renderowanie szkiców.
+
 ## Aktualizacja 2026-08-03 — warstwa wizualna homepage 2026
 
 - `page.tsx` preferuje `Page.sections`, następnie legacy `home_sections`, a dopiero przy braku obu używa `homepageProductionFallback`; ta kolejność gwarantuje nadrzędność edytowalnych danych CMS.

@@ -107,7 +107,10 @@ export default async function CategoryPage({ params }: Props) {
     return (
         <main className="min-h-screen bg-black">
             {layout === 'column' ? (
-                <CategoryColumnView sessions={category.sessions} />
+                <>
+                    <h1 className="sr-only">{category.title} — portfolio fotograficzne</h1>
+                    <CategoryColumnView sessions={category.sessions} />
+                </>
             ) : (
                 <CategoryFullSlider
                     sessions={category.sessions}

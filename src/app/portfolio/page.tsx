@@ -1,7 +1,7 @@
 import React from "react";
-import Link from "next/link";
 import { getPortfolioCategories } from "@/lib/portfolio";
 import type { Metadata } from "next";
+import PortfolioIndexViews, { type PortfolioIndexLayout } from "@/components/portfolio/PortfolioIndexViews";
 import PortfolioContent from "./PortfolioContent";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -27,102 +27,117 @@ export async function generateMetadata(): Promise<Metadata> {
 export const dynamic = 'force-dynamic';
 
 export default async function PortfolioHome() {
-    // 1. Fetch Categories and Flatten to Hero Sessions
     const categories = await getPortfolioCategories();
-
-    // Flatten logic: Extract all sessions that are marked as hero
-    // We Map them to a structure compatible with the view
     const heroSessions = categories.flatMap(cat => cat.sessions)
-        .filter(session => session.isCategoryHero === true) // Strict check
+        .filter(session => session.isCategoryHero === true)
         .map(session => ({
-            slug: session.slug, // Link to session, not category
+            slug: session.slug,
             title: session.title,
             coverImage: session.coverImage,
             imageCount: session.imageCount,
-            id: session.id
+            id: session.id,
+            category: session.category,
+            description: session.description,
         }));
 
-    // Fallback: If no hero sessions defined, maybe show categories?
-    // User requirement: "If 10 sessions, show 10". If 0, show 0?
-    // Let's assume if 0 hero sessions, we might fall back to categories to not show empty page.
-    // BUT user was specific about "Okładka kategorii".
-    // If heroSessions is empty, we fall back to old behavior?
-    // Let's keep it consistent: always pass the items list.
     const displayItems = heroSessions.length > 0 ? heroSessions : categories;
     const isSessionMode = heroSessions.length > 0;
-
-    // 2. Fetch Page Logic (Portfolio & Homepage for fallback)
     const prisma = (await import("@/lib/db/prisma")).default;
 
-    // Fetch Portfolio Page Data
-    const portfolioPage = await prisma.page.findUnique({
-        where: { slug: 'portfolio' },
-        select: {
-            sections: true,
-            content_images: true
-        }
-    });
+    const [portfolioPage, layoutSetting, homePage] = await Promise.all([
+        prisma.page.findUnique({
+            where: { slug: 'portfolio' },
+            select: { content_images: true, sections: true, hero_subtitle: true }
+        }),
+        prisma.setting.findUnique({
+            where: { setting_key: 'portfolio_index_layout' },
+            select: { setting_value: true }
+        }),
+        prisma.page.findUnique({
+            where: { slug: 'strona-glowna' },
+            select: { home_sections: true }
+        }),
+    ]);
 
-    // Fetch Homepage Data (for fallback Hero Slider)
-    const homePage = await prisma.page.findUnique({
-        where: { slug: 'strona-glowna' },
-        select: {
-            home_sections: true
-        }
-    });
+    const layout: PortfolioIndexLayout = layoutSetting?.setting_value === 'cinematic_contact'
+        ? 'cinematic_contact'
+        : 'chapters';
 
-    // Parse Portfolio Dynamic Sections
-    let portfolioSections: any[] = [];
-    if (portfolioPage?.sections) {
-        try {
-            portfolioSections = JSON.parse(portfolioPage.sections);
-        } catch (e) {
-            console.error("Failed to parse portfolio sections", e);
-        }
-    }
-
-    // Parse Custom Portfolio Hero Slides (saved in content_images via Admin)
-    let customHeroSlides: any[] = [];
+    let customHero: { image?: string; title?: string } = {};
+    let heroSlides: Array<{ id?: string | number; image?: string; image_desktop?: string; image_mobile?: string; title?: string; enabled?: boolean }> = [];
     if (portfolioPage?.content_images) {
         try {
             const parsed = JSON.parse(portfolioPage.content_images);
+            const firstEnabled = Array.isArray(parsed) ? parsed.find((item: any) => item?.enabled !== false) : null;
             if (Array.isArray(parsed)) {
-                customHeroSlides = parsed.map((s: any, i: number) => ({
-                    id: s.id || `custom-${i}`,
-                    image: s.url || s.image,
-                    title: s.title || "",
-                    subtitle: "",
-                    buttonText: s.buttonText || "Zobacz Galerię",
-                    buttonLink: "#portfolio-content",
-                    buttonStyle: s.buttonStyle || 'gold',
-                    enabled: true,
-                    textAnimation: 'fade'
-                }));
+                heroSlides = parsed.map((item: any, index: number) => {
+                    const rawImage = item.url || item.image;
+                    const rawDesktop = item.image_desktop;
+                    const rawMobile = item.image_mobile;
+                    return {
+                        id: item.id || `portfolio-hero-${index}`,
+                        image: typeof rawImage === 'string' ? rawImage : rawImage?.file_path,
+                        image_desktop: typeof rawDesktop === 'string' ? rawDesktop : rawDesktop?.file_path,
+                        image_mobile: typeof rawMobile === 'string' ? rawMobile : rawMobile?.file_path,
+                        title: item.title,
+                        enabled: item.enabled,
+                    };
+                });
             }
-        } catch (e) {
-            console.error("Failed to parse custom portfolio slides", e);
+            if (firstEnabled) {
+                customHero = {
+                    image: firstEnabled.url || firstEnabled.image,
+                    title: firstEnabled.title || undefined,
+                };
+            }
+        } catch (error) {
+            console.warn('[portfolio] Nie udało się odczytać niestandardowej okładki.', error);
         }
     }
 
-    // Parse Homepage Data for Fallback Helper
-    let homeData: any = null;
-    if (homePage?.home_sections) {
+    if (heroSlides.filter(slide => slide.enabled !== false && (slide.image_desktop || slide.image)).length === 0 && portfolioPage?.hero_subtitle === '1' && homePage?.home_sections) {
         try {
-            homeData = JSON.parse(homePage.home_sections);
-        } catch (e) { console.error("Failed to parse home sections", e); }
+            const parsedHome = JSON.parse(homePage.home_sections);
+            const fallbackSlides = Array.isArray(parsedHome?.hero_slider) ? parsedHome.hero_slider : [];
+            heroSlides = fallbackSlides.map((item: any, index: number) => ({
+                id: item.id || `home-hero-${index}`,
+                    image: typeof item.image === 'string' ? item.image : item.image?.file_path,
+                    image_desktop: typeof item.image_desktop === 'string' ? item.image_desktop : item.image_desktop?.file_path,
+                    image_mobile: typeof item.image_mobile === 'string' ? item.image_mobile : item.image_mobile?.file_path,
+                title: item.title,
+                enabled: item.enabled,
+            }));
+        } catch (error) {
+            console.warn('[portfolio] Nie udało się odczytać zapasowych slajdów strony głównej.', error);
+        }
+    }
+
+    let portfolioSections: any[] = [];
+    if (portfolioPage?.sections) {
+        try {
+            const parsedSections = JSON.parse(portfolioPage.sections);
+            portfolioSections = Array.isArray(parsedSections) ? parsedSections : [];
+        } catch (error) {
+            console.warn('[portfolio] Nie udało się odczytać bloków CMS.', error);
+        }
     }
 
     return (
-        <>
-            <h1 className="sr-only">Portfolio fotograficzne — sesje ślubne, rodzinne i portretowe</h1>
-            <PortfolioContent
-                categories={displayItems}
-                sections={portfolioSections}
-                fallbackHeroSlides={homeData?.hero_slider || []}
-                showFallbackHero={portfolioPage?.hero_subtitle === '1'}
-                customHeroSlides={customHeroSlides}
-                isSessionMode={isSessionMode}
-            />
-        </>
+        <PortfolioIndexViews
+            items={displayItems}
+            layout={layout}
+            isSessionMode={isSessionMode}
+            heroImage={customHero.image}
+            heroTitle={customHero.title}
+            heroSlides={heroSlides}
+            supplementalContent={portfolioSections.length > 0 ? (
+                <PortfolioContent
+                    categories={[]}
+                    sections={portfolioSections}
+                    fallbackHeroSlides={[]}
+                    sectionsOnly
+                />
+            ) : null}
+        />
     );
 }

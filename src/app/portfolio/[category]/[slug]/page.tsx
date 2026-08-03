@@ -1,7 +1,4 @@
-import { notFound } from 'next/navigation';
-import { getCategory } from '@/lib/portfolio';
-import { getApiUrl } from '@/lib/api-config';
-import Image from 'next/image';
+import { notFound, permanentRedirect } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import LightboxGallery from '@/components/LightboxGallery';
@@ -16,16 +13,23 @@ type Props = {
 export const revalidate = 3600;
 
 export async function generateMetadata({ params }: Props) {
-    const { slug } = await params;
+    const { category, slug } = await params;
+    const decodedCategory = decodeURIComponent(category);
     
     try {
         const prisma = (await import('@/lib/db/prisma')).default;
-        const session = await prisma.portfolioSession.findUnique({
-            where: { slug },
+        let session = await prisma.portfolioSession.findFirst({
+            where: {
+                slug,
+                category: { equals: decodedCategory, mode: 'insensitive' },
+                is_published: true,
+            },
             select: {
                 title: true,
                 description: true,
                 category: true,
+                meta_title: true,
+                meta_description: true,
                 cover_image: {
                     select: {
                         file_path: true
@@ -34,9 +38,24 @@ export async function generateMetadata({ params }: Props) {
             }
         });
 
+        if (!session && decodedCategory.toLowerCase() === 'sesja') {
+            session = await prisma.portfolioSession.findFirst({
+                where: { slug, is_published: true },
+                select: {
+                    title: true,
+                    description: true,
+                    category: true,
+                    meta_title: true,
+                    meta_description: true,
+                    cover_image: { select: { file_path: true } },
+                },
+            });
+        }
+
         if (!session) {
             return {
                 title: 'Sesja nie znaleziona',
+                robots: { index: false, follow: false },
             };
         }
 
@@ -44,17 +63,17 @@ export async function generateMetadata({ params }: Props) {
         const coverImageUrl = session.cover_image?.file_path || null;
 
         return {
-            title: `${session.title} | Portfolio`,
-            description: session.description || `Zobacz zdjęcia z sesji: ${session.title}`,
+            title: session.meta_title || `${session.title} | Portfolio`,
+            description: session.meta_description || session.description || `Zobacz zdjęcia z sesji: ${session.title}`,
             alternates: {
-                canonical: `${baseUrl}/portfolio/${session.category}/${slug}`,
+                canonical: `${baseUrl}/portfolio/${encodeURIComponent(session.category)}/${encodeURIComponent(slug)}`,
             },
             robots: { index: true, follow: true },
             openGraph: {
                 title: session.title,
                 description: session.description || `Zobacz zdjęcia z sesji: ${session.title}`,
                 type: 'website',
-                url: `${baseUrl}/portfolio/${session.category}/${slug}`,
+                url: `${baseUrl}/portfolio/${encodeURIComponent(session.category)}/${encodeURIComponent(slug)}`,
                 images: coverImageUrl ? [{
                     url: coverImageUrl.startsWith('http') ? coverImageUrl : `${baseUrl}${coverImageUrl}`,
                     width: 1200,
@@ -75,6 +94,7 @@ export async function generateStaticParams() {
     try {
         const prisma = (await import('@/lib/db/prisma')).default;
         const sessions = await prisma.portfolioSession.findMany({
+            where: { is_published: true },
             select: {
                 slug: true,
                 category: true
@@ -97,11 +117,14 @@ export default async function SessionPage({ params }: Props) {
 
     // Fetch session directly from database
     let session = null;
+    let legacyRedirectUrl: string | null = null;
     try {
         const prisma = (await import('@/lib/db/prisma')).default;
-        const dbSession = await prisma.portfolioSession.findUnique({
+        const dbSession = await prisma.portfolioSession.findFirst({
             where: {
-                slug: slug
+                slug,
+                category: { equals: decodeURIComponent(category), mode: 'insensitive' },
+                is_published: true,
             },
             include: {
                 cover_image: true
@@ -116,8 +139,22 @@ export default async function SessionPage({ params }: Props) {
                 cover_image_url: dbSession.cover_image?.file_path || null,
             };
         }
+
+        if (!dbSession && decodeURIComponent(category).toLowerCase() === 'sesja') {
+            const legacySession = await prisma.portfolioSession.findFirst({
+                where: { slug, is_published: true },
+                select: { category: true },
+            });
+            if (legacySession) {
+                legacyRedirectUrl = `/portfolio/${encodeURIComponent(legacySession.category)}/${encodeURIComponent(slug)}`;
+            }
+        }
     } catch (error) {
         console.error('Failed to fetch session from DB', error);
+    }
+
+    if (legacyRedirectUrl) {
+        permanentRedirect(legacyRedirectUrl);
     }
 
     if (!session) {
@@ -163,10 +200,10 @@ export default async function SessionPage({ params }: Props) {
 
     return (
         <main className="min-h-screen bg-black text-white">
-            <h1 className="sr-only">{session.title} — portfolio fotograficzne</h1>
             {/* Hero Section Wrapper for Overlay */}
             <div className="relative">
                 <HeroSlider
+                    documentTitle={`${session.title} — portfolio fotograficzne`}
                     slides={[
                         // Cover Image as first slide
                         ...(session.cover_image_url ? [{
