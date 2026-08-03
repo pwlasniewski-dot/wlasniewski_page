@@ -44,6 +44,7 @@ interface HeroSlide {
     enabled: boolean;
     order: number;
     textAnimation?: 'fade' | 'slide-up' | 'slide-down' | 'scale' | 'bounce' | 'zoom-in';
+    shader?: 'subtle' | 'cinematic' | 'deep';
 }
 
 interface Feature {
@@ -365,6 +366,41 @@ export default function HomepageManager() {
             .filter(s => s.enabled !== false)
             .forEach((section, idx) => {
                 const base = `${section.label || section.type} #${idx + 1}`;
+                const richTextSources: Array<{ label: string; html?: string }> = [
+                    { label: 'treść', html: (section as any)?.data?.content },
+                    { label: 'opis', html: (section as any)?.data?.description },
+                    { label: 'tekst', html: (section as any)?.data?.text },
+                    { label: 'opis mini galerii', html: (section as any)?.data?.mini_gallery_config?.description },
+                ];
+
+                (((section as any)?.data?.blocks || []) as Array<{ content?: string }>).forEach((block, blockIdx) => {
+                    richTextSources.push({ label: `blok treści #${blockIdx + 1}`, html: block.content });
+                });
+
+                richTextSources.forEach(source => {
+                    if (!source.html) return;
+                    const headingPattern = /<h([1-3])[^>]*>([\s\S]*?)<\/h\1>/gi;
+                    let match: RegExpExecArray | null;
+                    let headingIdx = 0;
+
+                    while ((match = headingPattern.exec(source.html)) !== null) {
+                        const level = `H${match[1]}` as HeadingAuditRow['level'];
+                        const title = stripHtml(match[2]);
+                        if (!title) continue;
+                        headingIdx += 1;
+                        const location = `${base}: ${source.label}, nagłówek #${headingIdx}`;
+                        const suggestion = suggestHeading(title, location, level);
+                        rows.push({
+                            location,
+                            level,
+                            current: title,
+                            shouldBe: suggestion.text,
+                            keywordHint: level === 'H1'
+                                ? 'zmień na H2 — strona ma już jeden główny H1'
+                                : suggestion.hint,
+                        });
+                    }
+                });
 
                 if (section.type === 'testimonials') {
                     const title = trimText((section as any)?.data?.title);
@@ -771,6 +807,32 @@ export default function HomepageManager() {
         setMediaPickerOpen(true);
     };
 
+    const closeMediaPicker = () => {
+        if (currentPickerTarget?.type === 'rte') {
+            const target = currentPickerTarget;
+            const marker = /<span data-rte-image-marker=(?:"true"|'true')><\/span>/gi;
+
+            setSections(current => current.map((section, sectionIndex) => {
+                if (sectionIndex !== target.index) return section;
+
+                const data = { ...(section.data || {}) } as any;
+                if (target.subIndex !== undefined && Array.isArray(data.blocks)) {
+                    data.blocks = data.blocks.map((block: any, blockIndex: number) => blockIndex === target.subIndex
+                        ? { ...block, content: (block.content || '').replace(marker, '') }
+                        : block);
+                } else {
+                    const fieldName = target.field || 'content';
+                    data[fieldName] = (data[fieldName] || '').replace(marker, '');
+                }
+
+                return { ...section, data };
+            }));
+        }
+
+        setMediaPickerOpen(false);
+        setCurrentPickerTarget(null);
+    };
+
     const handleMediaSelect = (url: string | string[]) => {
         const filePath = Array.isArray(url) ? url[0] : url;
         const filePaths = Array.isArray(url) ? url : [url];
@@ -813,15 +875,19 @@ export default function HomepageManager() {
             const section = updated[currentPickerTarget.index];
             const fieldName = currentPickerTarget.field || 'content';
 
-            // Handle inserting image into content string
+            // Insert at the cursor marker left by RichTextEditor; append only as a legacy fallback.
             const imgTag = `<img src="${filePath}" alt="" class="max-w-full h-auto rounded-lg my-4" />`;
+            const insertAtMarker = (content: string) => {
+                const marker = /<span data-rte-image-marker=(?:"true"|'true')><\/span>/i;
+                return marker.test(content) ? content.replace(marker, imgTag) : content + imgTag;
+            };
 
             if (currentPickerTarget.subIndex !== undefined && (section.data as any).blocks) {
                 const currentBlockContent = (section.data as any).blocks[currentPickerTarget.subIndex].content || '';
-                (section.data as any).blocks[currentPickerTarget.subIndex].content = currentBlockContent + imgTag;
+                (section.data as any).blocks[currentPickerTarget.subIndex].content = insertAtMarker(currentBlockContent);
             } else {
                 const currentContent = (section.data as any)[fieldName] || '';
-                (section.data as any)[fieldName] = currentContent + imgTag;
+                (section.data as any)[fieldName] = insertAtMarker(currentContent);
             }
 
             setSections(updated);
@@ -1013,7 +1079,8 @@ export default function HomepageManager() {
             buttonText: 'Zobacz więcej',
             buttonLink: '/portfolio',
             enabled: true,
-            order: heroSlides.length
+            order: heroSlides.length,
+            shader: 'cinematic'
         }]);
     };
 
@@ -1432,6 +1499,41 @@ export default function HomepageManager() {
                                 </div>
                             </div>
 
+                            {/* Artistic shader */}
+                            <div className="bg-zinc-800/30 p-3 rounded border border-zinc-700">
+                                <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                                    <div>
+                                        <label className="block text-sm font-medium text-zinc-300">Shader zdjęcia</label>
+                                        <p className="text-[11px] text-zinc-500">Buduje czytelność tekstu i filmowy klimat. Nie zmienia samego pliku zdjęcia.</p>
+                                    </div>
+                                    <span className="text-xs text-zinc-500">Domyślnie: filmowy</span>
+                                </div>
+                                <div className="grid sm:grid-cols-3 gap-2" role="group" aria-label={`Shader slajdu ${index + 1}`}>
+                                    {([
+                                        { value: 'subtle', label: 'Subtelny shader', description: 'Jasne zdjęcie, delikatna winieta' },
+                                        { value: 'cinematic', label: 'Filmowy shader', description: 'Najlepszy balans zdjęcia i tekstu' },
+                                        { value: 'deep', label: 'Głęboki shader', description: 'Mocniejszy, wieczorny charakter' },
+                                    ] as const).map(option => {
+                                        const isSelected = (slide.shader || 'cinematic') === option.value;
+                                        return (
+                                            <button
+                                                key={option.value}
+                                                type="button"
+                                                onClick={() => updateHeroSlide(index, 'shader', option.value)}
+                                                aria-pressed={isSelected}
+                                                className={`rounded-xl border px-3 py-3 text-left transition-colors ${isSelected
+                                                    ? 'border-gold-500 bg-gold-500/15 text-gold-200'
+                                                    : 'border-zinc-700 bg-zinc-900 text-zinc-300 hover:border-zinc-500'
+                                                    }`}
+                                            >
+                                                <span className="block text-sm font-semibold">{option.label}</span>
+                                                <span className="mt-1 block text-[11px] leading-relaxed text-zinc-500">{option.description}</span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
                             {/* Animation */}
                             <div className="bg-zinc-800/30 p-3 rounded border border-zinc-700">
                                 <label className="block text-sm text-zinc-400 mb-2">Animacja tekstu</label>
@@ -1679,7 +1781,7 @@ export default function HomepageManager() {
                                             </div>
                                         </div>
                                         <div className="md:col-span-2 bg-zinc-800/30 p-3 rounded border border-zinc-700">
-                                            <label className="block text-sm text-zinc-400 mb-1">Wysokość sekcji (VH)</label>
+                                            <label className="block text-sm text-zinc-400 mb-1">Stabilna wysokość sekcji</label>
                                             <div className="flex items-center gap-4">
                                                 <input
                                                     type="range"
@@ -1695,10 +1797,10 @@ export default function HomepageManager() {
                                                     className="flex-1"
                                                 />
                                                 <span className="text-sm font-mono text-gold-400 w-16 text-right">
-                                                    {parseInt((section.data.height || "min-h-[80vh]").match(/\d+/)?.[0] || "80")} vh
+                                                    {parseInt((section.data.height || "min-h-[80vh]").match(/\d+/)?.[0] || "80")} svh
                                                 </span>
                                             </div>
-                                            <p className="text-xs text-zinc-500 mt-1">Dostosuj wysokość obszaru parallax. Standardowo 80-100vh.</p>
+                                            <p className="text-xs text-zinc-500 mt-1">Dostosuj wysokość obszaru. Najczęściej najlepiej wygląda 80–100% wysokości ekranu.</p>
                                         </div>
                                     </div>
 
@@ -1742,11 +1844,11 @@ export default function HomepageManager() {
                                                 min="0"
                                                 max="1"
                                                 step="0.1"
-                                                value={section.data.textOpacity || 1}
+                                                value={section.data.textOpacity ?? 1}
                                                 onChange={e => updateSectionData(index, 'textOpacity', parseFloat(e.target.value))}
                                                 className="w-full"
                                             />
-                                            <span className="text-xs text-zinc-500">{((section.data.textOpacity || 1) * 100).toFixed(0)}%</span>
+                                            <span className="text-xs text-zinc-500">{((section.data.textOpacity ?? 1) * 100).toFixed(0)}%</span>
                                         </div>
                                         <div>
                                             <label className="block text-sm text-zinc-400 mb-1">Animacja tekstu</label>
@@ -1784,11 +1886,11 @@ export default function HomepageManager() {
                                                     min="0.1"
                                                     max="1.5"
                                                     step="0.1"
-                                                    value={section.data.parallaxSpeed || 0.5}
+                                                    value={section.data.parallaxSpeed ?? 0.5}
                                                     onChange={e => updateSectionData(index, 'parallaxSpeed', parseFloat(e.target.value))}
                                                     className="w-full"
                                                 />
-                                                <span className="text-xs text-zinc-500">{((section.data.parallaxSpeed || 0.5) * 100).toFixed(0)}%</span>
+                                                <span className="text-xs text-zinc-500">{((section.data.parallaxSpeed ?? 0.5) * 100).toFixed(0)}%</span>
                                             </div>
                                             <div className="w-1/2">
                                                 <label className="block text-sm text-zinc-400 mb-1">Przyciemnienie (Opacity)</label>
@@ -1805,17 +1907,20 @@ export default function HomepageManager() {
                                             </div>
                                         </div>
                                         <div>
-                                            <label className="block text-sm text-zinc-400 mb-1">Offset zdjęcia (px)</label>
+                                            <label className="block text-sm text-zinc-400 mb-1">Pozycja zdjęcia w pionie (%)</label>
                                             <input
                                                 type="number"
                                                 min="0"
-                                                max="200"
-                                                value={section.data.imageOffset || 20}
+                                                max="100"
+                                                value={section.data.imageOffset ?? 20}
                                                 onChange={e => updateSectionData(index, 'imageOffset', parseInt(e.target.value))}
                                                 className="w-full px-2 py-2 bg-zinc-900 border border-zinc-700 rounded text-white text-sm"
                                             />
                                         </div>
                                     </div>
+                                    <p className="text-xs leading-relaxed text-zinc-500">
+                                        Na telefonach zdjęcie pozostaje nieruchome, żeby przewijanie było płynne. Ustawienia parallaxu działają na tabletach i komputerach, a preferencja „ogranicz ruch” jest zawsze respektowana.
+                                    </p>
                                 </div>
 
                             )}
@@ -3347,7 +3452,7 @@ export default function HomepageManager() {
 
             <MediaPicker
                 isOpen={mediaPickerOpen}
-                onClose={() => setMediaPickerOpen(false)}
+                onClose={closeMediaPicker}
                 onSelect={handleMediaSelect}
                 multiple={currentPickerTarget?.field === 'photos'}
             />

@@ -58,7 +58,6 @@ export default function Navbar({ isB2B: serverIsB2B }: { isB2B?: boolean }) {
     const [isScrolled, setIsScrolled] = useState(false);
     const [logoLoaded, setLogoLoaded] = useState(false);
     const [isNavbarVisible, setIsNavbarVisible] = useState(true);
-    const [lastScrollY, setLastScrollY] = useState(0);
     const { user, isAuthenticated, logout } = useAuth();
     const { totalCount, setIsOpen: setIsCartOpen } = useCart();
     const [isAccountOpen, setIsAccountOpen] = useState(false);
@@ -66,27 +65,46 @@ export default function Navbar({ isB2B: serverIsB2B }: { isB2B?: boolean }) {
     // Scroll Logic (Auto-hide & Sticky)
     useEffect(() => {
         let lastY = window.scrollY;
+        let frameId: number | null = null;
+        let visible = true;
+        let scrolled = lastY > 20;
 
         const handleScroll = () => {
-            const currentY = window.scrollY;
+            if (frameId !== null) return;
+            frameId = window.requestAnimationFrame(() => {
+                const currentY = Math.max(window.scrollY, 0);
+                const nextScrolled = currentY > 20;
 
-            // Sticky background effect
-            setIsScrolled(currentY > 20);
+                if (nextScrolled !== scrolled) {
+                    scrolled = nextScrolled;
+                    setIsScrolled(nextScrolled);
+                }
 
-            // Auto-hide logic
-            // Hide when scrolling down and not at the very top (buffer of 100px)
-            if (currentY > lastY && currentY > 100) {
-                setIsNavbarVisible(false);
-            } else {
-                // Show when scrolling up
-                setIsNavbarVisible(true);
-            }
+                const delta = currentY - lastY;
+                if (currentY <= 80 && !visible) {
+                    visible = true;
+                    setIsNavbarVisible(true);
+                } else if (delta > 14 && currentY > 120 && visible) {
+                    visible = false;
+                    setIsNavbarVisible(false);
+                    lastY = currentY;
+                } else if (delta < -14 && !visible) {
+                    visible = true;
+                    setIsNavbarVisible(true);
+                    lastY = currentY;
+                } else if (Math.abs(delta) > 14) {
+                    lastY = currentY;
+                }
 
-            lastY = currentY;
+                frameId = null;
+            });
         };
 
         window.addEventListener('scroll', handleScroll, { passive: true });
-        return () => window.removeEventListener('scroll', handleScroll);
+        return () => {
+            window.removeEventListener('scroll', handleScroll);
+            if (frameId !== null) window.cancelAnimationFrame(frameId);
+        };
     }, []);
 
 

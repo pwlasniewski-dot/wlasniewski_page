@@ -7,13 +7,7 @@
   --background: #ffffff;
   --foreground: #171717;
 
-  /* Font variables populated by layout.tsx */
-  --font-display: var(--font-display);
-  --font-sans: var(--font-sans);
-  --font-playfair: var(--font-playfair);
-  --font-lato: var(--font-lato);
-  --font-great-vibes: var(--font-great-vibes);
-  --font-cinzel: var(--font-cinzel);
+  /* Font variables --font-* are populated by next/font in layout.tsx. */
 
   /* === PREMIUM TEMPLATE SYSTEM === */
 

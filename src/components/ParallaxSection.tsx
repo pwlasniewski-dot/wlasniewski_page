@@ -1,7 +1,7 @@
 'use client';
 
-import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
-import { useRef, useState, useEffect } from 'react';
+import { motion, useReducedMotion, useScroll, useTransform, useSpring } from 'framer-motion';
+import { useRef, useState, useEffect, type CSSProperties } from 'react';
 
 interface ParallaxSectionProps {
     // Content
@@ -20,7 +20,7 @@ interface ParallaxSectionProps {
     fontFamily?: 'sans' | 'serif' | 'display' | 'handwriting';
     textAnimation?: 'fade' | 'slide-up' | 'scale' | 'artistic';
 
-    // Legacy/Unused but kept for compatibility
+    // Motion controls stored by the CMS
     floatingImage?: boolean;
     parallaxSpeed?: number;
     imageOffset?: number;
@@ -44,17 +44,27 @@ export default function ParallaxSection({
     textOpacity = 1,
     fontFamily = 'display',
     textAnimation = 'slide-up',
+    floatingImage = true,
+    parallaxSpeed = 0.5,
+    imageOffset = 15,
     children
 }: ParallaxSectionProps) {
     const ref = useRef<HTMLDivElement>(null);
     const [finalImage, setFinalImage] = useState('');
-    const [isMobile, setIsMobile] = useState(false);
+    const [isMobile, setIsMobile] = useState(true);
+    const [motionReady, setMotionReady] = useState(false);
+    const shouldReduceMotion = useReducedMotion();
 
     useEffect(() => {
-        const checkMobile = () => setIsMobile(window.innerWidth < 768);
-        checkMobile();
-        window.addEventListener('resize', checkMobile);
-        return () => window.removeEventListener('resize', checkMobile);
+        const mobileQuery = window.matchMedia('(max-width: 767px)');
+        const updateViewport = () => {
+            setIsMobile(mobileQuery.matches);
+            setMotionReady(true);
+        };
+
+        updateViewport();
+        mobileQuery.addEventListener('change', updateViewport);
+        return () => mobileQuery.removeEventListener('change', updateViewport);
     }, []);
 
     useEffect(() => {
@@ -69,8 +79,20 @@ export default function ParallaxSection({
         offset: ["start end", "end start"]
     });
 
-    const yRange = isMobile ? ["-15%", "15%"] : ["-25%", "25%"];
-    const y = useTransform(scrollYProgress, [0, 1], yRange);
+    const clampedSpeed = Math.min(Math.max(parallaxSpeed, 0), 1.5);
+    const travel = 64 * clampedSpeed;
+    const overscan = Math.ceil(travel + 20);
+    const rawY = useTransform(scrollYProgress, [0, 1], [-travel, travel]);
+    const smoothY = useSpring(rawY, { stiffness: 72, damping: 24, mass: 0.35 });
+    const mobileHeightMatch = height.match(/(?:^|\s)min-h-\[(\d+)(?:s?vh)\]/);
+    const desktopHeightMatch = height.match(/(?:^|\s)md:min-h-\[(\d+)(?:s?vh)\]/);
+    const mobileHeight = Math.min(Math.max(parseInt(mobileHeightMatch?.[1] || '80', 10), 50), 130);
+    const desktopHeight = Math.min(Math.max(parseInt(desktopHeightMatch?.[1] || (height.includes('md:min-h-screen') ? '100' : String(mobileHeight)), 10), 50), 130);
+    const parallaxEnabled = motionReady && floatingImage && !isMobile && !shouldReduceMotion;
+    const sectionStyle = {
+        '--parallax-mobile-height': `${mobileHeight}svh`,
+        '--parallax-desktop-height': `${desktopHeight}svh`,
+    } as CSSProperties;
 
     // Font Styles Map
     const fontClasses = {
@@ -96,20 +118,24 @@ export default function ParallaxSection({
     return (
         <section
             ref={ref}
-            className={`relative w-full ${height} overflow-hidden bg-black flex items-center justify-center`}
+            className="relative w-full min-h-[var(--parallax-mobile-height)] md:min-h-[var(--parallax-desktop-height)] overflow-hidden bg-black flex items-center justify-center"
+            style={sectionStyle}
         >
             {/* BACKGROUND LAYER */}
-            <div className="absolute inset-x-0 -top-[30%] h-[160%] z-0 pointer-events-none">
+            <div
+                className="absolute inset-x-0 z-0 pointer-events-none"
+                style={{ top: -overscan, bottom: -overscan }}
+            >
                 {finalImage && (
                     <motion.div
-                        style={{ y, willChange: 'transform' }}
+                        style={{ y: parallaxEnabled ? smoothY : 0, willChange: parallaxEnabled ? 'transform' : 'auto' }}
                         className="relative w-full h-full"
                     >
                         <div
                             className="absolute inset-0 bg-cover bg-no-repeat"
                             style={{
                                 backgroundImage: `url(${finalImage})`,
-                                backgroundPosition: 'center 15%'
+                                backgroundPosition: `center ${Math.min(Math.max(imageOffset, 0), 100)}%`
                             }}
                         />
                     </motion.div>
@@ -130,8 +156,8 @@ export default function ParallaxSection({
             <div className="relative z-20 w-full max-w-7xl mx-auto px-6 flex items-center justify-center text-center">
                 {children || (
                     <motion.div
-                        initial={textVariants[textAnimation].initial}
-                        whileInView={textVariants[textAnimation].animate}
+                        initial={shouldReduceMotion ? { opacity: 0 } : textVariants[textAnimation].initial}
+                        whileInView={shouldReduceMotion ? { opacity: textOpacity } : textVariants[textAnimation].animate}
                         viewport={{ once: true, margin: "-20%" }}
                         transition={{ duration: 1.2, ease: "easeOut" }} // Slower duration for artistic feel
                     >

@@ -439,8 +439,6 @@ export default function HomeContent({ heroSlides, sections, homeData, orderedSec
                         key={section.id}
                         {...section.data}
                         imageSrc={section.data.image}
-                        // Explicitly mapping overrides if needed, but spread handles most
-                        height="min-h-[60vh] md:min-h-[80vh] lg:min-h-screen"
                     />
                 );
 

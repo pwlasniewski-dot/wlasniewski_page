@@ -21,6 +21,7 @@ interface HeroSlide {
     enabled?: boolean;
     order?: number;
     textAnimation?: 'fade' | 'slide-up' | 'slide-down' | 'scale' | 'bounce' | 'zoom-in';
+    shader?: 'subtle' | 'cinematic' | 'deep';
     is_before_after?: boolean;
     before_image?: string | { file_path: string };
     image_mobile?: string;
@@ -126,6 +127,21 @@ export default function HeroSlider({ slides = [], interval = 6000 }: HeroSliderP
     const mobileImage = slide.image_mobile || desktopImage;
     const textAnim = (slide.textAnimation || 'slide-up') as keyof typeof animationVariants;
     const variant = animationVariants[textAnim] || animationVariants['slide-up'];
+    const shaderPresets = {
+        subtle: {
+            veil: 'bg-black/10',
+            gradient: 'from-black/65 via-black/30 to-transparent'
+        },
+        cinematic: {
+            veil: 'bg-black/20',
+            gradient: 'from-black/85 via-black/55 to-transparent'
+        },
+        deep: {
+            veil: 'bg-black/35',
+            gradient: 'from-black via-black/75 to-transparent'
+        }
+    } as const;
+    const shaderClasses = shaderPresets[slide.shader as keyof typeof shaderPresets] ?? shaderPresets.cinematic;
 
     const nextSlide = () => {
         setCurrentSlide((prev) => (prev + 1) % enabledSlides.length);
@@ -141,7 +157,7 @@ export default function HeroSlider({ slides = [], interval = 6000 }: HeroSliderP
 
     if (currentSlideData?.is_before_after && currentSlideData.image && currentSlideData.before_image) {
         return (
-            <div className="relative h-[68svh] min-h-[520px] w-full bg-black md:min-h-[620px]">
+            <div className="relative h-[100svh] min-h-[600px] w-full bg-black">
                 <h1 className="sr-only">Fotograf Toruń — zdjęcia, do których chce się wracać</h1>
                 <BeforeAfterSlide
                     beforeImage={typeof currentSlideData.before_image === 'string' ? currentSlideData.before_image : currentSlideData.before_image.file_path}
@@ -177,7 +193,7 @@ export default function HeroSlider({ slides = [], interval = 6000 }: HeroSliderP
     }
 
     return (
-        <div className="relative h-[68svh] min-h-[520px] w-full overflow-hidden bg-black md:min-h-[620px]">
+        <div className="relative h-[100svh] min-h-[600px] w-full overflow-hidden bg-black">
             <h1 className="sr-only">Fotograf Toruń — zdjęcia, do których chce się wracać</h1>
             {/* Background Images */}
             <AnimatePresence mode="popLayout">
@@ -217,9 +233,9 @@ export default function HeroSlider({ slides = [], interval = 6000 }: HeroSliderP
             </AnimatePresence>
 
             {/* Gradient Overlays */}
-            <div className="absolute inset-0 bg-black/20 z-10" />
+            <div className={`absolute inset-0 z-10 ${shaderClasses.veil}`} />
             {/* Strong bottom fade for seamless transition */}
-            <div className="absolute bottom-0 left-0 w-full h-[60vh] bg-gradient-to-t from-black via-black/80 to-transparent z-10" />
+            <div className={`absolute bottom-0 left-0 w-full h-[62%] bg-gradient-to-t z-10 ${shaderClasses.gradient}`} />
 
             {/* Content */}
             <div className="relative z-20 w-full h-full flex flex-col items-center justify-end pb-24 sm:pb-32 md:pb-40 px-4 sm:px-6 text-center">

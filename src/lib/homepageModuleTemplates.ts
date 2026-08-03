@@ -10,7 +10,8 @@ export function createHeroSlideTemplate() {
         buttonText: 'Zobacz Portfolio',
         buttonLink: '/portfolio',
         enabled: true,
-        order: 0
+        order: 0,
+        shader: 'cinematic' as const
     };
 }
 

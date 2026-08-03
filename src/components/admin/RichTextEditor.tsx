@@ -1,7 +1,7 @@
 'use client';
 
-import { useRef, useEffect, useState } from 'react';
-import { Bold, Italic, Underline, List, ListOrdered, Link as LinkIcon, Image as ImageIcon, Heading1, Heading2, AlignLeft, AlignCenter, AlignRight, Palette, Type } from 'lucide-react';
+import { useRef, useEffect, useState, type ClipboardEvent } from 'react';
+import { Bold, Italic, Underline, List, ListOrdered, Link as LinkIcon, Image as ImageIcon, Heading1, Heading2, Heading3, Pilcrow, AlignLeft, AlignCenter, AlignRight, Palette, Type, Eye, EyeOff, Undo2, Redo2, RemoveFormatting } from 'lucide-react';
 
 interface RichTextEditorProps {
     value: string;
@@ -12,11 +12,13 @@ interface RichTextEditorProps {
 
 export default function RichTextEditor({ value, onChange, placeholder, onImageRequest }: RichTextEditorProps) {
     const editorRef = useRef<HTMLDivElement>(null);
+    const selectionRef = useRef<Range | null>(null);
     const [activeFormats, setActiveFormats] = useState<string[]>([]);
     const [showColorPicker, setShowColorPicker] = useState(false);
     const [showFontSizePicker, setShowFontSizePicker] = useState(false);
     const [showFontFamilyPicker, setShowFontFamilyPicker] = useState(false);
     const [currentColor, setCurrentColor] = useState('#ffffff');
+    const [readableMode, setReadableMode] = useState(true);
 
     useEffect(() => {
         // Enable modern CSS-based styling
@@ -44,6 +46,27 @@ export default function RichTextEditor({ value, onChange, placeholder, onImageRe
             onChange(editorRef.current.innerHTML);
             checkActiveFormats();
         }
+    };
+
+    const saveSelection = () => {
+        const selection = window.getSelection();
+        if (!selection || selection.rangeCount === 0 || !editorRef.current) return;
+
+        const range = selection.getRangeAt(0);
+        const commonNode = range.commonAncestorContainer;
+        if (editorRef.current.contains(commonNode)) {
+            selectionRef.current = range.cloneRange();
+        }
+    };
+
+    const restoreSelection = () => {
+        const selection = window.getSelection();
+        const range = selectionRef.current;
+        if (!selection || !range || !editorRef.current) return;
+
+        editorRef.current.focus({ preventScroll: true });
+        selection.removeAllRanges();
+        selection.addRange(range);
     };
 
     const checkActiveFormats = () => {
@@ -77,6 +100,8 @@ export default function RichTextEditor({ value, onChange, placeholder, onImageRe
                 if (!current) break;
                 if (current.tagName === 'H1') formats.push('h1');
                 if (current.tagName === 'H2') formats.push('h2');
+                if (current.tagName === 'H3') formats.push('h3');
+                if (current.tagName === 'P' || current.tagName === 'DIV') formats.push('p');
                 current = current.parentElement;
             }
         }
@@ -85,8 +110,9 @@ export default function RichTextEditor({ value, onChange, placeholder, onImageRe
     };
 
     const execCommand = (command: string, value?: string) => {
+        restoreSelection();
         document.execCommand(command, false, value);
-        editorRef.current?.focus();
+        saveSelection();
         handleInput();
         checkActiveFormats();
     };
@@ -100,6 +126,10 @@ export default function RichTextEditor({ value, onChange, placeholder, onImageRe
 
     const insertImage = () => {
         if (onImageRequest) {
+            restoreSelection();
+            document.execCommand('insertHTML', false, '<span data-rte-image-marker="true"></span>');
+            saveSelection();
+            handleInput();
             onImageRequest();
             return;
         }
@@ -110,6 +140,7 @@ export default function RichTextEditor({ value, onChange, placeholder, onImageRe
     };
 
     const applyFontFamily = (fontVar: string) => {
+        restoreSelection();
         const selection = window.getSelection();
         if (!selection || selection.rangeCount === 0) return;
 
@@ -129,6 +160,7 @@ export default function RichTextEditor({ value, onChange, placeholder, onImageRe
             newRange.selectNodeContents(span);
             selection.removeAllRanges();
             selection.addRange(newRange);
+            saveSelection();
 
             handleInput();
         } catch (e) {
@@ -137,8 +169,10 @@ export default function RichTextEditor({ value, onChange, placeholder, onImageRe
     };
 
     const buttons = [
+        { icon: Pilcrow, command: 'formatBlock', value: 'p', title: 'Zwykły akapit', isActive: activeFormats.includes('p') && !activeFormats.some(format => ['h1', 'h2', 'h3'].includes(format)) },
         { icon: Heading1, command: 'formatBlock', value: 'h1', title: 'Nagłówek 1', isActive: activeFormats.includes('h1') },
         { icon: Heading2, command: 'formatBlock', value: 'h2', title: 'Nagłówek 2', isActive: activeFormats.includes('h2') },
+        { icon: Heading3, command: 'formatBlock', value: 'h3', title: 'Nagłówek 3', isActive: activeFormats.includes('h3') },
         { icon: Bold, command: 'bold', title: 'Pogrubienie', isActive: activeFormats.includes('bold') },
         { icon: Italic, command: 'italic', title: 'Kursywa', isActive: activeFormats.includes('italic') },
         { icon: Underline, command: 'underline', title: 'Podkreślenie', isActive: activeFormats.includes('underline') },
@@ -159,10 +193,25 @@ export default function RichTextEditor({ value, onChange, placeholder, onImageRe
         return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
     };
 
+    const handlePaste = (event: ClipboardEvent<HTMLDivElement>) => {
+        event.preventDefault();
+        const plainText = event.clipboardData.getData('text/plain');
+        restoreSelection();
+        document.execCommand('insertText', false, plainText);
+        saveSelection();
+        handleInput();
+    };
+
     return (
-        <div className="border border-zinc-700 rounded-lg overflow-hidden bg-zinc-800">
+        <div className="border border-zinc-700 rounded-lg bg-zinc-800">
             {/* Toolbar */}
-            <div className="flex flex-wrap gap-1 p-2 bg-zinc-900 border-b border-zinc-700 items-center">
+            <div
+                className="flex flex-wrap gap-1 p-2 bg-zinc-900 border-b border-zinc-700 items-center sticky top-0 z-40 rounded-t-lg"
+                onMouseDownCapture={(event) => {
+                    const target = event.target as HTMLElement;
+                    if (target.closest('button')) event.preventDefault();
+                }}
+            >
                 {buttons.map((btn, idx) => (
                     <button
                         key={idx}
@@ -184,10 +233,42 @@ export default function RichTextEditor({ value, onChange, placeholder, onImageRe
                             : 'text-zinc-400 hover:bg-zinc-700 hover:text-gold-400'
                             }`}
                         title={btn.title}
+                        aria-label={btn.title}
+                        aria-pressed={btn.isActive}
                     >
                         <btn.icon className="w-4 h-4" />
                     </button>
                 ))}
+
+                <div className="w-px h-6 bg-zinc-700 mx-1" />
+
+                <button
+                    type="button"
+                    onClick={() => execCommand('undo')}
+                    className="p-2 hover:bg-zinc-700 rounded text-zinc-400 hover:text-gold-400 transition-colors"
+                    title="Cofnij"
+                    aria-label="Cofnij"
+                >
+                    <Undo2 className="w-4 h-4" />
+                </button>
+                <button
+                    type="button"
+                    onClick={() => execCommand('redo')}
+                    className="p-2 hover:bg-zinc-700 rounded text-zinc-400 hover:text-gold-400 transition-colors"
+                    title="Ponów"
+                    aria-label="Ponów"
+                >
+                    <Redo2 className="w-4 h-4" />
+                </button>
+                <button
+                    type="button"
+                    onClick={() => execCommand('removeFormat')}
+                    className="p-2 hover:bg-zinc-700 rounded text-zinc-400 hover:text-gold-400 transition-colors"
+                    title="Wyczyść formatowanie zaznaczenia"
+                    aria-label="Wyczyść formatowanie zaznaczenia"
+                >
+                    <RemoveFormatting className="w-4 h-4" />
+                </button>
 
                 <div className="w-px h-6 bg-zinc-700 mx-1" />
 
@@ -263,8 +344,9 @@ export default function RichTextEditor({ value, onChange, placeholder, onImageRe
                         onClick={() => setShowFontSizePicker(!showFontSizePicker)}
                         className={`p-2 rounded transition-colors text-zinc-400 hover:bg-zinc-700 hover:text-gold-400 ${showFontSizePicker ? 'bg-zinc-700 text-gold-400' : ''}`}
                         title="Rozmiar czcionki"
+                        aria-expanded={showFontSizePicker}
                     >
-                        <span className="font-serif font-bold text-sm">Size</span>
+                        <span className="text-xs font-semibold">Rozmiar</span>
                     </button>
                     {showFontSizePicker && (
                         <div className="absolute top-full left-0 mt-2 p-1 bg-zinc-900 border border-zinc-700 rounded shadow-xl min-w-[120px] z-50 flex flex-col gap-1">
@@ -296,8 +378,9 @@ export default function RichTextEditor({ value, onChange, placeholder, onImageRe
                         onClick={() => setShowFontFamilyPicker(!showFontFamilyPicker)}
                         className={`p-2 rounded transition-colors text-zinc-400 hover:bg-zinc-700 hover:text-gold-400 ${showFontFamilyPicker ? 'bg-zinc-700 text-gold-400' : ''}`}
                         title="Krój czcionki (Font)"
+                        aria-expanded={showFontFamilyPicker}
                     >
-                        <Type className="w-4 h-4" />
+                        <span className="flex items-center gap-1 text-xs font-semibold"><Type className="w-4 h-4" /> Font</span>
                     </button>
                     {showFontFamilyPicker && (
                         <div className="absolute top-full left-0 mt-2 p-1 bg-zinc-900 border border-zinc-700 rounded shadow-xl z-50 flex flex-col gap-1 max-h-[400px] overflow-y-auto w-72">
@@ -308,6 +391,8 @@ export default function RichTextEditor({ value, onChange, placeholder, onImageRe
                                 { label: 'Lato', var: '--font-lato', font: 'Lato, sans-serif' },
                                 { label: 'Great Vibes (Ozdobny)', var: '--font-great-vibes', font: 'Great Vibes, cursive', size: '1.2em' },
                                 { label: 'Cinzel (Filmowy)', var: '--font-cinzel', font: 'Cinzel, serif' },
+                                { label: 'Outfit (Nowoczesny)', var: '--font-outfit', font: 'Outfit, sans-serif' },
+                                { label: 'Inter (Czytelny)', var: '--font-inter', font: 'Inter, sans-serif' },
                             ].map(opt => (
                                 <button
                                     key={opt.var}
@@ -389,16 +474,39 @@ export default function RichTextEditor({ value, onChange, placeholder, onImageRe
                 >
                     2-COL
                 </button>
+
+                <div className="w-px h-6 bg-zinc-700 mx-1 self-center" />
+
+                <button
+                    type="button"
+                    onClick={() => setReadableMode(current => !current)}
+                    className={`px-2 py-1.5 rounded text-xs font-semibold transition-colors flex items-center gap-1 ${readableMode ? 'bg-sky-500/15 text-sky-300' : 'text-zinc-400 hover:bg-zinc-700'}`}
+                    title="Wymusza czytelne kolory tylko w edytorze. Nie zmienia wyglądu strony."
+                    aria-pressed={readableMode}
+                >
+                    {readableMode ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                    Czytelna edycja
+                </button>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-700 bg-zinc-950/70 px-3 py-2 text-xs text-zinc-400">
+                <span>
+                    Format: <strong className="text-zinc-200">{activeFormats.includes('h1') ? 'Nagłówek H1' : activeFormats.includes('h2') ? 'Nagłówek H2' : activeFormats.includes('h3') ? 'Nagłówek H3' : 'Akapit'}</strong>
+                </span>
+                <span>Zaznacz tekst, potem wybierz format. H1 używaj tylko raz na stronie.</span>
             </div>
 
             {/* Editor */}
             <div
                 ref={editorRef}
                 contentEditable
+                suppressContentEditableWarning
                 onInput={handleInput}
-                onKeyUp={checkActiveFormats}
-                onMouseUp={checkActiveFormats}
-                className="min-h-[300px] p-4 text-white focus:outline-none prose prose-invert max-w-none"
+                onPaste={handlePaste}
+                onKeyUp={() => { saveSelection(); checkActiveFormats(); }}
+                onMouseUp={() => { saveSelection(); checkActiveFormats(); }}
+                onFocus={saveSelection}
+                className={`rich-text-editing-surface min-h-[300px] p-4 text-white focus:outline-none focus:ring-2 focus:ring-inset focus:ring-gold-500/50 prose prose-invert max-w-none ${readableMode ? 'is-readable' : ''}`}
                 data-placeholder={placeholder}
                 style={{
                     whiteSpace: 'pre-wrap',
@@ -434,6 +542,19 @@ export default function RichTextEditor({ value, onChange, placeholder, onImageRe
                 .prose p {
                     margin-top: 0.5rem !important;
                     margin-bottom: 0.5rem !important;
+                }
+                .rich-text-editing-surface.is-readable,
+                .rich-text-editing-surface.is-readable * {
+                    color: #f4f4f5 !important;
+                }
+                .rich-text-editing-surface.is-readable a {
+                    color: #7dd3fc !important;
+                    text-decoration: underline;
+                }
+                .rich-text-editing-surface::selection,
+                .rich-text-editing-surface *::selection {
+                    background: rgba(212, 175, 55, 0.55);
+                    color: #ffffff;
                 }
             `}</style>
         </div>
