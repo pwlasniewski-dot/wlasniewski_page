@@ -11,25 +11,25 @@ import ContactForm from '@/components/ContactForm';
 import GiftCard from '@/components/GiftCard';
 
 // Lazy-loaded below-the-fold components
-const ParallaxSection = dynamic(() => import('@/components/ParallaxSection'), { ssr: false });
-const CarouselGallery = dynamic(() => import('@/components/VisualEffects/CarouselGallery'), { ssr: false });
-const MasonryGallery = dynamic(() => import('@/components/VisualEffects/MasonryGallery'), { ssr: false });
-const PuzzleGallery = dynamic(() => import('@/components/VisualEffects/PuzzleGallery'), { ssr: false });
-const AdvancedBanner = dynamic(() => import('@/components/AdvancedBanner'), { ssr: false });
-const CreativeSlider = dynamic(() => import('@/components/CreativeSlider'), { ssr: false });
-const WhiteInfoBand = dynamic(() => import('@/components/WhiteInfoBand'), { ssr: false });
-const PhotoChallengeBanner = dynamic(() => import('@/components/PhotoChallengeBanner'), { ssr: false });
+const ParallaxSection = dynamic(() => import('@/components/ParallaxSection'));
+const CarouselGallery = dynamic(() => import('@/components/VisualEffects/CarouselGallery'));
+const MasonryGallery = dynamic(() => import('@/components/VisualEffects/MasonryGallery'));
+const PuzzleGallery = dynamic(() => import('@/components/VisualEffects/PuzzleGallery'));
+const AdvancedBanner = dynamic(() => import('@/components/AdvancedBanner'));
+const CreativeSlider = dynamic(() => import('@/components/CreativeSlider'));
+const WhiteInfoBand = dynamic(() => import('@/components/WhiteInfoBand'));
+const PhotoChallengeBanner = dynamic(() => import('@/components/PhotoChallengeBanner'));
 // Premium Modules — lazy loaded
-const StoriesGrid = dynamic(() => import('@/components/sections/StoriesGrid'), { ssr: false });
-const ChronologicalGallery = dynamic(() => import('@/components/sections/ChronologicalGallery'), { ssr: false });
-const MagazineLayout = dynamic(() => import('@/components/sections/MagazineLayout'), { ssr: false });
-const EditorialMasonry = dynamic(() => import('@/components/sections/MasonryGallery'), { ssr: false });
-const ClientStory = dynamic(() => import('@/components/sections/ClientStory'), { ssr: false });
-const ProcessTimeline = dynamic(() => import('@/components/sections/ProcessTimeline'), { ssr: false });
-const InvestmentTeaser = dynamic(() => import('@/components/sections/InvestmentTeaser'), { ssr: false });
-const NarrativeText = dynamic(() => import('@/components/sections/NarrativeText'), { ssr: false });
-const FeaturedCarousel = dynamic(() => import('@/components/sections/FeaturedCarousel'), { ssr: false });
-const PhotoCube3D = dynamic(() => import('@/components/sections/PhotoCube3D'), { ssr: false });
+const StoriesGrid = dynamic(() => import('@/components/sections/StoriesGrid'));
+const ChronologicalGallery = dynamic(() => import('@/components/sections/ChronologicalGallery'));
+const MagazineLayout = dynamic(() => import('@/components/sections/MagazineLayout'));
+const EditorialMasonry = dynamic(() => import('@/components/sections/MasonryGallery'));
+const ClientStory = dynamic(() => import('@/components/sections/ClientStory'));
+const ProcessTimeline = dynamic(() => import('@/components/sections/ProcessTimeline'));
+const InvestmentTeaser = dynamic(() => import('@/components/sections/InvestmentTeaser'));
+const NarrativeText = dynamic(() => import('@/components/sections/NarrativeText'));
+const FeaturedCarousel = dynamic(() => import('@/components/sections/FeaturedCarousel'));
+const PhotoCube3D = dynamic(() => import('@/components/sections/PhotoCube3D'));
 // Banners are rendered in AppShell
 interface Testimonial {
     id: number;

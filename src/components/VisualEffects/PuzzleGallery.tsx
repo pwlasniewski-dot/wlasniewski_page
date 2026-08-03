@@ -91,13 +91,13 @@ export default function PuzzleGallery({ photos, config }: PuzzleGalleryProps) {
         }
     };
 
-    const pieceVariants = (xOffset: number, yOffset: number): Variants => ({
+    const pieceVariants = (xOffset: number, yOffset: number, rotation: number): Variants => ({
         hidden: {
             x: xOffset,
             y: yOffset,
             opacity: 0,
             scale: 1.1,
-            rotate: (Math.random() - 0.5) * 10
+            rotate: rotation
         },
         visible: {
             x: 0,
@@ -169,7 +169,7 @@ export default function PuzzleGallery({ photos, config }: PuzzleGalleryProps) {
                 <motion.div
                     className="absolute top-0 left-0 w-[340px] h-[240px] z-40 drop-shadow-2xl"
                     style={{ clipPath: pathTL }}
-                    variants={pieceVariants(-50, -50)}
+                    variants={pieceVariants(-50, -50, -4)}
                 >
                     {/* Image: Left Photo. Full Size 300x400. Pos: 0,0 */}
                     <div className="relative w-[340px] h-[400px]">
@@ -190,7 +190,7 @@ export default function PuzzleGallery({ photos, config }: PuzzleGalleryProps) {
                 <motion.div
                     className="absolute top-0 left-[300px] w-[300px] h-[240px] z-30 drop-shadow-xl"
                     style={{ clipPath: pathTR }}
-                    variants={pieceVariants(50, -50)}
+                    variants={pieceVariants(50, -50, 4)}
                 >
                     {/* Image: Right Photo. Full Size 300x400. Pos: 0,0 */}
                     <div className="relative w-[300px] h-[400px]">
@@ -210,7 +210,7 @@ export default function PuzzleGallery({ photos, config }: PuzzleGalleryProps) {
                 <motion.div
                     className="absolute top-[200px] left-0 w-[340px] h-[200px] z-30 drop-shadow-xl"
                     style={{ clipPath: pathBL }}
-                    variants={pieceVariants(-50, 50)}
+                    variants={pieceVariants(-50, 50, -3)}
                 >
                     {/* Image: Left Photo. Full Size 300x400. Pos: 0, -200 */}
                     <div className="relative w-[340px] h-[400px] -mt-[200px]">
@@ -230,7 +230,7 @@ export default function PuzzleGallery({ photos, config }: PuzzleGalleryProps) {
                 <motion.div
                     className="absolute top-[200px] left-[300px] w-[300px] h-[200px] z-20 drop-shadow-lg"
                     style={{ clipPath: pathBR }}
-                    variants={pieceVariants(50, 50)}
+                    variants={pieceVariants(50, 50, 3)}
                 >
                     {/* Image: Right Photo. Full Size 300x400. Pos: 0, -200 */}
                     <div className="relative w-[300px] h-[400px] -mt-[200px]">

@@ -50,7 +50,6 @@ export default function ParallaxSection({
     children
 }: ParallaxSectionProps) {
     const ref = useRef<HTMLDivElement>(null);
-    const [finalImage, setFinalImage] = useState('');
     const [isMobile, setIsMobile] = useState(true);
     const [motionReady, setMotionReady] = useState(false);
     const shouldReduceMotion = useReducedMotion();
@@ -67,12 +66,8 @@ export default function ParallaxSection({
         return () => mobileQuery.removeEventListener('change', updateViewport);
     }, []);
 
-    useEffect(() => {
-        const selected = isMobile && image_mobile
-            ? image_mobile
-            : image_desktop || image || imageSrc || '';
-        setFinalImage(selected);
-    }, [isMobile, image_mobile, image_desktop, image, imageSrc]);
+    const desktopImage = image_desktop || image || imageSrc || image_mobile || '';
+    const mobileImage = image_mobile || desktopImage;
 
     const { scrollYProgress } = useScroll({
         target: ref,
@@ -126,18 +121,23 @@ export default function ParallaxSection({
                 className="absolute inset-x-0 z-0 pointer-events-none"
                 style={{ top: -overscan, bottom: -overscan }}
             >
-                {finalImage && (
+                {desktopImage && (
                     <motion.div
                         style={{ y: parallaxEnabled ? smoothY : 0, willChange: parallaxEnabled ? 'transform' : 'auto' }}
                         className="relative w-full h-full"
                     >
-                        <div
-                            className="absolute inset-0 bg-cover bg-no-repeat"
-                            style={{
-                                backgroundImage: `url(${finalImage})`,
-                                backgroundPosition: `center ${Math.min(Math.max(imageOffset, 0), 100)}%`
-                            }}
-                        />
+                        <picture className="absolute inset-0 block h-full w-full">
+                            {mobileImage && <source media="(max-width: 767px)" srcSet={mobileImage} />}
+                            <img
+                                src={desktopImage}
+                                alt=""
+                                aria-hidden="true"
+                                loading="lazy"
+                                decoding="async"
+                                className="h-full w-full object-cover"
+                                style={{ objectPosition: `center ${Math.min(Math.max(imageOffset, 0), 100)}%` }}
+                            />
+                        </picture>
                     </motion.div>
                 )}
             </div>

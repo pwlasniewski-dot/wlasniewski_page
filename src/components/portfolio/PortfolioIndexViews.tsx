@@ -1,8 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowRight, Camera, Images } from 'lucide-react';
+import { ArrowRight, Camera, Images, Pause, Play } from 'lucide-react';
 import { useEffect, useState, type ReactNode } from 'react';
+import { useReducedMotion } from 'framer-motion';
 
 export type PortfolioIndexLayout = 'chapters' | 'cinematic_contact';
 
@@ -78,26 +79,34 @@ function PortfolioImage({ item, priority = false }: { item: PortfolioIndexItem; 
 function PortfolioIntro({ heroImage, heroTitle, heroSlides = [] }: Pick<PortfolioIndexViewsProps, 'heroImage' | 'heroTitle' | 'heroSlides'>) {
     const enabledSlides = heroSlides.filter(slide => slide.enabled !== false && (slide.image_desktop || slide.image));
     const [activeIndex, setActiveIndex] = useState(0);
+    const [autoplay, setAutoplay] = useState(true);
+    const prefersReducedMotion = useReducedMotion();
 
     useEffect(() => {
-        if (enabledSlides.length < 2) return;
+        if (enabledSlides.length < 2 || !autoplay || prefersReducedMotion) return;
         const timer = window.setInterval(() => setActiveIndex(index => (index + 1) % enabledSlides.length), 6500);
         return () => window.clearInterval(timer);
-    }, [enabledSlides.length]);
+    }, [autoplay, enabledSlides.length, prefersReducedMotion]);
 
     const activeSlide = enabledSlides[activeIndex] || null;
     const desktopImage = activeSlide?.image_desktop || activeSlide?.image || heroImage;
     const mobileImage = activeSlide?.image_mobile || desktopImage;
 
     return (
-        <header className="relative flex min-h-[82svh] items-end overflow-hidden bg-[#1d1a16] px-5 pb-16 pt-32 text-white sm:px-8 md:min-h-[88svh] md:pb-24 lg:px-14">
+        <header className="relative flex min-h-[760px] items-end overflow-hidden bg-[#1d1a16] px-5 pb-14 pt-[54svh] text-white sm:px-8 md:min-h-[88svh] md:pb-24 md:pt-32 lg:px-14">
             {desktopImage && (
-                <picture className="absolute inset-0 block h-full w-full">
+                <>
+                    <picture className="absolute inset-0 block h-full w-full md:hidden">
+                        <source media="(max-width: 767px)" srcSet={mobileImage || desktopImage} />
+                        <img src={desktopImage} alt="" aria-hidden="true" className="h-full w-full scale-110 object-cover opacity-45 blur-2xl" />
+                    </picture>
+                    <picture className="absolute inset-x-0 top-0 block h-[56svh] min-h-[390px] w-full md:inset-0 md:h-full md:min-h-0">
                     {mobileImage && <source media="(max-width: 767px)" srcSet={mobileImage} />}
-                    <img key={desktopImage} src={desktopImage} alt="Wybrane portfolio fotograficzne" fetchPriority="high" className="h-full w-full object-cover motion-safe:animate-[fadeIn_.8s_ease-out]" />
-                </picture>
+                        <img key={desktopImage} src={desktopImage} alt="Wybrane portfolio fotograficzne" fetchPriority="high" className="h-full w-full object-contain object-top motion-safe:animate-[fadeIn_.8s_ease-out] md:object-cover md:object-center" />
+                    </picture>
+                </>
             )}
-            <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(18,15,12,.9)_0%,rgba(18,15,12,.42)_48%,rgba(18,15,12,.12)_78%),linear-gradient(0deg,rgba(12,10,8,.78)_0%,transparent_58%)]" />
+            <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(18,15,12,.02)_0%,rgba(18,15,12,.08)_38%,rgba(18,15,12,.96)_62%,#1d1a16_100%)] md:bg-[linear-gradient(90deg,rgba(18,15,12,.9)_0%,rgba(18,15,12,.42)_48%,rgba(18,15,12,.12)_78%),linear-gradient(0deg,rgba(12,10,8,.78)_0%,transparent_58%)]" />
             <div className="relative z-10 mx-auto w-full max-w-[1380px]">
                 <p className="mb-5 text-[10px] font-bold uppercase tracking-[.34em] text-[#e5c98f] sm:text-xs">Portfolio · Toruń i okolice</p>
                 <h1 className="max-w-5xl font-display text-[clamp(3.5rem,8vw,8.5rem)] font-normal leading-[.82] tracking-[-.055em] text-[#fffaf1]">
@@ -110,10 +119,27 @@ function PortfolioIntro({ heroImage, heroTitle, heroSlides = [] }: Pick<Portfoli
                     Zobacz wybrane historie <ArrowRight size={15} />
                 </a>
                 {enabledSlides.length > 1 && (
-                    <div className="mt-7 flex gap-2" aria-label="Wybór zdjęcia otwierającego">
+                    <div className="mt-7 flex items-center gap-2" aria-label="Wybór zdjęcia otwierającego">
                         {enabledSlides.map((slide, index) => (
-                            <button key={slide.id || index} type="button" onClick={() => setActiveIndex(index)} className={`h-1.5 rounded-full transition-all ${index === activeIndex ? 'w-8 bg-[#e5c98f]' : 'w-1.5 bg-white/45 hover:bg-white'}`} aria-label={`Pokaż slajd ${index + 1}`} />
+                            <button
+                                key={slide.id || index}
+                                type="button"
+                                onClick={() => { setActiveIndex(index); setAutoplay(false); }}
+                                className={`h-1.5 rounded-full transition-all ${index === activeIndex ? 'w-8 bg-[#e5c98f]' : 'w-1.5 bg-white/45 hover:bg-white'}`}
+                                aria-label={`Pokaż slajd ${index + 1}`}
+                                aria-current={index === activeIndex ? 'true' : undefined}
+                            />
                         ))}
+                        {!prefersReducedMotion && (
+                            <button
+                                type="button"
+                                onClick={() => setAutoplay(value => !value)}
+                                className="ml-3 inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/30 text-white/80 transition hover:border-[#e5c98f] hover:text-[#e5c98f]"
+                                aria-label={autoplay ? 'Zatrzymaj automatyczną zmianę zdjęć' : 'Wznów automatyczną zmianę zdjęć'}
+                            >
+                                {autoplay ? <Pause size={14} aria-hidden="true" /> : <Play size={14} aria-hidden="true" />}
+                            </button>
+                        )}
                     </div>
                 )}
             </div>

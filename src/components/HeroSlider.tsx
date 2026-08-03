@@ -78,7 +78,16 @@ const animationVariants = {
 export default function HeroSlider({ slides = [], interval = 6000, documentTitle = 'Fotograf Toruń — zdjęcia, do których chce się wracać' }: HeroSliderProps & { interval?: number }) {
     const [currentSlide, setCurrentSlide] = useState(0);
     const [autoplay, setAutoplay] = useState(true);
+    const [isMobile, setIsMobile] = useState(true);
     const prefersReducedMotion = useReducedMotion();
+
+    useEffect(() => {
+        const query = window.matchMedia('(max-width: 767px)');
+        const update = () => setIsMobile(query.matches);
+        update();
+        query.addEventListener('change', update);
+        return () => query.removeEventListener('change', update);
+    }, []);
 
     // Filter enabled slides
     const enabledSlides = slides.filter(s => s.enabled !== false).sort((a, b) => (a.order || 0) - (b.order || 0));
@@ -216,9 +225,9 @@ export default function HeroSlider({ slides = [], interval = 6000, documentTitle
                     <motion.div
                         className="w-full h-full"
                         initial={{ scale: 1 }}
-                        animate={{ scale: prefersReducedMotion ? 1 : 1.02 }}
+                        animate={{ scale: prefersReducedMotion || isMobile ? 1 : 1.02 }}
                         transition={{
-                            duration: prefersReducedMotion ? 0 : 15,
+                            duration: prefersReducedMotion || isMobile ? 0 : 15,
                             ease: "linear",
                             repeat: 0
                         }}
