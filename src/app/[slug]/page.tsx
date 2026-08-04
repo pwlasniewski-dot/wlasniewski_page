@@ -111,9 +111,6 @@ export default async function DynamicPage({ params }: PageProps) {
         permanentRedirect(`https://aeroanaliza.pl/${page!.slug.toLowerCase().replace(/^b2b[/-]?/, '')}`);
     }
 
-    const serviceLabel = getServiceLabelBySlug(page!.slug);
-    const localCoverageLabel = LOCAL_CITY_LINKS.map(l => l.city).join(', ');
-
     // Intelligent Content Merging Strategy (Zero Loss Protocol)
     let sections: PageSection[] = [];
 
@@ -140,11 +137,17 @@ export default async function DynamicPage({ params }: PageProps) {
         ];
     }
 
+    const hasVisiblePrimaryHeading = sections.some((section) => {
+        const sectionData = section.data && typeof section.data === 'object' ? section.data : section;
+        return sectionData.isPrimaryHeading === true;
+    });
+    const serviceLabel = getServiceLabelBySlug(page!.slug);
+    const localCoverageLabel = LOCAL_CITY_LINKS.map(l => l.city).join(', ');
+
     return (
         <main className="min-h-screen bg-zinc-950 text-white selection:bg-gold-400 selection:text-black">
-            {/* SEO: deterministic SSR <h1>. Always render — even when a section "could" have h1
-                (e.g. hero_slider), DB content often has empty titles, leaving page without h1. */}
-            <h1 className="sr-only">{page.title}</h1>
+            {/* Fallback H1 keeps legacy pages semantic; SEO templates provide a visible H1 themselves. */}
+            {!hasVisiblePrimaryHeading && <h1 className="sr-only">{page.title}</h1>}
             {/* Schema.org Service — gives Google explicit understanding that this is a service page
                 offered locally in Toruń, increasing relevance for "fotograf [usługa] toruń" queries. */}
             <script

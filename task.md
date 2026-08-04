@@ -1,5 +1,14 @@
 # Aktualny plan prac
 
+## 2026-08-04 — wzorzec sprzedażowej strony usługi: sesja rodzinna
+
+- [x] Ustalony model jednej kanonicznej strony `/sesja-rodzinna`, bez mnożenia podobnych adresów.
+- [x] Szablon Pages „Sesja rodzinna — Toruń” z hero, przygotowaniem, galerią, tekstem lokalnym i CTA.
+- [x] Widoczny H1 tylko w pierwszym hero szablonu; pozostałe nagłówki pozostają H2.
+- [x] Lint projektu bez błędów blokujących; pełny build rozpoczęty po generacji Prisma, końcowy wynik wymaga potwierdzenia z powodu przerwanego logu środowiska.
+- [ ] Odbiór QA i właściciela przed commitem.
+- [ ] Po publikacji strony: własne zdjęcia z ALT, Title/Description, FAQ i linki z Portfolio/strony głównej.
+
 ## 2026-08-04 — rozdzielenie Wlasniewski.pl i Aeroanaliza.pl
 
 - [x] Inwentaryzacja historycznych adresów B2B, Foto-Match i pustej Historii.

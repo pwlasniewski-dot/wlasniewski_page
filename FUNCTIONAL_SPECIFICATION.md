@@ -2,6 +2,12 @@
 
 Ten dokument stanowi kompleksowy opis funkcjonalności oraz logiki biznesowej platformy **FOTO-DRON Przemysław Właśniewski**. Dokumentacja została opracowana na podstawie audytu technicznego przeprowadzonego w grudniu 2025 r. Szczegóły techniczne dotyczące infrastruktury i wzorców projektowych znajdują się w dokumencie [ARCHITECTURE.md](file:///c:/Strona-fotografa/ARCHITECTURE.md).
 
+## Aktualizacja 2026-08-04 — szablon strony sesji rodzinnej
+
+- W Pages każda zwykła strona B2C ma panel „Szybki start: strona usługi fotograficznej” z szablonem „Sesja rodzinna — Toruń”.
+- Szablon jest punktem wyjścia, a nie automatyczną publikacją: zapisuje komplet sekcji dopiero po potwierdzeniu administratora. Zdjęcia, teksty, kolejność bloków i CTA pozostają edytowalne.
+- Układ obejmuje hero, opis sposobu pracy, przygotowanie do sesji, galerię, lokalny tekst informacyjny oraz rezerwację. Hero jest oznaczony jako widoczny H1.
+
 ## Aktualizacja 2026-08-04 — rozdzielenie marek w wyszukiwarce
 
 - Wlasniewski.pl jest domeną fotografii. Historyczne wejścia `/dron`, `/termowizja`, `/monitoring` oraz `/b2b/*` są przekierowywane trwale na Aeroanaliza.pl.

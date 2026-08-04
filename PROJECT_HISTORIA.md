@@ -1,5 +1,11 @@
 # PROJECT_HISTORIA & VADEMECUM STABILNOŚCI
 
+## 2026-08-04 — Szablon usługi „Sesja rodzinna — Toruń” w Pages
+
+- Pages otrzymał gotowy, edytowalny szablon B2C dla jednej kanonicznej strony sesji rodzinnej: hero, przebieg spotkania, trzy moduły pomocnicze, galeria, lokalny tekst sprzedażowy i CTA do rezerwacji.
+- Szablon nie publikuje ani nie nadpisuje żadnej istniejącej strony. Administrator świadomie wybiera go w edycji konkretnej strony i podmienia własne fotografie oraz teksty.
+- Pierwszy hero w szablonie renderuje widoczny H1; kolejne nagłówki pozostają H2, więc strona zachowuje poprawną hierarchię SEO.
+
 ## 2026-08-04 — Rozdzielenie SEO fotografii i usług Aeroanaliza
 
 - Wlasniewski.pl trwale przekierowuje stare adresy dronowe oraz cały historyczny prefix `/b2b/*` do odpowiadających adresów Aeroanaliza.pl, zachowując parametry kampanii.

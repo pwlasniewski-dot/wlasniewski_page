@@ -223,6 +223,10 @@ export interface PageSection {
     pointcloud_tech_steps?: PointCloudTechStep[];
     pointcloud_stats?: Array<{ label: string; value: string }>;
     modelUrl?: string; // For 3D GLB file
+    // Set only for the first visual hero of an SEO landing page. It keeps the
+    // visible page heading semantic without turning every later promo into H1.
+    isPrimaryHeading?: boolean;
+    galleryAltPrefix?: string;
 }
 
 export interface PointCloudProject {
@@ -517,6 +521,17 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove, openMedia
                                 className="w-full rounded border border-zinc-700 bg-zinc-800 px-3 py-2 text-white"
                                 placeholder="np. Rodzinny spacer po Toruniu"
                             />
+                        </div>
+                        <div className="mb-4">
+                            <label className="mb-1 block text-xs text-zinc-400">Opis ALT zdjęć</label>
+                            <input
+                                type="text"
+                                value={section.galleryAltPrefix || ''}
+                                onChange={(e) => onUpdate(section.id, { galleryAltPrefix: e.target.value })}
+                                className="w-full rounded border border-zinc-700 bg-zinc-800 px-3 py-2 text-white"
+                                placeholder="np. Sesja rodzinna w Toruniu"
+                            />
+                            <p className="mt-1 text-[11px] text-zinc-500">Opis będzie uzupełniony numerem zdjęcia. Wpisz krótko, co przedstawia cała galeria.</p>
                         </div>
                         <div className="flex flex-wrap gap-2 mb-4">
                             {section.images?.map((img, idx) => (
@@ -3883,7 +3898,40 @@ export default function PageBuilder({ sections, onChange, pageType }: PageBuilde
         let templateSections: PageSection[] = [];
         const baseId = () => Math.random().toString(36).substr(2, 9);
 
-        if (templateName === 'thermal') {
+        if (templateName === 'family_session') {
+            templateSections = [
+                {
+                    id: baseId(), type: 'hero', isPrimaryHeading: true,
+                    tag: 'SESJA RODZINNA • TORUŃ I OKOLICE', image: '',
+                    title: 'Sesja rodzinna w Toruniu — naturalne zdjęcia bez sztywnych póz',
+                    subtitle: 'Spokojne spotkanie dla Waszej rodziny: dużo swobody, prawdziwych emocji i kadrów, do których chce się wracać.',
+                    buttonText: 'Sprawdź wolne terminy', buttonLink: '/rezerwacja'
+                },
+                {
+                    id: baseId(), type: 'image_text', layout: 'left', image: '',
+                    subtitle: 'JAK WYGLĄDA SESJA', title: 'Nie musicie umieć pozować.',
+                    content: '<p>Najpierw się poznajemy i dajemy sobie chwilę. Dzieci mogą być sobą, a Wy nie musicie patrzeć w aparat. Podpowiadam tylko tyle, ile trzeba, żeby zdjęcia wyglądały naturalnie.</p><p>Sesję możemy zrobić w plenerze, w Waszym domu albo w miejscu, które po prostu lubicie.</p>',
+                    buttonText: 'Zobacz portfolio rodzinne', buttonLink: '/portfolio/family'
+                },
+                {
+                    id: baseId(), type: 'features', sectionLayout: 'centered', featureSize: 'normal',
+                    features: [
+                        { id: baseId(), title: 'Dzieci i tempo sesji', items: ['Bez zmuszania do pozowania', 'Przerwy, ruch i zabawa są w porządku', 'Najważniejszy jest Wasz komfort'], enabled: true },
+                        { id: baseId(), title: 'Miejsce', items: ['Toruń, okolice lub Wasz dom', 'Pomagam dobrać lokalizację i porę', 'Pogoda ma zawsze plan B'], enabled: true },
+                        { id: baseId(), title: 'Przygotowanie', items: ['Proste wskazówki przed sesją', 'Kolory dopasowane do otoczenia', 'Gotowy poradnik ubioru i pozowania'], enabled: true, buttonText: 'Jak się przygotować', buttonLink: '/jak-sie-ubrac' }
+                    ]
+                },
+                { id: baseId(), type: 'gallery', title: 'Galeria z sesji rodzinnych', galleryAltPrefix: 'Sesja rodzinna w Toruniu', images: [] },
+                {
+                    id: baseId(), type: 'rich_text', content: '<h2>Sesja rodzinna w Toruniu i okolicach</h2><p>Najlepsze zdjęcia powstają tam, gdzie czujecie się swobodnie. Spotykamy się w Toruniu, w plenerze, nad Wisłą, w parku albo w Waszym domu. Wybierzemy miejsce pasujące do Waszego rytmu i pory roku.</p><h2>Co warto wiedzieć przed sesją?</h2><p>Nie potrzebujecie idealnych ubrań ani gotowych póz. Wystarczy wygodny strój, kilka wspólnych kolorów i chęć spędzenia razem spokojnego czasu. Resztą zajmę się na miejscu.</p>'
+                },
+                {
+                    id: baseId(), type: 'contact', title: 'Zapytaj o sesję rodzinną',
+                    subtitle: 'Napisz, kto będzie na zdjęciach i jaki termin rozważacie. Wrócę z odpowiedzią i propozycją miejsca.',
+                    buttonText: 'Przejdź do rezerwacji', buttonLink: '/rezerwacja'
+                }
+            ];
+        } else if (templateName === 'thermal') {
             templateSections = [
                 {
                     id: baseId(), type: 'b2b_hero', tag: 'TERMOWIZJA Z POWIETRZA',
@@ -4194,7 +4242,28 @@ export default function PageBuilder({ sections, onChange, pageType }: PageBuilde
 
     return (
         <div className="space-y-6">
-            {/* Quick Templates Panel - Only for B2B */}
+            {/* Quick templates are deliberately separate for photography and B2B.
+                They replace only page sections — images and wording remain editable. */}
+            {pageType !== 'b2b' && pageType !== 'dron' && (
+                <div className="p-6 bg-amber-500/5 rounded-2xl border border-amber-400/20 mb-8 relative overflow-hidden">
+                    <div className="relative z-10">
+                        <h3 className="text-sm font-bold text-white mb-2 uppercase tracking-[0.2em] flex items-center gap-2">
+                            <Stars size={16} className="text-amber-300" /> Szybki start: strona usługi fotograficznej
+                        </h3>
+                        <p className="max-w-2xl text-sm leading-relaxed text-zinc-400 mb-4">
+                            Szablon zastępuje obecne sekcje kompletnym układem sprzedażowym i SEO — użyj go na nowej stronie usługi albo po zapisaniu kopii obecnej zawartości. Następnie podmień zdjęcia i dopasuj teksty.
+                        </p>
+                        <button
+                            onClick={() => applyTemplate('family_session')}
+                            className="px-5 py-3 bg-amber-300 hover:bg-amber-200 text-zinc-950 text-xs font-bold rounded-xl transition-all flex items-center gap-2"
+                        >
+                            <Camera size={14} /> Sesja rodzinna — Toruń
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Quick Templates Panel - B2B */}
             {(pageType === 'b2b' || pageType === 'dron') && (
                 <div className="p-6 bg-zinc-900/50 rounded-2xl border border-zinc-800 mb-8 relative overflow-hidden group">
                     <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">

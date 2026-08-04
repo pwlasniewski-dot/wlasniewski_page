@@ -2,6 +2,11 @@
 
 Ten dokument stanowi techniczny blueprint platformy fotograficznej wlasniewski.pl. Jest on przeznaczony dla senior deweloperów i architektów systemowych, opisując strukturę, wzorce projektowe oraz krytyczne protokoły bezpieczeństwa.
 
+## Aktualizacja 2026-08-04 — semantyczny hero stron usługowych
+
+- `PageSection.isPrimaryHeading` jest opcjonalną flagą CMS. `PageRenderer` renderuje jej tytuł jako H1 wyłącznie dla pierwszego hero strony usługowej; bez flagi zachowuje H2, co nie zmienia istniejących układów.
+- Szablon B2C jest utrzymywany w `PageBuilder.applyTemplate('family_session')`. Nie wykonuje zapisu bez akcji administratora i używa wyłącznie istniejących, edytowalnych typów sekcji.
+
 ## Aktualizacja 2026-08-04 — granica B2C/B2B
 
 - `middleware.ts` jest punktem granicznym marek: na hostach Wlasniewski.pl mapuje znane adresy B2B i catch-all `/b2b/*` na Aeroanaliza.pl kodem 308, zachowując query string.

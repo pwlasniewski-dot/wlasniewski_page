@@ -199,12 +199,17 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                         return (
                             <section key={section.id} className="py-16 px-4 bg-zinc-950">
                                 <div className="mx-auto max-w-6xl">
+                                    {data.title && (
+                                        <h2 className="mb-8 text-center font-display text-3xl font-bold text-white md:text-5xl">
+                                            {data.title}
+                                        </h2>
+                                    )}
                                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                                         {data.images?.map((img: string, idx: number) => (
                                             <div key={idx} className="relative aspect-square rounded-xl overflow-hidden group">
                                                 <img
                                                     src={img}
-                                                    alt=""
+                                                    alt={data.galleryAltPrefix ? `${data.galleryAltPrefix} — zdjęcie ${idx + 1}` : ''}
                                                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                                                 />
                                                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
@@ -312,6 +317,7 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                         );
 
                     case 'hero':
+                        const HeroHeading = data.isPrimaryHeading ? 'h1' : 'h2';
                         return (
                             <section key={section.id} className="relative py-32 px-4 bg-zinc-950 flex flex-col items-center justify-center text-center overflow-hidden min-h-[60vh]">
                                 {data.videoUrl ? (
@@ -355,7 +361,7 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                             {data.tag}
                                         </span>
                                     )}
-                                    <h2 className="text-5xl md:text-7xl font-display font-bold text-white leading-tight" dangerouslySetInnerHTML={{ __html: data.title || '' }} />
+                                    <HeroHeading className="text-5xl md:text-7xl font-display font-bold text-white leading-tight" dangerouslySetInnerHTML={{ __html: data.title || '' }} />
                                     {data.subtitle && (
                                         <p className="text-xl md:text-2xl text-zinc-400 font-light">
                                             {data.subtitle}
