@@ -1,5 +1,11 @@
 # PROJECT_HISTORIA & VADEMECUM STABILNOŚCI
 
+## 2026-08-04 — Redakcyjny wygląd i kadrowanie strony sesji
+
+- Strony usługowe oznaczone stylem redakcyjnym, a także istniejące adresy `/sesja` i `/sesja-rodzinna`, korzystają z jasnej palety papieru, atramentu i starego złota spójnej ze stroną główną; pełnoekranowy hero pozostaje fotograficzny.
+- W CMS dla Hero oraz bloku „Zdjęcie i tekst” administrator wybiera niezależnie punkt kadrowania na desktopie i telefonie, a także tryb `Cover` lub `Contain`. Nie trzeba przygotowywać jednego, uniwersalnego kadru dla wszystkich ekranów.
+- Zmiana dotyczy wyłącznie stron usługowych w tym stylu; nie zmienia danych zdjęć ani pozostałych stron Pages.
+
 ## 2026-08-04 — Szablon usługi „Sesja rodzinna — Toruń” w Pages
 
 - Pages otrzymał gotowy, edytowalny szablon B2C dla jednej kanonicznej strony sesji rodzinnej: hero, przebieg spotkania, trzy moduły pomocnicze, galeria, lokalny tekst sprzedażowy i CTA do rezerwacji.

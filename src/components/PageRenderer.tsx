@@ -69,8 +69,13 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
     const [selectedGalleryImage, setSelectedGalleryImage] = React.useState<string | null>(null);
     if (!sections || sections.length === 0) return null;
 
+    const isEditorialService = sections.some((section) => {
+        const data = section.data && typeof section.data === 'object' ? section.data : section;
+        return data.pageStyle === 'editorial';
+    });
+
     return (
-        <div className="flex flex-col gap-0">
+        <div className={`flex flex-col gap-0 ${isEditorialService ? 'service-editorial' : ''}`}>
             {sections.map((section) => {
                 // Determine source of data (flat or nested in .data)
                 // This allows PageRenderer to handle both old and new data structures
@@ -114,8 +119,13 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
 
 
                     case 'image_text':
-                        const bgColor = data.backgroundColor === 'black' ? 'bg-black' :
+                        const useEditorialPaper = isEditorialService && data.sectionTone !== 'dark';
+                        const bgColor = data.sectionTone === 'paper' || useEditorialPaper ? 'bg-[#f3efe8] text-[#2b251f]' :
+                            data.sectionTone === 'sand' ? 'bg-[#e9e2d8] text-[#2b251f]' :
+                            data.sectionTone === 'dark' ? 'bg-[#211d19]' :
+                            data.backgroundColor === 'black' ? 'bg-black' :
                             data.backgroundColor === 'zinc-900' ? 'bg-zinc-900' : 'bg-zinc-950';
+                        const isPaperTone = data.sectionTone === 'paper' || data.sectionTone === 'sand' || useEditorialPaper;
 
                         return (
                             <section key={section.id} className={`py-20 md:py-32 px-4 md:px-6 ${bgColor} overflow-hidden`}>
@@ -133,7 +143,11 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                                     <img
                                                         src={data.image}
                                                         alt={stripHtml(data.title) || "Zdjęcie sekcji"}
-                                                        className={`w-full h-full transition-transform duration-[2s] group-hover:scale-105 ${data.imageObjectFit === 'contain' ? 'object-contain p-8' : 'object-cover'}`}
+                                                        style={{
+                                                            ['--cms-image-position' as any]: data.imagePosition || 'center center',
+                                                            ['--cms-image-position-mobile' as any]: data.imagePositionMobile || data.imagePosition || 'center center',
+                                                        }}
+                                                        className={`cms-section-image w-full h-full transition-transform duration-[2s] group-hover:scale-105 ${data.imageObjectFit === 'contain' ? 'object-contain p-8' : 'object-cover'}`}
                                                     />
                                                 ) : (
                                                     <div className="w-full h-full flex items-center justify-center text-zinc-700">
@@ -162,18 +176,18 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                             {data.subtitle && (
                                                 <div className="inline-flex items-center gap-3 mb-6">
                                                     <div className="h-px w-8 bg-yellow-500" />
-                                                    <span className="text-yellow-500 text-xs font-black uppercase tracking-[0.3em]">{data.subtitle}</span>
+                                                    <span className={`${isPaperTone ? 'text-[#a16f25]' : 'text-yellow-500'} text-xs font-black uppercase tracking-[0.3em]`}>{data.subtitle}</span>
                                                 </div>
                                             )}
 
                                             {/* Title */}
                                             {data.title && (
-                                                <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-8 leading-[1.1] tracking-tight" dangerouslySetInnerHTML={{ __html: data.title }}>
+                                                <h2 className={`text-4xl md:text-5xl lg:text-6xl font-bold mb-8 leading-[1.1] tracking-tight ${isPaperTone ? 'text-[#2b251f]' : 'text-white'}`} dangerouslySetInnerHTML={{ __html: data.title }}>
                                                 </h2>
                                             )}
 
                                             {/* Description */}
-                                            <div className="prose prose-invert prose-lg text-zinc-400 font-light leading-relaxed mb-10 max-w-none">
+                                            <div className={`${isPaperTone ? 'prose prose-lg text-[#686057]' : 'prose prose-invert prose-lg text-zinc-400'} font-light leading-relaxed mb-10 max-w-none`}>
                                                 <div dangerouslySetInnerHTML={{ __html: data.content || '' }} />
                                             </div>
 
@@ -182,7 +196,7 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                                 <div className="pt-4">
                                                     <Link
                                                         href={data.buttonLink}
-                                                        className="inline-flex items-center gap-3 px-8 py-4 bg-zinc-900 hover:bg-zinc-800 border border-white/10 rounded-full text-white font-bold transition-all group hover:border-yellow-500/50"
+                                                        className={`${isPaperTone ? 'bg-[#2b251f] hover:bg-[#42382f] border-[#2b251f] text-white' : 'bg-zinc-900 hover:bg-zinc-800 border-white/10 text-white'} inline-flex items-center gap-3 px-8 py-4 border rounded-full font-bold transition-all group hover:border-yellow-500/50`}
                                                     >
                                                         {data.buttonText}
                                                         <ArrowRight size={18} className="text-yellow-500 group-hover:translate-x-1 transition-transform" />
@@ -346,8 +360,13 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                 ) : data.image ? (
                                     <>
                                         <div
-                                            className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-                                            style={{ backgroundImage: `url("${data.image}")` }}
+                                            className="cms-hero-background absolute inset-0 bg-no-repeat"
+                                            style={{
+                                                backgroundImage: `url("${data.image}")`,
+                                                backgroundSize: data.imageObjectFit === 'contain' ? 'contain' : 'cover',
+                                                ['--cms-image-position' as any]: data.imagePosition || 'center center',
+                                                ['--cms-image-position-mobile' as any]: data.imagePositionMobile || data.imagePosition || 'center center',
+                                            }}
                                         />
                                         <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px]" />
                                     </>

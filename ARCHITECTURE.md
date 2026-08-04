@@ -2,6 +2,12 @@
 
 Ten dokument stanowi techniczny blueprint platformy fotograficznej wlasniewski.pl. Jest on przeznaczony dla senior deweloperów i architektów systemowych, opisując strukturę, wzorce projektowe oraz krytyczne protokoły bezpieczeństwa.
 
+## Aktualizacja 2026-08-04 — kontrakt kadrowania i stylu redakcyjnego
+
+- `PageSection.imagePosition` oraz `imagePositionMobile` przechowują prawidłowe wartości CSS `object-position`/`background-position`; renderer przekazuje je przez zmienne CSS `--cms-image-position` i `--cms-image-position-mobile`.
+- `imageObjectFit` steruje wyłącznie sposobem dopasowania obrazu (`cover` lub `contain`), a `sectionTone` określa tło bloku `image_text`. Wartości są opcjonalne i zachowują zgodność z istniejącym JSON-em Pages.
+- `PageRenderer` rozpoznaje `pageStyle='editorial'` oraz istniejące ścieżki `/sesja` i `/sesja-rodzinna`; zakres CSS `.service-editorial` nie dotyka pozostałych stron CMS.
+
 ## Aktualizacja 2026-08-04 — semantyczny hero stron usługowych
 
 - `PageSection.isPrimaryHeading` jest opcjonalną flagą CMS. `PageRenderer` renderuje jej tytuł jako H1 wyłącznie dla pierwszego hero strony usługowej; bez flagi zachowuje H2, co nie zmienia istniejących układów.

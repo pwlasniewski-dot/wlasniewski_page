@@ -2,6 +2,12 @@
 
 Ten dokument stanowi kompleksowy opis funkcjonalności oraz logiki biznesowej platformy **FOTO-DRON Przemysław Właśniewski**. Dokumentacja została opracowana na podstawie audytu technicznego przeprowadzonego w grudniu 2025 r. Szczegóły techniczne dotyczące infrastruktury i wzorców projektowych znajdują się w dokumencie [ARCHITECTURE.md](file:///c:/Strona-fotografa/ARCHITECTURE.md).
 
+## Aktualizacja 2026-08-04 — kadrowanie fotografii strony usługi
+
+- Edytor Hero ma pola „Kadrowanie zdjęcia”, „Kadrowanie na telefonie” oraz „Sposób wypełnienia”. `Cover` wypełnia hero, `Contain` pokazuje całe zdjęcie bez przycinania.
+- Blok „Zdjęcie i tekst” otrzymał te same niezależne kadry oraz wybór tła: jasny papier, piaskowy papier albo ciemny atrament. Dzięki temu administrator dobiera widoczny motyw zdjęcia bez ingerencji w plik źródłowy.
+- Szablon sesji rodzinnej domyślnie korzysta z jasnego języka redakcyjnego zgodnego ze stroną główną.
+
 ## Aktualizacja 2026-08-04 — szablon strony sesji rodzinnej
 
 - W Pages każda zwykła strona B2C ma panel „Szybki start: strona usługi fotograficznej” z szablonem „Sesja rodzinna — Toruń”.

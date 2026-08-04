@@ -1,5 +1,13 @@
 # Aktualny plan prac
 
+## 2026-08-04 — odbiór strony `/sesja`
+
+- [x] Jasny, redakcyjny wygląd dla `/sesja` oraz `/sesja-rodzinna`, bez zmiany pozostałych stron Pages.
+- [x] Wybór kadru desktop/mobile i `Cover`/`Contain` dla Hero oraz bloku „Zdjęcie i tekst”.
+- [x] Jasne/piaskowe/ciemne tło w edytorze bloku „Zdjęcie i tekst”.
+- [ ] Niezależna kontrola jakości i odbiór właściciela w lokalnym podglądzie.
+- [ ] Testy lint oraz build przed decyzją o commicie.
+
 ## 2026-08-04 — wzorzec sprzedażowej strony usługi: sesja rodzinna
 
 - [x] Ustalony model jednej kanonicznej strony `/sesja-rodzinna`, bez mnożenia podobnych adresów.

@@ -141,11 +141,15 @@ export default async function DynamicPage({ params }: PageProps) {
         const sectionData = section.data && typeof section.data === 'object' ? section.data : section;
         return sectionData.isPrimaryHeading === true;
     });
+    const isEditorialService = ['sesja', 'sesja-rodzinna'].includes(page!.slug.toLowerCase()) || sections.some((section) => {
+        const sectionData = section.data && typeof section.data === 'object' ? section.data : section;
+        return sectionData.pageStyle === 'editorial';
+    });
     const serviceLabel = getServiceLabelBySlug(page!.slug);
     const localCoverageLabel = LOCAL_CITY_LINKS.map(l => l.city).join(', ');
 
     return (
-        <main className="min-h-screen bg-zinc-950 text-white selection:bg-gold-400 selection:text-black">
+        <main className={isEditorialService ? 'min-h-screen bg-[#f3efe8] text-[#2b251f] selection:bg-[#c9ad74] selection:text-[#2b251f]' : 'min-h-screen bg-zinc-950 text-white selection:bg-gold-400 selection:text-black'}>
             {/* Fallback H1 keeps legacy pages semantic; SEO templates provide a visible H1 themselves. */}
             {!hasVisiblePrimaryHeading && <h1 className="sr-only">{page.title}</h1>}
             {/* Schema.org Service — gives Google explicit understanding that this is a service page
@@ -185,17 +189,17 @@ export default async function DynamicPage({ params }: PageProps) {
             <PageRenderer sections={sections} />
 
             {/* Local SEO reinforcement block for service intent + city coverage */}
-            <section className="border-t border-white/5 bg-zinc-950 py-14 px-6">
+            <section className={isEditorialService ? 'border-t border-[#d5cabd] bg-[#f3efe8] py-14 px-6 text-[#2b251f]' : 'border-t border-white/5 bg-zinc-950 py-14 px-6'}>
                 <div className="mx-auto max-w-5xl">
-                    <h2 className="text-2xl md:text-3xl font-bold text-white mb-5">
+                    <h2 className={`text-2xl md:text-3xl font-bold mb-5 ${isEditorialService ? 'text-[#2b251f]' : 'text-white'}`}>
                         {serviceLabel} — {localCoverageLabel} i okolice
                     </h2>
-                    <p className="text-zinc-300 leading-relaxed mb-6">
+                    <p className={`${isEditorialService ? 'text-[#686057]' : 'text-zinc-300'} leading-relaxed mb-6`}>
                         Realizuję usługi jako {serviceLabel} na terenie: {localCoverageLabel}.
                         Pracuję naturalnie, z naciskiem na emocje, światło i autentyczny reportaż.
                     </p>
 
-                    <h3 className="text-lg md:text-xl font-semibold text-gold-400 mb-3">
+                    <h3 className={`text-lg md:text-xl font-semibold mb-3 ${isEditorialService ? 'text-[#a16f25]' : 'text-gold-400'}`}>
                         Lokalnie: sprawdź dedykowane strony miast
                     </h3>
                     <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-sm">
@@ -203,7 +207,7 @@ export default async function DynamicPage({ params }: PageProps) {
                             <li key={item.href}>
                                 <a
                                     href={item.href}
-                                    className="block rounded-lg border border-white/10 px-4 py-3 text-zinc-200 hover:text-white hover:border-gold-400/50 transition"
+                                    className={isEditorialService ? 'block rounded-lg border border-[#d5cabd] px-4 py-3 text-[#494139] hover:bg-white/70 hover:border-[#a16f25] transition' : 'block rounded-lg border border-white/10 px-4 py-3 text-zinc-200 hover:text-white hover:border-gold-400/50 transition'}
                                 >
                                     {serviceLabel} {item.city}
                                 </a>

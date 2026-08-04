@@ -165,6 +165,49 @@ body {
   letter-spacing: -.025em;
 }
 
+/* Service editorial pages intentionally share the paper, ink and old-gold
+   language of the homepage while keeping a full-bleed photographic hero. */
+.service-editorial {
+  font-family: var(--font-sans), Montserrat, sans-serif;
+}
+
+.service-editorial > section:not(:has([class*="absolute"][class*="inset-0"])) {
+  background-color: #f3efe8 !important;
+  color: #2b251f !important;
+  border-color: #d5cabd !important;
+}
+
+.service-editorial > section:nth-child(even):not(:has([class*="absolute"][class*="inset-0"])) {
+  background-color: #e9e2d8 !important;
+}
+
+.service-editorial > section:not(:has([class*="absolute"][class*="inset-0"])) :is(.text-white,.text-zinc-50,.text-gold-400,.text-gold-300) {
+  color: #2b251f !important;
+}
+
+.service-editorial > section:not(:has([class*="absolute"][class*="inset-0"])) :is(.text-zinc-200,.text-zinc-300,.text-zinc-400,.text-zinc-500) {
+  color: #686057 !important;
+}
+
+.service-editorial > section:not(:has([class*="absolute"][class*="inset-0"])) :is(.bg-black,.bg-zinc-950,.bg-zinc-900,.bg-zinc-800,.bg-zinc-900\/50,.bg-zinc-900\/60,.bg-zinc-900\/70) {
+  background-color: rgba(255, 253, 248, .66) !important;
+}
+
+.service-editorial .font-display,
+.service-editorial h2 {
+  font-family: var(--font-display), "Cormorant Garamond", serif;
+  font-weight: 400;
+  letter-spacing: -.025em;
+}
+
+.cms-hero-background { background-position: var(--cms-image-position, center center); }
+.cms-section-image { object-position: var(--cms-image-position, center center); }
+
+@media (max-width: 767px) {
+  .cms-hero-background { background-position: var(--cms-image-position-mobile, center center); }
+  .cms-section-image { object-position: var(--cms-image-position-mobile, center center); }
+}
+
 @media (max-width: 767px) {
   .home-hero h2 {
     font-size: clamp(2.75rem, 14vw, 4.5rem);

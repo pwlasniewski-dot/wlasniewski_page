@@ -216,6 +216,9 @@ export interface PageSection {
     switchInterval?: number; // For thermal_slider
     overlayOpacity?: number; // For video modules
     imageObjectFit?: 'cover' | 'contain'; // For image_text
+    imagePosition?: string; // e.g. "center center" — shared crop control for hero and image/text
+    imagePositionMobile?: string;
+    sectionTone?: 'inherit' | 'paper' | 'sand' | 'dark';
     backgroundColor?: 'black' | 'zinc-900' | 'zinc-950'; // For image_text
     // Point Cloud / Surveying Properties
     pointcloud_projects?: PointCloudProject[];
@@ -227,6 +230,7 @@ export interface PageSection {
     // visible page heading semantic without turning every later promo into H1.
     isPrimaryHeading?: boolean;
     galleryAltPrefix?: string;
+    pageStyle?: 'editorial';
 }
 
 export interface PointCloudProject {
@@ -375,6 +379,45 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove, openMedia
                                 </button>
                             </div>
                         </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs text-zinc-400 mb-1">Kadrowanie zdjęcia</label>
+                                <select
+                                    value={section.imagePosition || 'center center'}
+                                    onChange={(e) => onUpdate(section.id, { imagePosition: e.target.value })}
+                                    className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
+                                >
+                                    <option value="left top">Lewy górny</option><option value="center top">Środek górny</option><option value="right top">Prawy górny</option>
+                                    <option value="left center">Lewy środek</option><option value="center center">Środek</option><option value="right center">Prawy środek</option>
+                                    <option value="left bottom">Lewy dolny</option><option value="center bottom">Środek dolny</option><option value="right bottom">Prawy dolny</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-xs text-zinc-400 mb-1">Kadrowanie na telefonie</label>
+                                <select
+                                    value={section.imagePositionMobile || ''}
+                                    onChange={(e) => onUpdate(section.id, { imagePositionMobile: e.target.value || undefined })}
+                                    className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
+                                >
+                                    <option value="">Tak jak desktop</option>
+                                    <option value="left top">Lewy górny</option><option value="center top">Środek górny</option><option value="right top">Prawy górny</option>
+                                    <option value="left center">Lewy środek</option><option value="center center">Środek</option><option value="right center">Prawy środek</option>
+                                    <option value="left bottom">Lewy dolny</option><option value="center bottom">Środek dolny</option><option value="right bottom">Prawy dolny</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-xs text-zinc-400 mb-1">Sposób wypełnienia</label>
+                                <select
+                                    value={section.imageObjectFit || 'cover'}
+                                    onChange={(e) => onUpdate(section.id, { imageObjectFit: e.target.value as 'cover' | 'contain' })}
+                                    className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
+                                >
+                                    <option value="cover">Wypełnij kadr (Cover)</option>
+                                    <option value="contain">Pokaż całe zdjęcie (Contain)</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
                 )}
 
@@ -423,6 +466,33 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove, openMedia
                                 </div>
 
                                 <div>
+                                    <label className="block text-xs text-zinc-400 mb-1">Kadrowanie na telefonie</label>
+                                    <select
+                                        value={section.imagePositionMobile || ''}
+                                        onChange={(e) => onUpdate(section.id, { imagePositionMobile: e.target.value || undefined })}
+                                        className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
+                                    >
+                                        <option value="">Tak jak desktop</option>
+                                        <option value="left top">Lewy górny</option><option value="center top">Środek górny</option><option value="right top">Prawy górny</option>
+                                        <option value="left center">Lewy środek</option><option value="center center">Środek</option><option value="right center">Prawy środek</option>
+                                        <option value="left bottom">Lewy dolny</option><option value="center bottom">Środek dolny</option><option value="right bottom">Prawy dolny</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs text-zinc-400 mb-1">Kadrowanie zdjęcia</label>
+                                    <select
+                                        value={section.imagePosition || 'center center'}
+                                        onChange={(e) => onUpdate(section.id, { imagePosition: e.target.value })}
+                                        className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
+                                    >
+                                        <option value="left top">Lewy górny</option><option value="center top">Środek górny</option><option value="right top">Prawy górny</option>
+                                        <option value="left center">Lewy środek</option><option value="center center">Środek</option><option value="right center">Prawy środek</option>
+                                        <option value="left bottom">Lewy dolny</option><option value="center bottom">Środek dolny</option><option value="right bottom">Prawy dolny</option>
+                                    </select>
+                                </div>
+
+                                <div>
                                     <label className="block text-xs text-zinc-400 mb-1">Tło sekcji</label>
                                     <select
                                         value={section.backgroundColor || 'zinc-950'}
@@ -432,6 +502,20 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove, openMedia
                                         <option value="zinc-950">Bardzo Ciemne (Zinc-950)</option>
                                         <option value="zinc-900">Ciemne (Zinc-900)</option>
                                         <option value="black">Czerń (Black)</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs text-zinc-400 mb-1">Styl redakcyjny</label>
+                                    <select
+                                        value={section.sectionTone || 'inherit'}
+                                        onChange={(e) => onUpdate(section.id, { sectionTone: e.target.value as PageSection['sectionTone'] })}
+                                        className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white"
+                                    >
+                                        <option value="inherit">Standardowy wygląd</option>
+                                        <option value="paper">Jasny papier</option>
+                                        <option value="sand">Piaskowy papier</option>
+                                        <option value="dark">Ciemny atrament</option>
                                     </select>
                                 </div>
 
@@ -3901,14 +3985,14 @@ export default function PageBuilder({ sections, onChange, pageType }: PageBuilde
         if (templateName === 'family_session') {
             templateSections = [
                 {
-                    id: baseId(), type: 'hero', isPrimaryHeading: true,
+                    id: baseId(), type: 'hero', isPrimaryHeading: true, pageStyle: 'editorial', imagePosition: 'center center', imageObjectFit: 'cover',
                     tag: 'SESJA RODZINNA • TORUŃ I OKOLICE', image: '',
                     title: 'Sesja rodzinna w Toruniu — naturalne zdjęcia bez sztywnych póz',
                     subtitle: 'Spokojne spotkanie dla Waszej rodziny: dużo swobody, prawdziwych emocji i kadrów, do których chce się wracać.',
                     buttonText: 'Sprawdź wolne terminy', buttonLink: '/rezerwacja'
                 },
                 {
-                    id: baseId(), type: 'image_text', layout: 'left', image: '',
+                    id: baseId(), type: 'image_text', layout: 'left', image: '', imagePosition: 'center center', sectionTone: 'paper',
                     subtitle: 'JAK WYGLĄDA SESJA', title: 'Nie musicie umieć pozować.',
                     content: '<p>Najpierw się poznajemy i dajemy sobie chwilę. Dzieci mogą być sobą, a Wy nie musicie patrzeć w aparat. Podpowiadam tylko tyle, ile trzeba, żeby zdjęcia wyglądały naturalnie.</p><p>Sesję możemy zrobić w plenerze, w Waszym domu albo w miejscu, które po prostu lubicie.</p>',
                     buttonText: 'Zobacz portfolio rodzinne', buttonLink: '/portfolio/family'
