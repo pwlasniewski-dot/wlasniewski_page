@@ -2,6 +2,12 @@
 
 Ten dokument stanowi techniczny blueprint platformy fotograficznej wlasniewski.pl. Jest on przeznaczony dla senior deweloperów i architektów systemowych, opisując strukturę, wzorce projektowe oraz krytyczne protokoły bezpieczeństwa.
 
+## Aktualizacja 2026-08-04 — granica B2C/B2B
+
+- `middleware.ts` jest punktem granicznym marek: na hostach Wlasniewski.pl mapuje znane adresy B2B i catch-all `/b2b/*` na Aeroanaliza.pl kodem 308, zachowując query string.
+- Sitemap Aeroanaliza obejmuje strony statyczne dronowe oraz opublikowane rekordy `page_type='b2b'`; dynamiczne strony B2B emitują własny canonical i adres Open Graph.
+- Reguły indeksowania są deklarowane jednocześnie w metadanych i nagłówku `X-Robots-Tag` dla Foto-Match, aby nie polegać na samym robots.txt.
+
 ## Aktualizacja 2026-08-03 — architektura indeksu Portfolio
 
 - `PortfolioIndexViews` jest wspólnym rendererem dwóch układów indeksu; otrzymuje ten sam kontrakt danych kategorii/sesji i nie ingeruje w źródła mediów.

@@ -1,4 +1,4 @@
-import { notFound, redirect } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import prisma from '@/lib/db/prisma';
 import PageRenderer from '@/components/PageRenderer';
 import { Metadata } from 'next';
@@ -108,7 +108,7 @@ export default async function DynamicPage({ params }: PageProps) {
 
     // Redirect B2B pages to their proper path
     if (page!.page_type === 'b2b') {
-        redirect(`/b2b/${page!.slug.toLowerCase()}`);
+        permanentRedirect(`https://aeroanaliza.pl/${page!.slug.toLowerCase().replace(/^b2b[/-]?/, '')}`);
     }
 
     const serviceLabel = getServiceLabelBySlug(page!.slug);

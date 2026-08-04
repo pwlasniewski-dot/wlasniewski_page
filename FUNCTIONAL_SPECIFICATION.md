@@ -2,6 +2,12 @@
 
 Ten dokument stanowi kompleksowy opis funkcjonalności oraz logiki biznesowej platformy **FOTO-DRON Przemysław Właśniewski**. Dokumentacja została opracowana na podstawie audytu technicznego przeprowadzonego w grudniu 2025 r. Szczegóły techniczne dotyczące infrastruktury i wzorców projektowych znajdują się w dokumencie [ARCHITECTURE.md](file:///c:/Strona-fotografa/ARCHITECTURE.md).
 
+## Aktualizacja 2026-08-04 — rozdzielenie marek w wyszukiwarce
+
+- Wlasniewski.pl jest domeną fotografii. Historyczne wejścia `/dron`, `/termowizja`, `/monitoring` oraz `/b2b/*` są przekierowywane trwale na Aeroanaliza.pl.
+- Foto-Match i Historia nie są materiałami pozyskującymi ruch fotograficzny; pozostają dostępne operacyjnie, lecz ich metadane i nagłówki HTTP wskazują `noindex, nofollow`.
+- W mapie strony Wlasniewski.pl pozostają wyłącznie publiczne strony fotograficzne przeznaczone do indeksowania.
+
 ## Aktualizacja 2026-08-03 — wybieralny wygląd Portfolio
 
 - Panel `/admin/portfolio` udostępnia dwa globalne wyglądy strony głównej Portfolio: „Edytorskie rozdziały” i „Kontakt filmowy”. Aktywny wariant jest jednoznacznie oznaczony, a zmiana działa jednym kliknięciem.

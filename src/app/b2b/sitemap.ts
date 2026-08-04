@@ -8,13 +8,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const b2bStaticPages = [
         '',          // aeroanaliza.pl/
         '/dron',     // aeroanaliza.pl/dron
+        '/termowizja',
+        '/monitoring',
     ];
 
     let dbPages: Array<{ slug: string; updated_at: Date }> = [];
 
     try {
         dbPages = await prisma.page.findMany({
-            where: { is_published: true, slug: { startsWith: 'b2b' } },
+            where: { is_published: true, page_type: 'b2b' },
             select: { slug: true, updated_at: true }
         });
     } catch (error) {
@@ -32,7 +34,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
         // B2B Dynamic pages from database
         ...dbPages.map(page => ({
-            url: `${b2bBase}/${page.slug.replace(/^b2b\/?/, '')}`,
+            url: `${b2bBase}/${page.slug.replace(/^b2b[/-]?/, '')}`,
             lastModified: page.updated_at,
             changeFrequency: 'monthly' as const,
             priority: 0.7,

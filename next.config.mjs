@@ -13,6 +13,8 @@ const privateNoIndexRoutes = [
     '/foto-wyzwanie/invite/:path*',
     '/foto-match/profil/:path*',
     '/foto-match/onboarding/:path*',
+    '/foto-match/:path*',
+    '/historia',
     '/karta-podarunkowa/dostep/:path*',
 ];
 

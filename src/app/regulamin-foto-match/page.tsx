@@ -5,6 +5,10 @@ import { ShieldCheck, Heart, AlertTriangle, MessageSquare, Camera, Lock, FileTex
 export const metadata: Metadata = {
     title: 'Regulamin Foto-Match | Przemysław Właśniewski',
     description: 'Zasady programu Foto-Match: weryfikacja, bezpieczeństwo, model release, RODO i polityka spotkań.',
+    robots: {
+        index: false,
+        follow: false,
+    },
 };
 
 export default function RegulaminFotoMatchPage() {

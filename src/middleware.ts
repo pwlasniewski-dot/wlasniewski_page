@@ -19,6 +19,34 @@ export default async function middleware(req: NextRequest) {
     const url = req.nextUrl;
     const hostname = req.headers.get("host") || "";
 
+    // Wlasniewski.pl is the photography brand. Legacy B2B paths used to be
+    // reachable on this domain too, which mixed two unrelated topics in search.
+    // Keep their SEO value by permanently moving visitors to the live B2B site.
+    const isPhotographyHost = ['wlasniewski.pl', 'www.wlasniewski.pl'].includes(hostname.split(':')[0].toLowerCase());
+    if (isPhotographyHost) {
+        const b2bDestinations: Record<string, string> = {
+            '/b2b': 'https://aeroanaliza.pl/',
+            '/b2b/dron': 'https://aeroanaliza.pl/dron',
+            '/b2b/termowizja': 'https://aeroanaliza.pl/dron#termowizja',
+            '/b2b/monitoring': 'https://aeroanaliza.pl/monitoring',
+            '/dron': 'https://aeroanaliza.pl/dron',
+            '/termowizja': 'https://aeroanaliza.pl/dron#termowizja',
+            '/monitoring': 'https://aeroanaliza.pl/monitoring',
+        };
+        const destination = b2bDestinations[url.pathname];
+        if (destination) {
+            const target = new URL(destination);
+            target.search = url.search;
+            return NextResponse.redirect(target, 308);
+        }
+
+        if (url.pathname.startsWith('/b2b/')) {
+            const target = new URL(`https://aeroanaliza.pl${url.pathname.slice('/b2b'.length)}`);
+            target.search = url.search;
+            return NextResponse.redirect(target, 308);
+        }
+    }
+
     // Unified Twin-Engine Logic
     const isB2B = isB2BContext({
         hostname: hostname,

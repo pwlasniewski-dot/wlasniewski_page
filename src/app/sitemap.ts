@@ -51,9 +51,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         '/blog',
         '/kontakt',
         '/karta-podarunkowa',
-        '/historia',
         '/foto-wyzwanie',
-        '/foto-match',
     ];
 
     // City SEO landing pages — priority 1.0 for local SEO
@@ -68,7 +66,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         '/fotograf-pluznica',
     ];
 
-    let dbPages: Array<{ slug: string; updated_at: Date }> = [];
+    let dbPages: Array<{ slug: string; page_type: string; updated_at: Date }> = [];
     let portfolioSessions: Array<{ slug: string; category: string; updated_at: Date }> = [];
     let blogPosts: Array<{ slug: string; updated_at: Date }> = [];
     let nphotoAlbums: Array<{ slug: string; updated_at: Date }> = [];
@@ -76,8 +74,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     try {
         dbPages = await prisma.page.findMany({
-            where: { is_published: true, NOT: { slug: { startsWith: 'b2b' } } },
-            select: { slug: true, updated_at: true }
+            where: {
+                is_published: true,
+                AND: [
+                    { NOT: { slug: { startsWith: 'b2b' } } },
+                    { NOT: { page_type: 'b2b' } },
+                ],
+            },
+            select: { slug: true, page_type: true, updated_at: true }
         });
 
         portfolioSessions = await prisma.portfolioSession.findMany({

@@ -10,6 +10,10 @@ export const metadata: Metadata = {
     alternates: {
         canonical: 'https://wlasniewski.pl/historia',
     },
+    robots: {
+        index: false,
+        follow: false,
+    },
 };
 
 export default async function HistoryPage() {

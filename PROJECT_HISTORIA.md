@@ -1,5 +1,11 @@
 # PROJECT_HISTORIA & VADEMECUM STABILNOŚCI
 
+## 2026-08-04 — Rozdzielenie SEO fotografii i usług Aeroanaliza
+
+- Wlasniewski.pl trwale przekierowuje stare adresy dronowe oraz cały historyczny prefix `/b2b/*` do odpowiadających adresów Aeroanaliza.pl, zachowując parametry kampanii.
+- Foto-Match oraz puste archiwum Historii pozostają dostępne, ale zostały wyłączone z indeksowania i usunięte z mapy strony fotograficznej.
+- Aeroanaliza otrzymała pełniejszą sitemapę i canonicale dynamicznych podstron, dzięki czemu obie domeny wysyłają Google jednoznaczne sygnały tematyczne.
+
 ## 2026-08-03 — Dwa przełączane układy strony Portfolio
 
 - Publiczne `/portfolio` otrzymało dwa kompletne warianty: jasne „Edytorskie rozdziały” oraz ciemny „Kontakt filmowy”. Administrator przełącza je w panelu Portfolio bez kopiowania sesji ani plików Amazon S3.

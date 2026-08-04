@@ -10,10 +10,16 @@ interface PageProps {
 
 async function getB2BPage(slug: string) {
     try {
+        const candidateSlugs = Array.from(new Set([
+            slug,
+            `b2b-${slug}`,
+            `b2b/${slug}`,
+        ]));
+
         // Specifically search for B2B domain pages to avoid clashing with B2C slugs
         const page = await prisma.page.findFirst({
             where: {
-                slug: { equals: slug, mode: 'insensitive' },
+                slug: { in: candidateSlugs, mode: 'insensitive' },
                 is_published: true,
                 page_type: 'b2b'
             },
@@ -22,6 +28,9 @@ async function getB2BPage(slug: string) {
                 title: true,
                 meta_title: true,
                 meta_description: true,
+                meta_keywords: true,
+                hero_image: true,
+                content: true,
                 sections: true
             }
         });
@@ -47,10 +56,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         title: page.meta_title || page.title,
         description: page.meta_description,
         keywords: page.meta_keywords,
+        alternates: {
+            canonical: `https://aeroanaliza.pl/${slug}`,
+        },
         openGraph: {
             title: page.meta_title || page.title,
             description: page.meta_description || '',
             type: 'website',
+            url: `https://aeroanaliza.pl/${slug}`,
             images: page.hero_image ? [page.hero_image] : [],
         },
     };

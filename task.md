@@ -1,5 +1,14 @@
 # Aktualny plan prac
 
+## 2026-08-04 — rozdzielenie Wlasniewski.pl i Aeroanaliza.pl
+
+- [x] Inwentaryzacja historycznych adresów B2B, Foto-Match i pustej Historii.
+- [x] Trwałe przekierowania dronowe oraz catch-all `/b2b/*` z domeny fotograficznej do Aeroanaliza.pl.
+- [x] Noindex dla Foto-Match i Historii; usunięcie ich z mapy strony fotograficznej.
+- [x] Canonicale oraz sitemap Aeroanaliza dla stron dynamicznych i usług B2B.
+- [x] Lint zmienionych plików bez błędów.
+- [ ] Odbiór właściciela i deploy przed przesłaniem odświeżonej mapy strony do Google Search Console.
+
 ## 2026-08-03 — dwa warianty Portfolio zarządzane z admina
 
 - [x] Wariant 01 „Edytorskie rozdziały” spójny z nową stroną główną.
