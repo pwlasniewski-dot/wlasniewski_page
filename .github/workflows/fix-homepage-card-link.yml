@@ -1,0 +1,43 @@
+name: Fix homepage service card funnel
+
+on:
+  push:
+    branches: [fix/homepage-service-card-funnel]
+
+permissions:
+  contents: write
+
+jobs:
+  fix-link:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/homepage-service-card-funnel
+          fetch-depth: 0
+      - name: Route whole card to booking
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('src/app/HomeContent.tsx')
+          s = p.read_text(encoding='utf-8')
+          s = s.replace(
+          '''                        {serviceCards.map((item, index) => (\n                            <article key={item.title} className={`group relative min-h-[420px] overflow-hidden rounded-[2px] bg-[#28221c] ${index === 0 ? 'md:col-span-5 md:min-h-[620px]' : index === 1 ? 'md:col-span-7 md:min-h-[620px]' : 'md:col-span-12 md:min-h-[480px]'}`}>''',
+          '''                        {serviceCards.map((item, index) => (\n                            <Link key={item.title} href={item.href} className={`group relative min-h-[420px] overflow-hidden rounded-[2px] bg-[#28221c] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#94733d] ${index === 0 ? 'md:col-span-5 md:min-h-[620px]' : index === 1 ? 'md:col-span-7 md:min-h-[620px]' : 'md:col-span-12 md:min-h-[480px]'}`}>''', 1)
+          s = s.replace(
+          '''                                        <div>\n                                            <Link href="/portfolio#wybrane-historie" className="rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#ead5ab]">\n                                                <h3 className="font-display text-4xl font-normal leading-none transition group-hover:text-[#f4dfb6] sm:text-5xl lg:text-6xl">{item.title}</h3>\n                                            </Link>\n                                            <p className="mt-4 max-w-lg text-sm leading-6 text-white/70">{item.copy}</p>\n                                        </div>\n                                        <div className="flex shrink-0 flex-col items-start gap-3 sm:items-end">\n                                            <Link href="/portfolio#wybrane-historie" className="text-[10px] font-bold uppercase tracking-[.16em] text-white/75 transition hover:text-white">Zobacz zdjęcia <ArrowRight className="ml-1 inline" size={14}/></Link>\n                                            <Link href={item.href} className="text-xs font-bold uppercase tracking-[.14em] text-[#ead5ab] transition hover:text-white">{publicPriceLabels[item.service] || fallbackPublicPriceLabel} <ArrowRight className="ml-2 inline" size={16}/></Link>\n                                        </div>''',
+          '''                                        <div>\n                                            <h3 className="font-display text-4xl font-normal leading-none transition group-hover:text-[#f4dfb6] sm:text-5xl lg:text-6xl">{item.title}</h3>\n                                            <p className="mt-4 max-w-lg text-sm leading-6 text-white/70">{item.copy}</p>\n                                        </div>\n                                        <span className="shrink-0 text-xs font-bold uppercase tracking-[.14em] text-[#ead5ab]">{publicPriceLabels[item.service] || fallbackPublicPriceLabel} <ArrowRight className="ml-2 inline" size={16}/></span>''', 1)
+          s = s.replace('''                            </article>\n                        ))}''', '''                            </Link>\n                        ))}''', 1)
+          if '/portfolio#wybrane-historie' in s[s.find('{serviceCards.map'):s.find('{serviceCards.map')+5000]:
+              raise SystemExit('Link do portfolio nadal występuje w kaflach')
+          p.write_text(s, encoding='utf-8')
+          PY
+      - name: Commit fix
+        run: |
+          rm .github/workflows/fix-homepage-card-link.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/app/HomeContent.tsx .github/workflows/fix-homepage-card-link.yml
+          git commit -m "fix: route homepage service cards to booking"
+          git push origin HEAD:fix/homepage-service-card-funnel
