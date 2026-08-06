@@ -23,6 +23,13 @@ function waitForStream(stream: NodeJS.ReadableStream): Promise<void> {
     });
 }
 
+function isSupportedImageContentType(contentType: string): boolean {
+    return contentType.includes('image/jpeg') ||
+        contentType.includes('image/jpg') ||
+        contentType.includes('image/png') ||
+        contentType.includes('image/webp');
+}
+
 export async function GET(
     _request: NextRequest,
     { params }: { params: Promise<{ accessCode: string }> }
@@ -33,9 +40,7 @@ export async function GET(
         const gallery = await prisma.clientGallery.findUnique({
             where: { access_code: accessCode },
             include: {
-                photos: {
-                    orderBy: { order_index: 'asc' },
-                },
+                photos: { orderBy: { order_index: 'asc' } },
                 orders: {
                     where: { payment_status: 'paid' },
                     select: { photo_ids: true },
@@ -73,7 +78,7 @@ export async function GET(
             return NextResponse.json({ error: 'Brak dostępnych zdjęć do pobrania' }, { status: 404 });
         }
 
-        const archiveName = `${safeFileName(gallery.client_name)}-zdjecia.zip`;
+        const archiveName = `${safeFileName(gallery.client_name)}-zdjecia-jpg.zip`;
         const passthrough = new PassThrough({ highWaterMark: 1024 * 1024 });
         const archive = archiver('zip', {
             store: true,
@@ -81,9 +86,7 @@ export async function GET(
             highWaterMark: 1024 * 1024,
         });
 
-        archive.on('warning', (error) => {
-            console.warn('ZIP warning:', error);
-        });
+        archive.on('warning', (error) => console.warn('ZIP warning:', error));
         archive.on('error', (error) => {
             console.error('ZIP error:', error);
             passthrough.destroy(error);
@@ -91,39 +94,46 @@ export async function GET(
         archive.pipe(passthrough);
 
         void (async () => {
+            const failures: string[] = [];
             let appended = 0;
 
             try {
                 for (const [index, photo] of photosToDownload.entries()) {
-                    const sourceUrl = photo.download_source_url || photo.file_url;
+                    // Full gallery downloads must never silently use the WebP/preview source.
+                    const sourceUrl = photo.download_source_url;
+                    if (!sourceUrl) {
+                        failures.push(`Zdjęcie ${photo.id}: brak pliku JPG w pełnej jakości.`);
+                        continue;
+                    }
 
                     try {
                         const response = await fetch(sourceUrl, {
                             cache: 'no-store',
+                            redirect: 'follow',
                             signal: AbortSignal.timeout(60_000),
                         });
 
                         if (!response.ok || !response.body) {
-                            throw new Error(`HTTP ${response.status} for photo ${photo.id}`);
+                            throw new Error(`HTTP ${response.status}`);
                         }
 
                         const contentType = (response.headers.get('content-type') || '').toLowerCase();
-                        const sourceLooksLikeJpeg =
-                            contentType.includes('image/jpeg') ||
-                            /\.jpe?g(?:$|\?)/i.test(sourceUrl);
+                        if (!isSupportedImageContentType(contentType)) {
+                            throw new Error(`Nieprawidłowy typ pliku: ${contentType || 'brak'}`);
+                        }
 
                         const sequence = String(index + 1).padStart(4, '0');
                         const filename = `${sequence}-photo-${photo.id}.jpg`;
                         const sourceStream = Readable.fromWeb(response.body as never);
+                        const sourceIsJpeg = contentType.includes('image/jpeg') || contentType.includes('image/jpg');
 
-                        if (sourceLooksLikeJpeg) {
+                        if (sourceIsJpeg) {
                             archive.append(sourceStream, { name: filename });
                             await waitForStream(sourceStream);
                         } else {
                             const jpegStream = sharp()
                                 .rotate()
-                                .jpeg({ quality: 92, chromaSubsampling: '4:4:4', mozjpeg: true });
-
+                                .jpeg({ quality: 94, chromaSubsampling: '4:4:4', mozjpeg: true });
                             sourceStream.pipe(jpegStream);
                             archive.append(jpegStream, { name: filename });
                             await waitForStream(jpegStream);
@@ -131,14 +141,31 @@ export async function GET(
 
                         appended += 1;
                     } catch (error) {
+                        const message = error instanceof Error ? error.message : 'nieznany błąd';
+                        failures.push(`Zdjęcie ${photo.id}: ${message}`);
                         console.error(`Failed to add photo ${photo.id} to ZIP:`, error);
                     }
                 }
 
+                if (failures.length > 0) {
+                    archive.append(
+                        [
+                            'Raport pobierania galerii',
+                            `Poprawnie dodano: ${appended}`,
+                            `Pominięto: ${failures.length}`,
+                            '',
+                            ...failures,
+                            '',
+                            'Brakujące pliki wymagają ponownego mapowania JPG przez fotografa.',
+                        ].join('\n'),
+                        { name: 'RAPORT-POBIERANIA.txt' }
+                    );
+                }
+
                 if (appended === 0) {
                     archive.append(
-                        'Nie udało się pobrać zdjęć źródłowych. Skontaktuj się z fotografem.',
-                        { name: 'BLAD-POBIERANIA.txt' }
+                        'Nie znaleziono żadnego pliku JPG w pełnej jakości. Skontaktuj się z fotografem.',
+                        { name: 'BRAK-PLIKOW-JPG.txt' }
                     );
                 }
 
