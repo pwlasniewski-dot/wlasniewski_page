@@ -31,7 +31,9 @@ function path(value: string | null) {
 }
 
 function summarize(rows: EventRow[]) {
-  const events = rows.map(row => ({ ...row, meta: parseMetadata(row.metadata) }));
+  const events = rows
+    .filter(row => !path(row.page_url).startsWith('/admin'))
+    .map(row => ({ ...row, meta: parseMetadata(row.metadata) }));
   const users = new Set(events.map(e => e.user_id));
   const sessions = new Set(events.map(e => e.session_id));
   const pageViews = events.filter(e => e.event_type === 'v2_page_view');
