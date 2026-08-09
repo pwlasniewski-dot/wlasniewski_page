@@ -76,6 +76,41 @@ Panel `/admin/analytics` korzysta z endpointu `/api/analytics/v2/dashboard` i ob
 - listę ostatnich sesji,
 - ścieżkę zdarzeń pojedynczej sesji.
 
+## Automatyczny raport e-mail
+
+Netlify Scheduled Function `daily-analytics-report` wysyła codzienny raport biznesowy z Analytics 2.0.
+
+Harmonogram:
+
+- CRON: `0 6 * * *`,
+- Netlify interpretuje harmonogram w UTC,
+- latem raport trafia około 08:00 czasu polskiego,
+- zimą około 07:00 czasu polskiego.
+
+Raport zawiera jednocześnie:
+
+- ostatnie 24 godziny z porównaniem do wcześniejszych 24 godzin,
+- ostatnie 7 dni z porównaniem do wcześniejszych 7 dni,
+- ostatnie 30 dni,
+- użytkowników, sesje i odsłony,
+- aktywny czas,
+- średnią liczbę stron na sesję,
+- starty rezerwacji i zakończone konwersje V2,
+- źródła ruchu,
+- najczęstsze strony, na których kończą się sesje,
+- najczęstsze ścieżki użytkowników,
+- najbardziej zaangażowane sesje z ostatniej doby,
+- krótkie automatyczne wnioski biznesowe.
+
+Adres odbiorcy jest pobierany z istniejącej konfiguracji poczty przez `getAdminEmail()` — preferowany jest `ADMIN_EMAIL`, a następnie konto SMTP.
+
+Ruch administratorów nie powinien trafiać do raportu, ponieważ Analytics 2.0 wyklucza:
+
+- ścieżki `/admin`,
+- urządzenia oznaczone `analytics_exclude`,
+- adresy IP z `ADMIN_IP`,
+- boty i ruch deploy-preview.
+
 ## Źródła prawdy
 
 - zachowanie użytkowników: `AnalyticsEvent` z `event_type` rozpoczynającym się od `v2_`,
@@ -96,7 +131,10 @@ Panel `/admin/analytics` korzysta z endpointu `/api/analytics/v2/dashboard` i ob
 - urządzenie administratora może być wykluczone,
 - endpoint dashboardu wymaga autoryzacji,
 - endpoint trackingu odrzuca boty, admin IP i `/admin`,
-- terminologia finansowa nie sugeruje „przychodu”, jeśli dane oznaczają wyłącznie wartość utworzonej rezerwacji.
+- terminologia finansowa nie sugeruje „przychodu”, jeśli dane oznaczają wyłącznie wartość utworzonej rezerwacji,
+- raport e-mail obejmuje dzień / tydzień / miesiąc i korzysta wyłącznie z danych V2,
+- raport e-mail nie zawiera ruchu backendowego administratorów,
+- przed scaleniem wykonać build/typecheck oraz ręczny `Run now` funkcji harmonogramowej na Netlify.
 
 ## Kolejny etap
 
