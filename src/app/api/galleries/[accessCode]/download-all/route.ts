@@ -76,15 +76,16 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     if (!photos.length) return NextResponse.json({ error: 'Brak zdjęć do pobrania' }, { status: 404 });
     const missingHq = photos.filter(photo => !photo.download_source_url).length;
     if (missingHq) return NextResponse.json({ error: `${missingHq} zdjęć nie ma przygotowanego JPG HQ.` }, { status: 409 });
+    const archivePhotoIds = photos.map(photo => photo.id);
     const jobId = createGalleryArchiveJobId({
         kind: 'individual', galleryId: gallery.id, participantId: null,
-        requestedPhotoIds: [], galleryUpdatedAt: gallery.updated_at,
+        requestedPhotoIds: archivePhotoIds, galleryUpdatedAt: gallery.updated_at,
     });
     const previous = await readGalleryArchiveJob(jobId);
     if (previous && ['queued', 'processing', 'ready'].includes(previous.status) && new Date(previous.expiresAt) > new Date()) {
         return NextResponse.json({ jobId, status: previous.status }, { status: previous.status === 'ready' ? 200 : 202 });
     }
-    const job = newGalleryArchiveJob({ jobId, kind: 'individual', galleryId: gallery.id, participantId: null, requestedPhotoIds: [], previousCreatedAt: previous?.createdAt });
+    const job = newGalleryArchiveJob({ jobId, kind: 'individual', galleryId: gallery.id, participantId: null, requestedPhotoIds: archivePhotoIds, previousCreatedAt: previous?.createdAt });
     await writeGalleryArchiveJob(job);
     try {
         await dispatchGalleryArchive(request.nextUrl.origin, job);
