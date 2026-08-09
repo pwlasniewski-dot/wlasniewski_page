@@ -189,7 +189,7 @@ export default function AnalyticsPage() {
     { label: 'Start rezerwacji', value: data.summary.bookingStarts, compare: null, icon: MousePointerClick },
     { label: 'Rezerwacje', value: data.summary.bookings, compare: data.comparison.bookingsPct, icon: ShoppingCart },
     { label: 'Konwersja', value: `${data.summary.conversionRate}%`, compare: null, icon: TrendingUp },
-    { label: 'Przychód', value: `${data.summary.revenue.toLocaleString('pl-PL')} zł`, compare: data.comparison.revenuePct, icon: WalletCards },
+    { label: 'Wartość rezerwacji', value: `${data.summary.revenue.toLocaleString('pl-PL')} zł`, compare: data.comparison.revenuePct, icon: WalletCards },
   ] : [];
 
   return (
@@ -369,7 +369,7 @@ export default function AnalyticsPage() {
           </section>
         )}
 
-        <footer className="text-xs text-zinc-600 pb-6 flex items-center gap-2"><CalendarDays size={13} /> Wszystkie czasy raportowane w strefie Europe/Warsaw. Rezerwacje i przychód pochodzą z tabeli zamówień; zachowanie użytkowników wyłącznie z Analytics V2.</footer>
+        <footer className="text-xs text-zinc-600 pb-6 flex items-center gap-2"><CalendarDays size={13} /> Wszystkie czasy raportowane w strefie Europe/Warsaw. Rezerwacje i wartość rezerwacji pochodzą z tabeli zamówień; zachowanie użytkowników wyłącznie z Analytics V2.</footer>
       </div>
     </div>
   );
