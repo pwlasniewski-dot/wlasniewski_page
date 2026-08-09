@@ -9,5 +9,6 @@ test('booking submit remains reachable for validation analytics and prevents dou
   assert.match(source, /type="submit"[\s\S]*?disabled=\{submitting\}/);
   assert.doesNotMatch(source, /disabled=\{!isReadyToSubmit \|\| submitting\}/);
   assert.match(source, /if \(submissionLock\.current\) return;\s*submissionLock\.current = true;\s*setSubmitting\(true\);/);
+  assert.match(source, /finally \{[\s\S]*?window\.setTimeout\(\(\) => \{[\s\S]*?submissionLock\.current = false;[\s\S]*?setSubmitting\(false\);[\s\S]*?\}, 750\);[\s\S]*?\}/);
   assert.match(source, /trackEvent\('booking_validation_failed'/);
 });

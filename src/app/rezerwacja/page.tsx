@@ -431,57 +431,61 @@ export default function RezerwacjaPage() {
         submissionLock.current = true;
         setSubmitting(true);
 
-        const title = `${service?.name} — ${chosenPackage.name}`;
-        const bookingData = {
-            service: service?.name,
-            package: chosenPackage.name,
-            hours: chosenPackage.hours,
-            price: finalPrice,
-            originalPrice: chosenPackage.price,
-            date: slot.date,
-            start_time: slot.start ?? null,
-            end_time: slot.end ?? null,
-            name,
-            email,
-            phone: phone || null,
-            venue_city: needsVenue ? venueCity : null,
-            venue_place: needsVenue ? venuePlace : null,
-            notes: notes || null,
-            promo_code: discount ? discount.code : null,
-            gift_card_code: giftCard ? giftCard.code : null,
-            photographer_id: preselectedPhotographer?.id ?? null,
-            photographer_name: preselectedPhotographer?.name ?? null,
-        };
+        try {
+            const title = `${service?.name} — ${chosenPackage.name}`;
+            const bookingData = {
+                service: service?.name,
+                package: chosenPackage.name,
+                hours: chosenPackage.hours,
+                price: finalPrice,
+                originalPrice: chosenPackage.price,
+                date: slot.date,
+                start_time: slot.start ?? null,
+                end_time: slot.end ?? null,
+                name,
+                email,
+                phone: phone || null,
+                venue_city: needsVenue ? venueCity : null,
+                venue_place: needsVenue ? venuePlace : null,
+                notes: notes || null,
+                promo_code: discount ? discount.code : null,
+                gift_card_code: giftCard ? giftCard.code : null,
+                photographer_id: preselectedPhotographer?.id ?? null,
+                photographer_name: preselectedPhotographer?.name ?? null,
+            };
 
-        // Event snippet for Prośba o wycenę conversion page
-        if (typeof window !== 'undefined' && (window as any).gtag) {
-            (window as any).gtag('event', 'conversion', { 'send_to': 'AW-17548893646/-bm8CJ-3h-YbEM67-69B' });
+            if (typeof window !== 'undefined' && (window as any).gtag) {
+                (window as any).gtag('event', 'conversion', { 'send_to': 'AW-17548893646/-bm8CJ-3h-YbEM67-69B' });
+            }
+
+            trackBookingEvent('add_to_cart', {
+                currency: 'PLN',
+                value: finalPrice / 100,
+                service: service?.name,
+                package: chosenPackage.name,
+            });
+            void trackEvent('booking_start', {
+                service_id: service?.id,
+                package_id: chosenPackage.id,
+                amount_grosze: finalPrice,
+            });
+            void trackEvent('booking_added_to_cart', { item_count: 1, amount_bucket: finalPrice < 50000 ? 'under_500' : finalPrice < 100000 ? '500_999' : '1000_plus' });
+
+            addItem({
+                type: 'booking',
+                productId: chosenPackage.id.toString(),
+                title,
+                subtitle: `${slot.date}${slot.start ? ` o ${slot.start}` : ''}`,
+                price: finalPrice,
+                quantity: 1,
+                metadata: bookingData
+            });
+        } finally {
+            window.setTimeout(() => {
+                submissionLock.current = false;
+                setSubmitting(false);
+            }, 750);
         }
-
-        trackBookingEvent('add_to_cart', {
-            currency: 'PLN',
-            value: finalPrice / 100,
-            service: service?.name,
-            package: chosenPackage.name,
-        });
-        void trackEvent('booking_start', {
-            service_id: service?.id,
-            package_id: chosenPackage.id,
-            amount_grosze: finalPrice,
-        });
-        void trackEvent('booking_added_to_cart', { item_count: 1, amount_bucket: finalPrice < 50000 ? 'under_500' : finalPrice < 100000 ? '500_999' : '1000_plus' });
-
-        addItem({
-            type: 'booking',
-            productId: chosenPackage.id.toString(),
-            title,
-            subtitle: `${slot.date}${slot.start ? ` o ${slot.start}` : ''}`,
-            price: finalPrice,
-            quantity: 1,
-            metadata: bookingData
-        });
-
-        // Scroll to top or show toast is handled by addItem
     };
 
     if (servicesLoading) {
