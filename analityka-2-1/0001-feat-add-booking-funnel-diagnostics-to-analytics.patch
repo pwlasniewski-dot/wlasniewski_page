@@ -1,0 +1,578 @@
+From 22a567cf20c8d67662a7a6aac5ddcadc779c63da Mon Sep 17 00:00:00 2001
+From: Codex <codex@openai.com>
+Date: Sun, 9 Aug 2026 04:07:47 -0700
+Subject: [PATCH 1/4] feat: add booking funnel diagnostics to analytics
+
+---
+ docs/ANALYTICS_2_1.md                         |  19 +++
+ netlify/functions/daily-analytics-report.ts   |  18 ++-
+ src/app/admin/analytics/page.tsx              |  34 +++++-
+ src/app/api/analytics/v2/dashboard/route.ts   |  11 +-
+ src/app/api/analytics/v2/track/route.ts       |  17 ++-
+ src/app/checkout/page.tsx                     |   9 ++
+ src/app/rezerwacja/page.tsx                   |  14 +++
+ src/hooks/useAnalytics.ts                     |  28 +++++
+ src/lib/analytics/funnelDiagnostics.ts        | 109 ++++++++++++++++++
+ .../unit/analytics-funnel-diagnostics.test.ts |  48 ++++++++
+ 10 files changed, 300 insertions(+), 7 deletions(-)
+ create mode 100644 docs/ANALYTICS_2_1.md
+ create mode 100644 src/lib/analytics/funnelDiagnostics.ts
+ create mode 100644 tests/unit/analytics-funnel-diagnostics.test.ts
+
+diff --git a/docs/ANALYTICS_2_1.md b/docs/ANALYTICS_2_1.md
+new file mode 100644
+index 0000000..e6dfd4e
+--- /dev/null
++++ b/docs/ANALYTICS_2_1.md
+@@ -0,0 +1,19 @@
++# Analytics 2.1 — lejek i diagnostyka
++
++Raport dzienny jest wysyłany na adres z `ANALYTICS_REPORT_RECIPIENTS`. Jeśli zmienna nie jest ustawiona, jawnym odbiorcą awaryjnym jest `pwlasniewski@gmail.com`.
++
++Lejek: rezerwacja → usługa → pakiet i cena → data → godzina → formularz/koszyk → checkout → zlecenie płatności → przekierowanie PayU.
++
++Tracker zapisuje wyłącznie identyfikatory sesji/użytkownika Analytics, bez imienia, e-maila, telefonu, treści formularza, wybranej daty lub pełnej ceny. Kwota jest grupowana w przedziały. Błędy zawierają jedynie obszar, kategorię, status HTTP i bezpieczny kod przyczyny — nigdy komunikat wyjątku.
++
++Reguły diagnozy:
++
++- błąd techniczny z trackera ma wysoką pewność;
++- wolne LCP ma średnią pewność przy małej próbie i wysoką od 3 sesji;
++- odpływ jest raportowany od 2 sesji i co najmniej 30%;
++- odpływ po wyborze pakietu może wskazywać na cenę lub ofertę, ale zawsze pozostaje hipotezą o niskiej pewności bez ankiety albo testu wariantów;
++- przy zerowych danych raport podaje instrukcję testu trackera, zamiast tworzyć sztuczne wnioski.
++
++## Znane ograniczenie
++
++Ta iteracja mierzy poprawne utworzenie checkoutu i przekierowanie do PayU. Nie zapisuje jeszcze kanonicznego `payment_result` z serwerowego webhooka PayU do Analytics, ponieważ webhook nie ma bezpiecznego powiązania z anonimowym identyfikatorem sesji. Ostateczny wynik płatności nadal należy potwierdzać w rejestrze płatności; nie wolno wyciągać go wyłącznie z klientowego lejka.
+diff --git a/netlify/functions/daily-analytics-report.ts b/netlify/functions/daily-analytics-report.ts
+index 38992bb..bcbbb60 100644
+--- a/netlify/functions/daily-analytics-report.ts
++++ b/netlify/functions/daily-analytics-report.ts
+@@ -1,6 +1,7 @@
+ import prisma from '../../src/lib/db/prisma';
+-import { getAdminEmail, sendEmail } from '../../src/lib/email/sender';
++import { sendEmail } from '../../src/lib/email/sender';
+ import { getAverageMonthlyBookingValue, getAverageMonthlyNetPayments, getFinanceSummary } from '../../src/lib/analytics/finance';
++import { diagnoseFunnel } from '../../src/lib/analytics/funnelDiagnostics';
+ 
+ const DAY = 24 * 60 * 60 * 1000;
+ const WARSAW = 'Europe/Warsaw';
+@@ -219,8 +220,7 @@ export default async () => {
+   const forced = process.env.ANALYTICS_REPORT_FORCE_SEND === 'true';
+   if (currentWarsaw.hour !== 8 && !forced) return;
+ 
+-  const recipient = process.env.ANALYTICS_REPORT_RECIPIENTS?.trim() || await getAdminEmail();
+-  if (!recipient) throw new Error('Analytics report: admin email is not configured');
++  const recipient = process.env.ANALYTICS_REPORT_RECIPIENTS?.trim() || 'pwlasniewski@gmail.com';
+   const reportPeriod = `${String(currentWarsaw.year)}-${String(currentWarsaw.month).padStart(2, '0')}-${String(currentWarsaw.day).padStart(2, '0')}`;
+   const reportMarker = `DAILY_ANALYTICS_REPORT_SENT_${reportPeriod}`;
+   const reportKey = forced ? `${reportMarker}_MANUAL` : reportMarker;
+@@ -256,12 +256,22 @@ export default async () => {
+   ]);
+ 
+   const notes = insights(day, week, month);
++  const diagnostics = diagnoseFunnel(slice(dayStart, todayStart).map(row => ({
++    event_type: row.event_type,
++    session_id: row.session_id,
++    metadata: parseMetadata(row.metadata),
++  })));
++  const actionRows = diagnostics.actions.map(action => `<div style="margin:10px 0;padding:12px;border:1px solid ${action.kind === 'error' ? '#fecaca' : '#fde68a'};border-radius:10px">
++    <strong>${esc(action.title)}</strong> <span style="font-size:11px;color:#6b7280">pewność: ${esc(action.confidence)}</span><br>
++    <span>${esc(action.evidence)}</span><br><span style="color:#374151">Działanie: ${esc(action.recommendation)}</span>
++  </div>`).join('');
+   const topSessions = day.engaged.map((s: any) => `<li style="margin:7px 0"><strong>${esc(s.source)}</strong> · ${Math.round(s.activeMs / 600) / 100} min aktywnie · ${s.pages.length} stron<br><span style="color:#6b7280">${esc(s.pages.slice(0, 7).join(' → '))}</span></li>`).join('');
+ 
+   const html = `<!doctype html><html><body style="font-family:Arial,sans-serif;background:#f5f5f5;margin:0;padding:24px;color:#111827"><div style="max-width:980px;margin:auto;background:white;padding:28px;border-radius:16px">
+-  <div style="font-size:12px;color:#6b7280">FOTO-DRON · ANALYTICS 2.0</div>
++  <div style="font-size:12px;color:#6b7280">FOTO-DRON · ANALYTICS 2.1</div>
+   <h1 style="font-size:28px;margin:6px 0">Codzienny raport biznesowy</h1>
+   <p style="color:#6b7280;margin-top:0">Stan na ${now.toLocaleString('pl-PL', { timeZone: 'Europe/Warsaw' })}. Wyłącznie dane Analytics V2; legacy, boty, /admin i wykluczone urządzenia administratorów nie są raportowane.</p>
++  <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:16px"><strong>Co wymaga działania teraz</strong>${actionRows || '<p style="margin-bottom:0;color:#6b7280">Brak wystarczających dowodów na problem w ostatniej dobie.</p>'}</div>
+   ${notes.length ? `<div style="background:#ecfdf5;border:1px solid #a7f3d0;border-radius:12px;padding:16px"><strong>Co dziś zwraca uwagę</strong><ul style="margin-bottom:0">${notes.map(n => `<li style="margin:6px 0">${esc(n)}</li>`).join('')}</ul></div>` : ''}
+   ${section('Wczoraj — dzień kalendarzowy Europe/Warsaw', day, prevDay)}
+   ${section('Ostatnie 7 dni', week, prevWeek)}
+diff --git a/src/app/admin/analytics/page.tsx b/src/app/admin/analytics/page.tsx
+index 92ff15b..c1bd660 100644
+--- a/src/app/admin/analytics/page.tsx
++++ b/src/app/admin/analytics/page.tsx
+@@ -78,6 +78,10 @@ type AnalyticsData = {
+     bookingCompleted: boolean;
+     path: Array<{ at: string; event: string; page: string }>;
+   }>;
++  diagnostics: {
++    funnel: Array<{ event: string; label: string; sessions: number; dropoff: number }>;
++    actions: Array<{ kind: string; title: string; evidence: string; sessions: number; confidence: string; recommendation: string }>;
++  };
+ };
+ 
+ const TIME_ZONE = 'Europe/Warsaw';
+@@ -214,7 +218,7 @@ export default function AnalyticsPage() {
+           <div>
+             <div className="flex items-center gap-3 mb-2">
+               <BarChart3 className="text-emerald-400" size={26} />
+-              <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">Analityka 2.0</h1>
++              <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">Analityka 2.1</h1>
+             </div>
+             <p className="text-sm text-zinc-400">Jednoznaczne dane o ruchu, aktywności i drodze do rezerwacji. Stare rekordy są wykluczone.</p>
+           </div>
+@@ -249,6 +253,34 @@ export default function AnalyticsPage() {
+           </div>
+         )}
+ 
++        {data?.diagnostics && (
++          <section className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-5">
++            <h2 className="text-lg font-semibold text-amber-100">Co wymaga działania teraz</h2>
++            <p className="mt-1 text-xs text-zinc-400">Wnioski wynikają z mierzalnych zdarzeń. Cena jest pokazywana wyłącznie jako hipoteza.</p>
++            <div className="mt-4 grid gap-3 lg:grid-cols-2">
++              {data.diagnostics.actions.length ? data.diagnostics.actions.map((action, index) => (
++                <div key={`${action.kind}-${index}`} className="rounded-xl border border-zinc-800 bg-zinc-950/70 p-4">
++                  <div className="flex items-start justify-between gap-3">
++                    <strong className="text-sm text-zinc-100">{action.title}</strong>
++                    <span className="shrink-0 rounded-full bg-zinc-800 px-2 py-1 text-[10px] text-zinc-300">pewność: {action.confidence}</span>
++                  </div>
++                  <p className="mt-2 text-xs text-zinc-300">{action.evidence}</p>
++                  <p className="mt-2 text-xs text-emerald-200">Działanie: {action.recommendation}</p>
++                </div>
++              )) : <p className="text-sm text-zinc-400">Brak wystarczających dowodów na problem w tym okresie.</p>}
++            </div>
++            <div className="mt-5 grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-5">
++              {data.diagnostics.funnel.map(step => (
++                <div key={step.event} className="rounded-lg border border-zinc-800 bg-zinc-900/70 p-3">
++                  <div className="text-[11px] text-zinc-400">{step.label}</div>
++                  <div className="mt-1 text-xl font-semibold">{step.sessions}</div>
++                  {step.dropoff > 0 && <div className="text-[10px] text-amber-300">odpływ: {step.dropoff}</div>}
++                </div>
++              ))}
++            </div>
++          </section>
++        )}
++
+         <section className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-4">
+           <div className="flex flex-wrap gap-2 mb-4">
+             {([
+diff --git a/src/app/api/analytics/v2/dashboard/route.ts b/src/app/api/analytics/v2/dashboard/route.ts
+index 3612694..e3e2d07 100644
+--- a/src/app/api/analytics/v2/dashboard/route.ts
++++ b/src/app/api/analytics/v2/dashboard/route.ts
+@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
+ import prisma from '@/lib/db/prisma';
+ import { requireAuth } from '@/lib/auth/middleware';
+ import { getFinanceSummary } from '@/lib/analytics/finance';
++import { diagnoseFunnel } from '@/lib/analytics/funnelDiagnostics';
+ 
+ const TIME_ZONE = 'Europe/Warsaw';
+ const MAX_RANGE_DAYS = 120;
+@@ -196,6 +197,7 @@ export async function GET(request: NextRequest) {
+ 
+     const summary = summarize(events);
+     const previousSummary = summarize(previousEvents);
++    const diagnostics = diagnoseFunnel(events);
+ 
+     const seriesMap = new Map<string, {
+       users: Set<string>;
+@@ -273,7 +275,13 @@ export async function GET(request: NextRequest) {
+       if (isBookingStart(event)) session.bookingStarted = true;
+       if (isBookingComplete(event)) session.bookingCompleted = true;
+ 
+-      if (['v2_session_start', 'v2_page_view', 'v2_click', 'v2_form_start', 'v2_form_submit', 'v2_booking_start', 'v2_booking_started', 'v2_booking_complete', 'v2_booking_completed', 'v2_payment_success'].includes(event.event_type)) {
++      if ([
++        'v2_session_start', 'v2_page_view', 'v2_click', 'v2_form_start', 'v2_form_submit',
++        'v2_booking_view', 'v2_service_selected', 'v2_package_selected', 'v2_date_selected',
++        'v2_time_selected', 'v2_booking_added_to_cart', 'v2_checkout_view', 'v2_checkout_submit',
++        'v2_checkout_result', 'v2_payu_redirect', 'v2_booking_start', 'v2_booking_created',
++        'v2_payment_success', 'v2_payment_failed',
++      ].includes(event.event_type)) {
+         session.path.push({ at: event.created_at, event: event.event_type.replace(/^v2_/, ''), page: normalizePath(event.page_url) });
+       }
+       sessionMap.set(event.session_id, session);
+@@ -381,6 +389,7 @@ export async function GET(request: NextRequest) {
+         receivedPaymentsPct: pctChange(finance.receivedPaymentsNet, previousFinance.receivedPaymentsNet),
+       },
+       timeSeries,
++      diagnostics,
+       sources,
+       pages,
+       recentSessions,
+diff --git a/src/app/api/analytics/v2/track/route.ts b/src/app/api/analytics/v2/track/route.ts
+index ebf386c..39ca85a 100644
+--- a/src/app/api/analytics/v2/track/route.ts
++++ b/src/app/api/analytics/v2/track/route.ts
+@@ -23,6 +23,11 @@ const ALLOWED_EVENTS = new Set([
+   'v2_visibility_visible', 'v2_page_exit', 'v2_booking_start',
+   'v2_booking_created', 'v2_payment_started', 'v2_payment_success',
+   'v2_payment_failed',
++  'v2_booking_view', 'v2_service_selected', 'v2_package_selected',
++  'v2_date_selected', 'v2_time_selected', 'v2_booking_added_to_cart',
++  'v2_checkout_view', 'v2_checkout_submit', 'v2_payu_redirect',
++  'v2_service_load_result', 'v2_availability_result', 'v2_checkout_result',
++  'v2_client_error', 'v2_performance',
+ ]);
+ const BLOCKED_PATHS = [
+   '/admin', '/api', '/galeria', '/konto', '/strefa-klienta', '/logowanie',
+@@ -135,7 +140,10 @@ function safeMetadata(raw: unknown, eventType: string) {
+   const value = raw && typeof raw === 'object' ? raw as Record<string, unknown> : {};
+   if (value.consent !== true) return null;
+   const result: Record<string, unknown> = { consent: true };
+-  const stringKeys = ['client_ts', 'session_started_at', 'timezone', 'viewport', 'tag', 'analytics_id', 'form_id'];
++  const stringKeys = [
++    'client_ts', 'session_started_at', 'timezone', 'viewport', 'tag', 'analytics_id', 'form_id',
++    'status', 'area', 'endpoint', 'reason_code', 'metric', 'amount_bucket', 'device_hint',
++  ];
+   for (const key of stringKeys) {
+     const safe = safeText(value[key], key === 'source' ? 100 : 80);
+     if (safe) result[key] = safe;
+@@ -145,6 +153,13 @@ function safeMetadata(raw: unknown, eventType: string) {
+   if (landing) result.landing_page = landing;
+   if (route) result.route = route;
+   if (typeof value.active === 'boolean') result.active = value.active;
++  for (const key of ['has_payment_redirect', 'has_available_slots']) {
++    if (typeof value[key] === 'boolean') result[key] = value[key];
++  }
++  for (const key of ['duration_ms', 'http_status', 'available_count', 'package_count', 'item_count']) {
++    const number = Number(value[key]);
++    if (Number.isFinite(number) && number >= 0 && number <= 600_000) result[key] = Math.round(number);
++  }
+   if (eventType === 'v2_engagement') {
+     const activeMs = Number(value.active_ms);
+     if (!Number.isFinite(activeMs) || activeMs < 1 || activeMs > 30_000) return null;
+diff --git a/src/app/checkout/page.tsx b/src/app/checkout/page.tsx
+index 5e3f9ff..3e58f6e 100644
+--- a/src/app/checkout/page.tsx
++++ b/src/app/checkout/page.tsx
+@@ -24,6 +24,10 @@ export default function CheckoutPage() {
+ 
+     const hasOnlyOneBooking = items.length === 1 && items[0]?.type === 'booking';
+ 
++    useEffect(() => {
++        if (items.length > 0) void trackEvent('checkout_view', { item_count: items.length });
++    }, [items.length, trackEvent]);
++
+     useEffect(() => {
+         fetch('/api/settings/public')
+             .then(r => r.json())
+@@ -151,6 +155,7 @@ export default function CheckoutPage() {
+ 
+         setSubmitting(true);
+         try {
++            void trackEvent('checkout_submit', { item_count: items.length, amount_bucket: amountNow < 50000 ? 'under_500' : amountNow < 100000 ? '500_999' : '1000_plus' });
+             void trackEvent('payment_started', {
+                 amount_grosze: amountNow,
+                 item_count: items.length,
+@@ -185,6 +190,7 @@ export default function CheckoutPage() {
+ 
+             if (!response.ok) {
+                 const data = await response.json();
++                void trackEvent('checkout_result', { status: 'error', area: 'checkout', endpoint: 'basket_checkout', http_status: response.status, reason_code: 'http_error' });
+                 throw new Error(data.message || 'Checkout failed');
+             }
+ 
+@@ -194,11 +200,13 @@ export default function CheckoutPage() {
+                 item_count: items.length,
+                 has_payment_redirect: !!data.redirectUrl,
+             });
++            void trackEvent('checkout_result', { status: 'ok', area: 'checkout', endpoint: 'basket_checkout', http_status: response.status, has_payment_redirect: !!data.redirectUrl });
+ 
+             toast.success('Zamówienie przyjęte! Przekierowanie do płatności...');
+ 
+             // Redirect to PayU payment page if URL provided
+             if (data.redirectUrl) {
++                void trackEvent('payu_redirect', { status: 'ok', area: 'payu' }, true);
+                 clearCart();
+                 window.location.href = data.redirectUrl;
+             } else {
+@@ -210,6 +218,7 @@ export default function CheckoutPage() {
+ 
+         } catch (error: any) {
+             console.error('Checkout error:', error);
++            void trackEvent('checkout_result', { status: 'error', area: 'checkout', endpoint: 'basket_checkout', reason_code: 'request_failed' });
+             toast.error(error.message || 'Wystąpił błąd podczas finalizacji zamówienia.');
+         } finally {
+             setSubmitting(false);
+diff --git a/src/app/rezerwacja/page.tsx b/src/app/rezerwacja/page.tsx
+index 65f8389..76a0d46 100644
+--- a/src/app/rezerwacja/page.tsx
++++ b/src/app/rezerwacja/page.tsx
+@@ -144,10 +144,15 @@ export default function RezerwacjaPage() {
+                         const selected = active.find((item: ServiceType) => item.name.toLowerCase() === requested?.toLowerCase()) || active[0];
+                         setService(selected);
+                         trackBookingEvent('booking_view', { service: selected.name, source: new URLSearchParams(window.location.search).get('source') || 'direct' });
++                        void trackEvent('booking_view', { package_count: active.reduce((sum: number, item: ServiceType) => sum + item.packages.filter(pkg => pkg.is_active).length, 0) });
+                     }
++                    void trackEvent('service_load_result', { status: 'ok', area: 'services', http_status: res.status, package_count: active.reduce((sum: number, item: ServiceType) => sum + item.packages.filter(pkg => pkg.is_active).length, 0) });
++                } else {
++                    void trackEvent('service_load_result', { status: 'error', area: 'services', http_status: res.status, reason_code: 'http_error' });
+                 }
+             } catch (error) {
+                 console.error('Failed to load services:', error);
++                void trackEvent('service_load_result', { status: 'error', area: 'services', reason_code: 'network_error' });
+             } finally {
+                 setServicesLoading(false);
+             }
+@@ -229,13 +234,17 @@ export default function RezerwacjaPage() {
+                     const data = await res.json();
+                     setAvailableHours(data.slots || []);
+                     setSelectedHour(null); // Reset selection when date changes
++                    const availableCount = (data.slots || []).filter((item: { available: boolean }) => item.available).length;
++                    void trackEvent('availability_result', { status: 'ok', area: 'availability', http_status: res.status, available_count: availableCount, has_available_slots: availableCount > 0 });
+                 } else {
+                     console.error('Failed to load availability:', res.status);
+                     setAvailableHours([]);
++                    void trackEvent('availability_result', { status: 'error', area: 'availability', http_status: res.status, reason_code: 'http_error' });
+                 }
+             } catch (error) {
+                 console.error('Failed to load availability:', error);
+                 setAvailableHours([]);
++                void trackEvent('availability_result', { status: 'error', area: 'availability', reason_code: 'network_error' });
+             } finally {
+                 setLoadingAvailability(false);
+             }
+@@ -438,6 +447,7 @@ export default function RezerwacjaPage() {
+             package_id: chosenPackage.id,
+             amount_grosze: finalPrice,
+         });
++        void trackEvent('booking_added_to_cart', { item_count: 1, amount_bucket: finalPrice < 50000 ? 'under_500' : finalPrice < 100000 ? '500_999' : '1000_plus' });
+ 
+         addItem({
+             type: 'booking',
+@@ -602,6 +612,7 @@ export default function RezerwacjaPage() {
+                                             url.searchParams.set('service', svc.name);
+                                             window.history.replaceState({}, '', url);
+                                             trackBookingEvent('booking_service_select', { service: svc.name });
++                                            void trackEvent('service_selected');
+                                         }}
+                                         className={`p-4 rounded-xl border transition-all text-left ${service?.id === svc.id
+                                             ? "border-[#8d7f6d] bg-[#8d7f6d]/10"
+@@ -636,6 +647,7 @@ export default function RezerwacjaPage() {
+                                             onClick={() => {
+                                                 setChosenPackage(pkg);
+                                                 trackBookingEvent('booking_package_select', { service: service.name, package: pkg.name, value: pkg.price / 100, currency: 'PLN' });
++                                                void trackEvent('package_selected', { amount_bucket: pkg.price < 50000 ? 'under_500' : pkg.price < 100000 ? '500_999' : '1000_plus' });
+                                             }}
+                                             className={`p-5 rounded-2xl border transition-all text-left flex flex-col h-full ${chosenPackage?.id === pkg.id
+                                                 ? "border-[#8d7f6d] bg-[#8d7f6d]/10 shadow-[0_0_20px_rgba(245,158,11,0.15)]"
+@@ -687,6 +699,7 @@ export default function RezerwacjaPage() {
+                                         onSlotSelect={(selected) => {
+                                             setSlot(selected);
+                                             if (selected?.date) trackBookingEvent('booking_date_select', { service: service?.name, package: chosenPackage?.name, date: selected.date });
++                                            if (selected?.date) void trackEvent('date_selected');
+                                         }}
+                                         selectedSlot={slot}
+                                         service={(service?.name as "Sesja" | "Ślub" | "Przyjęcie" | "Urodziny") || 'Sesja'}
+@@ -734,6 +747,7 @@ export default function RezerwacjaPage() {
+                                                             const end = `${(hSlot.hour + (chosenPackage?.hours || 1)).toString().padStart(2, '0')}:00`;
+                                                             setSelectedHour(hSlot.hour);
+                                                             setSlot(prev => prev ? { ...prev, start, end } : null);
++                                                            void trackEvent('time_selected');
+                                                         }}
+                                                         className={`py-2 rounded-lg transition-all text-sm font-medium ${hSlot.available
+                                                             ? selectedHour === hSlot.hour
+diff --git a/src/hooks/useAnalytics.ts b/src/hooks/useAnalytics.ts
+index 46c00a6..0dff01f 100644
+--- a/src/hooks/useAnalytics.ts
++++ b/src/hooks/useAnalytics.ts
+@@ -339,5 +339,33 @@ export function AnalyticsTracker() {
+     };
+   }, [pathname, trackEvent, consentVersion]);
+ 
++  useEffect(() => {
++    if (!hasAnalyticsConsent() || !isTrackablePath(pathname)) return;
++
++    const onError = () => void trackEvent('client_error', { status: 'error', area: 'javascript', reason_code: 'runtime_error' });
++    const onUnhandledRejection = () => void trackEvent('client_error', { status: 'error', area: 'javascript', reason_code: 'unhandled_promise' });
++    window.addEventListener('error', onError);
++    window.addEventListener('unhandledrejection', onUnhandledRejection);
++
++    let observer: PerformanceObserver | undefined;
++    if ('PerformanceObserver' in window) {
++      try {
++        observer = new PerformanceObserver(list => {
++          const entries = list.getEntries();
++          const last = entries.at(-1);
++          if (last) void trackEvent('performance', { metric: 'lcp', duration_ms: Math.round(last.startTime) });
++        });
++        observer.observe({ type: 'largest-contentful-paint', buffered: true });
++      } catch {
++        // Older browsers do not expose buffered LCP. Tracking remains optional.
++      }
++    }
++    return () => {
++      window.removeEventListener('error', onError);
++      window.removeEventListener('unhandledrejection', onUnhandledRejection);
++      observer?.disconnect();
++    };
++  }, [pathname, trackEvent, consentVersion]);
++
+   return null;
+ }
+diff --git a/src/lib/analytics/funnelDiagnostics.ts b/src/lib/analytics/funnelDiagnostics.ts
+new file mode 100644
+index 0000000..76b5f4f
+--- /dev/null
++++ b/src/lib/analytics/funnelDiagnostics.ts
+@@ -0,0 +1,109 @@
++export const FUNNEL_STEPS = [
++  { event: 'v2_booking_view', label: 'Rezerwacja' },
++  { event: 'v2_service_selected', label: 'Usługa' },
++  { event: 'v2_package_selected', label: 'Pakiet i cena' },
++  { event: 'v2_date_selected', label: 'Data' },
++  { event: 'v2_time_selected', label: 'Godzina' },
++  { event: 'v2_booking_added_to_cart', label: 'Formularz i koszyk' },
++  { event: 'v2_checkout_view', label: 'Checkout' },
++  { event: 'v2_checkout_submit', label: 'Zlecenie płatności' },
++  { event: 'v2_payu_redirect', label: 'Przekierowanie PayU' },
++] as const;
++
++export type DiagnosticEvent = {
++  event_type: string;
++  session_id: string;
++  metadata?: Record<string, unknown>;
++};
++
++export type FunnelDiagnostic = {
++  kind: 'error' | 'dropoff' | 'performance' | 'hypothesis' | 'empty';
++  title: string;
++  evidence: string;
++  sessions: number;
++  confidence: 'wysoka' | 'średnia' | 'niska';
++  recommendation: string;
++};
++
++const uniqueSessions = (events: DiagnosticEvent[]) => new Set(events.map(event => event.session_id)).size;
++
++export function diagnoseFunnel(events: DiagnosticEvent[]): { funnel: Array<{ event: string; label: string; sessions: number; dropoff: number }>; actions: FunnelDiagnostic[] } {
++  let reached = new Set(events.filter(event => event.event_type === FUNNEL_STEPS[0].event).map(event => event.session_id));
++  const funnel = FUNNEL_STEPS.map((step, index) => {
++    const stepSessions = new Set(events.filter(event => event.event_type === step.event).map(event => event.session_id));
++    const previous = reached.size;
++    if (index === 0) reached = stepSessions;
++    else reached = new Set([...reached].filter(session => stepSessions.has(session)));
++    return { ...step, sessions: reached.size, dropoff: Math.max(0, previous - reached.size) };
++  });
++  const actions: FunnelDiagnostic[] = [];
++
++  const errorGroups = new Map<string, Set<string>>();
++  for (const event of events.filter(item => ['v2_service_load_result', 'v2_availability_result', 'v2_checkout_result', 'v2_client_error'].includes(item.event_type))) {
++    const status = String(event.metadata?.status || '');
++    if (!['error', 'failed'].includes(status) && event.event_type !== 'v2_client_error') continue;
++    const area = String(event.metadata?.area || event.metadata?.endpoint || event.event_type.replace('v2_', ''));
++    const key = area.replace(/[^a-z0-9_-]/gi, '').slice(0, 40) || 'unknown';
++    const set = errorGroups.get(key) || new Set<string>();
++    set.add(event.session_id);
++    errorGroups.set(key, set);
++  }
++  for (const [area, sessions] of errorGroups) {
++    actions.push({
++      kind: 'error', title: `Awaria lub błąd: ${area}`, sessions: sessions.size,
++      evidence: `${sessions.size} sesji z technicznym zdarzeniem błędu.`, confidence: 'wysoka',
++      recommendation: `Sprawdź logi i odtwórz ścieżkę ${area} na telefonie oraz komputerze.`,
++    });
++  }
++
++  const noSlots = events.filter(event => event.event_type === 'v2_availability_result'
++    && event.metadata?.status === 'ok' && event.metadata?.has_available_slots === false);
++  const noSlotSessions = uniqueSessions(noSlots);
++  if (noSlotSessions) actions.push({
++    kind: 'dropoff', title: 'Brak dostępnych terminów', sessions: noSlotSessions,
++    evidence: `${noSlotSessions} sesji otrzymało poprawną odpowiedź systemu, ale bez wolnych godzin.`, confidence: 'wysoka',
++    recommendation: 'Sprawdź kalendarz dostępności i rozważ pokazanie najbliższych alternatywnych terminów.',
++  });
++
++  const slow = events.filter(event => event.event_type === 'v2_performance' && Number(event.metadata?.duration_ms || 0) >= 2500);
++  const slowSessions = uniqueSessions(slow);
++  if (slowSessions) actions.push({
++    kind: 'performance', title: 'Wolne ładowanie kluczowych stron', sessions: slowSessions,
++    evidence: `${slowSessions} sesji z ładowaniem LCP co najmniej 2,5 s.`, confidence: slowSessions >= 3 ? 'wysoka' : 'średnia',
++    recommendation: 'Sprawdź obrazy, odpowiedź serwera i skrypty na wskazanych trasach, zaczynając od urządzeń mobilnych.',
++  });
++
++  let strongestDrop: { index: number; count: number; rate: number } | null = null;
++  for (let index = 1; index < funnel.length; index++) {
++    const previous = funnel[index - 1].sessions;
++    if (!previous) continue;
++    const count = Math.max(0, previous - funnel[index].sessions);
++    const rate = count / previous;
++    if (count >= 2 && rate >= 0.3 && (!strongestDrop || count > strongestDrop.count)) strongestDrop = { index, count, rate };
++  }
++  if (strongestDrop) {
++    const before = funnel[strongestDrop.index - 1];
++    const after = funnel[strongestDrop.index];
++    const priceStep = before.event === 'v2_package_selected';
++    actions.push({
++      kind: priceStep ? 'hypothesis' : 'dropoff',
++      title: priceStep ? 'Cena lub oferta może być barierą' : `Największy odpływ: ${before.label} → ${after.label}`,
++      sessions: strongestDrop.count,
++      evidence: `${strongestDrop.count} z ${before.sessions} sesji (${Math.round(strongestDrop.rate * 100)}%) nie przeszło do kroku „${after.label}”.`,
++      confidence: priceStep ? 'niska' : (before.sessions >= 10 ? 'średnia' : 'niska'),
++      recommendation: priceStep
++        ? 'Traktuj cenę wyłącznie jako hipotezę. Najpierw sprawdź błędy, dostępność terminów i czytelność pakietów; potwierdzenie ceny wymaga odpowiedzi klienta lub testu wariantów.'
++        : before.sessions < 10
++          ? `Próba jest mała. Obserwuj krok „${after.label}” i najpierw odtwórz go technicznie, bez przesądzania o zmianie UX.`
++          : `Przetestuj krok „${after.label}” i uprość przejście z poprzedniego etapu.`,
++    });
++  }
++
++  if (!events.length) actions.push({
++    kind: 'empty', title: 'Brak danych do diagnozy', sessions: 0,
++    evidence: 'W wybranym okresie nie zapisano zdarzeń Analytics 2.1.', confidence: 'wysoka',
++    recommendation: 'Sprawdź zgodę cookies i wykonaj kontrolną ścieżkę rezerwacji na urządzeniu nieoznaczonym jako administrator.',
++  });
++
++  return { funnel, actions: actions.sort((a, b) => b.sessions - a.sessions).slice(0, 5) };
++}
+diff --git a/tests/unit/analytics-funnel-diagnostics.test.ts b/tests/unit/analytics-funnel-diagnostics.test.ts
+new file mode 100644
+index 0000000..d5ac3a1
+--- /dev/null
++++ b/tests/unit/analytics-funnel-diagnostics.test.ts
+@@ -0,0 +1,48 @@
++import assert from 'node:assert/strict';
++import test from 'node:test';
++import { diagnoseFunnel, type DiagnosticEvent } from '../../src/lib/analytics/funnelDiagnostics';
++
++const event = (session_id: string, event_type: string, metadata: Record<string, unknown> = {}): DiagnosticEvent => ({ session_id, event_type, metadata });
++
++test('reports technical failures as high-confidence evidence', () => {
++  const result = diagnoseFunnel([
++    event('a', 'v2_availability_result', { status: 'error', area: 'availability' }),
++    event('b', 'v2_availability_result', { status: 'error', area: 'availability' }),
++  ]);
++  assert.equal(result.actions[0].kind, 'error');
++  assert.equal(result.actions[0].sessions, 2);
++  assert.equal(result.actions[0].confidence, 'wysoka');
++});
++
++test('labels package drop-off as a price hypothesis, never a fact', () => {
++  const events: DiagnosticEvent[] = [];
++  for (let i = 0; i < 10; i++) {
++    events.push(event(String(i), 'v2_booking_view'), event(String(i), 'v2_service_selected'), event(String(i), 'v2_package_selected'));
++    if (i < 3) events.push(event(String(i), 'v2_date_selected'));
++  }
++  const action = diagnoseFunnel(events).actions.find(item => item.kind === 'hypothesis');
++  assert.ok(action);
++  assert.match(action.title, /może/);
++  assert.equal(action.confidence, 'niska');
++  assert.match(action.recommendation, /wyłącznie jako hipotezę/);
++});
++
++test('works with zero data and returns a complete zero funnel', () => {
++  const result = diagnoseFunnel([]);
++  assert.ok(result.funnel.every(step => step.sessions === 0));
++  assert.equal(result.actions[0].kind, 'empty');
++});
++
++test('does not report small random drop-offs', () => {
++  const result = diagnoseFunnel([event('a', 'v2_booking_view'), event('a', 'v2_service_selected')]);
++  assert.equal(result.actions.length, 0);
++});
++
++test('separates no availability from an API failure', () => {
++  const result = diagnoseFunnel([
++    event('a', 'v2_availability_result', { status: 'ok', has_available_slots: false }),
++  ]);
++  assert.equal(result.actions[0].title, 'Brak dostępnych terminów');
++  assert.equal(result.actions[0].kind, 'dropoff');
++  assert.equal(result.actions[0].confidence, 'wysoka');
++});
+-- 
+2.51.1
+
