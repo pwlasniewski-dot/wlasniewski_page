@@ -12,8 +12,14 @@ export async function PATCH(
 ) {
     return withAuth(request, async () => {
         try {
-            const { participantId } = await params;
+            const { id, participantId } = await params;
             const { name, max_selections, allow_extra_photo_purchase, notes } = await request.json();
+
+            const existing = await prisma.galleryParticipant.findFirst({
+                where: { id: Number(participantId), gallery_id: Number(id) },
+                select: { id: true },
+            });
+            if (!existing) return NextResponse.json({ error: 'Uczestnik nie należy do tej galerii' }, { status: 404 });
 
             const participant = await prisma.galleryParticipant.update({
                 where: { id: Number(participantId) },
@@ -48,7 +54,13 @@ export async function DELETE(
 ) {
     return withAuth(request, async () => {
         try {
-            const { participantId } = await params;
+            const { id, participantId } = await params;
+
+            const existing = await prisma.galleryParticipant.findFirst({
+                where: { id: Number(participantId), gallery_id: Number(id) },
+                select: { id: true },
+            });
+            if (!existing) return NextResponse.json({ error: 'Uczestnik nie należy do tej galerii' }, { status: 404 });
 
             await prisma.galleryParticipant.delete({
                 where: { id: Number(participantId) }

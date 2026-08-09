@@ -5,6 +5,7 @@ import { sendEmail, getAdminEmail } from '@/lib/email/sender';
 import { generateOfferPDF } from '@/lib/services/pdf';
 import { uploadToS3 } from '@/lib/storage/s3';
 import { logClientActivity } from '@/lib/crm-activity';
+import { canonicalizeAcceptedOfferSelection, OfferSelectionError } from '@/lib/offers/calculateAcceptedOfferTotal';
 
 export const dynamic = 'force-dynamic';
 
@@ -117,6 +118,7 @@ export async function PATCH(
         // Fetch offer and verify ownership
         const offer = await prisma.offer.findUnique({
             where: { id: offerId },
+            include: { sections: { include: { items: true } } },
         });
 
         if (!offer) {
@@ -151,16 +153,45 @@ export async function PATCH(
 
         // Handle different actions
         if (action === 'accept') {
-            const parsedTotalPrice = parseInt(body.client_selection?.totalPrice) || 0;
+            const acceptableStatuses = ['sent', 'pending', 'open'];
+            if (offer.is_template || !acceptableStatuses.includes(offer.status)) {
+                return NextResponse.json(
+                    { error: 'Tej wersji oferty nie można zaakceptować. Poproś fotografa o aktualną wersję.' },
+                    { status: 409 },
+                );
+            }
+            if (offer.valid_until && offer.valid_until < new Date()) {
+                return NextResponse.json({ error: 'Termin ważności oferty minął.' }, { status: 410 });
+            }
+            let parsedTotalPrice: number;
+            let trustedSelection: Record<string, unknown>;
+            try {
+                const canonical = canonicalizeAcceptedOfferSelection(offer as any, body.client_selection);
+                parsedTotalPrice = canonical.total;
+                trustedSelection = canonical.selection;
+            } catch (error) {
+                const message = error instanceof OfferSelectionError
+                    ? error.message
+                    : 'Nie można potwierdzić ceny oferty. Odśwież stronę lub skontaktuj się z fotografem.';
+                return NextResponse.json({ error: message }, { status: 409 });
+            }
 
-            await (prisma.offer.update as any)({
-                where: { id: offerId },
+            const accepted = await prisma.offer.updateMany({
+                where: {
+                    id: offerId,
+                    is_template: false,
+                    status: { in: acceptableStatuses },
+                    OR: [{ valid_until: null }, { valid_until: { gte: new Date() } }],
+                },
                 data: {
                     status: 'accepted',
-                    client_selection: body.client_selection ?? undefined,
+                    client_selection: trustedSelection as any,
                     total_price: parsedTotalPrice
                 },
             });
+            if (accepted.count !== 1) {
+                return NextResponse.json({ error: 'Oferta została już zmieniona lub zaakceptowana. Odśwież stronę.' }, { status: 409 });
+            }
 
             // Generate and upload accepted offer PDF to S3
             // SKIP for standalone/uploaded PDFs — they have no sections, regeneration would produce empty PDF
@@ -210,11 +241,7 @@ export async function PATCH(
             try {
                 const adminEmail = await getAdminEmail();
                 const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://wlasniewski.pl';
-                const selectionInfo = body.client_selection?.selectedPackage
-                    ? `Wybrany pakiet: <strong>${body.client_selection.selectedPackage.name}</strong> — ${body.client_selection.selectedPackage.price}`
-                    : body.client_selection?.childCount
-                        ? `Liczba dzieci: <strong>${body.client_selection.childCount}</strong>`
-                        : '';
+                const selectionInfo = `Cena została obliczona i potwierdzona po stronie serwera.`;
                 if (adminEmail) {
                     await sendEmail({
                         to: adminEmail,
@@ -228,7 +255,7 @@ export async function PATCH(
     <p style="color:#555;font-size:12px;margin:6px 0 0;">Klient: ${decoded.email}</p>
   </div>
   ${selectionInfo ? `<p style="color:#ccc;font-size:14px;">${selectionInfo}</p>` : ''}
-  <p style="color:#ccc;font-size:14px;">Łączna wartość: <strong style="color:#c5a059;">${body.client_selection?.totalPrice ? body.client_selection.totalPrice.toLocaleString('pl-PL') + ' PLN' : 'N/A'}</strong></p>
+  <p style="color:#ccc;font-size:14px;">Łączna wartość: <strong style="color:#c5a059;">${parsedTotalPrice.toLocaleString('pl-PL')} PLN</strong></p>
   <div style="text-align:center;margin:24px 0;">
     <a href="${appUrl}/admin/clients" style="display:inline-block;background:#c5a059;color:#000;text-decoration:none;padding:14px 32px;border-radius:8px;font-weight:bold;">Przejdź do panelu →</a>
   </div>
@@ -305,10 +332,9 @@ export async function PATCH(
                 console.error('[Offer Negotiate] Failed to send admin notification:', emailError);
             }
         } else if (action === 'request_unlock') {
-            await prisma.offer.update({
-                where: { id: offerId },
-                data: { status: 'unlock_requested' },
-            });
+            if (offer.status !== 'accepted') {
+                return NextResponse.json({ error: 'Prośbę o zmianę można wysłać tylko dla zaakceptowanej oferty.' }, { status: 409 });
+            }
 
             // Notify admin about the unlock request
             try {
@@ -327,7 +353,7 @@ export async function PATCH(
     <p style="color:#555;font-size:12px;margin:6px 0 0;">Klient: ${decoded.email}</p>
   </div>
   <p style="color:#ccc;font-size:14px;">Klient zaznaczył, że pomylił się przy wyborze i prosi o ponowne odblokowanie możliwości edycji/wyboru pakietu.</p>
-  <p style="color:#ccc;font-size:14px;">Aby odblokować ofertę, przejdź do jej edycji w panelu i użyj przycisku <strong>"Wyślij ponownie"</strong>.</p>
+  <p style="color:#ccc;font-size:14px;">Zaakceptowana wersja pozostaje niezmienna. Jeśli zmiana jest zasadna, przygotuj i wyślij klientowi nową wersję oferty.</p>
   <div style="text-align:center;margin:24px 0;">
     <a href="${appUrl}/admin/offers/${offer.id}" style="display:inline-block;background:#c5a059;color:#000;text-decoration:none;padding:14px 32px;border-radius:8px;font-weight:bold;">Edytuj ofertę →</a>
   </div>

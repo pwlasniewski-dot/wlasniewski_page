@@ -29,6 +29,23 @@ export async function POST(
                 include: { user: { select: { id: true, name: true, email: true } }, offer: { select: { title: true } } },
             });
 
+            const ledgerId = `contract-${contractId}-deposit`;
+            if (paid && paidAt && updated.deposit_amount && updated.deposit_amount > 0) {
+                await prisma.paymentLedger.upsert({
+                    where: { provider_provider_payment_id: { provider: 'MANUAL', provider_payment_id: ledgerId } },
+                    create: {
+                        provider: 'MANUAL', provider_payment_id: ledgerId,
+                        external_order_id: updated.contract_number,
+                        resource_type: 'CONTRACT', resource_id: contractId,
+                        payment_kind: 'DEPOSIT', amount: updated.deposit_amount * 100,
+                        paid_at: paidAt, metadata: { source: 'admin_mark_deposit_paid' },
+                    },
+                    update: { amount: updated.deposit_amount * 100, paid_at: paidAt, status: 'COMPLETED' },
+                });
+            } else if (!paid) {
+                await prisma.paymentLedger.deleteMany({ where: { provider: 'MANUAL', provider_payment_id: ledgerId } });
+            }
+
             // Log w CRM
             try {
                 await prisma.crmActivity.create({

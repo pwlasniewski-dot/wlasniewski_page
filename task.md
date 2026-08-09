@@ -1,5 +1,22 @@
 # Aktualny plan prac
 
+## 2026-08-09 — bramka wdrożeniowa galerie + Analytics/SEO
+
+- [x] Audyt PR #21, #23, #32 i #33: bezpieczeństwo, UX klienta/admina, spójność oferty i galerii, analityka oraz raport finansowy.
+- [x] Serwerowe przeliczanie zaakceptowanej oferty i naprawa indeksów dodatków.
+- [x] Wspólna autoryzacja podglądu, zamówień i pobrań galerii indywidualnej.
+- [x] Prywatne pełne JPG w S3, kontrolowany odczyt obiektu i blokada publikacji niegotowej galerii.
+- [x] Consent-first Analytics V2, redakcja prywatnych adresów i jawne zdarzenia początku/utworzenia rezerwacji.
+- [x] Raport: wartość rezerwacji, kanoniczny PaymentLedger, wpłaty, zwroty, dwie średnie sześciu pełnych miesięcy i organiczne strony wejścia.
+- [x] Unit testy nowych reguł 31/31, Prisma validate oraz build produkcyjny PASS z ostrzeżeniami środowiskowymi.
+- [x] Trwałe zadanie ZIP w tle z postępem, retry, prywatnym artefaktem S3 i linkiem TTL; testy syntetyczne 10/50/100/300 PASS.
+- [ ] Testy ZIP 100/300/500 na stagingu z prawdziwym S3 oraz formalny model uprawnień pobrań galerii grupowych.
+- [x] Trwały snapshot zaakceptowanej oferty i blokada ręcznej zmiany warunków galerii.
+- [ ] Pełny E2E snapshotu przez umowę/rezerwację oraz wybór zdjęć przez klienta w ramach limitu.
+- [ ] Integracja Google Search Console i księga kosztów/przychodów; do tego czasu raport nie może nazywać wpłat „dochodem”, a historia sprzed PaymentLedger jest częściowa.
+- [ ] Usunięcie istniejących błędów typechecku i niezależny odbiór QA przed wdrożeniem.
+- [x] Niezależny odbiór QA zmian: zakres dopuszczony wyłącznie do draft PR/staging, produkcja NO-GO.
+
 ## 2026-08-04 — odbiór strony `/sesja`
 
 - [x] Jasny, redakcyjny wygląd dla `/sesja` oraz `/sesja-rodzinna`, bez zmiany pozostałych stron Pages.

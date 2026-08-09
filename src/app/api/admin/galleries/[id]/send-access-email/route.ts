@@ -26,6 +26,9 @@ export async function POST(
                     group_access_code: true,
                     group_password: true,
                     expires_at: true,
+                    is_active: true,
+                    standard_count: true,
+                    photos: { select: { id: true, is_standard: true, download_source_url: true } },
                 },
             });
 
@@ -41,6 +44,21 @@ export async function POST(
                     { success: false, error: 'Brak emaila klienta w galerii' },
                     { status: 400 }
                 );
+            }
+            if (!gallery.is_active) {
+                return NextResponse.json({ success: false, error: 'Najpierw zakończ checklistę i aktywuj galerię.' }, { status: 409 });
+            }
+            if (gallery.photos.length === 0 || gallery.photos.some(photo => !photo.download_source_url)) {
+                return NextResponse.json({ success: false, error: 'Galeria nie jest gotowa: brakuje zdjęć lub plików JPG HQ.' }, { status: 409 });
+            }
+            if (gallery.gallery_mode !== 'GROUP') {
+                const included = gallery.photos.filter(photo => photo.is_standard).length;
+                if (included !== gallery.standard_count) {
+                    return NextResponse.json({
+                        success: false,
+                        error: `Nie można wysłać: w pakiecie jest ${included} zdjęć, a ustawiony limit to ${gallery.standard_count}.`,
+                    }, { status: 409 });
+                }
             }
 
             const isGroupMode = gallery.gallery_mode === 'GROUP';

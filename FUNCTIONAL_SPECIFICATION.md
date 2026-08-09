@@ -2,6 +2,20 @@
 
 Ten dokument stanowi kompleksowy opis funkcjonalności oraz logiki biznesowej platformy **FOTO-DRON Przemysław Właśniewski**. Dokumentacja została opracowana na podstawie audytu technicznego przeprowadzonego w grudniu 2025 r. Szczegóły techniczne dotyczące infrastruktury i wzorców projektowych znajdują się w dokumencie [ARCHITECTURE.md](file:///c:/Strona-fotografa/ARCHITECTURE.md).
 
+## Aktualizacja 2026-08-09 — reguły odbioru galerii i raportów
+
+- Akceptacja oferty jest jednorazowa. Nazwa, cena i rozbicie pakietu powstają z danych zapisanych na serwerze; dane opisowe wysłane przez klienta nie są źródłem umowy.
+- Tworząc galerię indywidualną administrator może wskazać zaakceptowaną ofertę. System przenosi liczbę zdjęć i cenę dodatku do wersjonowanego snapshotu, łączy ofertę/umowę z galerią i blokuje zmianę tych warunków.
+- Zmiana limitu galerii grupowej aktualizuje istniejących uczestników. Interfejs pokazuje rzeczywisty limit zamiast stałego `5/5`.
+- Wpływy od wdrożenia są zapisywane w `PaymentLedger`; raport opisuje starszą historię jako częściową. „Dochód” nie jest wyliczany bez kosztów.
+- Stan SEO on-page nie jest pozycją Google. Panel nie generuje zakresów TOP; ranking pojawi się dopiero z realnych danych Search Console.
+- Cena zaakceptowanej oferty jest wyliczana na serwerze z zapisanych pozycji, pakietu i dodatków; wartość przesłana przez przeglądarkę nie jest źródłem rozliczenia.
+- Indywidualna galeria, zamówienie i każde pobranie korzystają z jednego kontraktu dostępu: właściciel/admin albo krótkotrwała sesja uzyskana po poprawnym haśle galerii.
+- Galeria nie może zostać aktywowana ani wysłana klientowi, jeżeli nie ma zdjęć, źródeł JPG pełnej jakości albo liczba zdjęć w pakiecie nie zgadza się z konfiguracją.
+- Analytics zapisuje dane dopiero po zgodzie. Prywatne trasy, parametry URL, tokeny, adresy e-mail, tekst klikniętego elementu i pełny href nie należą do kontraktu zdarzenia.
+- Raport rozdziela: wartość utworzonych rezerwacji, otrzymane wpłaty brutto, zwroty i wpłaty netto. Przychód księgowy oraz dochód pozostają oznaczone jako brak danych, dopóki system nie ma księgi przychodów i kompletnej ewidencji kosztów.
+- Raport podaje osobno średnie zarejestrowane wpływy netto oraz średnią wartość nowych rezerwacji z sześciu pełnych miesięcy; bieżący niepełny miesiąc nie wchodzi do średniej.
+
 ## Aktualizacja 2026-08-04 — kadrowanie fotografii strony usługi
 
 - Edytor Hero ma pola „Kadrowanie zdjęcia”, „Kadrowanie na telefonie” oraz „Sposób wypełnienia”. `Cover` wypełnia hero, `Contain` pokazuje całe zdjęcie bez przycinania.

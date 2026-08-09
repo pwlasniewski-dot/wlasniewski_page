@@ -2,6 +2,18 @@
 
 Ten dokument stanowi techniczny blueprint platformy fotograficznej wlasniewski.pl. Jest on przeznaczony dla senior deweloperów i architektów systemowych, opisując strukturę, wzorce projektowe oraz krytyczne protokoły bezpieczeństwa.
 
+## Aktualizacja 2026-08-09 — granice bezpieczeństwa galerii i Analytics V2
+
+- `canonicalizeAcceptedOfferSelection` tworzy kanoniczny snapshot akceptacji i odrzuca brak/zmianę typu pakietu. `galleryTermsFromAcceptedOffer` jest jedyną drogą dziedziczenia warunków do `ClientGallery`.
+- `ClientGallery.offer_id`, `contract_id`, `package_snapshot`, `terms_source` i `terms_locked_at` utrwalają relację oferta–umowa–galeria.
+- `PaymentLedger` rejestruje idempotentnie PayU po `(provider, provider_payment_id)` i nowe płatności ręczne. `ReportDelivery.report_key` jest unikalną bramką wysyłki raportu.
+- Dashboard SEO analizuje wyłącznie opublikowane zasoby i zdarzenia `v2_page_view`; ruch organiczny liczy po unikalnych sesjach. Nie wyprowadza pozycji Google z własnego score.
+- `src/lib/galleries/individual-access.ts` jest wspólnym guardem podglądu, zamówienia i pobrań indywidualnej galerii. Po uwierzytelnieniu wystawia ograniczone ścieżką, HttpOnly cookie sesji galerii.
+- Pełny JPG jest normalizowany raz podczas uploadu i trafia do prywatnego obiektu S3; publiczny `file_url` pozostaje wyłącznie pomniejszonym preview. Odczyt pełnego źródła akceptuje tylko klucz lub dokładny host skonfigurowanego bucketu.
+- Endpoint Analytics V2 przyjmuje wyłącznie allowlistę zdarzeń i metadanych, odrzuca prywatne ścieżki oraz nieprawidłowy origin/active time. Klient nie inicjuje identyfikatorów przed zgodą.
+- `src/lib/analytics/finance.ts` liczy przepływy wg dat płatności i zwrotów, a nie daty utworzenia rezerwacji. Nie wyprowadza przychodu księgowego ani dochodu z ceny rezerwacji.
+- Duże ZIP-y są generowane w zadaniu Netlify Background Function, streamowane z prywatnego S3 do ZIP64 i ponownie zapisywane jako prywatny artefakt. Stan zadania utrwala postęp, blokadę duplikatów i błędy; link do pobrania wygasa po 15 minutach. Wariant 500 zdjęć wymaga jeszcze testu na stagingu; po przekroczeniu limitu czasu zostanie przeniesiony do dłużej działającego workera.
+
 ## Aktualizacja 2026-08-04 — kontrakt kadrowania i stylu redakcyjnego
 
 - `PageSection.imagePosition` oraz `imagePositionMobile` przechowują prawidłowe wartości CSS `object-position`/`background-position`; renderer przekazuje je przez zmienne CSS `--cms-image-position` i `--cms-image-position-mobile`.

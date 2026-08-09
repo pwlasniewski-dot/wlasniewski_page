@@ -257,7 +257,8 @@ type SeoOpsPayload = {
     generatedAt: string;
     summary: {
         score: number;
-        rankBand: string;
+        rankBand: null;
+        rankSource: 'unavailable';
         pageCount: number;
         completionPercent: number;
         unresolvedCritical: number;
@@ -344,7 +345,6 @@ const AUTOPILOT_ACTIONS: AutopilotActionDef[] = [
 
 /* ─── Helpers ─── */
 function clamp(v: number, min: number, max: number) { return Math.min(max, Math.max(min, v)); }
-function estimateRankBand(s: number) { if (s >= 85) return 'TOP 10'; if (s >= 72) return '11-20'; if (s >= 58) return '21-40'; if (s >= 45) return '41-70'; return '70+'; }
 function trendClass(d: number) { return d > 0 ? 'text-emerald-400' : d < 0 ? 'text-rose-400' : 'text-zinc-400'; }
 function severityColor(s: string) { return s === 'critical' ? 'text-rose-400 bg-rose-500/10 border-rose-500/30' : s === 'warning' ? 'text-amber-400 bg-amber-500/10 border-amber-500/30' : 'text-sky-400 bg-sky-500/10 border-sky-500/30'; }
 function severityLabel(s: string) { return s === 'critical' ? 'KRYTYCZNE' : s === 'warning' ? 'OSTRZEŻENIE' : 'INFO'; }
@@ -553,12 +553,12 @@ export default function SeoOpsPage() {
     };
 
     const simulation = useMemo(() => {
-        if (!data) return { predictedScore: 0, predictedRankBand: '70+', selectedImpact: 0 };
+        if (!data) return { predictedScore: 0, selectedImpact: 0 };
         const selectedImpact = checklist
             .filter(i => simulatedIds.includes(i.id) && !i.done)
             .reduce((sum, i) => sum + i.impactPoints, 0);
         const predictedScore = clamp(Math.round(data.summary.score + selectedImpact * 0.9), 10, 99);
-        return { predictedScore, predictedRankBand: estimateRankBand(predictedScore), selectedImpact };
+        return { predictedScore, selectedImpact };
     }, [data, checklist, simulatedIds]);
 
     const filteredAiRecs = useMemo(() => {
@@ -974,9 +974,8 @@ export default function SeoOpsPage() {
             </section>
 
             {/* ─── Metric Cards ─── */}
-            <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
-                <MetricCard icon={<Gauge className="h-5 w-5 text-emerald-400" />} label="SEO Score" value={`${data.summary.score}/100`} hint={`Pokrycie checklisty: ${data.summary.completionPercent}%`} />
-                <MetricCard icon={<Search className="h-5 w-5 text-sky-400" />} label="Aktualny ranking" value={data.summary.rankBand} hint="Estymacja pozycji dla fraz lokalnych" />
+            <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <MetricCard icon={<Gauge className="h-5 w-5 text-emerald-400" />} label="Stan SEO on-page" value={`${data.summary.score}/100`} hint={`Wskaźnik techniczny i treści, nie pozycja Google • checklista ${data.summary.completionPercent}%`} />
                 <MetricCard icon={<LineChart className="h-5 w-5 text-violet-400" />} label="Organic 30d" value={String(data.summary.currentOrganicVisits30d)} hint={`Zmiana m/m: ${data.summary.organicDeltaPercent}%`} hintClass={trendClass(data.summary.organicDeltaPercent)} />
                 <button onClick={() => setShowCriticalDetails(v => !v)} className="text-left">
                     <MetricCard icon={<CircleAlert className="h-5 w-5 text-amber-400" />} label="Krytyczne luki" value={String(data.summary.unresolvedCritical)}
@@ -1406,15 +1405,11 @@ export default function SeoOpsPage() {
                             <p className="text-3xl font-bold text-emerald-400">{simulation.predictedScore}/100</p>
                         </div>
                         <div>
-                            <p className="text-xs text-zinc-500">Estymowany ranking</p>
-                            <p className="text-2xl font-semibold">{simulation.predictedRankBand}</p>
-                        </div>
-                        <div>
                             <p className="text-xs text-zinc-500">Suma punktów zmian</p>
                             <p className="text-xl font-semibold">+{simulation.selectedImpact}</p>
                         </div>
                         <p className="text-xs text-zinc-500 leading-relaxed">
-                            Symulator pokazuje kierunek i skalę poprawy. Realny wynik zależy od konkurencji, sezonowości i tempa indeksacji Google.
+                            Symulator pokazuje wyłącznie przewidywaną poprawę stanu technicznego i treści. Pozycje, kliknięcia i CTR będą dostępne dopiero po imporcie danych Google Search Console.
                         </p>
                     </div>
                 </div>

@@ -4,8 +4,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { withAuth } from '@/lib/auth/middleware';
-import { extractToken, verifyToken } from '@/lib/auth/jwt';
 import { logCrmActivity } from '@/lib/crm-activity';
+import { attachIndividualGallerySession, authorizeIndividualGallery, galleryAccessDenied } from '@/lib/galleries/individual-access';
 
 export async function GET(
     request: NextRequest,
@@ -44,57 +44,25 @@ export async function GET(
             );
         }
 
-        const authHeader = request.headers.get('authorization') || request.headers.get('Authorization');
-        const token = extractToken(authHeader);
-
-        let authUser: { id: number; email: string; role: string } | null = null;
-        if (token) {
-            const decoded = await verifyToken(token);
-            if (decoded) {
-                const user = await prisma.user.findUnique({
-                    where: { id: decoded.id },
-                    select: { id: true, email: true, role: true, is_active: true },
-                });
-                if (user?.is_active) {
-                    authUser = { id: user.id, email: user.email, role: user.role };
-                }
-            }
+        if (gallery.gallery_mode === 'GROUP') {
+            return NextResponse.json({
+                success: false,
+                code: 'GROUP_AUTH_REQUIRED',
+                error: 'Ta galeria wymaga logowania uczestnika.',
+            }, { status: 401 });
         }
-
-        const ownerById = !!authUser && !!gallery.client_id && authUser.id === gallery.client_id;
-        const ownerByEmail = !!authUser && !!gallery.client_email && authUser.email.toLowerCase() === gallery.client_email.toLowerCase();
-        const privilegedRole = !!authUser && (authUser.role === 'ADMIN' || authUser.role === 'PHOTOGRAPHER');
-        const isOwner = ownerById || ownerByEmail || privilegedRole;
-
-        // INDIVIDUAL galleries are private by default.
-        // Access paths:
-        // 1) owner/admin/photographer via authenticated account,
-        // 2) family via admin-configured share password.
-        if (gallery.gallery_mode !== 'GROUP' && !isOwner) {
-            const configuredSharePassword = (gallery.group_password || '').trim();
-            const providedSharePassword = (request.headers.get('x-gallery-password') || '').trim();
-
-            if (!configuredSharePassword) {
-                return NextResponse.json(
-                    {
-                        success: false,
-                        code: 'OWNER_ONLY',
-                        error: 'Ta galeria jest prywatna. Właściciel musi wejść po zalogowaniu.',
-                    },
-                    { status: 403 }
-                );
+        const access = await authorizeIndividualGallery(request, gallery);
+        if (access && !access.allowed) {
+            if (!(gallery.group_password || '').trim()) {
+                return NextResponse.json({
+                    success: false,
+                    code: 'OWNER_ONLY',
+                    error: 'Ta galeria jest prywatna. Właściciel musi wejść po zalogowaniu.',
+                }, { status: 403 });
             }
-
-            if (providedSharePassword !== configuredSharePassword) {
-                return NextResponse.json(
-                    {
-                        success: false,
-                        code: 'PASSWORD_REQUIRED',
-                        error: 'Podaj hasło udostępniania galerii.',
-                    },
-                    { status: 401 }
-                );
-            }
+            const denied = galleryAccessDenied(access);
+            const deniedBody = await denied.json();
+            return NextResponse.json({ ...deniedBody, code: 'PASSWORD_REQUIRED' }, { status: 401 });
         }
 
         // Check if gallery is active
@@ -191,7 +159,7 @@ export async function GET(
             }
         }
 
-        return NextResponse.json({
+        const response = NextResponse.json({
             success: true,
             gallery: {
                 id: gallery.id,
@@ -202,12 +170,19 @@ export async function GET(
                 max_photos_for_print: gallery.max_photos_for_print,
                 price_per_premium: gallery.price_per_premium,
                 expires_at: gallery.expires_at,
+                event_video_url: gallery.event_video_enabled ? gallery.event_video_url : null,
+                event_video_title: gallery.event_video_enabled ? gallery.event_video_title : null,
+                event_video_description: gallery.event_video_enabled ? gallery.event_video_description : null,
                 standard_photos,
                 premium_photos,
                 paid_photo_ids: Array.from(paidPhotoIds),
                 products: gallery.products,
             }
         });
+        if (access?.allowed) {
+            await attachIndividualGallerySession(response, gallery);
+        }
+        return response;
     } catch (error) {
         console.error('Error fetching gallery:', error);
         return NextResponse.json(

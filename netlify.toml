@@ -28,6 +28,11 @@
     "@prisma/client"
   ]
 
+# Daily Analytics 2.0 business email. Netlify scheduled functions use UTC.
+# Run at both possible UTC offsets; the function sends only when Warsaw local time is 08:00.
+[functions."daily-analytics-report"]
+  schedule = "0 6,7 * * *"
+
 # ─── CRITICAL: Prevent Netlify from redirecting aeroanaliza.pl → wlasniewski.pl ───
 # Netlify automatically 301-redirects domain aliases to the primary domain.
 # These rules override that behavior so aeroanaliza.pl serves B2B content directly.

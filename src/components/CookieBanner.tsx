@@ -6,9 +6,11 @@ import Link from 'next/link';
 
 export default function CookieBanner() {
     const [showBanner, setShowBanner] = useState(false);
+    const [hasDecision, setHasDecision] = useState(false);
 
     useEffect(() => {
         const consent = localStorage.getItem('cookie_consent');
+        setHasDecision(Boolean(consent));
         if (!consent) {
             // Show banner after a short delay
             setTimeout(() => setShowBanner(true), 1000);
@@ -17,15 +19,40 @@ export default function CookieBanner() {
 
     const acceptCookies = () => {
         localStorage.setItem('cookie_consent', 'accepted');
+        setHasDecision(true);
+        window.dispatchEvent(new CustomEvent('cookie-consent-changed', { detail: 'accepted' }));
         setShowBanner(false);
     };
 
     const rejectCookies = () => {
         localStorage.setItem('cookie_consent', 'rejected');
+        localStorage.removeItem('analytics_v2_user_id');
+        localStorage.removeItem('analytics_v2_session');
+        for (const cookie of document.cookie.split(';')) {
+            const name = cookie.split('=')[0]?.trim();
+            if (!name || !/^(_ga|_gid|_gat|_gcl|_fbp|_fbc)/.test(name)) continue;
+            document.cookie = `${name}=; Max-Age=0; path=/; SameSite=Lax`;
+            document.cookie = `${name}=; Max-Age=0; path=/; domain=.${location.hostname}; SameSite=Lax`;
+        }
+        setHasDecision(true);
+        window.dispatchEvent(new CustomEvent('cookie-consent-changed', { detail: 'rejected' }));
         setShowBanner(false);
+        // Usuwa również już załadowane integracje zewnętrzne (GA/GTM/Meta), jeśli
+        // użytkownik wycofał zgodę w trakcie bieżącej sesji.
+        window.location.reload();
     };
 
-    if (!showBanner) return null;
+    if (!showBanner) {
+        return hasDecision ? (
+            <button
+                type="button"
+                onClick={() => setShowBanner(true)}
+                className="fixed bottom-3 left-3 z-40 rounded-full border border-zinc-700 bg-zinc-900/90 px-3 py-2 text-xs text-zinc-300 shadow-lg hover:text-white"
+            >
+                Ustawienia cookies
+            </button>
+        ) : null;
+    }
 
     return (
         <div className="fixed bottom-0 left-0 right-0 z-50 p-4 bg-zinc-900/95 backdrop-blur-sm border-t border-zinc-800 shadow-2xl">

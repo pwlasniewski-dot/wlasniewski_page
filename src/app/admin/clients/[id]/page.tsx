@@ -1097,6 +1097,7 @@ function ClientDetailsContent({ id }: { id: string }) {
                                     galleryId={editingGalleryId}
                                     clientEmail={client.email}
                                     clientName={client.name}
+                                    clientOffers={client.offers}
                                     onClose={() => {
                                         setEditingGalleryId(null);
                                         setIsCreatingGallery(false);

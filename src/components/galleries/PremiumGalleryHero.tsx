@@ -27,6 +27,8 @@ interface PremiumGalleryHeroProps {
   mode?: 'grid' | 'story';
   onModeChange?: (m: 'grid' | 'story') => void;
   onPhotoClick?: (photo: HeroPhoto) => void;
+  selectedPhotoIds?: Set<number>;
+  onToggleSelect?: (photo: HeroPhoto) => void;
   limitReached?: boolean;
   onLimitReached?: (photoId: number) => void;
   extraSelectedPhotoIds?: Set<number>;

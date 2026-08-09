@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Determine amount based on payment type
-        let amount: number;
+        let amountPln: number;
         let description: string;
 
         if (payment_type === "deposit") {
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
             if (offer.deposit_paid_at) {
                 return NextResponse.json({ error: "Deposit already paid" }, { status: 400 });
             }
-            amount = offer.deposit_amount;
+            amountPln = offer.deposit_amount;
             description = `Zaliczka - ${offer.workshop.title}`;
         } else if (payment_type === "full") {
             if (!offer.price) {
@@ -47,15 +47,16 @@ export async function POST(request: NextRequest) {
             }
             // Calculate remaining amount if deposit was paid
             const depositPaid = offer.deposit_paid_at ? (offer.deposit_amount || 0) : 0;
-            amount = offer.price - depositPaid;
+            amountPln = offer.price - depositPaid;
             
-            if (amount <= 0) {
+            if (amountPln <= 0) {
                 return NextResponse.json({ error: "Already fully paid" }, { status: 400 });
             }
             description = `Płatność za warsztat - ${offer.workshop.title}`;
         } else {
             return NextResponse.json({ error: "Invalid payment_type" }, { status: 400 });
         }
+        const amount = Math.round(amountPln * 100);
 
         // Get Client IP
         const headerList = await headers();
