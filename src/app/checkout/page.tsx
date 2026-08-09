@@ -5,8 +5,10 @@ import { motion } from 'framer-motion';
 import { useCart } from '@/context/CartContext';
 import { ShoppingBag, Lock, ShieldCheck, CreditCard, Gift, Wallet } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAnalytics } from '@/hooks/useAnalytics';
 
 export default function CheckoutPage() {
+    const { trackEvent } = useAnalytics();
     const { items, totalAmount, clearCart } = useCart();
     const [submitting, setSubmitting] = useState(false);
 
@@ -149,6 +151,11 @@ export default function CheckoutPage() {
 
         setSubmitting(true);
         try {
+            void trackEvent('payment_started', {
+                amount_grosze: amountNow,
+                item_count: items.length,
+                payment_plan: paymentPlan,
+            });
             if (typeof window !== 'undefined' && (window as any).gtag) {
                 (window as any).gtag('event', 'begin_checkout', {
                     currency: 'PLN',
@@ -182,6 +189,11 @@ export default function CheckoutPage() {
             }
 
             const data = await response.json();
+            void trackEvent('booking_created', {
+                amount_grosze: amountNow,
+                item_count: items.length,
+                has_payment_redirect: !!data.redirectUrl,
+            });
 
             toast.success('Zamówienie przyjęte! Przekierowanie do płatności...');
 

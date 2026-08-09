@@ -167,12 +167,12 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
         }
 
         // 2. Add Optional Items (Legacy)
-        offer.sections?.forEach((section: any) => {
+        offer.sections?.forEach((section: any, sectionIndex: number) => {
             section.items?.forEach((item: any, itemIndex: number) => {
                 if (!item.is_optional) {
                     // Always include non-optional items
                     total += item.price * item.quantity;
-                } else if (selectedOptionalItems.has(itemIndex)) {
+                } else if (selectedOptionalItems.has(sectionIndex * 100 + itemIndex)) {
                     // Include selected optional items
                     total += item.price * item.quantity;
                 }

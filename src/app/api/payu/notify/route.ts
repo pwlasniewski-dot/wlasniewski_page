@@ -82,6 +82,27 @@ export async function POST(request: NextRequest) {
             const typeOrId = parts[0];
             const resourceId = parts.length > 1 ? parseInt(parts[1]) : parseInt(typeOrId);
 
+            const paymentKind = parts.includes('deposit')
+                ? 'DEPOSIT'
+                : parts.includes('remaining') ? 'REMAINING' : 'FULL';
+            await prisma.paymentLedger.upsert({
+                where: { provider_provider_payment_id: { provider: 'PAYU', provider_payment_id: String(orderId) } },
+                create: {
+                    provider: 'PAYU',
+                    provider_payment_id: String(orderId),
+                    external_order_id: String(extOrderId),
+                    resource_type: String(typeOrId || 'UNKNOWN'),
+                    resource_id: Number.isInteger(resourceId) ? resourceId : null,
+                    payment_kind: paymentKind,
+                    amount: Math.max(0, Math.round(Number(order.totalAmount || 0))),
+                    currency: String(order.currencyCode || 'PLN'),
+                    status: 'COMPLETED',
+                    paid_at: new Date(),
+                    metadata: { source: 'payu_webhook' },
+                },
+                update: { status: 'COMPLETED' },
+            });
+
             // Try to detect resource type
             let handled = false;
 
@@ -698,7 +719,7 @@ export async function POST(request: NextRequest) {
                                         <p><strong>Numer transakcji:</strong> ${orderId}</p>
                                     </div>
                                     ${paymentType === 'deposit' && offer.price && offer.deposit_amount ? `
-                                        <p>Pozostała kwota do zapłaty: <strong>${((offer.price - offer.deposit_amount) / 100).toFixed(2)} PLN</strong></p>
+                                        <p>Pozostała kwota do zapłaty: <strong>${(offer.price - offer.deposit_amount).toFixed(2)} PLN</strong></p>
                                     ` : ''}
                                     <p>Możesz sprawdzić szczegóły warsztatu w swoim <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://wlasniewski.pl'}/konto?tab=warsztaty">panelu klienta</a>.</p>
                                     <p>Do zobaczenia na warsztatach!</p>
@@ -907,6 +928,22 @@ export async function POST(request: NextRequest) {
                     },
                 });
                 await logSystem('INFO', 'PAYMENT', `REFUND ${refundEvent.status} booking #${refundedBooking.id}`, { refundEvent });
+            }
+            const isComplete = refundEvent.status === 'FINALIZED' || refundEvent.status === 'COMPLETED';
+            if (isComplete) {
+                const refundAmount = Math.max(0, Math.round(Number(refundEvent.amount || refundEvent.totalAmount || 0)));
+                const ledgerPayment = await prisma.paymentLedger.findUnique({
+                    where: { provider_provider_payment_id: { provider: 'PAYU', provider_payment_id: String(order.orderId) } },
+                });
+                if (ledgerPayment) {
+                    await prisma.paymentLedger.update({
+                        where: { id: ledgerPayment.id },
+                        data: {
+                            refunded_amount: refundAmount || ledgerPayment.amount,
+                            refunded_at: new Date(),
+                        },
+                    });
+                }
             }
         }
 

@@ -1,5 +1,17 @@
 # PROJECT_HISTORIA & VADEMECUM STABILNOŚCI
 
+## 2026-08-09 — Audyt galerii, ofert i Analytics 2.0
+
+- Po poprawkach odbiorowych akceptacja wymaga prawidłowego pakietu, zapisuje wyłącznie kanoniczne dane z oferty i nie może zostać ponowiona przez klienta. Umowa zachowuje również rozbicie pakietów komunijnych.
+- Galeria indywidualna może zostać trwale połączona z zaakceptowaną ofertą i umową. Zapisuje snapshot liczby zdjęć, ceny dodatku i źródła warunków; administrator nie może ich po cichu zmienić po akceptacji.
+- Dodano wspólny `PaymentLedger` dla płatności PayU i nowych wpłat ręcznych oraz atomową bramkę `ReportDelivery` zapobiegającą podwójnemu wysłaniu raportu.
+- Usunięto pozorny ranking Google wyprowadzany z checklisty. Panel pokazuje stan SEO on-page; realne pozycje, CTR i kliknięcia wymagają importu GSC.
+- Build produkcyjny i 31 testów jednostkowych przechodzą. Pełna historia wpływów sprzed uruchomienia rejestru pozostaje jawnie oznaczona jako potencjalnie niekompletna.
+- Połączono roboczo PR #32 i #33 na gałęzi odbiorowej oraz wykonano audyt bezpieczeństwa, UX sprzedaży i spójności raportowania. Oba PR-y otrzymały decyzję NO-GO w pierwotnym stanie.
+- Zamknięto możliwość zaakceptowania oferty z ceną podmienioną w przeglądarce, obejścia ochrony galerii przez endpoint pobierania/zamówienia oraz pobierania pełnych plików z dowolnego adresu URL.
+- Analytics V2 wymaga teraz aktywnej zgody, pomija prywatne trasy i nie zapisuje query, tokenów, linków ani tekstu klienta. Raport rozdziela wartość rezerwacji od faktycznie otrzymanych wpłat.
+- ZIP ma preflight, streaming, trwałe zadanie w tle z postępem i prywatny link TTL; testy syntetyczne 10/50/100/300 przechodzą. Produkcyjne wdrożenie nadal wymaga migracji, testów 100/300/500 JPG na prawdziwym S3, próbnego raportu i końcowego odbioru QA.
+
 ## 2026-08-04 — Redakcyjny wygląd i kadrowanie strony sesji
 
 - Strony usługowe oznaczone stylem redakcyjnym, a także istniejące adresy `/sesja` i `/sesja-rodzinna`, korzystają z jasnej palety papieru, atramentu i starego złota spójnej ze stroną główną; pełnoekranowy hero pozostaje fotograficzny.

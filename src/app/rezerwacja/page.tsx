@@ -12,6 +12,7 @@ import PromocodeBar from '@/components/PromocodeBar';
 import PageRenderer from '@/components/PageRenderer';
 import { PageSection } from '@/components/admin/PageBuilder';
 import { useCart } from '@/context/CartContext';
+import { useAnalytics } from '@/hooks/useAnalytics';
 
 interface ServiceType {
     id: number;
@@ -61,6 +62,7 @@ const FALLBACK_RETURNING_PROMO: DiscountCode = {
 };
 
 export default function RezerwacjaPage() {
+    const { trackEvent } = useAnalytics();
     // Data from API
     const [serviceTypes, setServiceTypes] = useState<ServiceType[]>([]);
     const [servicesLoading, setServicesLoading] = useState(true);
@@ -430,6 +432,11 @@ export default function RezerwacjaPage() {
             value: finalPrice / 100,
             service: service?.name,
             package: chosenPackage.name,
+        });
+        void trackEvent('booking_start', {
+            service_id: service?.id,
+            package_id: chosenPackage.id,
+            amount_grosze: finalPrice,
         });
 
         addItem({

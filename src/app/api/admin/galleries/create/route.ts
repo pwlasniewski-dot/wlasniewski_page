@@ -6,6 +6,7 @@ import prisma from '@/lib/db/prisma';
 import { withAuth } from '@/lib/auth/middleware';
 import { generateAccessCode } from '@/lib/gallery-utils';
 import { sendEmail, getAdminEmail } from '@/lib/email/sender';
+import { galleryTermsFromAcceptedOffer } from '@/lib/galleries/offerTerms';
 
 export async function POST(request: NextRequest) {
     return withAuth(request, async () => {
@@ -18,8 +19,9 @@ export async function POST(request: NextRequest) {
                 price_per_premium,
                 expires_at,
                 booking_id,
+                offer_id,
                 challenge_id,
-                send_email: shouldSendEmail = false,
+                send_email: requestedSendEmail = false,
                 // Tryb grupowy
                 gallery_mode = 'INDIVIDUAL',
                 group_access_code: rawGroupCode,
@@ -27,6 +29,9 @@ export async function POST(request: NextRequest) {
                 max_photos_for_print,
                 external_download_url,
             } = body;
+            // A gallery is created as a draft. Sending access before photos and HQ files exist
+            // caused clients to receive empty or incomplete galleries.
+            const shouldSendEmail = false;
 
             if (!client_name || !client_email) {
                 return NextResponse.json(
@@ -34,8 +39,57 @@ export async function POST(request: NextRequest) {
                     { status: 400 }
                 );
             }
-
             const mode = gallery_mode === 'GROUP' ? 'GROUP' : 'INDIVIDUAL';
+            let includedCount = standard_count === undefined ? 10 : Number(standard_count);
+            let extraPhotoPrice = price_per_premium === undefined ? 2000 : Number(price_per_premium);
+            let sourceOffer: any = null;
+            let packageSnapshot: Record<string, unknown> | null = null;
+            if (offer_id !== undefined && offer_id !== null && offer_id !== '') {
+                if (mode !== 'INDIVIDUAL') {
+                    return NextResponse.json({ success: false, error: 'Powiązanie z pojedynczą ofertą dotyczy galerii indywidualnej.' }, { status: 400 });
+                }
+                sourceOffer = await prisma.offer.findUnique({
+                    where: { id: Number(offer_id) },
+                    include: { contract: { select: { id: true } }, gallery: { select: { id: true } } },
+                });
+                if (!sourceOffer || sourceOffer.status !== 'accepted') {
+                    return NextResponse.json({ success: false, error: 'Wybierz istniejącą, zaakceptowaną ofertę.' }, { status: 409 });
+                }
+                if (sourceOffer.gallery) {
+                    return NextResponse.json({ success: false, error: `Ta oferta jest już połączona z galerią #${sourceOffer.gallery.id}.` }, { status: 409 });
+                }
+                const normalizedEmail = String(client_email).trim().toLowerCase();
+                if (sourceOffer.client_email && sourceOffer.client_email.trim().toLowerCase() !== normalizedEmail) {
+                    return NextResponse.json({ success: false, error: 'Oferta należy do innego klienta.' }, { status: 409 });
+                }
+                try {
+                    const terms = galleryTermsFromAcceptedOffer(sourceOffer);
+                    if (terms.includedPhotoCount === null || terms.extraPhotoPriceGrosz === null) {
+                        return NextResponse.json({
+                            success: false,
+                            error: 'Oferta nie określa jednoznacznie liczby zdjęć w pakiecie i ceny dodatkowego zdjęcia. Uzupełnij i ponownie wyślij ofertę — galeria powiązana z ofertą nie używa wartości domyślnych.',
+                        }, { status: 409 });
+                    }
+                    includedCount = terms.includedPhotoCount;
+                    extraPhotoPrice = terms.extraPhotoPriceGrosz;
+                    packageSnapshot = {
+                        ...terms.snapshot,
+                        includedPhotoCount: includedCount,
+                        extraPhotoPriceGrosz: extraPhotoPrice,
+                        includedPhotoCountSource: 'OFFER',
+                        extraPhotoPriceSource: 'OFFER',
+                    };
+                } catch (error) {
+                    return NextResponse.json({ success: false, error: error instanceof Error ? error.message : 'Nie można odczytać warunków pakietu.' }, { status: 409 });
+                }
+            }
+            if (!Number.isInteger(includedCount) || includedCount < 0 || includedCount > 1000) {
+                return NextResponse.json({ success: false, error: 'Limit zdjęć musi być liczbą 0–1000.' }, { status: 400 });
+            }
+            if (!Number.isInteger(extraPhotoPrice) || extraPhotoPrice < 0 || extraPhotoPrice > 10_000_000) {
+                return NextResponse.json({ success: false, error: 'Cena dodatkowego zdjęcia jest nieprawidłowa.' }, { status: 400 });
+            }
+
             let externalDownloadUrl: string | null = null;
             if (external_download_url) {
                 try {
@@ -82,11 +136,16 @@ export async function POST(request: NextRequest) {
                     client_name,
                     client_email,
                     access_code,
-                    standard_count: standard_count || 10,
-                    price_per_premium: price_per_premium || 2000, // 20 zł default
+                    standard_count: includedCount,
+                    price_per_premium: extraPhotoPrice,
                     expires_at: expiresAt,
-                    is_active: true,
+                    is_active: false,
                     booking_id: booking_id ? Number(booking_id) : undefined,
+                    offer_id: sourceOffer?.id,
+                    contract_id: sourceOffer?.contract?.id,
+                    package_snapshot: packageSnapshot ? packageSnapshot as any : undefined,
+                    terms_source: sourceOffer ? 'ACCEPTED_OFFER' : 'MANUAL',
+                    terms_locked_at: sourceOffer ? new Date() : null,
                     gallery_mode: mode,
                     group_access_code,
                     group_password: group_password ? String(group_password).trim() || null : null,
@@ -209,7 +268,9 @@ export async function POST(request: NextRequest) {
                     gallery_mode: gallery.gallery_mode,
                     group_access_code: gallery.group_access_code,
                 },
-                message: shouldSendEmail ? 'Galeria utworzona i email wysłany do klienta' : 'Galeria utworzona'
+                message: requestedSendEmail
+                    ? 'Galeria utworzona jako szkic. Wgraj zdjęcia, sprawdź JPG HQ, aktywuj i dopiero wtedy wyślij dostęp.'
+                    : 'Galeria utworzona jako szkic'
             });
         } catch (error) {
             console.error('Error creating gallery:', error);

@@ -6,6 +6,7 @@ import prisma from '@/lib/db/prisma';
 
 // Use standard import for library
 import { createPayUOrder, extractClientIpv4 } from '@/lib/payu';
+import { authorizeIndividualGallery, galleryAccessDenied } from '@/lib/galleries/individual-access';
 
 export async function POST(
     request: NextRequest,
@@ -14,9 +15,18 @@ export async function POST(
     try {
         const { accessCode } = await params;
         const body = await request.json();
-        const { photo_ids = [], product_ids = [] } = body;
+        const photoIds = Array.from(new Set(
+            (Array.isArray(body.photo_ids) ? body.photo_ids : [])
+                .map(Number)
+                .filter((id: number) => Number.isInteger(id) && id > 0)
+        )) as number[];
+        const productIds = Array.from(new Set(
+            (Array.isArray(body.product_ids) ? body.product_ids : [])
+                .map(Number)
+                .filter((id: number) => Number.isInteger(id) && id > 0)
+        )) as number[];
 
-        if ((!photo_ids || photo_ids.length === 0) && (!product_ids || product_ids.length === 0)) {
+        if (photoIds.length === 0 && productIds.length === 0) {
             return NextResponse.json(
                 { success: false, error: 'Brak wybranych zdjęć lub produktów' },
                 { status: 400 }
@@ -33,6 +43,10 @@ export async function POST(
                 price_per_premium: true,
                 client_name: true,
                 client_email: true,
+                access_code: true,
+                gallery_mode: true,
+                client_id: true,
+                group_password: true,
             }
         });
 
@@ -43,16 +57,41 @@ export async function POST(
             );
         }
 
+        if (gallery.expires_at && gallery.expires_at < new Date()) {
+            return NextResponse.json({ success: false, error: 'Galeria wygasła' }, { status: 403 });
+        }
+
+        const access = await authorizeIndividualGallery(request, gallery);
+        if (!access.allowed) return galleryAccessDenied(access);
+
+        const paidOrders = await prisma.photoOrder.findMany({
+            where: { gallery_id: gallery.id, payment_status: 'paid' },
+            select: { photo_ids: true },
+        });
+        const alreadyPurchased = new Set<number>();
+        for (const paidOrder of paidOrders) {
+            try {
+                const ids = JSON.parse(paidOrder.photo_ids);
+                if (Array.isArray(ids)) ids.forEach(id => alreadyPurchased.add(Number(id)));
+            } catch {}
+        }
+        if (photoIds.some(id => alreadyPurchased.has(id))) {
+            return NextResponse.json(
+                { success: false, error: 'Co najmniej jedno zdjęcie zostało już opłacone.' },
+                { status: 409 },
+            );
+        }
+
         // Verify premium photos
         const photos = await prisma.galleryPhoto.findMany({
             where: {
-                id: { in: photo_ids },
+                id: { in: photoIds },
                 gallery_id: gallery.id,
                 is_standard: false,
             }
         });
 
-        if (photos.length !== photo_ids.length) {
+        if (photos.length !== photoIds.length) {
             return NextResponse.json(
                 { success: false, error: 'Niektóre zdjęcia nie są dostępne do zakupu' },
                 { status: 400 }
@@ -60,18 +99,19 @@ export async function POST(
         }
 
         // Verify products
-        const products = product_ids.length > 0 ? await prisma.galleryProduct.findMany({
+        const products = productIds.length > 0 ? await prisma.galleryProduct.findMany({
             where: {
-                id: { in: product_ids },
+                id: { in: productIds },
                 // Ensure product belongs to this gallery OR is global (if we supported global products in future, but for now we enforced gallery_id in Admin)
                 // Actually, schema allows null gallery_id. If we want to allow global products, we should check:
                 // OR: [{ gallery_id: gallery.id }, { gallery_id: null }]
                 // But for now let's stick to what we implemented in Admin (assigned to gallery)
-                gallery_id: gallery.id
+                gallery_id: gallery.id,
+                is_active: true,
             }
         }) : [];
 
-        if (products.length !== product_ids.length) {
+        if (products.length !== productIds.length) {
             return NextResponse.json(
                 { success: false, error: 'Niektóre produkty nie są dostępne' },
                 { status: 400 }
@@ -88,8 +128,8 @@ export async function POST(
         const order = await prisma.photoOrder.create({
             data: {
                 gallery_id: gallery.id,
-                photo_ids: JSON.stringify(photo_ids),
-                product_ids: JSON.stringify(product_ids),
+                photo_ids: JSON.stringify(photoIds),
+                product_ids: JSON.stringify(productIds),
                 photo_count,
                 total_amount,
                 payment_status: 'pending',

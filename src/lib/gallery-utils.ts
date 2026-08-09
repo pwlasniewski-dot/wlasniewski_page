@@ -8,9 +8,12 @@ import { uploadToS3, deleteFromS3 } from './storage/s3';
 export interface ProcessedPhoto {
     file_url: string;
     thumbnail_url: string;
+    download_source_url: string;
     file_size: number;
     width: number;
     height: number;
+    download_source_width: number;
+    download_source_height: number;
     content_hash: string;
 }
 
@@ -29,52 +32,34 @@ export async function processGalleryPhoto(
     const hash = crypto.randomBytes(8).toString('hex');
     const timestamp = Date.now();
 
-    // Determine extension and processing based on options
-    let processedBuffer: Buffer;
-    let extension: string;
-    let mimeType: string;
+    // Every upload creates two independent assets:
+    // public, reduced WebP preview and private, full-quality JPG download source.
+    const previewBuffer = await sharp(file)
+        .rotate()
+        .resize(2000, 2000, { fit: 'inside', withoutEnlargement: true })
+        .webp({ quality: 85 })
+        .toBuffer();
+    const downloadBuffer = await sharp(file)
+        .rotate()
+        .jpeg({ quality: 94, chromaSubsampling: '4:4:4', mozjpeg: true })
+        .toBuffer();
 
-    if (options.skipOptimization) {
-        // Keep original
-        processedBuffer = file;
-
-        // Avoid sharp for passthrough uploads (more robust on serverless runtimes).
-        const sourceMime = (options.sourceMimeType || '').toLowerCase();
-        if (sourceMime === 'image/png') {
-            extension = 'png';
-            mimeType = 'image/png';
-        } else if (sourceMime === 'image/webp') {
-            extension = 'webp';
-            mimeType = 'image/webp';
-        } else {
-            extension = 'jpg';
-            mimeType = 'image/jpeg';
-        }
-    } else {
-        const originalImage = sharp(file);
-
-        // Optimize to WebP, Max 2000px
-        extension = 'webp';
-        mimeType = 'image/webp';
-
-        processedBuffer = await originalImage
-            .resize(2000, 2000, {
-                fit: 'inside',
-                withoutEnlargement: true
-            })
-            .webp({ quality: 85 })
-            .toBuffer();
-    }
-
-    const filename = `${timestamp}-${hash}.${extension}`;
+    const filename = `${timestamp}-${hash}.webp`;
+    const downloadFilename = `download-${timestamp}-${hash}.jpg`;
     const folderPath = `galleries/${galleryId}`;
 
     // Get file size
-    const file_size = processedBuffer.length;
-    const content_hash = crypto.createHash('sha256').update(processedBuffer).digest('hex');
+    const file_size = previewBuffer.length;
+    const content_hash = crypto.createHash('sha256').update(downloadBuffer).digest('hex');
 
     // Upload main image to S3
-    const file_url = await uploadToS3(processedBuffer, `${folderPath}/${filename}`, mimeType);
+    const file_url = await uploadToS3(previewBuffer, `${folderPath}/${filename}`, 'image/webp');
+    const download_source_url = await uploadToS3(
+        downloadBuffer,
+        `${folderPath}/${downloadFilename}`,
+        'image/jpeg',
+        { access: 'private' },
+    );
 
     let width = 0;
     let height = 0;
@@ -92,17 +77,20 @@ export async function processGalleryPhoto(
     // Upload thumbnail to S3
     const thumbnail_url = await uploadToS3(thumbnailBuffer, `${folderPath}/${thumbnailFilename}`, 'image/webp');
 
-    // Keep correct dimensions for both optimized and full-quality uploads.
-    const processedMetadata = await sharp(processedBuffer).metadata();
+    const processedMetadata = await sharp(previewBuffer).metadata();
+    const downloadMetadata = await sharp(downloadBuffer).metadata();
     width = processedMetadata.width || 0;
     height = processedMetadata.height || 0;
 
     return {
         file_url,
         thumbnail_url,
+        download_source_url,
         file_size,
         width,
         height,
+        download_source_width: downloadMetadata.width || 0,
+        download_source_height: downloadMetadata.height || 0,
         content_hash,
     };
 }
@@ -114,7 +102,8 @@ export async function processGalleryPhoto(
  */
 export async function deleteGalleryPhoto(
     file_url: string,
-    thumbnail_url: string | null
+    thumbnail_url: string | null,
+    download_source_url?: string | null,
 ): Promise<void> {
     try {
         // Delete original
@@ -123,6 +112,9 @@ export async function deleteGalleryPhoto(
         // Delete thumbnail if exists
         if (thumbnail_url) {
             await deleteFromS3(thumbnail_url);
+        }
+        if (download_source_url && download_source_url !== file_url) {
+            await deleteFromS3(download_source_url);
         }
 
     } catch (error) {

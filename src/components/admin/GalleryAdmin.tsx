@@ -6,6 +6,7 @@ import { Upload, Trash2, Check, X, Eye, ImageIcon, Plus, ArrowLeft, Calendar, Sa
 import Image from 'next/image';
 import toast from 'react-hot-toast';
 import GalleryParticipantsManager from './GalleryParticipantsManager';
+import { galleryTermsFromAcceptedOffer } from '@/lib/galleries/offerTerms';
 
 interface GalleryPhoto {
     id: number;
@@ -58,17 +59,24 @@ interface Gallery {
     group_password?: string | null;
     max_photos_for_print?: number | null;
     external_download_url?: string | null;
+    event_video_url?: string | null;
+    event_video_title?: string | null;
+    event_video_description?: string | null;
+    event_video_enabled?: boolean;
+    terms_source?: string;
+    package_snapshot?: Record<string, any> | null;
 }
 
 interface GalleryAdminProps {
     galleryId?: number | null;
     clientEmail?: string;
     clientName?: string;
+    clientOffers?: any[];
     onClose: () => void;
     onCreated?: (galleryId: number) => void;
 }
 
-export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClose, onCreated }: GalleryAdminProps) {
+export default function GalleryAdmin({ galleryId, clientEmail, clientName, clientOffers = [], onClose, onCreated }: GalleryAdminProps) {
     const SAFE_UPLOAD_LIMIT_BYTES = 30 * 1024 * 1024;
     const MIN_DOWNLOAD_WIDTH = 3000;
     const MIN_DOWNLOAD_HEIGHT = 2000;
@@ -101,6 +109,10 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
         group_password: '',
         max_photos_for_print: '' as string | number,
         external_download_url: '',
+        event_video_url: '',
+        event_video_title: '',
+        event_video_description: '',
+        event_video_enabled: false,
     });
 
     // Create state
@@ -111,6 +123,7 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
         price_per_premium: 2000,
         expires_days: 30,
         send_email: false,
+        offer_id: '' as string | number,
         gallery_mode: 'INDIVIDUAL' as 'INDIVIDUAL' | 'GROUP',
         group_access_code: '',
         group_password: '',
@@ -151,6 +164,10 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
                 group_password: gallery.group_password || '',
                 max_photos_for_print: gallery.max_photos_for_print ?? '',
                 external_download_url: gallery.external_download_url || '',
+                event_video_url: gallery.event_video_url || '',
+                event_video_title: gallery.event_video_title || '',
+                event_video_description: gallery.event_video_description || '',
+                event_video_enabled: !!gallery.event_video_enabled,
             });
         }
     }, [gallery]);
@@ -238,6 +255,10 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
                 description: editData.description,
                 gallery_mode: editData.gallery_mode,
                 external_download_url: editData.external_download_url || null,
+                event_video_url: editData.event_video_url || null,
+                event_video_title: editData.event_video_title || null,
+                event_video_description: editData.event_video_description || null,
+                event_video_enabled: editData.event_video_enabled,
             };
             payload.group_password = editData.group_password || null;
             if (editData.gallery_mode === 'GROUP') {
@@ -406,7 +427,7 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
 
                     if (fileToUpload.size > SAFE_UPLOAD_LIMIT_BYTES) {
                         failedCount++;
-                        failedDetails.push(`${file.name}: plik jest za duży po kompresji (${(fileToUpload.size / 1024 / 1024).toFixed(1)}MB, limit 5MB)`);
+                        failedDetails.push(`${file.name}: plik jest za duży (${(fileToUpload.size / 1024 / 1024).toFixed(1)} MB, limit 30 MB)`);
                         console.error(`File too large after compression: ${file.name}`, {
                             originalSize: file.size,
                             uploadSize: fileToUpload.size,
@@ -764,9 +785,45 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
                     </div>
                 </div>
                 <form onSubmit={handleCreateGallery} className="space-y-6 max-w-lg">
+                    {newGallery.gallery_mode === 'INDIVIDUAL' && clientOffers.some(offer => offer.status === 'accepted') && (
+                        <div className="space-y-2 rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-4">
+                            <label className="block text-xs uppercase font-bold text-emerald-300">Źródło warunków galerii</label>
+                            <select
+                                value={newGallery.offer_id}
+                                onChange={(event) => {
+                                    const value = event.target.value;
+                                    const selected = clientOffers.find(offer => String(offer.id) === value);
+                                    if (!selected) {
+                                        setNewGallery(prev => ({ ...prev, offer_id: '' }));
+                                        return;
+                                    }
+                                    try {
+                                        const terms = galleryTermsFromAcceptedOffer(selected);
+                                        setNewGallery(prev => ({
+                                            ...prev,
+                                            offer_id: selected.id,
+                                            standard_count: terms.includedPhotoCount ?? prev.standard_count,
+                                            price_per_premium: terms.extraPhotoPriceGrosz ?? prev.price_per_premium,
+                                        }));
+                                    } catch (error) {
+                                        toast.error(error instanceof Error ? error.message : 'Nie można odczytać pakietu.');
+                                    }
+                                }}
+                                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white"
+                            >
+                                <option value="">Ustawienia ręczne (bez powiązania)</option>
+                                {clientOffers.filter(offer => offer.status === 'accepted').map(offer => (
+                                    <option key={offer.id} value={offer.id}>
+                                        {offer.offerNumber || `Oferta #${offer.id}`} — {offer.title}
+                                    </option>
+                                ))}
+                            </select>
+                            <p className="text-xs text-zinc-400">Po wybraniu oferty backend zapisze niezmienny snapshot pakietu i przejmie liczbę zdjęć, jeśli jest podana w tabeli oferty.</p>
+                        </div>
+                    )}
                     <div className="grid grid-cols-2 gap-6">
                         <div className="space-y-2">
-                            <label className="block text-xs uppercase font-bold text-zinc-500 ml-1">Limit STANDARD</label>
+                            <label className="block text-xs uppercase font-bold text-zinc-500 ml-1">Zdjęcia w pakiecie</label>
                             <input
                                 type="number"
                                 value={newGallery.standard_count}
@@ -775,7 +832,7 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
                             />
                         </div>
                         <div className="space-y-2">
-                            <label className="block text-xs uppercase font-bold text-zinc-500 ml-1">Cena PREMIUM (zł)</label>
+                            <label className="block text-xs uppercase font-bold text-zinc-500 ml-1">Dodatkowe zdjęcie (zł)</label>
                             <input
                                 type="number"
                                 value={newGallery.price_per_premium / 100}
@@ -794,15 +851,9 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
                         />
                     </div>
 
-                    <label className="flex items-center gap-3 bg-black border border-zinc-800 rounded-xl px-4 py-3 cursor-pointer hover:border-zinc-700 transition-colors">
-                        <input
-                            type="checkbox"
-                            checked={newGallery.send_email}
-                            onChange={(e) => setNewGallery({ ...newGallery, send_email: e.target.checked })}
-                            className="w-4 h-4 accent-gold-500"
-                        />
-                        <span className="text-sm text-zinc-200">Wyślij mail z dostępem od razu po utworzeniu galerii</span>
-                    </label>
+                    <p className="rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-200">
+                        Galeria powstanie jako szkic. Dostęp wyślesz dopiero po wgraniu zdjęć, sprawdzeniu JPG HQ i aktywacji.
+                    </p>
 
                     {/* Tryb galerii */}
                     <div className="space-y-3 pt-4 border-t border-zinc-800">
@@ -901,7 +952,7 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
                         disabled={creating}
                         className="w-full py-4 bg-gold-600 text-black font-black uppercase tracking-widest text-sm rounded-xl hover:bg-gold-500 transition-all shadow-lg shadow-gold-900/10 disabled:opacity-50"
                     >
-                        {creating ? 'Inicjalizacja...' : 'Stwórz i Aktywuj Galerię'}
+                        {creating ? 'Tworzenie szkicu...' : 'Utwórz szkic galerii'}
                     </button>
                 </form>
             </div>
@@ -963,15 +1014,16 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
                         <div className="p-2 bg-gold-500/10 rounded-lg">
                             <Calendar className="w-5 h-5 text-gold-500" />
                         </div>
-                        <h3 className="text-xl font-bold text-white uppercase tracking-tight">Kofiguracja parametrów</h3>
+                        <h3 className="text-xl font-bold text-white uppercase tracking-tight">Konfiguracja parametrów</h3>
                     </div>
                     <form onSubmit={handleUpdateSettings} className="grid grid-cols-1 md:grid-cols-4 gap-8">
                         <div className="space-y-2">
-                            <label className="block text-xs font-bold text-zinc-500 uppercase ml-1 tracking-widest">Limit Standard</label>
+                            <label className="block text-xs font-bold text-zinc-500 uppercase ml-1 tracking-widest">Zdjęcia w pakiecie</label>
                             <input
                                 type="number"
                                 value={editData.standard_count}
                                 onChange={(e) => setEditData({ ...editData, standard_count: parseInt(e.target.value) })}
+                                disabled={gallery.terms_source === 'ACCEPTED_OFFER'}
                                 className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:border-gold-500 outline-none transition-all"
                             />
                         </div>
@@ -985,14 +1037,21 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
                             />
                         </div>
                         <div className="space-y-2">
-                            <label className="block text-xs font-bold text-zinc-500 uppercase ml-1 tracking-widest">Cena Premium (zł)</label>
+                            <label className="block text-xs font-bold text-zinc-500 uppercase ml-1 tracking-widest">Dodatkowe zdjęcie (zł)</label>
                             <input
                                 type="number"
                                 value={editData.price_per_premium / 100}
                                 onChange={(e) => setEditData({ ...editData, price_per_premium: Math.round(parseFloat(e.target.value) * 100) })}
+                                disabled={gallery.terms_source === 'ACCEPTED_OFFER'}
                                 className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:border-gold-500 outline-none transition-all"
                             />
                         </div>
+
+                        {gallery.terms_source === 'ACCEPTED_OFFER' && (
+                            <p className="col-span-1 md:col-span-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5 px-4 py-3 text-sm text-emerald-200">
+                                Warunki sprzedaży są zablokowane zaakceptowaną ofertą {gallery.package_snapshot?.offerNumber || `#${gallery.package_snapshot?.offerId || ''}`}. Zmiana wymaga nowej wersji oferty.
+                            </p>
+                        )}
                         <div className="space-y-2">
                             <label className="block text-xs font-bold text-zinc-500 uppercase ml-1 tracking-widest">Wygasa dnia</label>
                             <input
@@ -1118,6 +1177,46 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, onClo
                                 </div>
                             </div>
                         )}
+
+                        <div className="col-span-1 md:col-span-4 grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-red-950/20 border border-red-900/40 rounded-xl">
+                            <div className="space-y-2 md:col-span-2">
+                                <label className="block text-xs font-bold text-zinc-500 uppercase ml-1 tracking-widest">Film z wydarzenia — YouTube</label>
+                                <input
+                                    type="url"
+                                    value={editData.event_video_url}
+                                    onChange={(e) => setEditData({ ...editData, event_video_url: e.target.value })}
+                                    placeholder="https://youtu.be/... lub https://youtube.com/watch?v=..."
+                                    className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:border-red-500 outline-none"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="block text-xs font-bold text-zinc-500 uppercase ml-1 tracking-widest">Tytuł filmu</label>
+                                <input
+                                    type="text"
+                                    value={editData.event_video_title}
+                                    onChange={(e) => setEditData({ ...editData, event_video_title: e.target.value })}
+                                    placeholder="Film z Waszego wydarzenia"
+                                    className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:border-red-500 outline-none"
+                                />
+                            </div>
+                            <label className="flex items-center gap-3 self-end bg-black border border-zinc-800 rounded-xl px-5 py-3 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={editData.event_video_enabled}
+                                    onChange={(e) => setEditData({ ...editData, event_video_enabled: e.target.checked })}
+                                />
+                                <span className="text-sm font-bold text-white">Pokaż film klientowi</span>
+                            </label>
+                            <div className="space-y-2 md:col-span-2">
+                                <label className="block text-xs font-bold text-zinc-500 uppercase ml-1 tracking-widest">Opis filmu</label>
+                                <textarea
+                                    value={editData.event_video_description}
+                                    onChange={(e) => setEditData({ ...editData, event_video_description: e.target.value })}
+                                    placeholder="Krótka wiadomość dla klienta"
+                                    className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:border-red-500 outline-none min-h-[80px]"
+                                />
+                            </div>
+                        </div>
                     </form>
                 </div>
             )}

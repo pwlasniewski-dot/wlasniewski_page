@@ -7,6 +7,7 @@ import prisma from '@/lib/db/prisma';
 import sharp from 'sharp';
 import { verifyParentToken, extractTokenFromHeader } from '@/lib/auth/parent-jwt';
 import { logSystem } from '@/lib/logger';
+import { getPrivateS3Object } from '@/lib/storage/s3';
 
 export async function GET(
   request: NextRequest,
@@ -26,7 +27,7 @@ export async function GET(
     }
 
     const authHeader = request.headers.get('Authorization');
-    const token = extractTokenFromHeader(authHeader) || request.nextUrl.searchParams.get('download_token');
+    const token = extractTokenFromHeader(authHeader);
     if (!token) {
       await logSystem('WARN', 'BASKET', 'GROUP_DOWNLOAD_SINGLE_NO_TOKEN', {
         gallery_id: galleryId,
@@ -44,7 +45,7 @@ export async function GET(
       return NextResponse.json({ error: 'Nieprawidłowy token' }, { status: 401 });
     }
 
-    if (payload.gallery_id !== galleryId) {
+    if (payload.gallery_id !== galleryId || payload.participant_id <= 0) {
       await logSystem('WARN', 'BASKET', 'GROUP_DOWNLOAD_SINGLE_FORBIDDEN', {
         participant_id: payload.participant_id,
         token_gallery_id: payload.gallery_id,
@@ -53,6 +54,12 @@ export async function GET(
       });
       return NextResponse.json({ error: 'Brak dostępu' }, { status: 403 });
     }
+
+    const participant = await prisma.galleryParticipant.findFirst({
+      where: { id: payload.participant_id, gallery_id: galleryId },
+      select: { id: true },
+    });
+    if (!participant) return NextResponse.json({ error: 'Brak dostępu' }, { status: 403 });
 
     const gallery = await prisma.clientGallery.findFirst({
       where: { id: galleryId, gallery_mode: 'GROUP', is_active: true },
@@ -81,7 +88,6 @@ export async function GET(
       where: { id: photoId, gallery_id: galleryId },
       select: { 
         id: true, 
-        file_url: true,
         download_source_url: true,
         width: true, 
         height: true,
@@ -99,29 +105,19 @@ export async function GET(
       return NextResponse.json({ error: 'Zdjęcie nie istnieje' }, { status: 404 });
     }
 
-    // Use download_source if mapped, otherwise use original file_url
-    const downloadUrl = photo.download_source_url || photo.file_url;
-    const isMapped = !!photo.download_source_url;
-
-    // Pobieramy to, co jest — bez blokady na pełną jakość.
-    // Fetch and return original bytes — no conversion/compression on download.
-    const s3Response = await fetch(downloadUrl);
-    if (!s3Response.ok) {
-      await logSystem('ERROR', 'BASKET', 'GROUP_DOWNLOAD_SINGLE_S3_FETCH_FAILED', {
-        participant_id: payload.participant_id,
-        gallery_id: galleryId,
-        photo_id: photoId,
-        s3_status: s3Response.status,
-        is_download_source: isMapped,
-      });
-      return NextResponse.json({ error: 'Nie udało się pobrać pliku' }, { status: 502 });
+    if (!photo.download_source_url) {
+      return NextResponse.json({ error: 'Pełny plik JPG nie jest jeszcze gotowy' }, { status: 409 });
     }
-    const srcBuffer = Buffer.from(await s3Response.arrayBuffer());
+    const source = await getPrivateS3Object(photo.download_source_url);
+    if (source.contentLength && source.contentLength > 80 * 1024 * 1024) {
+      return NextResponse.json({ error: 'Plik przekracza limit pobierania' }, { status: 413 });
+    }
+    const srcBuffer = Buffer.from(await source.body.transformToByteArray());
 
     // Konwersja do JPG — klient/laboratorium wymaga JPG, nie webp.
     // Jeśli źródło to już JPG (zmapowany oryginał), streamujemy surowo — bez utraty jakości.
-    const srcContentType = (s3Response.headers.get('content-type') || '').toLowerCase();
-    const srcIsJpeg = srcContentType.includes('jpeg') || /\.jpe?g(\?|$)/i.test(downloadUrl);
+    const srcContentType = source.contentType;
+    const srcIsJpeg = srcContentType.includes('jpeg') || srcContentType.includes('jpg');
     let buffer: Buffer;
     let contentType: string;
     let ext: string;
@@ -142,12 +138,8 @@ export async function GET(
       } catch (convErr) {
         console.error(`JPG conversion failed for photo ${photo.id}, serving original:`, convErr);
         buffer = srcBuffer;
-        contentType = s3Response.headers.get('content-type') || 'application/octet-stream';
-        const urlPath = (() => {
-          try { return new URL(downloadUrl).pathname; } catch { return downloadUrl; }
-        })();
-        const extMatch = urlPath.match(/\.([a-zA-Z0-9]+)$/);
-        ext = extMatch ? extMatch[1].toLowerCase() : 'bin';
+        contentType = srcContentType || 'application/octet-stream';
+        ext = 'bin';
       }
     }
     const filename = `zdjecie-${photo.id}.${ext}`;
@@ -159,10 +151,10 @@ export async function GET(
       bytes: buffer.length,
       content_type: contentType,
       filename,
-      is_download_source: isMapped,
+      is_download_source: true,
     });
 
-    return new NextResponse(buffer, {
+    return new NextResponse(new Uint8Array(buffer), {
       headers: {
         'Content-Type': contentType,
         'Content-Disposition': `attachment; filename="${filename}"`,

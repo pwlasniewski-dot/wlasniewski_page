@@ -307,6 +307,31 @@ model AnalyticsEvent {
   @@map("analytics_events")
 }
 
+model AnalyticsRateLimit {
+  signal_hash  String   @db.VarChar(64)
+  window_start DateTime
+  event_count  Int
+  updated_at   DateTime @default(now())
+
+  @@id([signal_hash, window_start])
+  @@index([window_start])
+  @@map("analytics_rate_limits")
+}
+
+model AnalyticsIngestMetric {
+  id           Int      @id @default(autoincrement())
+  bucket_start DateTime
+  reason_code  String
+  outcome      String
+  batch_count  Int      @default(0)
+  event_count  Int      @default(0)
+  updated_at   DateTime @default(now())
+
+  @@unique([bucket_start, reason_code, outcome])
+  @@index([bucket_start])
+  @@map("analytics_ingest_metrics")
+}
+
 model HeroSlide {
   id              Int           @id @default(autoincrement())
   title           String?
@@ -601,6 +626,7 @@ model Offer {
   photographer_id      Int?
   photographer         User?         @relation("OfferPhotographer", fields: [photographer_id], references: [id], onDelete: SetNull)
   contract            Contract?
+  gallery             ClientGallery?
   negotiations        Negotiation[]
   sections            OfferSection[]
   user                User?          @relation(fields: [client_id], references: [id])
@@ -661,6 +687,7 @@ model Contract {
   created_at      DateTime  @default(now())
   user            User?     @relation(fields: [client_id], references: [id])
   offer           Offer?    @relation(fields: [offer_id], references: [id])
+  gallery         ClientGallery?
 
   @@index([session_date])
   @@map("contracts")
@@ -906,6 +933,11 @@ model ClientGallery {
   updated_at        DateTime               @updatedAt
   photographer_id   Int?
   client_id         Int?
+  offer_id          Int?      @unique
+  contract_id       Int?      @unique
+  package_snapshot  Json?
+  terms_source      String    @default("MANUAL")
+  terms_locked_at   DateTime?
   
   // Tryb grupowy (komunia, impreza firmowa)
   gallery_mode         String  @default("INDIVIDUAL") // "INDIVIDUAL" | "GROUP"
@@ -914,9 +946,15 @@ model ClientGallery {
   max_photos_for_print Int?    // Limit zdjęć do druku (ustawiane przez admina)
   allow_extra_photo_purchase Boolean @default(false) // Czy rodzice mogą dokupować zdjęcia ponad limit
   external_download_url String? // Opcjonalny link do pobrania całej galerii (np. Adobe)
+  event_video_url String?
+  event_video_title String?
+  event_video_description String?
+  event_video_enabled Boolean @default(false)
   
   client            User?                  @relation("ClientGalleries", fields: [client_id], references: [id])
   photographer      User?                  @relation("PhotographerGalleries", fields: [photographer_id], references: [id])
+  offer             Offer?                 @relation(fields: [offer_id], references: [id], onDelete: SetNull)
+  contract          Contract?              @relation(fields: [contract_id], references: [id], onDelete: SetNull)
   photos            GalleryPhoto[]
   products          GalleryProduct[]
   orders            PhotoOrder[]
@@ -1108,6 +1146,45 @@ model PhotoOrder {
   gallery        ClientGallery @relation(fields: [gallery_id], references: [id], onDelete: Cascade)
 
   @@map("photo_orders")
+}
+
+model PaymentLedger {
+  id                  Int      @id @default(autoincrement())
+  provider            String
+  provider_payment_id String
+  external_order_id   String?
+  resource_type       String?
+  resource_id         Int?
+  payment_kind        String   @default("FULL")
+  amount              Int      // najmniejsza jednostka waluty; PLN = grosze
+  currency            String   @default("PLN")
+  status              String   @default("COMPLETED")
+  paid_at             DateTime
+  refunded_amount     Int      @default(0) // najmniejsza jednostka waluty
+  refunded_at         DateTime?
+  metadata            Json?
+  created_at          DateTime @default(now())
+  updated_at          DateTime @updatedAt
+
+  @@unique([provider, provider_payment_id])
+  @@index([paid_at, status])
+  @@index([resource_type, resource_id])
+  @@map("payment_ledger")
+}
+
+model ReportDelivery {
+  id           Int       @id @default(autoincrement())
+  report_key   String    @unique
+  report_type  String
+  period       String
+  recipient    String
+  status       String    @default("PENDING")
+  attempted_at DateTime  @default(now())
+  sent_at      DateTime?
+  error        String?
+
+  @@index([report_type, period])
+  @@map("report_deliveries")
 }
 
 model SystemSettings {

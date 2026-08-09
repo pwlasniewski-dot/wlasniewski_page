@@ -1,6 +1,7 @@
 'use client';
 
 import Script from 'next/script';
+import { useEffect, useState } from 'react';
 
 interface AnalyticsIntegrationProps {
     googleAnalyticsId?: string;
@@ -21,12 +22,27 @@ export default function AnalyticsIntegration({
     b2bFacebookPixelId,
     isB2B,
 }: AnalyticsIntegrationProps) {
+    const [hasConsent, setHasConsent] = useState(false);
+
+    useEffect(() => {
+        const syncConsent = () => setHasConsent(localStorage.getItem('cookie_consent') === 'accepted');
+        syncConsent();
+        window.addEventListener('cookie-consent-changed', syncConsent);
+        window.addEventListener('storage', syncConsent);
+        return () => {
+            window.removeEventListener('cookie-consent-changed', syncConsent);
+            window.removeEventListener('storage', syncConsent);
+        };
+    }, []);
+
     // Use B2B-specific IDs when on B2B domain, fallback to main
     const activeGAId = isB2B ? (b2bGoogleAnalyticsId || googleAnalyticsId) : googleAnalyticsId;
     const activeGTMId = isB2B ? (b2bGoogleTagManagerId || googleTagManagerId) : googleTagManagerId;
     const activePixelId = isB2B ? (b2bFacebookPixelId || facebookPixelId) : facebookPixelId;
     const googleAdsId = 'AW-17548893646';
     const googleLoaderId = activeGAId || googleAdsId;
+
+    if (!hasConsent) return null;
 
     return (
         <>

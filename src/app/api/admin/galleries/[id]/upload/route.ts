@@ -113,7 +113,7 @@ export async function POST(
                 // Exact duplicate within current request batch.
                 if (uploadedHashesInRequest.has(processed.content_hash)) {
                     duplicates.push({ name: file.name, reason: 'duplikat w paczce uploadu' });
-                    await deleteGalleryPhoto(processed.file_url, processed.thumbnail_url);
+                    await deleteGalleryPhoto(processed.file_url, processed.thumbnail_url, processed.download_source_url);
                     continue;
                 }
 
@@ -142,7 +142,7 @@ export async function POST(
 
                 if (isDuplicate) {
                     duplicates.push({ name: file.name, reason: 'zdjęcie już istnieje w galerii' });
-                    await deleteGalleryPhoto(processed.file_url, processed.thumbnail_url);
+                    await deleteGalleryPhoto(processed.file_url, processed.thumbnail_url, processed.download_source_url);
                     continue;
                 }
 
@@ -152,9 +152,12 @@ export async function POST(
                         gallery_id: galleryId,
                         file_url: processed.file_url,
                         thumbnail_url: processed.thumbnail_url,
+                        download_source_url: processed.download_source_url,
                         file_size: processed.file_size,
                         width: processed.width,
                         height: processed.height,
+                        download_source_width: processed.download_source_width,
+                        download_source_height: processed.download_source_height,
                         is_standard: isStandard,
                         order_index: currentIndex++,
                     }

@@ -44,6 +44,12 @@ const nextConfig = {
         return [
             ...noIndexHeaders,
             {
+                source: '/galeria/:path*',
+                headers: [
+                    { key: 'Content-Security-Policy', value: "frame-src 'self' https://www.youtube-nocookie.com" },
+                ],
+            },
+            {
                 source: '/:path*',
                 headers: [
                     { key: 'X-Content-Type-Options', value: 'nosniff' },

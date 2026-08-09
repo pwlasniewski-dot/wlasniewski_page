@@ -8,6 +8,7 @@ import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import PremiumGalleryHero, { PremiumGalleryStory } from '@/components/galleries/PremiumGalleryHero';
 import PostGalleryUpsell, { TopReviewNudge } from '@/components/galleries/PostGalleryUpsell';
+import { youtubeNoCookieEmbedUrl } from '@/lib/video/youtube';
 
 interface GalleryPhoto {
     id: number;
@@ -31,6 +32,9 @@ interface Gallery {
     premium_photos: GalleryPhoto[];
     paid_photo_ids: number[];
     products: GalleryProduct[];
+    event_video_url: string | null;
+    event_video_title: string | null;
+    event_video_description: string | null;
 }
 
 interface GalleryProduct {
@@ -288,17 +292,38 @@ export default function ClientGalleryPage() {
         if (!gallery || downloadingAll) return;
         setDownloadingAll(true);
         try {
+            const preflight = await fetch(`/api/galleries/${accessCode}/download-all?preflight=1`, {
+                credentials: 'include',
+                cache: 'no-store',
+            });
+            const readiness = await preflight.json().catch(() => null);
+            if (!preflight.ok || !readiness?.ok) {
+                throw new Error(readiness?.error || 'Galeria nie jest jeszcze gotowa do pobrania.');
+            }
+            const start = await fetch(`/api/galleries/${accessCode}/download-all`, {
+                method: 'POST', credentials: 'include', cache: 'no-store',
+            });
+            const started = await start.json().catch(() => null);
+            if (!start.ok || !started?.jobId) throw new Error(started?.error || 'Nie udało się uruchomić przygotowania ZIP.');
+            let result: any = null;
+            for (let attempt = 0; attempt < 180; attempt += 1) {
+                const status = await fetch(`/api/galleries/${accessCode}/download-all?job_id=${encodeURIComponent(started.jobId)}`, {
+                    credentials: 'include', cache: 'no-store',
+                });
+                result = await status.json().catch(() => null);
+                if (!status.ok) throw new Error(result?.error || 'Nie udało się sprawdzić postępu ZIP.');
+                if (result.status === 'ready' && result.downloadUrl) break;
+                if (result.status === 'failed') throw new Error(result.error || 'Nie udało się przygotować ZIP. Spróbuj ponownie.');
+                await new Promise(resolve => setTimeout(resolve, 2000));
+            }
+            if (!result?.downloadUrl) throw new Error('Przygotowanie trwa dłużej. Spróbuj ponownie za chwilę — gotowa paczka zostanie użyta ponownie.');
             const link = document.createElement('a');
-            link.href = `/api/galleries/${accessCode}/download-all`;
-            link.download = `${gallery.client_name || 'galeria'}-zdjecia.zip`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-
-            // Wait briefly to allow the download to initiate before reverting the button state
-            await new Promise(r => setTimeout(r, 2000));
+            link.href = result.downloadUrl;
+            link.download = result.fileName || `${gallery.client_name || 'galeria'}-zdjecia.zip`;
+            document.body.appendChild(link); link.click(); link.remove();
+            alert(`Pobieranie rozpoczęte: ${result.completed} zdjęć JPG${result.failedCount ? `, pominięto ${result.failedCount}` : ''}.`);
         } catch (error) {
-            alert('Wystąpił błąd podczas pobierania paczki ZIP.');
+            alert(error instanceof Error ? error.message : 'Wystąpił błąd podczas pobierania paczki ZIP.');
         } finally {
             setDownloadingAll(false);
         }
@@ -400,6 +425,7 @@ export default function ClientGalleryPage() {
     const premiumTotal = selectedPremium.size * gallery.price_per_premium;
     const productsTotal = (gallery.products || []).filter(p => selectedProducts.has(p.id)).reduce((acc, p) => acc + p.price, 0);
     const totalPrice = premiumTotal + productsTotal;
+    const eventVideoEmbedUrl = youtubeNoCookieEmbedUrl(gallery.event_video_url);
 
     return (
         <div className="min-h-screen bg-black text-white pb-40 selection:bg-gold-500/30 overflow-x-hidden">
@@ -422,7 +448,7 @@ export default function ClientGalleryPage() {
             {/* HERO SLIDER — wow factor */}
             {(gallery.standard_photos.length + gallery.premium_photos.length) > 0 && (
                 <PremiumGalleryHero
-                    photos={[...gallery.standard_photos, ...gallery.premium_photos].map(p => ({
+                    photos={(gallery.standard_photos.length ? gallery.standard_photos : gallery.premium_photos).map(p => ({
                         id: p.id,
                         file_url: p.file_url,
                         thumbnail_url: p.thumbnail_url,
@@ -449,12 +475,26 @@ export default function ClientGalleryPage() {
             )}
 
             <div className="max-w-7xl mx-auto py-12 px-4">
+                <section className="mb-10 grid grid-cols-1 sm:grid-cols-3 gap-3" aria-label="Podsumowanie galerii">
+                    <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5">
+                        <p className="text-xs uppercase tracking-widest text-zinc-500">Zdjęcia w pakiecie</p>
+                        <p className="mt-1 text-3xl font-black">{gallery.standard_photos.length}</p>
+                    </div>
+                    <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5">
+                        <p className="text-xs uppercase tracking-widest text-zinc-500">Dodatkowe zdjęcia</p>
+                        <p className="mt-1 text-3xl font-black">{gallery.premium_photos.length}</p>
+                    </div>
+                    <div className="rounded-2xl border border-gold-500/30 bg-gold-500/5 p-5">
+                        <p className="text-xs uppercase tracking-widest text-zinc-500">Cena dodatkowego zdjęcia</p>
+                        <p className="mt-1 text-3xl font-black text-gold-400">{(gallery.price_per_premium / 100).toFixed(2)} zł</p>
+                    </div>
+                </section>
                 {/* Standard Photos Section */}
                 {gallery.standard_photos.length > 0 && (
                     <div className="mb-24">
                         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-zinc-900/40 px-4 py-6 md:px-10 md:py-10 rounded-[2rem] md:rounded-[3rem] border border-zinc-800 mb-12">
                             <div>
-                                <h2 className="text-3xl font-black uppercase tracking-tight mb-2">Pobierz swoją paczkę</h2>
+                                <h2 className="text-3xl font-black uppercase tracking-tight mb-2">Zdjęcia w Twoim pakiecie</h2>
                                 <p className="text-zinc-500 font-medium">To są zdjęcia zawarte w Twoim pakiecie sesji.</p>
                                 {gallery.expires_at && (
                                     <div className="inline-flex items-center gap-2 bg-red-500/10 text-red-400 px-3 py-1.5 rounded-full text-xs font-bold uppercase mt-3 border border-red-500/20">
@@ -488,7 +528,7 @@ export default function ClientGalleryPage() {
                                     className="h-12 md:h-16 px-6 md:px-10 bg-white text-black font-black uppercase tracking-widest text-[10px] md:text-xs rounded-2xl hover:bg-gold-500 transition-all shadow-xl shadow-white/5 disabled:opacity-50 flex items-center justify-center gap-3 w-full sm:w-auto"
                                 >
                                     <Download className="w-5 h-5" />
-                                    {downloadingAll ? 'Pobieranie...' : 'Pobierz Wszystkie'}
+                                    {downloadingAll ? 'Rozpoczynam pobieranie...' : 'Pobierz zdjęcia z pakietu'}
                                 </button>
                                 {viewMode === 'story' && (
                                     <div className="text-xs text-zinc-500 sm:ml-2">
@@ -626,7 +666,7 @@ export default function ClientGalleryPage() {
                                                     onClick={(e) => { e.stopPropagation(); togglePremium(photo.id); }}
                                                     className={`w-full py-5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${selected ? 'bg-gold-500 text-black' : 'bg-black/80 text-white backdrop-blur-md border border-white/10 hover:bg-gold-500 hover:text-black'}`}
                                                 >
-                                                    {selected ? 'Zrezygnuj' : `Dodaj do pakietu • ${(gallery.price_per_premium / 100).toFixed(2)} zł`}
+                                                    {selected ? 'Usuń z zamówienia' : `Dodaj do zamówienia • ${(gallery.price_per_premium / 100).toFixed(2)} zł`}
                                                 </button>
                                             ) : (
                                                 <button
@@ -642,6 +682,30 @@ export default function ClientGalleryPage() {
                             })}
                         </div>
                     </div>
+                )}
+
+                {eventVideoEmbedUrl && (
+                    <section className="mt-24 border-t border-zinc-900 pt-16" aria-labelledby="event-video-title">
+                        <div className="max-w-5xl mx-auto">
+                            <h2 id="event-video-title" className="text-3xl md:text-4xl font-black text-center mb-4 uppercase tracking-tight">
+                                {gallery.event_video_title || 'Film z Waszego wydarzenia'}
+                            </h2>
+                            {gallery.event_video_description && (
+                                <p className="text-center text-zinc-400 mb-8 max-w-2xl mx-auto">{gallery.event_video_description}</p>
+                            )}
+                            <div className="aspect-video overflow-hidden rounded-2xl border border-zinc-800 bg-black shadow-2xl">
+                                <iframe
+                                    src={eventVideoEmbedUrl}
+                                    title={gallery.event_video_title || 'Film z wydarzenia'}
+                                    className="w-full h-full"
+                                    loading="lazy"
+                                    referrerPolicy="strict-origin-when-cross-origin"
+                                    allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                    allowFullScreen
+                                />
+                            </div>
+                        </div>
+                    </section>
                 )}
 
                 {/* ALBUM SHOP - Display regardless of tab if products exist */}
@@ -700,7 +764,7 @@ export default function ClientGalleryPage() {
             </div>
 
             {/* Sticky Selection Bar */}
-            {(selectedStandard.size > 0 || selectedPremium.size > 0) && (
+            {(selectedStandard.size > 0 || selectedPremium.size > 0 || selectedProducts.size > 0) && (
                 <div className="fixed bottom-0 left-0 right-0 bg-zinc-950/95 backdrop-blur-3xl border-t border-gold-500/20 p-6 z-40">
                     <div className="max-w-7xl mx-auto flex items-center justify-between">
                         <div className="flex items-center gap-12">
@@ -713,7 +777,7 @@ export default function ClientGalleryPage() {
                                     </div>
                                 </div>
                             )}
-                            {selectedPremium.size > 0 && (
+                            {(selectedPremium.size > 0 || selectedProducts.size > 0) && (
                                 <div className="flex items-center gap-4">
                                     <Check className="w-5 h-5 text-gold-500" />
                                     <div>
@@ -728,12 +792,12 @@ export default function ClientGalleryPage() {
                                 <div className="text-[10px] font-black uppercase text-zinc-500">Do zapłaty</div>
                                 <div className="text-4xl font-black text-gold-500">{(totalPrice / 100).toFixed(2)} zł</div>
                             </div>
-                            {selectedPremium.size > 0 && (
+                            {(selectedPremium.size > 0 || selectedProducts.size > 0) && (
                                 <button
                                     onClick={handleCheckout}
                                     className="h-16 px-12 bg-gold-500 hover:bg-gold-400 text-black font-black uppercase tracking-widest text-sm rounded-2xl transition-all flex items-center gap-3 shadow-2xl shadow-gold-500/30"
                                 >
-                                    <ShoppingCart className="w-5 h-5" /> Zamów ({selectedPremium.size})
+                                    <ShoppingCart className="w-5 h-5" /> Przejdź do płatności
                                 </button>
                             )}
                         </div>

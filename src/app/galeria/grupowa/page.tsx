@@ -823,9 +823,8 @@ export default function GroupGalleryPage() {
     );
   };
 
-  // Pobieranie ZIP (całość / wybrane): serwer buduje archiwum i wgrywa je na S3,
-  // a my dostajemy mały JSON z linkiem. Dzięki temu duże galerie nie wywalają
-  // funkcji serverless (brak przepychania 100+ MB przez odpowiedź).
+  // Duży ZIP powstaje w funkcji tła. UI odpytuje mały endpoint statusu,
+  // więc zamknięcie połączenia HTTP nie przerywa pakowania galerii.
   const downloadZipViaLink = useCallback(async (url: string) => {
     if (!authToken) {
       toast.error('Brak autoryzacji — zaloguj się ponownie');
@@ -833,33 +832,48 @@ export default function GroupGalleryPage() {
     }
     const tid = toast.loading('Pakuję zdjęcia do ZIP... to może potrwać chwilę');
     try {
-      const separator = url.includes('?') ? '&' : '?';
-      const fetchUrl = `${url}${separator}_ts=${Date.now()}`;
-      const res = await fetch(fetchUrl, {
-        headers: { Authorization: `Bearer ${authToken}` },
+      const parsed = new URL(url, window.location.origin);
+      const photoIds = (parsed.searchParams.get('photo_ids') || '').split(',').map(Number).filter(Number.isInteger);
+      parsed.search = '';
+      const endpoint = parsed.pathname;
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ photoIds }),
         cache: 'no-store',
       });
-
       const data = await res.json().catch(() => null);
-      if (!res.ok || !data?.downloadUrl) {
+      if (!res.ok || !data?.jobId) {
         const message = (data && typeof data.error === 'string')
           ? data.error
-          : `Nie udało się przygotować pobierania (HTTP ${res.status})`;
+          : `Nie udało się uruchomić pakowania (HTTP ${res.status})`;
         toast.error(message, { id: tid, duration: 6000 });
         return;
       }
-
+      let ready: any = null;
+      for (let attempt = 0; attempt < 180; attempt += 1) {
+        const statusRes = await fetch(`${endpoint}?job_id=${encodeURIComponent(data.jobId)}&_ts=${Date.now()}`, {
+          headers: { Authorization: `Bearer ${authToken}` }, cache: 'no-store',
+        });
+        ready = await statusRes.json().catch(() => null);
+        if (!statusRes.ok) throw new Error(ready?.error || 'Błąd sprawdzania postępu');
+        if (ready.status === 'ready' && ready.downloadUrl) break;
+        if (ready.status === 'failed') throw new Error(ready.error || 'Generator ZIP zakończył się błędem');
+        toast.loading(`Pakuję zdjęcia… ${ready.progress || 0}% (${ready.completed || 0}/${ready.total || '?'})`, { id: tid });
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+      if (!ready?.downloadUrl) throw new Error('Pakowanie trwa dłużej. Uruchom pobieranie ponownie za chwilę — zadanie nie zacznie się od początku.');
       const a = document.createElement('a');
-      a.href = data.downloadUrl;
-      a.download = data.fileName || 'galeria.zip';
+      a.href = ready.downloadUrl;
+      a.download = ready.fileName || 'galeria.zip';
       document.body.appendChild(a);
       a.click();
       a.remove();
 
-      const failedNote = data.failedCount > 0
-        ? ` (${data.failedCount} zdjęć pominięto z powodu błędu)`
+      const failedNote = ready.failedCount > 0
+        ? ` (${ready.failedCount} zdjęć pominięto z powodu błędu)`
         : '';
-      toast.success(`Pobieranie rozpoczęte — ${data.photoCount} zdjęć${failedNote}`, { id: tid, duration: 5000 });
+      toast.success(`Pobieranie rozpoczęte — ${ready.completed} zdjęć${failedNote}`, { id: tid, duration: 5000 });
     } catch (err) {
       console.error('Download ZIP error:', err);
       toast.error('Błąd pobierania — sprawdź połączenie i spróbuj ponownie', { id: tid });
@@ -2070,7 +2084,7 @@ Hasło: ${password}` : ''}`}
                       {selectedPhotos.length >= (participantInfo?.max_selections || 5) && !isSelected && extraPurchaseEnabled ? (
                         <div className="flex flex-col items-center gap-1 text-center">
                           <Lock className="w-6 h-6 text-red-400" />
-                          <span className="text-white font-bold text-xs">Limit 5/5</span>
+                          <span className="text-white font-bold text-xs">Limit {participantInfo?.max_selections || 5}/{participantInfo?.max_selections || 5}</span>
                           <span className="text-emerald-300 text-[10px]">💰 Kup extras</span>
                         </div>
                       ) : (
@@ -2102,7 +2116,7 @@ Hasło: ${password}` : ''}`}
                     ) : selectedPhotos.length >= (participantInfo?.max_selections || 5) ? (
                       <>
                         <Lock className="w-3.5 h-3.5" />
-                        Limit 5/5
+                        Limit {participantInfo?.max_selections || 5}/{participantInfo?.max_selections || 5}
                       </>
                     ) : (
                       <>

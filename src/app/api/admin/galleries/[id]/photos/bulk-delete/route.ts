@@ -40,6 +40,16 @@ export async function DELETE(
                     gallery_id: galleryId,
                 },
             });
+            const gallery = await prisma.clientGallery.findUnique({
+                where: { id: galleryId },
+                select: { is_active: true, gallery_mode: true },
+            });
+            if (gallery?.is_active && gallery.gallery_mode !== 'GROUP' && photos.some(photo => photo.is_standard)) {
+                return NextResponse.json({
+                    success: false,
+                    error: 'Zaznaczenie zawiera zdjęcia z pakietu aktywnej galerii. Najpierw wyłącz dostęp klienta.',
+                }, { status: 409 });
+            }
 
             // Delete S3 files in parallel
             await Promise.allSettled(

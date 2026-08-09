@@ -87,14 +87,6 @@ function percentDelta(current: number, previous: number): number {
     return Math.round(((current - previous) / previous) * 1000) / 10;
 }
 
-function estimateRankBand(score: number): string {
-    if (score >= 85) return 'TOP 10';
-    if (score >= 72) return '11-20';
-    if (score >= 58) return '21-40';
-    if (score >= 45) return '41-70';
-    return '70+';
-}
-
 function clamp(v: number, min: number, max: number): number {
     return Math.min(max, Math.max(min, v));
 }
@@ -272,18 +264,21 @@ export async function GET(request: NextRequest) {
                 },
             }),
             prisma.page.findMany({
+                where: { is_published: true },
                 select: {
                     id: true, slug: true, title: true, content: true,
                     meta_title: true, meta_description: true, updated_at: true,
                 },
             }),
             prisma.portfolioSession.findMany({
+                where: { is_published: true },
                 select: {
                     id: true, slug: true, title: true, description: true,
                     meta_title: true, meta_description: true, updated_at: true,
                 },
             }),
             prisma.blogPost.findMany({
+                where: { status: 'published' },
                 select: {
                     id: true, slug: true, title: true, excerpt: true,
                     meta_title: true, meta_description: true, updated_at: true,
@@ -296,7 +291,7 @@ export async function GET(request: NextRequest) {
         try {
             events = await prisma.analyticsEvent.findMany({
                 where: {
-                    event_type: 'page_view',
+                    event_type: 'v2_page_view',
                     created_at: { gte: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000) },
                 },
                 select: { created_at: true, referrer: true, page_url: true, session_id: true },
@@ -386,13 +381,19 @@ export async function GET(request: NextRequest) {
             return l.includes('google.') || l.includes('bing.') || l.includes('duckduckgo.') || l.includes('yahoo.');
         };
 
-        const currentOrganic = currentEvents.filter(e => isOrganic(e.referrer)).length;
-        const previousOrganic = previousEvents.filter(e => isOrganic(e.referrer)).length;
+        const currentOrganicEvents = currentEvents.filter(e => isOrganic(e.referrer));
+        const previousOrganicEvents = previousEvents.filter(e => isOrganic(e.referrer));
+        const currentOrganic = new Set(currentOrganicEvents.map(e => e.session_id)).size;
+        const previousOrganic = new Set(previousOrganicEvents.map(e => e.session_id)).size;
+        const currentSessions = new Set(currentEvents.map(e => e.session_id)).size;
+        const previousSessions = new Set(previousEvents.map(e => e.session_id)).size;
         const organicTrafficDelta = percentDelta(currentOrganic, previousOrganic);
-        const allTrafficDelta = percentDelta(currentEvents.length, previousEvents.length);
-        const organicShare = currentEvents.length > 0 ? Math.round((currentOrganic / currentEvents.length) * 100) : 0;
+        const allTrafficDelta = percentDelta(currentSessions, previousSessions);
+        const organicShare = currentSessions > 0 ? Math.round((currentOrganic / currentSessions) * 100) : 0;
         const analyticsConfigured = Boolean(gaId || gtmId || pixelId);
-        const gscConfigured = Boolean(gscVerification);
+        // A verification meta tag proves domain ownership only. It does not mean that
+        // Search Console query/ranking data is connected to this application.
+        const gscConfigured = false;
 
         const score = computeSeoScore({
             missingMetaTitle: missingMetaTitlePages + missingSessionMeta + missingBlogMeta,
@@ -403,7 +404,7 @@ export async function GET(request: NextRequest) {
 
         /* Top landing pages */
         const pageBuckets = new Map<string, number>();
-        for (const evt of currentEvents) {
+        for (const evt of currentOrganicEvents) {
             const raw = evt.page_url || '/';
             let page = raw;
             if (raw.startsWith('http')) { try { page = new URL(raw).pathname; } catch { page = raw; } }
@@ -444,20 +445,20 @@ export async function GET(request: NextRequest) {
 
         /* ─── Tool Connections ─── */
         const tools = [
-            { id: 'gsc', name: 'Google Search Console', connected: gscConfigured, source: 'meta_verification_google', setupUrl: 'https://search.google.com/search-console', free: true },
+            { id: 'gsc', name: 'Google Search Console', connected: false, source: gscVerification ? 'domena zweryfikowana; brak importu danych GSC' : 'do skonfigurowania', setupUrl: 'https://search.google.com/search-console', free: true },
             { id: 'ga4', name: 'Google Analytics 4', connected: Boolean(gaId), source: 'google_analytics_id', setupUrl: 'https://analytics.google.com', free: true },
             { id: 'gtm', name: 'Google Tag Manager', connected: Boolean(gtmId), source: 'google_tag_manager_id', setupUrl: 'https://tagmanager.google.com', free: true },
             { id: 'pixel', name: 'Facebook Pixel', connected: Boolean(pixelId), source: 'facebook_pixel_id', setupUrl: 'https://business.facebook.com/events_manager2', free: true },
             { id: 'clarity', name: 'Microsoft Clarity (Heatmapy)', connected: false, source: 'do skonfigurowania', setupUrl: 'https://clarity.microsoft.com', free: true },
             { id: 'pagespeed', name: 'PageSpeed Insights API', connected: true, source: 'wbudowany', setupUrl: 'https://pagespeed.web.dev', free: true },
             { id: 'indexnow', name: 'IndexNow (Natychmiastowa indeksacja)', connected: true, source: 'wbudowany', setupUrl: 'https://www.indexnow.org/', free: true },
-            { id: 'ubersuggest', name: 'Ubersuggest (Analiza fraz)', connected: true, source: 'zewnętrzny', setupUrl: 'https://neilpatel.com/ubersuggest/', free: true },
-            { id: 'atp', name: 'AnswerThePublic (Pytania użytkowników)', connected: true, source: 'zewnętrzny', setupUrl: 'https://answerthepublic.com/', free: true },
-            { id: 'gtrends', name: 'Google Trends (Sezonowość)', connected: true, source: 'zewnętrzny', setupUrl: 'https://trends.google.pl/', free: true },
+            { id: 'ubersuggest', name: 'Ubersuggest (Analiza fraz)', connected: false, source: 'link zewnętrzny', setupUrl: 'https://neilpatel.com/ubersuggest/', free: true },
+            { id: 'atp', name: 'AnswerThePublic (Pytania użytkowników)', connected: false, source: 'link zewnętrzny', setupUrl: 'https://answerthepublic.com/', free: true },
+            { id: 'gtrends', name: 'Google Trends (Sezonowość)', connected: false, source: 'link zewnętrzny', setupUrl: 'https://trends.google.pl/', free: true },
             { id: 'bing-wmt', name: 'Bing Webmaster Tools', connected: false, source: 'do skonfigurowania', setupUrl: 'https://www.bing.com/webmasters/', free: true },
-            { id: 'ahrefs-free', name: 'Ahrefs Webmaster Tools (Backlinki)', connected: true, source: 'zewnętrzny', setupUrl: 'https://ahrefs.com/webmaster-tools', free: true },
-            { id: 'schema-validator', name: 'Schema Markup Validator', connected: true, source: 'zewnętrzny', setupUrl: 'https://validator.schema.org/', free: true },
-            { id: 'rich-results', name: 'Rich Results Test', connected: true, source: 'zewnętrzny', setupUrl: 'https://search.google.com/test/rich-results', free: true },
+            { id: 'ahrefs-free', name: 'Ahrefs Webmaster Tools (Backlinki)', connected: false, source: 'link zewnętrzny', setupUrl: 'https://ahrefs.com/webmaster-tools', free: true },
+            { id: 'schema-validator', name: 'Schema Markup Validator', connected: false, source: 'narzędzie zewnętrzne', setupUrl: 'https://validator.schema.org/', free: true },
+            { id: 'rich-results', name: 'Rich Results Test', connected: false, source: 'narzędzie zewnętrzne', setupUrl: 'https://search.google.com/test/rich-results', free: true },
         ];
 
         return NextResponse.json({
@@ -465,7 +466,8 @@ export async function GET(request: NextRequest) {
             generatedAt: new Date().toISOString(),
             summary: {
                 score,
-                rankBand: estimateRankBand(score),
+                rankBand: null,
+                rankSource: 'unavailable',
                 pageCount: pages.length + sessions.length + blogPosts.length,
                 completionPercent,
                 unresolvedCritical: missingMetaTitlePages + missingMetaDescriptionPages + thinPages,

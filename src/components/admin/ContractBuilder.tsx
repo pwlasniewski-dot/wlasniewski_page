@@ -291,6 +291,16 @@ export default function ContractBuilder() {
                         packageDetails += `**Wybrany pakiet:** ${selection.selectedPackage.name}\n`;
                     }
 
+                    if (Array.isArray(selection.packagesBreakdown) && selection.packagesBreakdown.length > 0) {
+                        packageDetails += `**Wybrane pakiety:**\n`;
+                        selection.packagesBreakdown.forEach((item: any) => {
+                            const name = String(item?.name || 'Pakiet');
+                            const count = Math.max(0, Number(item?.count) || 0);
+                            const subtotal = Math.max(0, Number(item?.subtotal) || 0);
+                            packageDetails += `- ${name}: ${count} × ${item?.price || ''} = ${subtotal} PLN\n`;
+                        });
+                    }
+
                     if (selection.childCount) {
                         packageDetails += `**Liczba dzieci:** ${selection.childCount}\n`;
                     }

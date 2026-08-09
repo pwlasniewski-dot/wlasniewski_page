@@ -1,5 +1,6 @@
-import { S3Client, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, DeleteObjectCommand, GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import type { Readable } from 'stream';
 
 // Try specific keys first, then standard AWS SDK keys
@@ -14,7 +15,12 @@ const s3Client = new S3Client({
     },
 });
 
-export async function uploadToS3(fileBuffer: Buffer, fileName: string, mimeType: string): Promise<string> {
+export async function uploadToS3(
+    fileBuffer: Buffer,
+    fileName: string,
+    mimeType: string,
+    options: { access?: 'public' | 'private' } = {},
+): Promise<string> {
     const bucketName = process.env.S3_BUCKET || 'wlasniewski-photo-storage';
     const region = process.env.S3_REGION || 'eu-north-1';
 
@@ -41,7 +47,7 @@ export async function uploadToS3(fileBuffer: Buffer, fileName: string, mimeType:
                 Key: fileName,
                 Body: fileBuffer,
                 ContentType: mimeType,
-                ACL: 'public-read',
+                ...(options.access === 'private' ? {} : { ACL: 'public-read' as const }),
             },
         });
 
@@ -65,10 +71,35 @@ export async function uploadToS3(fileBuffer: Buffer, fileName: string, mimeType:
     }
 }
 
+export function ownedS3Key(value: string): string {
+    const bucketName = process.env.S3_BUCKET || 'wlasniewski-photo-storage';
+    const region = process.env.S3_REGION || 'eu-north-1';
+    if (!value.startsWith('http')) return value.replace(/^\//, '');
+    const url = new URL(value);
+    const expectedHost = `${bucketName}.s3.${region}.amazonaws.com`;
+    if (url.protocol !== 'https:' || url.hostname !== expectedHost || url.username || url.password || url.port) {
+        throw new Error('Gallery source is outside the configured private S3 bucket');
+    }
+    return decodeURIComponent(url.pathname.replace(/^\//, ''));
+}
+
+export async function getPrivateS3Object(value: string) {
+    const bucketName = process.env.S3_BUCKET || 'wlasniewski-photo-storage';
+    const key = ownedS3Key(value);
+    const result = await s3Client.send(new GetObjectCommand({ Bucket: bucketName, Key: key }));
+    if (!result.Body) throw new Error('S3 object has no body');
+    return {
+        body: result.Body,
+        contentType: (result.ContentType || '').toLowerCase(),
+        contentLength: result.ContentLength || null,
+        key,
+    };
+}
+
 /**
  * Strumieniowy upload na S3 (dla dużych plików budowanych w locie, np. ZIP galerii).
  * Nie trzyma całości w pamięci — czyta ze strumienia i wysyła multipartem.
- * Zwraca publiczny URL obiektu. Ustaw contentDisposition, aby wymusić pobieranie.
+ * Zwraca krótko ważny podpisany URL prywatnego obiektu.
  */
 export async function uploadStreamToS3(
     stream: Readable,
@@ -77,7 +108,6 @@ export async function uploadStreamToS3(
     contentDisposition?: string,
 ): Promise<string> {
     const bucketName = process.env.S3_BUCKET || 'wlasniewski-photo-storage';
-    const region = process.env.S3_REGION || 'eu-north-1';
 
     if (!accessKeyId || !secretAccessKey) {
         throw new Error('Missing AWS Credentials. Set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY in environment.');
@@ -90,7 +120,6 @@ export async function uploadStreamToS3(
             Key: fileName,
             Body: stream,
             ContentType: mimeType,
-            ACL: 'public-read',
             ...(contentDisposition ? { ContentDisposition: contentDisposition } : {}),
         },
         // Trzymaj pamięć w ryzach: 5MB części, max 4 równolegle
@@ -100,8 +129,91 @@ export async function uploadStreamToS3(
 
     await upload.done();
 
-    const encodedKey = fileName.split('/').map(encodeURIComponent).join('/');
-    return `https://${bucketName}.s3.${region}.amazonaws.com/${encodedKey}`;
+    return getSignedUrl(
+        s3Client,
+        new GetObjectCommand({ Bucket: bucketName, Key: fileName }),
+        { expiresIn: 15 * 60 },
+    );
+}
+
+/** Upload a private stream and return its stable object key (never a public URL). */
+export async function uploadPrivateStreamToS3(
+    stream: Readable,
+    fileName: string,
+    mimeType: string,
+    contentDisposition?: string,
+): Promise<string> {
+    const bucketName = process.env.S3_BUCKET || 'wlasniewski-photo-storage';
+    if (!accessKeyId || !secretAccessKey) {
+        throw new Error('Missing AWS credentials');
+    }
+    const upload = new Upload({
+        client: s3Client,
+        params: {
+            Bucket: bucketName,
+            Key: fileName,
+            Body: stream,
+            ContentType: mimeType,
+            ...(contentDisposition ? { ContentDisposition: contentDisposition } : {}),
+        },
+        partSize: 5 * 1024 * 1024,
+        queueSize: 2,
+        leavePartsOnError: false,
+    });
+    await upload.done();
+    return fileName;
+}
+
+export async function getPrivateS3DownloadUrl(fileName: string, expiresIn = 15 * 60): Promise<string> {
+    const bucketName = process.env.S3_BUCKET || 'wlasniewski-photo-storage';
+    return getSignedUrl(
+        s3Client,
+        new GetObjectCommand({ Bucket: bucketName, Key: ownedS3Key(fileName) }),
+        { expiresIn },
+    );
+}
+
+export async function putPrivateJson(fileName: string, value: unknown): Promise<void> {
+    const bucketName = process.env.S3_BUCKET || 'wlasniewski-photo-storage';
+    await s3Client.send(new PutObjectCommand({
+        Bucket: bucketName,
+        Key: ownedS3Key(fileName),
+        Body: JSON.stringify(value),
+        ContentType: 'application/json',
+        CacheControl: 'no-store',
+    }));
+}
+
+/** S3 conditional create is the distributed, cross-instance worker lock. */
+export async function createPrivateJsonIfAbsent(fileName: string, value: unknown): Promise<boolean> {
+    const bucketName = process.env.S3_BUCKET || 'wlasniewski-photo-storage';
+    try {
+        await s3Client.send(new PutObjectCommand({
+            Bucket: bucketName,
+            Key: ownedS3Key(fileName),
+            Body: JSON.stringify(value),
+            ContentType: 'application/json',
+            CacheControl: 'no-store',
+            IfNoneMatch: '*',
+        }));
+        return true;
+    } catch (error: any) {
+        const status = error?.$metadata?.httpStatusCode;
+        if (status === 409 || status === 412 || error?.name === 'PreconditionFailed') return false;
+        throw error;
+    }
+}
+
+export async function getPrivateJson<T>(fileName: string): Promise<T | null> {
+    try {
+        const object = await getPrivateS3Object(fileName);
+        const text = await object.body.transformToString('utf-8');
+        return JSON.parse(text) as T;
+    } catch (error: any) {
+        const status = error?.$metadata?.httpStatusCode;
+        if (status === 404 || error?.name === 'NoSuchKey') return null;
+        throw error;
+    }
 }
 
 export async function deleteFromS3(fileUrl: string): Promise<void> {

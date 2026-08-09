@@ -146,10 +146,13 @@ export async function POST(
 
             // Upload to SEPARATE S3 keys — do not modify original files
             if (shouldReplaceDownload) {
-                const downloadFilename = `download-${timestamp}-${hash}.${file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg'}`;
+                const downloadFilename = `download-${timestamp}-${hash}.jpg`;
                 downloadKey = `${folderPath}/${downloadFilename}`;
-                const sourceMimeType = (file.type || 'application/octet-stream').toLowerCase();
-                const downloadUrl = await uploadToS3(buffer, downloadKey, sourceMimeType);
+                const normalizedDownload = await sharp(buffer)
+                    .rotate()
+                    .jpeg({ quality: 94, chromaSubsampling: '4:4:4', mozjpeg: true })
+                    .toBuffer();
+                const downloadUrl = await uploadToS3(normalizedDownload, downloadKey, 'image/jpeg', { access: 'private' });
                 
                 updateData.download_source_url = downloadUrl;
                 updateData.download_source_width = newWidth;
@@ -227,7 +230,11 @@ export async function PUT(
     return withAuth(request, async () => {
         try {
             const { id, photoId } = await params;
-            const galleryId = id; // Map id to galleryId for consistency
+            const galleryId = Number(id);
+            const parsedPhotoId = Number(photoId);
+            if (!Number.isInteger(galleryId) || !Number.isInteger(parsedPhotoId)) {
+                return NextResponse.json({ success: false, error: 'Nieprawidłowe ID' }, { status: 400 });
+            }
             const body = await request.json();
 
             const { is_standard, order_index } = body;
@@ -236,8 +243,23 @@ export async function PUT(
             if (is_standard !== undefined) updateData.is_standard = is_standard;
             if (order_index !== undefined) updateData.order_index = order_index;
 
+            const existing = await prisma.galleryPhoto.findFirst({
+                where: { id: parsedPhotoId, gallery_id: galleryId },
+                select: { id: true, is_standard: true, gallery: { select: { is_active: true, gallery_mode: true } } },
+            });
+            if (!existing) {
+                return NextResponse.json({ success: false, error: 'Zdjęcie nie należy do tej galerii' }, { status: 404 });
+            }
+            if (existing.gallery.is_active && existing.gallery.gallery_mode !== 'GROUP'
+                && is_standard !== undefined && Boolean(is_standard) !== existing.is_standard) {
+                return NextResponse.json({
+                    success: false,
+                    error: 'Nie można zmienić składu pakietu w aktywnej galerii. Najpierw wyłącz dostęp klienta.',
+                }, { status: 409 });
+            }
+
             const photo = await prisma.galleryPhoto.update({
-                where: { id: Number(photoId) },
+                where: { id: parsedPhotoId },
                 data: updateData,
             });
 
@@ -255,6 +277,9 @@ export async function PUT(
     });
 }
 
+// GalleryAdmin historically used PATCH. Keep both methods on the same validated path.
+export const PATCH = PUT;
+
 // DELETE - Delete photo
 export async function DELETE(
     request: NextRequest,
@@ -263,11 +288,15 @@ export async function DELETE(
     return withAuth(request, async () => {
         try {
             const { id, photoId } = await params;
-            const galleryId = id;
+            const galleryId = Number(id);
+            const parsedPhotoId = Number(photoId);
+            if (!Number.isInteger(galleryId) || !Number.isInteger(parsedPhotoId)) {
+                return NextResponse.json({ success: false, error: 'Nieprawidłowe ID' }, { status: 400 });
+            }
 
             // Get photo info to delete files
-            const photo = await prisma.galleryPhoto.findUnique({
-                where: { id: Number(photoId) }
+            const photo = await prisma.galleryPhoto.findFirst({
+                where: { id: parsedPhotoId, gallery_id: galleryId }
             });
 
             if (!photo) {
@@ -275,6 +304,16 @@ export async function DELETE(
                     { success: false, error: 'Zdjęcie nie znalezione' },
                     { status: 404 }
                 );
+            }
+            const gallery = await prisma.clientGallery.findUnique({
+                where: { id: galleryId },
+                select: { is_active: true, gallery_mode: true },
+            });
+            if (gallery?.is_active && gallery.gallery_mode !== 'GROUP' && photo.is_standard) {
+                return NextResponse.json({
+                    success: false,
+                    error: 'Nie można usunąć zdjęcia należącego do pakietu z aktywnej galerii. Najpierw wyłącz dostęp klienta.',
+                }, { status: 409 });
             }
 
             // Delete files from S3
@@ -285,6 +324,12 @@ export async function DELETE(
                 if (photo.thumbnail_url) {
                     await deleteFromS3(photo.thumbnail_url);
                 }
+                if (photo.download_source_url && photo.download_source_url !== photo.file_url) {
+                    await deleteFromS3(photo.download_source_url);
+                }
+                if (photo.thumbnail_source_url && photo.thumbnail_source_url !== photo.thumbnail_url) {
+                    await deleteFromS3(photo.thumbnail_source_url);
+                }
             } catch (fileError) {
                 console.error('Error deleting files from S3:', fileError);
                 // Continue even if S3 deletion fails
@@ -292,7 +337,7 @@ export async function DELETE(
 
             // Delete from database
             await prisma.galleryPhoto.delete({
-                where: { id: Number(photoId) }
+                where: { id: parsedPhotoId }
             });
 
             return NextResponse.json({
