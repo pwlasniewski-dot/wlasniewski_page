@@ -279,6 +279,7 @@ export async function GET(request: NextRequest) {
         'v2_session_start', 'v2_page_view', 'v2_click', 'v2_form_start', 'v2_form_submit',
         'v2_booking_view', 'v2_service_selected', 'v2_package_selected', 'v2_date_selected',
         'v2_time_selected', 'v2_booking_added_to_cart', 'v2_checkout_view', 'v2_checkout_submit',
+        'v2_booking_form_started', 'v2_booking_validation_failed',
         'v2_checkout_result', 'v2_payu_redirect', 'v2_booking_start', 'v2_booking_created',
         'v2_payment_success', 'v2_payment_failed',
       ].includes(event.event_type)) {

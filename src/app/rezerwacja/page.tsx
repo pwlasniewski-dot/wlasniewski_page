@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { Toaster, toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { ShoppingBag } from 'lucide-react';
@@ -63,6 +63,7 @@ const FALLBACK_RETURNING_PROMO: DiscountCode = {
 
 export default function RezerwacjaPage() {
     const { trackEvent } = useAnalytics();
+    const bookingFormStarted = useRef(false);
     // Data from API
     const [serviceTypes, setServiceTypes] = useState<ServiceType[]>([]);
     const [servicesLoading, setServicesLoading] = useState(true);
@@ -144,9 +145,14 @@ export default function RezerwacjaPage() {
                         const selected = active.find((item: ServiceType) => item.name.toLowerCase() === requested?.toLowerCase()) || active[0];
                         setService(selected);
                         trackBookingEvent('booking_view', { service: selected.name, source: new URLSearchParams(window.location.search).get('source') || 'direct' });
-                        void trackEvent('booking_view', { package_count: active.reduce((sum: number, item: ServiceType) => sum + item.packages.filter(pkg => pkg.is_active).length, 0) });
+                        await trackEvent('booking_view', { package_count: active.reduce((sum: number, item: ServiceType) => sum + item.packages.filter(pkg => pkg.is_active).length, 0) });
+                        await trackEvent('service_selected');
                     }
-                    void trackEvent('service_load_result', { status: 'ok', area: 'services', http_status: res.status, package_count: active.reduce((sum: number, item: ServiceType) => sum + item.packages.filter(pkg => pkg.is_active).length, 0) });
+                    if (active.length === 0) {
+                        void trackEvent('service_load_result', { status: 'error', area: 'services', http_status: res.status, package_count: 0, reason_code: 'no_active_services' });
+                    } else {
+                        void trackEvent('service_load_result', { status: 'ok', area: 'services', http_status: res.status, package_count: active.reduce((sum: number, item: ServiceType) => sum + item.packages.filter(pkg => pkg.is_active).length, 0) });
+                    }
                 } else {
                     void trackEvent('service_load_result', { status: 'error', area: 'services', http_status: res.status, reason_code: 'http_error' });
                 }
@@ -221,6 +227,8 @@ export default function RezerwacjaPage() {
                 setAvailableHours([]);
                 setSelectedHour(null);
                 setSlot(prev => prev ? { ...prev, start: '08:00', end: '22:00' } : null);
+                await trackEvent('availability_result', { status: 'ok', area: 'availability', available_count: 1, has_available_slots: true });
+                await trackEvent('time_selected');
                 setLoadingAvailability(false);
                 return;
             }
@@ -288,6 +296,7 @@ export default function RezerwacjaPage() {
             slot &&
             chosenPackage &&
             rodo &&
+            (chosenPackage?.blocks_entire_day || Boolean(slot?.start)) &&
             (!needsVenue || (venueCity && venuePlace)),
         [name, email, slot, chosenPackage, rodo, needsVenue, venueCity, venuePlace]
     );
@@ -405,6 +414,13 @@ export default function RezerwacjaPage() {
         e.preventDefault();
 
         if (!isReadyToSubmit || !slot || !chosenPackage) {
+            const fieldGroup = !service ? 'service'
+                : !chosenPackage ? 'package'
+                    : !slot || (!chosenPackage.blocks_entire_day && !slot.start) ? 'date_time'
+                        : !name || !email ? 'contact'
+                            : !rodo ? 'consent'
+                                : 'venue';
+            void trackEvent('booking_validation_failed', { status: 'failed', area: 'booking_form', reason_code: 'required_missing', field_group: fieldGroup });
             alert("Uzupełnij wszystkie wymagane pola i wybierz termin!");
             return;
         }
@@ -567,7 +583,17 @@ export default function RezerwacjaPage() {
                         )}
                     </motion.section>
 
-                    <form id="booking-flow" onSubmit={handleSubmit} className="space-y-8 scroll-mt-24">
+                    <form
+                        id="booking-flow"
+                        onSubmit={handleSubmit}
+                        onFocusCapture={() => {
+                            if (!chosenPackage || !slot || (!chosenPackage.blocks_entire_day && !slot.start)) return;
+                            if (bookingFormStarted.current) return;
+                            bookingFormStarted.current = true;
+                            void trackEvent('booking_form_started', { area: 'booking_form' });
+                        }}
+                        className="space-y-8 scroll-mt-24"
+                    >
                         {preselectedPhotographer && (
                             <motion.div
                                 initial={{ opacity: 0, y: -10 }}

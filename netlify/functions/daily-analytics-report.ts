@@ -260,6 +260,7 @@ export default async () => {
     event_type: row.event_type,
     session_id: row.session_id,
     metadata: parseMetadata(row.metadata),
+    created_at: row.created_at,
   })));
   const actionRows = diagnostics.actions.map(action => `<div style="margin:10px 0;padding:12px;border:1px solid ${action.kind === 'error' ? '#fecaca' : '#fde68a'};border-radius:10px">
     <strong>${esc(action.title)}</strong> <span style="font-size:11px;color:#6b7280">pewność: ${esc(action.confidence)}</span><br>

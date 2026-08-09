@@ -154,6 +154,7 @@ export default function CheckoutPage() {
         }
 
         setSubmitting(true);
+        let checkoutFailureTracked = false;
         try {
             void trackEvent('checkout_submit', { item_count: items.length, amount_bucket: amountNow < 50000 ? 'under_500' : amountNow < 100000 ? '500_999' : '1000_plus' });
             void trackEvent('payment_started', {
@@ -189,9 +190,16 @@ export default function CheckoutPage() {
             });
 
             if (!response.ok) {
-                const data = await response.json();
                 void trackEvent('checkout_result', { status: 'error', area: 'checkout', endpoint: 'basket_checkout', http_status: response.status, reason_code: 'http_error' });
-                throw new Error(data.message || 'Checkout failed');
+                checkoutFailureTracked = true;
+                let message = 'Checkout failed';
+                try {
+                    const data = await response.json();
+                    if (typeof data?.message === 'string') message = data.message;
+                } catch {
+                    // A non-JSON 4xx/5xx is still a confirmed checkout failure.
+                }
+                throw new Error(message);
             }
 
             const data = await response.json();
@@ -218,7 +226,7 @@ export default function CheckoutPage() {
 
         } catch (error: any) {
             console.error('Checkout error:', error);
-            void trackEvent('checkout_result', { status: 'error', area: 'checkout', endpoint: 'basket_checkout', reason_code: 'request_failed' });
+            if (!checkoutFailureTracked) void trackEvent('checkout_result', { status: 'error', area: 'checkout', endpoint: 'basket_checkout', reason_code: 'request_failed' });
             toast.error(error.message || 'Wystąpił błąd podczas finalizacji zamówienia.');
         } finally {
             setSubmitting(false);

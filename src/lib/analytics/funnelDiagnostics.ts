@@ -4,6 +4,7 @@ export const FUNNEL_STEPS = [
   { event: 'v2_package_selected', label: 'Pakiet i cena' },
   { event: 'v2_date_selected', label: 'Data' },
   { event: 'v2_time_selected', label: 'Godzina' },
+  { event: 'v2_booking_form_started', label: 'Formularz' },
   { event: 'v2_booking_added_to_cart', label: 'Formularz i koszyk' },
   { event: 'v2_checkout_view', label: 'Checkout' },
   { event: 'v2_checkout_submit', label: 'Zlecenie płatności' },
@@ -14,10 +15,11 @@ export type DiagnosticEvent = {
   event_type: string;
   session_id: string;
   metadata?: Record<string, unknown>;
+  created_at?: Date | string | number;
 };
 
 export type FunnelDiagnostic = {
-  kind: 'error' | 'dropoff' | 'performance' | 'hypothesis' | 'empty';
+  kind: 'error' | 'availability' | 'dropoff' | 'performance' | 'hypothesis' | 'empty';
   title: string;
   evidence: string;
   sessions: number;
@@ -25,16 +27,46 @@ export type FunnelDiagnostic = {
   recommendation: string;
 };
 
+const PRIORITY: Record<FunnelDiagnostic['kind'], number> = {
+  error: 0,
+  availability: 1,
+  dropoff: 2,
+  performance: 3,
+  hypothesis: 4,
+  empty: 5,
+};
+
 const uniqueSessions = (events: DiagnosticEvent[]) => new Set(events.map(event => event.session_id)).size;
 
 export function diagnoseFunnel(events: DiagnosticEvent[]): { funnel: Array<{ event: string; label: string; sessions: number; dropoff: number }>; actions: FunnelDiagnostic[] } {
-  let reached = new Set(events.filter(event => event.event_type === FUNNEL_STEPS[0].event).map(event => event.session_id));
+  const reachedByStep = FUNNEL_STEPS.map(() => new Set<string>());
+  const sessions = new Map<string, Array<{ event: DiagnosticEvent; index: number }>>();
+  events.forEach((event, index) => {
+    const rows = sessions.get(event.session_id) || [];
+    rows.push({ event, index });
+    sessions.set(event.session_id, rows);
+  });
+  for (const [sessionId, rows] of sessions) {
+    rows.sort((a, b) => {
+      const timestamp = (value: DiagnosticEvent['created_at']) => value instanceof Date
+        ? value.getTime()
+        : value !== undefined ? new Date(value).getTime() : Number.NaN;
+      const left = timestamp(a.event.created_at);
+      const right = timestamp(b.event.created_at);
+      return Number.isFinite(left) && Number.isFinite(right) && left !== right ? left - right : a.index - b.index;
+    });
+    let expected = 0;
+    for (const { event } of rows) {
+      if (event.event_type !== FUNNEL_STEPS[expected]?.event) continue;
+      reachedByStep[expected].add(sessionId);
+      expected++;
+      if (expected === FUNNEL_STEPS.length) break;
+    }
+  }
   const funnel = FUNNEL_STEPS.map((step, index) => {
-    const stepSessions = new Set(events.filter(event => event.event_type === step.event).map(event => event.session_id));
-    const previous = reached.size;
-    if (index === 0) reached = stepSessions;
-    else reached = new Set([...reached].filter(session => stepSessions.has(session)));
-    return { ...step, sessions: reached.size, dropoff: Math.max(0, previous - reached.size) };
+    const count = reachedByStep[index].size;
+    const previous = index ? reachedByStep[index - 1].size : count;
+    return { ...step, sessions: count, dropoff: Math.max(0, previous - count) };
   });
   const actions: FunnelDiagnostic[] = [];
 
@@ -51,7 +83,7 @@ export function diagnoseFunnel(events: DiagnosticEvent[]): { funnel: Array<{ eve
   for (const [area, sessions] of errorGroups) {
     actions.push({
       kind: 'error', title: `Awaria lub błąd: ${area}`, sessions: sessions.size,
-      evidence: `${sessions.size} sesji z technicznym zdarzeniem błędu.`, confidence: 'wysoka',
+      evidence: `${sessions.size} sesji z technicznym zdarzeniem błędu.`, confidence: sessions.size >= 2 ? 'wysoka' : 'średnia',
       recommendation: `Sprawdź logi i odtwórz ścieżkę ${area} na telefonie oraz komputerze.`,
     });
   }
@@ -59,10 +91,25 @@ export function diagnoseFunnel(events: DiagnosticEvent[]): { funnel: Array<{ eve
   const noSlots = events.filter(event => event.event_type === 'v2_availability_result'
     && event.metadata?.status === 'ok' && event.metadata?.has_available_slots === false);
   const noSlotSessions = uniqueSessions(noSlots);
+  const availabilitySessions = uniqueSessions(events.filter(event => event.event_type === 'v2_availability_result'));
   if (noSlotSessions) actions.push({
-    kind: 'dropoff', title: 'Brak dostępnych terminów', sessions: noSlotSessions,
-    evidence: `${noSlotSessions} sesji otrzymało poprawną odpowiedź systemu, ale bez wolnych godzin.`, confidence: 'wysoka',
+    kind: 'availability', title: 'Brak dostępnych terminów', sessions: noSlotSessions,
+    evidence: `${noSlotSessions} z ${availabilitySessions} sesji sprawdzających dostępność otrzymało poprawną odpowiedź, ale bez wolnych godzin.`,
+    confidence: noSlotSessions >= 3 && availabilitySessions > 0 && noSlotSessions / availabilitySessions >= 0.2
+      ? 'wysoka'
+      : availabilitySessions >= 3 ? 'średnia' : 'niska',
     recommendation: 'Sprawdź kalendarz dostępności i rozważ pokazanie najbliższych alternatywnych terminów.',
+  });
+
+  const validationFailures = events.filter(event => event.event_type === 'v2_booking_validation_failed');
+  const validationSessions = uniqueSessions(validationFailures);
+  if (validationSessions) actions.push({
+    kind: 'dropoff', title: 'Formularz zatrzymuje rezerwację', sessions: validationSessions,
+    evidence: `${validationSessions} sesji próbowało przejść dalej z brakującą wymaganą grupą danych.`,
+    confidence: validationSessions >= 3 ? 'wysoka' : validationSessions === 2 ? 'średnia' : 'niska',
+    recommendation: validationSessions < 3
+      ? 'Próba jest mała. Obserwuj walidację i sprawdź formularz technicznie bez przesądzania o zmianie UX.'
+      : 'Sprawdź czy komunikaty i oznaczenia wymaganych pól są widoczne przed wysłaniem formularza.',
   });
 
   const slow = events.filter(event => event.event_type === 'v2_performance' && Number(event.metadata?.duration_ms || 0) >= 2500);
@@ -105,5 +152,5 @@ export function diagnoseFunnel(events: DiagnosticEvent[]): { funnel: Array<{ eve
     recommendation: 'Sprawdź zgodę cookies i wykonaj kontrolną ścieżkę rezerwacji na urządzeniu nieoznaczonym jako administrator.',
   });
 
-  return { funnel, actions: actions.sort((a, b) => b.sessions - a.sessions).slice(0, 5) };
+  return { funnel, actions: actions.sort((a, b) => PRIORITY[a.kind] - PRIORITY[b.kind] || b.sessions - a.sessions).slice(0, 5) };
 }
