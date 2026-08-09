@@ -144,10 +144,15 @@ export default function RezerwacjaPage() {
                         const selected = active.find((item: ServiceType) => item.name.toLowerCase() === requested?.toLowerCase()) || active[0];
                         setService(selected);
                         trackBookingEvent('booking_view', { service: selected.name, source: new URLSearchParams(window.location.search).get('source') || 'direct' });
+                        void trackEvent('booking_view', { package_count: active.reduce((sum: number, item: ServiceType) => sum + item.packages.filter(pkg => pkg.is_active).length, 0) });
                     }
+                    void trackEvent('service_load_result', { status: 'ok', area: 'services', http_status: res.status, package_count: active.reduce((sum: number, item: ServiceType) => sum + item.packages.filter(pkg => pkg.is_active).length, 0) });
+                } else {
+                    void trackEvent('service_load_result', { status: 'error', area: 'services', http_status: res.status, reason_code: 'http_error' });
                 }
             } catch (error) {
                 console.error('Failed to load services:', error);
+                void trackEvent('service_load_result', { status: 'error', area: 'services', reason_code: 'network_error' });
             } finally {
                 setServicesLoading(false);
             }
@@ -229,13 +234,17 @@ export default function RezerwacjaPage() {
                     const data = await res.json();
                     setAvailableHours(data.slots || []);
                     setSelectedHour(null); // Reset selection when date changes
+                    const availableCount = (data.slots || []).filter((item: { available: boolean }) => item.available).length;
+                    void trackEvent('availability_result', { status: 'ok', area: 'availability', http_status: res.status, available_count: availableCount, has_available_slots: availableCount > 0 });
                 } else {
                     console.error('Failed to load availability:', res.status);
                     setAvailableHours([]);
+                    void trackEvent('availability_result', { status: 'error', area: 'availability', http_status: res.status, reason_code: 'http_error' });
                 }
             } catch (error) {
                 console.error('Failed to load availability:', error);
                 setAvailableHours([]);
+                void trackEvent('availability_result', { status: 'error', area: 'availability', reason_code: 'network_error' });
             } finally {
                 setLoadingAvailability(false);
             }
@@ -438,6 +447,7 @@ export default function RezerwacjaPage() {
             package_id: chosenPackage.id,
             amount_grosze: finalPrice,
         });
+        void trackEvent('booking_added_to_cart', { item_count: 1, amount_bucket: finalPrice < 50000 ? 'under_500' : finalPrice < 100000 ? '500_999' : '1000_plus' });
 
         addItem({
             type: 'booking',
@@ -602,6 +612,7 @@ export default function RezerwacjaPage() {
                                             url.searchParams.set('service', svc.name);
                                             window.history.replaceState({}, '', url);
                                             trackBookingEvent('booking_service_select', { service: svc.name });
+                                            void trackEvent('service_selected');
                                         }}
                                         className={`p-4 rounded-xl border transition-all text-left ${service?.id === svc.id
                                             ? "border-[#8d7f6d] bg-[#8d7f6d]/10"
@@ -636,6 +647,7 @@ export default function RezerwacjaPage() {
                                             onClick={() => {
                                                 setChosenPackage(pkg);
                                                 trackBookingEvent('booking_package_select', { service: service.name, package: pkg.name, value: pkg.price / 100, currency: 'PLN' });
+                                                void trackEvent('package_selected', { amount_bucket: pkg.price < 50000 ? 'under_500' : pkg.price < 100000 ? '500_999' : '1000_plus' });
                                             }}
                                             className={`p-5 rounded-2xl border transition-all text-left flex flex-col h-full ${chosenPackage?.id === pkg.id
                                                 ? "border-[#8d7f6d] bg-[#8d7f6d]/10 shadow-[0_0_20px_rgba(245,158,11,0.15)]"
@@ -687,6 +699,7 @@ export default function RezerwacjaPage() {
                                         onSlotSelect={(selected) => {
                                             setSlot(selected);
                                             if (selected?.date) trackBookingEvent('booking_date_select', { service: service?.name, package: chosenPackage?.name, date: selected.date });
+                                            if (selected?.date) void trackEvent('date_selected');
                                         }}
                                         selectedSlot={slot}
                                         service={(service?.name as "Sesja" | "Ślub" | "Przyjęcie" | "Urodziny") || 'Sesja'}
@@ -734,6 +747,7 @@ export default function RezerwacjaPage() {
                                                             const end = `${(hSlot.hour + (chosenPackage?.hours || 1)).toString().padStart(2, '0')}:00`;
                                                             setSelectedHour(hSlot.hour);
                                                             setSlot(prev => prev ? { ...prev, start, end } : null);
+                                                            void trackEvent('time_selected');
                                                         }}
                                                         className={`py-2 rounded-lg transition-all text-sm font-medium ${hSlot.available
                                                             ? selectedHour === hSlot.hour

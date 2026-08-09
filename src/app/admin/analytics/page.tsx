@@ -78,6 +78,10 @@ type AnalyticsData = {
     bookingCompleted: boolean;
     path: Array<{ at: string; event: string; page: string }>;
   }>;
+  diagnostics: {
+    funnel: Array<{ event: string; label: string; sessions: number; dropoff: number }>;
+    actions: Array<{ kind: string; title: string; evidence: string; sessions: number; confidence: string; recommendation: string }>;
+  };
 };
 
 const TIME_ZONE = 'Europe/Warsaw';
@@ -214,7 +218,7 @@ export default function AnalyticsPage() {
           <div>
             <div className="flex items-center gap-3 mb-2">
               <BarChart3 className="text-emerald-400" size={26} />
-              <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">Analityka 2.0</h1>
+              <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">Analityka 2.1</h1>
             </div>
             <p className="text-sm text-zinc-400">Jednoznaczne dane o ruchu, aktywności i drodze do rezerwacji. Stare rekordy są wykluczone.</p>
           </div>
@@ -247,6 +251,34 @@ export default function AnalyticsPage() {
               </p>
             )}
           </div>
+        )}
+
+        {data?.diagnostics && (
+          <section className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-5">
+            <h2 className="text-lg font-semibold text-amber-100">Co wymaga działania teraz</h2>
+            <p className="mt-1 text-xs text-zinc-400">Wnioski wynikają z mierzalnych zdarzeń. Cena jest pokazywana wyłącznie jako hipoteza.</p>
+            <div className="mt-4 grid gap-3 lg:grid-cols-2">
+              {data.diagnostics.actions.length ? data.diagnostics.actions.map((action, index) => (
+                <div key={`${action.kind}-${index}`} className="rounded-xl border border-zinc-800 bg-zinc-950/70 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <strong className="text-sm text-zinc-100">{action.title}</strong>
+                    <span className="shrink-0 rounded-full bg-zinc-800 px-2 py-1 text-[10px] text-zinc-300">pewność: {action.confidence}</span>
+                  </div>
+                  <p className="mt-2 text-xs text-zinc-300">{action.evidence}</p>
+                  <p className="mt-2 text-xs text-emerald-200">Działanie: {action.recommendation}</p>
+                </div>
+              )) : <p className="text-sm text-zinc-400">Brak wystarczających dowodów na problem w tym okresie.</p>}
+            </div>
+            <div className="mt-5 grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-5">
+              {data.diagnostics.funnel.map(step => (
+                <div key={step.event} className="rounded-lg border border-zinc-800 bg-zinc-900/70 p-3">
+                  <div className="text-[11px] text-zinc-400">{step.label}</div>
+                  <div className="mt-1 text-xl font-semibold">{step.sessions}</div>
+                  {step.dropoff > 0 && <div className="text-[10px] text-amber-300">odpływ: {step.dropoff}</div>}
+                </div>
+              ))}
+            </div>
+          </section>
         )}
 
         <section className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-4">

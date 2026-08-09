@@ -25,6 +25,10 @@ export default function CheckoutPage() {
     const hasOnlyOneBooking = items.length === 1 && items[0]?.type === 'booking';
 
     useEffect(() => {
+        if (items.length > 0) void trackEvent('checkout_view', { item_count: items.length });
+    }, [items.length, trackEvent]);
+
+    useEffect(() => {
         fetch('/api/settings/public')
             .then(r => r.json())
             .then(d => {
@@ -151,6 +155,7 @@ export default function CheckoutPage() {
 
         setSubmitting(true);
         try {
+            void trackEvent('checkout_submit', { item_count: items.length, amount_bucket: amountNow < 50000 ? 'under_500' : amountNow < 100000 ? '500_999' : '1000_plus' });
             void trackEvent('payment_started', {
                 amount_grosze: amountNow,
                 item_count: items.length,
@@ -185,6 +190,7 @@ export default function CheckoutPage() {
 
             if (!response.ok) {
                 const data = await response.json();
+                void trackEvent('checkout_result', { status: 'error', area: 'checkout', endpoint: 'basket_checkout', http_status: response.status, reason_code: 'http_error' });
                 throw new Error(data.message || 'Checkout failed');
             }
 
@@ -194,11 +200,13 @@ export default function CheckoutPage() {
                 item_count: items.length,
                 has_payment_redirect: !!data.redirectUrl,
             });
+            void trackEvent('checkout_result', { status: 'ok', area: 'checkout', endpoint: 'basket_checkout', http_status: response.status, has_payment_redirect: !!data.redirectUrl });
 
             toast.success('Zamówienie przyjęte! Przekierowanie do płatności...');
 
             // Redirect to PayU payment page if URL provided
             if (data.redirectUrl) {
+                void trackEvent('payu_redirect', { status: 'ok', area: 'payu' }, true);
                 clearCart();
                 window.location.href = data.redirectUrl;
             } else {
@@ -210,6 +218,7 @@ export default function CheckoutPage() {
 
         } catch (error: any) {
             console.error('Checkout error:', error);
+            void trackEvent('checkout_result', { status: 'error', area: 'checkout', endpoint: 'basket_checkout', reason_code: 'request_failed' });
             toast.error(error.message || 'Wystąpił błąd podczas finalizacji zamówienia.');
         } finally {
             setSubmitting(false);

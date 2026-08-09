@@ -339,5 +339,33 @@ export function AnalyticsTracker() {
     };
   }, [pathname, trackEvent, consentVersion]);
 
+  useEffect(() => {
+    if (!hasAnalyticsConsent() || !isTrackablePath(pathname)) return;
+
+    const onError = () => void trackEvent('client_error', { status: 'error', area: 'javascript', reason_code: 'runtime_error' });
+    const onUnhandledRejection = () => void trackEvent('client_error', { status: 'error', area: 'javascript', reason_code: 'unhandled_promise' });
+    window.addEventListener('error', onError);
+    window.addEventListener('unhandledrejection', onUnhandledRejection);
+
+    let observer: PerformanceObserver | undefined;
+    if ('PerformanceObserver' in window) {
+      try {
+        observer = new PerformanceObserver(list => {
+          const entries = list.getEntries();
+          const last = entries.at(-1);
+          if (last) void trackEvent('performance', { metric: 'lcp', duration_ms: Math.round(last.startTime) });
+        });
+        observer.observe({ type: 'largest-contentful-paint', buffered: true });
+      } catch {
+        // Older browsers do not expose buffered LCP. Tracking remains optional.
+      }
+    }
+    return () => {
+      window.removeEventListener('error', onError);
+      window.removeEventListener('unhandledrejection', onUnhandledRejection);
+      observer?.disconnect();
+    };
+  }, [pathname, trackEvent, consentVersion]);
+
   return null;
 }

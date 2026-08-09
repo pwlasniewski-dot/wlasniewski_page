@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import prisma from '@/lib/db/prisma';
 import { requireAuth } from '@/lib/auth/middleware';
 import { getFinanceSummary } from '@/lib/analytics/finance';
+import { diagnoseFunnel } from '@/lib/analytics/funnelDiagnostics';
 
 const TIME_ZONE = 'Europe/Warsaw';
 const MAX_RANGE_DAYS = 120;
@@ -196,6 +197,7 @@ export async function GET(request: NextRequest) {
 
     const summary = summarize(events);
     const previousSummary = summarize(previousEvents);
+    const diagnostics = diagnoseFunnel(events);
 
     const seriesMap = new Map<string, {
       users: Set<string>;
@@ -273,7 +275,13 @@ export async function GET(request: NextRequest) {
       if (isBookingStart(event)) session.bookingStarted = true;
       if (isBookingComplete(event)) session.bookingCompleted = true;
 
-      if (['v2_session_start', 'v2_page_view', 'v2_click', 'v2_form_start', 'v2_form_submit', 'v2_booking_start', 'v2_booking_started', 'v2_booking_complete', 'v2_booking_completed', 'v2_payment_success'].includes(event.event_type)) {
+      if ([
+        'v2_session_start', 'v2_page_view', 'v2_click', 'v2_form_start', 'v2_form_submit',
+        'v2_booking_view', 'v2_service_selected', 'v2_package_selected', 'v2_date_selected',
+        'v2_time_selected', 'v2_booking_added_to_cart', 'v2_checkout_view', 'v2_checkout_submit',
+        'v2_checkout_result', 'v2_payu_redirect', 'v2_booking_start', 'v2_booking_created',
+        'v2_payment_success', 'v2_payment_failed',
+      ].includes(event.event_type)) {
         session.path.push({ at: event.created_at, event: event.event_type.replace(/^v2_/, ''), page: normalizePath(event.page_url) });
       }
       sessionMap.set(event.session_id, session);
@@ -381,6 +389,7 @@ export async function GET(request: NextRequest) {
         receivedPaymentsPct: pctChange(finance.receivedPaymentsNet, previousFinance.receivedPaymentsNet),
       },
       timeSeries,
+      diagnostics,
       sources,
       pages,
       recentSessions,

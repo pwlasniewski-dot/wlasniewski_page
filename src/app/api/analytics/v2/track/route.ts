@@ -23,6 +23,11 @@ const ALLOWED_EVENTS = new Set([
   'v2_visibility_visible', 'v2_page_exit', 'v2_booking_start',
   'v2_booking_created', 'v2_payment_started', 'v2_payment_success',
   'v2_payment_failed',
+  'v2_booking_view', 'v2_service_selected', 'v2_package_selected',
+  'v2_date_selected', 'v2_time_selected', 'v2_booking_added_to_cart',
+  'v2_checkout_view', 'v2_checkout_submit', 'v2_payu_redirect',
+  'v2_service_load_result', 'v2_availability_result', 'v2_checkout_result',
+  'v2_client_error', 'v2_performance',
 ]);
 const BLOCKED_PATHS = [
   '/admin', '/api', '/galeria', '/konto', '/strefa-klienta', '/logowanie',
@@ -135,7 +140,10 @@ function safeMetadata(raw: unknown, eventType: string) {
   const value = raw && typeof raw === 'object' ? raw as Record<string, unknown> : {};
   if (value.consent !== true) return null;
   const result: Record<string, unknown> = { consent: true };
-  const stringKeys = ['client_ts', 'session_started_at', 'timezone', 'viewport', 'tag', 'analytics_id', 'form_id'];
+  const stringKeys = [
+    'client_ts', 'session_started_at', 'timezone', 'viewport', 'tag', 'analytics_id', 'form_id',
+    'status', 'area', 'endpoint', 'reason_code', 'metric', 'amount_bucket', 'device_hint',
+  ];
   for (const key of stringKeys) {
     const safe = safeText(value[key], key === 'source' ? 100 : 80);
     if (safe) result[key] = safe;
@@ -145,6 +153,13 @@ function safeMetadata(raw: unknown, eventType: string) {
   if (landing) result.landing_page = landing;
   if (route) result.route = route;
   if (typeof value.active === 'boolean') result.active = value.active;
+  for (const key of ['has_payment_redirect', 'has_available_slots']) {
+    if (typeof value[key] === 'boolean') result[key] = value[key];
+  }
+  for (const key of ['duration_ms', 'http_status', 'available_count', 'package_count', 'item_count']) {
+    const number = Number(value[key]);
+    if (Number.isFinite(number) && number >= 0 && number <= 600_000) result[key] = Math.round(number);
+  }
   if (eventType === 'v2_engagement') {
     const activeMs = Number(value.active_ms);
     if (!Number.isFinite(activeMs) || activeMs < 1 || activeMs > 30_000) return null;
