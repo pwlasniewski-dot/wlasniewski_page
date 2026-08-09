@@ -111,6 +111,8 @@ Ruch administratorów nie powinien trafiać do raportu, ponieważ Analytics 2.0 
 - adresy IP z `ADMIN_IP`,
 - boty i ruch deploy-preview.
 
+Raport dodatkowo odrzuca rekordy, których `page_url` zaczyna się od `/admin`, jako drugą warstwę zabezpieczenia.
+
 ## Źródła prawdy
 
 - zachowanie użytkowników: `AnalyticsEvent` z `event_type` rozpoczynającym się od `v2_`,
