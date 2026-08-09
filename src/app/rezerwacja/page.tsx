@@ -64,6 +64,7 @@ const FALLBACK_RETURNING_PROMO: DiscountCode = {
 export default function RezerwacjaPage() {
     const { trackEvent } = useAnalytics();
     const bookingFormStarted = useRef(false);
+    const submissionLock = useRef(false);
     // Data from API
     const [serviceTypes, setServiceTypes] = useState<ServiceType[]>([]);
     const [servicesLoading, setServicesLoading] = useState(true);
@@ -410,20 +411,25 @@ export default function RezerwacjaPage() {
     const { addItem } = useCart();
 
     // Create booking and redirect to payment
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
-        if (!isReadyToSubmit || !slot || !chosenPackage) {
+        if (!e.currentTarget.checkValidity() || !isReadyToSubmit || !slot || !chosenPackage) {
             const fieldGroup = !service ? 'service'
                 : !chosenPackage ? 'package'
                     : !slot || (!chosenPackage.blocks_entire_day && !slot.start) ? 'date_time'
-                        : !name || !email ? 'contact'
+                        : !name || !email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? 'contact'
                             : !rodo ? 'consent'
                                 : 'venue';
             void trackEvent('booking_validation_failed', { status: 'failed', area: 'booking_form', reason_code: 'required_missing', field_group: fieldGroup });
-            alert("Uzupełnij wszystkie wymagane pola i wybierz termin!");
+            e.currentTarget.reportValidity();
+            alert("Uzupełnij poprawnie wszystkie wymagane pola i wybierz termin!");
             return;
         }
+
+        if (submissionLock.current) return;
+        submissionLock.current = true;
+        setSubmitting(true);
 
         const title = `${service?.name} — ${chosenPackage.name}`;
         const bookingData = {
@@ -586,6 +592,7 @@ export default function RezerwacjaPage() {
                     <form
                         id="booking-flow"
                         onSubmit={handleSubmit}
+                        noValidate
                         onFocusCapture={() => {
                             if (!chosenPackage || !slot || (!chosenPackage.blocks_entire_day && !slot.start)) return;
                             if (bookingFormStarted.current) return;
@@ -984,14 +991,14 @@ export default function RezerwacjaPage() {
                                 {/* Submit Button */}
                                 <button
                                     type="submit"
-                                    disabled={!isReadyToSubmit || submitting}
+                                    disabled={submitting}
                                     className={`w-full mt-6 py-4 rounded-full font-semibold text-lg transition-all shadow-lg ${isReadyToSubmit
                                         ? "bg-[#5b554e] text-white hover:bg-[#403b36] shadow-black/10"
-                                        : "bg-[#ece7e0] text-[#7c746b] cursor-not-allowed"
+                                        : "bg-[#ece7e0] text-[#5f5851] hover:bg-[#e2dcd3]"
                                         } group flex items-center justify-center gap-2`}
                                 >
                                     <ShoppingBag className="w-6 h-6 group-hover:scale-110 transition-transform" />
-                                    <span>Przejdź do podsumowania</span>
+                                    <span>{isReadyToSubmit ? 'Przejdź do podsumowania' : 'Sprawdź dane i przejdź dalej'}</span>
                                 </button>
                             </motion.section>
                         )}
