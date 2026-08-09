@@ -138,6 +138,10 @@ Raport dodatkowo odrzuca rekordy, których `page_url` zaczyna się od `/admin`, 
 - raport e-mail nie zawiera ruchu backendowego administratorów,
 - przed scaleniem wykonać build/typecheck oraz ręczny `Run now` funkcji harmonogramowej na Netlify.
 
+## Bramka wdrożeniowa
+
+Raport nie jest aktywny na produkcji, dopóki PR Analytics 2.0 nie zostanie scalony i opublikowany. Po deployu należy ręcznie uruchomić `daily-analytics-report` z panelu Netlify (`Run now`) i potwierdzić dostarczenie pierwszego maila przed pozostawieniem harmonogramu bez nadzoru.
+
 ## Kolejny etap
 
 Po zebraniu pierwszych danych V2 należy porównać liczbę sesji i pageview z GA4 / Clarity przez wspólny okres kontrolny. Dopiero po takim porównaniu legacy analytics można usunąć z repozytorium.
