@@ -6,6 +6,7 @@ import {
   trustedClientSignal,
   type AnalyticsIngestReason,
 } from '@/lib/analytics/ingestGuard';
+import { trustedSiteHostFromOrigin } from '@/lib/analytics/siteHost';
 
 const BOT_MARKERS = [
   'bot', 'crawler', 'spider', 'lighthouse', 'headless', 'phantom',
@@ -298,6 +299,7 @@ export async function POST(req: NextRequest) {
       browser: browserFromUserAgent(userAgent),
       language: req.headers.get('accept-language')?.split(',')[0] || null,
       received_at: new Date().toISOString(),
+      site_host: trustedSiteHostFromOrigin(origin),
     };
 
     const rows: any[] = [];

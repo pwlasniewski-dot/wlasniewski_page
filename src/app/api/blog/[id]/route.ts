@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
+import { preserveFirstPublication, publicationRegistryIdentity } from '@/lib/analytics/pagePublicationRegistry';
 import { withAuth } from '@/lib/auth/middleware';
 
 // GET single post
@@ -65,7 +66,8 @@ export async function PUT(
                 return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
             }
 
-            const post = await prisma.blogPost.update({
+            const post = await prisma.$transaction(async tx => {
+              const saved = await tx.blogPost.update({
                 where: { id: postId },
                 data: {
                     title: body.title,
@@ -81,6 +83,9 @@ export async function PUT(
                     tags: body.tags,
                     keywords: body.keywords,
                 },
+              });
+              if (saved.status === 'published') await preserveFirstPublication(tx, { ...publicationRegistryIdentity('blog', saved), publishedAt: saved.published_at || undefined });
+              return saved;
             });
 
             return NextResponse.json({ success: true, post });

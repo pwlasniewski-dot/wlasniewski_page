@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { withAuth, type AuthenticatedRequest } from '@/lib/auth/middleware';
+import { checkGscConnection } from '@/lib/analytics/gsc';
 
 export const dynamic = 'force-dynamic';
 
@@ -372,6 +373,7 @@ export async function GET(request: NextRequest) {
         const now = Date.now();
         const currentStart = new Date(now - 30 * 24 * 60 * 60 * 1000);
         const previousStart = new Date(now - 60 * 24 * 60 * 60 * 1000);
+        const gscStatus = await checkGscConnection();
         const currentEvents = events.filter(e => e.created_at >= currentStart);
         const previousEvents = events.filter(e => e.created_at >= previousStart && e.created_at < currentStart);
 
@@ -391,9 +393,7 @@ export async function GET(request: NextRequest) {
         const allTrafficDelta = percentDelta(currentSessions, previousSessions);
         const organicShare = currentSessions > 0 ? Math.round((currentOrganic / currentSessions) * 100) : 0;
         const analyticsConfigured = Boolean(gaId || gtmId || pixelId);
-        // A verification meta tag proves domain ownership only. It does not mean that
-        // Search Console query/ranking data is connected to this application.
-        const gscConfigured = false;
+        const gscConfigured = gscStatus.status === 'connected' || gscStatus.status === 'partial';
 
         const score = computeSeoScore({
             missingMetaTitle: missingMetaTitlePages + missingSessionMeta + missingBlogMeta,
@@ -445,7 +445,7 @@ export async function GET(request: NextRequest) {
 
         /* ─── Tool Connections ─── */
         const tools = [
-            { id: 'gsc', name: 'Google Search Console', connected: false, source: gscVerification ? 'domena zweryfikowana; brak importu danych GSC' : 'do skonfigurowania', setupUrl: 'https://search.google.com/search-console', free: true },
+            { id: 'gsc', name: 'Google Search Console', connected: gscConfigured, source: gscConfigured ? `API ${gscStatus.status}; domeny: ${gscStatus.sites.join(', ')}` : (gscVerification ? 'domena zweryfikowana; brak dostępu API GSC' : 'do skonfigurowania'), setupUrl: 'https://search.google.com/search-console', free: true },
             { id: 'ga4', name: 'Google Analytics 4', connected: Boolean(gaId), source: 'google_analytics_id', setupUrl: 'https://analytics.google.com', free: true },
             { id: 'gtm', name: 'Google Tag Manager', connected: Boolean(gtmId), source: 'google_tag_manager_id', setupUrl: 'https://tagmanager.google.com', free: true },
             { id: 'pixel', name: 'Facebook Pixel', connected: Boolean(pixelId), source: 'facebook_pixel_id', setupUrl: 'https://business.facebook.com/events_manager2', free: true },

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { requireAuth, withAuth } from '@/lib/auth/middleware';
 import { revalidatePath, revalidateTag } from 'next/cache';
+import { preserveFirstPublication, publicationRegistryIdentity } from '@/lib/analytics/pagePublicationRegistry';
 
 function revalidatePortfolio() {
     revalidateTag('portfolio');
@@ -92,7 +93,8 @@ export async function POST(request: NextRequest) {
                 ? body.media_ids
                 : JSON.stringify(body.media_ids || []);
 
-            const session = await prisma.portfolioSession.create({
+            const session = await prisma.$transaction(async tx => {
+              const saved = await tx.portfolioSession.create({
                 data: {
                     title: body.title,
                     slug: slugify(body.slug),
@@ -108,6 +110,9 @@ export async function POST(request: NextRequest) {
                     meta_description: body.meta_description || body.description || '',
                     is_category_hero: body.is_category_hero || false,
                 } as any,
+              });
+              if (saved.is_published) await preserveFirstPublication(tx, publicationRegistryIdentity('portfolio', saved));
+              return saved;
             });
 
             const serializedSession = {
@@ -157,7 +162,8 @@ export async function PUT(request: NextRequest) {
                 ? body.media_ids
                 : JSON.stringify(body.media_ids || []);
 
-            const session = await prisma.portfolioSession.update({
+            const session = await prisma.$transaction(async tx => {
+              const saved = await tx.portfolioSession.update({
                 where: { id: parseInt(id) },
                 data: {
                     title: body.title,
@@ -174,6 +180,9 @@ export async function PUT(request: NextRequest) {
                     meta_description: body.meta_description || body.description || '',
                     is_category_hero: body.is_category_hero || false,
                 } as any,
+              });
+              if (saved.is_published) await preserveFirstPublication(tx, publicationRegistryIdentity('portfolio', saved));
+              return saved;
             });
 
             const serializedSession = {

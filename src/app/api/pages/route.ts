@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
+import { preserveFirstPublication, publicationRegistryIdentity } from '@/lib/analytics/pagePublicationRegistry';
 import { requireAuth, withAuth } from '@/lib/auth/middleware';
 import { revalidatePath } from 'next/cache';
 
@@ -62,7 +63,8 @@ export async function POST(request: NextRequest) {
 
             if (id) {
                 // UPDATE existing page
-                page = await prisma.page.update({
+                page = await prisma.$transaction(async tx => {
+                  const saved = await tx.page.update({
                     where: { id: parseInt(id) },
                     data: {
                         title,
@@ -86,6 +88,9 @@ export async function POST(request: NextRequest) {
                         meta_description,
                         meta_keywords
                     }
+                  });
+                  if (saved.is_published) await preserveFirstPublication(tx, publicationRegistryIdentity('page', saved));
+                  return saved;
                 });
             } else {
                 // CREATE NEW page - check slug uniqueness first (case-insensitive)!
@@ -103,7 +108,8 @@ export async function POST(request: NextRequest) {
                 console.log('[API/Pages] Creating page with data:', { slug, title, page_type });
 
                 try {
-                    page = await prisma.page.create({
+                    page = await prisma.$transaction(async tx => {
+                      const saved = await tx.page.create({
                         data: {
                             slug,
                             title,
@@ -127,6 +133,9 @@ export async function POST(request: NextRequest) {
                             meta_description,
                             meta_keywords
                         },
+                      });
+                      if (saved.is_published) await preserveFirstPublication(tx, publicationRegistryIdentity('page', saved));
+                      return saved;
                     });
                 } catch (createError) {
                     console.error('[API/Pages] Create failed:', createError);

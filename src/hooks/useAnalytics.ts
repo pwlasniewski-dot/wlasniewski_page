@@ -184,6 +184,9 @@ export function useAnalytics() {
       session_started_at: new Date(session.started_at).toISOString(),
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       viewport: `${window.innerWidth}x${window.innerHeight}`,
+      // Informational only. The ingest endpoint overwrites this value from the
+      // validated Origin header and never trusts a client-provided domain.
+      site_host: window.location.hostname.replace(/^www\./, '').toLowerCase(),
     };
 
     try {
