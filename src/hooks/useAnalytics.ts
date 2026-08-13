@@ -184,6 +184,9 @@ export function useAnalytics() {
       session_started_at: new Date(session.started_at).toISOString(),
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       viewport: `${window.innerWidth}x${window.innerHeight}`,
+      // Informational only. The ingest endpoint overwrites this value from the
+      // validated Origin header and never trusts a client-provided domain.
+      site_host: window.location.hostname.replace(/^www\./, '').toLowerCase(),
     };
 
     try {
@@ -336,6 +339,34 @@ export function AnalyticsTracker() {
       window.removeEventListener('keydown', markInteraction);
       window.removeEventListener('scroll', markInteraction);
       window.removeEventListener('pagehide', onPageHide);
+    };
+  }, [pathname, trackEvent, consentVersion]);
+
+  useEffect(() => {
+    if (!hasAnalyticsConsent() || !isTrackablePath(pathname)) return;
+
+    const onError = () => void trackEvent('client_error', { status: 'error', area: 'javascript', reason_code: 'runtime_error' });
+    const onUnhandledRejection = () => void trackEvent('client_error', { status: 'error', area: 'javascript', reason_code: 'unhandled_promise' });
+    window.addEventListener('error', onError);
+    window.addEventListener('unhandledrejection', onUnhandledRejection);
+
+    let observer: PerformanceObserver | undefined;
+    if ('PerformanceObserver' in window) {
+      try {
+        observer = new PerformanceObserver(list => {
+          const entries = list.getEntries();
+          const last = entries.at(-1);
+          if (last) void trackEvent('performance', { metric: 'lcp', duration_ms: Math.round(last.startTime) });
+        });
+        observer.observe({ type: 'largest-contentful-paint', buffered: true });
+      } catch {
+        // Older browsers do not expose buffered LCP. Tracking remains optional.
+      }
+    }
+    return () => {
+      window.removeEventListener('error', onError);
+      window.removeEventListener('unhandledrejection', onUnhandledRejection);
+      observer?.disconnect();
     };
   }, [pathname, trackEvent, consentVersion]);
 

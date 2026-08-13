@@ -1,6 +1,7 @@
 import prisma from '../../src/lib/db/prisma';
-import { getAdminEmail, sendEmail } from '../../src/lib/email/sender';
+import { sendEmail } from '../../src/lib/email/sender';
 import { getAverageMonthlyBookingValue, getAverageMonthlyNetPayments, getFinanceSummary } from '../../src/lib/analytics/finance';
+import { diagnoseFunnel } from '../../src/lib/analytics/funnelDiagnostics';
 
 const DAY = 24 * 60 * 60 * 1000;
 const WARSAW = 'Europe/Warsaw';
@@ -219,8 +220,7 @@ export default async () => {
   const forced = process.env.ANALYTICS_REPORT_FORCE_SEND === 'true';
   if (currentWarsaw.hour !== 8 && !forced) return;
 
-  const recipient = process.env.ANALYTICS_REPORT_RECIPIENTS?.trim() || await getAdminEmail();
-  if (!recipient) throw new Error('Analytics report: admin email is not configured');
+  const recipient = process.env.ANALYTICS_REPORT_RECIPIENTS?.trim() || 'pwlasniewski@gmail.com';
   const reportPeriod = `${String(currentWarsaw.year)}-${String(currentWarsaw.month).padStart(2, '0')}-${String(currentWarsaw.day).padStart(2, '0')}`;
   const reportMarker = `DAILY_ANALYTICS_REPORT_SENT_${reportPeriod}`;
   const reportKey = forced ? `${reportMarker}_MANUAL` : reportMarker;
@@ -256,12 +256,23 @@ export default async () => {
   ]);
 
   const notes = insights(day, week, month);
+  const diagnostics = diagnoseFunnel(slice(dayStart, todayStart).map(row => ({
+    event_type: row.event_type,
+    session_id: row.session_id,
+    metadata: parseMetadata(row.metadata),
+    created_at: row.created_at,
+  })));
+  const actionRows = diagnostics.actions.map(action => `<div style="margin:10px 0;padding:12px;border:1px solid ${action.kind === 'error' ? '#fecaca' : '#fde68a'};border-radius:10px">
+    <strong>${esc(action.title)}</strong> <span style="font-size:11px;color:#6b7280">pewność: ${esc(action.confidence)}</span><br>
+    <span>${esc(action.evidence)}</span><br><span style="color:#374151">Działanie: ${esc(action.recommendation)}</span>
+  </div>`).join('');
   const topSessions = day.engaged.map((s: any) => `<li style="margin:7px 0"><strong>${esc(s.source)}</strong> · ${Math.round(s.activeMs / 600) / 100} min aktywnie · ${s.pages.length} stron<br><span style="color:#6b7280">${esc(s.pages.slice(0, 7).join(' → '))}</span></li>`).join('');
 
   const html = `<!doctype html><html><body style="font-family:Arial,sans-serif;background:#f5f5f5;margin:0;padding:24px;color:#111827"><div style="max-width:980px;margin:auto;background:white;padding:28px;border-radius:16px">
-  <div style="font-size:12px;color:#6b7280">FOTO-DRON · ANALYTICS 2.0</div>
+  <div style="font-size:12px;color:#6b7280">FOTO-DRON · ANALYTICS 2.1</div>
   <h1 style="font-size:28px;margin:6px 0">Codzienny raport biznesowy</h1>
   <p style="color:#6b7280;margin-top:0">Stan na ${now.toLocaleString('pl-PL', { timeZone: 'Europe/Warsaw' })}. Wyłącznie dane Analytics V2; legacy, boty, /admin i wykluczone urządzenia administratorów nie są raportowane.</p>
+  <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:16px"><strong>Co wymaga działania teraz</strong>${actionRows || '<p style="margin-bottom:0;color:#6b7280">Brak wystarczających dowodów na problem w ostatniej dobie.</p>'}</div>
   ${notes.length ? `<div style="background:#ecfdf5;border:1px solid #a7f3d0;border-radius:12px;padding:16px"><strong>Co dziś zwraca uwagę</strong><ul style="margin-bottom:0">${notes.map(n => `<li style="margin:6px 0">${esc(n)}</li>`).join('')}</ul></div>` : ''}
   ${section('Wczoraj — dzień kalendarzowy Europe/Warsaw', day, prevDay)}
   ${section('Ostatnie 7 dni', week, prevWeek)}

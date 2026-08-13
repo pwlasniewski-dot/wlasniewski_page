@@ -6,6 +6,7 @@ import {
   trustedClientSignal,
   type AnalyticsIngestReason,
 } from '@/lib/analytics/ingestGuard';
+import { trustedSiteHostFromOrigin } from '@/lib/analytics/siteHost';
 
 const BOT_MARKERS = [
   'bot', 'crawler', 'spider', 'lighthouse', 'headless', 'phantom',
@@ -23,6 +24,12 @@ const ALLOWED_EVENTS = new Set([
   'v2_visibility_visible', 'v2_page_exit', 'v2_booking_start',
   'v2_booking_created', 'v2_payment_started', 'v2_payment_success',
   'v2_payment_failed',
+  'v2_booking_view', 'v2_service_selected', 'v2_package_selected',
+  'v2_date_selected', 'v2_time_selected', 'v2_booking_added_to_cart',
+  'v2_booking_form_started', 'v2_booking_validation_failed',
+  'v2_checkout_view', 'v2_checkout_submit', 'v2_payu_redirect',
+  'v2_service_load_result', 'v2_availability_result', 'v2_checkout_result',
+  'v2_client_error', 'v2_performance',
 ]);
 const BLOCKED_PATHS = [
   '/admin', '/api', '/galeria', '/konto', '/strefa-klienta', '/logowanie',
@@ -140,11 +147,51 @@ function safeMetadata(raw: unknown, eventType: string) {
     const safe = safeText(value[key], key === 'source' ? 100 : 80);
     if (safe) result[key] = safe;
   }
+  const enumValues: Record<string, ReadonlySet<string>> = {
+    status: new Set(['ok', 'error', 'failed']),
+    area: new Set(['services', 'availability', 'checkout', 'payu', 'javascript', 'booking_form']),
+    endpoint: new Set(['basket_checkout']),
+    reason_code: new Set(['http_error', 'network_error', 'runtime_error', 'unhandled_promise', 'request_failed', 'required_missing', 'no_active_services']),
+    metric: new Set(['lcp']),
+    amount_bucket: new Set(['under_500', '500_999', '1000_plus']),
+    field_group: new Set(['service', 'package', 'date_time', 'contact', 'consent', 'venue']),
+  };
+  const eventMetadataKeys: Record<string, ReadonlySet<string>> = {
+    v2_booking_view: new Set(['package_count']),
+    v2_service_selected: new Set(),
+    v2_package_selected: new Set(['amount_bucket']),
+    v2_date_selected: new Set(),
+    v2_time_selected: new Set(),
+    v2_booking_form_started: new Set(['area']),
+    v2_booking_validation_failed: new Set(['status', 'area', 'reason_code', 'field_group']),
+    v2_booking_added_to_cart: new Set(['item_count', 'amount_bucket']),
+    v2_checkout_view: new Set(['item_count']),
+    v2_checkout_submit: new Set(['item_count', 'amount_bucket']),
+    v2_payu_redirect: new Set(['status', 'area']),
+    v2_service_load_result: new Set(['status', 'area', 'http_status', 'package_count', 'reason_code']),
+    v2_availability_result: new Set(['status', 'area', 'http_status', 'available_count', 'has_available_slots', 'reason_code']),
+    v2_checkout_result: new Set(['status', 'area', 'endpoint', 'http_status', 'has_payment_redirect', 'reason_code']),
+    v2_client_error: new Set(['status', 'area', 'reason_code']),
+    v2_performance: new Set(['metric', 'duration_ms']),
+  };
+  const allowedEventKeys = eventMetadataKeys[eventType] || new Set<string>();
+  for (const [key, allowed] of Object.entries(enumValues)) {
+    if (!allowedEventKeys.has(key)) continue;
+    const candidate = typeof value[key] === 'string' ? value[key] : '';
+    if (allowed.has(candidate)) result[key] = candidate;
+  }
   const landing = safePath(value.landing_page);
   const route = safePath(value.route);
   if (landing) result.landing_page = landing;
   if (route) result.route = route;
   if (typeof value.active === 'boolean') result.active = value.active;
+  for (const key of ['has_payment_redirect', 'has_available_slots']) {
+    if (allowedEventKeys.has(key) && typeof value[key] === 'boolean') result[key] = value[key];
+  }
+  for (const key of ['duration_ms', 'http_status', 'available_count', 'package_count', 'item_count']) {
+    const number = Number(value[key]);
+    if (allowedEventKeys.has(key) && Number.isFinite(number) && number >= 0 && number <= 600_000) result[key] = Math.round(number);
+  }
   if (eventType === 'v2_engagement') {
     const activeMs = Number(value.active_ms);
     if (!Number.isFinite(activeMs) || activeMs < 1 || activeMs > 30_000) return null;
@@ -252,6 +299,7 @@ export async function POST(req: NextRequest) {
       browser: browserFromUserAgent(userAgent),
       language: req.headers.get('accept-language')?.split(',')[0] || null,
       received_at: new Date().toISOString(),
+      site_host: trustedSiteHostFromOrigin(origin),
     };
 
     const rows: any[] = [];

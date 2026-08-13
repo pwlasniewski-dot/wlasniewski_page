@@ -332,6 +332,21 @@ model AnalyticsIngestMetric {
   @@map("analytics_ingest_metrics")
 }
 
+model PageAnalyticsRegistry {
+  id                      Int       @id @default(autoincrement())
+  site_host               String    @db.VarChar(100)
+  path                    String    @db.VarChar(500)
+  first_published_at      DateTime?
+  first_seen_analytics_at DateTime?
+  first_seen_gsc_at       DateTime?
+  created_at              DateTime  @default(now())
+  updated_at              DateTime  @updatedAt
+
+  @@unique([site_host, path])
+  @@index([first_published_at])
+  @@map("page_analytics_registry")
+}
+
 model HeroSlide {
   id              Int           @id @default(autoincrement())
   title           String?

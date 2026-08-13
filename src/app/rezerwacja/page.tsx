@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { Toaster, toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { ShoppingBag } from 'lucide-react';
@@ -63,6 +63,8 @@ const FALLBACK_RETURNING_PROMO: DiscountCode = {
 
 export default function RezerwacjaPage() {
     const { trackEvent } = useAnalytics();
+    const bookingFormStarted = useRef(false);
+    const submissionLock = useRef(false);
     // Data from API
     const [serviceTypes, setServiceTypes] = useState<ServiceType[]>([]);
     const [servicesLoading, setServicesLoading] = useState(true);
@@ -144,10 +146,20 @@ export default function RezerwacjaPage() {
                         const selected = active.find((item: ServiceType) => item.name.toLowerCase() === requested?.toLowerCase()) || active[0];
                         setService(selected);
                         trackBookingEvent('booking_view', { service: selected.name, source: new URLSearchParams(window.location.search).get('source') || 'direct' });
+                        await trackEvent('booking_view', { package_count: active.reduce((sum: number, item: ServiceType) => sum + item.packages.filter(pkg => pkg.is_active).length, 0) });
+                        await trackEvent('service_selected');
                     }
+                    if (active.length === 0) {
+                        void trackEvent('service_load_result', { status: 'error', area: 'services', http_status: res.status, package_count: 0, reason_code: 'no_active_services' });
+                    } else {
+                        void trackEvent('service_load_result', { status: 'ok', area: 'services', http_status: res.status, package_count: active.reduce((sum: number, item: ServiceType) => sum + item.packages.filter(pkg => pkg.is_active).length, 0) });
+                    }
+                } else {
+                    void trackEvent('service_load_result', { status: 'error', area: 'services', http_status: res.status, reason_code: 'http_error' });
                 }
             } catch (error) {
                 console.error('Failed to load services:', error);
+                void trackEvent('service_load_result', { status: 'error', area: 'services', reason_code: 'network_error' });
             } finally {
                 setServicesLoading(false);
             }
@@ -216,6 +228,8 @@ export default function RezerwacjaPage() {
                 setAvailableHours([]);
                 setSelectedHour(null);
                 setSlot(prev => prev ? { ...prev, start: '08:00', end: '22:00' } : null);
+                await trackEvent('availability_result', { status: 'ok', area: 'availability', available_count: 1, has_available_slots: true });
+                await trackEvent('time_selected');
                 setLoadingAvailability(false);
                 return;
             }
@@ -229,13 +243,17 @@ export default function RezerwacjaPage() {
                     const data = await res.json();
                     setAvailableHours(data.slots || []);
                     setSelectedHour(null); // Reset selection when date changes
+                    const availableCount = (data.slots || []).filter((item: { available: boolean }) => item.available).length;
+                    void trackEvent('availability_result', { status: 'ok', area: 'availability', http_status: res.status, available_count: availableCount, has_available_slots: availableCount > 0 });
                 } else {
                     console.error('Failed to load availability:', res.status);
                     setAvailableHours([]);
+                    void trackEvent('availability_result', { status: 'error', area: 'availability', http_status: res.status, reason_code: 'http_error' });
                 }
             } catch (error) {
                 console.error('Failed to load availability:', error);
                 setAvailableHours([]);
+                void trackEvent('availability_result', { status: 'error', area: 'availability', reason_code: 'network_error' });
             } finally {
                 setLoadingAvailability(false);
             }
@@ -279,6 +297,7 @@ export default function RezerwacjaPage() {
             slot &&
             chosenPackage &&
             rodo &&
+            (chosenPackage?.blocks_entire_day || Boolean(slot?.start)) &&
             (!needsVenue || (venueCity && venuePlace)),
         [name, email, slot, chosenPackage, rodo, needsVenue, venueCity, venuePlace]
     );
@@ -392,64 +411,81 @@ export default function RezerwacjaPage() {
     const { addItem } = useCart();
 
     // Create booking and redirect to payment
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
-        if (!isReadyToSubmit || !slot || !chosenPackage) {
-            alert("Uzupełnij wszystkie wymagane pola i wybierz termin!");
+        if (!e.currentTarget.checkValidity() || !isReadyToSubmit || !slot || !chosenPackage) {
+            const fieldGroup = !service ? 'service'
+                : !chosenPackage ? 'package'
+                    : !slot || (!chosenPackage.blocks_entire_day && !slot.start) ? 'date_time'
+                        : !name || !email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? 'contact'
+                            : !rodo ? 'consent'
+                                : 'venue';
+            void trackEvent('booking_validation_failed', { status: 'failed', area: 'booking_form', reason_code: 'required_missing', field_group: fieldGroup });
+            e.currentTarget.reportValidity();
+            alert("Uzupełnij poprawnie wszystkie wymagane pola i wybierz termin!");
             return;
         }
 
-        const title = `${service?.name} — ${chosenPackage.name}`;
-        const bookingData = {
-            service: service?.name,
-            package: chosenPackage.name,
-            hours: chosenPackage.hours,
-            price: finalPrice,
-            originalPrice: chosenPackage.price,
-            date: slot.date,
-            start_time: slot.start ?? null,
-            end_time: slot.end ?? null,
-            name,
-            email,
-            phone: phone || null,
-            venue_city: needsVenue ? venueCity : null,
-            venue_place: needsVenue ? venuePlace : null,
-            notes: notes || null,
-            promo_code: discount ? discount.code : null,
-            gift_card_code: giftCard ? giftCard.code : null,
-            photographer_id: preselectedPhotographer?.id ?? null,
-            photographer_name: preselectedPhotographer?.name ?? null,
-        };
+        if (submissionLock.current) return;
+        submissionLock.current = true;
+        setSubmitting(true);
 
-        // Event snippet for Prośba o wycenę conversion page
-        if (typeof window !== 'undefined' && (window as any).gtag) {
-            (window as any).gtag('event', 'conversion', { 'send_to': 'AW-17548893646/-bm8CJ-3h-YbEM67-69B' });
+        try {
+            const title = `${service?.name} — ${chosenPackage.name}`;
+            const bookingData = {
+                service: service?.name,
+                package: chosenPackage.name,
+                hours: chosenPackage.hours,
+                price: finalPrice,
+                originalPrice: chosenPackage.price,
+                date: slot.date,
+                start_time: slot.start ?? null,
+                end_time: slot.end ?? null,
+                name,
+                email,
+                phone: phone || null,
+                venue_city: needsVenue ? venueCity : null,
+                venue_place: needsVenue ? venuePlace : null,
+                notes: notes || null,
+                promo_code: discount ? discount.code : null,
+                gift_card_code: giftCard ? giftCard.code : null,
+                photographer_id: preselectedPhotographer?.id ?? null,
+                photographer_name: preselectedPhotographer?.name ?? null,
+            };
+
+            if (typeof window !== 'undefined' && (window as any).gtag) {
+                (window as any).gtag('event', 'conversion', { 'send_to': 'AW-17548893646/-bm8CJ-3h-YbEM67-69B' });
+            }
+
+            trackBookingEvent('add_to_cart', {
+                currency: 'PLN',
+                value: finalPrice / 100,
+                service: service?.name,
+                package: chosenPackage.name,
+            });
+            void trackEvent('booking_start', {
+                service_id: service?.id,
+                package_id: chosenPackage.id,
+                amount_grosze: finalPrice,
+            });
+            void trackEvent('booking_added_to_cart', { item_count: 1, amount_bucket: finalPrice < 50000 ? 'under_500' : finalPrice < 100000 ? '500_999' : '1000_plus' });
+
+            addItem({
+                type: 'booking',
+                productId: chosenPackage.id.toString(),
+                title,
+                subtitle: `${slot.date}${slot.start ? ` o ${slot.start}` : ''}`,
+                price: finalPrice,
+                quantity: 1,
+                metadata: bookingData
+            });
+        } finally {
+            window.setTimeout(() => {
+                submissionLock.current = false;
+                setSubmitting(false);
+            }, 750);
         }
-
-        trackBookingEvent('add_to_cart', {
-            currency: 'PLN',
-            value: finalPrice / 100,
-            service: service?.name,
-            package: chosenPackage.name,
-        });
-        void trackEvent('booking_start', {
-            service_id: service?.id,
-            package_id: chosenPackage.id,
-            amount_grosze: finalPrice,
-        });
-
-        addItem({
-            type: 'booking',
-            productId: chosenPackage.id.toString(),
-            title,
-            subtitle: `${slot.date}${slot.start ? ` o ${slot.start}` : ''}`,
-            price: finalPrice,
-            quantity: 1,
-            metadata: bookingData
-        });
-
-        // Scroll to top or show toast is handled by addItem
     };
 
     if (servicesLoading) {
@@ -557,7 +593,18 @@ export default function RezerwacjaPage() {
                         )}
                     </motion.section>
 
-                    <form id="booking-flow" onSubmit={handleSubmit} className="space-y-8 scroll-mt-24">
+                    <form
+                        id="booking-flow"
+                        onSubmit={handleSubmit}
+                        noValidate
+                        onFocusCapture={() => {
+                            if (!chosenPackage || !slot || (!chosenPackage.blocks_entire_day && !slot.start)) return;
+                            if (bookingFormStarted.current) return;
+                            bookingFormStarted.current = true;
+                            void trackEvent('booking_form_started', { area: 'booking_form' });
+                        }}
+                        className="space-y-8 scroll-mt-24"
+                    >
                         {preselectedPhotographer && (
                             <motion.div
                                 initial={{ opacity: 0, y: -10 }}
@@ -602,6 +649,7 @@ export default function RezerwacjaPage() {
                                             url.searchParams.set('service', svc.name);
                                             window.history.replaceState({}, '', url);
                                             trackBookingEvent('booking_service_select', { service: svc.name });
+                                            void trackEvent('service_selected');
                                         }}
                                         className={`p-4 rounded-xl border transition-all text-left ${service?.id === svc.id
                                             ? "border-[#8d7f6d] bg-[#8d7f6d]/10"
@@ -636,6 +684,7 @@ export default function RezerwacjaPage() {
                                             onClick={() => {
                                                 setChosenPackage(pkg);
                                                 trackBookingEvent('booking_package_select', { service: service.name, package: pkg.name, value: pkg.price / 100, currency: 'PLN' });
+                                                void trackEvent('package_selected', { amount_bucket: pkg.price < 50000 ? 'under_500' : pkg.price < 100000 ? '500_999' : '1000_plus' });
                                             }}
                                             className={`p-5 rounded-2xl border transition-all text-left flex flex-col h-full ${chosenPackage?.id === pkg.id
                                                 ? "border-[#8d7f6d] bg-[#8d7f6d]/10 shadow-[0_0_20px_rgba(245,158,11,0.15)]"
@@ -687,6 +736,7 @@ export default function RezerwacjaPage() {
                                         onSlotSelect={(selected) => {
                                             setSlot(selected);
                                             if (selected?.date) trackBookingEvent('booking_date_select', { service: service?.name, package: chosenPackage?.name, date: selected.date });
+                                            if (selected?.date) void trackEvent('date_selected');
                                         }}
                                         selectedSlot={slot}
                                         service={(service?.name as "Sesja" | "Ślub" | "Przyjęcie" | "Urodziny") || 'Sesja'}
@@ -734,6 +784,7 @@ export default function RezerwacjaPage() {
                                                             const end = `${(hSlot.hour + (chosenPackage?.hours || 1)).toString().padStart(2, '0')}:00`;
                                                             setSelectedHour(hSlot.hour);
                                                             setSlot(prev => prev ? { ...prev, start, end } : null);
+                                                            void trackEvent('time_selected');
                                                         }}
                                                         className={`py-2 rounded-lg transition-all text-sm font-medium ${hSlot.available
                                                             ? selectedHour === hSlot.hour
@@ -944,14 +995,14 @@ export default function RezerwacjaPage() {
                                 {/* Submit Button */}
                                 <button
                                     type="submit"
-                                    disabled={!isReadyToSubmit || submitting}
+                                    disabled={submitting}
                                     className={`w-full mt-6 py-4 rounded-full font-semibold text-lg transition-all shadow-lg ${isReadyToSubmit
                                         ? "bg-[#5b554e] text-white hover:bg-[#403b36] shadow-black/10"
-                                        : "bg-[#ece7e0] text-[#7c746b] cursor-not-allowed"
+                                        : "bg-[#ece7e0] text-[#5f5851] hover:bg-[#e2dcd3]"
                                         } group flex items-center justify-center gap-2`}
                                 >
                                     <ShoppingBag className="w-6 h-6 group-hover:scale-110 transition-transform" />
-                                    <span>Przejdź do podsumowania</span>
+                                    <span>{isReadyToSubmit ? 'Przejdź do podsumowania' : 'Sprawdź dane i przejdź dalej'}</span>
                                 </button>
                             </motion.section>
                         )}

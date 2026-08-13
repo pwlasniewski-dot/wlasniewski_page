@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
+import { preserveFirstPublication, publicationRegistryIdentity } from '@/lib/analytics/pagePublicationRegistry';
 import { withAuth } from '@/lib/auth/middleware';
 
 // GET all posts or single post by slug/id
@@ -101,7 +102,8 @@ export async function POST(request: NextRequest) {
                 return NextResponse.json({ error: 'Title and slug are required' }, { status: 400 });
             }
 
-            const post = await prisma.blogPost.create({
+            const post = await prisma.$transaction(async tx => {
+              const saved = await tx.blogPost.create({
                 data: {
                     title: body.title,
                     slug: body.slug,
@@ -114,6 +116,9 @@ export async function POST(request: NextRequest) {
                     meta_description: body.meta_description || body.excerpt || '',
                     author_id: req.user?.id,
                 },
+              });
+              if (saved.status === 'published') await preserveFirstPublication(tx, { ...publicationRegistryIdentity('blog', saved), publishedAt: saved.published_at || undefined });
+              return saved;
             });
 
             // Serialize response
@@ -154,7 +159,8 @@ export async function PUT(request: NextRequest) {
                 return NextResponse.json({ error: 'Post ID is required' }, { status: 400 });
             }
 
-            const post = await prisma.blogPost.update({
+            const post = await prisma.$transaction(async tx => {
+              const saved = await tx.blogPost.update({
                 where: { id: parseInt(body.id) },
                 data: {
                     title: body.title,
@@ -168,6 +174,9 @@ export async function PUT(request: NextRequest) {
                     meta_title: body.meta_title || body.title,
                     meta_description: body.meta_description || body.excerpt || '',
                 },
+              });
+              if (saved.status === 'published') await preserveFirstPublication(tx, { ...publicationRegistryIdentity('blog', saved), publishedAt: saved.published_at || undefined });
+              return saved;
             });
 
             return NextResponse.json({ success: true, post });
