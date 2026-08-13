@@ -24,6 +24,21 @@ type FirstPageRow = { page_url: string | null; created_at: Date; site_host: stri
 type IngestRow = { reason_code: string; outcome: string; batch_count: bigint; event_count: bigint };
 type RegistryRow = { site_host: string; path: string; first_published_at: Date | null; first_seen_analytics_at: Date | null; first_seen_gsc_at: Date | null };
 
+async function fetchDashboardSource<T>(
+  source: string,
+  query: () => Promise<T>,
+  fallback: T,
+  unavailableSources: string[],
+) {
+  try {
+    return await query();
+  } catch (error) {
+    unavailableSources.push(source);
+    console.warn(`[Analytics V3 source unavailable: ${source}]`, error instanceof Error ? error.message : 'unknown');
+    return fallback;
+  }
+}
+
 function parseMetadata(raw: string | null): Record<string, unknown> {
   try { return raw ? JSON.parse(raw) : {}; } catch { return {}; }
 }
@@ -111,21 +126,22 @@ export async function GET(request: NextRequest) {
     const baselineNow = now;
     const baselineCurrentStart = new Date(baselineNow.getTime() - 28 * 86_400_000);
     const baselinePreviousStart = new Date(baselineNow.getTime() - 56 * 86_400_000);
+    const unavailableSources: string[] = [];
     const [currentRaw, previousRaw, firstRaw, baselineRaw, cmsPages, blogPosts, portfolios, canonicalBookings, ingestRaw, gsc] = await Promise.all([
-      prisma.analyticsEvent.findMany({ where: { event_type: { startsWith: 'v2_' }, created_at: { gte: start, lt: end } }, orderBy: { created_at: 'asc' } }),
-      prisma.analyticsEvent.findMany({ where: { event_type: { startsWith: 'v2_' }, created_at: { gte: previousStart, lt: previousEnd } }, orderBy: { created_at: 'asc' } }),
-      prisma.$queryRaw<FirstPageRow[]>(Prisma.sql`
+      fetchDashboardSource('analytics-current', () => prisma.analyticsEvent.findMany({ where: { event_type: { startsWith: 'v2_' }, created_at: { gte: start, lt: end } }, orderBy: { created_at: 'asc' } }), [], unavailableSources),
+      fetchDashboardSource('analytics-previous', () => prisma.analyticsEvent.findMany({ where: { event_type: { startsWith: 'v2_' }, created_at: { gte: previousStart, lt: previousEnd } }, orderBy: { created_at: 'asc' } }), [], unavailableSources),
+      fetchDashboardSource('analytics-first-seen', () => prisma.$queryRaw<FirstPageRow[]>(Prisma.sql`
         SELECT "page_url", MIN("created_at") AS "created_at",
                COALESCE(NULLIF((regexp_match(COALESCE("metadata", ''), '"site_host"\s*:\s*"([^"\\]+)"'))[1], ''), 'unknown') AS "site_host"
         FROM "analytics_events"
         WHERE "event_type" = 'v2_page_view'
         GROUP BY "page_url", COALESCE(NULLIF((regexp_match(COALESCE("metadata", ''), '"site_host"\s*:\s*"([^"\\]+)"'))[1], ''), 'unknown')
-      `),
-      prisma.analyticsEvent.findMany({ where: { event_type: 'v2_page_view', created_at: { gte: baselinePreviousStart, lt: baselineNow } }, select: { event_type: true, page_url: true, session_id: true, created_at: true, metadata: true } }),
-      prisma.page.findMany({ select: { slug: true, title: true, content: true, meta_title: true, meta_description: true, is_published: true, hero_image: true, content_images: true, sections: true, updated_at: true } }),
-      prisma.blogPost.findMany({ select: { slug: true, title: true, content: true, meta_title: true, meta_description: true, status: true, published_at: true, featured_image_id: true, updated_at: true } }),
-      prisma.portfolioSession.findMany({ select: { slug: true, category: true, title: true, description: true, meta_title: true, meta_description: true, is_published: true, cover_image_id: true, media_ids: true, updated_at: true } }),
-      prisma.booking.findMany({ where: { created_at: { gte: start, lt: end } }, select: { id: true, created_at: true, price: true, status: true } }),
+      `), [] as FirstPageRow[], unavailableSources),
+      fetchDashboardSource('analytics-baseline', () => prisma.analyticsEvent.findMany({ where: { event_type: 'v2_page_view', created_at: { gte: baselinePreviousStart, lt: baselineNow } }, select: { event_type: true, page_url: true, session_id: true, created_at: true, metadata: true } }), [], unavailableSources),
+      fetchDashboardSource('cms-pages', () => prisma.page.findMany({ select: { slug: true, title: true, content: true, meta_title: true, meta_description: true, is_published: true, hero_image: true, content_images: true, sections: true, updated_at: true } }), [], unavailableSources),
+      fetchDashboardSource('blog-posts', () => prisma.blogPost.findMany({ select: { slug: true, title: true, content: true, meta_title: true, meta_description: true, status: true, published_at: true, featured_image_id: true, updated_at: true } }), [], unavailableSources),
+      fetchDashboardSource('portfolio', () => prisma.portfolioSession.findMany({ select: { slug: true, category: true, title: true, description: true, meta_title: true, meta_description: true, is_published: true, cover_image_id: true, media_ids: true, updated_at: true } }), [], unavailableSources),
+      fetchDashboardSource('bookings', () => prisma.booking.findMany({ where: { created_at: { gte: start, lt: end } }, select: { id: true, created_at: true, price: true, status: true } }), [], unavailableSources),
       fetchIngestMetrics(start, end),
       fetchGscComparison({ start, end, previousStart, previousEnd, now, calendarRanges: startDateParam && endDateParam && previousCalendar ? { current: { startDate: startDateParam, endDate: endDateParam }, previous: previousCalendar } : undefined }),
     ]);
@@ -392,7 +408,7 @@ export async function GET(request: NextRequest) {
         bookingStarted: items.some(isBookingStart), clientConversion: items.some(isClientConversion),
         path: items.filter(event => ['v2_page_view', 'v2_click', 'v2_booking_start', 'v2_booking_form_started', 'v2_booking_created', 'v2_payment_success'].includes(event.event_type)).map(event => ({ at: event.created_at, event: event.event_type.replace(/^v2_/, ''), page: normalizePath(event.page_url) })).slice(0, 80),
       })),
-      dataQuality: { syntheticValues: false, privacy: 'Brak danych osobowych i treści zapytań GSC w odpowiedzi.', gscFreshness: gsc.message },
+      dataQuality: { syntheticValues: false, unavailableSources: Array.from(new Set(unavailableSources)), privacy: 'Brak danych osobowych i treści zapytań GSC w odpowiedzi.', gscFreshness: gsc.message },
     });
   } catch (error) {
     console.error('[Analytics V3 dashboard]', error instanceof Error ? error.message : 'unknown');
