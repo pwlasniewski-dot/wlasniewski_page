@@ -58,6 +58,20 @@ function pct(current: number, previous: number) {
   return previous === 0 ? (current === 0 ? 0 : null) : Math.round(((current - previous) / previous) * 1000) / 10;
 }
 
+async function fetchIngestMetrics(start: Date, end: Date) {
+  try {
+    return await prisma.$queryRaw<IngestRow[]>(Prisma.sql`
+      SELECT "reason_code", "outcome", SUM("batch_count")::bigint AS "batch_count", SUM("event_count")::bigint AS "event_count"
+      FROM "analytics_ingest_metrics"
+      WHERE "bucket_start" >= ${start} AND "bucket_start" < ${end}
+      GROUP BY "reason_code", "outcome"
+    `);
+  } catch (error) {
+    console.warn('[Analytics V3 ingest metrics unavailable]', error instanceof Error ? error.message : 'unknown');
+    return [];
+  }
+}
+
 function aggregateGsc(rows: GscMetric[]) {
   const map = new Map<string, { clicks: number; impressions: number; positionTotal: number; firstDate: string | null }>();
   for (const row of rows) {
@@ -112,7 +126,7 @@ export async function GET(request: NextRequest) {
       prisma.blogPost.findMany({ select: { slug: true, title: true, content: true, meta_title: true, meta_description: true, status: true, published_at: true, featured_image_id: true, updated_at: true } }),
       prisma.portfolioSession.findMany({ select: { slug: true, category: true, title: true, description: true, meta_title: true, meta_description: true, is_published: true, cover_image_id: true, media_ids: true, updated_at: true } }),
       prisma.booking.findMany({ where: { created_at: { gte: start, lt: end } }, select: { id: true, created_at: true, price: true, status: true } }),
-      prisma.$queryRaw<IngestRow[]>(Prisma.sql`SELECT "reason_code", "outcome", SUM("batch_count")::bigint AS "batch_count", SUM("event_count")::bigint AS "event_count" FROM "analytics_ingest_metrics" WHERE "bucket_start" >= ${start} AND "bucket_start" < ${end} GROUP BY "reason_code", "outcome"`),
+      fetchIngestMetrics(start, end),
       fetchGscComparison({ start, end, previousStart, previousEnd, now, calendarRanges: startDateParam && endDateParam && previousCalendar ? { current: { startDate: startDateParam, endDate: endDateParam }, previous: previousCalendar } : undefined }),
     ]);
 
