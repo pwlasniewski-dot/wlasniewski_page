@@ -21,6 +21,24 @@ export type GscResult = {
 
 const historyCache = new Map<string, { expiresAt: number; rows: GscMetric[]; truncated: boolean }>();
 
+// Keep production diagnostics useful without ever serializing request config, JWTs or keys.
+// Google API errors carry the actionable HTTP status and a short reason in these fields.
+function gscErrorDiagnostic(error: unknown) {
+  const candidate = error as {
+    code?: unknown;
+    message?: unknown;
+    response?: { status?: unknown; data?: { error?: { code?: unknown; message?: unknown; status?: unknown; errors?: Array<{ reason?: unknown }> } } };
+  };
+  const apiError = candidate.response?.data?.error;
+  const message = apiError?.message ?? candidate.message;
+  const reason = apiError?.errors?.[0]?.reason ?? apiError?.status;
+  return {
+    status: Number(apiError?.code ?? candidate.response?.status ?? candidate.code ?? 0) || null,
+    reason: typeof reason === 'string' ? reason.slice(0, 160) : null,
+    message: typeof message === 'string' ? message.slice(0, 500) : 'unknown Google Search Console error',
+  };
+}
+
 export async function checkGscConnection(env: NodeJS.ProcessEnv = process.env) {
   const email = env.GSC_SERVICE_ACCOUNT_EMAIL;
   const key = env.GSC_SERVICE_ACCOUNT_PRIVATE_KEY?.replace(/\\n/g, '\n');
@@ -31,7 +49,10 @@ export async function checkGscConnection(env: NodeJS.ProcessEnv = process.env) {
     const configured = new Set(configuredGscSites(env));
     const sites = (response.data.siteEntry || []).map(entry => entry.siteUrl || '').filter(site => configured.has(site));
     return { status: sites.length === configured.size ? 'connected' as const : sites.length ? 'partial' as const : 'error' as const, sites };
-  } catch { return { status: 'error' as const, sites: [] as string[] }; }
+  } catch (error) {
+    console.warn('[Analytics GSC] connection check failed', gscErrorDiagnostic(error));
+    return { status: 'error' as const, sites: [] as string[] };
+  }
 }
 
 function publicError(error: unknown) {
@@ -112,6 +133,7 @@ export async function fetchGscComparison(input: {
       current.push(...currentResult.rows); previous.push(...previousResult.rows); history.push(...historyResult.rows);
       statuses.push({ siteUrl, status: 'connected', truncated: currentResult.truncated || previousResult.truncated || historyResult.truncated });
     } catch (error) {
+      console.warn('[Analytics GSC] query failed', { siteUrl, ...gscErrorDiagnostic(error) });
       statuses.push({ siteUrl, status: 'error', error: publicError(error) });
     }
   }));
