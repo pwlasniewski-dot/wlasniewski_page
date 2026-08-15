@@ -1,6 +1,7 @@
 import { MetadataRoute } from 'next';
 import { headers } from 'next/headers';
 import prisma from '@/lib/db/prisma';
+import { b2bPublicPath, isB2bCmsPage } from '@/lib/sites/b2b-routing';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const headersList = await headers();
@@ -12,17 +13,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         const b2bBase = 'https://aeroanaliza.pl';
         const b2bStaticPages = ['', '/dron', '/termowizja', '/monitoring'];
 
-        let dbPages: Array<{ slug: string; updated_at: Date }> = [];
+        let dbPages: Array<{ slug: string; page_type: string; updated_at: Date }> = [];
         try {
-            dbPages = await prisma.page.findMany({
-                where: { is_published: true, slug: { startsWith: 'b2b' } },
-                select: { slug: true, updated_at: true }
+            const publishedPages = await prisma.page.findMany({
+                where: { is_published: true },
+                select: { slug: true, page_type: true, updated_at: true }
             });
+            dbPages = publishedPages.filter(isB2bCmsPage);
         } catch (error) {
             console.error('[sitemap-b2b] Failed to load dynamic entries:', error);
         }
 
-        return [
+        const sitemap: MetadataRoute.Sitemap = [
             ...b2bStaticPages.map(route => ({
                 url: `${b2bBase}${route}`,
                 lastModified: new Date(),
@@ -30,12 +32,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
                 priority: route === '' ? 1.0 : 0.8,
             })),
             ...dbPages.map(page => ({
-                url: `${b2bBase}/${page.slug.replace(/^b2b\/?/, '')}`,
+                url: `${b2bBase}${b2bPublicPath(page.slug)}`,
                 lastModified: page.updated_at,
                 changeFrequency: 'monthly' as const,
                 priority: 0.7,
             })),
         ];
+        return Array.from(new Map(sitemap.map(entry => [entry.url, entry] as const)).values());
     }
 
     // ─── B2C Sitemap ───
@@ -143,7 +146,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
                 'reklamacje',
                 'jak-sie-ubrac',
             ]);
-            return !page.slug.startsWith('fotograf-') && !excludedSlugs.has(page.slug);
+            return !isB2bCmsPage(page) && !page.slug.startsWith('fotograf-') && !excludedSlugs.has(page.slug);
         }).map(page => ({
             url: `${b2cBase}/${page.slug}`,
             lastModified: page.updated_at,

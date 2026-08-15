@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { withAuth } from '@/lib/auth/middleware';
+import { isB2bCmsPage } from '@/lib/sites/b2b-routing';
 
 export const dynamic = 'force-dynamic';
 
@@ -191,13 +192,13 @@ export async function GET(request: NextRequest) {
         try {
             const [pages, seoStateRow] = await Promise.all([
                 prisma.page.findMany({
-                    select: { id: true, slug: true, title: true, meta_title: true, meta_description: true, is_published: true },
+                    select: { id: true, slug: true, page_type: true, title: true, meta_title: true, meta_description: true, is_published: true },
                 }),
                 prisma.setting.findUnique({ where: { setting_key: 'seo_autopilot_log' } }),
             ]);
 
-            const b2cPages = pages.filter(p => !p.slug.startsWith('b2b'));
-            const b2bPages = pages.filter(p => p.slug.startsWith('b2b'));
+            const b2cPages = pages.filter(p => !isB2bCmsPage(p));
+            const b2bPages = pages.filter(isB2bCmsPage);
 
             const missingMetaB2C = b2cPages.filter(p => !p.meta_title || p.meta_title.length < 20 || !p.meta_description || p.meta_description.length < 50);
             const missingMetaB2B = b2bPages.filter(p => !p.meta_title || p.meta_title.length < 20 || !p.meta_description || p.meta_description.length < 50);
@@ -268,17 +269,17 @@ export async function POST(request: NextRequest) {
 
                 if (previewAction === 'auto-fix-meta') {
                     const pages = await prisma.page.findMany({
-                        select: { id: true, slug: true, title: true, content: true, meta_title: true, meta_description: true },
+                        select: { id: true, slug: true, page_type: true, title: true, content: true, meta_title: true, meta_description: true },
                     });
                     const toFix = pages.filter(p => {
-                        const isB2B = p.slug.startsWith('b2b');
+                        const isB2B = isB2bCmsPage(p);
                         if (domain === 'b2c' && isB2B) return false;
                         if (domain === 'b2b' && !isB2B) return false;
                         return !p.meta_title || p.meta_title.length < 20 || !p.meta_description || p.meta_description.length < 50;
                     });
 
                     const previews = toFix.map(page => {
-                        const isB2B = page.slug.startsWith('b2b');
+                        const isB2B = isB2bCmsPage(page);
                         const domType: 'b2c' | 'b2b' = isB2B ? 'b2b' : 'b2c';
                         return {
                             slug: page.slug,
@@ -297,10 +298,10 @@ export async function POST(request: NextRequest) {
                     const faqs = getFaqData(domain as 'b2c' | 'b2b', tone);
                     const targetSlugs = domain === 'b2b' ? ['b2b'] : ['', 'strona-glowna', 'o-mnie', 'rezerwacja'];
                     const pages = await prisma.page.findMany({
-                        select: { slug: true, title: true, content: true },
-                        where: domain === 'b2b' ? { slug: { startsWith: 'b2b' } } : { NOT: { slug: { startsWith: 'b2b' } } },
+                        select: { slug: true, page_type: true, title: true, content: true },
                     });
-                    const target = pages.find(p => targetSlugs.includes(p.slug)) || pages[0];
+                    const domainPages = pages.filter(p => domain === 'b2b' ? isB2bCmsPage(p) : !isB2bCmsPage(p));
+                    const target = domainPages.find(p => targetSlugs.includes(p.slug)) || domainPages[0];
                     const alreadyInjected = target?.content?.includes('SEO_FAQ_SCHEMA') || false;
 
                     return NextResponse.json({
@@ -358,17 +359,17 @@ export async function POST(request: NextRequest) {
 
                 // Generate for all pages with missing meta
                 const pages = await prisma.page.findMany({
-                    select: { slug: true, title: true, content: true, meta_title: true, meta_description: true },
+                    select: { slug: true, page_type: true, title: true, content: true, meta_title: true, meta_description: true },
                 });
                 const toFix = pages.filter(p => {
-                    const isB2B = p.slug.startsWith('b2b');
+                    const isB2B = isB2bCmsPage(p);
                     if (domain === 'b2c' && isB2B) return false;
                     if (domain === 'b2b' && !isB2B) return false;
                     return !p.meta_title || p.meta_title.length < 20 || !p.meta_description || p.meta_description.length < 50;
                 });
 
                 const results = toFix.map(page => {
-                    const domType: 'b2c' | 'b2b' = page.slug.startsWith('b2b') ? 'b2b' : 'b2c';
+                    const domType: 'b2c' | 'b2b' = isB2bCmsPage(page) ? 'b2b' : 'b2c';
                     const titleVariants = allTones.map(t => ({
                         tone: t,
                         ...aiGenerateText(page.title, page.content || '', 'meta_title', domType, t),
@@ -387,11 +388,11 @@ export async function POST(request: NextRequest) {
             if (action === 'auto-fix-meta') {
                 const domain = body.domain || 'all';
                 const pages = await prisma.page.findMany({
-                    select: { id: true, slug: true, title: true, content: true, meta_title: true, meta_description: true },
+                    select: { id: true, slug: true, page_type: true, title: true, content: true, meta_title: true, meta_description: true },
                 });
 
                 const toFix = pages.filter(p => {
-                    const isB2B = p.slug.startsWith('b2b');
+                    const isB2B = isB2bCmsPage(p);
                     if (domain === 'b2c' && isB2B) return false;
                     if (domain === 'b2b' && !isB2B) return false;
                     return !p.meta_title || p.meta_title.length < 20 || !p.meta_description || p.meta_description.length < 50;
@@ -399,7 +400,7 @@ export async function POST(request: NextRequest) {
 
                 const updates = await Promise.all(
                     toFix.map(async (page) => {
-                        const isB2B = page.slug.startsWith('b2b');
+                        const isB2B = isB2bCmsPage(page);
                         const domainType: 'b2c' | 'b2b' = isB2B ? 'b2b' : 'b2c';
 
                         const newTitle = (!page.meta_title || page.meta_title.length < 20)
@@ -437,8 +438,7 @@ export async function POST(request: NextRequest) {
             if (action === 'inject-faq-schema') {
                 const domain = body.domain || 'b2c';
                 const pages = await prisma.page.findMany({
-                    select: { id: true, slug: true, title: true, content: true },
-                    where: domain === 'b2b' ? { slug: { startsWith: 'b2b' } } : { NOT: { slug: { startsWith: 'b2b' } } },
+                    select: { id: true, slug: true, page_type: true, title: true, content: true },
                 });
 
                 const faqs = getFaqData(domain as 'b2c' | 'b2b', tone);
@@ -456,7 +456,8 @@ export async function POST(request: NextRequest) {
                 const faqBlock = `\n\n<!-- SEO_FAQ_SCHEMA -->\n<script type="application/ld+json">${JSON.stringify(faqSchema)}</script>\n<!-- /SEO_FAQ_SCHEMA -->`;
 
                 const targetSlugs = domain === 'b2b' ? ['b2b'] : ['', 'strona-glowna', 'o-mnie', 'rezerwacja'];
-                const target = pages.find(p => targetSlugs.includes(p.slug)) || pages[0];
+                const domainPages = pages.filter(p => domain === 'b2b' ? isB2bCmsPage(p) : !isB2bCmsPage(p));
+                const target = domainPages.find(p => targetSlugs.includes(p.slug)) || domainPages[0];
 
                 let injected = 0;
                 if (target) {

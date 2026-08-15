@@ -1,5 +1,6 @@
 import { MetadataRoute } from 'next';
 import prisma from '@/lib/db/prisma';
+import { b2bPublicPath, isB2bCmsPage } from '@/lib/sites/b2b-routing';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const b2bBase = 'https://aeroanaliza.pl';
@@ -12,13 +13,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         '/monitoring',
     ];
 
-    let dbPages: Array<{ slug: string; updated_at: Date }> = [];
+    let dbPages: Array<{ slug: string; page_type: string; updated_at: Date }> = [];
 
     try {
-        dbPages = await prisma.page.findMany({
-            where: { is_published: true, page_type: 'b2b' },
-            select: { slug: true, updated_at: true }
+        const publishedPages = await prisma.page.findMany({
+            where: { is_published: true },
+            select: { slug: true, page_type: true, updated_at: true }
         });
+        dbPages = publishedPages.filter(isB2bCmsPage);
     } catch (error) {
         console.error('[b2b-sitemap] Failed to load dynamic entries:', error);
     }
@@ -34,12 +36,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
         // B2B Dynamic pages from database
         ...dbPages.map(page => ({
-            url: `${b2bBase}/${page.slug.replace(/^b2b[/-]?/, '')}`,
+            url: `${b2bBase}${b2bPublicPath(page.slug)}`,
             lastModified: page.updated_at,
             changeFrequency: 'monthly' as const,
             priority: 0.7,
         })),
     ];
 
-    return sitemap;
+    return Array.from(new Map(sitemap.map(entry => [entry.url, entry] as const)).values());
 }

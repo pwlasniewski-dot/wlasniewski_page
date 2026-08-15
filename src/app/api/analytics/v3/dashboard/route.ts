@@ -12,6 +12,7 @@ import {
   evaluatePageCompleteness, prioritizeDirectorActions, STATIC_PAGE_REGISTRY,
   portfolioPath, type DirectorAction, type PageSource,
 } from '@/lib/analytics/pageRegistry';
+import { b2bPublicPath, isB2bCmsPage } from '@/lib/sites/b2b-routing';
 
 export const dynamic = 'force-dynamic';
 const MAX_RANGE_DAYS = 120;
@@ -138,7 +139,7 @@ export async function GET(request: NextRequest) {
         GROUP BY "page_url", COALESCE(NULLIF((regexp_match(COALESCE("metadata", ''), '"site_host"\s*:\s*"([^"\\]+)"'))[1], ''), 'unknown')
       `), [] as FirstPageRow[], unavailableSources),
       fetchDashboardSource('analytics-baseline', () => prisma.analyticsEvent.findMany({ where: { event_type: 'v2_page_view', created_at: { gte: baselinePreviousStart, lt: baselineNow } }, select: { event_type: true, page_url: true, session_id: true, created_at: true, metadata: true } }), [], unavailableSources),
-      fetchDashboardSource('cms-pages', () => prisma.page.findMany({ select: { slug: true, title: true, content: true, meta_title: true, meta_description: true, is_published: true, hero_image: true, content_images: true, sections: true, updated_at: true } }), [], unavailableSources),
+      fetchDashboardSource('cms-pages', () => prisma.page.findMany({ select: { slug: true, page_type: true, title: true, content: true, meta_title: true, meta_description: true, is_published: true, hero_image: true, content_images: true, sections: true, updated_at: true } }), [], unavailableSources),
       fetchDashboardSource('blog-posts', () => prisma.blogPost.findMany({ select: { slug: true, title: true, content: true, meta_title: true, meta_description: true, status: true, published_at: true, featured_image_id: true, updated_at: true } }), [], unavailableSources),
       fetchDashboardSource('portfolio', () => prisma.portfolioSession.findMany({ select: { slug: true, category: true, title: true, description: true, meta_title: true, meta_description: true, is_published: true, cover_image_id: true, media_ids: true, updated_at: true } }), [], unavailableSources),
       fetchDashboardSource('bookings', () => prisma.booking.findMany({ where: { created_at: { gte: start, lt: end } }, select: { id: true, created_at: true, price: true, status: true } }), [], unavailableSources),
@@ -212,10 +213,10 @@ export async function GET(request: NextRequest) {
     const pageSources: PageSource[] = [
       ...STATIC_PAGE_REGISTRY,
       ...cmsPages.map(page => {
-        const isB2b = /^(b2b|dron|aero)/.test(page.slug);
+        const isB2b = isB2bCmsPage(page);
         return ({
         host: isB2b ? 'aeroanaliza.pl' as const : 'wlasniewski.pl' as const,
-        path: ['home', 'strona-glowna'].includes(page.slug) ? '/' : isB2b ? normalizePath(`/${page.slug.replace(/^b2b\/?/, '')}`) : `/${page.slug}`, title: page.title, kind: 'cms' as const,
+        path: ['home', 'strona-glowna'].includes(page.slug) ? '/' : isB2b ? b2bPublicPath(page.slug) : `/${page.slug}`, title: page.title, kind: 'cms' as const,
         published: page.is_published, metaTitle: page.meta_title, metaDescription: page.meta_description,
         content: `${page.content || ''} ${page.sections || ''}`, mediaCount: countMedia(page.content_images) + (page.hero_image ? 1 : 0),
         hasCta: /href=|button|rezerw|kontakt/i.test(`${page.content} ${page.sections}`), updatedAt: page.updated_at,

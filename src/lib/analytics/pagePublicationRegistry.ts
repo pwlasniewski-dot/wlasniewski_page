@@ -1,5 +1,6 @@
 import 'server-only';
 import { Prisma } from '@prisma/client';
+import { b2bPublicPath, isB2bCmsPage } from '@/lib/sites/b2b-routing';
 
 export type RegistryExecutor = Pick<Prisma.TransactionClient, '$executeRaw'>;
 
@@ -20,10 +21,10 @@ export async function preserveFirstPublication(
   `);
 }
 
-export function publicationRegistryIdentity(kind: 'page' | 'blog' | 'portfolio', data: { slug: string; category?: string }) {
+export function publicationRegistryIdentity(kind: 'page' | 'blog' | 'portfolio', data: { slug: string; category?: string; page_type?: string | null }) {
   if (kind === 'portfolio') return { siteHost: 'wlasniewski.pl' as const, path: `/portfolio/${encodeURIComponent(data.category || '')}/${encodeURIComponent(data.slug)}` };
   if (kind === 'blog') return { siteHost: 'wlasniewski.pl' as const, path: `/blog/${data.slug}` };
-  const siteHost = /^(b2b|dron|aero)/.test(data.slug) ? 'aeroanaliza.pl' as const : 'wlasniewski.pl' as const;
-  const path = ['home', 'strona-glowna', 'b2b'].includes(data.slug) ? '/' : siteHost === 'aeroanaliza.pl' ? `/${data.slug.replace(/^b2b\/?/, '')}` : `/${data.slug}`;
+  const siteHost = isB2bCmsPage(data) ? 'aeroanaliza.pl' as const : 'wlasniewski.pl' as const;
+  const path = ['home', 'strona-glowna'].includes(data.slug) ? '/' : siteHost === 'aeroanaliza.pl' ? b2bPublicPath(data.slug) : `/${data.slug}`;
   return { siteHost, path };
 }
