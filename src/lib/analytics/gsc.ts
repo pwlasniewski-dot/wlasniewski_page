@@ -41,8 +41,7 @@ function gscErrorDiagnostic(error: unknown) {
 
 export async function checkGscConnection(env: NodeJS.ProcessEnv = process.env) {
   const email = env.GSC_SERVICE_ACCOUNT_EMAIL;
-  const key = env.GSC_SERVICE_ACCOUNT_PRIVATE_KEY?.replace(/\n/g, '
-');
+  const key = env.GSC_SERVICE_ACCOUNT_PRIVATE_KEY?.replace(/\\n/g, '\n');
   if (!email || !key) return { status: 'not_configured' as const, sites: [] as string[] };
   try {
     const auth = new google.auth.JWT({ email, key, scopes: ['https://www.googleapis.com/auth/webmasters.readonly'] });
@@ -77,8 +76,7 @@ export async function fetchGscComparison(input: {
   const checkedAt = (input.now || new Date()).toISOString();
   const latestCompleteDate = latestCompleteGscDate(input.now);
   const email = env.GSC_SERVICE_ACCOUNT_EMAIL;
-  const privateKey = env.GSC_SERVICE_ACCOUNT_PRIVATE_KEY?.replace(/\n/g, '
-');
+  const privateKey = env.GSC_SERVICE_ACCOUNT_PRIVATE_KEY?.replace(/\\n/g, '\n');
   if (!email || !privateKey) {
     return {
       status: 'not_configured', comparisonStatus: 'waiting_for_complete_data', checkedAt, latestCompleteDate, incompleteDays: 2,
