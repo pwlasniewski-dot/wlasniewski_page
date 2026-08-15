@@ -4,6 +4,7 @@ import PageRenderer from '@/components/PageRenderer';
 import { Metadata } from 'next';
 import { PageSection } from '@/components/admin/PageBuilder';
 import CityLandingPage, { generateMetadata as cityGenerateMetadata } from '@/app/fotograf-[city]/page';
+import { b2bPublicPath, isB2bCmsPage } from '@/lib/sites/b2b-routing';
 
 interface PageProps {
     params: Promise<{ slug: string }>;
@@ -46,9 +47,26 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
     if (!page) {
         // Delegate to city landing metadata if this is a fotograf-{city} URL
-        if (slug.startsWith('fotograf-')) {
-            return cityGenerateMetadata({ params: Promise.resolve({ city: slug.replace('fotograf-', '') }) });
-        }
+    if (slug.startsWith('fotograf-')) {
+        return cityGenerateMetadata({ params: Promise.resolve({ city: slug.replace('fotograf-', '') }) });
+    }
+
+    if (isB2bCmsPage(page)) {
+        const canonical = `https://aeroanaliza.pl${b2bPublicPath(page.slug)}`;
+        return {
+            title: page.meta_title || page.title,
+            description: page.meta_description,
+            keywords: page.meta_keywords,
+            alternates: { canonical },
+            openGraph: {
+                title: page.meta_title || page.title,
+                description: page.meta_description || '',
+                type: 'website',
+                url: canonical,
+                images: page.hero_image ? [page.hero_image] : [],
+            },
+        };
+    }
         return {
             title: 'Strona nie znaleziona',
         };
@@ -107,8 +125,8 @@ export default async function DynamicPage({ params }: PageProps) {
     }
 
     // Redirect B2B pages to their proper path
-    if (page!.page_type === 'b2b') {
-        permanentRedirect(`https://aeroanaliza.pl/${page!.slug.toLowerCase().replace(/^b2b[/-]?/, '')}`);
+    if (isB2bCmsPage(page!)) {
+        permanentRedirect(`https://aeroanaliza.pl${b2bPublicPath(page!.slug)}`);
     }
 
     // Intelligent Content Merging Strategy (Zero Loss Protocol)

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { isB2BContext } from './lib/context';
+import { LEGACY_B2B_REDIRECTS } from './lib/sites/b2b-routing';
 
 export const config = {
     matcher: [
@@ -24,16 +25,7 @@ export default async function middleware(req: NextRequest) {
     // Keep their SEO value by permanently moving visitors to the live B2B site.
     const isPhotographyHost = ['wlasniewski.pl', 'www.wlasniewski.pl'].includes(hostname.split(':')[0].toLowerCase());
     if (isPhotographyHost) {
-        const b2bDestinations: Record<string, string> = {
-            '/b2b': 'https://aeroanaliza.pl/',
-            '/b2b/dron': 'https://aeroanaliza.pl/dron',
-            '/b2b/termowizja': 'https://aeroanaliza.pl/dron#termowizja',
-            '/b2b/monitoring': 'https://aeroanaliza.pl/monitoring',
-            '/dron': 'https://aeroanaliza.pl/dron',
-            '/termowizja': 'https://aeroanaliza.pl/dron#termowizja',
-            '/monitoring': 'https://aeroanaliza.pl/monitoring',
-        };
-        const destination = b2bDestinations[url.pathname];
+        const destination = LEGACY_B2B_REDIRECTS[url.pathname];
         if (destination) {
             const target = new URL(destination);
             target.search = url.search;

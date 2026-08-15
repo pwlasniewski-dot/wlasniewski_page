@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { withAuth, type AuthenticatedRequest } from '@/lib/auth/middleware';
 import { checkGscConnection } from '@/lib/analytics/gsc';
+import { isB2bCmsPage } from '@/lib/sites/b2b-routing';
 
 export const dynamic = 'force-dynamic';
 
@@ -213,11 +214,9 @@ function runAiAnalysis(
 
 /* ─── B2B Domain Diagnostics ─── */
 function buildB2BDiagnostics(
-    pages: Array<{ slug: string; title: string; content: string; meta_title: string | null; meta_description: string | null }>,
+    pages: Array<{ slug: string; page_type?: string | null; title: string; content: string; meta_title: string | null; meta_description: string | null }>,
 ): { status: string; issues: string[]; recommendations: string[] } {
-    const b2bPages = pages.filter(p =>
-        p.slug.startsWith('b2b') || p.slug.includes('dron') || p.slug.includes('aero')
-    );
+    const b2bPages = pages.filter(isB2bCmsPage);
 
     const issues: string[] = [];
     const recommendations: string[] = [];
@@ -267,7 +266,7 @@ export async function GET(request: NextRequest) {
             prisma.page.findMany({
                 where: { is_published: true },
                 select: {
-                    id: true, slug: true, title: true, content: true,
+                    id: true, slug: true, page_type: true, title: true, content: true,
                     meta_title: true, meta_description: true, updated_at: true,
                 },
             }),
@@ -414,8 +413,8 @@ export async function GET(request: NextRequest) {
             .sort((a, b) => b[1] - a[1]).slice(0, 7).map(([page, views]) => ({ page, views }));
 
         /* ─── Keyword Analytics: B2C vs B2B ─── */
-        const b2cPages = pages.filter(p => !p.slug.startsWith('b2b') && !p.slug.includes('dron') && !p.slug.includes('aero'));
-        const b2bPages = pages.filter(p => p.slug.startsWith('b2b') || p.slug.includes('dron') || p.slug.includes('aero'));
+        const b2cPages = pages.filter(p => !isB2bCmsPage(p));
+        const b2bPages = pages.filter(isB2bCmsPage);
 
         const b2cKeywordItems = [
             ...b2cPages.map(p => ({ slug: p.slug, title: p.title, content: p.content || '', meta_title: p.meta_title || '', meta_description: p.meta_description || '' })),
@@ -440,7 +439,7 @@ export async function GET(request: NextRequest) {
 
         /* ─── B2B Domain Diagnostics ─── */
         const b2bDiagnostics = buildB2BDiagnostics(
-            pages.map(p => ({ slug: p.slug, title: p.title, content: p.content || '', meta_title: p.meta_title, meta_description: p.meta_description })),
+            pages.map(p => ({ slug: p.slug, page_type: p.page_type, title: p.title, content: p.content || '', meta_title: p.meta_title, meta_description: p.meta_description })),
         );
 
         /* ─── Tool Connections ─── */
