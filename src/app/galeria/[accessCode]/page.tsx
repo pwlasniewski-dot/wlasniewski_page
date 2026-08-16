@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Download, ShoppingCart, Check, X, ArrowLeft, Calendar, ImageIcon, Plus, Minus, ChevronLeft, ChevronRight, Layers } from 'lucide-react';
+import { Download, ShoppingCart, Check, X, ArrowLeft, ArrowUpRight, Calendar, ImageIcon, Plus, Minus, ChevronLeft, ChevronRight, Layers } from 'lucide-react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import PremiumGalleryHero, { PremiumGalleryStory } from '@/components/galleries/PremiumGalleryHero';
@@ -45,8 +45,6 @@ type DownloadProgressState = {
     completed: number;
     total: number;
     message: string;
-    downloadUrl?: string;
-    fileName?: string;
 };
 
 interface GalleryProduct {
@@ -381,9 +379,7 @@ export default function ClientGalleryPage() {
                 percent: 100,
                 completed: Number(result.completed || readiness.photoCount || 0),
                 total: Number(result.total || readiness.photoCount || 0),
-                message: 'Pobieranie zostało przekazane do przeglądarki. Sprawdź ikonę pobierania w prawym górnym rogu ekranu.',
-                downloadUrl: result.downloadUrl,
-                fileName: result.fileName,
+                message: 'Pobieranie trwa w przeglądarce. Sprawdź prawy górny róg ekranu.',
             });
         } catch (error) {
             setDownloadProgress((current) => ({
@@ -905,6 +901,19 @@ export default function ClientGalleryPage() {
                         exit={{ opacity: 0 }}
                         className="fixed inset-0 z-[400] flex items-center justify-center bg-black/85 px-4 backdrop-blur-md"
                     >
+                        {downloadProgress.status === 'downloading' && (
+                            <motion.div
+                                initial={{ opacity: 0, x: -16, y: 16 }}
+                                animate={{ opacity: 1, x: [0, 8, 0], y: [0, -8, 0] }}
+                                transition={{ opacity: { duration: 0.25 }, x: { duration: 1.2, repeat: Infinity }, y: { duration: 1.2, repeat: Infinity } }}
+                                className="pointer-events-none fixed right-4 top-4 flex items-center gap-2 rounded-2xl border border-gold-500/40 bg-zinc-950/95 px-4 py-3 text-right shadow-2xl shadow-black/70 md:right-8 md:top-6"
+                            >
+                                <span className="max-w-[180px] text-xs font-black uppercase leading-tight tracking-wide text-white md:text-sm">
+                                    Tutaj sprawdź pobieranie
+                                </span>
+                                <ArrowUpRight className="h-9 w-9 shrink-0 text-gold-500 md:h-12 md:w-12" strokeWidth={2.5} />
+                            </motion.div>
+                        )}
                         <motion.div
                             initial={{ opacity: 0, y: 18, scale: 0.97 }}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -932,32 +941,21 @@ export default function ClientGalleryPage() {
                             <p className={`mt-3 text-sm leading-relaxed ${downloadProgress.status === 'error' ? 'text-red-300' : 'text-zinc-300'}`}>
                                 {downloadProgress.message}
                             </p>
-                            {downloadProgress.total > 0 && downloadProgress.status !== 'error' && (
+                            {downloadProgress.total > 0 && downloadProgress.status !== 'error' && downloadProgress.status !== 'downloading' && (
                                 <p className="mt-3 text-xs font-bold text-zinc-500">
-                                    {downloadProgress.status === 'downloading'
-                                        ? `Spakowano ${downloadProgress.completed} z ${downloadProgress.total} zdjęć`
-                                        : `Przetworzono ${downloadProgress.completed} z ${downloadProgress.total} zdjęć`}
+                                    Przetworzono {downloadProgress.completed} z {downloadProgress.total} zdjęć
                                 </p>
                             )}
                             <div className="mt-6 rounded-2xl border border-gold-500/20 bg-gold-500/5 px-4 py-3 text-left text-xs leading-relaxed text-zinc-400">
                                 {downloadProgress.status === 'downloading'
-                                    ? <><strong className="text-white">To już drugi etap.</strong> Postęp pobierania pliku pokazuje teraz Chrome w prawym górnym rogu. Poczekaj, aż przeglądarka pobierze całość. Potem otwórz folder „Pobrane” i wybierz „Wyodrębnij” lub „Rozpakuj”.</>
+                                    ? <>Poczekaj na zakończenie pobierania. Potem otwórz plik ZIP i wybierz „Wyodrębnij” lub „Rozpakuj”.</>
                                     : <>Otrzymasz jeden plik <strong className="text-white">ZIP</strong> ze zdjęciami JPG. Po pobraniu otwórz folder „Pobrane” i wybierz „Wyodrębnij” lub „Rozpakuj”. Nie zamykaj tej strony podczas przygotowywania pliku.</>}
                             </div>
-                            {downloadProgress.status === 'downloading' && downloadProgress.downloadUrl && (
-                                <button
-                                    type="button"
-                                    onClick={() => startBrowserDownload(downloadProgress.downloadUrl!, downloadProgress.fileName)}
-                                    className="mt-6 w-full rounded-xl bg-gold-500 px-5 py-3 text-sm font-black uppercase tracking-wider text-black hover:bg-gold-400"
-                                >
-                                    Pobierz ponownie
-                                </button>
-                            )}
                             {(downloadProgress.status === 'error' || downloadProgress.status === 'downloading') && (
                                 <button
                                     type="button"
                                     onClick={() => setDownloadProgress(null)}
-                                    className={`${downloadProgress.status === 'downloading' ? 'mt-3 border border-zinc-700 bg-zinc-900 text-white hover:bg-zinc-800' : 'mt-6 bg-white text-black hover:bg-gold-500'} w-full rounded-xl px-5 py-3 text-sm font-black uppercase tracking-wider`}
+                                    className={`${downloadProgress.status === 'downloading' ? 'mt-6 border border-zinc-700 bg-zinc-900 text-white hover:bg-zinc-800' : 'mt-6 bg-white text-black hover:bg-gold-500'} w-full rounded-xl px-5 py-3 text-sm font-black uppercase tracking-wider`}
                                 >
                                     {downloadProgress.status === 'downloading' ? 'Zamknij komunikat' : 'Zamknij'}
                                 </button>
