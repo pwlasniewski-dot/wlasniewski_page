@@ -58,6 +58,7 @@ interface Gallery {
     group_access_code?: string | null;
     group_password?: string | null;
     max_photos_for_print?: number | null;
+    allow_extra_photo_purchase?: boolean;
     external_download_url?: string | null;
     event_video_url?: string | null;
     event_video_title?: string | null;
@@ -108,6 +109,7 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, clien
         group_access_code: '',
         group_password: '',
         max_photos_for_print: '' as string | number,
+        allow_extra_photo_purchase: false,
         external_download_url: '',
         event_video_url: '',
         event_video_title: '',
@@ -163,6 +165,7 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, clien
                 group_access_code: gallery.group_access_code || '',
                 group_password: gallery.group_password || '',
                 max_photos_for_print: gallery.max_photos_for_print ?? '',
+                allow_extra_photo_purchase: !!gallery.allow_extra_photo_purchase,
                 external_download_url: gallery.external_download_url || '',
                 event_video_url: gallery.event_video_url || '',
                 event_video_title: gallery.event_video_title || '',
@@ -254,6 +257,7 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, clien
                 is_active: editData.is_active,
                 description: editData.description,
                 gallery_mode: editData.gallery_mode,
+                allow_extra_photo_purchase: editData.allow_extra_photo_purchase,
                 external_download_url: editData.external_download_url || null,
                 event_video_url: editData.event_video_url || null,
                 event_video_title: editData.event_video_title || null,
@@ -1174,6 +1178,33 @@ export default function GalleryAdmin({ galleryId, clientEmail, clientName, clien
                                 <div className="text-xs text-zinc-500 leading-relaxed self-center">
                                     W tym trybie: właściciel galerii ma dostęp po zalogowaniu na swoje konto.
                                     Dodatkowo może przekazać link rodzinie z tym hasłem.
+                                </div>
+                                <label className="md:col-span-2 flex items-start gap-3 rounded-xl border border-zinc-800 bg-black/60 px-4 py-3 cursor-pointer hover:border-zinc-700 transition-colors">
+                                    <input
+                                        type="checkbox"
+                                        checked={!editData.allow_extra_photo_purchase}
+                                        onChange={(e) => setEditData({ ...editData, allow_extra_photo_purchase: !e.target.checked })}
+                                        className="mt-0.5 h-4 w-4 rounded border-zinc-600 bg-zinc-900 text-gold-500"
+                                    />
+                                    <span>
+                                        <span className="block text-sm font-bold text-white">Ukryj cenę dodatkowego zdjęcia, gdy nie ma zdjęć Premium</span>
+                                        <span className="mt-1 block text-[11px] leading-relaxed text-zinc-500">
+                                            Gdy dodasz zdjęcia Premium, cena pojawi się automatycznie przy ofercie zakupu.
+                                        </span>
+                                    </span>
+                                </label>
+                                <div className="space-y-2 md:col-span-2">
+                                    <label className="block text-xs font-bold text-zinc-500 uppercase ml-1 tracking-widest">Link do pobrania całej galerii z Adobe</label>
+                                    <input
+                                        type="url"
+                                        value={editData.external_download_url}
+                                        onChange={(e) => setEditData({ ...editData, external_download_url: e.target.value })}
+                                        placeholder="https://adobe.ly/..."
+                                        className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:border-gold-500 outline-none transition-all"
+                                    />
+                                    <p className="text-[11px] text-zinc-500">
+                                        Opcjonalnie. Po zapisaniu główny przycisk „Pobierz całą galerię” otworzy ten link zamiast tworzyć ZIP na serwerze.
+                                    </p>
                                 </div>
                             </div>
                         )}
