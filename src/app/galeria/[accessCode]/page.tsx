@@ -903,18 +903,31 @@ export default function ClientGalleryPage() {
                         >
                             <div
                                 className="relative mx-auto mb-6 flex h-32 w-32 items-center justify-center rounded-full"
-                                style={{ background: `conic-gradient(${downloadProgress.status === 'error' ? '#ef4444' : '#d4af37'} ${downloadProgress.percent * 3.6}deg, #27272a 0deg)` }}
+                                style={{
+                                    background: downloadProgress.status === 'downloading'
+                                        ? '#d4af37'
+                                        : `conic-gradient(${downloadProgress.status === 'error' ? '#ef4444' : '#d4af37'} ${downloadProgress.percent * 3.6}deg, #27272a 0deg)`,
+                                }}
                             >
                                 <div className="flex h-24 w-24 flex-col items-center justify-center rounded-full bg-zinc-950">
-                                    <span className={`text-3xl font-black ${downloadProgress.status === 'error' ? 'text-red-400' : 'text-white'}`}>{downloadProgress.percent}%</span>
-                                    <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">ZIP</span>
+                                    {downloadProgress.status === 'downloading' ? (
+                                        <>
+                                            <span className="text-4xl font-black text-gold-500">✓</span>
+                                            <span className="mt-1 text-[10px] font-bold uppercase tracking-widest text-zinc-500">ZIP gotowy</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <span className={`text-3xl font-black ${downloadProgress.status === 'error' ? 'text-red-400' : 'text-white'}`}>{downloadProgress.percent}%</span>
+                                            <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Pakowanie ZIP</span>
+                                        </>
+                                    )}
                                 </div>
                             </div>
                             <h2 className="text-2xl font-black uppercase tracking-tight text-white">
                                 {downloadProgress.status === 'error'
                                     ? 'Nie udało się przygotować pliku'
                                     : downloadProgress.status === 'downloading'
-                                        ? 'Paczka gotowa — trwa pobieranie'
+                                        ? 'ZIP gotowy — Chrome pobiera plik'
                                         : downloadProgress.status === 'ready'
                                             ? 'Galeria gotowa'
                                             : 'Przygotowujemy galerię'}
@@ -924,12 +937,14 @@ export default function ClientGalleryPage() {
                             </p>
                             {downloadProgress.total > 0 && downloadProgress.status !== 'error' && (
                                 <p className="mt-3 text-xs font-bold text-zinc-500">
-                                    Przetworzono {downloadProgress.completed} z {downloadProgress.total} zdjęć
+                                    {downloadProgress.status === 'downloading'
+                                        ? `Spakowano ${downloadProgress.completed} z ${downloadProgress.total} zdjęć`
+                                        : `Przetworzono ${downloadProgress.completed} z ${downloadProgress.total} zdjęć`}
                                 </p>
                             )}
                             <div className="mt-6 rounded-2xl border border-gold-500/20 bg-gold-500/5 px-4 py-3 text-left text-xs leading-relaxed text-zinc-400">
                                 {downloadProgress.status === 'downloading'
-                                    ? <>ZIP jest już utworzony. Transfer pliku może potrwać, zwłaszcza przy dużej galerii — nie zamykaj karty ani pobierania. Po ukończeniu otwórz folder „Pobrane” i wybierz „Wyodrębnij” lub „Rozpakuj”.</>
+                                    ? <><strong className="text-white">To już drugi etap.</strong> Postęp pobierania pliku pokazuje teraz Chrome w prawym górnym rogu. Poczekaj, aż przeglądarka pobierze całość. Potem otwórz folder „Pobrane” i wybierz „Wyodrębnij” lub „Rozpakuj”.</>
                                     : <>Otrzymasz jeden plik <strong className="text-white">ZIP</strong> ze zdjęciami JPG. Po pobraniu otwórz folder „Pobrane” i wybierz „Wyodrębnij” lub „Rozpakuj”. Nie zamykaj tej strony podczas przygotowywania pliku.</>}
                             </div>
                             {(downloadProgress.status === 'error' || downloadProgress.status === 'downloading') && (
