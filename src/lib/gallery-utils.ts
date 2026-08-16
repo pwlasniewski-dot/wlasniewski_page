@@ -5,6 +5,12 @@ import sharp from 'sharp';
 import crypto from 'crypto';
 import { uploadToS3, deleteFromS3 } from './storage/s3';
 
+// Gallery uploads run inside a reused serverless process. Keep libvips from
+// retaining large decoded images between requests and avoid multiplying the
+// memory cost of a single high-resolution photo across worker threads.
+sharp.cache({ memory: 16, files: 0, items: 20 });
+sharp.concurrency(1);
+
 export interface ProcessedPhoto {
     file_url: string;
     thumbnail_url: string;
@@ -32,66 +38,75 @@ export async function processGalleryPhoto(
     const hash = crypto.randomBytes(8).toString('hex');
     const timestamp = Date.now();
 
-    // Every upload creates two independent assets:
-    // public, reduced WebP preview and private, full-quality JPG download source.
-    const previewBuffer = await sharp(file)
-        .rotate()
-        .resize(2000, 2000, { fit: 'inside', withoutEnlargement: true })
-        .webp({ quality: 85 })
-        .toBuffer();
-    const downloadBuffer = await sharp(file)
-        .rotate()
-        .jpeg({ quality: 94, chromaSubsampling: '4:4:4', mozjpeg: true })
-        .toBuffer();
-
     const filename = `${timestamp}-${hash}.webp`;
     const downloadFilename = `download-${timestamp}-${hash}.jpg`;
+    const thumbnailFilename = `thumb_${timestamp}-${hash}.webp`;
     const folderPath = `galleries/${galleryId}`;
 
-    // Get file size
-    const file_size = previewBuffer.length;
-    const content_hash = crypto.createHash('sha256').update(downloadBuffer).digest('hex');
+    // Build and upload the smaller public assets in their own scope. The
+    // thumbnail is derived from the already reduced preview, so the original
+    // high-resolution image is decoded only twice instead of three times.
+    const publicAssets = await (async () => {
+        const previewBuffer = await sharp(file)
+            .rotate()
+            .resize(2000, 2000, { fit: 'inside', withoutEnlargement: true })
+            .webp({ quality: 85 })
+            .toBuffer();
+        const processedMetadata = await sharp(previewBuffer).metadata();
+        const thumbnailBuffer = await sharp(previewBuffer)
+            .resize(400, 400, { fit: 'cover', position: 'center' })
+            .webp({ quality: 80 })
+            .toBuffer();
+        const thumbnailUrl = await uploadToS3(
+            thumbnailBuffer,
+            `${folderPath}/${thumbnailFilename}`,
+            'image/webp',
+        );
+        const fileUrl = await uploadToS3(previewBuffer, `${folderPath}/${filename}`, 'image/webp');
 
-    // Upload main image to S3
-    const file_url = await uploadToS3(previewBuffer, `${folderPath}/${filename}`, 'image/webp');
-    const download_source_url = await uploadToS3(
-        downloadBuffer,
-        `${folderPath}/${downloadFilename}`,
-        'image/jpeg',
-        { access: 'private' },
-    );
+        return {
+            fileUrl,
+            thumbnailUrl,
+            fileSize: previewBuffer.length,
+            width: processedMetadata.width || 0,
+            height: processedMetadata.height || 0,
+        };
+    })();
 
-    let width = 0;
-    let height = 0;
+    // Create the private JPG HQ only after the public buffers are no longer
+    // needed by image processing. This lowers peak memory for large originals.
+    const downloadAsset = await (async () => {
+        const downloadBuffer = await sharp(file)
+            .rotate()
+            .jpeg({ quality: 94, chromaSubsampling: '4:4:4', mozjpeg: true })
+            .toBuffer();
+        const downloadMetadata = await sharp(downloadBuffer).metadata();
+        const contentHash = crypto.createHash('sha256').update(downloadBuffer).digest('hex');
+        const downloadSourceUrl = await uploadToS3(
+            downloadBuffer,
+            `${folderPath}/${downloadFilename}`,
+            'image/jpeg',
+            { access: 'private' },
+        );
 
-    const thumbnailFilename = `thumb_${timestamp}-${hash}.webp`;
-    const thumbnailBuffer = await sharp(file)
-        .rotate() // Ensure rotation is correct
-        .resize(400, 400, {
-            fit: 'cover',
-            position: 'center'
-        })
-        .webp({ quality: 80 })
-        .toBuffer();
-
-    // Upload thumbnail to S3
-    const thumbnail_url = await uploadToS3(thumbnailBuffer, `${folderPath}/${thumbnailFilename}`, 'image/webp');
-
-    const processedMetadata = await sharp(previewBuffer).metadata();
-    const downloadMetadata = await sharp(downloadBuffer).metadata();
-    width = processedMetadata.width || 0;
-    height = processedMetadata.height || 0;
+        return {
+            downloadSourceUrl,
+            contentHash,
+            width: downloadMetadata.width || 0,
+            height: downloadMetadata.height || 0,
+        };
+    })();
 
     return {
-        file_url,
-        thumbnail_url,
-        download_source_url,
-        file_size,
-        width,
-        height,
-        download_source_width: downloadMetadata.width || 0,
-        download_source_height: downloadMetadata.height || 0,
-        content_hash,
+        file_url: publicAssets.fileUrl,
+        thumbnail_url: publicAssets.thumbnailUrl,
+        download_source_url: downloadAsset.downloadSourceUrl,
+        file_size: publicAssets.fileSize,
+        width: publicAssets.width,
+        height: publicAssets.height,
+        download_source_width: downloadAsset.width,
+        download_source_height: downloadAsset.height,
+        content_hash: downloadAsset.contentHash,
     };
 }
 

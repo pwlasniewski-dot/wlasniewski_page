@@ -169,6 +169,8 @@ export async function GET(
                 standard_count: gallery.standard_count,
                 max_photos_for_print: gallery.max_photos_for_print,
                 price_per_premium: gallery.price_per_premium,
+                show_extra_photo_price_when_empty: gallery.allow_extra_photo_purchase,
+                external_download_url: gallery.external_download_url,
                 expires_at: gallery.expires_at,
                 event_video_url: gallery.event_video_enabled ? gallery.event_video_url : null,
                 event_video_title: gallery.event_video_enabled ? gallery.event_video_title : null,

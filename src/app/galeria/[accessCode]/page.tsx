@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Download, ShoppingCart, Check, X, ArrowLeft, Calendar, ImageIcon, Plus, Minus, ChevronLeft, ChevronRight, Layers } from 'lucide-react';
+import { Download, ShoppingCart, Check, X, ArrowLeft, ArrowUpRight, Calendar, ImageIcon, Plus, Minus, ChevronLeft, ChevronRight, Layers } from 'lucide-react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import PremiumGalleryHero, { PremiumGalleryStory } from '@/components/galleries/PremiumGalleryHero';
@@ -27,6 +27,8 @@ interface Gallery {
     description: string | null;
     standard_count: number;
     price_per_premium: number;
+    show_extra_photo_price_when_empty: boolean;
+    external_download_url: string | null;
     expires_at: string | null;
     standard_photos: GalleryPhoto[];
     premium_photos: GalleryPhoto[];
@@ -36,6 +38,14 @@ interface Gallery {
     event_video_title: string | null;
     event_video_description: string | null;
 }
+
+type DownloadProgressState = {
+    status: 'checking' | 'queued' | 'processing' | 'ready' | 'downloading' | 'error';
+    percent: number;
+    completed: number;
+    total: number;
+    message: string;
+};
 
 interface GalleryProduct {
     id: number;
@@ -60,6 +70,7 @@ export default function ClientGalleryPage() {
     const [selectedPremium, setSelectedPremium] = useState<Set<number>>(new Set());
     const [selectedStandard, setSelectedStandard] = useState<Set<number>>(new Set());
     const [downloadingAll, setDownloadingAll] = useState(false);
+    const [downloadProgress, setDownloadProgress] = useState<DownloadProgressState | null>(null);
     const [viewMode, setViewMode] = useState<'grid' | 'story'>('grid');
 
     // Advanced Lightbox State
@@ -288,9 +299,25 @@ export default function ClientGalleryPage() {
         setIsTouchSwiping(false);
     };
 
+    const startBrowserDownload = (downloadUrl: string, fileName?: string) => {
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = fileName || `${gallery?.client_name || 'galeria'}-zdjecia.zip`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+    };
+
     const downloadAllFree = async () => {
         if (!gallery || downloadingAll) return;
         setDownloadingAll(true);
+        setDownloadProgress({
+            status: 'checking',
+            percent: 2,
+            completed: 0,
+            total: gallery.standard_photos.length,
+            message: 'Sprawdzamy, czy wszystkie zdjęcia JPG HQ są gotowe.',
+        });
         try {
             const preflight = await fetch(`/api/galleries/${accessCode}/download-all?preflight=1`, {
                 credentials: 'include',
@@ -300,11 +327,24 @@ export default function ClientGalleryPage() {
             if (!preflight.ok || !readiness?.ok) {
                 throw new Error(readiness?.error || 'Galeria nie jest jeszcze gotowa do pobrania.');
             }
+            setDownloadProgress({
+                status: 'queued',
+                percent: 6,
+                completed: 0,
+                total: Number(readiness.photoCount || gallery.standard_photos.length),
+                message: 'Zdjęcia są gotowe. Uruchamiamy przygotowanie archiwum ZIP.',
+            });
             const start = await fetch(`/api/galleries/${accessCode}/download-all`, {
                 method: 'POST', credentials: 'include', cache: 'no-store',
             });
             const started = await start.json().catch(() => null);
             if (!start.ok || !started?.jobId) throw new Error(started?.error || 'Nie udało się uruchomić przygotowania ZIP.');
+            setDownloadProgress((current) => current ? {
+                ...current,
+                status: 'queued',
+                percent: Math.max(current.percent, 8),
+                message: 'Zlecenie przyjęte. Serwer rozpoczyna pakowanie zdjęć.',
+            } : current);
             let result: any = null;
             for (let attempt = 0; attempt < 180; attempt += 1) {
                 const status = await fetch(`/api/galleries/${accessCode}/download-all?job_id=${encodeURIComponent(started.jobId)}`, {
@@ -312,18 +352,43 @@ export default function ClientGalleryPage() {
                 });
                 result = await status.json().catch(() => null);
                 if (!status.ok) throw new Error(result?.error || 'Nie udało się sprawdzić postępu ZIP.');
+                const serverPercent = Number.isFinite(Number(result?.progress)) ? Number(result.progress) : 0;
+                const completed = Number.isFinite(Number(result?.completed)) ? Number(result.completed) : 0;
+                const total = Number.isFinite(Number(result?.total)) && Number(result.total) > 0
+                    ? Number(result.total)
+                    : Number(readiness.photoCount || gallery.standard_photos.length);
+                setDownloadProgress({
+                    status: result?.status === 'ready' ? 'ready' : result?.status === 'processing' ? 'processing' : 'queued',
+                    percent: result?.status === 'ready' ? 100 : Math.max(8, Math.min(99, serverPercent)),
+                    completed,
+                    total,
+                    message: result?.status === 'processing'
+                        ? `Dodajemy zdjęcia JPG HQ do archiwum: ${completed} z ${total}.`
+                        : result?.status === 'ready'
+                            ? 'Archiwum jest gotowe. Przekazujemy plik do pobrania w przeglądarce.'
+                            : 'Oczekiwanie na rozpoczęcie pakowania zdjęć.',
+                });
                 if (result.status === 'ready' && result.downloadUrl) break;
                 if (result.status === 'failed') throw new Error(result.error || 'Nie udało się przygotować ZIP. Spróbuj ponownie.');
                 await new Promise(resolve => setTimeout(resolve, 2000));
             }
             if (!result?.downloadUrl) throw new Error('Przygotowanie trwa dłużej. Spróbuj ponownie za chwilę — gotowa paczka zostanie użyta ponownie.');
-            const link = document.createElement('a');
-            link.href = result.downloadUrl;
-            link.download = result.fileName || `${gallery.client_name || 'galeria'}-zdjecia.zip`;
-            document.body.appendChild(link); link.click(); link.remove();
-            alert(`Pobieranie rozpoczęte: ${result.completed} zdjęć JPG${result.failedCount ? `, pominięto ${result.failedCount}` : ''}.`);
+            startBrowserDownload(result.downloadUrl, result.fileName);
+            setDownloadProgress({
+                status: 'downloading',
+                percent: 100,
+                completed: Number(result.completed || readiness.photoCount || 0),
+                total: Number(result.total || readiness.photoCount || 0),
+                message: 'Pobieranie trwa w przeglądarce. Sprawdź prawy górny róg ekranu.',
+            });
         } catch (error) {
-            alert(error instanceof Error ? error.message : 'Wystąpił błąd podczas pobierania paczki ZIP.');
+            setDownloadProgress((current) => ({
+                status: 'error',
+                percent: current?.percent || 0,
+                completed: current?.completed || 0,
+                total: current?.total || gallery.standard_photos.length,
+                message: error instanceof Error ? error.message : 'Wystąpił błąd podczas pobierania paczki ZIP.',
+            }));
         } finally {
             setDownloadingAll(false);
         }
@@ -475,7 +540,7 @@ export default function ClientGalleryPage() {
             )}
 
             <div className="max-w-7xl mx-auto py-12 px-4">
-                <section className="mb-10 grid grid-cols-1 sm:grid-cols-3 gap-3" aria-label="Podsumowanie galerii">
+                <section className={`mb-10 grid grid-cols-1 ${gallery.premium_photos.length > 0 || gallery.show_extra_photo_price_when_empty ? 'sm:grid-cols-3' : 'sm:grid-cols-2'} gap-3`} aria-label="Podsumowanie galerii">
                     <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5">
                         <p className="text-xs uppercase tracking-widest text-zinc-500">Zdjęcia w pakiecie</p>
                         <p className="mt-1 text-3xl font-black">{gallery.standard_photos.length}</p>
@@ -484,10 +549,12 @@ export default function ClientGalleryPage() {
                         <p className="text-xs uppercase tracking-widest text-zinc-500">Dodatkowe zdjęcia</p>
                         <p className="mt-1 text-3xl font-black">{gallery.premium_photos.length}</p>
                     </div>
-                    <div className="rounded-2xl border border-gold-500/30 bg-gold-500/5 p-5">
-                        <p className="text-xs uppercase tracking-widest text-zinc-500">Cena dodatkowego zdjęcia</p>
-                        <p className="mt-1 text-3xl font-black text-gold-400">{(gallery.price_per_premium / 100).toFixed(2)} zł</p>
-                    </div>
+                    {(gallery.premium_photos.length > 0 || gallery.show_extra_photo_price_when_empty) && (
+                        <div className="rounded-2xl border border-gold-500/30 bg-gold-500/5 p-5">
+                            <p className="text-xs uppercase tracking-widest text-zinc-500">Cena dodatkowego zdjęcia</p>
+                            <p className="mt-1 text-3xl font-black text-gold-400">{(gallery.price_per_premium / 100).toFixed(2)} zł</p>
+                        </div>
+                    )}
                 </section>
                 {/* Standard Photos Section */}
                 {gallery.standard_photos.length > 0 && (
@@ -522,14 +589,26 @@ export default function ClientGalleryPage() {
                                         Historia
                                     </button>
                                 </div>
-                                <button
-                                    onClick={downloadAllFree}
-                                    disabled={downloadingAll}
-                                    className="h-12 md:h-16 px-6 md:px-10 bg-white text-black font-black uppercase tracking-widest text-[10px] md:text-xs rounded-2xl hover:bg-gold-500 transition-all shadow-xl shadow-white/5 disabled:opacity-50 flex items-center justify-center gap-3 w-full sm:w-auto"
-                                >
-                                    <Download className="w-5 h-5" />
-                                    {downloadingAll ? 'Rozpoczynam pobieranie...' : 'Pobierz zdjęcia z pakietu'}
-                                </button>
+                                {gallery.external_download_url ? (
+                                    <a
+                                        href={gallery.external_download_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="h-12 md:h-16 px-6 md:px-10 bg-white text-black font-black uppercase tracking-widest text-[10px] md:text-xs rounded-2xl hover:bg-gold-500 transition-all shadow-xl shadow-white/5 flex items-center justify-center gap-3 w-full sm:w-auto"
+                                    >
+                                        <Download className="w-5 h-5" />
+                                        Pobierz całą galerię
+                                    </a>
+                                ) : (
+                                    <button
+                                        onClick={downloadAllFree}
+                                        disabled={downloadingAll}
+                                        className="h-12 md:h-16 px-6 md:px-10 bg-white text-black font-black uppercase tracking-widest text-[10px] md:text-xs rounded-2xl hover:bg-gold-500 transition-all shadow-xl shadow-white/5 disabled:opacity-50 flex items-center justify-center gap-3 w-full sm:w-auto"
+                                    >
+                                        <Download className="w-5 h-5" />
+                                        {downloadingAll ? 'Przygotowujemy ZIP...' : 'Pobierz całą galerię'}
+                                    </button>
+                                )}
                                 {viewMode === 'story' && (
                                     <div className="text-xs text-zinc-500 sm:ml-2">
                                         Tryb Historia: przewijaj pionowo. Otwórz podgląd, aby przesuwać kadry palcem.
@@ -813,6 +892,78 @@ export default function ClientGalleryPage() {
                     theme="dark"
                 />
             )}
+
+            <AnimatePresence>
+                {downloadProgress && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[400] flex items-center justify-center bg-black/85 px-4 backdrop-blur-md"
+                    >
+                        {downloadProgress.status === 'downloading' && (
+                            <motion.div
+                                initial={{ opacity: 0, x: -16, y: 16 }}
+                                animate={{ opacity: 1, x: [0, 8, 0], y: [0, -8, 0] }}
+                                transition={{ opacity: { duration: 0.25 }, x: { duration: 1.2, repeat: Infinity }, y: { duration: 1.2, repeat: Infinity } }}
+                                className="pointer-events-none fixed right-4 top-4 flex items-center gap-2 rounded-2xl border border-gold-500/40 bg-zinc-950/95 px-4 py-3 text-right shadow-2xl shadow-black/70 md:right-8 md:top-6"
+                            >
+                                <span className="max-w-[180px] text-xs font-black uppercase leading-tight tracking-wide text-white md:text-sm">
+                                    Tutaj sprawdź pobieranie
+                                </span>
+                                <ArrowUpRight className="h-9 w-9 shrink-0 text-gold-500 md:h-12 md:w-12" strokeWidth={2.5} />
+                            </motion.div>
+                        )}
+                        <motion.div
+                            initial={{ opacity: 0, y: 18, scale: 0.97 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 18, scale: 0.97 }}
+                            className="w-full max-w-md rounded-3xl border border-zinc-700 bg-zinc-950 p-7 text-center shadow-2xl"
+                        >
+                            <div className={`mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full border-4 ${downloadProgress.status === 'error' ? 'border-red-500 text-red-400' : 'border-gold-500 text-gold-500'}`}>
+                                {downloadProgress.status === 'downloading' ? (
+                                    <span className="text-5xl font-black" aria-label="ZIP gotowy">✓</span>
+                                ) : downloadProgress.status === 'error' ? (
+                                    <span className="text-4xl font-black" aria-label="Błąd">!</span>
+                                ) : (
+                                    <span className="h-10 w-10 animate-spin rounded-full border-4 border-zinc-700 border-t-gold-500" aria-label="Przygotowywanie ZIP" />
+                                )}
+                            </div>
+                            <h2 className="text-2xl font-black uppercase tracking-tight text-white">
+                                {downloadProgress.status === 'error'
+                                    ? 'Nie udało się przygotować pliku'
+                                    : downloadProgress.status === 'downloading'
+                                        ? 'ZIP gotowy'
+                                        : downloadProgress.status === 'ready'
+                                            ? 'Galeria gotowa'
+                                            : 'Przygotowujemy galerię'}
+                            </h2>
+                            <p className={`mt-3 text-sm leading-relaxed ${downloadProgress.status === 'error' ? 'text-red-300' : 'text-zinc-300'}`}>
+                                {downloadProgress.message}
+                            </p>
+                            {downloadProgress.total > 0 && downloadProgress.status !== 'error' && downloadProgress.status !== 'downloading' && (
+                                <p className="mt-3 text-xs font-bold text-zinc-500">
+                                    Przetworzono {downloadProgress.completed} z {downloadProgress.total} zdjęć
+                                </p>
+                            )}
+                            <div className="mt-6 rounded-2xl border border-gold-500/20 bg-gold-500/5 px-4 py-3 text-left text-xs leading-relaxed text-zinc-400">
+                                {downloadProgress.status === 'downloading'
+                                    ? <>Poczekaj na zakończenie pobierania. Potem otwórz plik ZIP i wybierz „Wyodrębnij” lub „Rozpakuj”.</>
+                                    : <>Otrzymasz jeden plik <strong className="text-white">ZIP</strong> ze zdjęciami JPG. Po pobraniu otwórz folder „Pobrane” i wybierz „Wyodrębnij” lub „Rozpakuj”. Nie zamykaj tej strony podczas przygotowywania pliku.</>}
+                            </div>
+                            {(downloadProgress.status === 'error' || downloadProgress.status === 'downloading') && (
+                                <button
+                                    type="button"
+                                    onClick={() => setDownloadProgress(null)}
+                                    className={`${downloadProgress.status === 'downloading' ? 'mt-6 border border-zinc-700 bg-zinc-900 text-white hover:bg-zinc-800' : 'mt-6 bg-white text-black hover:bg-gold-500'} w-full rounded-xl px-5 py-3 text-sm font-black uppercase tracking-wider`}
+                                >
+                                    {downloadProgress.status === 'downloading' ? 'Zamknij komunikat' : 'Zamknij'}
+                                </button>
+                            )}
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Professional Zoomable Lightbox */}
             <AnimatePresence>

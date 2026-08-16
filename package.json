@@ -28,7 +28,7 @@
     "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=22.0.0 <23"
   },
   "dependencies": {
     "@aws-sdk/client-rekognition": "^3.1095.0",
