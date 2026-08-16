@@ -45,6 +45,8 @@ type DownloadProgressState = {
     completed: number;
     total: number;
     message: string;
+    downloadUrl?: string;
+    fileName?: string;
 };
 
 interface GalleryProduct {
@@ -299,6 +301,15 @@ export default function ClientGalleryPage() {
         setIsTouchSwiping(false);
     };
 
+    const startBrowserDownload = (downloadUrl: string, fileName?: string) => {
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = fileName || `${gallery?.client_name || 'galeria'}-zdjecia.zip`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+    };
+
     const downloadAllFree = async () => {
         if (!gallery || downloadingAll) return;
         setDownloadingAll(true);
@@ -364,16 +375,15 @@ export default function ClientGalleryPage() {
                 await new Promise(resolve => setTimeout(resolve, 2000));
             }
             if (!result?.downloadUrl) throw new Error('Przygotowanie trwa dłużej. Spróbuj ponownie za chwilę — gotowa paczka zostanie użyta ponownie.');
-            const link = document.createElement('a');
-            link.href = result.downloadUrl;
-            link.download = result.fileName || `${gallery.client_name || 'galeria'}-zdjecia.zip`;
-            document.body.appendChild(link); link.click(); link.remove();
+            startBrowserDownload(result.downloadUrl, result.fileName);
             setDownloadProgress({
                 status: 'downloading',
                 percent: 100,
                 completed: Number(result.completed || readiness.photoCount || 0),
                 total: Number(result.total || readiness.photoCount || 0),
-                message: 'Paczka ZIP jest gotowa. Chrome pobiera teraz plik — jego rzeczywisty postęp sprawdzisz w panelu pobierania przeglądarki.',
+                message: 'Pobieranie zostało przekazane do przeglądarki. Sprawdź ikonę pobierania w prawym górnym rogu ekranu.',
+                downloadUrl: result.downloadUrl,
+                fileName: result.fileName,
             });
         } catch (error) {
             setDownloadProgress((current) => ({
@@ -901,33 +911,20 @@ export default function ClientGalleryPage() {
                             exit={{ opacity: 0, y: 18, scale: 0.97 }}
                             className="w-full max-w-md rounded-3xl border border-zinc-700 bg-zinc-950 p-7 text-center shadow-2xl"
                         >
-                            <div
-                                className="relative mx-auto mb-6 flex h-32 w-32 items-center justify-center rounded-full"
-                                style={{
-                                    background: downloadProgress.status === 'downloading'
-                                        ? '#d4af37'
-                                        : `conic-gradient(${downloadProgress.status === 'error' ? '#ef4444' : '#d4af37'} ${downloadProgress.percent * 3.6}deg, #27272a 0deg)`,
-                                }}
-                            >
-                                <div className="flex h-24 w-24 flex-col items-center justify-center rounded-full bg-zinc-950">
-                                    {downloadProgress.status === 'downloading' ? (
-                                        <>
-                                            <span className="text-4xl font-black text-gold-500">✓</span>
-                                            <span className="mt-1 text-[10px] font-bold uppercase tracking-widest text-zinc-500">ZIP gotowy</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <span className={`text-3xl font-black ${downloadProgress.status === 'error' ? 'text-red-400' : 'text-white'}`}>{downloadProgress.percent}%</span>
-                                            <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Pakowanie ZIP</span>
-                                        </>
-                                    )}
-                                </div>
+                            <div className={`mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full border-4 ${downloadProgress.status === 'error' ? 'border-red-500 text-red-400' : 'border-gold-500 text-gold-500'}`}>
+                                {downloadProgress.status === 'downloading' ? (
+                                    <span className="text-5xl font-black" aria-label="ZIP gotowy">✓</span>
+                                ) : downloadProgress.status === 'error' ? (
+                                    <span className="text-4xl font-black" aria-label="Błąd">!</span>
+                                ) : (
+                                    <span className="h-10 w-10 animate-spin rounded-full border-4 border-zinc-700 border-t-gold-500" aria-label="Przygotowywanie ZIP" />
+                                )}
                             </div>
                             <h2 className="text-2xl font-black uppercase tracking-tight text-white">
                                 {downloadProgress.status === 'error'
                                     ? 'Nie udało się przygotować pliku'
                                     : downloadProgress.status === 'downloading'
-                                        ? 'ZIP gotowy — Chrome pobiera plik'
+                                        ? 'ZIP gotowy'
                                         : downloadProgress.status === 'ready'
                                             ? 'Galeria gotowa'
                                             : 'Przygotowujemy galerię'}
@@ -947,13 +944,22 @@ export default function ClientGalleryPage() {
                                     ? <><strong className="text-white">To już drugi etap.</strong> Postęp pobierania pliku pokazuje teraz Chrome w prawym górnym rogu. Poczekaj, aż przeglądarka pobierze całość. Potem otwórz folder „Pobrane” i wybierz „Wyodrębnij” lub „Rozpakuj”.</>
                                     : <>Otrzymasz jeden plik <strong className="text-white">ZIP</strong> ze zdjęciami JPG. Po pobraniu otwórz folder „Pobrane” i wybierz „Wyodrębnij” lub „Rozpakuj”. Nie zamykaj tej strony podczas przygotowywania pliku.</>}
                             </div>
+                            {downloadProgress.status === 'downloading' && downloadProgress.downloadUrl && (
+                                <button
+                                    type="button"
+                                    onClick={() => startBrowserDownload(downloadProgress.downloadUrl!, downloadProgress.fileName)}
+                                    className="mt-6 w-full rounded-xl bg-gold-500 px-5 py-3 text-sm font-black uppercase tracking-wider text-black hover:bg-gold-400"
+                                >
+                                    Pobierz ponownie
+                                </button>
+                            )}
                             {(downloadProgress.status === 'error' || downloadProgress.status === 'downloading') && (
                                 <button
                                     type="button"
                                     onClick={() => setDownloadProgress(null)}
-                                    className="mt-6 w-full rounded-xl bg-white px-5 py-3 text-sm font-black uppercase tracking-wider text-black hover:bg-gold-500"
+                                    className={`${downloadProgress.status === 'downloading' ? 'mt-3 border border-zinc-700 bg-zinc-900 text-white hover:bg-zinc-800' : 'mt-6 bg-white text-black hover:bg-gold-500'} w-full rounded-xl px-5 py-3 text-sm font-black uppercase tracking-wider`}
                                 >
-                                    {downloadProgress.status === 'downloading' ? 'Rozumiem' : 'Zamknij'}
+                                    {downloadProgress.status === 'downloading' ? 'Zamknij komunikat' : 'Zamknij'}
                                 </button>
                             )}
                         </motion.div>
