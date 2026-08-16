@@ -40,7 +40,7 @@ interface Gallery {
 }
 
 type DownloadProgressState = {
-    status: 'checking' | 'queued' | 'processing' | 'ready' | 'error';
+    status: 'checking' | 'queued' | 'processing' | 'ready' | 'downloading' | 'error';
     percent: number;
     completed: number;
     total: number;
@@ -356,7 +356,7 @@ export default function ClientGalleryPage() {
                     message: result?.status === 'processing'
                         ? `Dodajemy zdjęcia JPG HQ do archiwum: ${completed} z ${total}.`
                         : result?.status === 'ready'
-                            ? 'Archiwum jest gotowe. Rozpoczynamy pobieranie.'
+                            ? 'Archiwum jest gotowe. Przekazujemy plik do pobrania w przeglądarce.'
                             : 'Oczekiwanie na rozpoczęcie pakowania zdjęć.',
                 });
                 if (result.status === 'ready' && result.downloadUrl) break;
@@ -369,14 +369,12 @@ export default function ClientGalleryPage() {
             link.download = result.fileName || `${gallery.client_name || 'galeria'}-zdjecia.zip`;
             document.body.appendChild(link); link.click(); link.remove();
             setDownloadProgress({
-                status: 'ready',
+                status: 'downloading',
                 percent: 100,
                 completed: Number(result.completed || readiness.photoCount || 0),
                 total: Number(result.total || readiness.photoCount || 0),
-                message: 'Pobieranie rozpoczęte. Plik ZIP znajdziesz w folderze „Pobrane”.',
+                message: 'Paczka ZIP jest gotowa. Chrome pobiera teraz plik — jego rzeczywisty postęp sprawdzisz w panelu pobierania przeglądarki.',
             });
-            await new Promise(resolve => setTimeout(resolve, 2200));
-            setDownloadProgress(null);
         } catch (error) {
             setDownloadProgress((current) => ({
                 status: 'error',
@@ -913,7 +911,13 @@ export default function ClientGalleryPage() {
                                 </div>
                             </div>
                             <h2 className="text-2xl font-black uppercase tracking-tight text-white">
-                                {downloadProgress.status === 'error' ? 'Nie udało się przygotować pliku' : downloadProgress.status === 'ready' ? 'Galeria gotowa' : 'Przygotowujemy galerię'}
+                                {downloadProgress.status === 'error'
+                                    ? 'Nie udało się przygotować pliku'
+                                    : downloadProgress.status === 'downloading'
+                                        ? 'Paczka gotowa — trwa pobieranie'
+                                        : downloadProgress.status === 'ready'
+                                            ? 'Galeria gotowa'
+                                            : 'Przygotowujemy galerię'}
                             </h2>
                             <p className={`mt-3 text-sm leading-relaxed ${downloadProgress.status === 'error' ? 'text-red-300' : 'text-zinc-300'}`}>
                                 {downloadProgress.message}
@@ -924,15 +928,17 @@ export default function ClientGalleryPage() {
                                 </p>
                             )}
                             <div className="mt-6 rounded-2xl border border-gold-500/20 bg-gold-500/5 px-4 py-3 text-left text-xs leading-relaxed text-zinc-400">
-                                Otrzymasz jeden plik <strong className="text-white">ZIP</strong> ze zdjęciami JPG. Po pobraniu otwórz folder „Pobrane” i wybierz „Wyodrębnij” lub „Rozpakuj”. Nie zamykaj tej strony podczas przygotowywania pliku.
+                                {downloadProgress.status === 'downloading'
+                                    ? <>ZIP jest już utworzony. Transfer pliku może potrwać, zwłaszcza przy dużej galerii — nie zamykaj karty ani pobierania. Po ukończeniu otwórz folder „Pobrane” i wybierz „Wyodrębnij” lub „Rozpakuj”.</>
+                                    : <>Otrzymasz jeden plik <strong className="text-white">ZIP</strong> ze zdjęciami JPG. Po pobraniu otwórz folder „Pobrane” i wybierz „Wyodrębnij” lub „Rozpakuj”. Nie zamykaj tej strony podczas przygotowywania pliku.</>}
                             </div>
-                            {downloadProgress.status === 'error' && (
+                            {(downloadProgress.status === 'error' || downloadProgress.status === 'downloading') && (
                                 <button
                                     type="button"
                                     onClick={() => setDownloadProgress(null)}
                                     className="mt-6 w-full rounded-xl bg-white px-5 py-3 text-sm font-black uppercase tracking-wider text-black hover:bg-gold-500"
                                 >
-                                    Zamknij
+                                    {downloadProgress.status === 'downloading' ? 'Rozumiem' : 'Zamknij'}
                                 </button>
                             )}
                         </motion.div>
