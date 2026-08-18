@@ -1,9 +1,9 @@
 import 'server-only';
 
 import { google } from 'googleapis';
-import { configuredGscSites, gscCalendarComparisonRanges, gscComparisonRanges, gscInclusiveRange, latestCompleteGscDate, normalizeGscRows, type GscMetric } from './gscCore';
-export { configuredGscSites, gscIdentity, gscInclusiveRange, latestCompleteGscDate, normalizeGscRows, propertyHost } from './gscCore';
-export type { GscMetric } from './gscCore';
+import { configuredGscSites, gscCalendarComparisonRanges, gscComparisonRanges, gscInclusiveRange, latestCompleteGscDate, normalizeGscQueryRows, normalizeGscRows, type GscMetric, type GscQueryMetric } from './gscCore';
+export { configuredGscSites, gscIdentity, gscInclusiveRange, latestCompleteGscDate, normalizeGscQueryRows, normalizeGscRows, propertyHost } from './gscCore';
+export type { GscMetric, GscQueryMetric } from './gscCore';
 
 const DEFAULT_TIMEOUT_MS = 8_000;
 export type GscResult = {
@@ -12,10 +12,12 @@ export type GscResult = {
   checkedAt: string;
   latestCompleteDate: string;
   incompleteDays: number;
-  sites: Array<{ siteUrl: string; status: 'connected' | 'error'; error?: string; truncated?: boolean }>;
+  sites: Array<{ siteUrl: string; status: 'connected' | 'error'; error?: string; truncated?: boolean; queryReport: 'connected' | 'partial' | 'error'; queryError?: string }>;
   current: GscMetric[];
   previous: GscMetric[];
   history: GscMetric[];
+  queryCurrent: GscQueryMetric[];
+  queryPrevious: GscQueryMetric[];
   message: string;
 };
 
@@ -80,7 +82,7 @@ export async function fetchGscComparison(input: {
   if (!email || !privateKey) {
     return {
       status: 'not_configured', comparisonStatus: 'waiting_for_complete_data', checkedAt, latestCompleteDate, incompleteDays: 2,
-      sites: [], current: [], previous: [], history: [],
+      sites: [], current: [], previous: [], history: [], queryCurrent: [], queryPrevious: [],
       message: 'Dodaj dane service account i udostępnij mu usługi w Google Search Console.',
     };
   }
@@ -96,6 +98,8 @@ export async function fetchGscComparison(input: {
   const current: GscMetric[] = [];
   const previous: GscMetric[] = [];
   const history: GscMetric[] = [];
+  const queryCurrent: GscQueryMetric[] = [];
+  const queryPrevious: GscQueryMetric[] = [];
   const statuses: GscResult['sites'] = [];
   const comparison = input.calendarRanges
     ? gscCalendarComparisonRanges(input.calendarRanges.current, input.calendarRanges.previous, latestCompleteDate)
@@ -117,6 +121,18 @@ export async function fetchGscComparison(input: {
         }
         return { rows, truncated: true };
       };
+      const queryBySearchTerm = async (range: { startDate: string; endDate: string } | null) => {
+        if (!range) return { rows: [] as GscQueryMetric[], truncated: false };
+        const rows: GscQueryMetric[] = []; const rowLimit = 25_000; const maxRows = 100_000;
+        for (let startRow = 0; startRow < maxRows; startRow += rowLimit) {
+          const response = await searchConsole.searchanalytics.query({ siteUrl, requestBody: {
+            startDate: range.startDate, endDate: range.endDate, dimensions: ['query', 'page'], rowLimit, startRow, dataState: 'final',
+          } }, { timeout });
+          const page = normalizeGscQueryRows(siteUrl, response.data.rows); rows.push(...page);
+          if (page.length < rowLimit) return { rows, truncated: false };
+        }
+        return { rows, truncated: true };
+      };
       const historyStart = new Date((input.now || new Date()).getTime() - 16 * 31 * 86_400_000);
       const cacheKey = `${siteUrl}:${latestCompleteDate}`;
       const cached = historyCache.get(cacheKey);
@@ -131,10 +147,26 @@ export async function fetchGscComparison(input: {
         historyPromise,
       ]);
       current.push(...currentResult.rows); previous.push(...previousResult.rows); history.push(...historyResult.rows);
-      statuses.push({ siteUrl, status: 'connected', truncated: currentResult.truncated || previousResult.truncated || historyResult.truncated });
+      const [queryCurrentResult, queryPreviousResult] = await Promise.allSettled([
+        queryBySearchTerm(currentRange),
+        queryBySearchTerm(comparison.previous),
+      ]);
+      if (queryCurrentResult.status === 'fulfilled') queryCurrent.push(...queryCurrentResult.value.rows);
+      if (queryPreviousResult.status === 'fulfilled') queryPrevious.push(...queryPreviousResult.value.rows);
+      const queryFailures = [queryCurrentResult, queryPreviousResult].filter(result => result.status === 'rejected');
+      if (queryFailures.length) console.warn('[Analytics GSC] query report failed', { siteUrl, failures: queryFailures.length });
+      statuses.push({
+        siteUrl,
+        status: 'connected',
+        truncated: currentResult.truncated || previousResult.truncated || historyResult.truncated
+          || (queryCurrentResult.status === 'fulfilled' && queryCurrentResult.value.truncated)
+          || (queryPreviousResult.status === 'fulfilled' && queryPreviousResult.value.truncated),
+        queryReport: queryFailures.length === 0 ? 'connected' : queryFailures.length === 1 ? 'partial' : 'error',
+        queryError: queryFailures.length ? 'Raport zapytań GSC jest chwilowo niepełny; podstawowe metryki stron pozostają dostępne.' : undefined,
+      });
     } catch (error) {
       console.warn('[Analytics GSC] query failed', { siteUrl, ...gscErrorDiagnostic(error) });
-      statuses.push({ siteUrl, status: 'error', error: publicError(error) });
+      statuses.push({ siteUrl, status: 'error', error: publicError(error), queryReport: 'error' });
     }
   }));
 
@@ -143,7 +175,7 @@ export async function fetchGscComparison(input: {
   return {
     status: !connected ? 'error' : connectedCount === statuses.length ? 'connected' : 'partial', comparisonStatus,
     checkedAt, latestCompleteDate, incompleteDays: 2,
-    sites: statuses, current, previous, history,
+    sites: statuses, current, previous, history, queryCurrent, queryPrevious,
     message: connected
       ? 'Dane kończą się na ostatnim kompletnym dniu GSC; najnowsze dni mogą jeszcze ulec zmianie.'
       : 'Poświadczenia istnieją, ale żadna dozwolona usługa GSC nie odpowiedziała.',

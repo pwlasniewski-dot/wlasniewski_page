@@ -12,4 +12,7 @@ test('V3 dashboard renders traffic sources, ingest quality and expandable sessio
   for (const field of ['page.impact.baseline28.sampleStatus', 'page.impact.baseline28.growthConfidence', 'page.impact.baseline28.note', 'data-testid="page-baseline-status"']) {
     assert.ok(source.includes(field), `missing per-page baseline contract: ${field}`);
   }
+  for (const field of ['data?.searchQueries', 'data.querySummary.multiplePagesSignals', 'totalRows: number', 'truncated: boolean', 'queryReportIncomplete', "queryReport: 'connected' | 'partial' | 'error'", 'row.multiplePagesSignal', 'row.competingPages', 'data-testid="gsc-query-page-report"']) {
+    assert.ok(source.includes(field), `missing GSC query/page contract: ${field}`);
+  }
 });
