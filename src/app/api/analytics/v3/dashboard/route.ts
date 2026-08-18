@@ -13,6 +13,7 @@ import {
   portfolioPath, type DirectorAction, type PageSource,
 } from '@/lib/analytics/pageRegistry';
 import { b2bPublicPath, isB2bCmsPage } from '@/lib/sites/b2b-routing';
+import { buildGscQueryReport } from '@/lib/analytics/gscQueryReport';
 
 export const dynamic = 'force-dynamic';
 const MAX_RANGE_DAYS = 120;
@@ -357,6 +358,9 @@ export async function GET(request: NextRequest) {
     }
 
     const totalGsc = (rows: GscMetric[]) => rows.reduce((sum, row) => sum + row.impressions, 0);
+    const allSearchQueries = buildGscQueryReport(gsc.queryCurrent, gsc.queryPrevious);
+    const priorityQuery = (row: typeof allSearchQueries[number]) => row.host === 'wlasniewski.pl' && row.query.toLocaleLowerCase('pl-PL') === 'fotograf toruń';
+    const searchQueries = [...allSearchQueries.filter(priorityQuery), ...allSearchQueries.filter(row => !priorityQuery(row))].slice(0, 500);
     const actions: DirectorAction[] = [];
     for (const diagnostic of diagnostics.actions) {
       const priority = diagnostic.kind === 'error' ? 140 : diagnostic.kind === 'availability' ? 130 : diagnostic.kind === 'dropoff' ? 120 : diagnostic.kind === 'performance' ? 115 : diagnostic.kind === 'hypothesis' ? 105 : 90;
@@ -366,6 +370,8 @@ export async function GET(request: NextRequest) {
     if (events.length === 0) actions.push({ priority: 125, kind: 'tracking', title: 'Brak danych własnej analityki', evidence: 'Nie przyjęto żadnego zdarzenia V2 w wybranym okresie.', recommendation: 'Sprawdź tracker, zgodę analityczną i endpoint ingest na produkcji.' });
     const visibleWithoutClicks = pageRows.find(page => page.impact.gsc.impressions >= 20 && page.impact.gsc.clicks === 0);
     if (visibleWithoutClicks) actions.push({ priority: 80, kind: 'ctr', title: `Widoczność bez kliknięć: ${visibleWithoutClicks.path}`, evidence: `${visibleWithoutClicks.impact.gsc.impressions} wyświetleń i 0 kliknięć.`, recommendation: 'Popraw title i description zgodnie z intencją zapytania; oceń wynik po 28 dniach.' });
+    const torunQuerySignal = searchQueries.find(row => row.host === 'wlasniewski.pl' && row.query.toLocaleLowerCase('pl-PL') === 'fotograf toruń' && row.multiplePagesSignal);
+    if (torunQuerySignal) actions.push({ priority: 95, kind: 'query_overlap', title: 'Sprawdź rozdzielenie frazy „fotograf Toruń”', evidence: `To samo zapytanie wyświetla ${torunQuerySignal.competingPages.length} URL-e: ${torunQuerySignal.competingPages.join(', ')}. To sygnał, nie automatyczny dowód kanibalizacji.`, recommendation: 'Porównaj kliknięcia, wyświetlenia, CTR i pozycję URL-i; zmieniaj tylko jeden title w kontrolowanym teście 28/28.' });
     const importantIncomplete = pageRows.find(page => page.completeness < 70 && (page.impact.sessions > 0 || page.impact.gsc.impressions > 0));
     if (importantIncomplete) actions.push({ priority: 70, kind: 'completeness', title: `Dokończ ${importantIncomplete.path}`, evidence: `Kompletność ${importantIncomplete.completeness}%. ${importantIncomplete.blockers.slice(0, 2).join('; ')}`, recommendation: 'Usuń wskazane blokery strony, zaczynając od publikacji, meta i CTA.' });
     if (shouldCreateZeroBookingAction(sessionIds.size, bookingStartSessions)) actions.push({ priority: 60, kind: 'funnel', title: 'Ruch nie rozpoczyna rezerwacji', evidence: `${sessionIds.size} sesji i 0 startów rezerwacji.`, recommendation: 'Sprawdź CTA na najczęstszych landing pages i ręcznie przetestuj rezerwację mobile.' });
@@ -401,6 +407,16 @@ export async function GET(request: NextRequest) {
       diagnostics,
       trafficSources: Array.from(sourceMap, ([source, ids]) => ({ source, sessions: ids.size })).sort((a, b) => b.sessions - a.sessions),
       ingest: ingestRaw.map(row => ({ reason: row.reason_code, outcome: row.outcome, batches: Number(row.batch_count), events: Number(row.event_count) })),
+      searchQueries,
+      querySummary: {
+        rows: searchQueries.length,
+        totalRows: allSearchQueries.length,
+        truncated: allSearchQueries.length > searchQueries.length,
+        multiplePagesSignals: new Set(allSearchQueries.filter(row => row.multiplePagesSignal).map(row => `${row.host}\u0000${row.query.toLocaleLowerCase('pl-PL')}`)).size,
+        note: allSearchQueries.length > searchQueries.length
+          ? 'Wiele URL-i dla jednego zapytania jest sygnałem do analizy, a nie automatycznym dowodem kanibalizacji. Raport zawiera 500 priorytetowych wierszy; brak wyniku filtra nie dowodzi braku zapytania w GSC.'
+          : `Wiele URL-i dla jednego zapytania jest sygnałem do analizy, a nie automatycznym dowodem kanibalizacji. Raport zawiera wszystkie dostępne wiersze (${allSearchQueries.length}).`,
+      },
       pages: pageRows,
       recentSessions: Array.from(sessions.entries()).slice(-50).reverse().map(([sessionId, items]) => ({
         sessionId, startedAt: items[0]?.created_at, landingPage: normalizePath(items.find(event => event.event_type === 'v2_page_view')?.page_url),
@@ -409,7 +425,7 @@ export async function GET(request: NextRequest) {
         bookingStarted: items.some(isBookingStart), clientConversion: items.some(isClientConversion),
         path: items.filter(event => ['v2_page_view', 'v2_click', 'v2_booking_start', 'v2_booking_form_started', 'v2_booking_created', 'v2_payment_success'].includes(event.event_type)).map(event => ({ at: event.created_at, event: event.event_type.replace(/^v2_/, ''), page: normalizePath(event.page_url) })).slice(0, 80),
       })),
-      dataQuality: { syntheticValues: false, unavailableSources: Array.from(new Set(unavailableSources)), privacy: 'Brak danych osobowych i treści zapytań GSC w odpowiedzi.', gscFreshness: gsc.message },
+      dataQuality: { syntheticValues: false, unavailableSources: Array.from(new Set(unavailableSources)), privacy: 'Zapytania GSC są dostępne wyłącznie w chronionym panelu administratora; Google może pomijać rzadkie zapytania.', gscFreshness: gsc.message },
     });
   } catch (error) {
     console.error('[Analytics V3 dashboard]', error instanceof Error ? error.message : 'unknown');

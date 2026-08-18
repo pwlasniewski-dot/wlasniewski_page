@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { configuredGscSites, gscIdentity, gscInclusiveRange, latestCompleteGscDate, normalizeGscRows } from '../../src/lib/analytics/gscCore.ts';
+import { readFile } from 'node:fs/promises';
+import { configuredGscSites, gscIdentity, gscInclusiveRange, latestCompleteGscDate, normalizeGscQueryRows, normalizeGscRows } from '../../src/lib/analytics/gscCore.ts';
 
 test('GSC site configuration enforces the domain allowlist', () => {
   assert.deepEqual(configuredGscSites({
@@ -27,4 +28,20 @@ test('GSC rows normalize page/date and numeric metrics', () => {
 
 test('latest complete GSC date marks two newest days as incomplete', () => {
   assert.equal(latestCompleteGscDate(new Date('2026-08-12T12:00:00Z')), '2026-08-10');
+});
+
+test('GSC query rows normalize search term, landing page and numeric metrics', () => {
+  const rows = normalizeGscQueryRows('sc-domain:wlasniewski.pl', [{
+    keys: [' fotograf toruń ', 'https://wlasniewski.pl/fotograf-torun/?x=1'], clicks: 4, impressions: 80, ctr: 0.05, position: 6.2,
+  }]);
+  assert.deepEqual(rows[0], {
+    siteUrl: 'sc-domain:wlasniewski.pl', query: 'fotograf toruń', page: '/fotograf-torun', clicks: 4, impressions: 80, ctr: 0.05, position: 6.2,
+  });
+});
+
+test('query report failures are isolated from the existing page metrics', async () => {
+  const source = await readFile(new URL('../../src/lib/analytics/gsc.ts', import.meta.url), 'utf8');
+  assert.ok(source.includes('Promise.allSettled'));
+  assert.ok(source.includes("queryReport: queryFailures.length === 0 ? 'connected'"));
+  assert.ok(source.indexOf('current.push(...currentResult.rows)') < source.indexOf('Promise.allSettled'));
 });

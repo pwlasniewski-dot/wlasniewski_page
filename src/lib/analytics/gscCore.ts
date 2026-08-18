@@ -4,6 +4,10 @@ export type GscMetric = {
   siteUrl: string; page: string; date: string; clicks: number; impressions: number; ctr: number; position: number;
 };
 
+export type GscQueryMetric = {
+  siteUrl: string; query: string; page: string; clicks: number; impressions: number; ctr: number; position: number;
+};
+
 function safeSiteUrl(raw: string): string | null {
   const value = raw.trim();
   if (value.startsWith('sc-domain:')) {
@@ -61,5 +65,23 @@ export function normalizeGscRows(siteUrl: string, rows: any[] | undefined): GscM
     let page = '/'; try { page = new URL(pageKey).pathname || '/'; } catch { return []; }
     if (page !== '/') page = page.replace(/\/+$/, '');
     return [{ siteUrl, page, date: dateKey, clicks: Number(row.clicks || 0), impressions: Number(row.impressions || 0), ctr: Number(row.ctr || 0), position: Number(row.position || 0) }];
+  });
+}
+
+export function normalizeGscQueryRows(siteUrl: string, rows: any[] | undefined): GscQueryMetric[] {
+  return (rows || []).flatMap(row => {
+    const [queryKey, pageKey] = Array.isArray(row.keys) ? row.keys : [];
+    if (typeof queryKey !== 'string' || !queryKey.trim() || typeof pageKey !== 'string') return [];
+    let page = '/'; try { page = new URL(pageKey).pathname || '/'; } catch { return []; }
+    if (page !== '/') page = page.replace(/\/+$/, '');
+    return [{
+      siteUrl,
+      query: queryKey.trim(),
+      page,
+      clicks: Number(row.clicks || 0),
+      impressions: Number(row.impressions || 0),
+      ctr: Number(row.ctr || 0),
+      position: Number(row.position || 0),
+    }];
   });
 }
