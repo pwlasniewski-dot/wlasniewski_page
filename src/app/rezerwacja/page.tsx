@@ -121,6 +121,10 @@ export default function RezerwacjaPage() {
     useEffect(() => {
         if (typeof window === 'undefined') return;
         const sp = new URLSearchParams(window.location.search);
+        const requestedCity = sp.get('city')?.trim();
+        if (requestedCity && requestedCity.length <= 80) {
+            setVenueCity(requestedCity);
+        }
         const pid = sp.get('photographer');
         if (!pid || !/^\d+$/.test(pid)) return;
         fetch(`/api/photographers/public?purpose=bookings`)
