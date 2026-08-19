@@ -1,6 +1,8 @@
 
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
+import { loadDronePhotographyCmsPage } from '@/lib/dronePhotographyCms';
+import { formatDronePrice } from '@/lib/dronePhotographyOffer';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -24,12 +26,35 @@ export async function POST(req: Request) {
         const company_name = cleanText(body.company_name, 160);
         const email = cleanText(body.email, 180).toLowerCase();
         const phone = cleanText(body.phone, 40);
-        const service_type = cleanText(body.service_type, 100);
-        const details = cleanText(body.details, 4000);
+        const package_slug = cleanText(body.package_slug, 100);
+        const city = cleanText(body.city, 120);
+        const preferred_date = cleanText(body.preferred_date, 20);
+        const address = cleanText(body.address, 300);
+        const goal = cleanText(body.goal, 240);
+        const notes = cleanText(body.notes, 1600);
+        const source = cleanText(body.source, 160) || 'direct';
 
-        if (client_name.length < 2 || !EMAIL_PATTERN.test(email) || !service_type) {
-            return NextResponse.json({ error: 'Uzupełnij poprawnie imię, e-mail i rodzaj usługi.' }, { status: 400 });
+        if (client_name.length < 2 || !EMAIL_PATTERN.test(email) || phone.replace(/\D/g, '').length < 7) {
+            return NextResponse.json({ error: 'Uzupełnij poprawnie imię, e-mail i telefon.' }, { status: 400 });
         }
+
+        const { config } = await loadDronePhotographyCmsPage();
+        const selectedPackage = config.packages.find(item => item.slug === package_slug && item.active !== false);
+        if (!selectedPackage) return NextResponse.json({ error: 'Wybrany pakiet nie jest już dostępny. Odśwież stronę i wybierz aktualną ofertę.' }, { status: 400 });
+        if (!city || !/^\d{4}-\d{2}-\d{2}$/.test(preferred_date) || !config.booking.goalOptions.includes(goal)) {
+            return NextResponse.json({ error: 'Uzupełnij miejscowość, preferowaną datę i zadanie materiału.' }, { status: 400 });
+        }
+
+        const service_type = `fotografia_${selectedPackage.slug}`;
+        const details = [
+            `Pakiet: ${selectedPackage.name} (${formatDronePrice(selectedPackage)})`,
+            `Miejscowość: ${city}`,
+            `Preferowana data: ${preferred_date}`,
+            `Adres / miejsce: ${address || 'do ustalenia'}`,
+            `Główne zadanie materiału: ${goal}`,
+            `Dodatkowe informacje: ${notes || 'brak'}`,
+            `Źródło: ${source}`,
+        ].join('\n');
 
         const order = await prisma.droneOrder.create({
             data: {
