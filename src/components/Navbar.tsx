@@ -22,7 +22,10 @@ const MENU_ITEMS: MenuItem[] = [
     { id: 3, label: 'Fotografowie', href: '/fotografowie' },
     { id: 4, label: 'O mnie', href: '/o-mnie' },
     { id: 5, label: 'Blog', href: '/blog' },
-    { id: 6, label: 'Dron', href: '/fotografia-z-drona' },
+    { id: 6, label: 'Dron', href: '/fotografia-z-drona', children: [
+        { id: 61, label: 'Oferta i ceny', href: '/fotografia-z-drona' },
+        { id: 62, label: 'Rezerwacja drona', href: '/rezerwacja/dron?source=navbar' },
+    ] },
     { id: 7, label: 'Kontakt', href: '/kontakt' },
     { id: 8, label: 'Rezerwacja', href: '/rezerwacja' },
 ];

@@ -9,6 +9,7 @@ import { Camera, ChevronDown, Facebook, Instagram, Mail, MapPin, Phone, Send, Us
 import HeroSlider from '@/components/HeroSlider';
 import ContactForm from '@/components/ContactForm';
 import GiftCard from '@/components/GiftCard';
+import { mergeHomepageServiceCards, type HomepageServiceCard } from '@/lib/homepageServiceCards';
 
 // Lazy-loaded below-the-fold components
 const ParallaxSection = dynamic(() => import('@/components/ParallaxSection'), { ssr: false });
@@ -76,17 +77,6 @@ interface HomeData {
     challenge_banner?: any;
     foto_wyzwanie_effect?: any;
     foto_wyzwanie_photos?: any;
-}
-
-interface HomepageServiceCard {
-    title: string;
-    label: string;
-    service: string;
-    copy: string;
-    href: string;
-    image: string;
-    image_mobile?: string;
-    image_position?: string;
 }
 
 // Interfaces
@@ -1003,14 +993,7 @@ export default function HomeContent({ heroSlides, sections, homeData, orderedSec
         }
     };
 
-    const defaultServiceCards: HomepageServiceCard[] = [
-        { title: 'Sesja rodzinna', label: 'Bliskość', service: 'Sesja', copy: 'Dla rodziny, pary albo na spokojne zdjęcia kilku pokoleń.', href: '/rezerwacja?source=home&service=Sesja', image: '/assets/slider/fotografia-rodzinna-grudziadz-01.webp' },
-        { title: 'Ślub', label: 'Reportaż', service: 'Ślub', copy: 'Od ceremonii w urzędzie po pełny reportaż z wesela.', href: '/rezerwacja?source=home&service=Ślub', image: '/assets/slider/fotografia-slubna-torun-16.webp' },
-        { title: 'Urodziny i przyjęcia', label: 'Emocje', service: 'Urodziny', copy: 'Reportaż z urodzin, jubileuszu lub rodzinnej uroczystości.', href: '/rezerwacja?source=home&service=Urodziny', image: '/assets/slider/naturalne-zdjecia-rodzinne-lisewo-03.webp' },
-    ];
-    const serviceCards = Array.isArray(homeData?.service_cards) && homeData.service_cards.length === 3
-        ? defaultServiceCards.map((fallback, index) => ({ ...fallback, ...homeData.service_cards![index] }))
-        : defaultServiceCards;
+    const serviceCards = mergeHomepageServiceCards(homeData?.service_cards);
 
     return (
         <main className="home-editorial min-h-screen bg-[#f3efe8] text-[#27221c]">
@@ -1033,7 +1016,8 @@ export default function HomeContent({ heroSlides, sections, homeData, orderedSec
                     </div>
                     <div className="grid gap-4 md:grid-cols-12 md:gap-5">
                         {serviceCards.map((item, index) => (
-                            <Link key={item.title} href={item.href} className={`group relative min-h-[420px] overflow-hidden rounded-[2px] bg-[#28221c] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#94733d] ${index === 0 ? 'md:col-span-5 md:min-h-[620px]' : index === 1 ? 'md:col-span-7 md:min-h-[620px]' : 'md:col-span-12 md:min-h-[480px]'}`}>
+                            <article key={item.title} className={`group relative min-h-[420px] overflow-hidden rounded-[2px] bg-[#28221c] ${index === 0 ? 'md:col-span-5 md:min-h-[620px]' : index === 1 ? 'md:col-span-7 md:min-h-[620px]' : 'md:col-span-6 md:min-h-[480px]'}`}>
+                                <Link href={item.href} aria-label={`${item.title} — ${item.cta_label || 'sprawdź ceny i terminy'}`} className="absolute inset-0 z-10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-[#ead5ab]" />
                                 <picture className="absolute inset-0 block">
                                     {item.image_mobile && <source media="(max-width: 767px)" srcSet={item.image_mobile} />}
                                     <img
@@ -1046,17 +1030,24 @@ export default function HomeContent({ heroSlides, sections, homeData, orderedSec
                                     />
                                 </picture>
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-black/5" />
-                                <div className="absolute inset-x-0 bottom-0 p-7 text-white sm:p-9 lg:p-11">
+                                <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 p-7 text-white sm:p-9 lg:p-11">
                                     <div className="mb-4 flex items-center gap-3 text-[10px] font-bold uppercase tracking-[.25em] text-[#ead5ab]"><span>{String(index + 1).padStart(2, '0')}</span><span className="h-px w-8 bg-[#ead5ab]/60"/><span>{item.label}</span></div>
                                     <div className="flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
                                         <div>
                                             <h3 className="font-display text-4xl font-normal leading-none transition group-hover:text-[#f4dfb6] sm:text-5xl lg:text-6xl">{item.title}</h3>
                                             <p className="mt-4 max-w-lg text-sm leading-6 text-white/70">{item.copy}</p>
                                         </div>
-                                        <span className="shrink-0 text-xs font-bold uppercase tracking-[.14em] text-[#ead5ab]">{publicPriceLabels[item.service] || fallbackPublicPriceLabel} <ArrowRight className="ml-2 inline" size={16}/></span>
+                                        <div className="flex shrink-0 flex-col items-start gap-3 sm:items-end">
+                                            <span className="text-xs font-bold uppercase tracking-[.14em] text-[#ead5ab]">{item.cta_label || publicPriceLabels[item.service] || fallbackPublicPriceLabel} <ArrowRight className="ml-2 inline" size={16}/></span>
+                                            {item.secondary_href && item.secondary_label && (
+                                                <Link href={item.secondary_href} className="pointer-events-auto rounded-full border border-white/60 px-4 py-2 text-[10px] font-bold uppercase tracking-[.16em] text-white transition hover:border-[#ead5ab] hover:bg-[#ead5ab] hover:text-[#28221c] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ead5ab]">
+                                                    {item.secondary_label}
+                                                </Link>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
-                            </Link>
+                            </article>
                         ))}
                     </div>
                 </div>

@@ -9,6 +9,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { getApiUrl } from '@/lib/api-config';
+import { DEFAULT_HOMEPAGE_SERVICE_CARDS, mergeHomepageServiceCards, type HomepageServiceCard } from '@/lib/homepageServiceCards';
 import {
     Layout, GripVertical, Image as ImageIcon, Type, Save, Plus, Trash2,
     ArrowLeft, Eye, EyeOff, MoveUp, MoveDown, LayoutTemplate, X,
@@ -47,22 +48,7 @@ interface HeroSlide {
     shader?: 'subtle' | 'cinematic' | 'deep';
 }
 
-interface HomepageServiceCard {
-    title: string;
-    label: string;
-    service: string;
-    copy: string;
-    href: string;
-    image: string;
-    image_mobile?: string;
-    image_position?: string;
-}
-
-const DEFAULT_SERVICE_CARDS: HomepageServiceCard[] = [
-    { title: 'Sesja rodzinna', label: 'Bliskość', service: 'Sesja', copy: 'Dla rodziny, pary albo na spokojne zdjęcia kilku pokoleń.', href: '/rezerwacja?source=home&service=Sesja', image: '/assets/slider/fotografia-rodzinna-grudziadz-01.webp', image_position: 'center center' },
-    { title: 'Ślub', label: 'Reportaż', service: 'Ślub', copy: 'Od ceremonii w urzędzie po pełny reportaż z wesela.', href: '/rezerwacja?source=home&service=Ślub', image: '/assets/slider/fotografia-slubna-torun-16.webp', image_position: 'center center' },
-    { title: 'Urodziny i przyjęcia', label: 'Emocje', service: 'Urodziny', copy: 'Reportaż z urodzin, jubileuszu lub rodzinnej uroczystości.', href: '/rezerwacja?source=home&service=Urodziny', image: '/assets/slider/naturalne-zdjecia-rodzinne-lisewo-03.webp', image_position: 'center center' },
-];
+const DEFAULT_SERVICE_CARDS = DEFAULT_HOMEPAGE_SERVICE_CARDS;
 
 interface Feature {
     id: string;
@@ -489,9 +475,7 @@ export default function HomepageManager() {
 
                 // Load Hero Slides
                 if (parsed.hero_slider) setHeroSlides(parsed.hero_slider);
-                if (Array.isArray(parsed.service_cards) && parsed.service_cards.length === 3) {
-                    setServiceCards(DEFAULT_SERVICE_CARDS.map((fallback, index) => ({ ...fallback, ...parsed.service_cards[index] })));
-                }
+                setServiceCards(mergeHomepageServiceCards(parsed.service_cards));
 
                 // Load Sections - check if using new structure or migrate old one
                 if (parsed.sections && Array.isArray(parsed.sections)) {
@@ -1439,7 +1423,7 @@ export default function HomepageManager() {
                             <ImageIcon className="h-5 w-5 text-amber-400" />
                             Kafle oferty pod Hero
                         </h2>
-                        <p className="mt-1 text-xs leading-5 text-zinc-400">Osobne kadry dla komputera i telefonu. Dla szerokiego kafla „Urodziny i przyjęcia” użyj na desktopie proporcji 5:2 (najlepiej 3000 × 1200 px), a na telefonie 4:5.</p>
+                        <p className="mt-1 text-xs leading-5 text-zinc-400">Osobne kadry dla komputera i telefonu. Kafle 3 i 4 są wyświetlane obok siebie na komputerze, a na telefonie jeden pod drugim.</p>
                     </div>
 
                     <div className="grid gap-4 xl:grid-cols-3">
@@ -1447,7 +1431,7 @@ export default function HomepageManager() {
                             <div key={`${card.service}-${index}`} className="space-y-4 rounded-lg border border-zinc-700 bg-black/30 p-4">
                                 <div className="flex items-center justify-between">
                                     <span className="text-xs font-bold uppercase tracking-[.18em] text-amber-300">Kafel {index + 1}</span>
-                                    <span className="text-[10px] text-zinc-500">{index === 2 ? 'desktop 5:2' : 'desktop pionowy'}</span>
+                                    <span className="text-[10px] text-zinc-500">{index < 2 ? 'desktop pionowy' : 'desktop poziomy'}</span>
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-3">
@@ -1490,12 +1474,29 @@ export default function HomepageManager() {
                                             <option value="Sesja">Sesja</option>
                                             <option value="Ślub">Ślub</option>
                                             <option value="Urodziny">Urodziny</option>
+                                            <option value="Dron">Dron</option>
                                         </select>
                                     </div>
                                     <div>
                                         <label className="mb-1 block text-[11px] text-zinc-400">Link po kliknięciu</label>
                                         <input value={card.href} onChange={event => setServiceCards(current => current.map((item, cardIndex) => cardIndex === index ? { ...item, href: event.target.value } : item))} className="w-full rounded border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white" placeholder="/rezerwacja?..." />
                                     </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="mb-1 block text-[11px] text-zinc-400">Tekst głównego przejścia</label>
+                                        <input value={card.cta_label || ''} onChange={event => setServiceCards(current => current.map((item, cardIndex) => cardIndex === index ? { ...item, cta_label: event.target.value } : item))} className="w-full rounded border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white" placeholder="Domyślnie cena kategorii" />
+                                    </div>
+                                    <div>
+                                        <label className="mb-1 block text-[11px] text-zinc-400">Tekst drugiego przycisku</label>
+                                        <input value={card.secondary_label || ''} onChange={event => setServiceCards(current => current.map((item, cardIndex) => cardIndex === index ? { ...item, secondary_label: event.target.value } : item))} className="w-full rounded border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white" placeholder="np. Rezerwuj" />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="mb-1 block text-[11px] text-zinc-400">Link drugiego przycisku</label>
+                                    <input value={card.secondary_href || ''} onChange={event => setServiceCards(current => current.map((item, cardIndex) => cardIndex === index ? { ...item, secondary_href: event.target.value } : item))} className="w-full rounded border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white" placeholder="/rezerwacja/dron?..." />
                                 </div>
 
                                 <div>
