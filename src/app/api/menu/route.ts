@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from '@/lib/db/prisma';
 import { requireAdminAuth } from '@/lib/auth/middleware';
 import { z } from 'zod';
+import { withDroneMenuFunnel } from '@/lib/droneMenuFunnel';
 
 export const dynamic = 'force-dynamic';
 
@@ -82,7 +83,8 @@ export async function GET(request: Request) {
                 children: item.children ? item.children.map(mapItem) : []
             });
 
-            return NextResponse.json(withPublicGuide(menuItems.map(mapItem)));
+            const publicMenu = withPublicGuide(menuItems.map(mapItem));
+            return NextResponse.json(type === 'b2c' ? withDroneMenuFunnel(publicMenu) : publicMenu);
         }
 
         // 2. FALLBACK: If menu_items is empty AND type is b2c, fetch pages (Old Logic)
@@ -119,7 +121,7 @@ export async function GET(request: Request) {
                 }))
             }));
 
-            return NextResponse.json(withPublicGuide(menu));
+            return NextResponse.json(withDroneMenuFunnel(withPublicGuide(menu)));
         }
 
         return NextResponse.json([]);

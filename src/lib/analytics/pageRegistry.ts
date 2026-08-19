@@ -27,6 +27,8 @@ export type PageSignals = {
 export const STATIC_PAGE_REGISTRY: PageSource[] = [
   { host: 'wlasniewski.pl', path: '/', title: 'Strona główna', kind: 'static', published: true, hasCta: true },
   { host: 'wlasniewski.pl', path: '/rezerwacja', title: 'Rezerwacja', kind: 'static', published: true, hasCta: true },
+  { host: 'wlasniewski.pl', path: '/fotografia-z-drona', title: 'Fotografia z drona', kind: 'static', published: true, hasCta: true },
+  { host: 'wlasniewski.pl', path: '/rezerwacja/dron', title: 'Rezerwacja fotografii z drona', kind: 'static', published: true, hasCta: true },
   { host: 'wlasniewski.pl', path: '/portfolio', title: 'Portfolio', kind: 'static', published: true, hasCta: true },
   { host: 'wlasniewski.pl', path: '/blog', title: 'Blog', kind: 'static', published: true, hasCta: false },
   { host: 'wlasniewski.pl', path: '/kontakt', title: 'Kontakt', kind: 'static', published: true, hasCta: true },

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
+import { loadDronePhotographyCmsPage } from '@/lib/dronePhotographyCms';
 
 interface AvailabilitySlot {
     hour: number;
@@ -11,9 +12,10 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const serviceId = searchParams.get('serviceId');
     const packageId = searchParams.get('packageId');
+    const dronePackageSlug = searchParams.get('dronePackageSlug');
     const dateStr = searchParams.get('date'); // YYYY-MM-DD format
 
-    if (!serviceId || !dateStr) {
+    if ((!serviceId && !dronePackageSlug) || !dateStr) {
         return NextResponse.json(
             { error: 'Missing serviceId and date parameters' },
             { status: 400 }
@@ -22,10 +24,19 @@ export async function GET(request: NextRequest) {
 
     try {
         // Get package details
-        const pkgQuery = packageId ? { id: parseInt(packageId) } : { service_id: parseInt(serviceId) };
-        const pkg = await prisma.package.findFirst({
-            where: pkgQuery
-        });
+        let pkg: { name: string; hours: number } | null = null;
+        if (dronePackageSlug) {
+            const { config } = await loadDronePhotographyCmsPage();
+            const item = config.packages.find(candidate =>
+                candidate.slug === dronePackageSlug &&
+                candidate.active !== false &&
+                candidate.bookingMode !== 'addon'
+            );
+            if (item) pkg = { name: item.name, hours: Math.max(1, item.durationHours || 1) };
+        } else {
+            const pkgQuery = packageId ? { id: parseInt(packageId) } : { service_id: parseInt(serviceId!) };
+            pkg = await prisma.package.findFirst({ where: pkgQuery, select: { name: true, hours: true } });
+        }
 
         if (!pkg) {
             return NextResponse.json({ error: 'Package not found' }, { status: 404 });
@@ -78,7 +89,7 @@ export async function GET(request: NextRequest) {
             // For now, we check if it's wedding/event service type by analyzing package info
             // This will be enhanced when blocks_entire_day field is available
 
-            const isWeddingOrEvent = booking.service === 'Ślub' ||
+            const isWeddingOrEvent = booking.blocks_entire_day || booking.service === 'Ślub' ||
                 booking.service === 'Przyjęcie' ||
                 booking.service === 'Urodziny';
 
@@ -114,8 +125,17 @@ export async function GET(request: NextRequest) {
             }
         }
 
-        // Convert map to array and sort
-        const slots = Array.from(availabilityMap.values()).sort((a, b) => a.hour - b.hour);
+        // A start hour is available only when the whole selected package fits
+        // before the next reservation. This prevents a 2–3 hour drone job from
+        // being placed over an already occupied slot.
+        const slots = Array.from(availabilityMap.values())
+            .sort((a, b) => a.hour - b.hour)
+            .map(slot => {
+                if (!slot.available) return slot;
+                const fits = Array.from({ length: pkg.hours }, (_, index) => availabilityMap.get(slot.hour + index))
+                    .every(candidate => candidate?.available === true);
+                return fits ? slot : { ...slot, available: false, reason: 'booked_session' };
+            });
 
         return NextResponse.json({
             success: true,
@@ -135,4 +155,3 @@ export async function GET(request: NextRequest) {
         );
     }
 }
-

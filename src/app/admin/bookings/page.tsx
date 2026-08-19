@@ -23,6 +23,24 @@ type Booking = {
     challenge_id: number | null;
     status: string;
     created_at: string;
+    client_id: number | null;
+    booking_source: string | null;
+    booking_kind: string | null;
+    company_name: string | null;
+    base_price: number | null;
+    drone_package_slug: string | null;
+    drone_package_name: string | null;
+    drone_price: number | null;
+    drone_goal: string | null;
+    drone_terms_accepted_at: string | null;
+    flight_check_status: string | null;
+    payment_plan: string | null;
+    deposit_amount: number | null;
+    deposit_paid_at: string | null;
+    remaining_amount: number | null;
+    remaining_paid_at: string | null;
+    remaining_due_at: string | null;
+    payu_order_id: string | null;
 };
 
 export default function AdminBookingsPage() {
@@ -222,6 +240,7 @@ export default function AdminBookingsPage() {
                         <option value="Ślub">Ślub</option>
                         <option value="Przyjęcie">Przyjęcie</option>
                         <option value="Urodziny">Urodziny</option>
+                        <option value="Dron">Dron</option>
                     </select>
                 </div>
             </div>
@@ -255,6 +274,7 @@ export default function AdminBookingsPage() {
                                         <td className="px-6 py-4">
                                             <div className="font-medium text-zinc-900">{booking.service}</div>
                                             <div className="text-zinc-500 text-xs">{booking.package}</div>
+                                            {booking.drone_package_name && booking.service !== 'Dron' && <div className="mt-1 text-xs font-medium text-sky-700">+ {booking.drone_package_name}</div>}
                                             <div className="flex gap-2 mt-1 flex-wrap">
                                                 {booking.challenge_id && (
                                                     <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gold-100 text-gold-800 border border-gold-300">
@@ -445,6 +465,7 @@ export default function AdminBookingsPage() {
                                                     <option value="Ślub">Ślub</option>
                                                     <option value="Przyjęcie">Przyjęcie</option>
                                                     <option value="Urodziny">Urodziny</option>
+                                                    <option value="Dron">Dron</option>
                                                 </select>
                                             ) : (
                                                 <div className="font-medium text-zinc-900">{selectedBooking.service}</div>
@@ -514,6 +535,48 @@ export default function AdminBookingsPage() {
                                                 <div className="font-medium text-zinc-900">{(selectedBooking.price / 100).toFixed(2)} zł</div>
                                             )}
                                         </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {selectedBooking.drone_package_slug && (
+                                <div>
+                                    <h3 className="text-lg font-semibold text-zinc-900 mb-3">Dron i kontrola lotu</h3>
+                                    <div className="rounded-lg border border-sky-200 bg-sky-50 p-4">
+                                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                            <div><label className="text-xs text-zinc-500 block mb-1">Rodzaj</label><div className="font-medium text-zinc-900">{selectedBooking.booking_kind === 'DRONE_STANDALONE' ? 'Samodzielna usługa' : 'Dodatek do fotografii'}</div></div>
+                                            <div><label className="text-xs text-zinc-500 block mb-1">Pakiet</label><div className="font-medium text-zinc-900">{selectedBooking.drone_package_name}</div></div>
+                                            <div><label className="text-xs text-zinc-500 block mb-1">Cena części dronowej</label><div className="font-medium text-zinc-900">{((selectedBooking.drone_price || 0) / 100).toFixed(2)} zł</div></div>
+                                            <div><label className="text-xs text-zinc-500 block mb-1">Cel materiału</label><div className="font-medium text-zinc-900">{selectedBooking.drone_goal || '-'}</div></div>
+                                            <div><label className="text-xs text-zinc-500 block mb-1">Firma</label><div className="font-medium text-zinc-900">{selectedBooking.company_name || '-'}</div></div>
+                                            <div>
+                                                <label className="text-xs text-zinc-500 block mb-1">Sprawdzenie możliwości lotu</label>
+                                                {isEditing ? (
+                                                    <select value={editForm.flight_check_status || 'PENDING'} onChange={e => setEditForm({ ...editForm, flight_check_status: e.target.value })} className="w-full text-sm p-2 rounded border border-zinc-300">
+                                                        <option value="PENDING">Do sprawdzenia</option>
+                                                        <option value="APPROVED">Lot możliwy</option>
+                                                        <option value="RESCHEDULE_REQUIRED">Potrzebna zmiana terminu</option>
+                                                        <option value="NOT_POSSIBLE">Lot niemożliwy</option>
+                                                    </select>
+                                                ) : <div className="font-medium text-zinc-900">{selectedBooking.flight_check_status || 'PENDING'}</div>}
+                                            </div>
+                                            <div><label className="text-xs text-zinc-500 block mb-1">Warunki lotu</label><div className="font-medium text-zinc-900">{selectedBooking.drone_terms_accepted_at ? `Zaakceptowane ${new Date(selectedBooking.drone_terms_accepted_at).toLocaleString('pl-PL')}` : 'Brak akceptacji'}</div></div>
+                                            <div><label className="text-xs text-zinc-500 block mb-1">Źródło</label><div className="font-medium text-zinc-900">{selectedBooking.booking_source || '-'}</div></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div>
+                                <h3 className="text-lg font-semibold text-zinc-900 mb-3">Płatność</h3>
+                                <div className="rounded-lg bg-zinc-50 p-4">
+                                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                        <div><label className="text-xs text-zinc-500 block mb-1">Plan</label><div className="font-medium text-zinc-900">{selectedBooking.payment_plan === 'SPLIT' ? '50/50' : 'Całość'}</div></div>
+                                        <div><label className="text-xs text-zinc-500 block mb-1">PayU order ID</label><div className="break-all font-mono text-sm text-zinc-900">{selectedBooking.payu_order_id || 'Oczekuje na płatność'}</div></div>
+                                        {selectedBooking.payment_plan === 'SPLIT' && <>
+                                            <div><label className="text-xs text-zinc-500 block mb-1">Pierwsza wpłata</label><div className="font-medium text-zinc-900">{((selectedBooking.deposit_amount || 0) / 100).toFixed(2)} zł — {selectedBooking.deposit_paid_at ? 'opłacona' : 'oczekuje'}</div></div>
+                                            <div><label className="text-xs text-zinc-500 block mb-1">Pozostało</label><div className="font-medium text-zinc-900">{((selectedBooking.remaining_amount || 0) / 100).toFixed(2)} zł — {selectedBooking.remaining_paid_at ? 'opłacone' : 'oczekuje'}</div></div>
+                                        </>}
                                     </div>
                                 </div>
                             </div>

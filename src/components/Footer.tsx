@@ -45,6 +45,8 @@ const defaultSettings: FooterSettings = {
             links: [
                 { id: 'offer-family', label: 'Sesje rodzinne', url: '/sesja-rodzinna' },
                 { id: 'offer-wedding', label: 'Fotografia ślubna', url: '/slub' },
+                { id: 'offer-drone', label: 'Zdjęcia i filmy z drona', url: '/fotografia-z-drona' },
+                { id: 'offer-drone-booking', label: 'Rezerwacja drona', url: '/rezerwacja?service=Dron&source=footer' },
                 { id: 'offer-booking', label: 'Cennik i rezerwacja', url: '/rezerwacja' },
                 { id: 'offer-gift', label: 'Karty podarunkowe', url: '/karta-podarunkowa' },
             ]

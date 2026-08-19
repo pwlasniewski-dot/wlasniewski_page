@@ -60,6 +60,10 @@ export interface BookingEmailData {
   notes?: string;
   phone?: string;
   email: string;
+  dronePackageName?: string;
+  droneGoal?: string;
+  flightCheckStatus?: string;
+  paymentStatusLabel?: string;
 }
 
 export interface OfferEmailData {
@@ -386,6 +390,8 @@ export function generateClientEmail(data: BookingEmailData): string {
         <table width="100%" cellpadding="0" cellspacing="0">
           ${detailRow('Usługa', data.service)}
           ${detailRow('Pakiet', data.packageName)}
+          ${data.dronePackageName ? detailRow('Dron', data.dronePackageName) : ''}
+          ${data.droneGoal ? detailRow('Cel materiału z drona', data.droneGoal) : ''}
           ${detailRow('📅 Data', data.date, true)}
           ${data.time ? detailRow('🕐 Godzina', data.time) : ''}
           ${data.location ? detailRow('📍 Miejsce', data.location) : ''}
@@ -431,12 +437,16 @@ export function generateBookingConfirmedEmail(data: BookingEmailData): string {
         <table width="100%" cellpadding="0" cellspacing="0">
           ${detailRow('Usługa', data.service)}
           ${detailRow('Pakiet', data.packageName)}
+          ${data.dronePackageName ? detailRow('Dron', data.dronePackageName) : ''}
+          ${data.droneGoal ? detailRow('Cel materiału z drona', data.droneGoal) : ''}
           ${detailRow('📅 Data', `<span style="color:#4ade80;font-weight:600;">${data.date}</span>`)}
           ${data.time ? detailRow('🕐 Godzina', data.time) : ''}
           ${data.location ? detailRow('📍 Miejsce', data.location) : ''}
-          ${detailRow('💳 Status płatności', '<span style="color:#4ade80;">Rozliczenie na miejscu / Przelew</span>')}
+          ${detailRow('💳 Status płatności', `<span style="color:#4ade80;">${data.paymentStatusLabel || 'Termin potwierdzony — rozliczenie według ustaleń'}</span>`)}
         </table>
       `, 'rgba(74,222,128,0.3)')}
+
+      ${data.dronePackageName ? subtext('Możliwość lotu zostanie potwierdzona po sprawdzeniu miejsca, aktualnych stref i pogody. Jeżeli lot nie będzie możliwy, ustalimy zmianę terminu albo zwrot za część dronową.') : ''}
 
       ${goldDivider()}
       <p style="color:#888;font-size:13px;text-align:center;margin:0 0 20px;">Do zobaczenia! Jeśli masz pytania przed sesją, jestem do dyspozycji.</p>
@@ -474,6 +484,9 @@ export function generateAdminEmail(data: BookingEmailData): string {
         <table width="100%" cellpadding="0" cellspacing="0">
           ${detailRow('Usługa', data.service)}
           ${detailRow('Pakiet', data.packageName)}
+          ${data.dronePackageName ? detailRow('Dron', data.dronePackageName) : ''}
+          ${data.droneGoal ? detailRow('Cel materiału z drona', data.droneGoal) : ''}
+          ${data.flightCheckStatus ? detailRow('Kontrola lotu', data.flightCheckStatus) : ''}
           ${detailRow('📅 Data', data.date, true)}
           ${data.time ? detailRow('🕐 Godzina', data.time) : ''}
           ${data.location ? detailRow('📍 Miejsce', data.location) : ''}

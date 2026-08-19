@@ -9,6 +9,12 @@ import toast from 'react-hot-toast';
 import MediaPicker from '@/components/admin/MediaPicker';
 import RichTextEditor from '@/components/admin/RichTextEditor';
 import PageBuilder, { PageSection } from '@/components/admin/PageBuilder';
+import DronePhotographyPageEditor from '@/components/admin/DronePhotographyPageEditor';
+import {
+    DEFAULT_DRONE_PHOTOGRAPHY_CONFIG,
+    parseDronePhotographyConfig,
+    type DronePhotographyConfig,
+} from '@/lib/dronePhotographyOffer';
 
 interface ColorPalette {
     id: string;
@@ -80,6 +86,7 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
 
     // Dynamic Page Builder State
     const [sections, setSections] = useState<PageSection[]>([]);
+    const [droneConfig, setDroneConfig] = useState<DronePhotographyConfig>(() => parseDronePhotographyConfig(DEFAULT_DRONE_PHOTOGRAPHY_CONFIG));
 
     // Legacy Features State
     const [colorPalettes, setColorPalettes] = useState<ColorPalette[]>([]);
@@ -163,7 +170,9 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
                     });
 
                     // Load Page Builder Sections
-                    if (page.sections) {
+                    if (resolvedParams.slug === 'fotografia-z-drona') {
+                        setDroneConfig(parseDronePhotographyConfig(page.sections));
+                    } else if (page.sections) {
                         try {
                             const raw = JSON.parse(page.sections);
                             // Normalize: flatten nested "data" wrapper into section root
@@ -209,6 +218,19 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
                             if (Array.isArray(parsed)) setPortfolioHeroSlides(parsed);
                         } catch (e) { console.error('Failed to parse portfolio slides', e); }
                     }
+                } else if (resolvedParams.slug === 'fotografia-z-drona' && res.status === 404) {
+                    setFormData(current => ({
+                        ...current,
+                        slug: 'fotografia-z-drona',
+                        title: 'Fotografia z drona',
+                        page_type: 'offer',
+                        content: '',
+                        is_published: true,
+                        meta_title: 'Zdjęcia i filmy z drona Toruń | Pakiety od 449 zł',
+                        meta_description: 'Zdjęcia i filmy z drona w Toruniu i kujawsko-pomorskim: nieruchomości, firmy i śluby. Wybierz zakres i sprawdź termin.',
+                        meta_keywords: 'zdjęcia z drona Toruń, filmowanie dronem Toruń, fotografia nieruchomości dron kujawsko-pomorskie, dron na ślub Toruń',
+                    }));
+                    setDroneConfig(parseDronePhotographyConfig(DEFAULT_DRONE_PHOTOGRAPHY_CONFIG));
                 }
             } catch (error) {
                 toast.error('Błąd pobierania strony');
@@ -223,9 +245,11 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
         setSaving(true);
         try {
             const token = localStorage.getItem('admin_token');
+            const isDronePhotographyPage = resolvedParams?.slug === 'fotografia-z-drona';
             const dataToSave: any = {
                 ...formData,
-                sections: JSON.stringify(sections)
+                sections: isDronePhotographyPage ? JSON.stringify(droneConfig) : JSON.stringify(sections),
+                page_type: isDronePhotographyPage ? 'offer' : formData.page_type,
             };
 
             // Legacy support
@@ -256,15 +280,20 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
             });
 
             if (res.ok) {
+                const saved = await res.json();
+                if (saved?.page?.id) {
+                    setFormData(current => ({ ...current, id: saved.page.id }));
+                }
                 toast.success('Zapisano zmiany');
             } else if (res.status === 401) {
                 toast.error('Sesja wygasła. Zaloguj się ponownie.');
                 // Optional: router.push('/admin/login');
             } else {
-                throw new Error('Failed to save');
+                const errorData = await res.json().catch(() => null);
+                throw new Error(errorData?.error || 'Nie udało się zapisać zmian');
             }
         } catch (error) {
-            toast.error('Błąd zapisu');
+            toast.error(error instanceof Error ? error.message : 'Błąd zapisu');
         } finally {
             setSaving(false);
         }
@@ -403,6 +432,7 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
     const isOMnie = resolvedParams?.slug === 'o-mnie';
     const isHomePage = resolvedParams?.slug === 'strona-glowna';
     const isPortfolio = resolvedParams?.slug === 'portfolio';
+    const isDronePhotographyPage = resolvedParams?.slug === 'fotografia-z-drona';
 
     const scrollToTop = () => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -630,7 +660,9 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
                     <p className="text-sm text-zinc-400 mb-4">
                         Dodawaj i układaj sekcje, aby zbudować unikalny wygląd strony.
                     </p>
-                    <PageBuilder sections={sections} onChange={setSections} pageType={formData.page_type} />
+                    {isDronePhotographyPage
+                        ? <DronePhotographyPageEditor value={droneConfig} onChange={setDroneConfig} />
+                        : <PageBuilder sections={sections} onChange={setSections} pageType={formData.page_type} />}
                 </div>
 
                 {/* LEGACY CONTENT - Only for specific pages */}

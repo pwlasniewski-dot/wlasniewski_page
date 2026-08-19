@@ -378,6 +378,19 @@ export default async function DynamicPage({ params, searchParams }: PageProps) {
                 <ServiceGrowthOffer config={growthConfig} packages={growthPackages} editorial={isEditorialService} city={growthCity} />
             )}
 
+            {growthConfig?.slug === 'slub' && (
+                <section className={isEditorialService ? 'border-t border-[#d5cabd] bg-[#28221c] px-6 py-14 text-white' : 'border-t border-white/10 bg-zinc-900 px-6 py-14 text-white'}>
+                    <div className="mx-auto flex max-w-5xl flex-col justify-between gap-7 md:flex-row md:items-center">
+                        <div>
+                            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#d4b77c]">Dodatek do reportażu</p>
+                            <h2 className="mt-3 text-2xl font-semibold md:text-3xl">Zdjęcia i krótki film z drona +690 zł</h2>
+                            <p className="mt-3 max-w-2xl leading-relaxed text-white/65">Miejsce ceremonii, sala i otoczenie pokazane z powietrza — jeśli pogoda, przestrzeń i warunki bezpieczeństwa pozwalają wykonać lot.</p>
+                        </div>
+                        <Link href="/fotografia-z-drona#slub" className="inline-flex shrink-0 items-center justify-center rounded-full border border-[#d4b77c] bg-[#d4b77c] px-7 py-3.5 text-sm font-semibold text-[#28221c] transition hover:border-white hover:bg-white">Zobacz zakres</Link>
+                    </div>
+                </section>
+            )}
+
             {/* Local SEO reinforcement block for service intent + city coverage */}
             <section className={isEditorialService ? 'border-t border-[#d5cabd] bg-[#f3efe8] py-14 px-6 text-[#2b251f]' : 'border-t border-white/5 bg-zinc-950 py-14 px-6'}>
                 <div className="mx-auto max-w-5xl">

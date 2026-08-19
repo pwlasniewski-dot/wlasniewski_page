@@ -422,6 +422,21 @@ model Booking {
   client_rating     Int?
   client_review     String?
 
+  // Jedna rezerwacja dla fotografii standardowej i usług z drona.
+  client_id                 Int?
+  booking_source            String?   @db.VarChar(120)
+  booking_kind              String?   @default("STANDARD") @db.VarChar(30)
+  company_name              String?
+  base_price                Int?
+  drone_package_slug        String?   @db.VarChar(80)
+  drone_package_name        String?
+  drone_price               Int?
+  drone_goal                String?
+  drone_terms_accepted_at   DateTime?
+  flight_check_status       String?   @db.VarChar(30)
+  blocks_entire_day         Boolean   @default(false)
+  booking_snapshot          Json?
+
   // Split payment 50/50
   payment_plan         String?   @default("FULL") @db.VarChar(20)
   deposit_amount       Int?
@@ -452,8 +467,11 @@ model Booking {
   calendar_synced_at   DateTime?
 
   photographer      User?    @relation("PhotographerBookings", fields: [photographer_id], references: [id])
+  client            User?    @relation("ClientBookings", fields: [client_id], references: [id], onDelete: SetNull)
   complaints        BookingComplaint[]
 
+  @@index([client_id])
+  @@index([drone_package_slug])
   @@map("bookings")
 }
 
@@ -578,6 +596,7 @@ model User {
   workshops_enabled       Boolean                 @default(false)
   baskets                 Basket[]
   assigned_bookings       Booking[]               @relation("PhotographerBookings")
+  client_bookings         Booking[]               @relation("ClientBookings")
   client_galleries        ClientGallery[]         @relation("ClientGalleries")
   assigned_galleries      ClientGallery[]         @relation("PhotographerGalleries")
   contracts               Contract[]

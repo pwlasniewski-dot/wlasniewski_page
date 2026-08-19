@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { evaluatePageCompleteness, portfolioPath, prioritizeDirectorActions } from '../../src/lib/analytics/pageRegistry.ts';
+import { evaluatePageCompleteness, portfolioPath, prioritizeDirectorActions, STATIC_PAGE_REGISTRY } from '../../src/lib/analytics/pageRegistry.ts';
 
 test('completeness reports exact blockers and does not score unknown gates', () => {
   const result = evaluatePageCompleteness({
@@ -39,6 +39,12 @@ test('growing stage requires positive trend', () => {
 
 test('portfolio URL includes category and slug', () => {
   assert.equal(portfolioPath('śluby', 'ania-i-piotr'), '/portfolio/%C5%9Bluby/ania-i-piotr');
+});
+
+test('drone offer and its booking step are visible in Analytics V3 page registry', () => {
+  const paths = STATIC_PAGE_REGISTRY.filter(page => page.host === 'wlasniewski.pl').map(page => page.path);
+  assert.ok(paths.includes('/fotografia-z-drona'));
+  assert.ok(paths.includes('/rezerwacja/dron'));
 });
 
 test('director actions return at most three in priority order', () => {

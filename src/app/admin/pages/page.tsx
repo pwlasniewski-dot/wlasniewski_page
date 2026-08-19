@@ -202,9 +202,9 @@ export default function PagesListPage() {
     };
 
     const filteredPages = pages.filter(page => {
-        if (page.slug === 'przygotowanie-klienta' || page.slug === 'jak-sie-ubrac') return false;
+        if (page.slug === 'przygotowanie-klienta' || page.slug === 'jak-sie-ubrac' || page.slug === 'fotografia-z-drona') return false;
         if (activeTabId === 'b2c') {
-            const isB2B = page.page_type === 'b2b' || page.slug.startsWith('b2b') || page.slug.includes('dron');
+            const isB2B = page.page_type === 'b2b' || page.slug.startsWith('b2b') || (page.slug.includes('dron') && page.slug !== 'fotografia-z-drona');
             const matchesCustom = pageTabs.filter(t => !t.isSystem).some(t =>
                 t.keywords.some(k => page.slug.includes(k) || page.page_type === k)
             );
@@ -286,7 +286,7 @@ export default function PagesListPage() {
             </div>
 
             {activeTabId === 'b2c' && (
-                <div className="mb-6 grid gap-4 lg:grid-cols-2">
+                <div className="mb-6 grid gap-4 lg:grid-cols-3">
                 <div className="rounded-xl border border-emerald-500/30 bg-gradient-to-r from-emerald-500/10 to-zinc-900 p-6">
                     <div className="flex h-full flex-col justify-between gap-4">
                         <div>
@@ -314,6 +314,21 @@ export default function PagesListPage() {
                         </div>
                         <Link href="/admin/pages/przygotowanie-klienta" className="inline-flex min-h-11 items-center justify-center rounded-lg border border-gold-500/40 bg-gold-500 px-4 text-sm font-semibold text-black hover:bg-gold-400">
                             <Edit className="mr-2 h-4 w-4" /> Edytuj poradnik
+                        </Link>
+                    </div>
+                </div>
+                <div className="rounded-xl border border-sky-500/30 bg-gradient-to-r from-sky-500/10 to-zinc-900 p-6">
+                    <div className="flex h-full flex-col justify-between gap-4">
+                        <div>
+                            <div className="mb-2 flex flex-wrap items-center gap-2">
+                                <span className="rounded bg-sky-500 px-2 py-0.5 text-xs font-bold uppercase text-black">Oferta sprzedażowa</span>
+                                <span className="text-xs text-zinc-400">Dron · pakiety · rezerwacja</span>
+                            </div>
+                            <h2 className="text-lg font-semibold text-white">Fotografia z drona</h2>
+                            <p className="mt-1 text-sm leading-6 text-zinc-400">Moduły, teksty, ceny, zdjęcia, SEO i formularz rezerwacji z jednego miejsca.</p>
+                        </div>
+                        <Link href="/admin/pages/fotografia-z-drona?tab=b2c" className="inline-flex min-h-11 items-center justify-center rounded-lg bg-sky-500 px-4 text-sm font-semibold text-black hover:bg-sky-400">
+                            <Edit className="mr-2 h-4 w-4" /> Edytuj ofertę dronową
                         </Link>
                     </div>
                 </div>

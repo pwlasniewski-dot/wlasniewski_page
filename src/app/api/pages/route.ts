@@ -3,6 +3,7 @@ import prisma from '@/lib/db/prisma';
 import { preserveFirstPublication, publicationRegistryIdentity } from '@/lib/analytics/pagePublicationRegistry';
 import { requireAuth, withAuth } from '@/lib/auth/middleware';
 import { revalidatePath } from 'next/cache';
+import { validateDronePhotographyConfig } from '@/lib/dronePhotographyOffer';
 
 // GET all pages or specific page by slug or id
 export async function GET(request: NextRequest) {
@@ -58,6 +59,11 @@ export async function POST(request: NextRequest) {
 
             // Normalize slug to lowercase
             if (slug) slug = slug.toLowerCase().trim();
+
+            if (slug === 'fotografia-z-drona') {
+                const validation = validateDronePhotographyConfig(sections);
+                if (!validation.valid) return NextResponse.json({ error: validation.error }, { status: 400 });
+            }
 
             let page;
 
@@ -149,6 +155,10 @@ export async function POST(request: NextRequest) {
                 if (page.slug === 'strona-glowna') revalidatePath('/');
                 if (page.slug === 'portfolio') revalidatePath('/portfolio');
                 if (page.slug === 'dron') revalidatePath('/dron');
+                if (page.slug === 'fotografia-z-drona') {
+                    revalidatePath('/fotografia-z-drona');
+                    revalidatePath('/rezerwacja/dron');
+                }
                 revalidatePath('/', 'layout');
             } catch (revError) {
                 console.warn('Revalidation failed:', revError);
