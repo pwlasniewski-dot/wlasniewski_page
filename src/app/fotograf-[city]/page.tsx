@@ -20,7 +20,7 @@ interface CityInfo {
     heroImage: string;
     intro: string[];
     sections: { title: string; icon: string; paragraphs: string[] }[];
-    services: { name: string; description: string }[];
+    services: { name: string; description: string; href?: string }[];
     faqs: { question: string; answer: string }[];
     nearbyLinks: { label: string; href: string }[];
     lat: number;
@@ -32,9 +32,9 @@ const CITIES: Record<string, CityInfo> = {
         slug: 'fotograf-torun',
         city: 'Toruń',
         region: 'kujawsko-pomorskie',
-        h1: 'Fotograf w Toruniu. Rodzinne historie, śluby i portrety.',
+        h1: 'Fotograf w Toruniu — sesje rodzinne i śluby',
         metaTitle: 'Fotograf Toruń | Sesje rodzinne i śluby — Właśniewski',
-        metaDescription: 'Fotograf w Toruniu: naturalne sesje rodzinne, ceremonie i pełne reportaże ślubne. Zobacz aktualne pakiety oraz wolne terminy online.',
+        metaDescription: 'Fotograf w Toruniu. Sesje rodzinne od 750 zł, fotografia ślubna od 1900 zł. Zobacz pakiety i sprawdź wolny termin online.',
         keywords: ['fotograf toruń', 'fotografia wizerunkowa toruń', 'fotograf portretowy toruń', 'fotograf toruń starówka', 'profesjonalna fotografia toruń', 'fotograf ślubny toruń', 'fotografia ślubna toruń', 'sesja zdjęciowa toruń', 'fotografia biznesowa toruń', 'sesja narzeczeńska toruń', 'sesja rodzinna toruń', 'plener ślubny toruń', 'zdjęcia biznesowe toruń', 'sesja w mieście toruń', 'fotograf bulwar filadelfijski'],
         heroImage: '/assets/portfolio/family/sesja-rodzinna-torun-plener-07.webp',
         lat: 53.0138,
@@ -47,8 +47,8 @@ const CITIES: Record<string, CityInfo> = {
                 title: 'Jak wygląda sesja w Toruniu',
                 icon: '📷',
                 paragraphs: [
-                    'Najpierw wybierasz pakiet i termin. Przed spotkaniem krótko ustalamy, kto będzie na zdjęciach, jaki klimat lubicie i gdzie się spotykamy. Nie musicie umieć pozować — podczas sesji daję proste wskazówki i dbam o spokojne tempo.',
-                    'Z dziećmi pracuję przez zabawę i ruch. Z parami oraz dorosłymi skupiam się na rozmowie, bliskości i dobrym świetle. Dzięki temu zdjęcia są swobodne, ale nadal uporządkowane i dopracowane.',
+                    'Najpierw wybierasz pakiet i termin. Przed spotkaniem ustalamy, kto będzie na zdjęciach, gdzie się spotykamy i jaki rezultat jest dla Was najważniejszy. Podczas sesji pokazuję, gdzie stanąć i co zrobić w kolejnym ujęciu.',
+                    'Przy zdjęciach z dziećmi zostawiam czas na ruch i przerwy. Z dorosłymi zaczynam od prostych ustawień, a później przechodzimy do kolejnych ujęć. Dzięki temu wiadomo, czego spodziewać się na każdym etapie.',
                 ],
             },
             {
@@ -69,8 +69,8 @@ const CITIES: Record<string, CityInfo> = {
             },
         ],
         services: [
-            { name: 'Sesja rodzinna w Toruniu', description: 'Rodzina, para, dzieci albo zdjęcia kilku pokoleń — w mieście lub spokojnym plenerze. Aktualne pakiety znajdziesz w rezerwacji.' },
-            { name: 'Fotografia ślubna Toruń', description: 'Ceremonia cywilna, kameralny ślub z przyjęciem lub pełny reportaż ślubny. Aktualny zakres i ceny są widoczne w rezerwacji.' },
+            { name: 'Sesja rodzinna w Toruniu', description: 'Rodzina, para, dzieci albo zdjęcia kilku pokoleń — w mieście lub spokojnym plenerze. Aktualne pakiety znajdziesz w rezerwacji.', href: '/sesja-rodzinna?city=Toruń' },
+            { name: 'Fotografia ślubna Toruń', description: 'Ceremonia cywilna, kameralny ślub z przyjęciem lub pełny reportaż ślubny. Aktualny zakres i ceny są widoczne w rezerwacji.', href: '/slub?city=Toruń' },
             { name: 'Urodziny i rodzinne przyjęcia', description: 'Reportaż z urodzin, jubileuszu i ważnego rodzinnego spotkania, bez odrywania gości od zabawy.' },
             { name: 'Sesja portretowa i wizerunkowa', description: 'Portrety do pracy, marki osobistej albo po prostu dla siebie — w plenerze lub wybranym wnętrzu.' },
         ],
@@ -78,7 +78,7 @@ const CITIES: Record<string, CityInfo> = {
             { question: 'Ile kosztuje sesja rodzinna w Toruniu?', answer: 'Cena zależy od czasu fotografowania, liczby gotowych zdjęć i dodatków. Aktualne pakiety, ich pełny zakres oraz wolne terminy sprawdzisz w rezerwacji online.' },
             { question: 'Ile kosztuje fotograf na ślub w Toruniu?', answer: 'Zakres może obejmować krótką ceremonię, kameralne przyjęcie albo pełny reportaż. Aktualne warianty i ceny są zawsze widoczne przed wyborem terminu w rezerwacji online.' },
             { question: 'Gdzie najlepiej zrobić sesję w Toruniu?', answer: 'Najczęściej fotografuję na Starówce, Bulwarze Filadelfijskim, Bydgoskim Przedmieściu i w Parku Miejskim. Miejsce dobieram do pory dnia, wieku dzieci i klimatu, który chcecie uzyskać.' },
-            { question: 'Czy musimy umieć pozować?', answer: 'Nie. Daję proste wskazówki, pokazuję gdzie stanąć i co zrobić, ale nie ustawiam każdej dłoni. Zależy mi na swobodnych zdjęciach, w których nadal dobrze wyglądacie.' },
+            { question: 'Jak prowadzisz sesję?', answer: 'Na początku pokazuję, gdzie stanąć i od jakich ujęć zaczynamy. Później podaję krótkie wskazówki i pilnuję tempa, światła oraz kolejności zdjęć.' },
             { question: 'Jak zarezerwować termin?', answer: 'Wybierz usługę i pakiet, zaznacz dostępny dzień, uzupełnij dane i potwierdź rezerwację bezpieczną zaliczką przez PayU.' },
         ],
         nearbyLinks: [
@@ -93,16 +93,15 @@ const CITIES: Record<string, CityInfo> = {
         slug: 'fotograf-grudziadz',
         city: 'Grudziądz',
         region: 'kujawsko-pomorskie',
-        h1: 'Fotograf Grudziądz — sesje rodzinne, ślubne i biznesowe',
-        metaTitle: 'Fotograf Grudziądz ⭐ Sesje rodzinne, ślubne, biznesowe',
-        metaDescription: 'Fotograf Grudziądz: sesje rodzinne, śluby i portrety przy spichlerzach, bulwarach nad Wisłą oraz Górze Zamkowej. Sprawdź galerię i terminy.',
+        h1: 'Fotograf w Grudziądzu — sesje rodzinne i śluby',
+        metaTitle: 'Fotograf Grudziądz – sesje rodzinne i śluby | Ceny',
+        metaDescription: 'Sesje rodzinne od 750 zł i fotografia ślubna od 1900 zł w Grudziądzu. Zobacz zakres, wybierz pakiet i sprawdź wolny termin online.',
         keywords: ['fotograf grudziądz', 'fotograf ślubny grudziądz', 'sesja rodzinna grudziądz', 'fotografia portretowa grudziądz', 'zdjęcia plenerowe grudziądz', 'sesja narzeczeńska grudziądz'],
         heroImage: '/assets/portfolio/family/sesja-rodzinna-torun-plener-07.webp',
         lat: 53.4837,
         lng: 18.7536,
         intro: [
-            'Jestem Przemek — dojeżdżam do Grudziądza na sesje rodzinne, ślubne, biznesowe i eventowe. Grudziądz ze swoją panoramą spichlerzy to jedno z najbardziej fotogenicznych miejsc w województwie kujawsko-pomorskim.',
-            'Uwielbiam realizować tu sesje o zachodzie słońca, gdy ceglane mury nabierają ciepłych barw. Mieszkam w okolicy (baza w Płużnicy), więc do Grudziądza mam rzut beretem i dojazd w ramach pakietu.',
+            'Jestem Przemek. Do Grudziądza dojeżdżam na sesje rodzinne, śluby i przyjęcia. Przed spotkaniem ustalamy zakres, miejsce oraz godzinę. Cenę i dostępne terminy sprawdzisz przed rezerwacją.',
         ],
         sections: [
             {
@@ -118,22 +117,22 @@ const CITIES: Record<string, CityInfo> = {
                 title: 'Jak pracuję na sesji',
                 icon: '📷',
                 paragraphs: [
-                    'Nie stresujmy się pozowaniem — wolę pójść z Wami na spacer i przy okazji zrobić świetne zdjęcia. W Grudziądzu pracuję dokładnie tak samo jak wszędzie: reportażowo, z naturalnymi emocjami.',
-                    'Z dziećmi są zabawy i mikrozadania, z dorosłymi — spokojne wskazówki i rozmowa. Cel to prawdziwe, niesztuczne kadry pełne emocji. Wykorzystuję architekturę Grudziądza jako tło, ale najważniejsi jesteście Wy.',
+                    'Na początku ustalam kolejność ujęć i pokazuję, gdzie stanąć. Przy zdjęciach rodzinnych zostawiam czas na ruch dzieci, a przy portretach pilnuję ustawienia i światła.',
+                    'Jeżeli wybieramy spacer po mieście, wcześniej ustalamy krótką trasę. Nie tracimy czasu na szukanie miejsca już podczas sesji.',
                 ],
             },
             {
                 title: 'Pakiet i realizacja',
                 icon: '🖼️',
                 paragraphs: [
-                    'Po sesji w Grudziądzu dostajesz galerię online z wyselekcjonowanymi zdjęciami po autorskiej obróbce. Minimum 20 ujęć w pakiecie podstawowym.',
-                    'Odbitki realizuję w profesjonalnym labie nPhoto — świetna jakość i trwałość. Albumy projektuję indywidualnie. Gotowe zdjęcia do 10 dni roboczych.',
+                    'Pakiety rodzinne obejmują od 35 do 80 gotowych zdjęć oraz prywatną galerię internetową. W wyższym wariancie dostępny jest album nPhoto.',
+                    'Przy ślubie możesz wybrać samą ceremonię, kameralne przyjęcie albo pełny reportaż. Aktualny zakres i cena są widoczne w rezerwacji.',
                 ],
             },
         ],
         services: [
-            { name: 'Sesja rodzinna w Grudziądzu', description: 'Naturalne zdjęcia rodzinne przy spicherzach, w parku lub w plenerze nad Wisłą.' },
-            { name: 'Fotografia ślubna Grudziądz', description: 'Reportaż ślubny od przygotowań do pierwszego tańca + sesja plenerowa.' },
+            { name: 'Sesja rodzinna w Grudziądzu', description: 'Zdjęcia rodzinne przy spichlerzach, w parku albo w plenerze nad Wisłą.', href: '/sesja-rodzinna?city=Grudziądz' },
+            { name: 'Fotografia ślubna Grudziądz', description: 'Ceremonia, kameralne przyjęcie albo pełny reportaż z przygotowaniami i weselem.', href: '/slub?city=Grudziądz' },
             { name: 'Sesja portretowa i biznesowa', description: 'Profesjonalne portrety wizerunkowe i biznesowe w klimatycznych lokalizacjach Grudziądza.' },
             { name: 'Fotografia komunijna Grudziądz', description: 'Pamiątkowe zdjęcia z Pierwszej Komunii — kościół, plener, portret.' },
             { name: 'Zdjęcia z drona', description: 'Ujęcia panoramy spichlerzy i Wisły z lotu ptaka — na ślub, event lub sesję.' },
@@ -155,33 +154,32 @@ const CITIES: Record<string, CityInfo> = {
         slug: 'fotograf-chelmno',
         city: 'Chełmno',
         region: 'kujawsko-pomorskie',
-        h1: 'Fotograf Chełmno — Miasto Zakochanych w kadrze',
-        metaTitle: 'Fotograf Chełmno ⭐ Śluby plenerowe, narzeczeńskie, rodzinne',
-        metaDescription: 'Fotograf Chełmno: śluby w plenerze oraz sesje narzeczeńskie, biznesowe i rodzinne w Mieście Zakochanych, na rynku, murach i nad Wisłą.',
+        h1: 'Fotograf w Chełmnie — sesje rodzinne i śluby',
+        metaTitle: 'Fotograf Chełmno – sesje rodzinne i śluby | Ceny',
+        metaDescription: 'Sesje rodzinne od 750 zł i fotografia ślubna od 1900 zł w Chełmnie. Zobacz zakres, wybierz pakiet i sprawdź wolny termin online.',
         keywords: ['fotograf chełmno', 'fotograf ślubny chełmno', 'sesja narzeczeńska chełmno', 'sesja rodzinna chełmno', 'miasto zakochanych zdjęcia', 'fotografia chełmno'],
         heroImage: '/assets/portfolio/family/sesja-rodzinna-torun-plener-07.webp',
         lat: 53.3490,
         lng: 18.4311,
         intro: [
-            'Chełmno, Miasto Zakochanych — czy może być lepsze miejsce na sesję narzeczeńską lub ślubną? Urokliwy rynek, parki i panorama Wisły tworzą niesamowity klimat do fotografii.',
-            'Jestem Przemek — fotograf dojeżdżający do Chełmna. Lubię wykorzystywać architekturę tego pięknego miasta jako tło do portretów. Najważniejsi jesteście Wy i Wasze uczucia. Jestem u Was w kilkanaście minut, gotowy uwiecznić Waszą historię.',
+            'Jestem Przemek. Do Chełmna dojeżdżam na sesje rodzinne, śluby i zdjęcia par. Przed spotkaniem ustalamy zakres, miejsce oraz godzinę. Rynek, mury miejskie i park dają kilka różnych wariantów bez długich przejazdów.',
         ],
         sections: [
             {
                 title: 'Miejsca na sesję zdjęciową w Chełmnie',
                 icon: '📍',
                 paragraphs: [
-                    'Rynek w Chełmnie z renesansowym ratuszem to ikoniczne tło. Mury obronne — jedne z najlepiej zachowanych w Polsce — dają unikalny, historyczny klimat. Brama Grudziądzka i Brama Merseburska to punkty, które kocham fotograficznie.',
+                    'Rynek z ratuszem, mury obronne oraz okolice Bramy Grudziądzkiej pozwalają zrobić kilka różnych serii zdjęć podczas jednego spaceru.',
                     'Park nad Wisłą i teren przy Fosa Miejska — spokojne miejsca z naturalnym światłem, idealne na sesje rodzinne. Okolice kościołów (Wniebowzięcia NMP, farny) sprawdzają się na sesje komunijne i ślubne.',
-                    'Latem organizowany jest tu Festiwal Miłości — jeśli planujesz sesję narzeczeńską w Chełmnie, złota godzina + mury miejskie = magia.',
+                    'Godzinę spotkania dobieram do światła i liczby osób. Jeżeli nie masz wybranego miejsca, przed sesją podam dwie konkretne propozycje.',
                 ],
             },
             {
                 title: 'Styl pracy i podejście',
                 icon: '📷',
                 paragraphs: [
-                    'W Chełmnie staram się łapać ulotne momenty czułości, które w tym mieście wydają się jeszcze bardziej magiczne. Prowadzę reportażowo — nie ustawiam sztywnych póz.',
-                    'Sesja narzeczeńska w Chełmnie to spacer po starówce z drobnymi podpowiedziami ode mnie. Naturalność i emocje ponad pozowanie. Z dziećmi pracuję przez zabawę.',
+                    'Na początku pokazuję, gdzie stanąć i od jakich ujęć zaczynamy. Później przechodzimy krótką trasę, żeby zmienić tło bez tracenia czasu.',
+                    'Przy zdjęciach rodzinnych planuję także pojedyncze portrety i ujęcia kilku pokoleń. Zakres ustalamy jeszcze przed rezerwacją.',
                 ],
             },
             {
@@ -194,9 +192,9 @@ const CITIES: Record<string, CityInfo> = {
             },
         ],
         services: [
-            { name: 'Sesja narzeczeńska w Chełmnie', description: 'Romantyczna sesja par w Mieście Zakochanych — rynek, mury, panorama Wisły.' },
-            { name: 'Fotografia ślubna Chełmno', description: 'Reportaż ślubny + sesja plenerowa w pięknych chełmińskich plenerach.' },
-            { name: 'Sesja rodzinna', description: 'Naturalne zdjęcia rodzinne w parku, na starówce lub w plenerze.' },
+            { name: 'Sesja rodzinna w Chełmnie', description: 'Zdjęcia rodziny, dzieci i kilku pokoleń w parku, na rynku albo przy murach miejskich.', href: '/sesja-rodzinna?city=Chełmno' },
+            { name: 'Fotografia ślubna Chełmno', description: 'Ceremonia, kameralne przyjęcie albo pełny reportaż z ustalonym zakresem.', href: '/slub?city=Chełmno' },
+            { name: 'Sesja pary', description: 'Spacer po rynku i przy murach miejskich z wcześniej ustaloną trasą.' },
             { name: 'Fotografia komunijna', description: 'Pamiątkowe zdjęcia z Pierwszej Komunii Świętej w Chełmnie.' },
         ],
         faqs: [
@@ -216,16 +214,15 @@ const CITIES: Record<string, CityInfo> = {
         slug: 'fotograf-wabrzezno',
         city: 'Wąbrzeźno',
         region: 'kujawsko-pomorskie',
-        h1: 'Fotograf Wąbrzeźno — rodzinna, ślubna i portretowa',
-        metaTitle: 'Fotograf Wąbrzeźno ⭐ Śluby, wizerunek, sesje plenerowe',
-        metaDescription: 'Fotograf Wąbrzeźno: śluby plenerowe oraz sesje wizerunkowe, biznesowe i rodzinne nad Jeziorem Zamkowym. Poznaj lokalizacje i wolne terminy.',
+        h1: 'Fotograf w Wąbrzeźnie — sesje rodzinne i śluby',
+        metaTitle: 'Fotograf Wąbrzeźno – sesje rodzinne i śluby | Ceny',
+        metaDescription: 'Sesje rodzinne od 750 zł i fotografia ślubna od 1900 zł w Wąbrzeźnie. Zobacz zakres, wybierz pakiet i sprawdź wolny termin online.',
         keywords: ['fotograf wąbrzeźno', 'fotograf wabrzeźno', 'sesja rodzinna wąbrzeźno', 'fotografia ślubna wąbrzeźno', 'sesja narzeczeńska wąbrzeźno', 'zdjęcia wąbrzeźno'],
         heroImage: '/assets/portfolio/family/sesja-rodzinna-torun-plener-07.webp',
         lat: 53.2860,
         lng: 18.9557,
         intro: [
-            'Nazywam się Przemek — fotograf w Wąbrzeźnie. Mieszkam tuż obok, więc Wąbrzeźno to mój „domowy" teren. Jezioro Zamkowe i Frydek to klasyki, ale znam też mnóstwo ukrytych miejsc w okolicznych lasach i na polach.',
-            'Pracuję bez presji i bez sztucznego pozowania. Działając lokalnie, jestem dostępny nierzadko „od ręki" na krótsze sesje. Fotografia w Wąbrzeźnie nie musi być nudna — pokażę Ci, jak wydobyć piękno z naszych codziennych okolic.',
+            'Jestem Przemek i mieszkam niedaleko Wąbrzeźna. Fotografuję tu rodziny, śluby oraz przyjęcia. Przed spotkaniem ustalamy zakres, miejsce i godzinę. Cenę oraz dostępne terminy zobaczysz przed rezerwacją.',
         ],
         sections: [
             {
@@ -241,8 +238,8 @@ const CITIES: Record<string, CityInfo> = {
                 title: 'Styl pracy',
                 icon: '📷',
                 paragraphs: [
-                    'Prowadzę reportażowo: podpowiadam drobiazgi, nie ustawiam sztywno. Z dziećmi — zabawa i mikrozadania. Dorośli — spokój, rozmowa, kilka kroków przy ciekawym świetle.',
-                    'Łapiemy naturalne gesty, a potem dokładamy portrety i detale. Realizuję tu reportaże ślubne, osiemnastki i sesje komunijne, zawsze z pełnym zaangażowaniem.',
+                    'Na początku pokazuję, gdzie stanąć i od jakich ujęć zaczynamy. Przy rodzinach planuję zdjęcia całej grupy, mniejszych zestawień oraz pojedyncze portrety.',
+                    'Przy ślubach pracuję według ustalonego wcześniej planu dnia. Wiadomo, od której godziny zaczynam i jaki zakres końcowy otrzymacie.',
                 ],
             },
             {
@@ -250,13 +247,13 @@ const CITIES: Record<string, CityInfo> = {
                 icon: '🖼️',
                 paragraphs: [
                     'Po sesji otrzymujesz galerię online z gotowymi zdjęciami po obróbce. Odbitki i album projektuję na życzenie, z akceptacją projektu.',
-                    'Gotowe zdjęcia do 10 dni roboczych. Ceny zależne od pakietu — wszystko przejrzyście na mailu po wyborze terminu.',
+                    'Cena, czas fotografowania i liczba gotowych zdjęć są widoczne w rezerwacji. Po wyborze pakietu przechodzisz od razu do wolnych terminów.',
                 ],
             },
         ],
         services: [
-            { name: 'Sesja rodzinna w Wąbrzeźnie', description: 'Naturalne zdjęcia rodzinne nad jeziorem, w parku lub na łąkach.' },
-            { name: 'Fotografia ślubna Wąbrzeźno', description: 'Reportaż ślubny + sesja plenerowa w okolicznych plenerach.' },
+            { name: 'Sesja rodzinna w Wąbrzeźnie', description: 'Zdjęcia rodzinne nad jeziorem, w parku albo na łąkach w okolicy.', href: '/sesja-rodzinna?city=Wąbrzeźno' },
+            { name: 'Fotografia ślubna Wąbrzeźno', description: 'Ceremonia, kameralne przyjęcie albo pełny reportaż ślubny.', href: '/slub?city=Wąbrzeźno' },
             { name: 'Sesja portretowa', description: 'Portrety indywidualne i wizerunkowe w kameralnych lokalizacjach.' },
             { name: 'Fotografia komunijna', description: 'Sesje komunijne — kościół, plener i portret.' },
         ],
@@ -368,16 +365,15 @@ const CITIES: Record<string, CityInfo> = {
         slug: 'fotograf-swiecie',
         city: 'Świecie',
         region: 'kujawsko-pomorskie',
-        h1: 'Fotograf Świecie — sesje rodzinne, ślubne i portretowe',
-        metaTitle: 'Fotograf Świecie ⭐ Śluby, wizerunek, sesje miejskie',
-        metaDescription: 'Fotograf Świecie: śluby plenerowe przy Zamku Krzyżackim oraz sesje wizerunkowe, biznesowe i rodzinne nad Wdą. Sprawdź galerię i terminy.',
+        h1: 'Fotograf w Świeciu — sesje rodzinne i śluby',
+        metaTitle: 'Fotograf Świecie – sesje rodzinne i śluby | Ceny',
+        metaDescription: 'Sesje rodzinne od 750 zł i fotografia ślubna od 1900 zł w Świeciu. Zobacz zakres, wybierz pakiet i sprawdź wolny termin online.',
         keywords: ['fotograf świecie', 'sesja rodzinna świecie', 'fotografia ślubna świecie', 'zdjęcia świecie', 'fotograf świecie nad wisłą'],
         heroImage: '/assets/portfolio/family/sesja-rodzinna-torun-plener-07.webp',
         lat: 53.4100,
         lng: 18.4408,
         intro: [
-            'Zamek w Świeciu to ikona, ale fotograficznie miasto ma do zaoferowania znacznie więcej. Parki, okolice Wdy i Wisły to świetne plenery na sesje rodzinne i narzeczeńskie.',
-            'Jestem Przemek — fotograf dojeżdżający do Świecia. Cenię sobie otwartość mieszkańców i swobodną atmosferę, którą staram się oddać na zdjęciach.',
+            'Jestem Przemek. Do Świecia dojeżdżam na sesje rodzinne, śluby i zdjęcia par. Przed spotkaniem ustalamy zakres, miejsce oraz godzinę. Zamek, okolice Wdy i parki dają kilka różnych wariantów zdjęć.',
         ],
         sections: [
             {
@@ -390,8 +386,8 @@ const CITIES: Record<string, CityInfo> = {
             },
         ],
         services: [
-            { name: 'Sesja rodzinna Świecie', description: 'Naturalne zdjęcia przy zamku, w parku lub nad rzeką.' },
-            { name: 'Fotografia ślubna Świecie', description: 'Reportaż ślubny + sesja plenerowa przy Zamku Krzyżackim.' },
+            { name: 'Sesja rodzinna Świecie', description: 'Zdjęcia rodziny, dzieci i kilku pokoleń przy zamku, w parku albo nad rzeką.', href: '/sesja-rodzinna?city=Świecie' },
+            { name: 'Fotografia ślubna Świecie', description: 'Ceremonia, kameralne przyjęcie albo pełny reportaż ślubny.', href: '/slub?city=Świecie' },
             { name: 'Sesja portretowa', description: 'Portrety wizerunkowe i artystyczne w świeckich plenerach.' },
         ],
         faqs: [
@@ -819,13 +815,13 @@ export default async function CityLandingPage({ params, sections = [] }: PagePro
                                     href={`/rezerwacja?source=city&city=${encodeURIComponent(data.city)}&service=Sesja`}
                                     className="inline-flex items-center justify-center rounded-full bg-[#292622] px-7 py-3.5 text-sm font-semibold text-white transition hover:bg-[#11100f]"
                                 >
-                                    Zobacz pakiety i terminy
+                                    Sesja rodzinna — pakiety
                                 </Link>
                                 <Link
-                                    href="/portfolio"
+                                    href={`/rezerwacja?source=city&city=${encodeURIComponent(data.city)}&service=Ślub`}
                                     className="inline-flex items-center justify-center rounded-full border border-[#a9a095] px-7 py-3.5 text-sm font-semibold text-[#292622] transition hover:border-[#292622]"
                                 >
-                                    Obejrzyj fotografie
+                                    Ślub — pakiety
                                 </Link>
                             </div>
                             <div className="mt-10 grid grid-cols-3 gap-4 border-t border-[#cfc7bd] pt-6 text-xs leading-relaxed text-[#6e675f]">
@@ -920,13 +916,26 @@ export default async function CityLandingPage({ params, sections = [] }: PagePro
                         <p className="mt-5 leading-relaxed text-[#6c655d]">Każde spotkanie ma inny rytm. Zakres ustalamy jasno, a sposób pracy dopasowuję do Was i miejsca.</p>
                     </div>
                     <div className="mt-14 grid gap-5 md:grid-cols-2">
-                        {data.services.map((service, index) => (
-                            <article key={service.name} className="rounded-2xl border border-[#d8d1c7] bg-[#fbfaf7] p-7 md:p-8">
+                        {data.services.map((service, index) => {
+                            const content = (
+                                <>
                                 <span className="text-xs tracking-[0.2em] text-[#948777]">0{index + 1}</span>
                                 <h3 className="mt-5 font-serif text-2xl font-medium">{service.name}</h3>
                                 <p className="mt-3 leading-relaxed text-[#6c655d]">{service.description}</p>
-                            </article>
-                        ))}
+                                {service.href && <span className="mt-6 inline-flex text-sm font-semibold text-[#413c36]">Zobacz ofertę <span className="ml-2" aria-hidden="true">→</span></span>}
+                                </>
+                            );
+
+                            return service.href ? (
+                                <Link key={service.name} href={service.href} className="group rounded-2xl border border-[#d8d1c7] bg-[#fbfaf7] p-7 transition hover:-translate-y-0.5 hover:border-[#a99b89] md:p-8">
+                                    {content}
+                                </Link>
+                            ) : (
+                                <article key={service.name} className="rounded-2xl border border-[#d8d1c7] bg-[#fbfaf7] p-7 md:p-8">
+                                    {content}
+                                </article>
+                            );
+                        })}
                     </div>
                 </div>
             </section>
@@ -963,16 +972,19 @@ export default async function CityLandingPage({ params, sections = [] }: PagePro
                             href={`/rezerwacja?source=city-end&city=${encodeURIComponent(data.city)}&service=Sesja`}
                             className="rounded-full bg-[#eee8de] px-8 py-4 text-sm font-semibold text-[#26231f] transition hover:bg-white"
                         >
-                            Pakiety i wolne terminy
+                            Sesja rodzinna — terminy
                         </Link>
                         <Link
-                            href="/kontakt"
+                            href={`/rezerwacja?source=city-end&city=${encodeURIComponent(data.city)}&service=Ślub`}
                             className="rounded-full border border-white/30 px-8 py-4 text-sm font-semibold text-white transition hover:border-white/70"
                         >
-                            Napisz do mnie
+                            Ślub — terminy
                         </Link>
                     </div>
-                    <a href="tel:+48530788694" className="mt-8 inline-block text-sm text-[#cfc8bf] hover:text-white">+48 530 788 694</a>
+                    <div className="mt-8 flex flex-wrap justify-center gap-x-5 gap-y-2 text-sm text-[#cfc8bf]">
+                        <Link href="/kontakt" className="hover:text-white">Napisz do mnie</Link>
+                        <a href="tel:+48530788694" className="hover:text-white">+48 530 788 694</a>
+                    </div>
                 </div>
             </section>
 
