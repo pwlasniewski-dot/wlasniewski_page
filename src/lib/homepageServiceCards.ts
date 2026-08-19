@@ -25,7 +25,7 @@ export const DEFAULT_HOMEPAGE_SERVICE_CARDS: HomepageServiceCard[] = [
         image: '/assets/drone/drone-home.webp',
         image_position: 'center center',
         cta_label: 'Zobacz ofertę i ceny',
-        secondary_href: '/rezerwacja/dron?source=home-service-card',
+        secondary_href: '/rezerwacja?service=Dron&source=home-service-card',
         secondary_label: 'Rezerwuj',
     },
 ];
@@ -35,6 +35,12 @@ export function mergeHomepageServiceCards(value: unknown): HomepageServiceCard[]
 
     return DEFAULT_HOMEPAGE_SERVICE_CARDS.map((fallback, index) => {
         const saved = value[index];
-        return saved && typeof saved === 'object' ? { ...fallback, ...saved } : { ...fallback };
+        const merged = saved && typeof saved === 'object' ? { ...fallback, ...saved } : { ...fallback };
+        if (merged.service === 'Dron' && merged.secondary_href?.startsWith('/rezerwacja/dron')) {
+            merged.secondary_href = merged.secondary_href
+                .replace('/rezerwacja/dron?', '/rezerwacja?service=Dron&')
+                .replace('/rezerwacja/dron', '/rezerwacja?service=Dron');
+        }
+        return merged;
     });
 }

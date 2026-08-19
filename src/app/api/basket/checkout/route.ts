@@ -3,6 +3,7 @@ import prisma from '@/lib/db/prisma';
 import { logSystem } from '@/lib/logger';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
+import { loadDronePhotographyCmsPage } from '@/lib/dronePhotographyCms';
 
 export async function POST(request: Request) {
     try {
@@ -56,13 +57,9 @@ export async function POST(request: Request) {
         });
 
         // 1. Handle account creation if requested
-        let userId: number | null = null;
-        if (createAccount && password) {
-            const existingUser = await prisma.user.findUnique({
-                where: { email: customer.email }
-            });
-
-            if (!existingUser) {
+        const existingUser = await prisma.user.findUnique({ where: { email: customer.email } });
+        let userId: number | null = existingUser?.id || null;
+        if (createAccount && password && !existingUser) {
                 // Server-side validation
                 const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*(),.?":{}|<>]).{8,}$/;
                 if (!passwordRegex.test(password)) {
@@ -80,9 +77,6 @@ export async function POST(request: Request) {
                     }
                 });
                 userId = newUser.id;
-            } else {
-                userId = existingUser.id;
-            }
         }
 
         // 2. Prepare Cart ID (Unified Order ID) used directly as PayU extOrderId
@@ -93,23 +87,78 @@ export async function POST(request: Request) {
         const payuProducts = [];
         const createdResourceIds = [];
 
+        let droneConfigPromise: ReturnType<typeof loadDronePhotographyCmsPage> | null = null;
         for (const item of items) {
             if (item.type === 'booking') {
                 const md = (item.metadata || {}) as Record<string, any>;
-                const packageId = Number(item.productId);
-                if (!Number.isInteger(packageId)) {
-                    return NextResponse.json({ ok: false, message: "Nieprawidłowy pakiet." }, { status: 400 });
+                const isDroneStandalone = md.booking_package_source === 'drone_cms' || String(item.productId).startsWith('drone:');
+                let serviceName = '';
+                let packageName = '';
+                let packageHours = 1;
+                let packageBlocksEntireDay = false;
+                let basePrice = 0;
+                let dronePackage: { slug: string; name: string; price: number } | null = null;
+                let selectedPackage: any = null;
+
+                if (isDroneStandalone) {
+                    droneConfigPromise ||= loadDronePhotographyCmsPage();
+                    const { config } = await droneConfigPromise;
+                    const slug = String(md.package_slug || item.productId).replace(/^drone:/, '');
+                    const selected = config.packages.find(candidate =>
+                        candidate.slug === slug &&
+                        candidate.active !== false &&
+                        candidate.bookingMode !== 'addon'
+                    );
+                    if (!selected) return NextResponse.json({ ok: false, message: 'Wybrany pakiet dronowy nie jest już dostępny.' }, { status: 400 });
+                    serviceName = 'Dron';
+                    packageName = selected.name;
+                    packageHours = Math.max(1, selected.durationHours || 1);
+                    packageBlocksEntireDay = selected.blocksEntireDay === true;
+                    basePrice = selected.price * 100;
+                    dronePackage = { slug: selected.slug, name: selected.name, price: selected.price * 100 };
+                } else {
+                    const packageId = Number(item.productId);
+                    if (!Number.isInteger(packageId)) return NextResponse.json({ ok: false, message: 'Nieprawidłowy pakiet.' }, { status: 400 });
+                    selectedPackage = await prisma.package.findFirst({
+                        where: { id: packageId, is_active: true },
+                        include: { service: true },
+                    });
+                    if (!selectedPackage || !selectedPackage.service?.is_active) {
+                        return NextResponse.json({ ok: false, message: 'Wybrany pakiet nie jest już dostępny.' }, { status: 400 });
+                    }
+                    serviceName = selectedPackage.service.name;
+                    packageName = selectedPackage.name;
+                    packageHours = selectedPackage.hours;
+                    packageBlocksEntireDay = selectedPackage.blocks_entire_day === true;
+                    basePrice = selectedPackage.price;
+
+                    if (md.drone_addon_slug) {
+                        droneConfigPromise ||= loadDronePhotographyCmsPage();
+                        const { config } = await droneConfigPromise;
+                        const addon = config.packages.find(candidate =>
+                            candidate.slug === String(md.drone_addon_slug) &&
+                            candidate.active !== false &&
+                            (candidate.bookingMode === 'addon' || candidate.bookingMode === 'both') &&
+                            (candidate.eligibleServices || []).includes(serviceName)
+                        );
+                        if (!addon) return NextResponse.json({ ok: false, message: 'Wybrany dodatek dronowy nie jest dostępny dla tej usługi.' }, { status: 400 });
+                        dronePackage = { slug: addon.slug, name: addon.name, price: addon.price * 100 };
+                    }
                 }
 
-                const selectedPackage = await prisma.package.findFirst({
-                    where: { id: packageId, is_active: true },
-                    include: { service: true },
-                });
-                if (!selectedPackage || !selectedPackage.service.is_active) {
-                    return NextResponse.json({ ok: false, message: "Wybrany pakiet nie jest już dostępny." }, { status: 400 });
+                const hasDrone = Boolean(dronePackage);
+                if (hasDrone) {
+                    droneConfigPromise ||= loadDronePhotographyCmsPage();
+                    const { config } = await droneConfigPromise;
+                    if (!config.booking.goalOptions.includes(String(md.drone_goal || ''))) {
+                        return NextResponse.json({ ok: false, message: 'Wybierz główne zadanie materiału z drona.' }, { status: 400 });
+                    }
+                    if (!md.drone_terms_accepted || !md.venue_city || !md.venue_place) {
+                        return NextResponse.json({ ok: false, message: 'Do rezerwacji drona potrzebne są miejsce realizacji i akceptacja warunków lotu.' }, { status: 400 });
+                    }
                 }
 
-                let verifiedPrice = selectedPackage.price;
+                let verifiedPrice = basePrice + (isDroneStandalone ? 0 : dronePackage?.price || 0);
 
                 if (md.promo_code) {
                     const promoCode = String(md.promo_code).trim().toUpperCase();
@@ -180,9 +229,10 @@ export async function POST(request: Request) {
                     return NextResponse.json({ ok: false, message: "Brak lub nieprawidłowa data rezerwacji." }, { status: 400 });
                 }
                 const allowedBookingFields: Record<string, any> = {
-                    service: selectedPackage.service.name,
-                    package: selectedPackage.name,
+                    service: serviceName,
+                    package: packageName,
                     price: verifiedPrice,
+                    base_price: basePrice,
                     date: bookingDate,
                     start_time: md.start_time ?? null,
                     end_time: md.end_time ?? null,
@@ -193,6 +243,29 @@ export async function POST(request: Request) {
                     gift_card_code: md.gift_card_code ?? null,
                     challenge_id: md.challenge_id ?? null,
                     photographer_id: md.photographer_id ?? null,
+                    client_id: userId,
+                    booking_source: String(md.booking_source || 'booking').slice(0, 120),
+                    booking_kind: isDroneStandalone ? 'DRONE_STANDALONE' : hasDrone ? 'PHOTO_WITH_DRONE' : 'STANDARD',
+                    company_name: md.company_name ? String(md.company_name).slice(0, 120) : null,
+                    drone_package_slug: dronePackage?.slug || null,
+                    drone_package_name: dronePackage?.name || null,
+                    drone_price: dronePackage?.price || null,
+                    drone_goal: hasDrone ? String(md.drone_goal) : null,
+                    drone_terms_accepted_at: hasDrone ? new Date() : null,
+                    flight_check_status: hasDrone ? 'PENDING' : null,
+                    blocks_entire_day: packageBlocksEntireDay,
+                    booking_snapshot: {
+                        version: 1,
+                        service: serviceName,
+                        package: { name: packageName, price: basePrice, hours: packageHours },
+                        drone: dronePackage,
+                        totalBeforeDiscounts: basePrice + (isDroneStandalone ? 0 : dronePackage?.price || 0),
+                        totalAfterDiscounts: verifiedPrice,
+                        venue: { city: md.venue_city || null, place: md.venue_place || null },
+                        droneGoal: hasDrone ? String(md.drone_goal) : null,
+                        bookingSource: String(md.booking_source || 'booking').slice(0, 120),
+                        droneTermsVersion: hasDrone ? '2026-08-19' : null,
+                    },
                 };
                 // usuń undefined żeby Prisma nie nadpisała defaultów
                 Object.keys(allowedBookingFields).forEach(k => {
@@ -211,7 +284,7 @@ export async function POST(request: Request) {
                 });
                 createdResourceIds.push(`Booking #${booking.id}`);
                 payuProducts.push({
-                    name: item.title || 'Rezerwacja',
+                    name: `${serviceName}: ${packageName}${!isDroneStandalone && dronePackage ? ` + ${dronePackage.name}` : ''}`,
                     unitPrice: useSplitPayment ? Math.round(verifiedPrice * depositPercent / 100) : verifiedPrice,
                     quantity: 1
                 });

@@ -287,7 +287,7 @@ export async function GET(request: Request) {
 
                 // If it's a full day event (Wedding, Party, Birthday usually)
                 // Or if it's a Session but marks full day (logic can be refined)
-                if (booking.service !== "Sesja") {
+                if (booking.blocks_entire_day || (booking.service !== "Sesja" && booking.service !== "Dron")) {
                     availability[dateKey].fullDay = true;
                 } else {
                     // For sessions, mark specific slots as booked
@@ -366,7 +366,7 @@ export async function PATCH(request: Request) {
             'date', 'start_time', 'end_time',
             'client_name', 'email', 'phone',
             'venue_city', 'venue_place', 'notes',
-            'promo_code', 'gift_card_code'
+            'promo_code', 'gift_card_code', 'flight_check_status', 'drone_goal', 'company_name'
         ];
 
         const updateData: Record<string, any> = {};
@@ -391,10 +391,29 @@ export async function PATCH(request: Request) {
             );
         }
 
+        const previousBooking = await prisma.booking.findUnique({ where: { id: parseInt(id) } });
         const booking = await prisma.booking.update({
             where: { id: parseInt(id) },
             data: updateData,
         });
+
+        if (updateData.flight_check_status && previousBooking?.flight_check_status !== updateData.flight_check_status && booking.drone_package_slug) {
+            try {
+                const label: Record<string, string> = {
+                    APPROVED: 'Lot został sprawdzony i jest możliwy w zarezerwowanym terminie.',
+                    RESCHEDULE_REQUIRED: 'Warunki wymagają ustalenia innego terminu lotu. Skontaktuję się z Tobą w sprawie dostępnych dat.',
+                    NOT_POSSIBLE: 'W tym miejscu lub terminie lot nie może zostać wykonany. Skontaktuję się z Tobą w sprawie zmiany terminu albo zwrotu za część dronową.',
+                    PENDING: 'Możliwość lotu wróciła do etapu sprawdzania.',
+                };
+                await sendEmail({
+                    to: booking.email,
+                    subject: `Aktualizacja rezerwacji drona #${booking.id}`,
+                    html: `<p>Dzień dobry ${booking.client_name},</p><p>${label[updateData.flight_check_status] || 'Zaktualizowano możliwość wykonania lotu.'}</p><p>Rezerwacja: ${booking.service} — ${booking.package}${booking.drone_package_name && booking.service !== 'Dron' ? ` + ${booking.drone_package_name}` : ''}.</p><p>W razie pytań odpowiedz na tę wiadomość.</p>`,
+                });
+            } catch (flightEmailError) {
+                await logSystem('ERROR', 'EMAIL', 'Failed to send drone flight status email', { bookingId: id, error: String(flightEmailError) });
+            }
+        }
 
         // [STABLE: 2025-12-23] Notify client when status is updated to confirmed
         if (updateData.status === "confirmed") {

@@ -75,6 +75,7 @@ export default function DronePhotographyPageEditor({
                 slug: `nowy-pakiet-${Date.now()}`,
                 name: 'Nowy pakiet', shortName: 'Nowy pakiet', audience: 'nieruchomosc', price: 0,
                 summary: '', delivery: '', features: ['Zakres pakietu'], active: false,
+                bookingMode: 'standalone', durationHours: 1, blocksEntireDay: false, eligibleServices: [],
             }],
         });
     }
@@ -145,14 +146,18 @@ export default function DronePhotographyPageEditor({
                                 <Select label="Odbiorca" value={item.audience} onChange={audience => patchPackage(index, { audience: audience as DronePhotographyPackage['audience'] })} options={[['nieruchomosc', 'Nieruchomość'], ['firma', 'Firma'], ['slub', 'Ślub']]} />
                                 <Field label="Cena w zł" value={String(item.price)} type="number" onChange={price => patchPackage(index, { price: Math.max(0, Number(price) || 0) })} />
                                 <Field label="Prefiks ceny" value={item.pricePrefix || ''} onChange={pricePrefix => patchPackage(index, { pricePrefix })} placeholder="np. od lub +" />
+                                <Select label="Sposób rezerwacji" value={item.bookingMode || 'standalone'} onChange={bookingMode => patchPackage(index, { bookingMode: bookingMode as DronePhotographyPackage['bookingMode'] })} options={[["standalone", "Osobna usługa"], ["addon", "Dodatek"], ["both", "Osobna i dodatek"]]} />
+                                <Field label="Czas pracy (godziny)" value={String(item.durationHours || 1)} type="number" onChange={durationHours => patchPackage(index, { durationHours: Math.max(1, Number(durationHours) || 1) })} />
                                 <label className="flex items-center gap-2 pt-6 text-sm text-zinc-300"><input type="checkbox" checked={item.active !== false} onChange={event => patchPackage(index, { active: event.target.checked })} /> Aktywny</label>
                                 <label className="flex items-center gap-2 pt-6 text-sm text-zinc-300"><input type="checkbox" checked={Boolean(item.featured)} onChange={event => patchPackage(index, { featured: event.target.checked })} /> Najczęściej wybierany</label>
+                                <label className="flex items-center gap-2 pt-6 text-sm text-zinc-300"><input type="checkbox" checked={Boolean(item.blocksEntireDay)} onChange={event => patchPackage(index, { blocksEntireDay: event.target.checked })} /> Blokuje cały dzień</label>
                             </div>
                             <div className="mt-3 grid gap-3 md:grid-cols-2">
                                 <Field label="Opis" value={item.summary} onChange={summary => patchPackage(index, { summary })} multiline />
                                 <Field label="Termin oddania" value={item.delivery} onChange={delivery => patchPackage(index, { delivery })} multiline />
                             </div>
                             <div className="mt-3"><label className={labelClass}>Zakres — po jednym punkcie w wierszu</label><textarea className={inputClass} rows={4} value={item.features.join('\n')} onChange={event => patchPackage(index, { features: lines(event.target.value) })} /></div>
+                            {(item.bookingMode === 'addon' || item.bookingMode === 'both') && <div className="mt-3"><label className={labelClass}>Dodatek dostępny dla usług — po jednej nazwie w wierszu</label><textarea className={inputClass} rows={3} value={(item.eligibleServices || []).join('\n')} onChange={event => patchPackage(index, { eligibleServices: lines(event.target.value) })} placeholder={'Ślub\nPrzyjęcie\nUrodziny'} /></div>}
                         </div>
                     ))}
                 </div>
@@ -197,7 +202,7 @@ function BookingEditor({ value, onChange }: { value: DronePhotographyConfig; onC
     const patch = (data: Partial<typeof booking>) => onChange({ booking: { ...booking, ...data } });
     return <section className="rounded-xl border border-blue-500/25 bg-blue-500/5 p-5">
         <h3 className="text-lg font-semibold text-white">Teksty formularza rezerwacji</h3>
-        <p className="mt-1 text-sm text-zinc-400">Zmiany pojawią się na /rezerwacja/dron.</p>
+        <p className="mt-1 text-sm text-zinc-400">Zmiany pojawią się w głównej rezerwacji po wybraniu drona.</p>
         <div className="mt-5 grid gap-4 md:grid-cols-2">
             <Field label="Nadtytuł" value={booking.eyebrow} onChange={eyebrow => patch({ eyebrow })} />
             <Field label="Nagłówek" value={booking.title} onChange={title => patch({ title })} />

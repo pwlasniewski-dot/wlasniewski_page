@@ -1496,7 +1496,7 @@ export default function HomepageManager() {
 
                                 <div>
                                     <label className="mb-1 block text-[11px] text-zinc-400">Link drugiego przycisku</label>
-                                    <input value={card.secondary_href || ''} onChange={event => setServiceCards(current => current.map((item, cardIndex) => cardIndex === index ? { ...item, secondary_href: event.target.value } : item))} className="w-full rounded border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white" placeholder="/rezerwacja/dron?..." />
+                                    <input value={card.secondary_href || ''} onChange={event => setServiceCards(current => current.map((item, cardIndex) => cardIndex === index ? { ...item, secondary_href: event.target.value } : item))} className="w-full rounded border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white" placeholder="/rezerwacja?service=Dron&..." />
                                 </div>
 
                                 <div>

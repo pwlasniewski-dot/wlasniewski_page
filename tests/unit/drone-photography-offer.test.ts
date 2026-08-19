@@ -13,8 +13,8 @@ import {
 } from '../../src/lib/dronePhotographyOffer.ts';
 
 const landingSource = readFileSync(new URL('../../src/app/fotografia-z-drona/page.tsx', import.meta.url), 'utf8');
-const bookingSource = readFileSync(new URL('../../src/components/DronePhotographyBookingForm.tsx', import.meta.url), 'utf8');
-const orderApiSource = readFileSync(new URL('../../src/app/api/drone/order/route.ts', import.meta.url), 'utf8');
+const bookingSource = readFileSync(new URL('../../src/app/rezerwacja/page.tsx', import.meta.url), 'utf8');
+const checkoutApiSource = readFileSync(new URL('../../src/app/api/basket/checkout/route.ts', import.meta.url), 'utf8');
 const adminEditorSource = readFileSync(new URL('../../src/components/admin/DronePhotographyPageEditor.tsx', import.meta.url), 'utf8');
 
 test('default drone offer has three direct products and a wedding add-on', () => {
@@ -44,22 +44,22 @@ test('invalid or unsafe CMS package state is rejected before save', () => {
     if (!result.valid) assert.match(result.error, /więcej niż raz/);
 });
 
-test('every active CMS package leads to the dedicated booking funnel', () => {
+test('every active CMS package leads to the unified booking funnel', () => {
     for (const item of DEFAULT_DRONE_PHOTOGRAPHY_CONFIG.packages) {
         const href = droneBookingHref(item.slug, 'test');
-        assert.match(href, /^\/rezerwacja\/dron\?/);
-        assert.match(href, new RegExp(`pakiet=${item.slug}`));
+        assert.match(href, /^\/rezerwacja\?/);
+        assert.match(href, new RegExp(`(?:pakiet|dron)=${item.slug}`));
     }
 });
 
-test('offer, booking and order API consume the shared CMS configuration', () => {
+test('offer, unified booking and checkout consume the shared CMS configuration', () => {
     assert.match(landingSource, /loadDronePhotographyCmsPage/);
     assert.match(landingSource, /config\.packages/);
-    assert.match(bookingSource, /packages: DronePhotographyPackage\[\]/);
-    assert.match(bookingSource, /package_slug: selectedPackage\.slug/);
-    assert.match(orderApiSource, /loadDronePhotographyCmsPage/);
-    assert.match(orderApiSource, /config\.packages\.find/);
-    assert.match(orderApiSource, /formatDronePrice\(selectedPackage\)/);
+    assert.match(bookingSource, /drone_addon_slug/);
+    assert.match(bookingSource, /booking_package_source/);
+    assert.match(checkoutApiSource, /loadDronePhotographyCmsPage/);
+    assert.match(checkoutApiSource, /DRONE_STANDALONE/);
+    assert.match(checkoutApiSource, /PHOTO_WITH_DRONE/);
 });
 
 test('admin editor covers modules, packages, media and controlled visual variants', () => {

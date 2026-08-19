@@ -29,6 +29,12 @@ export async function sendBookingConfirmationEmail(booking: Booking) {
         notes: clientNotes,
         phone: booking.phone || undefined,
         email: booking.email,
+        dronePackageName: booking.drone_package_name || undefined,
+        droneGoal: booking.drone_goal || undefined,
+        flightCheckStatus: booking.flight_check_status || undefined,
+        paymentStatusLabel: booking.payment_plan === 'SPLIT' && !booking.remaining_paid_at
+            ? 'Zaliczka opłacona przez PayU — pozostała druga wpłata'
+            : 'Opłacono przez PayU',
     };
 
     // 1. Send Client Email

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 
-export type ServiceType = "Sesja" | "Ślub" | "Przyjęcie" | "Urodziny";
+export type ServiceType = "Sesja" | "Ślub" | "Przyjęcie" | "Urodziny" | "Dron";
 
 type DayAvailability =
   | undefined

@@ -12,6 +12,10 @@ export type DronePhotographyPackage = {
     features: string[];
     featured?: boolean;
     active?: boolean;
+    bookingMode?: 'standalone' | 'addon' | 'both';
+    eligibleServices?: string[];
+    durationHours?: number;
+    blocksEntireDay?: boolean;
 };
 
 export type DroneTheme = {
@@ -185,21 +189,25 @@ export const DEFAULT_DRONE_PHOTOGRAPHY_CONFIG: DronePhotographyConfig = {
             slug: 'nieruchomosc-foto', name: 'Nieruchomość z powietrza', shortName: 'Zdjęcia nieruchomości', audience: 'nieruchomosc', price: 449,
             summary: 'Dom, działka, pensjonat lub obiekt przeznaczony do sprzedaży i wynajmu.', delivery: 'gotowe zdjęcia do 2 dni roboczych od lotu',
             features: ['10 wybranych i opracowanych zdjęć', 'ujęcia bryły, otoczenia i dojazdu', 'pliki do ogłoszeń, strony i mediów społecznościowych', 'jedna lokalizacja i do 60 minut pracy na miejscu'], active: true,
+            bookingMode: 'standalone', durationHours: 1, blocksEntireDay: false,
         },
         {
             slug: 'foto-film', name: 'Zdjęcia i krótki film', shortName: 'Zdjęcia + film', audience: 'nieruchomosc', price: 990,
             summary: 'Pełniejsza prezentacja nieruchomości, obiektu noclegowego lub miejsca na wydarzenia.', delivery: 'gotowy materiał do 3 dni roboczych od lotu',
             features: ['12 wybranych i opracowanych zdjęć', 'film 30–45 sekund z montażem i muzyką', 'wersja pozioma oraz krótki pionowy materiał do social mediów', 'pliki przygotowane do publikacji w internecie'], featured: true, active: true,
+            bookingMode: 'standalone', durationHours: 2, blocksEntireDay: false,
         },
         {
             slug: 'firma-obiekt', name: 'Firma i obiekt', shortName: 'Firma / obiekt', audience: 'firma', price: 1290, pricePrefix: 'od',
             summary: 'Materiał do strony firmy, kampanii, prezentacji inwestycji lub promocji miejsca.', delivery: 'termin oddania ustalany przed potwierdzeniem zlecenia',
             features: ['minimum 15 opracowanych zdjęć', 'film 45–60 sekund z montażem', 'formaty dopasowane do strony i mediów społecznościowych', 'prawo wykorzystania materiału we własnej promocji firmy'], active: true,
+            bookingMode: 'standalone', durationHours: 3, blocksEntireDay: false,
         },
         {
             slug: 'slub-dodatek', name: 'Ślub z drona', shortName: 'Dron do reportażu ślubnego', audience: 'slub', price: 690, pricePrefix: '+',
             summary: 'Dodatek do mojego reportażu ślubnego, realizowany przy odpowiedniej pogodzie i możliwości wykonania lotu.', delivery: 'razem z gotowym reportażem ślubnym',
             features: ['8–12 opracowanych zdjęć z powietrza', 'krótki filmowy fragment miejsca i otoczenia', 'ujęcie obiektu, pleneru i bezpiecznie ustawionej grupy', 'sprawdzenie przestrzeni powietrznej przed realizacją'], active: true,
+            bookingMode: 'addon', eligibleServices: ['Ślub', 'Przyjęcie', 'Urodziny'], durationHours: 1, blocksEntireDay: false,
         },
     ],
     booking: {
@@ -271,7 +279,7 @@ export const DEFAULT_DRONE_PHOTOGRAPHY_CONFIG: DronePhotographyConfig = {
         {
             id: 'drone-cta', type: 'cta', enabled: true, tone: 'dark', eyebrow: '', title: 'Masz miejsce lub wydarzenie do pokazania?',
             description: 'Wybierz najbliższy zakres. W formularzu podasz miasto, preferowany termin i najważniejsze zadanie materiału.',
-            buttonLabel: 'Rozpocznij rezerwację', buttonHref: '/rezerwacja/dron?pakiet=nieruchomosc-foto&source=drone-offer-bottom',
+            buttonLabel: 'Rozpocznij rezerwację', buttonHref: '/rezerwacja?service=Dron&pakiet=nieruchomosc-foto&source=drone-offer-bottom',
         },
     ],
 };
@@ -299,6 +307,10 @@ export function parseDronePhotographyConfig(value: unknown): DronePhotographyCon
             price: Math.max(0, Number(item.price) || 0),
             features: Array.isArray(item.features) ? item.features.filter(feature => typeof feature === 'string') : [],
             active: item.active !== false,
+            bookingMode: ['standalone', 'addon', 'both'].includes(String(item.bookingMode)) ? item.bookingMode : 'standalone',
+            eligibleServices: Array.isArray(item.eligibleServices) ? item.eligibleServices.filter(value => typeof value === 'string') : [],
+            durationHours: Math.max(1, Number(item.durationHours) || 1),
+            blocksEntireDay: item.blocksEntireDay === true,
         } as DronePhotographyPackage))
         : defaults.packages;
     const allowedModuleTypes = new Set(defaults.modules.map(module => module.type));
@@ -361,8 +373,11 @@ export function getDronePhotographyPackage(slug: string | null | undefined, pack
 }
 
 export function droneBookingHref(packageSlug: DronePhotographyPackageSlug, source: string) {
-    const params = new URLSearchParams({ pakiet: packageSlug, source });
-    return `/rezerwacja/dron?${params.toString()}`;
+    const item = getDronePhotographyPackage(packageSlug);
+    const isAddon = item.bookingMode === 'addon';
+    const params = new URLSearchParams({ service: isAddon ? 'Ślub' : 'Dron', source });
+    params.set(isAddon ? 'dron' : 'pakiet', packageSlug);
+    return `/rezerwacja?${params.toString()}`;
 }
 
 export function formatDronePrice(item: DronePhotographyPackage) {

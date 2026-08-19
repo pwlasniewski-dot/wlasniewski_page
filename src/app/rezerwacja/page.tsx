@@ -36,6 +36,31 @@ interface Package {
     order: number;
     blocks_entire_day?: boolean;
     is_active: boolean;
+    source?: 'database' | 'drone_cms';
+    slug?: string;
+    pricePrefix?: string;
+}
+
+interface DronePackage {
+    slug: string;
+    name: string;
+    shortName: string;
+    price: number;
+    pricePrefix?: string;
+    summary: string;
+    delivery: string;
+    features: string[];
+    bookingMode?: 'standalone' | 'addon' | 'both';
+    eligibleServices?: string[];
+    durationHours?: number;
+    blocksEntireDay?: boolean;
+    active?: boolean;
+}
+
+interface DroneCatalog {
+    packages: DronePackage[];
+    areas: string[];
+    booking: { goalLabel: string; goalOptions: string[] };
 }
 
 interface DiscountCode {
@@ -67,11 +92,13 @@ export default function RezerwacjaPage() {
     const submissionLock = useRef(false);
     // Data from API
     const [serviceTypes, setServiceTypes] = useState<ServiceType[]>([]);
+    const [droneCatalog, setDroneCatalog] = useState<DroneCatalog | null>(null);
     const [servicesLoading, setServicesLoading] = useState(true);
 
     // Selected values
     const [service, setService] = useState<ServiceType | null>(null);
     const [chosenPackage, setChosenPackage] = useState<Package | null>(null);
+    const [selectedDroneAddonSlug, setSelectedDroneAddonSlug] = useState<string | null>(null);
     const [slot, setSlot] = useState<{ date: string; start?: string; end?: string } | null>(null);
 
     // Availability
@@ -86,6 +113,9 @@ export default function RezerwacjaPage() {
     const [venueCity, setVenueCity] = useState("");
     const [venuePlace, setVenuePlace] = useState("");
     const [notes, setNotes] = useState("");
+    const [companyName, setCompanyName] = useState("");
+    const [droneGoal, setDroneGoal] = useState("");
+    const [droneTermsAccepted, setDroneTermsAccepted] = useState(false);
     const [rodo, setRodo] = useState(false);
 
     // Promo code
@@ -140,16 +170,53 @@ export default function RezerwacjaPage() {
     useEffect(() => {
         const loadServices = async () => {
             try {
-                const res = await fetch(getApiUrl('service-types'));
+                const [res, droneRes] = await Promise.all([
+                    fetch(getApiUrl('service-types')),
+                    fetch('/api/booking/drone-catalog'),
+                ]);
                 if (res.ok) {
                     const data = await res.json();
-                    const active = (data.serviceTypes || []).filter((s: ServiceType) => s.is_active);
+                    const catalog: DroneCatalog | null = droneRes.ok ? await droneRes.json() : null;
+                    setDroneCatalog(catalog);
+                    const databaseServices = (data.serviceTypes || []).filter((s: ServiceType) => s.is_active);
+                    const standaloneDronePackages = (catalog?.packages || [])
+                        .filter(item => item.active !== false && item.bookingMode !== 'addon')
+                        .map((item, index): Package => ({
+                            id: -1000 - index,
+                            service_id: -100,
+                            name: item.name,
+                            description: `<p>${item.summary}</p><p>${item.delivery}</p>`,
+                            hours: Math.max(1, item.durationHours || 1),
+                            price: item.price * 100,
+                            subtitle: item.shortName,
+                            features: item.features.join('\n'),
+                            order: index,
+                            blocks_entire_day: item.blocksEntireDay === true,
+                            is_active: true,
+                            source: 'drone_cms',
+                            slug: item.slug,
+                            pricePrefix: item.pricePrefix,
+                        }));
+                    const droneService: ServiceType | null = standaloneDronePackages.length ? {
+                        id: -100,
+                        name: 'Dron',
+                        description: 'Zdjęcia i film z powietrza jako osobne zlecenie',
+                        is_active: true,
+                        packages: standaloneDronePackages,
+                    } : null;
+                    const active = droneService ? [...databaseServices, droneService] : databaseServices;
                     setServiceTypes(active);
                     if (active.length > 0 && !service) {
-                        const requested = new URLSearchParams(window.location.search).get('service');
+                        const query = new URLSearchParams(window.location.search);
+                        const requested = query.get('service');
                         const selected = active.find((item: ServiceType) => item.name.toLowerCase() === requested?.toLowerCase()) || active[0];
                         setService(selected);
-                        trackBookingEvent('booking_view', { service: selected.name, source: new URLSearchParams(window.location.search).get('source') || 'direct' });
+                        const requestedPackage = query.get('pakiet');
+                        const preselectedPackage = selected.packages.find(pkg => pkg.slug === requestedPackage);
+                        if (preselectedPackage) setChosenPackage(preselectedPackage);
+                        const requestedAddon = query.get('dron');
+                        if (requestedAddon && catalog?.packages.some(pkg => pkg.slug === requestedAddon)) setSelectedDroneAddonSlug(requestedAddon);
+                        trackBookingEvent('booking_view', { service: selected.name, source: query.get('source') || 'direct' });
                         await trackEvent('booking_view', { package_count: active.reduce((sum: number, item: ServiceType) => sum + item.packages.filter(pkg => pkg.is_active).length, 0) });
                         await trackEvent('service_selected');
                     }
@@ -241,7 +308,9 @@ export default function RezerwacjaPage() {
             setLoadingAvailability(true);
             try {
                 const res = await fetch(
-                    `/api/availability?serviceId=${chosenPackage.service_id}&packageId=${chosenPackage.id}&date=${slot.date}`
+                    chosenPackage.source === 'drone_cms'
+                        ? `/api/availability?dronePackageSlug=${encodeURIComponent(chosenPackage.slug || '')}&date=${slot.date}`
+                        : `/api/availability?serviceId=${chosenPackage.service_id}&packageId=${chosenPackage.id}&date=${slot.date}`
                 );
                 if (res.ok) {
                     const data = await res.json();
@@ -266,7 +335,22 @@ export default function RezerwacjaPage() {
         loadAvailability();
     }, [chosenPackage, slot?.date]);
 
-    const needsVenue = service && ['Ślub', 'Przyjęcie', 'Urodziny'].includes(service.name);
+    const selectedDroneAddon = useMemo(
+        () => droneCatalog?.packages.find(item => item.slug === selectedDroneAddonSlug) || null,
+        [droneCatalog, selectedDroneAddonSlug]
+    );
+
+    const eligibleDroneAddons = useMemo(
+        () => (droneCatalog?.packages || []).filter(item =>
+            item.active !== false &&
+            (item.bookingMode === 'addon' || item.bookingMode === 'both') &&
+            (item.eligibleServices || []).includes(service?.name || '')
+        ),
+        [droneCatalog, service?.name]
+    );
+
+    const hasDrone = service?.name === 'Dron' || Boolean(selectedDroneAddon);
+    const needsVenue = Boolean(service && (hasDrone || ['Ślub', 'Przyjęcie', 'Urodziny'].includes(service.name)));
 
     const activePackages = useMemo(
         () => (service ? service.packages.filter(p => p.is_active) : []),
@@ -275,7 +359,7 @@ export default function RezerwacjaPage() {
 
     const finalPrice = useMemo(() => {
         if (!chosenPackage) return 0;
-        let price = chosenPackage.price;
+        let price = chosenPackage.price + (selectedDroneAddon?.price || 0) * 100;
 
         // Apply discount
         if (discount) {
@@ -292,7 +376,7 @@ export default function RezerwacjaPage() {
         }
 
         return Math.max(0, price);
-    }, [chosenPackage, discount, giftCard]);
+    }, [chosenPackage, selectedDroneAddon, discount, giftCard]);
 
     const isReadyToSubmit = useMemo(
         () =>
@@ -302,8 +386,9 @@ export default function RezerwacjaPage() {
             chosenPackage &&
             rodo &&
             (chosenPackage?.blocks_entire_day || Boolean(slot?.start)) &&
-            (!needsVenue || (venueCity && venuePlace)),
-        [name, email, slot, chosenPackage, rodo, needsVenue, venueCity, venuePlace]
+            (!needsVenue || (venueCity && venuePlace)) &&
+            (!hasDrone || (droneGoal && droneTermsAccepted)),
+        [name, email, slot, chosenPackage, rodo, needsVenue, venueCity, venuePlace, hasDrone, droneGoal, droneTermsAccepted]
     );
 
     // Check promo code
@@ -436,13 +521,14 @@ export default function RezerwacjaPage() {
         setSubmitting(true);
 
         try {
-            const title = `${service?.name} — ${chosenPackage.name}`;
+            const title = `${service?.name} — ${chosenPackage.name}${selectedDroneAddon ? ` + ${selectedDroneAddon.name}` : ''}`;
+            const source = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('source') || 'booking' : 'booking';
             const bookingData = {
                 service: service?.name,
                 package: chosenPackage.name,
                 hours: chosenPackage.hours,
                 price: finalPrice,
-                originalPrice: chosenPackage.price,
+                originalPrice: chosenPackage.price + (selectedDroneAddon?.price || 0) * 100,
                 date: slot.date,
                 start_time: slot.start ?? null,
                 end_time: slot.end ?? null,
@@ -451,6 +537,12 @@ export default function RezerwacjaPage() {
                 phone: phone || null,
                 venue_city: needsVenue ? venueCity : null,
                 venue_place: needsVenue ? venuePlace : null,
+                company_name: companyName || null,
+                booking_package_source: chosenPackage.source || 'database',
+                booking_source: source,
+                drone_addon_slug: selectedDroneAddon?.slug || null,
+                drone_goal: hasDrone ? droneGoal : null,
+                drone_terms_accepted: hasDrone ? droneTermsAccepted : false,
                 notes: notes || null,
                 promo_code: discount ? discount.code : null,
                 gift_card_code: giftCard ? giftCard.code : null,
@@ -477,7 +569,7 @@ export default function RezerwacjaPage() {
 
             addItem({
                 type: 'booking',
-                productId: chosenPackage.id.toString(),
+                productId: chosenPackage.source === 'drone_cms' ? `drone:${chosenPackage.slug}` : chosenPackage.id.toString(),
                 title,
                 subtitle: `${slot.date}${slot.start ? ` o ${slot.start}` : ''}`,
                 price: finalPrice,
@@ -648,9 +740,14 @@ export default function RezerwacjaPage() {
                                         onClick={() => {
                                             setService(svc);
                                             setChosenPackage(null);
+                                            setSelectedDroneAddonSlug(null);
+                                            setDroneGoal('');
+                                            setDroneTermsAccepted(false);
                                             setSlot(null);
                                             const url = new URL(window.location.href);
                                             url.searchParams.set('service', svc.name);
+                                            url.searchParams.delete('pakiet');
+                                            url.searchParams.delete('dron');
                                             window.history.replaceState({}, '', url);
                                             trackBookingEvent('booking_service_select', { service: svc.name });
                                             void trackEvent('service_selected');
@@ -708,7 +805,7 @@ export default function RezerwacjaPage() {
 
                                             <div className="text-xl text-[#766958] font-extrabold mb-4 flex items-center gap-2">
                                                 <span className="text-sm bg-[#8d7f6d]/10 px-2 py-0.5 rounded border border-[#b7aa99]/50">{pkg.hours}h</span>
-                                                <span>{(pkg.price / 100).toFixed(2)} zł</span>
+                                                <span>{pkg.pricePrefix && `${pkg.pricePrefix} `}{(pkg.price / 100).toFixed(2)} zł</span>
                                             </div>
 
                                             {pkg.description && (
@@ -720,6 +817,39 @@ export default function RezerwacjaPage() {
                                         </button>
                                     ))}
                                 </div>
+
+                                {service.name !== 'Dron' && eligibleDroneAddons.length > 0 && (
+                                    <div className="mt-8 border-t border-[#ddd6cc] pt-7">
+                                        <div className="mb-4">
+                                            <h3 className="text-xl font-bold text-[#25221f]">Dodaj zdjęcia i film z drona</h3>
+                                            <p className="mt-1 text-sm text-[#6b645c]">Dron jest częścią tej samej rezerwacji, terminu i płatności.</p>
+                                        </div>
+                                        <div className="grid gap-3 md:grid-cols-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => setSelectedDroneAddonSlug(null)}
+                                                className={`rounded-xl border p-4 text-left ${!selectedDroneAddonSlug ? 'border-[#8d7f6d] bg-[#8d7f6d]/10' : 'border-[#ddd6cc] bg-white'}`}
+                                            >
+                                                <span className="font-bold text-[#25221f]">Bez drona</span>
+                                                <span className="mt-1 block text-sm text-[#6b645c]">Pozostaw wybrany pakiet bez dodatku.</span>
+                                            </button>
+                                            {eligibleDroneAddons.map(item => (
+                                                <button
+                                                    key={item.slug}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setSelectedDroneAddonSlug(item.slug);
+                                                        trackBookingEvent('drone_addon_selected', { service: service.name, package: item.name, value: item.price });
+                                                    }}
+                                                    className={`rounded-xl border p-4 text-left ${selectedDroneAddonSlug === item.slug ? 'border-[#8d7f6d] bg-[#8d7f6d]/10' : 'border-[#ddd6cc] bg-white'}`}
+                                                >
+                                                    <span className="flex justify-between gap-3 font-bold text-[#25221f]"><span>{item.name}</span><span>+{item.price} zł</span></span>
+                                                    <span className="mt-1 block text-sm leading-6 text-[#6b645c]">{item.summary}</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                             </motion.section>
                         )}
 
@@ -743,7 +873,7 @@ export default function RezerwacjaPage() {
                                             if (selected?.date) void trackEvent('date_selected');
                                         }}
                                         selectedSlot={slot}
-                                        service={(service?.name as "Sesja" | "Ślub" | "Przyjęcie" | "Urodziny") || 'Sesja'}
+                                        service={(service?.name as "Sesja" | "Ślub" | "Przyjęcie" | "Urodziny" | "Dron") || 'Sesja'}
                                     />
                                 </div>
 
@@ -869,6 +999,20 @@ export default function RezerwacjaPage() {
                                         />
                                     </div>
 
+                                    {hasDrone && service?.name === 'Dron' && (
+                                        <div>
+                                            <label className="block text-sm font-medium text-[#514b44] mb-2">Firma (opcjonalnie)</label>
+                                            <input
+                                                type="text"
+                                                value={companyName}
+                                                onChange={(e) => setCompanyName(e.target.value.slice(0, 120))}
+                                                maxLength={120}
+                                                className="w-full px-4 py-2 rounded-lg bg-[#ece7e0] border border-[#d2cabf] text-[#25221f] focus:ring-2 focus:ring-[#8d7f6d] outline-none"
+                                                placeholder="Nazwa firmy"
+                                            />
+                                        </div>
+                                    )}
+
                                     {needsVenue && (
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div>
@@ -897,6 +1041,23 @@ export default function RezerwacjaPage() {
                                                     placeholder="Pałac Dąbrowski"
                                                 />
                                             </div>
+                                        </div>
+                                    )}
+
+                                    {hasDrone && (
+                                        <div>
+                                            <label className="block text-sm font-medium text-[#514b44] mb-2">
+                                                {droneCatalog?.booking.goalLabel || 'Główne zadanie materiału'} *
+                                            </label>
+                                            <select
+                                                required
+                                                value={droneGoal}
+                                                onChange={(e) => setDroneGoal(e.target.value)}
+                                                className="w-full px-4 py-2 rounded-lg bg-[#ece7e0] border border-[#d2cabf] text-[#25221f] focus:ring-2 focus:ring-[#8d7f6d] outline-none"
+                                            >
+                                                <option value="">Wybierz</option>
+                                                {(droneCatalog?.booking.goalOptions || []).map(option => <option key={option} value={option}>{option}</option>)}
+                                            </select>
                                         </div>
                                     )}
 
@@ -975,6 +1136,13 @@ export default function RezerwacjaPage() {
                                         </div>
                                     )}
 
+                                    {chosenPackage && (
+                                        <div className="space-y-2 border-t border-[#ddd6cc] pt-4 text-sm text-[#514b44]">
+                                            <div className="flex justify-between gap-4"><span>{chosenPackage.name}</span><span>{(chosenPackage.price / 100).toFixed(2)} zł</span></div>
+                                            {selectedDroneAddon && <div className="flex justify-between gap-4"><span>{selectedDroneAddon.name}</span><span>+{selectedDroneAddon.price.toFixed(2)} zł</span></div>}
+                                        </div>
+                                    )}
+
                                     {/* Final Price */}
                                     <div className="flex justify-between text-2xl font-bold text-[#25221f] pt-4 border-t border-[#ddd6cc]">
                                         <span>Do zapłaty:</span>
@@ -983,6 +1151,20 @@ export default function RezerwacjaPage() {
                                 </div>
 
                                 {/* RODO */}
+                                {hasDrone && (
+                                    <label className="flex items-start gap-3 cursor-pointer group mt-6 rounded-xl border border-[#d2cabf] bg-[#f4f1eb] p-4">
+                                        <input
+                                            type="checkbox"
+                                            checked={droneTermsAccepted}
+                                            onChange={(e) => setDroneTermsAccepted(e.target.checked)}
+                                            required
+                                            className="mt-1 w-4 h-4 rounded border-[#c6bdb1] bg-[#ece7e0] text-[#6e6252] focus:ring-[#8d7f6d]"
+                                        />
+                                        <span className="text-sm leading-6 text-[#514b44]">
+                                            Rozumiem, że lot zostanie wykonany po sprawdzeniu miejsca, aktualnych stref i pogody. Jeśli bezpieczny i zgodny z przepisami lot nie będzie możliwy, ustalimy nowy termin albo zwrot za dodatek dronowy. *
+                                        </span>
+                                    </label>
+                                )}
                                 <label className="flex items-start gap-3 cursor-pointer group mt-6">
                                     <input
                                         type="checkbox"
