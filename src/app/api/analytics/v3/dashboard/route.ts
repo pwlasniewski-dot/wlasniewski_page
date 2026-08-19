@@ -64,11 +64,11 @@ function countMedia(raw: string | null | undefined) {
 }
 
 function isBookingStart(event: Event) {
-  return ['v2_booking_start', 'v2_booking_started', 'v2_booking_form_started'].includes(event.event_type);
+  return ['v2_booking_start', 'v2_booking_started', 'v2_booking_form_started', 'v2_drone_booking_started'].includes(event.event_type);
 }
 
 function isClientConversion(event: Event) {
-  return ['v2_booking_created', 'v2_booking_complete', 'v2_booking_completed', 'v2_payment_success'].includes(event.event_type);
+  return ['v2_booking_created', 'v2_booking_complete', 'v2_booking_completed', 'v2_payment_success', 'v2_drone_booking_submitted'].includes(event.event_type);
 }
 
 function pct(current: number, previous: number) {
@@ -423,7 +423,7 @@ export async function GET(request: NextRequest) {
         siteHost: safeAnalyticsSiteHost(items.find(event => event.event_type === 'v2_page_view')?.metadata.site_host),
         pageViews: items.filter(event => event.event_type === 'v2_page_view').length,
         bookingStarted: items.some(isBookingStart), clientConversion: items.some(isClientConversion),
-        path: items.filter(event => ['v2_page_view', 'v2_click', 'v2_booking_start', 'v2_booking_form_started', 'v2_booking_created', 'v2_payment_success'].includes(event.event_type)).map(event => ({ at: event.created_at, event: event.event_type.replace(/^v2_/, ''), page: normalizePath(event.page_url) })).slice(0, 80),
+        path: items.filter(event => ['v2_page_view', 'v2_click', 'v2_booking_start', 'v2_booking_form_started', 'v2_booking_created', 'v2_payment_success', 'v2_drone_booking_started', 'v2_drone_booking_submitted'].includes(event.event_type)).map(event => ({ at: event.created_at, event: event.event_type.replace(/^v2_/, ''), page: normalizePath(event.page_url) })).slice(0, 80),
       })),
       dataQuality: { syntheticValues: false, unavailableSources: Array.from(new Set(unavailableSources)), privacy: 'Zapytania GSC są dostępne wyłącznie w chronionym panelu administratora; Google może pomijać rzadkie zapytania.', gscFreshness: gsc.message },
     });

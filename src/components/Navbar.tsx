@@ -22,8 +22,9 @@ const MENU_ITEMS: MenuItem[] = [
     { id: 3, label: 'Fotografowie', href: '/fotografowie' },
     { id: 4, label: 'O mnie', href: '/o-mnie' },
     { id: 5, label: 'Blog', href: '/blog' },
-    { id: 6, label: 'Kontakt', href: '/kontakt' },
-    { id: 7, label: 'Rezerwacja', href: '/rezerwacja' },
+    { id: 6, label: 'Dron', href: '/fotografia-z-drona' },
+    { id: 7, label: 'Kontakt', href: '/kontakt' },
+    { id: 8, label: 'Rezerwacja', href: '/rezerwacja' },
 ];
 
 const B2B_MENU_ITEMS: MenuItem[] = [

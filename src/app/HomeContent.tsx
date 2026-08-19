@@ -1140,7 +1140,7 @@ export default function HomeContent({ heroSlides, sections, homeData, orderedSec
                     <h2 className="mb-12 text-center font-display text-4xl font-normal tracking-[-.03em] text-[#28221c] md:text-6xl">
                         Fotograf w Toruniu i regionie
                     </h2>
-                    <div className="grid grid-cols-1 border-y border-[#c8bbab] sm:grid-cols-2 lg:grid-cols-4 lg:divide-x lg:divide-[#c8bbab]">
+                    <div className="grid grid-cols-1 border-y border-[#c8bbab] sm:grid-cols-2 lg:grid-cols-5 lg:divide-x lg:divide-[#c8bbab]">
                         <Link href="/fotograf-torun" className="group block border-b border-[#c8bbab] p-7 transition hover:bg-white/50 sm:border-r lg:border-b-0 lg:border-r-0">
                             <div className="mb-3 text-[10px] font-bold uppercase tracking-[.25em] text-[#94733d]">Toruń</div>
                             <div className="mb-2 font-display text-2xl text-[#28221c] transition-colors group-hover:text-[#94733d]">Fotograf Toruń</div>
@@ -1160,6 +1160,11 @@ export default function HomeContent({ heroSlides, sections, homeData, orderedSec
                             <div className="mb-3 text-[10px] font-bold uppercase tracking-[.25em] text-[#94733d]">Ślub</div>
                             <div className="mb-2 font-display text-2xl text-[#28221c] transition-colors group-hover:text-[#94733d]">Fotografia ślubna</div>
                             <p className="text-sm leading-6 text-[#6f665d]">Ceremonia, wesele i plener — wybierz potrzebny zakres.</p>
+                        </Link>
+                        <Link href="/fotografia-z-drona" className="group block border-t border-[#c8bbab] p-7 transition hover:bg-white/50 sm:border-l lg:border-l-0 lg:border-t-0">
+                            <div className="mb-3 text-[10px] font-bold uppercase tracking-[.25em] text-[#94733d]">Z powietrza</div>
+                            <div className="mb-2 font-display text-2xl text-[#28221c] transition-colors group-hover:text-[#94733d]">Zdjęcia z drona</div>
+                            <p className="text-sm leading-6 text-[#6f665d]">Nieruchomości, firmy i ujęcia do reportażu ślubnego.</p>
                         </Link>
                     </div>
                 </div>

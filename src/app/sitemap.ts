@@ -55,6 +55,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         '/kontakt',
         '/karta-podarunkowa',
         '/foto-wyzwanie',
+        '/fotografia-z-drona',
     ];
 
     // City SEO landing pages — priority 1.0 for local SEO
