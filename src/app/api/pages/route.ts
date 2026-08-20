@@ -5,6 +5,21 @@ import { requireAuth, withAuth } from '@/lib/auth/middleware';
 import { revalidatePath } from 'next/cache';
 import { validateDronePhotographyConfig } from '@/lib/dronePhotographyOffer';
 
+async function preservePagePublicationBestEffort(page: {
+    slug: string;
+    page_type: string | null;
+    is_published: boolean;
+}) {
+    if (!page.is_published) return;
+    try {
+        await preserveFirstPublication(prisma, publicationRegistryIdentity('page', page));
+    } catch (error) {
+        // Rejestr analityczny jest pomocniczy. Brak jego migracji lub chwilowa
+        // awaria nie może cofnąć zapisu treści wykonanej przez administratora.
+        console.warn('[API/Pages] Page saved, but publication registry update failed:', error);
+    }
+}
+
 // GET all pages or specific page by slug or id
 export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
@@ -70,7 +85,7 @@ export async function POST(request: NextRequest) {
             if (id) {
                 // UPDATE existing page
                 page = await prisma.$transaction(async tx => {
-                  const saved = await tx.page.update({
+                  return tx.page.update({
                     where: { id: parseInt(id) },
                     data: {
                         title,
@@ -95,8 +110,6 @@ export async function POST(request: NextRequest) {
                         meta_keywords
                     }
                   });
-                  if (saved.is_published) await preserveFirstPublication(tx, publicationRegistryIdentity('page', saved));
-                  return saved;
                 });
             } else {
                 // CREATE NEW page - check slug uniqueness first (case-insensitive)!
@@ -115,7 +128,7 @@ export async function POST(request: NextRequest) {
 
                 try {
                     page = await prisma.$transaction(async tx => {
-                      const saved = await tx.page.create({
+                      return tx.page.create({
                         data: {
                             slug,
                             title,
@@ -140,14 +153,14 @@ export async function POST(request: NextRequest) {
                             meta_keywords
                         },
                       });
-                      if (saved.is_published) await preserveFirstPublication(tx, publicationRegistryIdentity('page', saved));
-                      return saved;
                     });
                 } catch (createError) {
                     console.error('[API/Pages] Create failed:', createError);
                     throw createError;
                 }
             }
+
+            await preservePagePublicationBestEffort(page);
 
             // ISR revalidation
             try {
