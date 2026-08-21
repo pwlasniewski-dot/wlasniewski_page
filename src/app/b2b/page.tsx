@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import PageRenderer from '@/components/PageRenderer';
+import AeroPageRenderer from '@/components/aero/AeroPageRenderer';
 import { AeroStructuredData } from '@/components/aero/AeroStructuredData';
 import { AERO_SITE, applyAeroCmsToDefinition, getAeroPageDefinition, mergeAeroPageSections } from '@/lib/aeroanaliza/content';
 import { loadAeroCmsPage } from '@/lib/aeroanaliza/server';
@@ -36,9 +36,9 @@ export default async function AeroHomePage() {
     const sections = mergeAeroPageSections(definition, cmsSections);
     const effectiveDefinition = applyAeroCmsToDefinition(definition, page, sections);
     return (
-        <main className="min-h-screen bg-[#07100f] text-zinc-200 selection:bg-emerald-300 selection:text-[#07100f]">
+        <main className="min-h-screen bg-[#f4f8fb] text-[#142e49] selection:bg-[#cfe4ff] selection:text-[#102c48]">
             <AeroStructuredData page={effectiveDefinition} />
-            <PageRenderer sections={sections} />
+            <AeroPageRenderer sections={sections} />
         </main>
     );
 }

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import Link from 'next/link';
 
-export default function CookieBanner() {
+export default function CookieBanner({ variant = 'default' }: { variant?: 'default' | 'aero' }) {
     const [showBanner, setShowBanner] = useState(false);
     const [hasDecision, setHasDecision] = useState(false);
 
@@ -42,12 +42,14 @@ export default function CookieBanner() {
         window.location.reload();
     };
 
+    const isAero = variant === 'aero';
+
     if (!showBanner) {
         return hasDecision ? (
             <button
                 type="button"
                 onClick={() => setShowBanner(true)}
-                className="fixed bottom-3 left-3 z-40 rounded-full border border-zinc-700 bg-zinc-900/90 px-3 py-2 text-xs text-zinc-300 shadow-lg hover:text-white"
+                className={`fixed bottom-3 left-3 z-40 rounded-full px-3 py-2 text-xs shadow-lg ${isAero ? 'border border-[#cbd9e3] bg-white/95 font-semibold text-[#38556e] hover:text-[#1f6feb]' : 'border border-zinc-700 bg-zinc-900/90 text-zinc-300 hover:text-white'}`}
             >
                 Ustawienia cookies
             </button>
@@ -55,16 +57,16 @@ export default function CookieBanner() {
     }
 
     return (
-        <div className="fixed bottom-0 left-0 right-0 z-50 p-4 bg-zinc-900/95 backdrop-blur-sm border-t border-zinc-800 shadow-2xl">
+        <div className={`fixed bottom-0 left-0 right-0 z-50 border-t p-4 shadow-2xl backdrop-blur-sm ${isAero ? 'border-[#d2dee7] bg-white/95' : 'border-zinc-800 bg-zinc-900/95'}`}>
             <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-                <div className="flex-1 text-sm text-zinc-300">
+                <div className={`flex-1 text-sm ${isAero ? 'text-[#5a6f81]' : 'text-zinc-300'}`}>
                     <p className="mb-2">
-                        <strong className="text-white">Ta strona używa plików cookies</strong>
+                        <strong className={isAero ? 'text-[#173754]' : 'text-white'}>Ta strona używa plików cookies</strong>
                     </p>
                     <p>
                         Wykorzystujemy pliki cookies do zapewnienia prawidłowego działania strony oraz analizy ruchu.
                         Więcej informacji znajdziesz w naszej{' '}
-                        <Link href="/polityka-prywatnosci" className="text-gold-400 hover:underline">
+                        <Link href="/polityka-prywatnosci" className={isAero ? 'font-semibold text-[#1b5fa7] hover:underline' : 'text-gold-400 hover:underline'}>
                             Polityce Prywatności
                         </Link>.
                     </p>
@@ -72,20 +74,20 @@ export default function CookieBanner() {
                 <div className="flex gap-3 flex-shrink-0">
                     <button
                         onClick={rejectCookies}
-                        className="px-4 py-2 text-sm text-zinc-400 hover:text-white transition-colors"
+                        className={`px-4 py-2 text-sm transition-colors ${isAero ? 'font-semibold text-[#607588] hover:text-[#173754]' : 'text-zinc-400 hover:text-white'}`}
                     >
                         Odrzuć
                     </button>
                     <button
                         onClick={acceptCookies}
-                        className="px-6 py-2 bg-gold-500 text-black text-sm font-medium rounded hover:bg-gold-400 transition-colors"
+                        className={`rounded px-6 py-2 text-sm font-bold transition-colors ${isAero ? 'bg-[#ff5d37] text-white hover:bg-[#e94c28]' : 'bg-gold-500 text-black hover:bg-gold-400'}`}
                     >
                         Akceptuję
                     </button>
                 </div>
                 <button
                     onClick={rejectCookies}
-                    className="absolute top-2 right-2 md:relative md:top-0 md:right-0 text-zinc-500 hover:text-white transition-colors"
+                    className={`absolute right-2 top-2 transition-colors md:relative md:right-0 md:top-0 ${isAero ? 'text-[#8296a7] hover:text-[#173754]' : 'text-zinc-500 hover:text-white'}`}
                     aria-label="Zamknij"
                 >
                     <X className="w-5 h-5" />

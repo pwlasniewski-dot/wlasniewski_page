@@ -12,7 +12,8 @@
 - [x] Formularz odporny na podwójne wysłanie: unikalny identyfikator żądania, zapis przed powiadomieniem e-mail i obsługa powtórzeń.
 - [x] Osobna polityka prywatności i cookies oraz analityka lejka Aero działająca wyłącznie po zgodzie, bez wysyłania danych z formularza.
 - [x] Usunięcie jawnych connection stringów z bieżących skryptów.
-- [x] Pełny zestaw testów jednostkowych: 122/122.
+- [x] Osobny jasny renderer i pełny system wizualny Aero: hero, karty, proces, formularz, header, footer, cookies, polityka prywatności i porównania termiczne bez dominującego czarnego motywu.
+- [x] Pełny zestaw testów jednostkowych: 125/125.
 - [x] Oddzielny lejek Aero w Analityce V3: sesje/CTA/start/wysłanie tylko dla `aeroanaliza.pl` oraz kanoniczna liczba zapisanych zapytań z `Inquiry`.
 - [x] `git diff --check` i skan bieżącego drzewa pod kątem jawnych connection stringów oraz starych adresów kontaktowych: bez trafień.
 - [ ] Rotacja ujawnionych danych bazy, secret scan historii Git i sprawdzenie aliasów `b2b.`/`dron.` w DNS/Netlify.

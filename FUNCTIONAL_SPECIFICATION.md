@@ -7,6 +7,7 @@ Ten dokument stanowi kompleksowy opis funkcjonalności oraz logiki biznesowej pl
 - Kanoniczne strony publiczne to `/`, `/termowizja`, `/inspekcja-fotowoltaiki-dronem`, `/inspekcja-dachu-dronem`, `/monitoring` i `/kujawsko-pomorskie`. Pozostałe historyczne adresy są przekierowaniami, nie osobnymi landingami.
 - Każda strona ma jedno główne CTA do formularza RFQ, automatycznie wybraną usługę, lokalizację, rodzaj obiektu, termin, cel i preferowany kontakt. Lead jest zapisany w `Inquiry` przed opcjonalnym powiadomieniem e-mail.
 - Treści startowe są bezpiecznym fallbackiem. Akcja „Przygotuj strony v2 w CMS” najpierw pokazuje plan; stare rekordy `page_type=b2b` są konwertowane dopiero po potwierdzeniu i pełnym snapshotcie, a istniejące rekordy v2 nie są nadpisywane. Teksty, SEO, media, CTA oraz kolejność sekcji pozostają edytowalne w Pages.
+- Strony używają jasnego, niezależnego systemu wizualnego Aero Analiza. Zmiana wyglądu nie przenosi tekstów ani zdjęć do kodu: hero, karty usług, blok zdjęcie/tekst, proces, realizacje, porównania termiczne i RFQ nadal renderują dane zapisane w Pages CMS.
 - Para RGB/termowizja ma status zgodności. `registered` pozwala na nakładany suwak, a `side_by_side_only` i `pending` wymuszają uczciwą prezentację obok siebie.
 - Serwis nie deklaruje diagnozy automatycznej ani zgodności z AI Act jako odznaki. Niezweryfikowane LUC/UAVO/SLA/„inżynier”, sztuczne statystyki i atrapowe parametry pomiaru nie należą do treści startowej.
 

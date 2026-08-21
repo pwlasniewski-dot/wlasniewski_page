@@ -30,15 +30,15 @@ export default function AppShell({ children, isB2B: serverIsB2B }: { children: R
     // basket, promotions or customer-zone providers.
     if (isB2B && !isAdmin) {
         return (
-            <>
+            <div className="aero-site flex min-h-screen flex-col bg-[#f4f8fb] text-[#142e49]">
                 <AeroHeader />
                 <div className="flex-1 pt-20">
                     {children}
                     <AeroFooter />
                 </div>
-                <CookieBanner />
+                <CookieBanner variant="aero" />
                 <ScrollToTop />
-            </>
+            </div>
         );
     }
 

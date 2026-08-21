@@ -43,16 +43,16 @@ export default function ThermalHeroSlider({ slides = [] }: { slides: ThermalHero
         : <img src={src} alt={alt} className={mediaClassName} style={mediaStyle} />;
 
     return (
-        <section className="bg-[#07100f] px-4 py-16 md:px-6" aria-labelledby={slide.title ? `thermal-title-${slide.id}` : undefined} aria-label={slide.title ? undefined : 'Porównanie obrazu rzeczywistego i termicznego'}>
+        <section className="overflow-hidden bg-[#eef4f8] px-4 py-20 md:px-6 md:py-28" aria-labelledby={slide.title ? `thermal-title-${slide.id}` : undefined} aria-label={slide.title ? undefined : 'Porównanie obrazu rzeczywistego i termicznego'}>
             <div className="mx-auto max-w-7xl">
-                <div className="mb-8 max-w-3xl">
-                    {slide.category && <p className="mb-3 text-xs font-bold uppercase tracking-[0.25em] text-emerald-300">{slide.category}</p>}
-                    {slide.title && <h2 id={`thermal-title-${slide.id}`} className="text-3xl font-bold text-white md:text-5xl" dangerouslySetInnerHTML={{ __html: slide.title }} />}
-                    {slide.subtitle && <p className="mt-4 text-lg leading-relaxed text-zinc-400">{slide.subtitle}</p>}
+                <div className="mb-10 max-w-3xl md:mb-14">
+                    {slide.category && <p className="mb-4 inline-flex items-center rounded-full border border-[#cbdbe7] bg-white px-4 py-2 text-[11px] font-extrabold uppercase tracking-[0.2em] text-[#1b5fa7] shadow-sm">{slide.category}</p>}
+                    {slide.title && <h2 id={`thermal-title-${slide.id}`} className="aero-heading text-balance text-4xl font-semibold leading-[1.05] tracking-[-0.04em] text-[#102c48] md:text-6xl" dangerouslySetInnerHTML={{ __html: slide.title }} />}
+                    {slide.subtitle && <p className="mt-5 text-lg leading-8 text-[#5b6f82]">{slide.subtitle}</p>}
                 </div>
 
                 {overlayAllowed ? (
-                    <div className="relative aspect-[4/3] overflow-hidden rounded-3xl border border-white/10 bg-black md:aspect-video">
+                    <div className="relative aspect-[4/3] overflow-hidden rounded-[2rem] border-[6px] border-white bg-[#102c48] shadow-[0_25px_70px_rgba(21,53,80,.18)] md:aspect-video">
                         <img src={slide.thermalMedia} alt={slide.labelRight || 'Obraz termiczny badanego obszaru'} className="thermal-comparison-media absolute inset-0 h-full w-full object-cover" style={mediaStyle} />
                         <div className="absolute inset-0 overflow-hidden" style={{ clipPath: `inset(0 ${100 - position}% 0 0)` }}>
                             <img src={slide.visualMedia} alt={slide.labelLeft || 'Obraz rzeczywisty badanego obszaru'} className="thermal-comparison-media absolute inset-0 h-full w-full object-cover" style={mediaStyle} />
@@ -62,23 +62,23 @@ export default function ThermalHeroSlider({ slides = [] }: { slides: ThermalHero
                         </div>
                         <span className="absolute left-4 top-4 rounded-full bg-black/70 px-3 py-2 text-xs font-bold text-white">{slide.labelLeft || 'Obraz rzeczywisty'}</span>
                         <span className="absolute right-4 top-4 rounded-full bg-black/70 px-3 py-2 text-xs font-bold text-white">{slide.labelRight || 'Termowizja'}</span>
-                        <label className="absolute inset-x-4 bottom-4 z-20 rounded-xl bg-black/75 px-4 py-3 text-xs text-white backdrop-blur-sm">
+                        <label className="absolute inset-x-4 bottom-4 z-20 rounded-2xl bg-[#091e32]/85 px-4 py-3 text-xs text-white shadow-xl backdrop-blur-sm">
                             <span className="sr-only">Położenie podziału obrazu rzeczywistego i termicznego</span>
                             <input type="range" min="0" max="100" value={position} onChange={event => setPosition(Number(event.target.value))} className="h-11 w-full cursor-ew-resize accent-emerald-300" aria-label="Porównaj obraz rzeczywisty z termowizją" aria-valuetext={`${position}% obrazu rzeczywistego`} />
                         </label>
                     </div>
                 ) : (
-                    <div className="grid gap-4 md:grid-cols-2">
-                        <figure className="overflow-hidden rounded-2xl border border-white/10 bg-black">{media(slide.visualMedia, slide.labelLeft || 'Obraz rzeczywisty badanego obszaru')}<figcaption className="p-3 text-sm text-zinc-300">{slide.labelLeft || 'Obraz rzeczywisty'}</figcaption></figure>
-                        <figure className="overflow-hidden rounded-2xl border border-white/10 bg-black">{media(slide.thermalMedia, slide.labelRight || 'Obraz termiczny badanego obszaru')}<figcaption className="p-3 text-sm text-zinc-300">{slide.labelRight || 'Termowizja'}</figcaption></figure>
+                    <div className="grid gap-5 md:grid-cols-2">
+                        <figure className="overflow-hidden rounded-[1.75rem] border-[6px] border-white bg-[#102c48] shadow-[0_22px_60px_rgba(21,53,80,.15)]">{media(slide.visualMedia, slide.labelLeft || 'Obraz rzeczywisty badanego obszaru')}<figcaption className="bg-white px-5 py-4 text-sm font-bold text-[#173754]">{slide.labelLeft || 'Obraz rzeczywisty'}</figcaption></figure>
+                        <figure className="overflow-hidden rounded-[1.75rem] border-[6px] border-white bg-[#102c48] shadow-[0_22px_60px_rgba(21,53,80,.15)]">{media(slide.thermalMedia, slide.labelRight || 'Obraz termiczny badanego obszaru')}<figcaption className="bg-white px-5 py-4 text-sm font-bold text-[#173754]">{slide.labelRight || 'Termowizja'}</figcaption></figure>
                     </div>
                 )}
 
-                <div className="mt-6 flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="max-w-3xl text-sm leading-relaxed text-zinc-400" dangerouslySetInnerHTML={{ __html: slide.description || 'Porównanie ma charakter dokumentacyjny. Interpretacja zależy od warunków rejestracji i właściwości badanego obiektu.' }} />
+                <div className="mt-7 flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="max-w-3xl text-sm leading-7 text-[#637689]" dangerouslySetInnerHTML={{ __html: slide.description || 'Porównanie ma charakter dokumentacyjny. Interpretacja zależy od warunków rejestracji i właściwości badanego obiektu.' }} />
                     <div className="flex shrink-0 items-center gap-3">
-                        {slide.buttonText && <Link href={slide.buttonLink || '#wycena'} className="rounded-full bg-emerald-300 px-5 py-3 text-sm font-bold text-[#07100f]">{slide.buttonText}</Link>}
-                        {slides.length > 1 && <><button type="button" onClick={previous} className="grid h-11 w-11 place-items-center rounded-full border border-white/15 text-white hover:bg-white/10" aria-label="Poprzednie porównanie"><ChevronLeft /></button><span className="text-xs text-zinc-500" aria-live="polite">{index + 1}/{slides.length}</span><button type="button" onClick={next} className="grid h-11 w-11 place-items-center rounded-full border border-white/15 text-white hover:bg-white/10" aria-label="Następne porównanie"><ChevronRight /></button></>}
+                        {slide.buttonText && <Link href={slide.buttonLink || '#wycena'} className="rounded-full bg-[#ff5d37] px-5 py-3 text-sm font-bold text-white shadow-[0_10px_24px_rgba(255,93,55,.2)] hover:bg-[#e94c28]">{slide.buttonText}</Link>}
+                        {slides.length > 1 && <><button type="button" onClick={previous} className="grid h-11 w-11 place-items-center rounded-full border border-[#c8d7e2] bg-white text-[#173754] hover:border-[#1f6feb] hover:text-[#1f6feb]" aria-label="Poprzednie porównanie"><ChevronLeft /></button><span className="text-xs font-bold text-[#708497]" aria-live="polite">{index + 1}/{slides.length}</span><button type="button" onClick={next} className="grid h-11 w-11 place-items-center rounded-full border border-[#c8d7e2] bg-white text-[#173754] hover:border-[#1f6feb] hover:text-[#1f6feb]" aria-label="Następne porównanie"><ChevronRight /></button></>}
                     </div>
                 </div>
             </div>

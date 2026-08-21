@@ -1,4 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Aero Analiza">
-  <rect width="128" height="128" rx="28" fill="#07100f"/>
-  <path d="M26 88 57 30h14l31 58H84l-7-14H50l-7 14H26Zm30-28h15l-8-16-7 16Z" fill="#6ee7b7"/>
+  <defs>
+    <linearGradient id="thermal" x1="18" y1="110" x2="108" y2="18" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1F6FEB"/>
+      <stop offset=".52" stop-color="#7657DF"/>
+      <stop offset="1" stop-color="#FF5D37"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="28" fill="#102C48"/>
+  <path d="M25 91 57 29h14l32 62H84l-7-15H50l-8 15H25Zm31-30h15l-8-17-7 17Z" fill="white"/>
+  <rect x="18" y="108" width="92" height="6" rx="3" fill="url(#thermal)"/>
 </svg>
