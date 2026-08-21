@@ -4,6 +4,7 @@ import { preserveFirstPublication, publicationRegistryIdentity } from '@/lib/ana
 import { requireAuth, withAuth } from '@/lib/auth/middleware';
 import { revalidatePath } from 'next/cache';
 import { validateDronePhotographyConfig } from '@/lib/dronePhotographyOffer';
+import { validateAeroPageSections } from '@/lib/aeroanaliza/page-validation';
 
 async function preservePagePublicationBestEffort(page: {
     slug: string;
@@ -77,6 +78,11 @@ export async function POST(request: NextRequest) {
 
             if (slug === 'fotografia-z-drona') {
                 const validation = validateDronePhotographyConfig(sections);
+                if (!validation.valid) return NextResponse.json({ error: validation.error }, { status: 400 });
+            }
+
+            if (page_type === 'b2b' && is_published !== false) {
+                const validation = validateAeroPageSections(sections);
                 if (!validation.valid) return NextResponse.json({ error: validation.error }, { status: 400 });
             }
 

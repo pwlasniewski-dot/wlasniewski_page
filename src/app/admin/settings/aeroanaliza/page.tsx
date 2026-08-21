@@ -2,19 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { getApiUrl } from '@/lib/api-config';
-import { Save, Globe, BarChart3, Tag, ExternalLink, AlertTriangle } from 'lucide-react';
+import { Save, Globe, BarChart3, Tag, ExternalLink, AlertTriangle, WandSparkles } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { AERO_SITE } from '@/lib/aeroanaliza/content';
 
 interface AeroanalizaSettings {
     b2b_google_analytics_id: string;
     b2b_google_tag_manager_id: string;
     b2b_facebook_pixel_id: string;
-    b2b_brand_name: string;
-    b2b_tagline: string;
-    b2b_phone: string;
-    b2b_email: string;
-    logo_dark_url: string;
-    b2b_footer_config: string;
 }
 
 export default function AeroanalizaSettingsPage() {
@@ -22,15 +17,10 @@ export default function AeroanalizaSettingsPage() {
         b2b_google_analytics_id: '',
         b2b_google_tag_manager_id: '',
         b2b_facebook_pixel_id: '',
-        b2b_brand_name: '',
-        b2b_tagline: '',
-        b2b_phone: '',
-        b2b_email: '',
-        logo_dark_url: '',
-        b2b_footer_config: '',
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [publishing, setPublishing] = useState(false);
 
     useEffect(() => {
         fetchSettings();
@@ -53,28 +43,10 @@ export default function AeroanalizaSettingsPage() {
             const data = await res.json();
             if (data.success) {
                 const s = data.settings;
-                let brandName = '', tagline = '', phone = '', email = '';
-
-                if (s.b2b_footer_config) {
-                    try {
-                        const config = JSON.parse(s.b2b_footer_config);
-                        brandName = config.brand_name || '';
-                        tagline = config.tagline || '';
-                        phone = config.phone || '';
-                        email = config.email || '';
-                    } catch {}
-                }
-
                 setSettings({
                     b2b_google_analytics_id: s.b2b_google_analytics_id || '',
                     b2b_google_tag_manager_id: s.b2b_google_tag_manager_id || '',
                     b2b_facebook_pixel_id: s.b2b_facebook_pixel_id || '',
-                    b2b_brand_name: brandName,
-                    b2b_tagline: tagline,
-                    b2b_phone: phone,
-                    b2b_email: email,
-                    logo_dark_url: s.logo_dark_url || '',
-                    b2b_footer_config: s.b2b_footer_config || '',
                 });
             }
         } catch (error) {
@@ -90,25 +62,10 @@ export default function AeroanalizaSettingsPage() {
         try {
             const token = localStorage.getItem('admin_token');
 
-            // Build B2B footer config
-            let existingConfig: any = {};
-            if (settings.b2b_footer_config) {
-                try { existingConfig = JSON.parse(settings.b2b_footer_config); } catch {}
-            }
-            const updatedConfig = {
-                ...existingConfig,
-                brand_name: settings.b2b_brand_name,
-                tagline: settings.b2b_tagline,
-                phone: settings.b2b_phone,
-                email: settings.b2b_email,
-            };
-
             const payload: Record<string, any> = {
                 b2b_google_analytics_id: settings.b2b_google_analytics_id || null,
                 b2b_google_tag_manager_id: settings.b2b_google_tag_manager_id || null,
                 b2b_facebook_pixel_id: settings.b2b_facebook_pixel_id || null,
-                logo_dark_url: settings.logo_dark_url,
-                b2b_footer_config: JSON.stringify(updatedConfig),
             };
 
             const res = await fetch(getApiUrl('settings'), {
@@ -140,6 +97,39 @@ export default function AeroanalizaSettingsPage() {
         }
     };
 
+    const publishProfessionalPages = async () => {
+        setPublishing(true);
+        try {
+            const token = localStorage.getItem('admin_token');
+            const previewResponse = await fetch('/api/admin/aeroanaliza/publish-v2', {
+                headers: { 'Authorization': `Bearer ${token}` },
+                cache: 'no-store',
+            });
+            const preview = await previewResponse.json();
+            if (!previewResponse.ok || !preview.success) throw new Error(preview.error || 'Nie udało się sprawdzić stron');
+            const toCreate = preview.pages.filter((page: { action: string }) => page.action === 'create').length;
+            const toConvert = preview.pages.filter((page: { action: string }) => page.action === 'convert_with_backup').length;
+            const confirmed = window.confirm(`Plan: utworzenie ${toCreate} brakujących stron i konwersja ${toConvert} starszych stron. Przed każdą konwersją zostanie zapisany pełny snapshot. Kontynuować?`);
+            if (!confirmed) return;
+
+            const response = await fetch('/api/admin/aeroanaliza/publish-v2', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ mode: 'convert', confirm: 'REPLACE_LEGACY_AERO_CONTENT' }),
+            });
+            const data = await response.json();
+            if (!response.ok || !data.success) throw new Error(data.error || 'Nie udało się przygotować stron');
+            const created = data.pages.filter((page: { action: string }) => page.action === 'created').length;
+            const converted = data.pages.filter((page: { action: string }) => page.action === 'converted_with_backup').length;
+            const skipped = data.pages.filter((page: { action: string }) => page.action === 'skipped').length;
+            toast.success(`Utworzono: ${created}, przekonwertowano z backupem: ${converted}, bez zmian: ${skipped}.`);
+        } catch (error: any) {
+            toast.error(error?.message || 'Błąd przygotowania stron');
+        } finally {
+            setPublishing(false);
+        }
+    };
+
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-[400px]">
@@ -161,14 +151,16 @@ export default function AeroanalizaSettingsPage() {
                         Konfiguracja domeny B2B / dronowej
                     </p>
                 </div>
-                <button
-                    onClick={handleSave}
-                    disabled={saving}
-                    className="flex items-center gap-2 bg-gold-500 hover:bg-gold-600 text-black px-6 py-2.5 rounded-lg font-medium transition-colors disabled:opacity-50"
-                >
-                    <Save className="h-4 w-4" />
-                    {saving ? 'Zapisywanie...' : 'Zapisz'}
-                </button>
+                <div className="flex flex-wrap justify-end gap-3">
+                    <button onClick={publishProfessionalPages} disabled={publishing} className="flex items-center gap-2 rounded-lg border border-emerald-400/30 bg-emerald-400/10 px-5 py-2.5 font-medium text-emerald-300 transition-colors hover:bg-emerald-400/20 disabled:opacity-50" title="Najpierw pokazuje plan. Starsze treści konwertuje dopiero po potwierdzeniu i zapisaniu pełnego snapshotu.">
+                        <WandSparkles className="h-4 w-4" />
+                        {publishing ? 'Przygotowywanie…' : 'Sprawdź i wdroż strony v2'}
+                    </button>
+                    <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 bg-gold-500 hover:bg-gold-600 text-black px-6 py-2.5 rounded-lg font-medium transition-colors disabled:opacity-50">
+                        <Save className="h-4 w-4" />
+                        {saving ? 'Zapisywanie...' : 'Zapisz'}
+                    </button>
+                </div>
             </div>
 
             {/* Stream Info Banner */}
@@ -271,67 +263,13 @@ export default function AeroanalizaSettingsPage() {
                     Dane firmowe (aeroanaliza.pl)
                 </h2>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label className="block text-sm font-medium text-zinc-300 mb-1.5">Nazwa firmy</label>
-                        <input
-                            type="text"
-                            value={settings.b2b_brand_name}
-                            onChange={(e) => setSettings(s => ({ ...s, b2b_brand_name: e.target.value }))}
-                            placeholder="Aeroanaliza"
-                            className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2.5 text-white placeholder-zinc-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-zinc-300 mb-1.5">Tagline / Slogan</label>
-                        <input
-                            type="text"
-                            value={settings.b2b_tagline}
-                            onChange={(e) => setSettings(s => ({ ...s, b2b_tagline: e.target.value }))}
-                            placeholder="Profesjonalne usługi dronowe"
-                            className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2.5 text-white placeholder-zinc-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-zinc-300 mb-1.5">Email kontaktowy</label>
-                        <input
-                            type="email"
-                            value={settings.b2b_email}
-                            onChange={(e) => setSettings(s => ({ ...s, b2b_email: e.target.value }))}
-                            placeholder="kontakt@aeroanaliza.pl"
-                            className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2.5 text-white placeholder-zinc-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-zinc-300 mb-1.5">Telefon</label>
-                        <input
-                            type="tel"
-                            value={settings.b2b_phone}
-                            onChange={(e) => setSettings(s => ({ ...s, b2b_phone: e.target.value }))}
-                            placeholder="+48 123 456 789"
-                            className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2.5 text-white placeholder-zinc-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                    </div>
-
-                    <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-zinc-300 mb-1.5">Logo B2B (URL)</label>
-                        <input
-                            type="text"
-                            value={settings.logo_dark_url}
-                            onChange={(e) => setSettings(s => ({ ...s, logo_dark_url: e.target.value }))}
-                            placeholder="https://..."
-                            className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2.5 text-white placeholder-zinc-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                        {settings.logo_dark_url && (
-                            <div className="mt-3 p-3 bg-zinc-800 rounded-lg inline-block">
-                                <img src={settings.logo_dark_url} alt="Logo B2B" className="h-12 object-contain" />
-                            </div>
-                        )}
-                    </div>
+                <div className="grid grid-cols-1 gap-4 text-sm md:grid-cols-2">
+                    <p className="rounded-lg border border-zinc-800 bg-zinc-950/60 p-4"><span className="block text-zinc-500">Marka</span><strong className="text-white">{AERO_SITE.name}</strong></p>
+                    <p className="rounded-lg border border-zinc-800 bg-zinc-950/60 p-4"><span className="block text-zinc-500">Nazwa prawna</span><strong className="text-white">{AERO_SITE.legalName}</strong></p>
+                    <p className="rounded-lg border border-zinc-800 bg-zinc-950/60 p-4"><span className="block text-zinc-500">Jedyny adres e-mail</span><strong className="text-white">{AERO_SITE.email}</strong></p>
+                    <p className="rounded-lg border border-zinc-800 bg-zinc-950/60 p-4"><span className="block text-zinc-500">Telefon</span><strong className="text-white">{AERO_SITE.phone}</strong></p>
                 </div>
+                <p className="text-xs leading-relaxed text-zinc-500">Dane tożsamości są celowo zarządzane w jednym, wersjonowanym źródle kodu i używane przez nagłówek, stopkę, formularz, e-mail oraz schema.org. Treści ofert i media pozostają edytowalne w CMS.</p>
             </div>
 
             {/* Bottom Save Button */}

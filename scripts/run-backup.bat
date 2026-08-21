@@ -3,9 +3,10 @@
 echo 🚀 Starting Automatic PRODUCTION Database Backup...
 echo ⚠️  CONNECTING TO PRODUCTION (Neon)...
 
-:: Set PRODUCTION database URL
-set DATABASE_URL=postgresql://neondb_owner:npg_vjh6d9PJuKFT@ep-dry-art-aemsvsfc.c-2.us-east-2.aws.neon.tech/neondb?channel_binding=require^&sslmode=require
-
+if "%DATABASE_URL%"=="" (
+    echo ERROR: DATABASE_URL is not configured.
+    exit /b 1
+)
 cd /d "C:\Strona-fotografa"
 call npm run db:backup
 

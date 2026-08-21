@@ -2,6 +2,14 @@
 
 Ten dokument stanowi kompleksowy opis funkcjonalności oraz logiki biznesowej platformy **FOTO-DRON Przemysław Właśniewski**. Dokumentacja została opracowana na podstawie audytu technicznego przeprowadzonego w grudniu 2025 r. Szczegóły techniczne dotyczące infrastruktury i wzorców projektowych znajdują się w dokumencie [ARCHITECTURE.md](file:///c:/Strona-fotografa/ARCHITECTURE.md).
 
+## Aktualizacja 2026-08-21 — lejek i CMS Aero Analiza
+
+- Kanoniczne strony publiczne to `/`, `/termowizja`, `/inspekcja-fotowoltaiki-dronem`, `/inspekcja-dachu-dronem`, `/monitoring` i `/kujawsko-pomorskie`. Pozostałe historyczne adresy są przekierowaniami, nie osobnymi landingami.
+- Każda strona ma jedno główne CTA do formularza RFQ, automatycznie wybraną usługę, lokalizację, rodzaj obiektu, termin, cel i preferowany kontakt. Lead jest zapisany w `Inquiry` przed opcjonalnym powiadomieniem e-mail.
+- Treści startowe są bezpiecznym fallbackiem. Akcja „Przygotuj strony v2 w CMS” najpierw pokazuje plan; stare rekordy `page_type=b2b` są konwertowane dopiero po potwierdzeniu i pełnym snapshotcie, a istniejące rekordy v2 nie są nadpisywane. Teksty, SEO, media, CTA oraz kolejność sekcji pozostają edytowalne w Pages.
+- Para RGB/termowizja ma status zgodności. `registered` pozwala na nakładany suwak, a `side_by_side_only` i `pending` wymuszają uczciwą prezentację obok siebie.
+- Serwis nie deklaruje diagnozy automatycznej ani zgodności z AI Act jako odznaki. Niezweryfikowane LUC/UAVO/SLA/„inżynier”, sztuczne statystyki i atrapowe parametry pomiaru nie należą do treści startowej.
+
 ## Aktualizacja 2026-08-09 — reguły odbioru galerii i raportów
 
 - Akceptacja oferty jest jednorazowa. Nazwa, cena i rozbicie pakietu powstają z danych zapisanych na serwerze; dane opisowe wysłane przez klienta nie są źródłem umowy.

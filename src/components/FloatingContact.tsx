@@ -11,7 +11,7 @@ export default function FloatingContact() {
     const pathname = usePathname();
     const whatsappUrl = 'https://wa.me/48530788694?text=' + encodeURIComponent('Cześć Przemek! Piszę ze strony wlasniewski.pl — chciał(a)bym zapytać o sesję.');
     const phoneUrl = 'tel:+48530788694';
-    const emailUrl = 'mailto:kontakt@wlasniewski.pl?subject=Zapytanie%20o%20sesj%C4%99';
+    const emailUrl = 'mailto:pwlasniewski@gmail.com?subject=Zapytanie%20o%20sesj%C4%99';
 
     useEffect(() => {
         setIsAdminPanel(pathname?.startsWith('/admin') || false);

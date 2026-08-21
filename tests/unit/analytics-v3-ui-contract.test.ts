@@ -15,4 +15,7 @@ test('V3 dashboard renders traffic sources, ingest quality and expandable sessio
   for (const field of ['data?.searchQueries', 'data.querySummary.multiplePagesSignals', 'totalRows: number', 'truncated: boolean', 'queryReportIncomplete', "queryReport: 'connected' | 'partial' | 'error'", 'row.multiplePagesSignal', 'row.competingPages', 'data-testid="gsc-query-page-report"']) {
     assert.ok(source.includes(field), `missing GSC query/page contract: ${field}`);
   }
+  for (const field of ['data.aero.funnel', 'data.sources.aeroSales.canonicalInquiries', 'data-testid="aero-sales-funnel"']) {
+    assert.ok(source.includes(field), `missing separate Aero sales contract: ${field}`);
+  }
 });

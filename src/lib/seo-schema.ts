@@ -25,7 +25,7 @@ export function generateLocalBusinessSchema(data?: Partial<LocalBusinessSchema>)
         "description": data?.description || "Profesjonalna fotografia rodzinna, ślubna, portretowa i komunijna. Naturalne zdjęcia w Toruniu, Wąbrzeźnie, Płużnicy i okolicach.",
         "image": data?.image || "https://wlasniewski.pl/og-image.jpg",
         "telephone": data?.telephone || "+48 530 788 694",
-        "email": data?.email || process.env.NEXT_PUBLIC_CONTACT_EMAIL || "kontakt@wlasniewski.pl",
+        "email": data?.email || process.env.NEXT_PUBLIC_CONTACT_EMAIL || "pwlasniewski@gmail.com",
         "url": data?.url || "https://wlasniewski.pl",
         "priceRange": data?.priceRange || "$$",
         "address": {
@@ -110,7 +110,7 @@ export function generatePersonSchema(): string {
         "image": "https://wlasniewski.pl/og-image.jpg",
         "url": "https://wlasniewski.pl",
         "telephone": "+48 530 788 694",
-        "email": process.env.NEXT_PUBLIC_CONTACT_EMAIL || "kontakt@wlasniewski.pl",
+        "email": process.env.NEXT_PUBLIC_CONTACT_EMAIL || "pwlasniewski@gmail.com",
         "sameAs": [
             "https://www.facebook.com/przemyslaw.wlasniewski.fotografia",
             "https://www.instagram.com/wlasniewski.pl/"
@@ -196,7 +196,7 @@ export function generateB2BDroneBusinessSchema(): string {
         "description": "Profesjonalne usługi dronowe: inspekcje termowizyjne, ortofotomapy, monitoring inwestycji budowlanych, audyty dachów i paneli fotowoltaicznych. Licencjonowany operator UAVO.",
         "image": "https://aeroanaliza.pl/assets/b2b/hero-drone.jpg",
         "telephone": "+48 530 788 694",
-        "email": process.env.NEXT_PUBLIC_CONTACT_EMAIL || "kontakt@aeroanaliza.pl",
+        "email": process.env.NEXT_PUBLIC_CONTACT_EMAIL || "pwlasniewski@gmail.com",
         "url": "https://aeroanaliza.pl",
         "priceRange": "$$-$$$",
         "address": {

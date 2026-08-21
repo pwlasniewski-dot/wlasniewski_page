@@ -47,6 +47,14 @@ test('drone offer and its booking step are visible in Analytics V3 page registry
   assert.ok(paths.includes('/rezerwacja/dron'));
 });
 
+test('all Aero Analiza sales landings are visible in Analytics V3', () => {
+  const paths = STATIC_PAGE_REGISTRY.filter(page => page.host === 'aeroanaliza.pl').map(page => page.path);
+  for (const path of ['/', '/termowizja', '/inspekcja-fotowoltaiki-dronem', '/inspekcja-dachu-dronem', '/monitoring', '/kujawsko-pomorskie']) {
+    assert.ok(paths.includes(path), path);
+  }
+  assert.equal(paths.includes('/dron'), false);
+});
+
 test('director actions return at most three in priority order', () => {
   const result = prioritizeDirectorActions([
     { priority: 20, kind: 'b', title: 'B', evidence: '', recommendation: '' },

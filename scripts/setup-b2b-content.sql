@@ -2,6 +2,12 @@
 -- B2B Menu & Content Setup - Mavic 3 Thermal
 -- ============================================
 
+BEGIN;
+DO $$
+BEGIN
+    RAISE EXCEPTION 'Ten historyczny skrypt Aero Analiza jest wyłączony. Użyj wersjonowanych stron v2 w CMS.';
+END $$;
+
 -- 1. Clean existing B2B menu
 DELETE FROM menu_items WHERE menu_type = 'b2b';
 
@@ -114,7 +120,7 @@ VALUES (
 
 <h2>Dane Kontaktowe</h2>
 <p><strong>FotoDron Właśniewski</strong><br>
-Email: <a href="mailto:kontakt@wlasniewski.pl">kontakt@wlasniewski.pl</a><br>
+Email: <a href="mailto:pwlasniewski@gmail.com">pwlasniewski@gmail.com</a><br>
 Tel: +48 XXX XXX XXX<br>
 NIP: XXXXXXXXXX</p>
 

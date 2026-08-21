@@ -1,351 +1,87 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState } from 'react';
+import type { CSSProperties } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, ChevronRight, Activity, ScanLine, Crosshair, Maximize2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, MoveHorizontal } from 'lucide-react';
 
 interface ThermalHeroSlide {
     id: string;
-    category: string;
-    title: string;
+    category?: string;
+    title?: string;
     subtitle?: string;
     description?: string;
-    visualMedia: string; // URL
-    thermalMedia: string; // URL
+    visualMedia: string;
+    thermalMedia: string;
     mediaType?: 'image' | 'video';
     labelLeft?: string;
     labelRight?: string;
     buttonText?: string;
     buttonLink?: string;
-    buttonStyle?: 'gold' | 'white' | 'transparent';
-    textAnimation?: 'fade' | 'slide-up' | 'scale';
+    objectPosition?: string;
+    objectPositionMobile?: string;
+    alignmentStatus?: 'registered' | 'side_by_side_only' | 'pending';
 }
 
-interface ThermalHeroSliderProps {
-    slides: ThermalHeroSlide[];
-    interval?: number;
-}
+export default function ThermalHeroSlider({ slides = [] }: { slides: ThermalHeroSlide[]; interval?: number }) {
+    const [index, setIndex] = useState(0);
+    const [position, setPosition] = useState(50);
+    if (!slides.length) return null;
 
-const textVariants = {
-    'fade': { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } },
-    'slide-up': { initial: { opacity: 0, y: 50 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: -50 } },
-    'scale': { initial: { opacity: 0, scale: 0.9 }, animate: { opacity: 1, scale: 1 }, exit: { opacity: 0, scale: 1.1 } }
-};
-
-export default function ThermalHeroSlider({ slides = [], interval = 10000 }: ThermalHeroSliderProps) {
-    const [currentSlide, setCurrentSlide] = useState(0);
-    const [sliderPos, setSliderPos] = useState(50);
-    const [isDragging, setIsDragging] = useState(false);
-    const [autoplay, setAutoplay] = useState(true);
-    const containerRef = useRef<HTMLDivElement>(null);
-    const autoplayRef = useRef<NodeJS.Timeout>();
-    const touchStartRef = useRef<number | null>(null);
-
-    const handlePointerDown = (e: React.PointerEvent) => {
-        // Ignore if clicking a button or link
-        if ((e.target as HTMLElement).closest('button, a')) {
-            return;
-        }
-        if (e.pointerType === 'mouse' && e.button !== 0) return;
-        (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId);
-        setIsDragging(true);
-        updateSlider(e.clientX);
-        touchStartRef.current = e.clientX;
-    };
-
-    const handlePointerMove = (e: React.PointerEvent) => {
-        if (!isDragging) return;
-        updateSlider(e.clientX);
-    };
-
-    const handlePointerUp = (e: React.PointerEvent) => {
-        if (!isDragging) return;
-        setIsDragging(false);
-        (e.currentTarget as HTMLDivElement).releasePointerCapture(e.pointerId);
-        touchStartRef.current = null;
-    };
-
-    const slide = slides[currentSlide];
-
-    // Autoplay logic
-    useEffect(() => {
-        if (!autoplay || slides.length <= 1) return;
-        autoplayRef.current = setInterval(() => {
-            setCurrentSlide((prev) => (prev + 1) % slides.length);
-        }, interval);
-        return () => {
-            if (autoplayRef.current) clearInterval(autoplayRef.current);
-        };
-    }, [autoplay, slides.length, interval]);
-
-    const updateSlider = useCallback((clientX: number) => {
-        if (!containerRef.current) return;
-        const rect = containerRef.current.getBoundingClientRect();
-        const x = clientX - rect.left;
-        const position = Math.max(0, Math.min(100, (x / rect.width) * 100));
-        setSliderPos(position);
-        setAutoplay(false);
-    }, []);
-
-    const handleMouseMove = (e: React.MouseEvent) => {
-        updateSlider(e.clientX);
-    };
-
-    const nextSlide = () => {
-        setCurrentSlide((prev) => (prev + 1) % slides.length);
-        setAutoplay(false);
-    };
-
-    const prevSlide = () => {
-        setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
-        setAutoplay(false);
-    };
-
-    if (!slides || slides.length === 0) return null;
-
-    const variant = textVariants[slide.textAnimation || 'slide-up'] || textVariants['slide-up'];
+    const slide = slides[index];
+    const next = () => { setIndex(value => (value + 1) % slides.length); setPosition(50); };
+    const previous = () => { setIndex(value => (value - 1 + slides.length) % slides.length); setPosition(50); };
+    const overlayAllowed = slide.alignmentStatus === 'registered' && slide.mediaType !== 'video';
+    const objectPosition = slide.objectPosition || 'center center';
+    const mediaStyle = {
+        '--thermal-position': objectPosition,
+        '--thermal-position-mobile': slide.objectPositionMobile || objectPosition,
+    } as CSSProperties;
+    const mediaClassName = 'thermal-comparison-media aspect-video h-full w-full object-cover';
+    const media = (src: string, alt: string) => slide.mediaType === 'video'
+        ? <video className={mediaClassName} style={mediaStyle} controls muted playsInline preload="metadata" aria-label={alt}><source src={src} /></video>
+        : <img src={src} alt={alt} className={mediaClassName} style={mediaStyle} />;
 
     return (
-        <div className="relative w-full h-[90vh] md:h-screen bg-black overflow-hidden group/slider">
-            {/* Main Interaction Layer */}
-            <div
-                ref={containerRef}
-                onMouseMove={handleMouseMove}
-                onPointerDown={handlePointerDown}
-                onPointerMove={handlePointerMove}
-                onPointerUp={handlePointerUp}
-                onPointerCancel={handlePointerUp}
-                className="absolute inset-0 w-full h-full cursor-crosshair touch-pan-y z-10"
-            >
-                {/* 1. VISUAL/THERMAL IMAGES (Behind Interaction Layer) */}
-                <div className="absolute inset-0 w-full h-full pointer-events-none z-0">
-                    <AnimatePresence mode="wait">
-                        <motion.div
-                            key={`thermal-${currentSlide}`}
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            transition={{ duration: 1 }}
-                            className="absolute inset-0 w-full h-full overflow-hidden"
-                        >
-                            {slide.mediaType === 'video' ? (
-                                <video
-                                    src={slide.thermalMedia}
-                                    autoPlay
-                                    muted
-                                    loop
-                                    playsInline
-                                    className="w-full h-full object-cover"
-                                />
-                            ) : (
-                                <div
-                                    className="w-full h-full bg-cover bg-center"
-                                    style={{ backgroundImage: `url("${slide.thermalMedia}")` }}
-                                />
-                            )}
-                        </motion.div>
-                    </AnimatePresence>
-
-                    {/* Visual Layer with Clip-path */}
-                    <AnimatePresence mode="wait">
-                        <motion.div
-                            key={`visual-${currentSlide}`}
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            transition={{ duration: 1 }}
-                            className="absolute inset-0 w-full h-full overflow-hidden z-10"
-                            style={{
-                                clipPath: `inset(0 ${100 - sliderPos}% 0 0)`,
-                                WebkitClipPath: `inset(0 ${100 - sliderPos}% 0 0)`
-                            }}
-                        >
-                            {slide.mediaType === 'video' ? (
-                                <video
-                                    src={slide.visualMedia}
-                                    autoPlay
-                                    muted
-                                    loop
-                                    playsInline
-                                    className="w-full h-full object-cover"
-                                />
-                            ) : (
-                                <div
-                                    className="w-full h-full bg-cover bg-center"
-                                    style={{ backgroundImage: `url("${slide.visualMedia}")` }}
-                                />
-                            )}
-                        </motion.div>
-                    </AnimatePresence>
-
-                    {/* Overlays */}
-                    <div className="absolute inset-0 bg-black/20 z-20 pointer-events-none" />
-                    <div className="absolute bottom-0 left-0 w-full h-[60vh] bg-gradient-to-t from-black via-black/40 to-transparent z-20 pointer-events-none" />
-
-                    {/* HUD Elements */}
-                    <div className="absolute top-10 left-10 z-30 pointer-events-none hidden md:flex flex-col gap-3">
-                        <div className="flex items-center gap-3 px-4 py-2 bg-black/40 backdrop-blur-xl rounded-xl border border-white/10 text-[10px] font-mono text-zinc-300">
-                            <ScanLine size={14} className="text-yellow-500 animate-pulse" />
-                            <span className="tracking-widest">SYSTEM_STATUS: THERMAL_HERO_ACTIVE</span>
-                        </div>
-                        <div className="flex items-center gap-3 px-4 py-2 bg-black/40 backdrop-blur-xl rounded-xl border border-white/10 text-[10px] font-mono text-zinc-300">
-                            <Crosshair size={14} className="text-blue-400" />
-                            <span>SENSORS: FLIR_RADIOMETRIC_PRO</span>
-                        </div>
-                    </div>
-
-                    <div className="absolute top-10 right-10 z-30 pointer-events-none hidden md:flex flex-col items-end gap-3">
-                        <div className="flex items-center gap-3 px-4 py-2 bg-black/40 backdrop-blur-xl rounded-xl border border-white/10 text-[10px] font-mono text-zinc-300">
-                            <span>LENS: 24MM_EQUIVALENT</span>
-                            <Maximize2 size={14} className="text-zinc-500" />
-                        </div>
-                        <div className="flex items-center gap-2 px-4 py-2 bg-yellow-500 text-black text-[10px] font-black rounded-xl">
-                            <Activity size={14} /> LIVE_DELTA_T_SCAN
-                        </div>
-                    </div>
-
-                    {/* Wiper Handle */}
-                    <div
-                        className="absolute inset-y-0 z-40 pointer-events-none"
-                        style={{ left: `${sliderPos}%`, transform: 'translateX(-50%)' }}
-                    >
-                        <div className="h-full w-0.5 bg-yellow-500/50 shadow-[0_0_30px_rgba(234,179,8,0.8)]" />
-                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-                            <div className="w-12 h-12 md:w-20 md:h-20 rounded-full bg-black/40 backdrop-blur-3xl border border-white/10 flex items-center justify-center shadow-2xl">
-                                <div className="w-8 h-8 md:w-12 md:h-12 rounded-full border border-yellow-500/30 flex items-center justify-center animate-pulse">
-                                    <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-yellow-400 shadow-[0_0_15px_rgba(234,179,8,1)]" />
-                                </div>
-                            </div>
-                            <div className="absolute -bottom-12 left-1/2 -translate-x-1/2 px-3 py-1 bg-yellow-500 text-black text-[10px] font-black rounded-lg uppercase tracking-tighter whitespace-nowrap shadow-2xl opacity-0 group-hover/slider:opacity-100 transition-opacity">
-                                SCAN_POS: {sliderPos.toFixed(1)}%
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Labels */}
-                    <div className="absolute bottom-10 left-10 z-30 pointer-events-none hidden sm:block">
-                        <div className="flex flex-col gap-1">
-                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 mb-1">Optical View</span>
-                            <span className="bg-black/40 backdrop-blur-2xl text-white text-[10px] font-bold uppercase tracking-widest px-5 py-2.5 rounded-xl border border-white/10 shadow-2xl">
-                                {slide.labelLeft || 'Standard RGB'}
-                            </span>
-                        </div>
-                    </div>
-
-                    <div className="absolute bottom-10 right-10 z-30 pointer-events-none hidden sm:block">
-                        <div className="flex flex-col items-end gap-1">
-                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 mb-1">Thermal Core</span>
-                            <span className="bg-yellow-500 text-black text-[10px] font-bold uppercase tracking-widest px-5 py-2.5 rounded-xl shadow-[0_10px_40px_rgba(234,179,8,0.4)] border border-yellow-400">
-                                {slide.labelRight || 'Ironbow Palette'}
-                            </span>
-                        </div>
-                    </div>
+        <section className="bg-[#07100f] px-4 py-16 md:px-6" aria-labelledby={slide.title ? `thermal-title-${slide.id}` : undefined} aria-label={slide.title ? undefined : 'Porównanie obrazu rzeczywistego i termicznego'}>
+            <div className="mx-auto max-w-7xl">
+                <div className="mb-8 max-w-3xl">
+                    {slide.category && <p className="mb-3 text-xs font-bold uppercase tracking-[0.25em] text-emerald-300">{slide.category}</p>}
+                    {slide.title && <h2 id={`thermal-title-${slide.id}`} className="text-3xl font-bold text-white md:text-5xl" dangerouslySetInnerHTML={{ __html: slide.title }} />}
+                    {slide.subtitle && <p className="mt-4 text-lg leading-relaxed text-zinc-400">{slide.subtitle}</p>}
                 </div>
 
-                {/* Content Overlay - Text and CTA (Above Images, part of interaction if pointer-events-none) */}
-                <div className="absolute inset-0 z-20 pointer-events-none flex flex-col items-center justify-end pb-24 md:pb-32 px-6">
-                    <AnimatePresence mode="wait">
-                        <motion.div
-                            key={`text-${currentSlide}`}
-                            initial={variant.initial}
-                            animate={variant.animate}
-                            exit={variant.exit}
-                            transition={{ duration: 0.8 }}
-                            className="max-w-4xl w-full text-center space-y-4 md:space-y-6 pointer-events-none"
-                        >
-                            <motion.div
-                                initial={{ opacity: 0, scale: 0.9 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                className="inline-flex items-center gap-2 px-4 py-1.5 bg-yellow-500/10 border border-yellow-500/20 rounded-full text-yellow-500 text-[10px] md:text-xs font-black uppercase tracking-[0.3em] mb-4"
-                            >
-                                <Activity size={12} className="animate-pulse" /> {slide.category}
-                            </motion.div>
-                            <h2 className="text-4xl md:text-7xl lg:text-8xl font-black text-white leading-tight tracking-tighter drop-shadow-2xl" dangerouslySetInnerHTML={{ __html: slide.title }} />
-                            {slide.subtitle && (
-                                <p className="text-lg md:text-2xl text-zinc-300 font-light max-w-2xl mx-auto drop-shadow-xl">
-                                    {slide.subtitle}
-                                </p>
-                            )}
-                            {slide.description && (
-                                <div className="max-w-xl mx-auto text-sm md:text-base text-zinc-400 leading-relaxed" dangerouslySetInnerHTML={{ __html: slide.description }} />
-                            )}
-                            {slide.buttonText && (
-                                <div className="pt-6">
-                                    <Link
-                                        href={slide.buttonLink || '#'}
-                                        className={`inline-block px-8 py-4 font-black rounded-2xl transition-all duration-300 shadow-2xl hover:scale-105 pointer-events-auto ${slide.buttonStyle === 'white'
-                                            ? 'bg-white text-black hover:bg-zinc-200'
-                                            : slide.buttonStyle === 'transparent'
-                                                ? 'bg-transparent border-2 border-white/20 text-white hover:bg-white/10 hover:border-white'
-                                                : 'bg-yellow-500 text-black hover:bg-yellow-400'
-                                            }`}
-                                    >
-                                        {slide.buttonText}
-                                    </Link>
-                                </div>
-                            )}
-                        </motion.div>
-                    </AnimatePresence>
-                </div>
-
-                {/* Navigation Arrows (Above Images) */}
-                {slides.length > 1 && (
-                    <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 z-30 px-4 md:px-8 pointer-events-none flex justify-between items-center hidden md:flex opacity-0 group-hover/slider:opacity-100 transition-opacity">
-                        <button
-                            type="button"
-                            onClick={prevSlide}
-                            className="pointer-events-auto p-4 md:p-6 rounded-2xl bg-black/40 hover:bg-yellow-500 text-white hover:text-black transition-all backdrop-blur-xl border border-white/10 group/btn relative overflow-hidden"
-                        >
-                            <ChevronLeft size={32} className="relative z-10 group-hover/btn:-translate-x-1 transition-transform" />
-                            <div className="absolute inset-0 border-2 border-yellow-500/30 rounded-2xl animate-pulse opacity-0 group-hover/btn:opacity-100 transition-opacity" />
-                        </button>
-                        <button
-                            type="button"
-                            onClick={nextSlide}
-                            className="pointer-events-auto p-4 md:p-6 rounded-2xl bg-black/40 hover:bg-yellow-500 text-white hover:text-black transition-all backdrop-blur-xl border border-white/10 group/btn relative overflow-hidden"
-                        >
-                            <ChevronRight size={32} className="relative z-10 group-hover/btn:translate-x-1 transition-transform" />
-                            <div className="absolute inset-0 border-2 border-yellow-500/30 rounded-2xl animate-pulse opacity-0 group-hover/btn:opacity-100 transition-opacity" />
-                        </button>
+                {overlayAllowed ? (
+                    <div className="relative aspect-[4/3] overflow-hidden rounded-3xl border border-white/10 bg-black md:aspect-video">
+                        <img src={slide.thermalMedia} alt={slide.labelRight || 'Obraz termiczny badanego obszaru'} className="thermal-comparison-media absolute inset-0 h-full w-full object-cover" style={mediaStyle} />
+                        <div className="absolute inset-0 overflow-hidden" style={{ clipPath: `inset(0 ${100 - position}% 0 0)` }}>
+                            <img src={slide.visualMedia} alt={slide.labelLeft || 'Obraz rzeczywisty badanego obszaru'} className="thermal-comparison-media absolute inset-0 h-full w-full object-cover" style={mediaStyle} />
+                        </div>
+                        <div className="pointer-events-none absolute inset-y-0 z-10 w-0.5 bg-white shadow-[0_0_12px_rgba(0,0,0,.8)]" style={{ left: `${position}%` }}>
+                            <span className="absolute left-1/2 top-1/2 grid h-12 w-12 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-white/40 bg-black/70 text-white"><MoveHorizontal size={22} /></span>
+                        </div>
+                        <span className="absolute left-4 top-4 rounded-full bg-black/70 px-3 py-2 text-xs font-bold text-white">{slide.labelLeft || 'Obraz rzeczywisty'}</span>
+                        <span className="absolute right-4 top-4 rounded-full bg-black/70 px-3 py-2 text-xs font-bold text-white">{slide.labelRight || 'Termowizja'}</span>
+                        <label className="absolute inset-x-4 bottom-4 z-20 rounded-xl bg-black/75 px-4 py-3 text-xs text-white backdrop-blur-sm">
+                            <span className="sr-only">Położenie podziału obrazu rzeczywistego i termicznego</span>
+                            <input type="range" min="0" max="100" value={position} onChange={event => setPosition(Number(event.target.value))} className="h-11 w-full cursor-ew-resize accent-emerald-300" aria-label="Porównaj obraz rzeczywisty z termowizją" aria-valuetext={`${position}% obrazu rzeczywistego`} />
+                        </label>
+                    </div>
+                ) : (
+                    <div className="grid gap-4 md:grid-cols-2">
+                        <figure className="overflow-hidden rounded-2xl border border-white/10 bg-black">{media(slide.visualMedia, slide.labelLeft || 'Obraz rzeczywisty badanego obszaru')}<figcaption className="p-3 text-sm text-zinc-300">{slide.labelLeft || 'Obraz rzeczywisty'}</figcaption></figure>
+                        <figure className="overflow-hidden rounded-2xl border border-white/10 bg-black">{media(slide.thermalMedia, slide.labelRight || 'Obraz termiczny badanego obszaru')}<figcaption className="p-3 text-sm text-zinc-300">{slide.labelRight || 'Termowizja'}</figcaption></figure>
                     </div>
                 )}
 
-                {/* Filmstrip Thumbnails (Above Images) */}
-                {slides.length > 1 && (
-                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 w-full max-w-4xl px-4 flex gap-3 md:gap-4 justify-center items-center overflow-x-auto no-scrollbar py-4 pointer-events-auto">
-                        {slides.map((s, idx) => (
-                            <button
-                                key={idx}
-                                type="button"
-                                onClick={() => { setCurrentSlide(idx); setAutoplay(false); }}
-                                className={`group/thumb relative flex-shrink-0 w-24 md:w-32 aspect-video rounded-xl overflow-hidden border-2 transition-all duration-500 ${idx === currentSlide
-                                    ? 'border-yellow-500 scale-110 shadow-[0_0_30px_rgba(234,179,8,0.5)]'
-                                    : 'border-white/5 hover:border-white/20'}`}
-                            >
-                                <img
-                                    src={s.visualMedia}
-                                    className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 ${idx === currentSlide ? 'grayscale-0 opacity-100' : 'grayscale opacity-40 group-hover/thumb:opacity-70 group-hover/thumb:grayscale-0'}`}
-                                />
-                                <div className="absolute inset-0 z-20 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-                                <div className="absolute bottom-1.5 left-2 right-2 z-30">
-                                    <p className={`text-[8px] font-black uppercase tracking-tighter truncate ${idx === currentSlide ? 'text-yellow-500' : 'text-zinc-500'}`}>
-                                        {s.category}
-                                    </p>
-                                </div>
-                                {idx === currentSlide && (
-                                    <div className="absolute inset-0 border-2 border-yellow-500 animate-pulse pointer-events-none" />
-                                )}
-                            </button>
-                        ))}
+                <div className="mt-6 flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="max-w-3xl text-sm leading-relaxed text-zinc-400" dangerouslySetInnerHTML={{ __html: slide.description || 'Porównanie ma charakter dokumentacyjny. Interpretacja zależy od warunków rejestracji i właściwości badanego obiektu.' }} />
+                    <div className="flex shrink-0 items-center gap-3">
+                        {slide.buttonText && <Link href={slide.buttonLink || '#wycena'} className="rounded-full bg-emerald-300 px-5 py-3 text-sm font-bold text-[#07100f]">{slide.buttonText}</Link>}
+                        {slides.length > 1 && <><button type="button" onClick={previous} className="grid h-11 w-11 place-items-center rounded-full border border-white/15 text-white hover:bg-white/10" aria-label="Poprzednie porównanie"><ChevronLeft /></button><span className="text-xs text-zinc-500" aria-live="polite">{index + 1}/{slides.length}</span><button type="button" onClick={next} className="grid h-11 w-11 place-items-center rounded-full border border-white/15 text-white hover:bg-white/10" aria-label="Następne porównanie"><ChevronRight /></button></>}
                     </div>
-                )}
+                </div>
             </div>
-
-            <style jsx global>{`
-                .no-scrollbar::-webkit-scrollbar { display: none; }
-                .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-            `}</style>
-        </div>
+        </section>
     );
 }

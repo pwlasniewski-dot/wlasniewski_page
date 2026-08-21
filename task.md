@@ -1,5 +1,27 @@
 # Aktualny plan prac
 
+## 2026-08-21 — profesjonalna przebudowa Aero Analiza
+
+- [x] Osobny publiczny shell, menu, stopka, manifest, metadata i schema bez elementów fotografii.
+- [x] Formularz RFQ z jednym kontraktem/API, zapisem do `Inquiry`, kwalifikacją zlecenia i jedynym adresem `pwlasniewski@gmail.com`.
+- [x] Kanoniczne strony termowizji, PV, dachów, monitoringu i kujawsko-pomorskiego oraz allowlista sitemap.
+- [x] Naprawa `robots.txt`, canonical hosta `www`, przekierowań historycznych i botów wyszukiwania Google/Bing/OpenAI.
+- [x] Dostępne porównania RGB/termowizja bez fałszywego HUD; status zgodności pary edytowalny w CMS.
+- [x] Kontrolowana migracja treści v2 w Pages CMS: podgląd zmian, jawne potwierdzenie, pełny snapshot rekordu i zachowanie istniejącej pary termicznej.
+- [x] Walidacja publikacji Aero po stronie serwera: allowlista modułów, jeden H1, jeden formularz, bezpieczne CTA i jawny status zgodności par termicznych.
+- [x] Formularz odporny na podwójne wysłanie: unikalny identyfikator żądania, zapis przed powiadomieniem e-mail i obsługa powtórzeń.
+- [x] Osobna polityka prywatności i cookies oraz analityka lejka Aero działająca wyłącznie po zgodzie, bez wysyłania danych z formularza.
+- [x] Usunięcie jawnych connection stringów z bieżących skryptów.
+- [x] Pełny zestaw testów jednostkowych: 122/122.
+- [x] Oddzielny lejek Aero w Analityce V3: sesje/CTA/start/wysłanie tylko dla `aeroanaliza.pl` oraz kanoniczna liczba zapisanych zapytań z `Inquiry`.
+- [x] `git diff --check` i skan bieżącego drzewa pod kątem jawnych connection stringów oraz starych adresów kontaktowych: bez trafień.
+- [ ] Rotacja ujawnionych danych bazy, secret scan historii Git i sprawdzenie aliasów `b2b.`/`dron.` w DNS/Netlify.
+- [ ] Ręczne przypisanie i weryfikacja prawdziwych par RGB/termowizja w Media Library.
+- [x] Lokalny build bez bazy: PASS, 247 tras; oczekiwane fallbacki CMS i ostrzeżenia Prisma nie przerwały generowania.
+- [ ] Podgląd wdrożeniowy z bazą/SMTP w obsługiwanym Node.js 22 oraz `prisma migrate deploy` przed promocją wersji.
+- [ ] Aktualizacja zależności po `npm audit` (22 podatności produkcyjnych, w tym 17 wysokich) przed decyzją o wdrożeniu.
+- [x] Niezależny QA kodu zakończony werdyktem NO-GO dla produkcji do czasu wykonania zadań oznaczonych wyżej jako niewykonane.
+
 ## 2026-08-09 — bramka wdrożeniowa galerie + Analytics/SEO
 
 - [x] Audyt PR #21, #23, #32 i #33: bezpieczeństwo, UX klienta/admina, spójność oferty i galerii, analityka oraz raport finansowy.

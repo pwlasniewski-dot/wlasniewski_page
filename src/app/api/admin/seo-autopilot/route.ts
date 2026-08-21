@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { withAuth } from '@/lib/auth/middleware';
 import { isB2bCmsPage } from '@/lib/sites/b2b-routing';
+import { AERO_PUBLIC_SLUGS, AERO_SITE, getAeroPageDefinition } from '@/lib/aeroanaliza/content';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,35 +33,35 @@ type PostBody = {
 const TONE_CONFIG: Record<Tone, { suffix_b2c: string; suffix_b2b: string; cta_b2c: string; cta_b2b: string; style: string }> = {
     professional: {
         suffix_b2c: ' | Właśniewski Fotograf',
-        suffix_b2b: ' | FOTO-DRON aeroanaliza.pl',
+        suffix_b2b: ' | Aero Analiza',
         cta_b2c: 'Sprawdź ofertę i zarezerwuj sesję.',
-        cta_b2b: 'Zamów bezpłatną wycenę.',
+        cta_b2b: 'Opisz obiekt i poproś o wycenę.',
         style: 'Rzeczowy, konkretny, ekspercki ton',
     },
     friendly: {
         suffix_b2c: ' | Właśniewski Fotografia ❤️',
-        suffix_b2b: ' | FOTO-DRON — Twój partner dronowy',
+        suffix_b2b: ' | Aero Analiza',
         cta_b2c: 'Napisz do mnie — razem stworzymy piękne zdjęcia!',
         cta_b2b: 'Porozmawiajmy o Twoim projekcie — bez zobowiązań!',
         style: 'Ciepły, przyjazny, bezpośredni ton',
     },
     luxury: {
         suffix_b2c: ' | Fotografia Artystyczna Właśniewski',
-        suffix_b2b: ' | FOTO-DRON — Precyzja z powietrza',
+        suffix_b2b: ' | Aero Analiza',
         cta_b2c: 'Zarezerwuj ekskluzywną sesję — ograniczona liczba terminów.',
         cta_b2b: 'Skorzystaj z precyzyjnej analizy dronowej najwyższej klasy.',
         style: 'Elegancki, prestiżowy, ekskluzywny ton',
     },
     dynamic: {
         suffix_b2c: ' | Właśniewski — Fotograf z pasją',
-        suffix_b2b: ' | FOTO-DRON — Technologia w akcji',
+        suffix_b2b: ' | Aero Analiza',
         cta_b2c: 'Nie czekaj — zarezerwuj termin już teraz!',
         cta_b2b: 'Działaj szybciej — zamów analizę dronem!',
         style: 'Energiczny, motywujący, dynamiczny ton',
     },
     emotional: {
         suffix_b2c: ' | Chwile, które zostaną na zawsze',
-        suffix_b2b: ' | FOTO-DRON — Widzimy więcej',
+        suffix_b2b: ' | Aero Analiza',
         cta_b2c: 'Pozwól mi opowiedzieć Twoją historię w zdjęciach.',
         cta_b2b: 'Odkryj to, co niewidoczne gołym okiem.',
         style: 'Emocjonalny, narracyjny, poetycki ton',
@@ -85,7 +86,7 @@ function generateMetaDescription(content: string, title: string, domain: 'b2c' |
         .trim();
 
     const cta = domain === 'b2b' ? config.cta_b2b : config.cta_b2c;
-    const location = domain === 'b2b' ? 'Toruń i okolice' : 'Toruń';
+    const location = domain === 'b2b' ? 'kujawsko-pomorskie' : 'Toruń';
     // Build rich description even when CMS content is empty
     let desc: string;
     if (plain.length > 30) {
@@ -96,7 +97,7 @@ function generateMetaDescription(content: string, title: string, domain: 'b2c' |
         desc = `${title} — ${location}. ${cta}`;
         if (desc.length < 80) {
             const extra = domain === 'b2b'
-                ? ' Profesjonalne usługi dronem, termowizja, ortofotomapy.'
+                ? ' Termowizja i inspekcje dronem z kwalifikacją warunków.'
                 : ' Profesjonalna fotografia: śluby, sesje rodzinne, eventy.';
             desc += extra;
         }
@@ -128,19 +129,13 @@ function aiGenerateText(
 function getFaqData(domain: 'b2c' | 'b2b', tone: Tone) {
     const config = TONE_CONFIG[tone];
 
-    const b2bFaqs = [
-        { q: 'Ile kosztuje inspekcja dachu dronem?', a: tone === 'luxury' ? 'Cena inspekcji zależy od zakresu — standardowa analiza dachu to ok. 500-800 zł. Każde zlecenie traktujemy indywidualnie. Wycena jest bezpłatna i niezobowiązująca.' : tone === 'friendly' ? 'Standardowa inspekcja dachu to ok. 500-800 zł, a wycena jest zawsze bezpłatna! Napisz do nas — chętnie pomożemy dobrać najlepszą opcję.' : 'Cena zależy od powierzchni i zakresu inspekcji. Standardowa inspekcja dachu jednorodzinnego to ok. 500-800 zł. Wycena jest zawsze bezpłatna — zadzwoń lub napisz.' },
-        { q: 'Czy potrzebujecie zezwolenia na loty w okolicy lotniska?', a: 'Tak, posiadamy licencję UAVO i uzyskujemy wymagane zezwolenia ULC dla każdej lokalizacji. Loty w strefach kontrolowanych wymagają dodatkowej notyfikacji.' },
-        { q: 'Jak szybko otrzymam raport po inspekcji?', a: tone === 'dynamic' ? 'Raport PDF gotowy w 48h od lotu! Zawiera zdjęcia, mapę anomalii i konkretne rekomendacje — działaj szybko z naszymi danymi.' : 'Raport PDF z wynikami termowizji dostarczamy w ciągu 48 godzin od wykonania lotu. Raport zawiera zdjęcia, mapę anomalii i rekomendacje.' },
-        { q: 'Jaki obszar obejmujecie usługami?', a: 'Działamy w Toruniu, Bydgoszczy, Grudziądzu, Chełmnie, Wąbrzeźnie i całym województwie kujawsko-pomorskim. Na zlecenie realizujemy usługi w całej Polsce.' },
-        { q: 'Czy kamera termowizyjna wykryje uszkodzone panele PV?', a: 'Tak, Mavic 3 Thermal z kamerą radiometryczną 640×512px dokładnie wykrywa hotspoty, uszkodzone ogniwa i zacienione moduły fotowoltaiczne.' },
-    ];
+    const b2bFaqs = AERO_PUBLIC_SLUGS.flatMap(slug => getAeroPageDefinition(slug)?.faqs || []).map(faq => ({ q: faq.question, a: faq.answer }));
 
     const b2cFaqs = [
         { q: 'Ile kosztuje sesja fotograficzna w Toruniu?', a: tone === 'luxury' ? 'Sesje portretowe rozpoczynają się od 350 zł, rodzinne od 450 zł, a ekskluzywne reportaże ślubne od 1800 zł. Każda sesja to starannie zaplanowane doświadczenie.' : tone === 'emotional' ? 'Sesje od 350 zł za portret, od 450 zł za rodzinną, od 1800 zł za ślubną. Bo piękne wspomnienia nie mają ceny — ale mogą mieć przystępną cenę.' : 'Ceny sesji zaczynają się od 350 zł za sesję portretową. Sesje rodzinne od 450 zł, ślubne od 1800 zł. Szczegółowy cennik znajdziesz na stronie rezerwacji.' },
         { q: 'Jak długo czekam na zdjęcia po sesji?', a: tone === 'dynamic' ? 'Podgląd miniatur w 7 dni, pełna galeria w 2-3 tygodnie. Szybko i na czas — zawsze!' : 'Standardowy czas dostawy to 2-3 tygodnie. Galerię online z podglądem miniatur dostarczam w ciągu 7 dni od sesji.' },
         { q: 'Czy robicie sesje w Bydgoszczy lub Grudziądzu?', a: 'Tak, wykonuję sesje w całym regionie kujawsko-pomorskim: Toruń, Bydgoszcz, Grudziądz, Chełmno, Wąbrzeźno i okolice.' },
-        { q: 'Jak zarezerwować termin sesji?', a: tone === 'friendly' ? 'Najprościej? Przez formularz na stronie Rezerwacja! Możesz też napisać na kontakt@wlasniewski.pl lub zadzwonić: +48 530 788 694. Odezwę się szybko! 😊' : 'Możesz zarezerwować sesję online przez formularz na stronie Rezerwacja lub napisać bezpośrednio: kontakt@wlasniewski.pl. Telefon: +48 530 788 694.' },
+        { q: 'Jak zarezerwować termin sesji?', a: tone === 'friendly' ? 'Najprościej? Przez formularz na stronie Rezerwacja! Możesz też napisać na pwlasniewski@gmail.com lub zadzwonić: +48 530 788 694. Odezwę się szybko! 😊' : 'Możesz zarezerwować sesję online przez formularz na stronie Rezerwacja lub napisać bezpośrednio: pwlasniewski@gmail.com. Telefon: +48 530 788 694.' },
         { q: 'Co to jest sesja naturalistyczna?', a: tone === 'emotional' ? 'To sesja, gdzie nie ma póz — jest prawda. Fotografuję śmiech, czułość, zabawę tak, jak się naprawdę dzieją. Bo najpiękniejsze chwile to te autentyczne.' : 'Sesja naturalistyczna to sesja w plenerze bez ustawionych póz. Fotografuję autentyczne chwile i emocje — śmiech, zabawę, czułość. Idealna dla rodzin z dziećmi.' },
     ];
 
@@ -152,11 +147,15 @@ function getServiceSchemaData(domain: 'b2c' | 'b2b') {
     if (domain === 'b2b') {
         return {
             '@context': 'https://schema.org',
-            '@graph': [
-                { '@type': 'Service', name: 'Inspekcje Termowizyjne Dronem', provider: { '@type': 'LocalBusiness', name: 'FOTO-DRON Przemysław Właśniewski' }, serviceType: 'Inspekcja termowizyjna', areaServed: { '@type': 'State', name: 'Kujawsko-Pomorskie' }, description: 'Wykrywanie mostków cieplnych, awarii paneli PV, inspekcje dachów kamerą Mavic 3 Thermal 640×512px.', url: 'https://aeroanaliza.pl/dron' },
-                { '@type': 'Service', name: 'Monitoring Inwestycji Budowlanych', provider: { '@type': 'LocalBusiness', name: 'FOTO-DRON Przemysław Właśniewski' }, serviceType: 'Dokumentacja budowy', areaServed: { '@type': 'State', name: 'Kujawsko-Pomorskie' }, description: 'Timeline budowy z lotu ptaka. Regularne zdjęcia z tej samej perspektywy i raporty PDF dla inwestorów.', url: 'https://aeroanaliza.pl' },
-                { '@type': 'Service', name: 'Ortofotomapy i Rolnictwo Precyzyjne', provider: { '@type': 'LocalBusiness', name: 'FOTO-DRON Przemysław Właśniewski' }, serviceType: 'Fotogrametria', areaServed: { '@type': 'State', name: 'Kujawsko-Pomorskie' }, description: 'Szacowanie szkód łowieckich, analiza stanu upraw, mapy GeoTIFF dla GIS.', url: 'https://aeroanaliza.pl' },
-            ],
+            '@graph': AERO_PUBLIC_SLUGS.map(slug => getAeroPageDefinition(slug)!).filter(page => page.serviceName).map(page => ({
+                '@type': 'Service',
+                name: page.serviceName,
+                provider: { '@type': 'LocalBusiness', name: AERO_SITE.name, email: AERO_SITE.email },
+                serviceType: page.serviceName,
+                areaServed: { '@type': 'AdministrativeArea', name: 'województwo kujawsko-pomorskie' },
+                description: page.serviceDescription || page.description,
+                url: `${AERO_SITE.url}${page.slug ? `/${page.slug}` : ''}`,
+            })),
         };
     }
     return {
@@ -181,8 +180,7 @@ const INDEXNOW_URLS = {
         'https://wlasniewski.pl/foto-wyzwanie',
     ],
     b2b: [
-        'https://aeroanaliza.pl/',
-        'https://aeroanaliza.pl/dron',
+        ...AERO_PUBLIC_SLUGS.map(slug => `${AERO_SITE.url}${slug ? `/${slug}` : '/'}`),
     ],
 };
 
@@ -261,6 +259,14 @@ export async function POST(request: NextRequest) {
             const action = body.action;
             const tone: Tone = body.tone || 'professional';
             const executedAt = new Date().toISOString();
+
+            const b2bContentActions: AutopilotAction[] = ['auto-fix-meta', 'inject-faq-schema', 'inject-service-schema', 'ai-generate'];
+            if ((body.domain === 'b2b' || body.domain === 'all') && b2bContentActions.includes(action)) {
+                return NextResponse.json({
+                    success: false,
+                    error: 'Automatyczne modyfikowanie treści Aero Analiza jest wyłączone. Użyj wersjonowanych definicji Aero i ręcznej kontroli w CMS.',
+                }, { status: 409 });
+            }
 
             // ── PREVIEW: dry-run, show what will happen ──
             if (action === 'preview') {

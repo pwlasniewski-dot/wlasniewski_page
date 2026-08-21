@@ -1,6 +1,8 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
+throw new Error('Ten historyczny seeder Aero Analiza jest wyłączony. Użyj panelu Ustawienia → Aero Analiza oraz wersjonowanych stron v2.');
+
 async function main() {
     console.log('🌱 Seeding/Updating B2B Page...');
 

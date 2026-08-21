@@ -1,6 +1,8 @@
 
 import { PrismaClient } from '@prisma/client';
 
+throw new Error('Ten historyczny seeder Aero Analiza jest wyłączony. Edytuj monitoring w CMS po publikacji wersji v2.');
+
 const prisma = new PrismaClient();
 
 const MONITORING_SECTIONS = [

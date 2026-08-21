@@ -94,7 +94,7 @@ export default function RegulaminFotoMatchPage() {
                 </Section>
 
                 <Section icon={<Phone className="w-6 h-6 text-amber-400" />} title="Kontakt + zgłoszenia">
-                    <p>Email: <a href="mailto:kontakt@wlasniewski.pl" className="text-amber-400 underline">kontakt@wlasniewski.pl</a></p>
+                    <p>Email: <a href="mailto:pwlasniewski@gmail.com" className="text-amber-400 underline">pwlasniewski@gmail.com</a></p>
                     <p className="mt-2">Wszystkie zgłoszenia naruszeń odpowiadamy w ciągu 48h roboczych.</p>
                 </Section>
 

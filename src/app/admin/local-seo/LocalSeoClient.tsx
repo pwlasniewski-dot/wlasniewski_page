@@ -334,7 +334,7 @@ export default function LocalSeoClient({ initialSettings, completedBookings, ini
                         </div>
                         <div className="grid grid-cols-3 gap-3 text-sm">
                             <div className="text-zinc-500">Email:</div>
-                            <div className="col-span-2 font-mono text-amber-400">kontakt@wlasniewski.pl</div>
+                            <div className="col-span-2 font-mono text-amber-400">pwlasniewski@gmail.com</div>
                         </div>
                         <div className="grid grid-cols-3 gap-3 text-sm">
                             <div className="text-zinc-500">NIP:</div>

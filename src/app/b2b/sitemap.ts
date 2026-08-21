@@ -1,47 +1,27 @@
-import { MetadataRoute } from 'next';
+import type { MetadataRoute } from 'next';
 import prisma from '@/lib/db/prisma';
-import { b2bPublicPath, isB2bCmsPage } from '@/lib/sites/b2b-routing';
+import { AERO_SITE, getAeroPageDefinition } from '@/lib/aeroanaliza/content';
+import { getAeroCmsLastModified, getSitemapAeroSlugs, type AeroCmsPublicationState } from '@/lib/aeroanaliza/sitemap';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-    const b2bBase = 'https://aeroanaliza.pl';
-
-    // B2B Static pages
-    const b2bStaticPages = [
-        '',          // aeroanaliza.pl/
-        '/dron',     // aeroanaliza.pl/dron
-        '/termowizja',
-        '/monitoring',
-    ];
-
-    let dbPages: Array<{ slug: string; page_type: string; updated_at: Date }> = [];
-
+    const releaseDate = new Date('2026-08-21T00:00:00.000Z');
+    let cmsPages: AeroCmsPublicationState[] | null = null;
     try {
-        const publishedPages = await prisma.page.findMany({
-            where: { is_published: true },
-            select: { slug: true, page_type: true, updated_at: true }
+        cmsPages = await prisma.page.findMany({
+            where: { page_type: 'b2b' },
+            select: { slug: true, updated_at: true, is_published: true },
         });
-        dbPages = publishedPages.filter(isB2bCmsPage);
     } catch (error) {
-        console.error('[b2b-sitemap] Failed to load dynamic entries:', error);
+        console.error('[aeroanaliza] Sitemap uses release dates because CMS is unavailable', error);
     }
 
-    const sitemap: MetadataRoute.Sitemap = [
-        // B2B Static pages
-        ...b2bStaticPages.map(route => ({
-            url: `${b2bBase}${route}`,
-            lastModified: new Date(),
-            changeFrequency: 'monthly' as const,
-            priority: route === '' ? 1.0 : 0.8,
-        })),
-
-        // B2B Dynamic pages from database
-        ...dbPages.map(page => ({
-            url: `${b2bBase}${b2bPublicPath(page.slug)}`,
-            lastModified: page.updated_at,
-            changeFrequency: 'monthly' as const,
-            priority: 0.7,
-        })),
-    ];
-
-    return Array.from(new Map(sitemap.map(entry => [entry.url, entry] as const)).values());
+    return getSitemapAeroSlugs(cmsPages).map(slug => {
+        const definition = getAeroPageDefinition(slug)!;
+        return {
+            url: `${AERO_SITE.url}${slug ? `/${slug}` : ''}`,
+            lastModified: cmsPages ? getAeroCmsLastModified(slug, cmsPages) || releaseDate : releaseDate,
+            changeFrequency: definition.changeFrequency,
+            priority: definition.priority,
+        };
+    });
 }

@@ -3,7 +3,8 @@ import fs from 'fs';
 import path from 'path';
 
 // PRODUCTION DATABASE URL
-const PRODUCTION_DB = "postgresql://neondb_owner:npg_vjh6d9PJuKFT@ep-dry-art-aemsvsfc.c-2.us-east-2.aws.neon.tech/neondb?channel_binding=require&sslmode=require";
+const PRODUCTION_DB = process.env.DATABASE_URL || '';
+if (!PRODUCTION_DB) throw new Error('DATABASE_URL is required');
 
 const prisma = new PrismaClient({
     datasources: {

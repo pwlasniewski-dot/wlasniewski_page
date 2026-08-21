@@ -12,7 +12,7 @@ export function isSemanticCta(event: AttributionEvent) {
 
 export function pathsBeforeFirstBookingStart(events: AttributionEvent[], identityForEvent: (event: AttributionEvent) => string) {
   const ordered = [...events].sort((a, b) => a.created_at.getTime() - b.created_at.getTime());
-  const startIndex = ordered.findIndex(event => ['v2_booking_start', 'v2_booking_started', 'v2_booking_form_started', 'v2_drone_booking_started'].includes(event.event_type));
+  const startIndex = ordered.findIndex(event => ['v2_booking_start', 'v2_booking_started', 'v2_booking_form_started', 'v2_drone_booking_started', 'v2_aero_inquiry_started'].includes(event.event_type));
   if (startIndex < 0) return [];
   return Array.from(new Set(ordered.slice(0, startIndex).filter(event => event.event_type === 'v2_page_view').map(identityForEvent)));
 }

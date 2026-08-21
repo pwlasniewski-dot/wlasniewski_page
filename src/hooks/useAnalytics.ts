@@ -266,7 +266,11 @@ export function AnalyticsTracker() {
 
       let analyticsId = target.getAttribute('data-analytics') || target.id || target.getAttribute('aria-label') || target.getAttribute('name') || '';
       if (!analyticsId && target instanceof HTMLAnchorElement) {
-        try { analyticsId = `link:${new URL(target.href).pathname}`; } catch { analyticsId = 'link'; }
+        if (target.protocol === 'mailto:') analyticsId = 'email_link';
+        else if (target.protocol === 'tel:') analyticsId = 'phone_link';
+        else {
+          try { analyticsId = `link:${new URL(target.href).pathname}`; } catch { analyticsId = 'link'; }
+        }
       }
       if (!analyticsId && target instanceof HTMLButtonElement) analyticsId = `button:${target.type || 'button'}`;
 

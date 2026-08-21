@@ -213,11 +213,11 @@ export default function WorkshopLandingPage({ params }: { params: Promise<{ slug
                         <div className="text-5xl mb-3">📧</div>
                         <h2 className="text-2xl font-bold text-zinc-900 mb-2">Zapisy zamknięte</h2>
                         <p className="text-zinc-600 max-w-md mx-auto">
-                            Zapisów na ten warsztat można dokonać tylko poprzez bezpośredni kontakt. 
+                            Zapisów na ten warsztat można dokonać tylko poprzez bezpośredni kontakt.
                             Skontaktuj się ze mną, jeśli jesteś zainteresowany.
                         </p>
-                        <a 
-                            href="mailto:kontakt@wlasniewski.pl" 
+                        <a
+                            href="mailto:pwlasniewski@gmail.com"
                             className="inline-flex items-center gap-2 bg-gradient-to-r from-rose-500 to-amber-500 hover:from-rose-600 hover:to-amber-600 text-white px-6 py-3 rounded-lg font-bold shadow-lg mt-6"
                         >
                             Napisz do mnie <ArrowRight size={18} />

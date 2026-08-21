@@ -1,6 +1,8 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
+throw new Error('Ten historyczny seeder Aero Analiza jest wyłączony. Użyj panelu Ustawienia → Aero Analiza oraz wersjonowanych stron v2.');
+
 async function seedB2BContent() {
     console.log('🚀 Starting B2B Content Seeding...\n');
 
@@ -163,7 +165,7 @@ async function seedB2BContent() {
 
 <h2>Dane Kontaktowe</h2>
 <p><strong>FotoDron Właśniewski</strong><br>
-Email: <a href="mailto:kontakt@wlasniewski.pl">kontakt@wlasniewski.pl</a><br>
+Email: <a href="mailto:pwlasniewski@gmail.com">pwlasniewski@gmail.com</a><br>
 Tel: +48 XXX XXX XXX<br>
 NIP: XXXXXXXXXX</p>
 

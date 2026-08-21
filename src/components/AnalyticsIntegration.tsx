@@ -35,30 +35,30 @@ export default function AnalyticsIntegration({
         };
     }, []);
 
-    // Use B2B-specific IDs when on B2B domain, fallback to main
-    const activeGAId = isB2B ? (b2bGoogleAnalyticsId || googleAnalyticsId) : googleAnalyticsId;
-    const activeGTMId = isB2B ? (b2bGoogleTagManagerId || googleTagManagerId) : googleTagManagerId;
-    const activePixelId = isB2B ? (b2bFacebookPixelId || facebookPixelId) : facebookPixelId;
-    const googleAdsId = 'AW-17548893646';
+    // Aero Analiza must never fall back to photography tracking identifiers.
+    const activeGAId = isB2B ? b2bGoogleAnalyticsId : googleAnalyticsId;
+    const activeGTMId = isB2B ? b2bGoogleTagManagerId : googleTagManagerId;
+    const activePixelId = isB2B ? b2bFacebookPixelId : facebookPixelId;
+    const googleAdsId = isB2B ? undefined : 'AW-17548893646';
     const googleLoaderId = activeGAId || googleAdsId;
 
     if (!hasConsent) return null;
+    if (!googleLoaderId && !activeGTMId && !activePixelId) return null;
 
     return (
         <>
-            <Script
-                src={`https://www.googletagmanager.com/gtag/js?id=${googleLoaderId}`}
-                strategy="afterInteractive"
-            />
-            <Script id="google-analytics-ads" strategy="afterInteractive">
-                {`
-                    window.dataLayer = window.dataLayer || [];
-                    function gtag(){dataLayer.push(arguments);}
-                    gtag('js', new Date());
-                    ${activeGAId ? `gtag('config', '${activeGAId}');` : ''}
-                    gtag('config', '${googleAdsId}');
-                `}
-            </Script>
+            {googleLoaderId && <Script src={`https://www.googletagmanager.com/gtag/js?id=${googleLoaderId}`} strategy="afterInteractive" />}
+            {googleLoaderId && (
+                <Script id="google-analytics-ads" strategy="afterInteractive">
+                    {`
+                        window.dataLayer = window.dataLayer || [];
+                        function gtag(){dataLayer.push(arguments);}
+                        gtag('js', new Date());
+                        ${activeGAId ? `gtag('config', '${activeGAId}');` : ''}
+                        ${googleAdsId ? `gtag('config', '${googleAdsId}');` : ''}
+                    `}
+                </Script>
+            )}
 
             {/* Google Tag Manager */}
             {activeGTMId && (

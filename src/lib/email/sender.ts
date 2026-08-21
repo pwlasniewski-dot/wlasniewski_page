@@ -270,7 +270,7 @@ function renderTemplate(template: string, data: Record<string, any>): string {
             </div>
             <p>Zaproszony otrzymał właśnie e-mail z linkiem do akceptacji terminu. Powiadomię Cię, gdy zaakceptuje lub odrzuci zaproszenie.</p>
             <p style="font-size: 13px; color: #666; margin-top: 20px;">
-                W razie pytań: kontakt@wlasniewski.pl &nbsp;·&nbsp; +48 530 788 694
+                W razie pytań: pwlasniewski@gmail.com &nbsp;·&nbsp; +48 530 788 694
             </p>
         </div>
     </div>
@@ -445,7 +445,7 @@ function renderTemplate(template: string, data: Record<string, any>): string {
         <div class="greeting">Cześć ${d.name || ''}</div>
         <p>Twój profil w Foto-Match został zawieszony${d.reason ? ` z powodu: <strong>${d.reason}</strong>` : ''}.</p>
         <p>Profil nie jest obecnie widoczny dla innych. Skontaktuj się z nami, jeśli uważasz że to pomyłka.</p>
-        <div class="cta-section"><a href="mailto:${d.contactEmail || 'kontakt@wlasniewski.pl'}" class="cta-button">Napisz do nas</a></div>
+        <div class="cta-section"><a href="mailto:${d.contactEmail || 'pwlasniewski@gmail.com'}" class="cta-button">Napisz do nas</a></div>
     </div>
 </div></body></html>`,
         'foto-match-referral-rewarded': (d) => `

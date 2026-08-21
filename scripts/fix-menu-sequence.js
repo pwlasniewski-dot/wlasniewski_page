@@ -1,6 +1,7 @@
 
 // Force use of local DB to match app environment
-process.env.DATABASE_URL = "postgresql://postgres:zWMWbkFpBt@localhost:5432/test_neon";
+if (!process.env.LOCAL_DATABASE_URL) throw new Error('LOCAL_DATABASE_URL is required');
+process.env.DATABASE_URL = process.env.LOCAL_DATABASE_URL;
 
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
