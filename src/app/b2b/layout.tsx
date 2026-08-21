@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     category: 'professional-services',
 };
 
-export const viewport: Viewport = { themeColor: '#07100f', colorScheme: 'dark' };
+export const viewport: Viewport = { themeColor: '#ffffff', colorScheme: 'light' };
 
 export default function AeroLayout({ children }: { children: React.ReactNode }) {
     const schema = {

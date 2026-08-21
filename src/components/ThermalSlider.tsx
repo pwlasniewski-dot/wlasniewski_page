@@ -32,7 +32,7 @@ export default function ThermalSlider({ visualImage, thermalImage, labelLeft = '
     const source = sections.length ? sections : [{ id: 'comparison', category: title || 'Porównanie', visualImage: visualImage || '', thermalImage: thermalImage || '', labelLeft, labelRight, alignmentStatus, objectPosition, objectPositionMobile }];
     const valid = source.filter(item => item.visualImage && item.thermalImage);
 
-    if (!valid.length) return <div className="rounded-2xl border border-dashed border-white/15 p-12 text-center text-zinc-500">Para obrazu rzeczywistego i termicznego nie została jeszcze opublikowana.</div>;
+    if (!valid.length) return <div className="rounded-2xl border border-dashed border-[#b9cad7] bg-[#f6f9fb] p-12 text-center text-[#6b7f91]">Para obrazu rzeczywistego i termicznego nie została jeszcze opublikowana.</div>;
 
     return <ThermalHeroSlider slides={valid.map(item => ({
         id: item.id,

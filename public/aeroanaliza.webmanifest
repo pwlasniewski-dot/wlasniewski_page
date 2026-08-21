@@ -4,7 +4,7 @@
   "description": "Termowizja i inspekcje dronem w województwie kujawsko-pomorskim",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#07100f",
-  "theme_color": "#07100f",
+  "background_color": "#f4f8fb",
+  "theme_color": "#ffffff",
   "icons": [{ "src": "/aeroanaliza-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
 }

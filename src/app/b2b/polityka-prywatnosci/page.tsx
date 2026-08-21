@@ -15,24 +15,24 @@ export const metadata: Metadata = {
 };
 
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
-    <section className="space-y-3">
-        <h2 className="text-2xl font-bold text-white">{title}</h2>
-        <div className="space-y-3 leading-relaxed text-zinc-300">{children}</div>
+    <section className="space-y-3 border-t border-[#dce5ec] pt-8">
+        <h2 className="aero-heading text-2xl font-semibold text-[#16344f]">{title}</h2>
+        <div className="space-y-3 leading-8 text-[#566b7d]">{children}</div>
     </section>
 );
 
 export default function AeroPrivacyPage() {
     return (
-        <main className="min-h-screen bg-[#07100f] px-4 py-16 text-zinc-200 md:px-6">
-            <article className="mx-auto max-w-4xl space-y-10 rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:p-12">
+        <main className="min-h-screen bg-[#f2f6f9] px-4 py-16 text-[#17344f] md:px-6 md:py-24">
+            <article className="mx-auto max-w-4xl space-y-9 rounded-[2rem] border border-[#d5e0e8] bg-white p-6 shadow-[0_24px_70px_rgba(24,52,77,.09)] md:p-12">
                 <header>
-                    <p className="text-xs font-bold uppercase tracking-[0.22em] text-emerald-300">Aero Analiza</p>
-                    <h1 className="mt-3 text-4xl font-bold text-white md:text-5xl">Polityka prywatności i cookies</h1>
-                    <p className="mt-4 text-zinc-400">Aktualizacja: 21 sierpnia 2026 r.</p>
+                    <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-[#1f6feb]">Aero Analiza</p>
+                    <h1 className="aero-heading mt-4 text-4xl font-semibold tracking-[-.035em] text-[#102c48] md:text-6xl">Polityka prywatności i cookies</h1>
+                    <p className="mt-4 text-[#738698]">Aktualizacja: 21 sierpnia 2026 r.</p>
                 </header>
 
                 <Section title="Administrator danych">
-                    <p>Administratorem danych jest {AERO_SITE.legalName}, Płużnica, województwo kujawsko-pomorskie. Kontakt: <a className="text-emerald-300 underline" href={`mailto:${AERO_SITE.email}`}>{AERO_SITE.email}</a> lub <a className="text-emerald-300 underline" href={`tel:${AERO_SITE.phoneHref}`}>{AERO_SITE.phone}</a>.</p>
+                    <p>Administratorem danych jest {AERO_SITE.legalName}, Płużnica, województwo kujawsko-pomorskie. Kontakt: <a className="font-semibold text-[#1b5fa7] underline" href={`mailto:${AERO_SITE.email}`}>{AERO_SITE.email}</a> lub <a className="font-semibold text-[#1b5fa7] underline" href={`tel:${AERO_SITE.phoneHref}`}>{AERO_SITE.phone}</a>.</p>
                 </Section>
 
                 <Section title="Zapytania ofertowe">
@@ -54,7 +54,7 @@ export default function AeroPrivacyPage() {
                     <p>Serwis nie podejmuje automatycznych decyzji wywołujących skutki prawne wobec klientów. Zapytania, treści techniczne i możliwość wykonania usługi podlegają ocenie człowieka. Na stronie nie działa chatbot podszywający się pod człowieka ani generator wyników termowizyjnych.</p>
                 </Section>
 
-                <Link href="/" className="inline-flex rounded-full border border-emerald-300/30 px-5 py-3 font-semibold text-emerald-300 hover:bg-emerald-300/10">Wróć do Aero Analiza</Link>
+                <Link href="/" className="inline-flex rounded-full bg-[#102c48] px-6 py-3 font-semibold text-white shadow-lg transition hover:bg-[#174f82]">Wróć do Aero Analiza</Link>
             </article>
         </main>
     );

@@ -3,6 +3,8 @@
 ## 2026-08-21 — przebudowa Aero Analiza pod zapytania techniczne
 
 - Publiczna domena Aero Analiza otrzymała własny shell, nawigację, stopkę, manifest, ikony, metadane i graf encji. Nie montuje konta, koszyka, promocji, galerii ani kontaktu marki fotograficznej.
+- Po odbiorze Deploy Preview usunięto dominujący czarny motyw. Osobny `AeroPageRenderer` wprowadził jasne powierzchnie, profesjonalny hero sprzedażowy, lekkie karty, uporządkowany proces, kontrastową sekcję wyceny i spójną identyfikację nagłówka, stopki, formularza, cookies oraz polityki prywatności.
+- Porównania RGB/termowizja zachowują bezpieczną logikę zgodności par, ale otrzymały jasną oprawę, czytelne podpisy oraz przyciski zgodne z pozostałą częścią serwisu.
 - Ograniczono architekturę treści do pięciu intencji sprzedażowych: termowizja, PV, dachy, monitoring i region kujawsko-pomorski. Strony używają bezpiecznych treści startowych, a panel może opublikować je do istniejącego Pages CMS bez utraty par termicznych.
 - Wprowadzono odrębny kontrakt zapytania Aero, zapis leada przed wysyłką e-mail, atrybucję bez PII oraz jedyny adres kontaktowy `pwlasniewski@gmail.com`. Stary formularz `/dron` nie używa już niezgodnego endpointu fotografii.
 - Oba komponenty porównań termicznych nie udają pomiaru live. Natywny range obsługuje klawiaturę, dotyk i czytniki ekranu; CMS rozróżnia parę zarejestrowaną od prezentacji obok siebie.

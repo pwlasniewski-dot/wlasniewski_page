@@ -100,48 +100,51 @@ export default function B2BContactForm({ defaultService }: { defaultService?: st
         return (
             <div className="grid min-h-[520px] place-items-center p-8 text-center" role="status" aria-live="polite">
                 <div className="max-w-md">
-                    <CheckCircle className="mx-auto mb-5 text-emerald-300" size={48} />
-                    <h3 className="text-3xl font-bold text-white">Zapytanie zostało zapisane</h3>
-                    <p className="mt-4 leading-relaxed text-zinc-400">Przemysław Właśniewski skontaktuje się po sprawdzeniu zakresu i warunków realizacji.</p>
+                    <CheckCircle className="mx-auto mb-5 text-[#1f6feb]" size={48} />
+                    <h3 className="aero-heading text-3xl font-semibold text-[#102c48]">Zapytanie zostało zapisane</h3>
+                    <p className="mt-4 leading-relaxed text-[#607286]">Przemysław Właśniewski skontaktuje się po sprawdzeniu zakresu i warunków realizacji.</p>
                 </div>
             </div>
         );
     }
 
+    const labelClass = 'text-sm font-semibold text-[#34516b]';
+    const fieldClass = 'mt-2 w-full rounded-xl border border-[#ccd9e3] bg-[#f8fafc] px-4 py-3 text-[#16314b] shadow-inner outline-none transition placeholder:text-[#8ba0b2] hover:border-[#aebfcd] focus:border-[#1f6feb] focus:bg-white focus:ring-4 focus:ring-[#1f6feb]/10';
+
     return (
-        <form id="aero-inquiry-form" name="aero-inquiry-form" data-analytics="aero-inquiry-form" onSubmit={submit} className="space-y-5 p-6 md:p-10" aria-describedby="aero-form-note">
+        <form id="aero-inquiry-form" name="aero-inquiry-form" data-analytics="aero-inquiry-form" onSubmit={submit} className="space-y-5 bg-white p-6 md:p-10 lg:p-12" aria-describedby="aero-form-note">
             <div>
-                <h3 className="text-2xl font-bold text-white">Zapytanie o zakres i wycenę</h3>
-                <p id="aero-form-note" className="mt-2 text-sm text-zinc-400">Pola oznaczone * są wymagane. Dane służą wyłącznie do obsługi tego zapytania.</p>
+                <h3 className="aero-heading text-3xl font-semibold tracking-[-.025em] text-[#102c48]">Zapytanie o zakres i wycenę</h3>
+                <p id="aero-form-note" className="mt-2 text-sm leading-6 text-[#6a7d8f]">Pola oznaczone * są wymagane. Dane służą wyłącznie do obsługi tego zapytania.</p>
             </div>
 
             <div className="grid gap-5 md:grid-cols-2">
-                <label className="text-sm text-zinc-300">Imię i nazwisko *<input required autoComplete="name" value={form.name} onChange={e => update('name', e.target.value)} className="mt-2 w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-white outline-none focus:border-emerald-300" /></label>
-                <label className="text-sm text-zinc-300">Firma / organizacja<input autoComplete="organization" value={form.company} onChange={e => update('company', e.target.value)} className="mt-2 w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-white outline-none focus:border-emerald-300" /></label>
-                <label className="text-sm text-zinc-300">E-mail *<input required type="email" autoComplete="email" value={form.email} onChange={e => update('email', e.target.value)} className="mt-2 w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-white outline-none focus:border-emerald-300" /></label>
-                <label className="text-sm text-zinc-300">Telefon<input type="tel" autoComplete="tel" value={form.phone} onChange={e => update('phone', e.target.value)} className="mt-2 w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-white outline-none focus:border-emerald-300" /></label>
+                <label className={labelClass}>Imię i nazwisko *<input required autoComplete="name" value={form.name} onChange={e => update('name', e.target.value)} className={fieldClass} /></label>
+                <label className={labelClass}>Firma / organizacja<input autoComplete="organization" value={form.company} onChange={e => update('company', e.target.value)} className={fieldClass} /></label>
+                <label className={labelClass}>E-mail *<input required type="email" autoComplete="email" value={form.email} onChange={e => update('email', e.target.value)} className={fieldClass} /></label>
+                <label className={labelClass}>Telefon<input type="tel" autoComplete="tel" value={form.phone} onChange={e => update('phone', e.target.value)} className={fieldClass} /></label>
             </div>
 
-            <label className="block text-sm text-zinc-300">Usługa *<select required value={form.serviceType} onChange={e => update('serviceType', e.target.value)} className="mt-2 w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-white outline-none focus:border-emerald-300">{serviceOptions.map(service => <option key={service} value={service}>{service}</option>)}</select></label>
+            <label className={`block ${labelClass}`}>Usługa *<select required value={form.serviceType} onChange={e => update('serviceType', e.target.value)} className={fieldClass}>{serviceOptions.map(service => <option key={service} value={service}>{service}</option>)}</select></label>
 
             <div className="grid gap-5 md:grid-cols-2">
-                <label className="text-sm text-zinc-300">Lokalizacja obiektu *<input required value={form.location} onChange={e => update('location', e.target.value)} placeholder="miejscowość lub adres" className="mt-2 w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-white outline-none focus:border-emerald-300" /></label>
-                <label className="text-sm text-zinc-300">Rodzaj obiektu<input value={form.objectType} onChange={e => update('objectType', e.target.value)} placeholder="np. dach hali, instalacja PV" className="mt-2 w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-white outline-none focus:border-emerald-300" /></label>
-                <label className="text-sm text-zinc-300">Preferowany termin<select value={form.timeframe} onChange={e => update('timeframe', e.target.value)} className="mt-2 w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-white outline-none focus:border-emerald-300"><option>Do uzgodnienia</option><option>W ciągu 7 dni</option><option>W ciągu 30 dni</option><option>Konkretny termin opiszę poniżej</option></select></label>
-                <label className="text-sm text-zinc-300">Preferowany kontakt<select value={form.preferredContact} onChange={e => update('preferredContact', e.target.value)} className="mt-2 w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-white outline-none focus:border-emerald-300"><option>Telefon lub e-mail</option><option>Telefon</option><option>E-mail</option></select></label>
+                <label className={labelClass}>Lokalizacja obiektu *<input required value={form.location} onChange={e => update('location', e.target.value)} placeholder="miejscowość lub adres" className={fieldClass} /></label>
+                <label className={labelClass}>Rodzaj obiektu<input value={form.objectType} onChange={e => update('objectType', e.target.value)} placeholder="np. dach hali, instalacja PV" className={fieldClass} /></label>
+                <label className={labelClass}>Preferowany termin<select value={form.timeframe} onChange={e => update('timeframe', e.target.value)} className={fieldClass}><option>Do uzgodnienia</option><option>W ciągu 7 dni</option><option>W ciągu 30 dni</option><option>Konkretny termin opiszę poniżej</option></select></label>
+                <label className={labelClass}>Preferowany kontakt<select value={form.preferredContact} onChange={e => update('preferredContact', e.target.value)} className={fieldClass}><option>Telefon lub e-mail</option><option>Telefon</option><option>E-mail</option></select></label>
             </div>
 
-            <label className="block text-sm text-zinc-300">Co chcesz sprawdzić lub udokumentować? *<textarea required minLength={20} rows={5} value={form.message} onChange={e => update('message', e.target.value)} placeholder="Opisz problem, wielkość obiektu i oczekiwany rezultat." className="mt-2 w-full resize-y rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-white outline-none focus:border-emerald-300" /></label>
+            <label className={`block ${labelClass}`}>Co chcesz sprawdzić lub udokumentować? *<textarea required minLength={20} rows={5} value={form.message} onChange={e => update('message', e.target.value)} placeholder="Opisz problem, wielkość obiektu i oczekiwany rezultat." className={`${fieldClass} resize-y`} /></label>
             <label className="absolute -left-[9999px]" aria-hidden="true">Strona internetowa<input tabIndex={-1} autoComplete="off" value={form.website} onChange={e => update('website', e.target.value)} /></label>
 
-            <p className="text-xs leading-relaxed text-zinc-500">
+            <p className="text-xs leading-6 text-[#778a9b]">
                 Administratorem danych jest {AERO_SITE.legalName}. Dane wykorzystuję do odpowiedzi na zapytanie i przygotowania oferty. Szczegóły znajdziesz w{' '}
-                <Link href="/polityka-prywatnosci" className="text-emerald-300 underline underline-offset-2 hover:text-emerald-200">polityce prywatności Aero Analiza</Link>.
+                <Link href="/polityka-prywatnosci" className="font-semibold text-[#1b5fa7] underline underline-offset-2 hover:text-[#164c80]">polityce prywatności Aero Analiza</Link>.
             </p>
 
             {status === 'error' && <div className="flex gap-3 rounded-xl border border-red-400/30 bg-red-950/30 p-4 text-sm text-red-200" role="alert"><AlertCircle className="shrink-0" size={20} /><p>{error} Możesz też napisać na <a data-analytics="aero-cta-email-error" className="underline" href={`mailto:${AERO_SITE.email}`}>{AERO_SITE.email}</a>.</p></div>}
 
-            <button type="submit" disabled={status === 'loading'} className="flex min-h-12 w-full items-center justify-center gap-3 rounded-xl bg-emerald-300 px-6 py-4 font-bold text-[#07100f] transition hover:bg-emerald-200 disabled:cursor-wait disabled:opacity-70">
+            <button type="submit" disabled={status === 'loading'} className="flex min-h-14 w-full items-center justify-center gap-3 rounded-xl bg-[#ff5d37] px-6 py-4 font-bold text-white shadow-[0_14px_28px_rgba(255,93,55,.2)] transition hover:-translate-y-0.5 hover:bg-[#e94c28] disabled:cursor-wait disabled:opacity-70">
                 {status === 'loading' ? <><Loader2 className="animate-spin" size={19} />Zapisywanie zapytania…</> : <>Wyślij zapytanie <Send size={19} /></>}
             </button>
         </form>

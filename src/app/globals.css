@@ -108,6 +108,87 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+/* Aero Analiza has its own visual identity and does not inherit the black
+   photography/B2B theme. Business copy and media still come from Page CMS;
+   these rules only provide the stable, safe presentation layer. */
+.aero-site {
+  --aero-ink: #102c48;
+  --aero-blue: #1f6feb;
+  --aero-thermal: #ff5d37;
+  --aero-paper: #f4f8fb;
+  min-width: 0;
+  overflow-x: clip;
+  font-family: var(--font-inter), Inter, system-ui, sans-serif;
+  background: var(--aero-paper);
+  color: #142e49;
+}
+
+.aero-site .aero-heading {
+  font-family: var(--font-outfit), Outfit, var(--font-inter), sans-serif;
+}
+
+.aero-site h1,
+.aero-site h2,
+.aero-site h3 {
+  text-wrap: balance;
+}
+
+.aero-site .text-yellow-500,
+.aero-site .text-yellow-400 {
+  color: var(--aero-thermal) !important;
+}
+
+.aero-grid {
+  background-image:
+    linear-gradient(rgba(24, 74, 112, .055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(24, 74, 112, .055) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: linear-gradient(to bottom, black 10%, transparent 92%);
+}
+
+.aero-media {
+  object-position: var(--aero-media-position, center center);
+}
+
+.aero-prose p {
+  margin: 0 0 1.15rem;
+}
+
+.aero-prose p:last-child {
+  margin-bottom: 0;
+}
+
+.aero-prose :is(strong, b) {
+  color: #173754;
+  font-weight: 700;
+}
+
+.aero-prose :is(ul, ol) {
+  margin: 1.25rem 0;
+  padding-left: 1.4rem;
+}
+
+.aero-prose li {
+  margin: .45rem 0;
+}
+
+@media (max-width: 767px) {
+  .aero-media {
+    object-position: var(--aero-media-position-mobile, var(--aero-media-position, center center));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aero-site *,
+  .aero-site *::before,
+  .aero-site *::after {
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
 /* Homepage 2026 — editorial photography system. CMS modules keep their data and
    structure, while this wrapper makes them feel like one authored composition. */
 .home-editorial {
