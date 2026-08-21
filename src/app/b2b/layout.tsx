@@ -1,166 +1,72 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from 'next';
+import { AERO_SITE } from '@/lib/aeroanaliza/content';
 
-/**
- * B2B Layout — aeroanaliza.pl
- * 
- * Nadpisuje metadataBase z wlasniewski.pl (B2C) na aeroanaliza.pl (B2B).
- * Dzięki temu wszystkie kanoniczne URL-e, OG-images i schema.org
- * generowane w podstronach /b2b/* wskazują na właściwą domenę.
- */
 export const metadata: Metadata = {
-    metadataBase: new URL("https://aeroanaliza.pl"),
-    title: {
-        default: "FOTO-DRON | Usługi Dronem — aeroanaliza.pl",
-        template: "%s | FOTO-DRON aeroanaliza.pl",
-    },
-    description:
-        "Profesjonalne usługi dronem dla biznesu: inspekcje termowizyjne Mavic 3 Thermal, monitoring inwestycji, ortofotomapy. Licencjonowany operator UAVO. Toruń, kujawsko-pomorskie.",
-    keywords: [
-        "inspekcje dronem toruń",
-        "termowizja dronem",
-        "Mavic 3 Thermal",
-        "inspekcja dachu dronem",
-        "analiza paneli fotowoltaicznych dronem",
-        "ortofotomapy dron",
-        "monitoring budowy dron",
-        "timeline budowy dron",
-        "koła łowieckie dron",
-        "operator UAVO kujawsko-pomorskie",
-        "FOTO-DRON Przemysław Właśniewski",
-        "aeroanaliza",
-        "usługi dronem kujawsko-pomorskie",
-    ],
-    authors: [{ name: "Przemysław Właśniewski — FOTO-DRON" }],
-    creator: "Przemysław Właśniewski",
-    publisher: "FOTO-DRON Przemysław Właśniewski",
+    metadataBase: new URL(AERO_SITE.url),
+    title: { default: 'Aero Analiza — termowizja i inspekcje dronem', template: '%s | Aero Analiza' },
+    description: 'Termowizja, inspekcje dachów i fotowoltaiki oraz monitoring inwestycji dronem w województwie kujawsko-pomorskim.',
+    keywords: ['termowizja dronem', 'inspekcja dachu dronem', 'inspekcja fotowoltaiki dronem', 'monitoring inwestycji dronem', 'kujawsko-pomorskie'],
+    applicationName: AERO_SITE.name,
+    authors: [{ name: 'Przemysław Właśniewski' }],
+    creator: 'Przemysław Właśniewski',
+    publisher: AERO_SITE.legalName,
+    manifest: '/aeroanaliza.webmanifest',
+    icons: { icon: '/aeroanaliza-icon.svg', shortcut: '/aeroanaliza-icon.svg', apple: '/aeroanaliza-icon.svg' },
     openGraph: {
-        type: "website",
-        locale: "pl_PL",
-        url: "https://aeroanaliza.pl",
-        siteName: "FOTO-DRON — aeroanaliza.pl",
-        title: "FOTO-DRON | Inspekcje Dronem i Termowizja — aeroanaliza.pl",
-        description:
-            "Specjalistyczne usługi dronem dla firm: inspekcje termowizyjne, monitoring inwestycji, ortofotomapy. Toruń i kujawsko-pomorskie.",
-        images: [
-            {
-                url: "/og-b2b.jpg",
-                width: 1200,
-                height: 630,
-                alt: "FOTO-DRON — Usługi Dronem dla Biznesu",
-            },
-        ],
+        type: 'website',
+        locale: 'pl_PL',
+        url: AERO_SITE.url,
+        siteName: AERO_SITE.name,
+        title: 'Aero Analiza — termowizja i inspekcje dronem',
+        description: 'Termowizja, inspekcje i monitoring inwestycji dronem w województwie kujawsko-pomorskim.',
+        images: [{ url: '/assets/drone/drone-home.webp', alt: 'Dron wykorzystywany do inspekcji Aero Analiza' }],
     },
     twitter: {
-        card: "summary_large_image",
-        title: "FOTO-DRON | Inspekcje Dronem — aeroanaliza.pl",
-        description:
-            "Profesjonalne usługi dronem: termowizja, inspekcje dachów, monitoring budowy. Toruń i okolice.",
-        images: ["/og-b2b.jpg"],
+        card: 'summary_large_image',
+        title: 'Aero Analiza — termowizja i inspekcje dronem',
+        description: 'Termowizja, inspekcje i monitoring inwestycji dronem w województwie kujawsko-pomorskim.',
+        images: ['/assets/drone/drone-home.webp'],
     },
-    robots: {
-        index: true,
-        follow: true,
-        googleBot: {
-            index: true,
-            follow: true,
-            "max-video-preview": -1,
-            "max-image-preview": "large",
-            "max-snippet": -1,
-        },
-    },
-    alternates: {
-        canonical: "https://aeroanaliza.pl",
-    },
-    category: "professional-services",
+    appleWebApp: { capable: true, title: AERO_SITE.name, statusBarStyle: 'black-translucent' },
+    robots: { index: true, follow: true, googleBot: { index: true, follow: true, 'max-video-preview': -1, 'max-image-preview': 'large', 'max-snippet': -1 } },
+    category: 'professional-services',
 };
 
-export default function B2BLayout({
-    children,
-}: {
-    children: React.ReactNode;
-}) {
+export const viewport: Viewport = { themeColor: '#07100f', colorScheme: 'dark' };
+
+export default function AeroLayout({ children }: { children: React.ReactNode }) {
+    const schema = {
+        '@context': 'https://schema.org',
+        '@graph': [
+            {
+                '@type': ['LocalBusiness', 'ProfessionalService'],
+                '@id': `${AERO_SITE.url}/#business`,
+                name: AERO_SITE.name,
+                legalName: AERO_SITE.legalName,
+                url: AERO_SITE.url,
+                email: AERO_SITE.email,
+                telephone: AERO_SITE.phoneHref,
+                logo: `${AERO_SITE.url}/aeroanaliza-icon.svg`,
+                image: `${AERO_SITE.url}/assets/drone/drone-home.webp`,
+                description: 'Termowizja i dokumentacja RGB dachów, instalacji fotowoltaicznych, obiektów oraz postępów inwestycji z użyciem drona DJI Mavic 3 Thermal.',
+                address: { '@type': 'PostalAddress', addressLocality: AERO_SITE.locality, addressRegion: 'kujawsko-pomorskie', addressCountry: 'PL' },
+                areaServed: { '@type': 'AdministrativeArea', name: 'województwo kujawsko-pomorskie' },
+                founder: { '@type': 'Person', name: 'Przemysław Właśniewski' },
+            },
+            {
+                '@type': 'WebSite',
+                '@id': `${AERO_SITE.url}/#website`,
+                url: AERO_SITE.url,
+                name: AERO_SITE.name,
+                inLanguage: 'pl-PL',
+                publisher: { '@id': `${AERO_SITE.url}/#business` },
+            },
+        ],
+    };
+
     return (
         <>
-            {/* B2B Schema.org — ProfessionalService */}
-            <script
-                type="application/ld+json"
-                dangerouslySetInnerHTML={{
-                    __html: JSON.stringify({
-                        "@context": "https://schema.org",
-                        "@type": "ProfessionalService",
-                        name: "FOTO-DRON Przemysław Właśniewski",
-                        alternateName: "aeroanaliza.pl",
-                        url: "https://aeroanaliza.pl",
-                        logo: "https://aeroanaliza.pl/logo-b2b.png",
-                        image: "https://aeroanaliza.pl/og-b2b.jpg",
-                        description:
-                            "Profesjonalne usługi dronem dla przemysłu, rolnictwa i deweloperów. Termowizja Mavic 3 Thermal, inspekcje dachów, ortofotomapy, monitoring inwestycji. Licencjonowany operator UAVO.",
-                        telephone: "+48530788694",
-                        taxID: "8781430365",
-                        address: {
-                            "@type": "PostalAddress",
-                            addressRegion: "Kujawsko-Pomorskie",
-                            addressLocality: "Toruń",
-                            addressCountry: "PL",
-                        },
-                        geo: {
-                            "@type": "GeoCoordinates",
-                            latitude: 53.01379,
-                            longitude: 18.59844,
-                        },
-                        areaServed: {
-                            "@type": "State",
-                            name: "Kujawsko-Pomorskie",
-                        },
-                        hasOfferCatalog: {
-                            "@type": "OfferCatalog",
-                            name: "Usługi Dronem",
-                            itemListElement: [
-                                {
-                                    "@type": "Offer",
-                                    itemOffered: {
-                                        "@type": "Service",
-                                        name: "Inspekcje Termowizyjne",
-                                        description:
-                                            "Wykrywanie mostków cieplnych, awarii paneli PV i wycieków ciepła kamerą Mavic 3 Thermal.",
-                                    },
-                                },
-                                {
-                                    "@type": "Offer",
-                                    itemOffered: {
-                                        "@type": "Service",
-                                        name: "Monitoring Inwestycji",
-                                        description:
-                                            "Regularna dokumentacja postępów budowy z tej samej perspektywy. Raporty dla inwestorów.",
-                                    },
-                                },
-                                {
-                                    "@type": "Offer",
-                                    itemOffered: {
-                                        "@type": "Service",
-                                        name: "Inspekcje Dachów i Infrastruktury",
-                                        description:
-                                            "Bezpieczna ocena stanu technicznego bez konieczności wchodzenia na wysokość.",
-                                    },
-                                },
-                                {
-                                    "@type": "Offer",
-                                    itemOffered: {
-                                        "@type": "Service",
-                                        name: "Ortofotomapy i Rolnictwo Precyzyjne",
-                                        description:
-                                            "Szacowanie szkód łowieckich, analiza stanu upraw, mapowanie terenu.",
-                                    },
-                                },
-                            ],
-                        },
-                        sameAs: [
-                            "https://www.facebook.com/przemyslaw.wlasniewski.fotografia",
-                            "https://www.instagram.com/wlasniewski.pl/",
-                        ],
-                    }),
-                }}
-            />
+            <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema).replace(/</g, '\\u003c') }} />
             {children}
         </>
     );

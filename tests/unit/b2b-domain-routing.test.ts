@@ -16,4 +16,6 @@ test('builds one canonical Aeroanaliza path', () => {
     assert.equal(b2bPublicPath('b2b/termowizja'), '/termowizja');
     assert.equal(b2bPublicPath('termowizja'), '/termowizja');
     assert.equal(LEGACY_B2B_REDIRECTS['/termowizja'], 'https://aeroanaliza.pl/termowizja');
+    assert.equal(LEGACY_B2B_REDIRECTS['/fotowoltaika'], 'https://aeroanaliza.pl/inspekcja-fotowoltaiki-dronem');
+    assert.equal(LEGACY_B2B_REDIRECTS['/inspekcja-dachu-dronem'], 'https://aeroanaliza.pl/inspekcja-dachu-dronem');
 });

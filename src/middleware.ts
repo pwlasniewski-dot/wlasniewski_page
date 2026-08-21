@@ -19,11 +19,35 @@ export const config = {
 export default async function middleware(req: NextRequest) {
     const url = req.nextUrl;
     const hostname = req.headers.get("host") || "";
+    const bareHostname = hostname.split(':')[0].toLowerCase();
+
+    if (bareHostname === 'www.aeroanaliza.pl') {
+        const target = new URL(`https://aeroanaliza.pl${url.pathname}`);
+        target.search = url.search;
+        return NextResponse.redirect(target, 308);
+    }
+
+    if (['b2b.wlasniewski.pl', 'dron.wlasniewski.pl'].includes(bareHostname)) {
+        const legacyPath = url.pathname === '/dron' || url.pathname === '/start'
+            ? '/'
+            : url.pathname.replace(/^\/b2b(?=\/|$)/, '') || '/';
+        const target = new URL(`https://aeroanaliza.pl${legacyPath}`);
+        target.search = url.search;
+        return NextResponse.redirect(target, 308);
+    }
+
+    // These are photography/customer-zone routes. `isB2BContext` intentionally
+    // excludes them, so the host boundary must run before context detection.
+    if (bareHostname === 'aeroanaliza.pl' && ['/galeria', '/konto', '/koszyk', '/strefa-klienta'].some(path => url.pathname.startsWith(path))) {
+        const target = new URL(`https://wlasniewski.pl${url.pathname}`);
+        target.search = url.search;
+        return NextResponse.redirect(target, 308);
+    }
 
     // Wlasniewski.pl is the photography brand. Legacy B2B paths used to be
     // reachable on this domain too, which mixed two unrelated topics in search.
     // Keep their SEO value by permanently moving visitors to the live B2B site.
-    const isPhotographyHost = ['wlasniewski.pl', 'www.wlasniewski.pl'].includes(hostname.split(':')[0].toLowerCase());
+    const isPhotographyHost = ['wlasniewski.pl', 'www.wlasniewski.pl'].includes(bareHostname);
     if (isPhotographyHost) {
         const destination = LEGACY_B2B_REDIRECTS[url.pathname];
         if (destination) {
@@ -46,6 +70,35 @@ export default async function middleware(req: NextRequest) {
     });
 
     if (isB2B) {
+        if (url.pathname === '/b2b' || url.pathname.startsWith('/b2b/')) {
+            const publicPath = url.pathname.slice('/b2b'.length) || '/';
+            const target = new URL('https://aeroanaliza.pl');
+            target.pathname = publicPath;
+            target.search = url.search;
+            return NextResponse.redirect(target, 308);
+        }
+
+        const aeroRedirects: Record<string, string> = {
+            '/dron': '/',
+            '/start': '/',
+            '/kontakt': '/#wycena',
+            '/kontakt-': '/#wycena',
+            '/fotowoltaika': '/inspekcja-fotowoltaiki-dronem',
+            '/inspekcja': '/inspekcja-dachu-dronem',
+            '/inspekcje': '/inspekcja-dachu-dronem',
+        };
+        if (aeroRedirects[url.pathname]) {
+            const target = new URL(`https://aeroanaliza.pl${aeroRedirects[url.pathname]}`);
+            target.search = url.search;
+            return NextResponse.redirect(target, 308);
+        }
+
+        // Root metadata route already switches its content by Host. Let it run
+        // directly; rewriting it to /b2b/robots.txt produced an HTML 404.
+        if (url.pathname === '/robots.txt') {
+            return NextResponse.next();
+        }
+
         // For sitemap.xml, rewrite to /b2b/sitemap.xml
         if (url.pathname === '/sitemap.xml') {
             url.pathname = '/b2b/sitemap.xml';
@@ -56,8 +109,7 @@ export default async function middleware(req: NextRequest) {
         // Prevent double stacking if the path already starts with /b2b 
         // Also skip admin/api routes (they are global/internal)
         // SKIP /galeria routes - they are B2C only
-        if (url.pathname.startsWith('/b2b') ||
-            url.pathname.startsWith('/admin') ||
+        if (url.pathname.startsWith('/admin') ||
             url.pathname.startsWith('/api') ||
             url.pathname.startsWith('/galeria')) {
             return NextResponse.next();

@@ -36,8 +36,12 @@ export const STATIC_PAGE_REGISTRY: PageSource[] = [
   { host: 'wlasniewski.pl', path: '/sklep/albumy', title: 'Albumy', kind: 'static', published: true, hasCta: true },
   { host: 'wlasniewski.pl', path: '/jak-sie-ubrac', title: 'Jak się ubrać', kind: 'static', published: true, hasCta: true },
   { host: 'wlasniewski.pl', path: '/fotograf-torun', title: 'Fotograf Toruń', kind: 'static', published: true, hasCta: true },
-  { host: 'aeroanaliza.pl', path: '/', title: 'Aeroanaliza B2B', kind: 'static', published: true, hasCta: true },
-  { host: 'aeroanaliza.pl', path: '/dron', title: 'Usługi dronowe B2B', kind: 'static', published: true, hasCta: true },
+  { host: 'aeroanaliza.pl', path: '/', title: 'Aero Analiza', kind: 'static', published: true, hasCta: true },
+  { host: 'aeroanaliza.pl', path: '/termowizja', title: 'Termowizja dronem', kind: 'static', published: true, hasCta: true },
+  { host: 'aeroanaliza.pl', path: '/inspekcja-fotowoltaiki-dronem', title: 'Inspekcja fotowoltaiki dronem', kind: 'static', published: true, hasCta: true },
+  { host: 'aeroanaliza.pl', path: '/inspekcja-dachu-dronem', title: 'Inspekcja dachu dronem', kind: 'static', published: true, hasCta: true },
+  { host: 'aeroanaliza.pl', path: '/monitoring', title: 'Monitoring inwestycji dronem', kind: 'static', published: true, hasCta: true },
+  { host: 'aeroanaliza.pl', path: '/kujawsko-pomorskie', title: 'Usługi dronem — kujawsko-pomorskie', kind: 'static', published: true, hasCta: true },
 ];
 
 function plainText(value: string | null | undefined) {

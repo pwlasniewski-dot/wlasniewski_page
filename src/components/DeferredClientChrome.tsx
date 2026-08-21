@@ -8,7 +8,8 @@ const FloatingContact = dynamic(() => import('./FloatingContact'), { ssr: false 
 const SeasonalEffectsWrapper = dynamic(() => import('./effects/SeasonalEffectsWrapper'), { ssr: false });
 const PhotoCubeIntro = dynamic(() => import('./PhotoCubeIntro'), { ssr: false });
 
-export default function DeferredClientChrome() {
+export default function DeferredClientChrome({ disabled = false }: { disabled?: boolean }) {
+    if (disabled) return null;
     return (
         <>
             <UtmTracker />

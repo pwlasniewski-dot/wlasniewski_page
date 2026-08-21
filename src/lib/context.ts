@@ -33,19 +33,15 @@ export function isB2BContext({
     // 2. Check Hostname
     if (hostname) {
         const lowerHost = hostname.toLowerCase();
+        const bareHost = lowerHost.split(':')[0];
 
         // Direct domain match
-        if (B2B_DOMAINS.some(d => lowerHost === d.toLowerCase())) {
-            return true;
-        }
-
-        // Subdomain checks
-        if (lowerHost.includes('b2b') || lowerHost.includes('dron')) {
+        if (B2B_DOMAINS.some(d => bareHost === d.toLowerCase())) {
             return true;
         }
 
         // Local testing variations
-        if (lowerHost.includes('localhost:3001')) {
+        if (lowerHost === 'localhost:3001' || lowerHost === '127.0.0.1:3001') {
             return true;
         }
     }

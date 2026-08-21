@@ -27,6 +27,7 @@ const ALLOWED_EVENTS = new Set([
   'v2_booking_view', 'v2_service_selected', 'v2_package_selected',
   'v2_date_selected', 'v2_time_selected', 'v2_booking_added_to_cart',
   'v2_booking_form_started', 'v2_booking_validation_failed',
+  'v2_aero_inquiry_started', 'v2_aero_inquiry_submitted',
   'v2_checkout_view', 'v2_checkout_submit', 'v2_payu_redirect',
   'v2_service_load_result', 'v2_availability_result', 'v2_checkout_result',
   'v2_client_error', 'v2_performance',

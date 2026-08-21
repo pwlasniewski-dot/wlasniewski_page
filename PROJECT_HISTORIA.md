@@ -1,5 +1,14 @@
 # PROJECT_HISTORIA & VADEMECUM STABILNOŚCI
 
+## 2026-08-21 — przebudowa Aero Analiza pod zapytania techniczne
+
+- Publiczna domena Aero Analiza otrzymała własny shell, nawigację, stopkę, manifest, ikony, metadane i graf encji. Nie montuje konta, koszyka, promocji, galerii ani kontaktu marki fotograficznej.
+- Ograniczono architekturę treści do pięciu intencji sprzedażowych: termowizja, PV, dachy, monitoring i region kujawsko-pomorski. Strony używają bezpiecznych treści startowych, a panel może opublikować je do istniejącego Pages CMS bez utraty par termicznych.
+- Wprowadzono odrębny kontrakt zapytania Aero, zapis leada przed wysyłką e-mail, atrybucję bez PII oraz jedyny adres kontaktowy `pwlasniewski@gmail.com`. Stary formularz `/dron` nie używa już niezgodnego endpointu fotografii.
+- Oba komponenty porównań termicznych nie udają pomiaru live. Natywny range obsługuje klawiaturę, dotyk i czytniki ekranu; CMS rozróżnia parę zarejestrowaną od prezentacji obok siebie.
+- Naprawiono `robots.txt`, wyczyszczono sitemapę, dodano self-canonical i schema `WebSite`, `ProfessionalService`, `WebPage`, `Service`, `BreadcrumbList` i FAQ. Nie dodano nieobsługiwanego przez Google `llms.txt`.
+- Jawne connection stringi usunięto ze skryptów. Dotychczasowe dane produkcyjne wymagają rotacji i kontroli historii Git przed wdrożeniem.
+
 ## 2026-08-09 — Audyt galerii, ofert i Analytics 2.0
 
 - Po poprawkach odbiorowych akceptacja wymaga prawidłowego pakietu, zapisuje wyłącznie kanoniczne dane z oferty i nie może zostać ponowiona przez klienta. Umowa zachowuje również rozbicie pakietów komunijnych.
@@ -2111,7 +2120,7 @@ Business Insights
     - **Email Sending System**:
         - Endpoint `POST /api/admin/marketing/send`
         - Obsługa zmiennych dynamicznych ({{company}}, {{client_name}})
-        - **BCC Verification**: Każdy mail marketingowy wysyła kopię ukrytą (BCC) na `kontakt@wlasniewski.pl`
+        - **BCC Verification**: Historycznie każdy mail marketingowy wysyłał kopię ukrytą (BCC); aktualny jedyny adres właściciela to `pwlasniewski@gmail.com`.
         - **Editing**: Możliwość edycji tematu i treści przed wysyłką (zaciągane z szablonu, ale edytowalne)
     - **Logging**:
         - Zapis akcji do `MarketingAction` (dla statystyk w dashboardzie)

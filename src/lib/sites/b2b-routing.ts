@@ -12,12 +12,17 @@ const B2B_SLUG_PREFIXES = [
 
 export const LEGACY_B2B_REDIRECTS: Readonly<Record<string, string>> = {
     '/b2b': 'https://aeroanaliza.pl/',
-    '/b2b/dron': 'https://aeroanaliza.pl/dron',
+    '/b2b/dron': 'https://aeroanaliza.pl/',
     '/b2b/termowizja': 'https://aeroanaliza.pl/termowizja',
     '/b2b/monitoring': 'https://aeroanaliza.pl/monitoring',
-    '/dron': 'https://aeroanaliza.pl/dron',
+    '/b2b/fotowoltaika': 'https://aeroanaliza.pl/inspekcja-fotowoltaiki-dronem',
+    '/b2b/inspekcje': 'https://aeroanaliza.pl/inspekcja-dachu-dronem',
+    '/dron': 'https://aeroanaliza.pl/',
     '/termowizja': 'https://aeroanaliza.pl/termowizja',
     '/monitoring': 'https://aeroanaliza.pl/monitoring',
+    '/fotowoltaika': 'https://aeroanaliza.pl/inspekcja-fotowoltaiki-dronem',
+    '/inspekcja-fotowoltaiki-dronem': 'https://aeroanaliza.pl/inspekcja-fotowoltaiki-dronem',
+    '/inspekcja-dachu-dronem': 'https://aeroanaliza.pl/inspekcja-dachu-dronem',
 };
 
 export function isB2bCmsPage(page: { slug: string; page_type?: string | null }) {

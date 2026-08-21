@@ -2,7 +2,8 @@
 import { PrismaClient } from '@prisma/client';
 
 async function main() {
-    const url = "postgresql://postgres:zWMWbkFpBt@localhost:5432/test_neon";
+    const url = process.env.LOCAL_DATABASE_URL || "";
+    if (!url) throw new Error('LOCAL_DATABASE_URL is required');
     const prisma = new PrismaClient({
         datasources: {
             db: {

@@ -1,112 +1,40 @@
 import { notFound } from 'next/navigation';
-import prisma from '@/lib/db/prisma';
+import type { Metadata } from 'next';
 import PageRenderer from '@/components/PageRenderer';
-import { Metadata } from 'next';
-import { PageSection } from '@/components/admin/PageBuilder';
+import { AeroStructuredData } from '@/components/aero/AeroStructuredData';
+import { AERO_SITE, applyAeroCmsToDefinition, getAeroPageDefinition, mergeAeroPageSections } from '@/lib/aeroanaliza/content';
+import { loadAeroCmsPage } from '@/lib/aeroanaliza/server';
 
-interface PageProps {
-    params: Promise<{ slug: string }>;
-}
-
-async function getB2BPage(slug: string) {
-    try {
-        const candidateSlugs = Array.from(new Set([
-            slug,
-            `b2b-${slug}`,
-            `b2b/${slug}`,
-        ]));
-
-        // Specifically search for B2B domain pages to avoid clashing with B2C slugs
-        const page = await prisma.page.findFirst({
-            where: {
-                slug: { in: candidateSlugs, mode: 'insensitive' },
-                is_published: true,
-                page_type: 'b2b'
-            },
-            select: {
-                slug: true,
-                title: true,
-                meta_title: true,
-                meta_description: true,
-                meta_keywords: true,
-                hero_image: true,
-                content: true,
-                sections: true
-            }
-        });
-
-        return page;
-    } catch (error) {
-        console.error(`ERROR: Database connection failed for B2B slug [${slug}]:`, error);
-        return null;
-    }
-}
+type PageProps = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
     const { slug } = await params;
-    const page = await getB2BPage(slug);
-
-    if (!page) {
-        return {
-            title: 'Strona nie znaleziona | B2B',
-        };
-    }
-
+    const definition = getAeroPageDefinition(slug);
+    if (!definition) return { title: 'Strona nie istnieje', robots: { index: false, follow: false } };
+    const { page, status } = await loadAeroCmsPage(slug);
+    if (status === 'unpublished') return { title: 'Strona niedostępna', robots: { index: false, follow: false } };
+    const url = `${AERO_SITE.url}/${slug}`;
+    const title = page?.meta_title || definition.title;
+    const description = page?.meta_description || definition.description;
     return {
-        title: page.meta_title || page.title,
-        description: page.meta_description,
-        keywords: page.meta_keywords,
-        alternates: {
-            canonical: `https://aeroanaliza.pl/${slug}`,
-        },
-        openGraph: {
-            title: page.meta_title || page.title,
-            description: page.meta_description || '',
-            type: 'website',
-            url: `https://aeroanaliza.pl/${slug}`,
-            images: page.hero_image ? [page.hero_image] : [],
-        },
+        title, description, keywords: page?.meta_keywords || definition.keywords,
+        alternates: { canonical: url },
+        openGraph: { type: 'website', locale: 'pl_PL', siteName: AERO_SITE.name, url, title, description, images: [{ url: page?.hero_image || '/assets/drone/drone-home.webp', alt: `${definition.serviceName || definition.title} — Aero Analiza` }] },
+        twitter: { card: 'summary_large_image', title, description, images: [page?.hero_image || '/assets/drone/drone-home.webp'] },
     };
 }
 
-export default async function B2BDynamicPage({ params }: PageProps) {
+export default async function AeroServicePage({ params }: PageProps) {
     const { slug } = await params;
-
-    // Security measure: don't allow accessing 'b2b' itself as a slug here 
-    // (it's handled by src/app/b2b/page.tsx)
-    if (slug === 'b2b') notFound();
-
-    const page = await getB2BPage(slug);
-
-    if (!page) {
-        notFound();
-    }
-
-    let sections: PageSection[] = [];
-
-    if (page.sections) {
-        try {
-            sections = JSON.parse(page.sections);
-        } catch (e) {
-            console.error('Failed to parse B2B sections', e);
-        }
-    }
-
-    // Fallback to HTML content if no sections
-    if (sections.length === 0 && page.content) {
-        sections = [
-            {
-                id: 'legacy_content',
-                type: 'rich_text',
-                data: {
-                    content: page.content
-                }
-            }
-        ];
-    }
-
+    const definition = getAeroPageDefinition(slug);
+    if (!definition) notFound();
+    const { page, sections: cmsSections, status } = await loadAeroCmsPage(slug);
+    if (status === 'unpublished') notFound();
+    const sections = mergeAeroPageSections(definition, cmsSections);
+    const effectiveDefinition = applyAeroCmsToDefinition(definition, page, sections);
     return (
-        <main className="min-h-screen bg-neutral-950 text-neutral-200 selection:bg-gold-500 selection:text-black">
+        <main className="min-h-screen bg-[#07100f] text-zinc-200 selection:bg-emerald-300 selection:text-[#07100f]">
+            <AeroStructuredData page={effectiveDefinition} />
             <PageRenderer sections={sections} />
         </main>
     );

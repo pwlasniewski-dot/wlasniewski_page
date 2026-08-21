@@ -25,6 +25,8 @@ export interface SliderSlide {
     videoUrl?: string;
     overlayOpacity?: number;
     textAnimation?: 'fade' | 'slide-up' | 'scale';
+    alignmentStatus?: 'registered' | 'side_by_side_only' | 'pending';
+    objectPosition?: string;
     is_before_after?: boolean;
     before_image?: string;
 }
@@ -47,6 +49,27 @@ export interface MiniGalleryConfig {
     textPosition: 'below' | 'overlay' | 'hover';
     corners: 'square' | 'rounded' | 'pill';
     backgroundColor?: string;
+    mobileColumns?: number;
+    containerWidth?: string;
+    descriptionWidth?: string;
+    descriptionAlign?: 'left' | 'center' | 'right';
+    descriptionPlacement?: string;
+    description?: string;
+}
+
+export interface BannerItem {
+    id: string;
+    type: 'image' | 'video' | 'challenge';
+    src: string;
+    challengePhotos?: string[];
+    title: string;
+    subtitle: string;
+    ctaText: string;
+    ctaLink: string;
+    animation: 'fade' | 'slide-left' | 'slide-right' | 'zoom' | 'rotate';
+    imageSize?: number;
+    contentPosition?: 'left' | 'center' | 'right';
+    imageShape?: 'square' | 'circle';
 }
 
 export interface ThermalHeroSlide {
@@ -64,6 +87,9 @@ export interface ThermalHeroSlide {
     buttonLink?: string;
     buttonStyle?: 'gold' | 'white' | 'transparent';
     textAnimation?: 'fade' | 'slide-up' | 'scale';
+    alignmentStatus?: 'registered' | 'side_by_side_only' | 'pending';
+    objectPosition?: string;
+    objectPositionMobile?: string;
 }
 
 
@@ -87,6 +113,9 @@ export interface ThermalSectionData {
     description?: string;
     labelLeft?: string;
     labelRight?: string;
+    alignmentStatus?: 'registered' | 'side_by_side_only' | 'pending';
+    objectPosition?: string;
+    objectPositionMobile?: string;
 }
 
 export interface StoryGridItem {
@@ -166,14 +195,20 @@ export interface FeatureItem {
 export interface PageSection {
     id: string;
     type: SectionType;
+    label?: string;
+    aeroContentVersion?: 2;
     content?: string;
     image?: string;
+    secondaryImage?: string;
     thermalImage?: string; // For thermal_slider (single)
     thermalSections?: ThermalSectionData[]; // For thermal_slider (multiple)
+    alignmentStatus?: 'registered' | 'side_by_side_only' | 'pending';
+    objectPosition?: string;
+    objectPositionMobile?: string;
     title?: string;
     subtitle?: string;
     description?: string; // For hero (long text)
-    layout?: 'left' | 'right'; // For image_text
+    layout?: 'left' | 'right' | 'bottom-right'; // For image_text and floating controls
     images?: string[]; // For gallery
     tag?: string; // For hero / b2b titles
     buttonText?: string; // For contact/hero
@@ -185,6 +220,10 @@ export interface PageSection {
     certificates?: CertificateItem[]; // For certificates
     featureTitle?: string; // For B2B process box
     featureContent?: string; // For B2B process box
+    secondaryFeatureTitle?: string;
+    secondaryFeatureContent?: string;
+    stepLabel?: string;
+    defaultService?: string;
     b2b_stats?: B2BStat[];
     b2b_logos?: B2BLogo[];
     b2b_process?: B2BProcessStep[];
@@ -282,7 +321,7 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove, openMedia
     onRemove: (id: string) => void;
     onUpdate: (id: string, data: Partial<PageSection>) => void;
     onMove: (id: string, direction: 'up' | 'down') => void;
-    openMediaPicker: (sectionId: string, options: { target: 'single' | 'gallery', context?: 'visual' | 'thermal' | 'before' | 'case_logo' | 'case_video' | 'video' | 'mini_gallery_item' | 'story_cover' | 'chronological', index?: number }) => void;
+    openMediaPicker: (sectionId: string, options: { target: 'single' | 'gallery', context?: 'visual' | 'thermal' | 'before' | 'case_logo' | 'case_video' | 'video' | 'secondary' | 'mini_gallery_item' | 'story_cover' | 'chronological', index?: number }) => void;
 }) {
     const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: section.id });
     const style = { transform: CSS.Transform.toString(transform), transition };
@@ -1209,7 +1248,9 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove, openMedia
                                             thermalImage: '',
                                             description: '',
                                             labelLeft: 'Widok Standardowy',
-                                            labelRight: 'Termowizja'
+                                            labelRight: 'Termowizja',
+                                            alignmentStatus: 'side_by_side_only',
+                                            objectPosition: 'center center'
                                         };
                                         onUpdate(section.id, {
                                             thermalSections: [...(section.thermalSections || []), newSection]
@@ -1311,6 +1352,33 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove, openMedia
                                                 />
                                             </div>
                                             <div>
+                                                <div className="mb-4 grid gap-4 md:grid-cols-3">
+                                                    <label className="text-xs text-zinc-400">Tryb porównania
+                                                        <select value={ts.alignmentStatus || 'side_by_side_only'} onChange={(e) => {
+                                                            const updated = [...(section.thermalSections || [])];
+                                                            updated[tsIndex] = { ...ts, alignmentStatus: e.target.value as ThermalSectionData['alignmentStatus'] };
+                                                            onUpdate(section.id, { thermalSections: updated });
+                                                        }} className="mt-1 w-full rounded border border-zinc-600 bg-zinc-700 px-3 py-2 text-white">
+                                                            <option value="side_by_side_only">Obok siebie — domyślnie</option>
+                                                            <option value="pending">Oczekuje na weryfikację</option>
+                                                            <option value="registered">Suwak — kadry ręcznie zgodne</option>
+                                                        </select>
+                                                    </label>
+                                                    <label className="text-xs text-zinc-400">Wspólny kadr (object-position)
+                                                        <input value={ts.objectPosition || 'center center'} onChange={(e) => {
+                                                            const updated = [...(section.thermalSections || [])];
+                                                            updated[tsIndex] = { ...ts, objectPosition: e.target.value };
+                                                            onUpdate(section.id, { thermalSections: updated });
+                                                        }} className="mt-1 w-full rounded border border-zinc-600 bg-zinc-700 px-3 py-2 text-white" placeholder="center center" />
+                                                    </label>
+                                                    <label className="text-xs text-zinc-400">Kadr mobilny
+                                                        <input value={ts.objectPositionMobile || ts.objectPosition || 'center center'} onChange={(e) => {
+                                                            const updated = [...(section.thermalSections || [])];
+                                                            updated[tsIndex] = { ...ts, objectPositionMobile: e.target.value };
+                                                            onUpdate(section.id, { thermalSections: updated });
+                                                        }} className="mt-1 w-full rounded border border-zinc-600 bg-zinc-700 px-3 py-2 text-white" placeholder="center center" />
+                                                    </label>
+                                                </div>
                                                 <label className="block text-xs text-zinc-500 mb-1">Opis / Podtytuł kategorii...</label>
                                                 <RichTextEditor
                                                     value={ts.description || ''}
@@ -1368,6 +1436,21 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove, openMedia
                                         Wybierz zdjęcie
                                     </button>
                                 </div>
+                            </div>
+                            <div className="mt-4 grid gap-4 md:grid-cols-3">
+                                <label className="text-xs text-zinc-400">Tryb pojedynczej pary
+                                    <select value={section.alignmentStatus || 'side_by_side_only'} onChange={(e) => onUpdate(section.id, { alignmentStatus: e.target.value as PageSection['alignmentStatus'] })} className="mt-1 w-full rounded border border-zinc-700 bg-zinc-800 px-3 py-2 text-white">
+                                        <option value="side_by_side_only">Obok siebie — domyślnie</option>
+                                        <option value="pending">Oczekuje na weryfikację</option>
+                                        <option value="registered">Suwak — kadry ręcznie zgodne</option>
+                                    </select>
+                                </label>
+                                <label className="text-xs text-zinc-400">Wspólny kadr (object-position)
+                                    <input value={section.objectPosition || 'center center'} onChange={(e) => onUpdate(section.id, { objectPosition: e.target.value })} className="mt-1 w-full rounded border border-zinc-700 bg-zinc-800 px-3 py-2 text-white" placeholder="center center" />
+                                </label>
+                                <label className="text-xs text-zinc-400">Kadr mobilny
+                                    <input value={section.objectPositionMobile || section.objectPosition || 'center center'} onChange={(e) => onUpdate(section.id, { objectPositionMobile: e.target.value })} className="mt-1 w-full rounded border border-zinc-700 bg-zinc-800 px-3 py-2 text-white" placeholder="center center" />
+                                </label>
                             </div>
                         </div>
                     </div>
@@ -1528,6 +1611,10 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove, openMedia
                 {/* FEATURES (KAFELKI) */}
                 {section.type === 'features' && (
                     <div className="space-y-6">
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                            <div><label className="block text-xs text-zinc-400 mb-1">Tytuł sekcji</label><input type="text" value={section.title || ''} onChange={e => onUpdate(section.id, { title: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white" /></div>
+                            <div><label className="block text-xs text-zinc-400 mb-1">Opis sekcji</label><input type="text" value={section.subtitle || ''} onChange={e => onUpdate(section.id, { subtitle: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white" /></div>
+                        </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-xs text-zinc-400 mb-1">Układ</label>
@@ -2058,6 +2145,11 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove, openMedia
                                     <input type="text" value={section.featureContent || ''} onChange={e => onUpdate(section.id, { featureContent: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1.5 text-xs text-white" />
                                 </div>
                             </div>
+                            <div className="grid grid-cols-2 gap-3 border-t border-zinc-800 pt-3">
+                                <input type="text" value={section.secondaryFeatureTitle || ''} onChange={e => onUpdate(section.id, { secondaryFeatureTitle: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1.5 text-xs text-white" placeholder="Nagłówek drugiego boksu" />
+                                <input type="text" value={section.secondaryFeatureContent || ''} onChange={e => onUpdate(section.id, { secondaryFeatureContent: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1.5 text-xs text-white" placeholder="Treść drugiego boksu" />
+                            </div>
+                            <input type="text" value={section.stepLabel || ''} onChange={e => onUpdate(section.id, { stepLabel: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1.5 text-xs text-white" placeholder="Etykieta pod każdym krokiem" />
                         </div>
                         <div className="flex items-center justify-between">
                             <h4 className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Proces Współpracy (SLA)</h4>
@@ -2094,7 +2186,7 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove, openMedia
                             <h4 className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Case Studies (Projekty)</h4>
                             <button
                                 onClick={() => {
-                                    const newCase: B2BCaseStudy = { id: Math.random().toString(36).substr(2, 9), title: 'Nowy Case Study', client: 'Klient Inc.', description: 'Opis realizacji...', image: '' };
+                                    const newCase: B2BCaseStudy = { id: Math.random().toString(36).substr(2, 9), title: '', client: '', description: '', image: '' };
                                     onUpdate(section.id, { b2b_cases: [...(section.b2b_cases || []), newCase] });
                                 }}
                                 className="text-xs bg-orange-500/20 text-orange-400 px-2 py-1 rounded border border-orange-500/30 hover:bg-orange-500/30 font-bold"
@@ -2260,6 +2352,11 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove, openMedia
                                     <input type="text" value={section.subtitle || ''} onChange={e => onUpdate(section.id, { subtitle: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white" />
                                 </div>
                             </div>
+                            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                                <input type="text" value={section.defaultService || ''} onChange={e => onUpdate(section.id, { defaultService: e.target.value })} className="bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white" placeholder="Domyślna usługa formularza" />
+                                <input type="text" value={section.featureTitle || ''} onChange={e => onUpdate(section.id, { featureTitle: e.target.value })} className="bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white" placeholder="Pierwsza korzyść" />
+                                <input type="text" value={section.featureContent || ''} onChange={e => onUpdate(section.id, { featureContent: e.target.value })} className="bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white" placeholder="Druga korzyść" />
+                            </div>
                         </div>
                     )
                 }
@@ -2290,7 +2387,10 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove, openMedia
                                             title: 'Tytuł <span class="text-yellow-500">Slajdu</span>',
                                             visualMedia: '',
                                             thermalMedia: '',
-                                            mediaType: 'image'
+                                            mediaType: 'image',
+                                            alignmentStatus: 'side_by_side_only',
+                                            labelLeft: 'Obraz rzeczywisty',
+                                            labelRight: 'Termowizja'
                                         };
                                         onUpdate(section.id, { thermal_hero_slides: [...(section.thermal_hero_slides || []), newSlide] });
                                     }}
@@ -2331,6 +2431,18 @@ function SortableSection({ section, index, onRemove, onUpdate, onMove, openMedia
                                                 <option value="image">Format: Zdjęcie</option>
                                                 <option value="video">Format: Wideo</option>
                                             </select>
+                                            <select value={slide.alignmentStatus || 'side_by_side_only'} onChange={e => { const up = [...section.thermal_hero_slides!]; up[sIndex].alignmentStatus = e.target.value as ThermalHeroSlide['alignmentStatus']; onUpdate(section.id, { thermal_hero_slides: up }); }} className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-1.5 text-xs text-white">
+                                                <option value="side_by_side_only">Obok siebie — para nie jest zarejestrowana</option>
+                                                <option value="registered">Suwak — zgodność kadru sprawdzona</option>
+                                                <option value="pending">Oczekuje na weryfikację</option>
+                                            </select>
+                                            <p className="text-[10px] leading-relaxed text-amber-300/80">Wybierz suwak tylko po ręcznym potwierdzeniu zgodności kadru RGB i termowizji.</p>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <input type="text" value={slide.labelLeft || ''} onChange={e => { const up = [...section.thermal_hero_slides!]; up[sIndex].labelLeft = e.target.value; onUpdate(section.id, { thermal_hero_slides: up }); }} placeholder="Etykieta RGB" className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-1.5 text-[10px] text-white" />
+                                                <input type="text" value={slide.labelRight || ''} onChange={e => { const up = [...section.thermal_hero_slides!]; up[sIndex].labelRight = e.target.value; onUpdate(section.id, { thermal_hero_slides: up }); }} placeholder="Etykieta termowizji" className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-1.5 text-[10px] text-white" />
+                                            </div>
+                                            <input type="text" value={slide.objectPosition || ''} onChange={e => { const up = [...section.thermal_hero_slides!]; up[sIndex].objectPosition = e.target.value; onUpdate(section.id, { thermal_hero_slides: up }); }} placeholder="Wspólny kadr, np. 50% 50%" className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-1.5 text-[10px] text-zinc-300" />
+                                            <input type="text" value={slide.objectPositionMobile || ''} onChange={e => { const up = [...section.thermal_hero_slides!]; up[sIndex].objectPositionMobile = e.target.value; onUpdate(section.id, { thermal_hero_slides: up }); }} placeholder="Kadr mobilny, np. 45% 50%" className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-1.5 text-[10px] text-zinc-300" />
                                             <input type="text" value={slide.title} onChange={e => { const up = [...section.thermal_hero_slides!]; up[sIndex].title = e.target.value; onUpdate(section.id, { thermal_hero_slides: up }); }} placeholder="Tytuł Slajdu (HTML)" className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-1.5 text-xs text-white" />
                                             <input type="text" value={slide.subtitle || ''} onChange={e => { const up = [...section.thermal_hero_slides!]; up[sIndex].subtitle = e.target.value; onUpdate(section.id, { thermal_hero_slides: up }); }} placeholder="Podtytuł" className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-1.5 text-xs text-zinc-400" />
                                             <div className="grid grid-cols-2 gap-2">
@@ -3571,11 +3683,11 @@ export default function PageBuilder({ sections, onChange, pageType }: PageBuilde
     // Global MediaPicker State
     const [showMediaPicker, setShowMediaPicker] = useState(false);
     const [mediaPickerTarget, setMediaPickerTarget] = useState<'single' | 'gallery'>('single');
-    const [mediaPickerContext, setMediaPickerContext] = useState<'visual' | 'thermal' | 'before' | 'case_logo' | 'case_video' | 'video' | 'mini_gallery_item' | 'story_cover' | 'chronological' | 'pc_model' | 'pc_cover' | 'pc_svc_model' | null>(null);
+    const [mediaPickerContext, setMediaPickerContext] = useState<'visual' | 'thermal' | 'before' | 'case_logo' | 'case_video' | 'video' | 'secondary' | 'mini_gallery_item' | 'story_cover' | 'chronological' | 'pc_model' | 'pc_cover' | 'pc_svc_model' | null>(null);
     const [sectionEditIndex, setSectionEditIndex] = useState(-1);
     const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
 
-    const openMediaPicker = (sectionId: string, options: { target: 'single' | 'gallery', context?: 'visual' | 'thermal' | 'before' | 'case_logo' | 'case_video' | 'video' | 'mini_gallery_item' | 'story_cover' | 'chronological' | 'pc_model' | 'pc_cover' | 'pc_svc_model', index?: number }) => {
+    const openMediaPicker = (sectionId: string, options: { target: 'single' | 'gallery', context?: 'visual' | 'thermal' | 'before' | 'case_logo' | 'case_video' | 'video' | 'secondary' | 'mini_gallery_item' | 'story_cover' | 'chronological' | 'pc_model' | 'pc_cover' | 'pc_svc_model', index?: number }) => {
         setActiveSectionId(sectionId);
         setMediaPickerTarget(options.target);
         setMediaPickerContext(options.context || null);
@@ -3759,6 +3871,14 @@ export default function PageBuilder({ sections, onChange, pageType }: PageBuilde
     };
 
     const addSection = (type: SectionType) => {
+        if ((pageType === 'b2b' || pageType === 'dron') && type === 'b2b_hero' && sections.some(section => section.type === 'b2b_hero')) {
+            alert('Strona Aero Analiza może mieć tylko jeden moduł Hero (H1).');
+            return;
+        }
+        if ((pageType === 'b2b' || pageType === 'dron') && type === 'b2b_contact' && sections.some(section => section.type === 'b2b_contact')) {
+            alert('Strona Aero Analiza może mieć tylko jeden formularz wyceny.');
+            return;
+        }
         const newSection: PageSection = {
             id: Math.random().toString(36).substr(2, 9),
             type,
@@ -3767,35 +3887,28 @@ export default function PageBuilder({ sections, onChange, pageType }: PageBuilde
         };
 
         if (type === 'b2b_stats') {
-            newSection.b2b_stats = [
-                { id: Math.random().toString(36).substr(2, 9), value: '15+', label: 'Lat doświadczenia', prefix: '', suffix: '' },
-                { id: Math.random().toString(36).substr(2, 9), value: '500+', label: 'Zrealizowanych projektów', prefix: '', suffix: '' },
-                { id: Math.random().toString(36).substr(2, 9), value: '100%', label: 'Bezpieczeństwa operacji', prefix: '', suffix: '' }
-            ];
+            newSection.b2b_stats = [];
         } else if (type === 'b2b_process') {
-            newSection.title = 'Proces oparty na <span class="text-yellow-500">precyzji</span> i SLA.';
-            newSection.subtitle = 'Standardy Operacyjne';
-            newSection.featureTitle = 'Bezpieczeństwo';
-            newSection.featureContent = 'SORA / LUC';
+            newSection.title = 'Jak przebiega realizacja';
+            newSection.subtitle = 'Zakres uzgadniany przed lotem';
+            newSection.featureTitle = 'Odpowiedzialność operatora';
+            newSection.featureContent = 'Ocena warunków, bezpieczeństwa i ograniczeń przed realizacją.';
             newSection.b2b_process = [
-                { id: Math.random().toString(36).substr(2, 9), title: 'Kontakt i Wycena', description: 'Analizujemy Twoje potrzeby i przygotowujemy dedykowaną ofertę.', stepNumber: '01' },
-                { id: Math.random().toString(36).substr(2, 9), title: 'Realizacja Operacji', description: 'Wykonujemy naloty wg najwyższych standardów bezpieczeństwa.', stepNumber: '02' },
-                { id: Math.random().toString(36).substr(2, 9), title: 'Analiza i Raport', description: 'Przetwarzamy dane i dostarczamy gotowy produkt w 48h.', stepNumber: '03' }
+                { id: Math.random().toString(36).substr(2, 9), title: 'Kwalifikacja', description: 'Ustalamy problem, lokalizację, warunki i oczekiwany rezultat.', stepNumber: '01' },
+                { id: Math.random().toString(36).substr(2, 9), title: 'Rejestracja', description: 'Wykonujemy uzgodnione ujęcia RGB lub termiczne.', stepNumber: '02' },
+                { id: Math.random().toString(36).substr(2, 9), title: 'Przekazanie materiału', description: 'Przekazujemy materiał w zakresie i formacie ustalonym przed realizacją.', stepNumber: '03' }
             ];
         } else if (type === 'b2b_cases') {
             newSection.b2b_cases = [];
         } else if (type === 'b2b_logos') {
             newSection.b2b_logos = [];
         } else if (type === 'b2b_hero') {
-            newSection.title = 'Innowacyjne rozwiązania <span class="text-yellow-500">dla Twojego biznesu</span>';
-            newSection.subtitle = 'Profesjonalne usługi dronem, termowizja i inspekcje techniczne z powietrza.';
-            newSection.tag = 'B2B SOLUTIONS';
-            newSection.buttonText = 'ZAPYTAJ O OFERTĘ';
-            newSection.buttonLink = '#rfq';
-            newSection.videoType = 'youtube';
-            newSection.videoAutoPlay = true;
-            newSection.videoMuted = true;
-            newSection.videoLoop = true;
+            newSection.aeroContentVersion = 2;
+            newSection.title = 'Dane z drona, które pomagają podjąć decyzję';
+            newSection.subtitle = 'Zakres inspekcji dobierany do problemu, obiektu, warunków i oczekiwanego rezultatu.';
+            newSection.tag = 'Aero Analiza • kujawsko-pomorskie';
+            newSection.buttonText = 'Opisz obiekt i odbierz wycenę';
+            newSection.buttonLink = '#wycena';
         } else if (type === 'info_band') {
             newSection.title = 'Wsparcie Twojego <span class="text-yellow-500">biznesu</span>';
             newSection.subtitle = 'KOMPLEKSOWA OBSŁUGA';
@@ -3805,8 +3918,9 @@ export default function PageBuilder({ sections, onChange, pageType }: PageBuilde
                 { id: Math.random().toString(36).substr(2, 9), icon: 'Crosshair', title: 'Precyzyjne Pomiary', description: 'Fotogrametria i modele 3D terenu.' }
             ];
         } else if (type === 'b2b_contact') {
-            newSection.title = 'Zapytaj o <span class="text-yellow-500">ofertę B2B.</span>';
-            newSection.subtitle = 'Nasz doradca techniczny skontaktuje się z Tobą w ciągu 4 godzin roboczych.';
+            newSection.title = 'Opisz obiekt. Otrzymasz zakres i wycenę.';
+            newSection.subtitle = 'Podaj lokalizację, rodzaj obiektu i oczekiwany rezultat. Odpowiedź nastąpi po ocenie wykonalności i warunków lotu.';
+            newSection.defaultService = 'Konsultacja / dobór usługi';
         } else if (type === 'b2b_video') {
             newSection.videoType = 'youtube';
             newSection.sectionLayout = 'full';
@@ -3815,6 +3929,8 @@ export default function PageBuilder({ sections, onChange, pageType }: PageBuilde
             newSection.videoLoop = true;
         } else if (type === 'thermal_hero') {
             newSection.thermal_hero_slides = [];
+        } else if (type === 'thermal_slider') {
+            newSection.alignmentStatus = 'side_by_side_only';
         } else if (type === 'hero_video') {
             newSection.slides = [];
         } else if (type === 'parallax_video') {
@@ -4312,6 +4428,11 @@ export default function PageBuilder({ sections, onChange, pageType }: PageBuilde
     };
 
     const removeSection = (id: string) => {
+        const target = sections.find(section => section.id === id);
+        if ((pageType === 'b2b' || pageType === 'dron') && target && ['b2b_hero', 'b2b_contact'].includes(target.type)) {
+            alert('Hero i formularz wyceny są wymagane na opublikowanej stronie Aero Analiza. Możesz je edytować, ale nie usuwać.');
+            return;
+        }
         onChange(sections.filter(s => s.id !== id));
     };
 
@@ -4349,66 +4470,17 @@ export default function PageBuilder({ sections, onChange, pageType }: PageBuilde
 
             {/* Quick Templates Panel - B2B */}
             {(pageType === 'b2b' || pageType === 'dron') && (
-                <div className="p-6 bg-zinc-900/50 rounded-2xl border border-zinc-800 mb-8 relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                        <Stars size={80} />
-                    </div>
-                    <div className="relative z-10">
-                        <h3 className="text-sm font-bold text-white mb-4 uppercase tracking-[0.2em] flex items-center gap-2">
-                            <Stars size={16} className="text-yellow-500" /> Szybki Start: Szablony Biznesowe
-                        </h3>
-                        <div className="flex flex-wrap gap-3">
-                            <button
-                                onClick={() => applyTemplate('thermal')}
-                                className="px-5 py-3 bg-white/5 hover:bg-yellow-500 hover:text-black text-white text-xs font-bold rounded-xl transition-all border border-white/5 flex items-center gap-2"
-                            >
-                                <Zap size={14} /> Ekspert Termowizji
-                            </button>
-                            <button
-                                onClick={() => applyTemplate('construction')}
-                                className="px-5 py-3 bg-white/5 hover:bg-yellow-500 hover:text-black text-white text-xs font-bold rounded-xl transition-all border border-white/5 flex items-center gap-2"
-                            >
-                                <Building2 size={14} /> Monitoring & Dron
-                            </button>
-                            <button
-                                onClick={() => applyTemplate('google_360')}
-                                className="px-5 py-3 bg-white/5 hover:bg-yellow-500 hover:text-black text-white text-xs font-bold rounded-xl transition-all border border-white/5 flex items-center gap-2"
-                            >
-                                <Camera size={14} /> Wizytówka Google 360
-                            </button>
-                            <button
-                                onClick={() => applyTemplate('building_analysis')}
-                                className="px-5 py-3 bg-white/5 hover:bg-yellow-500 hover:text-black text-white text-xs font-bold rounded-xl transition-all border border-white/5 flex items-center gap-2"
-                            >
-                                <ShieldCheck size={14} /> Analiza Budynków
-                            </button>
-                            <button
-                                onClick={() => applyTemplate('pointcloud_surveying')}
-                                className="px-5 py-3 bg-cyan-500/10 hover:bg-cyan-500 hover:text-white text-cyan-400 text-xs font-bold rounded-xl transition-all border border-cyan-500/20 flex items-center gap-2"
-                            >
-                                <Crosshair size={14} /> Chmura Punktów & Pomiary
-                            </button>
-                            <button
-                                onClick={() => applyTemplate('master_business')}
-                                className="px-5 py-3 bg-blue-500/10 hover:bg-blue-500 hover:text-white text-blue-400 text-xs font-bold rounded-xl transition-all border border-blue-500/20 flex items-center gap-2"
-                            >
-                                <Stars size={14} /> PEŁNA OFERTA (Master)
-                            </button>
-                            <div className="h-10 w-px bg-zinc-800 mx-2 hidden md:block" />
-                            <button
-                                onClick={() => { if (confirm('Na pewno wyczyścić stronę?')) onChange([]); }}
-                                className="px-5 py-3 bg-red-900/20 hover:bg-red-600 text-red-500 hover:text-white text-xs font-bold rounded-xl transition-all border border-red-500/10 flex items-center gap-2"
-                            >
-                                <Trash2 size={14} /> Wyczyść sekcje
-                            </button>
-                        </div>
-                        <p className="mt-4 text-[10px] text-zinc-500 italic">
-                            Wybierz szablon, aby automatycznie wygenerować sprawdzony układ sekcji dla konkretnej branży.
-                        </p>
-                    </div>
+                <div className="mb-8 rounded-2xl border border-emerald-400/20 bg-emerald-400/5 p-6">
+                    <h3 className="flex items-center gap-2 text-sm font-bold uppercase tracking-[0.2em] text-white">
+                        <ShieldCheck size={16} className="text-emerald-300" /> Bezpieczna edycja Aero Analiza
+                    </h3>
+                    <p className="mt-3 max-w-3xl text-sm leading-relaxed text-zinc-400">
+                        Paleta zawiera tylko moduły potrzebne w serwisie technicznym. Publikuj wyłącznie sprawdzone realizacje, parametry, kwalifikacje i terminy. Suwak termiczny włączaj dopiero po ręcznym potwierdzeniu zgodności kadru obu obrazów.
+                    </p>
                 </div>
             )}
 
+            {pageType !== 'b2b' && pageType !== 'dron' && (
             <div className="flex gap-2 flex-wrap">
                 <button onClick={() => addSection('hero_parallax')} className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded text-sm text-white transition-colors">
                     <ImageIcon className="w-4 h-4" /> Zdjęcie Parallax
@@ -4486,69 +4558,35 @@ export default function PageBuilder({ sections, onChange, pageType }: PageBuilde
                 </button>
 
             </div>
+            )}
 
             {/* Moduły B2B Premium - Only for B2B */}
             {(pageType === 'b2b' || pageType === 'dron') && (
                 <div className="flex gap-2 flex-wrap border-t border-zinc-800 pt-4 mt-2">
-                    <span className="w-full text-[10px] font-bold text-zinc-600 uppercase tracking-widest mb-1 ml-1">Moduły B2B Premium</span>
+                    <span className="w-full text-[10px] font-bold text-zinc-600 uppercase tracking-widest mb-1 ml-1">Moduły Aero Analiza</span>
                     <button onClick={() => addSection('b2b_hero')} className="flex items-center gap-2 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/50 rounded text-sm text-zinc-300 transition-colors group">
-                        <Stars className="w-4 h-4 text-yellow-500" /> B2B Hero
+                        <Stars className="w-4 h-4 text-emerald-300" /> Hero usługi
                     </button>
-                    <button onClick={() => addSection('b2b_stats')} className="flex items-center gap-2 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/50 rounded text-sm text-zinc-300 transition-colors group">
-                        <BarChart3 className="w-4 h-4 text-blue-500" /> B2B Stats
+                    <button onClick={() => addSection('features')} className="flex items-center gap-2 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/50 rounded text-sm text-zinc-300 transition-colors group">
+                        <Layout className="w-4 h-4 text-emerald-300" /> Zakres usługi
                     </button>
-                    <button onClick={() => addSection('b2b_logos')} className="flex items-center gap-2 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/50 rounded text-sm text-zinc-300 transition-colors group">
-                        <Award className="w-4 h-4 text-purple-500" /> B2B Logos
+                    <button onClick={() => addSection('image_text')} className="flex items-center gap-2 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/50 rounded text-sm text-zinc-300 transition-colors group">
+                        <ImageIcon className="w-4 h-4 text-emerald-300" /> Tekst + zdjęcie
                     </button>
                     <button onClick={() => addSection('b2b_process')} className="flex items-center gap-2 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/50 rounded text-sm text-zinc-300 transition-colors group">
-                        <Workflow className="w-4 h-4 text-green-500" /> B2B Process
+                        <Workflow className="w-4 h-4 text-emerald-300" /> Proces realizacji
                     </button>
                     <button onClick={() => addSection('b2b_cases')} className="flex items-center gap-2 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/50 rounded text-sm text-zinc-300 transition-colors group">
-                        <Briefcase className="w-4 h-4 text-orange-500" /> B2B Cases
+                        <Briefcase className="w-4 h-4 text-emerald-300" /> Zweryfikowane realizacje
                     </button>
                     <button onClick={() => addSection('b2b_contact')} className="flex items-center gap-2 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/50 rounded text-sm text-zinc-300 transition-colors group">
-                        <FileText className="w-4 h-4 text-red-500" /> B2B RFQ
-                    </button>
-                    <button onClick={() => addSection('info_band')} className="flex items-center gap-2 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/50 rounded text-sm text-zinc-300 transition-colors group">
-                        <Layout className="w-4 h-4 text-blue-400" /> InfoBand (White)
-                    </button>
-                    <button onClick={() => addSection('b2b_video')} className="flex items-center gap-2 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/50 rounded text-sm text-zinc-300 transition-colors group">
-                        <Video className="w-4 h-4 text-orange-400" /> B2B Video
+                        <FileText className="w-4 h-4 text-emerald-300" /> Formularz wyceny
                     </button>
                     <button onClick={() => addSection('thermal_hero')} className="flex items-center gap-2 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/50 rounded text-sm text-zinc-300 transition-colors group">
-                        <Thermometer className="w-4 h-4 text-red-500" /> Thermal Hero
-                    </button>
-                    <button onClick={() => addSection('hero_video')} className="flex items-center gap-2 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/50 rounded text-sm text-zinc-300 transition-colors group">
-                        <Video className="w-4 h-4 text-blue-500" /> Hero Video Slider
-                    </button>
-                    <button onClick={() => addSection('parallax_video')} className="flex items-center gap-2 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/50 rounded text-sm text-zinc-300 transition-colors group">
-                        <MoveUp className="w-4 h-4 text-purple-500" /> Parallax Video
-                    </button>
-                    <button onClick={() => addSection('thermal_report')} className="flex items-center gap-2 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/50 rounded text-sm text-zinc-300 transition-colors group">
-                        <FileSearch className="w-4 h-4 text-yellow-500" /> Thermal Reports
+                        <Thermometer className="w-4 h-4 text-orange-400" /> Pary RGB / termowizja
                     </button>
                     <button onClick={() => addSection('thermal_slider')} className="flex items-center gap-2 px-4 py-2 bg-gold-600/10 hover:bg-gold-600/20 border border-gold-500/20 rounded text-sm text-gold-400 transition-colors">
-                        <Layout className="w-4 h-4" /> Thermal Slider
-                    </button>
-                    <button onClick={() => addSection('mini_gallery')} className="flex items-center gap-2 px-4 py-2 bg-pink-600/10 hover:bg-pink-600/20 border border-pink-500/20 rounded text-sm text-pink-400 transition-colors">
-                        <Layout className="w-4 h-4" /> Mini Gallery (Pro)
-                    </button>
-                    <div className="w-full h-px bg-cyan-900/30 my-1" />
-                    <span className="w-full text-[10px] font-bold text-cyan-700 uppercase tracking-widest mb-1 ml-1">Moduły Chmura Punktów / Pomiary</span>
-                    <button onClick={() => addSection('pointcloud_hero')} className="flex items-center gap-2 px-4 py-2 bg-cyan-900/20 hover:bg-cyan-800/40 border border-cyan-700/30 rounded text-sm text-cyan-400 transition-colors">
-                        <Crosshair className="w-4 h-4" /> PC Hero
-                    </button>
-                    <button onClick={() => addSection('pointcloud_viewer')} className="flex items-center gap-2 px-4 py-2 bg-cyan-900/20 hover:bg-cyan-800/40 border border-cyan-700/30 rounded text-sm text-cyan-400 transition-colors">
-                        <Map className="w-4 h-4" /> 3D Viewer
-                    </button>
-                    <button onClick={() => addSection('pointcloud_services')} className="flex items-center gap-2 px-4 py-2 bg-cyan-900/20 hover:bg-cyan-800/40 border border-cyan-700/30 rounded text-sm text-cyan-400 transition-colors">
-                        <HardHat className="w-4 h-4" /> Usługi PC
-                    </button>
-                    <button onClick={() => addSection('pointcloud_showcase')} className="flex items-center gap-2 px-4 py-2 bg-cyan-900/20 hover:bg-cyan-800/40 border border-cyan-700/30 rounded text-sm text-cyan-400 transition-colors">
-                        <Camera className="w-4 h-4" /> Showcase PC
-                    </button>
-                    <button onClick={() => addSection('pointcloud_tech')} className="flex items-center gap-2 px-4 py-2 bg-cyan-900/20 hover:bg-cyan-800/40 border border-cyan-700/30 rounded text-sm text-cyan-400 transition-colors">
-                        <Cpu className="w-4 h-4" /> Technologia PC
+                        <Layout className="w-4 h-4" /> Pojedyncza para termiczna
                     </button>
                 </div>
             )}

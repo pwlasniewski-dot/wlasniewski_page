@@ -64,11 +64,11 @@ function countMedia(raw: string | null | undefined) {
 }
 
 function isBookingStart(event: Event) {
-  return ['v2_booking_start', 'v2_booking_started', 'v2_booking_form_started', 'v2_drone_booking_started'].includes(event.event_type);
+  return ['v2_booking_start', 'v2_booking_started', 'v2_booking_form_started', 'v2_drone_booking_started', 'v2_aero_inquiry_started'].includes(event.event_type);
 }
 
 function isClientConversion(event: Event) {
-  return ['v2_booking_created', 'v2_booking_complete', 'v2_booking_completed', 'v2_payment_success', 'v2_drone_booking_submitted'].includes(event.event_type);
+  return ['v2_booking_created', 'v2_booking_complete', 'v2_booking_completed', 'v2_payment_success', 'v2_drone_booking_submitted', 'v2_aero_inquiry_submitted'].includes(event.event_type);
 }
 
 function pct(current: number, previous: number) {
@@ -129,7 +129,7 @@ export async function GET(request: NextRequest) {
     const baselineCurrentStart = new Date(baselineNow.getTime() - 28 * 86_400_000);
     const baselinePreviousStart = new Date(baselineNow.getTime() - 56 * 86_400_000);
     const unavailableSources: string[] = [];
-    const [currentRaw, previousRaw, firstRaw, baselineRaw, cmsPages, blogPosts, portfolios, canonicalBookings, ingestRaw, gsc] = await Promise.all([
+    const [currentRaw, previousRaw, firstRaw, baselineRaw, cmsPages, blogPosts, portfolios, canonicalBookings, canonicalAeroInquiries, ingestRaw, gsc] = await Promise.all([
       fetchDashboardSource('analytics-current', () => prisma.analyticsEvent.findMany({ where: { event_type: { startsWith: 'v2_' }, created_at: { gte: start, lt: end } }, orderBy: { created_at: 'asc' } }), [], unavailableSources),
       fetchDashboardSource('analytics-previous', () => prisma.analyticsEvent.findMany({ where: { event_type: { startsWith: 'v2_' }, created_at: { gte: previousStart, lt: previousEnd } }, orderBy: { created_at: 'asc' } }), [], unavailableSources),
       fetchDashboardSource('analytics-first-seen', () => prisma.$queryRaw<FirstPageRow[]>(Prisma.sql`
@@ -144,6 +144,7 @@ export async function GET(request: NextRequest) {
       fetchDashboardSource('blog-posts', () => prisma.blogPost.findMany({ select: { slug: true, title: true, content: true, meta_title: true, meta_description: true, status: true, published_at: true, featured_image_id: true, updated_at: true } }), [], unavailableSources),
       fetchDashboardSource('portfolio', () => prisma.portfolioSession.findMany({ select: { slug: true, category: true, title: true, description: true, meta_title: true, meta_description: true, is_published: true, cover_image_id: true, media_ids: true, updated_at: true } }), [], unavailableSources),
       fetchDashboardSource('bookings', () => prisma.booking.findMany({ where: { created_at: { gte: start, lt: end } }, select: { id: true, created_at: true, price: true, status: true } }), [], unavailableSources),
+      fetchDashboardSource('aero-inquiries', () => prisma.inquiry.findMany({ where: { created_at: { gte: start, lt: end }, source: { startsWith: 'aeroanaliza:' } }, select: { id: true, created_at: true } }), [], unavailableSources),
       fetchIngestMetrics(start, end),
       fetchGscComparison({ start, end, previousStart, previousEnd, now, calendarRanges: startDateParam && endDateParam && previousCalendar ? { current: { startDate: startDateParam, endDate: endDateParam }, previous: previousCalendar } : undefined }),
     ]);
@@ -160,6 +161,14 @@ export async function GET(request: NextRequest) {
     const ctaSessions = new Set(events.filter(isSemanticCta).map(event => event.session_id)).size;
     const bookingStartSessions = new Set(events.filter(isBookingStart).map(event => event.session_id)).size;
     const conversionSessions = new Set(events.filter(isClientConversion).map(event => event.session_id)).size;
+    const aeroEvents = events.filter(event => safeAnalyticsSiteHost(event.metadata.site_host) === 'aeroanaliza.pl');
+    const aeroSessionIds = new Set(aeroEvents.map(event => event.session_id));
+    const aeroSessions = new Map<string, Event[]>();
+    for (const event of aeroEvents) aeroSessions.set(event.session_id, [...(aeroSessions.get(event.session_id) || []), event]);
+    const aeroEngagedSessions = Array.from(aeroSessions.values()).filter(items => items.some(event => event.event_type === 'v2_engagement' && Number(event.metadata.active_ms || 0) >= 10_000)).length;
+    const aeroCtaSessions = new Set(aeroEvents.filter(isSemanticCta).map(event => event.session_id)).size;
+    const aeroInquiryStarts = new Set(aeroEvents.filter(event => event.event_type === 'v2_aero_inquiry_started').map(event => event.session_id)).size;
+    const aeroInquirySubmissions = new Set(aeroEvents.filter(event => event.event_type === 'v2_aero_inquiry_submitted').map(event => event.session_id)).size;
     const diagnostics = diagnoseFunnel(events);
     const previousSessions = new Set(previousEvents.map(event => event.session_id)).size;
     const previousUsers = new Set(previousEvents.map(event => event.user_id)).size;
@@ -385,6 +394,26 @@ export async function GET(request: NextRequest) {
         analytics: { status: events.length ? 'connected' : 'no_data', events: events.length, lastEventAt: events.at(-1)?.created_at.toISOString() || null, unknownHostSessions: unknownHostSessions.size, hostNote: 'Starsze zdarzenia bez serwerowego site_host pozostają unknown i nie są przypisywane do domeny.' },
         gsc: { status: gsc.status, comparisonStatus: gsc.comparisonStatus, checkedAt: gsc.checkedAt, latestCompleteDate: gsc.latestCompleteDate, incompleteDays: gsc.incompleteDays, sites: gsc.sites, message: gsc.message },
         finance: { status: 'connected_unattributed', canonicalBookings: canonicalBookings.length, note: 'Suma kanoniczna jest wiarygodna, ale bezpieczne przypisanie do podstrony nie jest obecnie możliwe.' },
+        aeroSales: { status: 'connected_unattributed', canonicalInquiries: canonicalAeroInquiries.length, note: 'Zapytania Aero są liczone z bazy niezależnie od zgody analitycznej. Nie są przypisywane do sesji.' },
+      },
+      aero: {
+        overview: {
+          sessions: aeroSessionIds.size,
+          pageViews: aeroEvents.filter(event => event.event_type === 'v2_page_view').length,
+          engagedSessions: aeroEngagedSessions,
+          ctaSessions: aeroCtaSessions,
+          inquiryStartSessions: aeroInquiryStarts,
+          clientInquirySubmissions: aeroInquirySubmissions,
+          canonicalInquiries: canonicalAeroInquiries.length,
+        },
+        funnel: [
+          { key: 'aero_sessions', label: 'Sesje Aero', value: aeroSessionIds.size },
+          { key: 'aero_engaged', label: 'Zaangażowane', value: aeroEngagedSessions },
+          { key: 'aero_cta', label: 'Kliknięcia CTA', value: aeroCtaSessions },
+          { key: 'aero_inquiry_start', label: 'Start formularza', value: aeroInquiryStarts },
+          { key: 'aero_client_submit', label: 'Wysłanie klienta', value: aeroInquirySubmissions, note: 'Sygnał po zgodzie analitycznej.' },
+          { key: 'aero_canonical', label: 'Zapytania zapisane', value: canonicalAeroInquiries.length, note: 'Kanoniczna liczba z bazy, także bez zgody analitycznej.' },
+        ],
       },
       overview: {
         users: userIds.size, sessions: sessionIds.size, pageViews, engagedSessions, ctaSessions,
@@ -423,7 +452,7 @@ export async function GET(request: NextRequest) {
         siteHost: safeAnalyticsSiteHost(items.find(event => event.event_type === 'v2_page_view')?.metadata.site_host),
         pageViews: items.filter(event => event.event_type === 'v2_page_view').length,
         bookingStarted: items.some(isBookingStart), clientConversion: items.some(isClientConversion),
-        path: items.filter(event => ['v2_page_view', 'v2_click', 'v2_booking_start', 'v2_booking_form_started', 'v2_booking_created', 'v2_payment_success', 'v2_drone_booking_started', 'v2_drone_booking_submitted'].includes(event.event_type)).map(event => ({ at: event.created_at, event: event.event_type.replace(/^v2_/, ''), page: normalizePath(event.page_url) })).slice(0, 80),
+        path: items.filter(event => ['v2_page_view', 'v2_click', 'v2_booking_start', 'v2_booking_form_started', 'v2_booking_created', 'v2_payment_success', 'v2_drone_booking_started', 'v2_drone_booking_submitted', 'v2_aero_inquiry_started', 'v2_aero_inquiry_submitted'].includes(event.event_type)).map(event => ({ at: event.created_at, event: event.event_type.replace(/^v2_/, ''), page: normalizePath(event.page_url) })).slice(0, 80),
       })),
       dataQuality: { syntheticValues: false, unavailableSources: Array.from(new Set(unavailableSources)), privacy: 'Zapytania GSC są dostępne wyłącznie w chronionym panelu administratora; Google może pomijać rzadkie zapytania.', gscFreshness: gsc.message },
     });

@@ -94,21 +94,6 @@ type NarrativeTextSection = EditorSection;
 type FeaturedCarouselSection = EditorSection;
 type PhotoCube3DSection = EditorSection;
 
-interface BannerItem {
-    id: string;
-    type: 'image' | 'video' | 'challenge';
-    src: string;
-    challengePhotos?: string[];
-    title: string;
-    subtitle: string;
-    ctaText: string;
-    ctaLink: string;
-    animation: 'fade' | 'slide-left' | 'slide-right' | 'zoom' | 'rotate';
-    imageSize?: number;
-    contentPosition?: 'left' | 'center' | 'right';
-    imageShape?: 'square' | 'circle';
-}
-
 type HeadingLevel = 'H1' | 'H2' | 'H3';
 
 type HeadingAuditRow = {

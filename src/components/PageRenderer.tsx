@@ -457,6 +457,9 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                             sections={data.thermalSections}
                                             title={data.showCategoryTitle ? data.title : undefined}
                                             switchInterval={data.switchInterval}
+                                            alignmentStatus={data.alignmentStatus}
+                                            objectPosition={data.objectPosition}
+                                            objectPositionMobile={data.objectPositionMobile}
                                         />
                                     </div>
                                     {data.content && (
@@ -551,12 +554,16 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                         <div className="grid md:grid-cols-2 gap-8">
                                             {data.items.map((item: any) => {
                                                 const IconComp = iconMap[item.icon] || Zap;
-                                                return (
-                                                    <div key={item.id} className="bg-zinc-900/50 rounded-2xl border border-zinc-800 hover:border-gold-500/30 transition-colors p-8">
-                                                        <IconComp className="w-8 h-8 text-gold-500 mb-4" />
-                                                        <h3 className="text-xl font-bold text-white mb-3">{item.title}</h3>
-                                                        <p className="text-zinc-400 leading-relaxed">{item.text}</p>
-                                                    </div>
+                                                const card = <>
+                                                    <IconComp className="w-8 h-8 text-gold-500 mb-4" />
+                                                    <h3 className="text-xl font-bold text-white mb-3">{item.title}</h3>
+                                                    <p className="text-zinc-400 leading-relaxed">{item.text}</p>
+                                                    {item.href && <span className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-emerald-300">Sprawdź zakres <ArrowRight size={16} /></span>}
+                                                </>;
+                                                return item.href ? (
+                                                    <Link key={item.id} href={item.href} className="block bg-zinc-900/50 rounded-2xl border border-zinc-800 hover:border-emerald-300/40 transition-colors p-8 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-300">{card}</Link>
+                                                ) : (
+                                                    <div key={item.id} className="bg-zinc-900/50 rounded-2xl border border-zinc-800 hover:border-emerald-300/30 transition-colors p-8">{card}</div>
                                                 );
                                             })}
                                         </div>
@@ -567,10 +574,9 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
 
                         return (
                             <section key={section.id} className="py-20 px-6 bg-black">
-                                <div className={`max-w-6xl mx-auto ${isCentered
-                                    ? 'flex flex-wrap justify-center gap-8'
-                                    : 'grid md:grid-cols-3 gap-8'
-                                    }`}>
+                                <div className="max-w-6xl mx-auto">
+                                    {(data.title || data.subtitle) && <div className="mb-12 text-center">{data.title && <h2 className="text-3xl md:text-5xl font-display font-bold text-white mb-4">{data.title}</h2>}{data.subtitle && <p className="mx-auto max-w-2xl text-zinc-400">{data.subtitle}</p>}</div>}
+                                    <div className={`${isCentered ? 'flex flex-wrap justify-center gap-8' : 'grid md:grid-cols-3 gap-8'}`}>
                                     {data.features?.map((feature: any, index: number) => (
                                         feature.enabled && (
                                             <div key={index}
@@ -603,6 +609,7 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                             </div>
                                         )
                                     ))}
+                                    </div>
                                 </div>
                             </section>
                         );
@@ -859,11 +866,11 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                             <Zap size={12} className="fill-yellow-500/20" /> {data.tag}
                                         </motion.div>
                                     )}
-                                    <h2 className="text-5xl md:text-7xl font-bold text-white mb-8 leading-[1.1] tracking-tight" dangerouslySetInnerHTML={{ __html: data.title || '' }} />
+                                    <h1 className="text-5xl md:text-7xl font-bold text-white mb-8 leading-[1.1] tracking-tight" dangerouslySetInnerHTML={{ __html: data.title || '' }} />
                                     <p className="text-zinc-400 text-lg md:text-xl mb-12 max-w-2xl mx-auto leading-relaxed">{data.subtitle}</p>
                                     {data.buttonText && (
                                         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 }}>
-                                            <Link href={data.buttonLink || '#kontakt'} className="inline-flex items-center gap-2 bg-white text-black font-bold px-10 py-5 rounded-full hover:bg-yellow-500 transition-all group hover:scale-105 active:scale-95">
+                                            <Link href={data.buttonLink || '#kontakt'} data-analytics="aero-cta-hero" className="inline-flex items-center gap-2 bg-white text-black font-bold px-10 py-5 rounded-full hover:bg-yellow-500 transition-all group hover:scale-105 active:scale-95">
                                                 {data.buttonText}
                                                 <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
                                             </Link>
@@ -931,15 +938,15 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                                 whileInView={{ opacity: 1, x: 0 }}
                                                 className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] font-black uppercase tracking-[0.3em] mb-8"
                                             >
-                                                <Workflow size={12} className="animate-spin-slow" /> {data.subtitle || 'Ecosystem Operacyjny'}
+                                                <Workflow size={12} className="animate-spin-slow" /> {data.subtitle || 'Zakres realizacji'}
                                             </motion.div>
 
                                             <h2 className="text-5xl md:text-7xl font-bold text-white mb-10 leading-[1.05] tracking-tight"
-                                                dangerouslySetInnerHTML={{ __html: data.title || 'Inżynieria procesowa <span class="text-yellow-500">bez kompromisów.</span>' }}
+                                                dangerouslySetInnerHTML={{ __html: data.title || 'Jak przebiega <span class="text-yellow-500">współpraca.</span>' }}
                                             />
 
                                             <p className="text-zinc-400 text-lg mb-12 max-w-lg leading-relaxed">
-                                                {data.description || 'Dostarczamy dane najwyższej jakości dzięki zdefiniowanym protokołom operacyjnym i rygorystycznym standardom bezpieczeństwa.'}
+                                                {data.description || 'Kolejne kroki, zakres pomiaru i ograniczenia są ustalane przed lotem.'}
                                             </p>
 
                                             <div className="grid grid-cols-2 gap-8">
@@ -949,8 +956,8 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                                 >
                                                     <div className="absolute inset-0 bg-yellow-500/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-[32px]" />
                                                     <ShieldCheck className="text-yellow-500 mb-6" size={32} />
-                                                    <p className="text-white font-black text-xs uppercase tracking-widest mb-2">{data.featureTitle || 'Standardy LUC'}</p>
-                                                    <p className="text-[10px] text-zinc-500 font-bold tracking-tight uppercase">{data.featureContent || 'Pełna zgodność z EASA'}</p>
+                                                    <p className="text-white font-black text-xs uppercase tracking-widest mb-2">{data.featureTitle || 'Ocena wykonalności'}</p>
+                                                    <p className="text-[10px] text-zinc-500 font-bold tracking-tight uppercase">{data.featureContent || 'Warunki i ograniczenia ustalone przed lotem'}</p>
                                                 </motion.div>
 
                                                 <motion.div
@@ -959,8 +966,8 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                                 >
                                                     <div className="absolute inset-0 bg-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-[32px]" />
                                                     <Zap className="text-blue-400 mb-6" size={32} />
-                                                    <p className="text-white font-black text-xs uppercase tracking-widest mb-2">Czas Reakcji</p>
-                                                    <p className="text-[10px] text-zinc-500 font-bold tracking-tight uppercase">SLA 24h / 48h</p>
+                                                    <p className="text-white font-black text-xs uppercase tracking-widest mb-2">{data.secondaryFeatureTitle || 'Czytelny zakres'}</p>
+                                                    <p className="text-[10px] text-zinc-500 font-bold tracking-tight uppercase">{data.secondaryFeatureContent || 'Ustalone dane i format przekazania'}</p>
                                                 </motion.div>
                                             </div>
                                         </div>
@@ -1008,7 +1015,7 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                                             <div className="mt-8 flex items-center gap-4">
                                                                 <div className="h-px w-8 bg-zinc-800" />
                                                                 <span className="text-[9px] font-black text-zinc-600 uppercase tracking-widest group-hover:text-zinc-400 transition-colors">
-                                                                    Verified Operation
+                                                                    {data.stepLabel || 'Uzgodniony etap realizacji'}
                                                                 </span>
                                                             </div>
                                                         </div>
@@ -1351,7 +1358,7 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
 
                     case 'b2b_contact':
                         return (
-                            <section key={section.id} id="rfq" className="py-24 md:py-32 px-4 md:px-6">
+                            <section key={section.id} id="wycena" className="scroll-mt-24 py-24 md:py-32 px-4 md:px-6">
                                 <div className="max-w-[1400px] mx-auto">
                                     <div className="bg-zinc-900 border border-white/5 rounded-3xl md:rounded-[40px] overflow-hidden shadow-2xl">
                                         <div className="flex flex-col lg:flex-row">
@@ -1359,13 +1366,13 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                             <div className="lg:w-1/3 p-8 md:p-12 lg:p-16 bg-zinc-800/50 border-b lg:border-b-0 lg:border-r border-white/5">
                                                 <h2
                                                     className="text-5xl md:text-7xl font-bold text-white mb-8 leading-tight"
-                                                    dangerouslySetInnerHTML={{ __html: section.title || 'Zapytaj o <span class="text-yellow-500">ofertę B2B.</span>' }}
+                                                    dangerouslySetInnerHTML={{ __html: data.title || section.title || 'Opisz obiekt. Otrzymasz zakres i wycenę.' }}
                                                 />
                                                 <p className="text-zinc-400 text-lg mb-12">
-                                                    {section.subtitle || 'Nasz doradca techniczny skontaktuje się z Tobą w ciągu 4 godzin roboczych.'}
+                                                    {data.subtitle || section.subtitle || 'Podaj najważniejsze informacje o obiekcie i oczekiwanym rezultacie.'}
                                                 </p>
                                                 <div className="space-y-4">
-                                                    {['Bezpośrednie wsparcie inżyniera', 'Darmowa analiza wykonalności'].map((item, i) => (
+                                                    {[data.featureTitle || 'Bezpośredni kontakt z operatorem', data.featureContent || 'Ocena wykonalności przed potwierdzeniem terminu'].map((item, i) => (
                                                         <div key={i} className="flex items-center gap-4 text-white font-medium">
                                                             <CheckCircle2 className="text-yellow-500" size={20} /> {item}
                                                         </div>
@@ -1373,7 +1380,7 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
                                                 </div>
                                             </div>
                                             <div className="relative z-10 w-full">
-                                                <B2BContactForm />
+                                                <B2BContactForm defaultService={data.defaultService} />
                                             </div>
                                         </div>
                                     </div>
@@ -1782,4 +1789,3 @@ export default function PageRenderer({ sections }: { sections: PageSection[] }) 
         </div >
     );
 }
-

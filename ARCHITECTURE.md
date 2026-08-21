@@ -2,6 +2,15 @@
 
 Ten dokument stanowi techniczny blueprint platformy fotograficznej wlasniewski.pl. Jest on przeznaczony dla senior deweloperów i architektów systemowych, opisując strukturę, wzorce projektowe oraz krytyczne protokoły bezpieczeństwa.
 
+## Aktualizacja 2026-08-21 — izolowana warstwa Aero Analiza
+
+- `middleware.ts` kanonizuje `www.aeroanaliza.pl`, przepuszcza hostowy `/robots.txt`, przepisuje sitemapę do allowlisty Aero i przekierowuje B2C oraz historyczne adresy bez renderowania duplikatów.
+- `AppShell` ma wczesną gałąź Aero bez `AuthProvider`, `CartProvider`, `DeferredClientChrome`, service workera i UI fotografii. Wspólna aplikacja pozostaje mechanizmem wdrożenia, ale publiczna marka, ścieżki i encja SEO są rozdzielone.
+- `src/lib/aeroanaliza/content.ts` definiuje wersjonowane, bezpieczne wartości startowe i kontrakt stron. `loadAeroCmsPage` pobiera tylko opublikowane `page_type=b2b`; wersja CMS v2 ma pierwszeństwo, a ze starej treści wolno odziedziczyć wyłącznie parę termiczną.
+- Chroniony endpoint `/api/admin/aeroanaliza/publish-v2` pokazuje plan, tworzy brakujące strony i konwertuje stare rekordy wyłącznie po jawnym potwierdzeniu oraz zapisaniu pełnego snapshotu. Rekordy v2 są pomijane, więc migrator nie nadpisuje późniejszych zmian administratora.
+- `/api/aeroanaliza/inquiries` ma walidację Zod, honeypot, kontrolę Origin i współdzielony rate limit; zapisuje `Inquiry`, a następnie próbuje wysłać powiadomienie wyłącznie na adres z `AERO_SITE`. Addytywna migracja `external_id` zapewnia idempotencję, a fallback kompatybilności chroni lead podczas kontrolowanego rollout'u migracji.
+- Skrypty bazodanowe nie mają wbudowanych URL-i. Produkcja używa `DATABASE_URL`, lokalne operacje `LOCAL_DATABASE_URL`; skrypty kończą pracę przed połączeniem, jeśli zmienna nie istnieje.
+
 ## Aktualizacja 2026-08-09 — granice bezpieczeństwa galerii i Analytics V2
 
 - `canonicalizeAcceptedOfferSelection` tworzy kanoniczny snapshot akceptacji i odrzuca brak/zmianę typu pakietu. `galleryTermsFromAcceptedOffer` jest jedyną drogą dziedziczenia warunków do `ClientGallery`.

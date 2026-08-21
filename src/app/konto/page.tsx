@@ -1339,7 +1339,7 @@ export default function AccountPage() {
                             Dostęp do panelu uczestnika, materiałów edukacyjnych i przesyłania prac otrzymasz po zapisie i opłaceniu zaliczki.
                         </p>
                         <p className="text-zinc-500 text-xs mt-3">Skontaktuj się ze mną żeby otrzymać ofertę warsztatów dopasowanych do Ciebie.</p>
-                        <a href="mailto:kontakt@wlasniewski.pl" className="inline-block mt-4 bg-gradient-to-r from-rose-500 to-amber-500 hover:from-rose-600 hover:to-amber-600 text-white px-5 py-2 rounded-lg font-bold text-sm">
+                        <a href="mailto:pwlasniewski@gmail.com" className="inline-block mt-4 bg-gradient-to-r from-rose-500 to-amber-500 hover:from-rose-600 hover:to-amber-600 text-white px-5 py-2 rounded-lg font-bold text-sm">
                             Napisz do mnie
                         </a>
                     </div>

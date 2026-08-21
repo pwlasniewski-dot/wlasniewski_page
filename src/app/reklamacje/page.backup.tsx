@@ -40,7 +40,7 @@ export default function ReklamacjePage() {
                             Reklamacje można składać:
                         </p>
                         <ul className="list-disc list-inside text-zinc-300 mb-4 space-y-2">
-                            <li>E-mail: <a href={`mailto:${process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'kontakt@wlasniewski.pl'}`} className="text-gold-400 hover:underline">{process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'kontakt@wlasniewski.pl'}</a></li>
+                            <li>E-mail: <a href={`mailto:${process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'pwlasniewski@gmail.com'}`} className="text-gold-400 hover:underline">{process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'pwlasniewski@gmail.com'}</a></li>
                             <li>Telefonicznie: <a href="tel:+48530788694" className="text-gold-400 hover:underline">+48 530 788 694</a></li>
                             <li>Za pośrednictwem formularza kontaktowego na stronie</li>
                         </ul>
@@ -66,7 +66,7 @@ export default function ReklamacjePage() {
                         <h2 className="text-2xl font-display font-semibold text-gold-400 mb-4">6. Kontakt</h2>
                         <p className="text-zinc-300 mb-4">
                             W sprawie reklamacji prosimy o kontakt:<br />
-                            Email: <a href={`mailto:${process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'kontakt@wlasniewski.pl'}`} className="text-gold-400 hover:underline">{process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'kontakt@wlasniewski.pl'}</a><br />
+                            Email: <a href={`mailto:${process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'pwlasniewski@gmail.com'}`} className="text-gold-400 hover:underline">{process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'pwlasniewski@gmail.com'}</a><br />
                             Tel: <a href="tel:+48530788694" className="text-gold-400 hover:underline">+48 530 788 694</a>
                         </p>
                     </section>

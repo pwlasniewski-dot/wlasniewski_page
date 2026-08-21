@@ -5,9 +5,10 @@ import { PrismaClient } from '@prisma/client';
 // Using "no-verify" or relaxed SSL might help if pooler cert is generic
 const PROD_URL = process.env.DATABASE_URL || '';
 
-const LOCAL_URL = process.env.DATABASE_URL || "postgresql://postgres:postgres@localhost:5432/fotograf_local";
+const LOCAL_URL = process.env.LOCAL_DATABASE_URL || '';
 
 async function main() {
+    if (!PROD_URL || !LOCAL_URL) throw new Error('DATABASE_URL and LOCAL_DATABASE_URL are required');
     console.log('🔄 Starting Content Sync (Retry SSL)...');
     // Bypass SSL validation for potential certificate mismatches on poolers
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";

@@ -65,6 +65,7 @@ import AnalyticsLoader from "@/components/AnalyticsLoader";
 import DeferredClientChrome from "@/components/DeferredClientChrome";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 import { isB2BContext } from "@/lib/context";
+import { AERO_SITE } from "@/lib/aeroanaliza/content";
 
 const cormorant = localFont({
     src: "../../public/fonts/CormorantGaramond-Variable.ttf",
@@ -172,6 +173,19 @@ export const viewport = {
 };
 
 export async function generateMetadata(): Promise<Metadata> {
+    const headersList = await headers();
+    const host = headersList.get('host') || '';
+    if (isB2BContext({ hostname: host })) {
+        return {
+            metadataBase: new URL(AERO_SITE.url),
+            title: 'Aero Analiza — termowizja i inspekcje dronem',
+            description: 'Termowizja i inspekcje dronem w województwie kujawsko-pomorskim.',
+            applicationName: AERO_SITE.name,
+            formatDetection: { email: false, address: false, telephone: false },
+            robots: { index: true, follow: true },
+        };
+    }
+
     try {
         const settings = await prisma.setting.findFirst({
             orderBy: { id: 'asc' },
@@ -220,10 +234,12 @@ export default async function RootLayout({
         <html lang="pl" className={`${cormorant.variable} ${montserrat.variable} ${playfair.variable} ${lato.variable} ${greatVibes.variable} ${cinzel.variable} ${inter.variable} ${outfit.variable}`} suppressHydrationWarning>
             <head>
                 {/* Ahrefs Site Verification */}
-                <meta name="ahrefs-site-verification" content="ad34c2e1091a50dd0d41ef8609b8c15dff9fae7b00d57dd291f5a8e75dbd675b" />
+                {!isB2B && <meta name="ahrefs-site-verification" content="ad34c2e1091a50dd0d41ef8609b8c15dff9fae7b00d57dd291f5a8e75dbd675b" />}
                 {/* Preconnect to speed up critical resources */}
-                <link rel="preconnect" href="https://wlasniewski-photo-storage.s3.eu-north-1.amazonaws.com" crossOrigin="anonymous" />
-                <link rel="dns-prefetch" href="https://wlasniewski-photo-storage.s3.eu-north-1.amazonaws.com" />
+                {!isB2B && <>
+                    <link rel="preconnect" href="https://wlasniewski-photo-storage.s3.eu-north-1.amazonaws.com" crossOrigin="anonymous" />
+                    <link rel="dns-prefetch" href="https://wlasniewski-photo-storage.s3.eu-north-1.amazonaws.com" />
+                </>}
                 {!isB2B && (
                     <script
                         type="application/ld+json"
@@ -240,7 +256,7 @@ export default async function RootLayout({
                                         "description": "Sesje rodzinne, reportaże ślubne, portrety i fotografia uroczystości w Toruniu oraz województwie kujawsko-pomorskim.",
                                         "url": "https://wlasniewski.pl",
                                         "telephone": "+48530788694",
-                                        "email": "kontakt@wlasniewski.pl",
+                                        "email": "pwlasniewski@gmail.com",
                                         "taxID": "8781430365",
                                         "priceRange": "$$",
                                         "address": {
@@ -285,7 +301,7 @@ export default async function RootLayout({
                                         "image": "https://wlasniewski.pl/og-image.jpg",
                                         "url": "https://wlasniewski.pl",
                                         "telephone": "+48 530 788 694",
-                                        "email": "kontakt@wlasniewski.pl",
+                                        "email": "pwlasniewski@gmail.com",
                                         "sameAs": [
                                             "https://www.facebook.com/przemyslaw.wlasniewski.fotografia",
                                             "https://www.instagram.com/wlasniewski.pl/"
@@ -313,8 +329,8 @@ export default async function RootLayout({
                 <AppShell isB2B={isB2B}>
                     {children}
                 </AppShell>
-                <DeferredClientChrome />
-                <ServiceWorkerRegister />
+                <DeferredClientChrome disabled={isB2B} />
+                {!isB2B && <ServiceWorkerRegister />}
             </body>
         </html>
     );

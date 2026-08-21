@@ -557,3 +557,13 @@ body {
     background: radial-gradient(circle, var(--tw-gradient-stops));
   }
 }
+/* A verified thermal pair must use the same responsive crop for both layers. */
+.thermal-comparison-media {
+  object-position: var(--thermal-position-mobile, center center);
+}
+
+@media (min-width: 768px) {
+  .thermal-comparison-media {
+    object-position: var(--thermal-position, center center);
+  }
+}

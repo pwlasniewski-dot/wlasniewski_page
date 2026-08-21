@@ -2,7 +2,8 @@
 import { Client } from 'pg';
 
 async function main() {
-    const connectionString = "postgresql://postgres:zWMWbkFpBt@localhost:5432/postgres";
+    const connectionString = process.env.LOCAL_DATABASE_URL || "";
+    if (!connectionString) throw new Error('LOCAL_DATABASE_URL is required');
     const client = new Client({
         connectionString: connectionString,
     });
