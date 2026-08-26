@@ -2,11 +2,11 @@
 
 Data: 2026-08-24  
 Baza: Neon, gałąź produkcyjna `main`  
-Tryb pracy: wyłącznie odczyt danych produkcyjnych; bez migracji, korekt i usuwania rekordów.
+Tryb początkowego audytu: wyłącznie odczyt danych produkcyjnych. Aneks z 2026-08-26 dokumentuje późniejsze, zatwierdzone wdrożenie migracji i korekt ofert; nie usunięto rekordów ani tabel.
 
 ## Decyzja
 
-**NO-GO dla bezpośredniego wdrożenia na produkcję.** Kod naprawczy i migracje muszą najpierw przejść kopię produkcji, staging, preflight, testy E2E i niezależny QA. Aktualne dane klienta nie zostały zmienione.
+**Historyczna decyzja audytowa: NO-GO dla bezpośredniego wdrożenia.** Wymagane etapy kopii, stagingu, preflightu, testów kodu i Deploy Preview zostały następnie wykonane. Aktualny stan produkcyjny i zakres nadal otwartych testów opisuje końcowy aneks z 2026-08-26.
 
 ## Reguły biznesowe zatwierdzone przez właściciela
 
@@ -207,4 +207,21 @@ Dedykowany Neon staging `staging-crm-observability-20260823` został odświeżon
 - 18 częściowych lub pustych wyborów pozostawionych jako `DRAFT`;
 - zero osieroconych relacji, duplikatów e-maili galerii, przekroczeń limitu i wyborów między galeriami.
 
-Staging bazy jest poprawny. Produkcyjny Neon pozostaje bez zmian do przejścia buildu wdrożeniowego, testów prawdziwego S3/ZIP i kontroli canary.
+Staging bazy jest poprawny. Ten wynik był podstawą do zatwierdzonej promocji produkcyjnej opisanej poniżej.
+
+## Aneks końcowy — wdrożenie produkcyjne 2026-08-26
+
+Właściciel zatwierdził wysłanie zmian i wdrożenie kontrolne. Przed jakimkolwiek zapisem utworzono odzyskiwalną gałąź Neon `predeploy-backup-crm-20260826` (`br-misty-glade-aek73etq`). Następnie:
+
+- 11 brakujących migracji wykonano atomowo na produkcyjnej gałęzi `br-still-tooth-ae2wv03k`;
+- historia `_prisma_migrations` ma 18 migracji zakończonych i 0 problematycznych;
+- liczby danych krytycznych pozostały niezmienione: użytkownicy 31, oferty 22, umowy 7, galerie 10, uczestnicy 64, wybory 244, zamówienia zdjęć 14, rejestr płatności 1;
+- powstały wymagane obiekty obserwowalności i procesu galerii: `admin_incidents`, `message_outbox`, `group_gallery_activities`, `group_gallery_login_tokens` i `group_selection_submissions`;
+- backfill nadał 46 kompletnym historycznym zestawom status `LEGACY_REVIEW_REQUIRED`, a 18 częściowym lub pustym status `DRAFT`;
+- kontrola po migracji wykazała zero osieroconych ofert, umów, galerii i wyborów, zero duplikatów znormalizowanych e-maili rodziców, zero przekroczeń limitu i zero wyborów między galeriami;
+- ofertę #67 oznaczono jako zastąpioną przez #68, a #75 przez #78, z datą, powodem i wpisami `offer_superseded` w audycie CRM; rekordów historycznych nie usunięto;
+- testy kontraktowe zakończyły się wynikiem 5/5 dla galerii i 53/53 dla CRM, a pełny build produkcyjny Netlify zakończył się powodzeniem;
+- PR #48 został scalony, a Netlify opublikował `main@cbdcd5264d904f57fa5c4dfb82c33a95f11baf61` w 2 min 37 s;
+- smoke test potwierdził formularz `/logowanie`, formularz dostępu `/galeria/grupowa` i ochronę `/admin/incidents`; po wdrożeniu nie odnotowano nowych incydentów.
+
+Stan wydania: wdrożone, bez zaobserwowanych błędów P0/P1 w kontroli powdrożeniowej. Nadal wymagane są dwa testy operacyjne, których nie należy uznawać za wykonane: pełny przebieg na rzeczywistym uwierzytelnionym koncie klienta oraz test prawdziwego S3/ZIP dla 100/300/500 zdjęć. Eksperymentalny dual-write outbox pozostaje wyłączony domyślną flagą i nie został aktywowany tym wydaniem.

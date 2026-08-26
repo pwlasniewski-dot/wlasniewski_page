@@ -16,8 +16,11 @@
 - [ ] Bezpieczna naprawa danych #20 i #16 po backupie, kopii produkcji, uzgodnieniu nazw/profili/płatności i akceptacji właściciela.
 - [x] Migracje danych na Neon staging: świeży reset z produkcyjnego `main`, 11 brakujących migracji zastosowanych atomowo, historia Prisma 18/18 poprawna, liczby rekordów before/after bez zmian, zero osieroconych relacji.
 - [x] Backfill galerii na stagingu: 46 kompletnych historycznych zestawów `LEGACY_REVIEW_REQUIRED`, 18 częściowych/pustych `DRAFT`, bez utraty 244 wyborów.
-- [ ] QA końcowe: test kontraktu galerii 5/5 i CRM 53/53 przechodzą; nadal wymagane typecheck/build w CI/Netlify, prawdziwy S3 100/300/500, eksport odbitek i alarmy e-mail.
-- [ ] Produkcja pozostaje NO-GO do wyniku buildu wdrożeniowego, testów prawdziwego S3 i kontroli canary; produkcyjny Neon nie został jeszcze zmieniony.
+- [x] QA kodu: test kontraktu galerii 5/5 i CRM 53/53, kontrola składni oraz produkcyjny build Netlify przechodzą.
+- [x] Wdrożenie kontrolne zakończone: PR #48 scalony do `main`, produkcja Netlify opublikowana, chronione trasy i publiczne ekrany wejściowe przeszły smoke test.
+- [x] Produkcyjny Neon: backup `predeploy-backup-crm-20260826`, 11 migracji zastosowanych atomowo, historia Prisma 18/18 poprawna, liczby rekordów bez zmian i zero wykrytych osieroconych relacji.
+- [x] Oferty #67 i #75 oznaczone jako zastąpione odpowiednio przez kanoniczne #68 i #78; korekty zachowane w audycie CRM bez kasowania historii.
+- [ ] Pozostały QA operacyjny: pełne E2E na rzeczywistym koncie klienta, test prawdziwego S3/ZIP 100/300/500, eksport odbitek i kontrolowany test alarmu e-mail.
 
 ## 2026-08-21 — profesjonalna przebudowa Aero Analiza
 
