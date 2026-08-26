@@ -7,6 +7,7 @@ import { withAuth } from '@/lib/auth/middleware';
 import { generateAccessCode } from '@/lib/gallery-utils';
 import { sendEmail, getAdminEmail } from '@/lib/email/sender';
 import { galleryTermsFromAcceptedOffer } from '@/lib/galleries/offerTerms';
+import { normalizeEmail } from '@/lib/crm/delivery';
 
 export async function POST(request: NextRequest) {
     return withAuth(request, async () => {
@@ -39,6 +40,7 @@ export async function POST(request: NextRequest) {
                     { status: 400 }
                 );
             }
+            const normalizedClientEmail = normalizeEmail(client_email);
             const mode = gallery_mode === 'GROUP' ? 'GROUP' : 'INDIVIDUAL';
             let includedCount = standard_count === undefined ? 10 : Number(standard_count);
             let extraPhotoPrice = price_per_premium === undefined ? 2000 : Number(price_per_premium);
@@ -50,7 +52,11 @@ export async function POST(request: NextRequest) {
                 }
                 sourceOffer = await prisma.offer.findUnique({
                     where: { id: Number(offer_id) },
-                    include: { contract: { select: { id: true } }, gallery: { select: { id: true } } },
+                    include: {
+                        contract: { select: { id: true } },
+                        gallery: { select: { id: true } },
+                        user: { select: { email: true } },
+                    },
                 });
                 if (!sourceOffer || sourceOffer.status !== 'accepted') {
                     return NextResponse.json({ success: false, error: 'Wybierz istniejącą, zaakceptowaną ofertę.' }, { status: 409 });
@@ -58,8 +64,8 @@ export async function POST(request: NextRequest) {
                 if (sourceOffer.gallery) {
                     return NextResponse.json({ success: false, error: `Ta oferta jest już połączona z galerią #${sourceOffer.gallery.id}.` }, { status: 409 });
                 }
-                const normalizedEmail = String(client_email).trim().toLowerCase();
-                if (sourceOffer.client_email && sourceOffer.client_email.trim().toLowerCase() !== normalizedEmail) {
+                const sourceEmail = normalizeEmail(sourceOffer.user?.email || sourceOffer.client_email);
+                if (sourceEmail && sourceEmail !== normalizedClientEmail) {
                     return NextResponse.json({ success: false, error: 'Oferta należy do innego klienta.' }, { status: 409 });
                 }
                 try {
@@ -130,11 +136,19 @@ export async function POST(request: NextRequest) {
                 ? new Date(expires_at)
                 : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
+            const matchedClient = sourceOffer?.client_id
+                ? { id: sourceOffer.client_id }
+                : await prisma.user.findFirst({
+                    where: { email: { equals: normalizedClientEmail, mode: 'insensitive' } },
+                    select: { id: true },
+                });
+
             // Create gallery
             const gallery = await prisma.clientGallery.create({
                 data: {
                     client_name,
-                    client_email,
+                    client_email: normalizedClientEmail,
+                    client_id: matchedClient?.id || null,
                     access_code,
                     standard_count: includedCount,
                     price_per_premium: extraPhotoPrice,

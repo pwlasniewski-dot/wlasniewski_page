@@ -35,14 +35,14 @@ export async function POST(request: NextRequest) {
         const fileName = `contracts/umowa_${safeNumber}_custom.pdf`;
 
         console.log(`[STANDALONE_CONTRACT] Uploading PDF for client ${clientId}, size: ${buffer.length}`);
-        const s3Url = await uploadToS3(buffer, fileName, 'application/pdf');
+        const s3Url = await uploadToS3(buffer, fileName, 'application/pdf', { access: 'private' });
 
         const contract = await prisma.contract.create({
             data: {
                 contract_number: contractNumber,
                 client_id: parseInt(clientId),
                 content: `Umowa wgrana jako PDF (${file.name})`,
-                status: 'pending',
+                status: 'draft',
                 pdf_url: s3Url,
             }
         });

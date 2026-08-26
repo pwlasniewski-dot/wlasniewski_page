@@ -16,6 +16,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { Check, Loader2, BookOpen, Ruler } from 'lucide-react';
+import { isClientActionableOfferStatus } from '@/lib/offers/status';
 
 interface Album {
     id: number;
@@ -69,7 +70,7 @@ export default function ClientOfferAddonCheckbox({
     onAddonsChange?: (addons: OfferAddon[]) => void;
     offerStatus?: string;
 }) {
-    const isLocked = offerStatus === 'accepted' || offerStatus === 'signed' || offerStatus === 'completed';
+    const isLocked = !isClientActionableOfferStatus(offerStatus);
     const [albums, setAlbums] = useState<Album[]>([]);
     const [addons, setAddons] = useState<OfferAddon[]>([]);
     const [loading, setLoading] = useState(true);

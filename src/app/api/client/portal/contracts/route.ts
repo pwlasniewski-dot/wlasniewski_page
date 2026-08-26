@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { verifyToken, extractToken } from '@/lib/auth/jwt';
+import { revalidateActiveClient } from '@/lib/auth/active-client';
+import { contractOwnershipWhere } from '@/lib/auth/document-access';
+import { CLIENT_VISIBLE_CONTRACT_STATUS_VALUES } from '@/lib/contracts/status';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,14 +27,17 @@ export async function GET(request: NextRequest) {
                 { status: 401 }
             );
         }
+        const client = await revalidateActiveClient(decoded);
+        if (!client) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
 
         // Fetch contracts associated with this client
         const contracts = await prisma.contract.findMany({
             where: {
-                OR: [
-                    { client_id: decoded.id },
-                    { offer: { client_id: decoded.id } },
-                    { offer: { client_email: decoded.email } },
+                AND: [
+                    { OR: contractOwnershipWhere(client) },
+                    { status: { in: CLIENT_VISIBLE_CONTRACT_STATUS_VALUES } },
                 ],
             },
             include: {

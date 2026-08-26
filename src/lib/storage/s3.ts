@@ -55,8 +55,12 @@ export async function uploadToS3(
         await upload.done();
         console.log(`[S3_UPLOAD] Execution finished SUCCESSFULLY for ${fileName}`);
 
-        // Return the public URL
-        // Format: https://{bucket}.s3.{region}.amazonaws.com/{key}
+        // Private documents are persisted as opaque object keys. Callers must
+        // authenticate and mint a short-lived download URL; a stable S3 URL is
+        // never returned for private content.
+        if (options.access === 'private') return fileName;
+
+        // Public media keeps the legacy URL contract.
         return `https://${bucketName}.s3.${region}.amazonaws.com/${fileName}`;
     } catch (error: any) {
         console.error('[S3_UPLOAD] CRITICAL ERROR:', {

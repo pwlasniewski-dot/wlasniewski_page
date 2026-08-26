@@ -1,6 +1,7 @@
-import { createHash, randomUUID } from 'crypto';
+import { randomUUID } from 'crypto';
 import { SignJWT, jwtVerify } from 'jose';
 import { getPrivateJson, putPrivateJson } from '@/lib/storage/s3';
+export { createGalleryArchiveContentFingerprint, createGalleryArchiveJobId } from './archive-content';
 
 export type GalleryArchiveKind = 'individual' | 'group';
 export type GalleryArchiveStatus = 'queued' | 'processing' | 'ready' | 'failed';
@@ -13,6 +14,7 @@ export type GalleryArchiveJob = {
     galleryId: number;
     participantId: number | null;
     requestedPhotoIds: number[];
+    contentFingerprint?: string;
     status: GalleryArchiveStatus;
     progress: number;
     total: number;
@@ -44,29 +46,13 @@ export function galleryArchiveLockKey(jobId: string, runId: string) {
     return `${JOB_PREFIX}/locks/${jobId}-${runId}.json`;
 }
 
-export function createGalleryArchiveJobId(input: {
-    kind: GalleryArchiveKind;
-    galleryId: number;
-    participantId: number | null;
-    requestedPhotoIds: number[];
-    galleryUpdatedAt: Date;
-}) {
-    const canonical = JSON.stringify({
-        kind: input.kind,
-        galleryId: input.galleryId,
-        participantId: input.participantId,
-        requestedPhotoIds: [...new Set(input.requestedPhotoIds)].sort((a, b) => a - b),
-        galleryUpdatedAt: input.galleryUpdatedAt.toISOString(),
-    });
-    return createHash('sha256').update(canonical).digest('hex');
-}
-
 export function newGalleryArchiveJob(input: {
     jobId: string;
     kind: GalleryArchiveKind;
     galleryId: number;
     participantId: number | null;
     requestedPhotoIds: number[];
+    contentFingerprint?: string;
     previousCreatedAt?: string;
 }): GalleryArchiveJob {
     const now = new Date();
@@ -78,6 +64,7 @@ export function newGalleryArchiveJob(input: {
         galleryId: input.galleryId,
         participantId: input.participantId,
         requestedPhotoIds: [...new Set(input.requestedPhotoIds)].sort((a, b) => a - b),
+        contentFingerprint: input.contentFingerprint,
         status: 'queued',
         progress: 0,
         total: 0,

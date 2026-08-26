@@ -9,6 +9,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { logSystem } from '@/lib/logger';
 import { extractToken, verifyToken } from '@/lib/auth/jwt';
+import { revalidateActiveClient } from '@/lib/auth/active-client';
+import {
+    CLIENT_ACTIONABLE_OFFER_STATUS_VALUES,
+    isClientActionableOfferStatus,
+    isClientVisibleOfferStatus,
+} from '@/lib/offers/status';
+import { randomUUID } from 'node:crypto';
+import { recordAdminIncidentSafely } from '@/lib/admin-incidents';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,33 +38,64 @@ type Addon = {
     status: 'pending';             // czeka na potwierdzenie fotografa
 };
 
-async function getAuthorizedOffer(request: NextRequest, offerId: number) {
+function caseCode(correlationId: string) {
+    return correlationId.replaceAll('-', '').slice(0, 8).toUpperCase();
+}
+
+function errorResponse(error: string, status: number, correlationId: string) {
+    return NextResponse.json({ error, caseCode: caseCode(correlationId) }, {
+        status,
+        headers: { 'X-Correlation-ID': correlationId },
+    });
+}
+
+async function getAuthorizedOffer(request: NextRequest, offerId: number, correlationId: string) {
     const token = extractToken(request.headers.get('authorization'))
         || request.cookies.get('client_token')?.value
         || request.cookies.get('user_token')?.value;
     const decoded = token ? await verifyToken(token) : null;
     if (!decoded) {
-        return {
-            response: NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-        };
+        return { response: errorResponse('Unauthorized', 401, correlationId) };
     }
+    const client = await revalidateActiveClient(decoded);
+    if (!client) return { response: errorResponse('Unauthorized', 401, correlationId) };
 
     const offer = await prisma.offer.findUnique({
         where: { id: offerId },
-        include: { user: true }
     });
     if (!offer) {
-        return {
-            response: NextResponse.json({ error: 'Not found' }, { status: 404 })
-        };
+        return { response: errorResponse('Not found', 404, correlationId) };
     }
-    if (offer.client_id !== decoded.id && offer.client_email !== decoded.email) {
-        return {
-            response: NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-        };
+    if (offer.client_id !== client.id) {
+        return { response: errorResponse('Forbidden', 403, correlationId) };
     }
 
-    return { offer, decoded };
+    return { offer, client };
+}
+
+async function recordAddonAuditFailure(
+    action: 'addon_added' | 'addon_removed',
+    correlationId: string,
+    offer: { id: number; client_id: number | null; client_email: string | null },
+    error: unknown,
+) {
+    await logSystem('WARN', 'SYSTEM', `CrmActivity ${action} failed`, {
+        correlation_id: correlationId,
+        offer_id: offer.id,
+        error: String(error),
+    });
+    await recordAdminIncidentSafely({
+        severity: 'P1',
+        category: 'AUDIT',
+        reasonCode: action === 'addon_added' ? 'OFFER_ADDON_ADD_AUDIT_FAILED' : 'OFFER_ADDON_REMOVE_AUDIT_FAILED',
+        summary: 'Nie udało się zapisać audytu zmiany dodatków oferty',
+        clientId: offer.client_id,
+        clientEmail: offer.client_email,
+        entityType: 'offer',
+        entityId: offer.id,
+        correlationId,
+        details: { action, error: error instanceof Error ? error.message : String(error) },
+    });
 }
 
 // Format (z bazy: NphotoAlbum.format_options) → rabat (discount_pct)
@@ -104,24 +143,24 @@ function calcFinal(
 }
 
 export async function POST(request: NextRequest) {
+    const correlationId = randomUUID();
     try {
         const body = await request.json();
         const { offer_id, album_id, custom_pages, custom_format_request, message } = body;
 
         if (!offer_id || !album_id) {
-            return NextResponse.json({ error: 'Missing offer_id or album_id' }, { status: 400 });
+            return errorResponse('Missing offer_id or album_id', 400, correlationId);
         }
 
-        const authorized = await getAuthorizedOffer(request, Number(offer_id));
+        const authorized = await getAuthorizedOffer(request, Number(offer_id), correlationId);
         if ('response' in authorized) return authorized.response;
-        const { offer } = authorized;
+        const { offer, client } = authorized;
         const album = await prisma.nphotoAlbum.findUnique({ where: { id: Number(album_id) } });
 
-        if (!album) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+        if (!album) return errorResponse('Not found', 404, correlationId);
 
-        // Bezpieczenstwo: na zatwierdzonych ofertach NIE wolno juz nic zmieniac
-        if (offer.status === 'accepted' || offer.status === 'signed' || offer.status === 'completed') {
-            return NextResponse.json({ error: 'Oferta jest juz zatwierdzona - skontaktuj sie z fotografem aby dodac album.' }, { status: 403 });
+        if (!isClientActionableOfferStatus(offer.status)) {
+            return errorResponse('Dodatki można zmieniać tylko w aktywnej, wysłanej ofercie.', 409, correlationId);
         }
 
         const pricePerSpread = album.price_per_spread || 40;
@@ -142,7 +181,7 @@ export async function POST(request: NextRequest) {
         );
 
         const addon: Addon = {
-            id: `${album.id}-${Date.now()}`,
+            id: `${album.id}-${randomUUID()}`,
             album_id: album.id,
             album_title: album.title,
             base_price: album.price || 0,
@@ -164,81 +203,125 @@ export async function POST(request: NextRequest) {
         const filtered = current.filter(a => a && a.album_id !== album.id);
         const next = [...filtered, addon];
 
-        await prisma.offer.update({
-            where: { id: offer.id },
+        const changed = await prisma.offer.updateMany({
+            where: {
+                id: offer.id,
+                client_id: client.id,
+                status: { in: CLIENT_ACTIONABLE_OFFER_STATUS_VALUES },
+                updated_at: offer.updated_at,
+            },
             data: { selected_addons: next as any }
         });
+        if (changed.count !== 1) {
+            return errorResponse('Oferta została w międzyczasie zmieniona. Odśwież stronę.', 409, correlationId);
+        }
 
         try {
             await prisma.crmActivity.create({
                 data: {
-                    client_id: offer.client_id || null,
-                    client_email: offer.client_email || offer.user?.email || null,
+                    client_id: client.id,
+                    client_email: client.email,
                     action: 'addon_added',
                     entity_type: 'offer',
                     entity_id: offer.id,
-                    details: JSON.stringify(addon),
+                    details: JSON.stringify({ ...addon, correlation_id: correlationId }),
                 }
             });
         } catch (e) {
-            await logSystem('WARN', 'SYSTEM', 'CrmActivity addon_added failed', { error: String(e) });
+            await recordAddonAuditFailure('addon_added', correlationId, {
+                id: offer.id, client_id: client.id, client_email: client.email,
+            }, e);
         }
 
         // UWAGA: NIE wysyłamy maila przy dodawaniu addona — klient sam ustala finalną cenę
         // i może wielokrotnie zmieniać konfigurację. Mail wysyłamy dopiero przy akceptacji oferty.
 
-        return NextResponse.json({ success: true, addon, addons: next });
+        return NextResponse.json({ success: true, addon, addons: next }, {
+            headers: { 'X-Correlation-ID': correlationId },
+        });
     } catch (error: any) {
         console.error('Offer addon POST error:', error);
-        return NextResponse.json({ error: 'Failed' }, { status: 500 });
+        await recordAdminIncidentSafely({
+            severity: 'P1', category: 'CLIENT_PORTAL', reasonCode: 'OFFER_ADDON_UPDATE_FAILED',
+            summary: 'Nie udało się zmienić dodatku oferty', correlationId,
+            details: { error: error instanceof Error ? error.message : String(error) },
+        });
+        return errorResponse('Nie udało się zmienić dodatku.', 500, correlationId);
     }
 }
 
 export async function DELETE(request: NextRequest) {
+    const correlationId = randomUUID();
     try {
         const body = await request.json();
         const { offer_id, addon_id } = body;
-        if (!offer_id || !addon_id) return NextResponse.json({ error: 'Missing params' }, { status: 400 });
+        if (!offer_id || !addon_id) return errorResponse('Missing params', 400, correlationId);
 
-        const authorized = await getAuthorizedOffer(request, Number(offer_id));
+        const authorized = await getAuthorizedOffer(request, Number(offer_id), correlationId);
         if ('response' in authorized) return authorized.response;
-        const { offer } = authorized;
-        if (offer.status === 'accepted' || offer.status === 'signed' || offer.status === 'completed') {
-            return NextResponse.json({ error: 'Oferta jest juz zatwierdzona - nie mozna usunac dodatku.' }, { status: 403 });
+        const { offer, client } = authorized;
+        if (!isClientActionableOfferStatus(offer.status)) {
+            return errorResponse('Dodatki można zmieniać tylko w aktywnej, wysłanej ofercie.', 409, correlationId);
         }
 
         const current: Addon[] = Array.isArray(offer.selected_addons) ? (offer.selected_addons as any) : [];
         const removed = current.find(a => a.id === addon_id);
         const next = current.filter(a => a.id !== addon_id);
 
-        await prisma.offer.update({ where: { id: offer.id }, data: { selected_addons: next as any } });
+        const changed = await prisma.offer.updateMany({
+            where: {
+                id: offer.id,
+                client_id: client.id,
+                status: { in: CLIENT_ACTIONABLE_OFFER_STATUS_VALUES },
+                updated_at: offer.updated_at,
+            },
+            data: { selected_addons: next as any },
+        });
+        if (changed.count !== 1) {
+            return errorResponse('Oferta została w międzyczasie zmieniona. Odśwież stronę.', 409, correlationId);
+        }
 
         try {
             await prisma.crmActivity.create({
                 data: {
-                    client_id: offer.client_id || null,
-                    client_email: offer.client_email || offer.user?.email || null,
+                    client_id: client.id,
+                    client_email: client.email,
                     action: 'addon_removed',
                     entity_type: 'offer',
                     entity_id: offer.id,
-                    details: JSON.stringify({ addon_id, removed }),
+                    details: JSON.stringify({ addon_id, removed, correlation_id: correlationId }),
                 }
             });
-        } catch {}
+        } catch (error) {
+            await recordAddonAuditFailure('addon_removed', correlationId, {
+                id: offer.id, client_id: client.id, client_email: client.email,
+            }, error);
+        }
 
-        return NextResponse.json({ success: true, addons: next });
+        return NextResponse.json({ success: true, addons: next }, {
+            headers: { 'X-Correlation-ID': correlationId },
+        });
     } catch (error: any) {
         console.error('Offer addon DELETE error:', error);
-        return NextResponse.json({ error: 'Failed' }, { status: 500 });
+        await recordAdminIncidentSafely({
+            severity: 'P1', category: 'CLIENT_PORTAL', reasonCode: 'OFFER_ADDON_DELETE_FAILED',
+            summary: 'Nie udało się usunąć dodatku oferty', correlationId,
+            details: { error: error instanceof Error ? error.message : String(error) },
+        });
+        return errorResponse('Nie udało się usunąć dodatku.', 500, correlationId);
     }
 }
 
 export async function GET(request: NextRequest) {
+    const correlationId = randomUUID();
     const url = new URL(request.url);
     const offerId = url.searchParams.get('offer_id');
-    if (!offerId) return NextResponse.json({ error: 'Missing offer_id' }, { status: 400 });
-    const authorized = await getAuthorizedOffer(request, Number(offerId));
+    if (!offerId) return errorResponse('Missing offer_id', 400, correlationId);
+    const authorized = await getAuthorizedOffer(request, Number(offerId), correlationId);
     if ('response' in authorized) return authorized.response;
     const { offer } = authorized;
-    return NextResponse.json({ success: true, addons: Array.isArray(offer.selected_addons) ? offer.selected_addons : [] });
+    if (!isClientVisibleOfferStatus(offer.status)) return errorResponse('Not found', 404, correlationId);
+    return NextResponse.json({ success: true, addons: Array.isArray(offer.selected_addons) ? offer.selected_addons : [] }, {
+        headers: { 'X-Correlation-ID': correlationId },
+    });
 }

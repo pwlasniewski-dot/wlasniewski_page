@@ -33,3 +33,26 @@ test('photos without access do not affect the individual gallery archive job ID'
 
     assert.equal(individualJobId(accessiblePhotoIds), individualJobId([10, 20]));
 });
+
+function groupJobId(participantId: number | null, contentFingerprint: string) {
+    return createGalleryArchiveJobId({
+        kind: 'group',
+        galleryId: 20,
+        participantId,
+        requestedPhotoIds: [],
+        galleryUpdatedAt,
+        contentFingerprint,
+    });
+}
+
+test('group full-gallery artifact is shared when the participant is not part of the content key', () => {
+    assert.equal(groupJobId(null, 'manifest-v1'), groupJobId(null, 'manifest-v1'));
+});
+
+test('group full-gallery artifact changes when an HQ source manifest changes', () => {
+    assert.notEqual(groupJobId(null, 'manifest-v1'), groupJobId(null, 'manifest-v2'));
+});
+
+test('participant-specific and shared group jobs cannot collide', () => {
+    assert.notEqual(groupJobId(64, 'manifest-v1'), groupJobId(null, 'manifest-v1'));
+});

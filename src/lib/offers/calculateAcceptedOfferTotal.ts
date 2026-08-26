@@ -1,3 +1,5 @@
+import { parsePlnAmount } from '../money/pln.ts';
+
 type OfferItem = { title?: string; price: number; quantity: number; is_optional: boolean };
 type OfferSection = { items: OfferItem[] };
 
@@ -10,12 +12,6 @@ type AcceptedOfferInput = {
 };
 
 export class OfferSelectionError extends Error {}
-
-function priceFromLabel(value: unknown): number {
-    if (typeof value !== 'string' && typeof value !== 'number') return 0;
-    const match = String(value).replace(/\s/g, '').match(/-?\d+(?:[.,]\d+)?/);
-    return match ? Math.max(0, Math.round(Number(match[0].replace(',', '.')))) : 0;
-}
 
 function boundedInteger(value: unknown, min: number, max: number): number | null {
     const number = Number(value);
@@ -36,8 +32,11 @@ export function canonicalizeAcceptedOfferSelection(offer: AcceptedOfferInput, ra
     const footerPrices = Array.isArray(template.footerPrices) ? template.footerPrices : [];
     const pricingHeaders = Array.isArray(template.pricingHeaders) ? template.pricingHeaders : [];
     const packageIndexes = footerPrices
-        .map((value: unknown, index: number) => ({ index, price: priceFromLabel(value) }))
+        .map((value: unknown, index: number) => ({ index, price: parsePlnAmount(value) ?? 0 }))
         .filter(({ index, price }) => index > 0 && price > 0);
+    if (footerPrices.length > 1 && packageIndexes.length === 0) {
+        throw new OfferSelectionError('Cennik oferty nie zawiera jednoznacznej dodatniej ceny.');
+    }
     const trusted: Record<string, unknown> = {};
     let total = 0;
     const normalizedCategory = (offer.category || '').trim().toLowerCase();
@@ -57,7 +56,7 @@ export function canonicalizeAcceptedOfferSelection(offer: AcceptedOfferInput, ra
                 throw new OfferSelectionError('Wykryto nieprawidłowy pakiet lub liczbę uczestników.');
             }
             if (count === 0) continue;
-            const unitPrice = priceFromLabel(footerPrices[index]);
+            const unitPrice = parsePlnAmount(footerPrices[index]) ?? 0;
             if (unitPrice <= 0) throw new OfferSelectionError('Wybrany pakiet nie ma prawidłowej ceny.');
             canonicalCounts[String(index)] = count;
             packagesBreakdown.push({
@@ -83,7 +82,7 @@ export function canonicalizeAcceptedOfferSelection(offer: AcceptedOfferInput, ra
         if (index === null || !packageIndexes.some(item => item.index === index)) {
             throw new OfferSelectionError('Wybierz prawidłowy pakiet przed akceptacją oferty.');
         }
-        const price = priceFromLabel(footerPrices[index]);
+        const price = parsePlnAmount(footerPrices[index]) ?? 0;
         trusted.selectedPackage = {
             index,
             name: safeText(pricingHeaders[index]) || `Pakiet ${index}`,
@@ -140,7 +139,7 @@ export function canonicalizeAcceptedOfferSelection(offer: AcceptedOfferInput, ra
         };
     }
 
-    const hasStructuredPrice = packageIndexes.length > 0
+    const hasStructuredPrice = footerPrices.length > 1
         || offer.sections.some(section => section.items.length > 0)
         || (Array.isArray(offer.selected_addons) && offer.selected_addons.length > 0);
     const roundedTotal = Math.round(

@@ -4,11 +4,16 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Lock, Eye, EyeOff, CheckCircle2, ShieldCheck, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useAuth } from '@/context/AuthContext';
+import { safeReturnTo } from '@/lib/auth/return-to';
+import Link from 'next/link';
 
 function SetPasswordForm() {
     const searchParams = useSearchParams();
     const router = useRouter();
+    const { login } = useAuth();
     const token = searchParams.get('token');
+    const returnTo = safeReturnTo(searchParams.get('returnTo'));
 
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -44,12 +49,13 @@ function SetPasswordForm() {
             const res = await fetch('/api/auth/reset-password', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ token, password }),
+                body: JSON.stringify({ token, password, returnTo }),
             });
             const data = await res.json();
             if (res.ok) {
+                if (data.token && data.user) login(data.token, data.user);
                 setSuccess(true);
-                setTimeout(() => router.push('/logowanie'), 3000);
+                setTimeout(() => router.replace(data.sessionEstablished ? (data.returnTo || returnTo) : (data.loginUrl || `/logowanie?returnTo=${encodeURIComponent(returnTo)}`)), 800);
             } else {
                 setError(data.error || 'Wystąpił błąd. Spróbuj ponownie.');
             }
@@ -67,7 +73,7 @@ function SetPasswordForm() {
                     <CheckCircle2 className="w-8 h-8 text-green-500" />
                 </div>
                 <h2 className="text-2xl font-bold text-white mb-2">Hasło ustawione!</h2>
-                <p className="text-zinc-400 mb-6">Za chwilę zostaniesz przekierowany do strony logowania...</p>
+                <p className="text-zinc-400 mb-6">Jesteś zalogowany. Otwieram Twój panel...</p>
             </div>
         );
     }
@@ -75,9 +81,15 @@ function SetPasswordForm() {
     return (
         <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
-                <div className="flex items-center gap-2 bg-red-900/20 border border-red-800/40 rounded-xl p-4">
-                    <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
-                    <p className="text-red-400 text-sm">{error}</p>
+                <div className="space-y-3 bg-red-900/20 border border-red-800/40 rounded-xl p-4">
+                    <div className="flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
+                        <p className="text-red-400 text-sm">{error}</p>
+                    </div>
+                    <div className="flex flex-wrap gap-3 text-sm">
+                        <Link href={`/logowanie?returnTo=${encodeURIComponent(returnTo)}`} className="font-bold text-gold-400 hover:underline">Zaloguj się</Link>
+                        <Link href={`/logowanie/przypomnij-haslo?returnTo=${encodeURIComponent(returnTo)}`} className="font-bold text-gold-400 hover:underline">Wyślij nowy link</Link>
+                    </div>
                 </div>
             )}
 

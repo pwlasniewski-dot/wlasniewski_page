@@ -3,13 +3,17 @@ import prisma from '@/lib/db/prisma';
 import { withAuth } from '@/lib/auth/middleware';
 import bcrypt from 'bcryptjs';
 import { logSystem } from '@/lib/logger';
-import { sendEmail } from '@/lib/email/sender';
+import { normalizeEmail } from '@/lib/crm/delivery';
+import { randomUUID } from 'node:crypto';
+import { recordAdminIncidentSafely } from '@/lib/admin-incidents';
+import { jsonWithCorrelation } from '@/lib/http/correlation';
 
 export const dynamic = 'force-dynamic';
 
 // GET: Fetch all clients with stats
 export async function GET(request: NextRequest) {
     return withAuth(request, async (req) => {
+        const correlationId = randomUUID();
         try {
             const clients = await prisma.user.findMany({
                 where: { role: 'CLIENT' },
@@ -28,12 +32,12 @@ export async function GET(request: NextRequest) {
                 prisma.giftCardOrder.findMany({
                     where: { user_id: { in: allClientIds } },
                     select: { user_id: true, amount_paid: true, created_at: true }
-                }).catch(() => []),
+                }),
                 prisma.booking.findMany({
                     where: { email: { in: allClientEmails } },
                     select: { email: true, id: true, service: true, package: true, date: true, status: true, price: true },
                     orderBy: { date: 'desc' }
-                }).catch(() => []),
+                }),
                 prisma.offer.findMany({
                     where: { client_id: { in: allClientIds } },
                     select: {
@@ -50,7 +54,7 @@ export async function GET(request: NextRequest) {
                         created_at: true
                     },
                     orderBy: { created_at: 'desc' }
-                }).catch(() => []),
+                }),
                 prisma.clientGallery.findMany({
                     where: {
                         OR: [
@@ -66,7 +70,7 @@ export async function GET(request: NextRequest) {
                         // nested selects/includes might still fail if tables are truly weird, 
                         // but let's try to keep them simplified
                     }
-                }).catch(() => []),
+                }),
                 prisma.negotiation.findMany({
                     where: {
                         offer: {
@@ -78,7 +82,7 @@ export async function GET(request: NextRequest) {
                         offer_id: true,
                         offer: { select: { client_id: true } }
                     }
-                }).catch(() => []),
+                }),
                 prisma.contract.findMany({
                     where: { client_id: { in: allClientIds } },
                     select: {
@@ -95,7 +99,7 @@ export async function GET(request: NextRequest) {
                         offer: { select: { total_price: true } },
                     },
                     orderBy: { created_at: 'desc' }
-                }).catch(() => [])
+                })
             ]);
 
             // Map data for fast lookup
@@ -252,11 +256,19 @@ export async function GET(request: NextRequest) {
                 };
             });
 
-            return NextResponse.json({ success: true, clients: formattedClients });
+            return jsonWithCorrelation({ success: true, clients: formattedClients }, correlationId);
         } catch (error: any) {
             console.error('Fetch clients error:', error);
             await logSystem('ERROR', 'SYSTEM', 'Failed to fetch clients', { error: error.message, stack: error.stack });
-            return NextResponse.json({ error: 'Failed to fetch clients' }, { status: 500 });
+            await recordAdminIncidentSafely({
+                severity: 'P1', category: 'ADMIN_PROFILE', reasonCode: 'ADMIN_CLIENT_LIST_LOAD_FAILED',
+                summary: 'Nie udało się pobrać kompletnej listy klientów i jej statystyk',
+                correlationId, details: { error: error instanceof Error ? error.message : String(error) },
+            });
+            return jsonWithCorrelation({
+                error: 'Nie udało się pobrać kompletnej listy klientów',
+                correlation_id: correlationId,
+            }, correlationId, 500);
         }
     });
 }
@@ -267,13 +279,16 @@ export async function POST(request: NextRequest) {
         try {
             const body = await req.json();
             const { name, email, phone } = body;
+            const normalizedEmail = normalizeEmail(email);
 
-            if (!name || !email) {
+            if (!name || !normalizedEmail) {
                 return NextResponse.json({ error: 'Name and email are required' }, { status: 400 });
             }
 
             // Check if email already exists
-            const existingUser = await prisma.user.findUnique({ where: { email } });
+            const existingUser = await prisma.user.findFirst({
+                where: { email: { equals: normalizedEmail, mode: 'insensitive' } },
+            });
             if (existingUser) {
                 return NextResponse.json({ error: 'User with this email already exists' }, { status: 400 });
             }
@@ -289,32 +304,21 @@ export async function POST(request: NextRequest) {
             const user = await prisma.user.create({
                 data: {
                     name,
-                    email,
+                    email: normalizedEmail,
                     phone,
                     password_hash: placeholderHash,
                     role: 'CLIENT',
                     reset_token: resetToken,
                     reset_token_expires: resetTokenExpires,
+                    permissions: { galleries: true, offers: true, contracts: true, bookings: true, gift_cards: true },
                 }
             });
-
-            // Set default full permissions for admin-created clients
-            const defaultPerms = JSON.stringify({ galleries: true, offers: true, contracts: true, bookings: true, gift_cards: true });
-            await prisma.$executeRawUnsafe(
-                `UPDATE users SET permissions = $1::jsonb WHERE id = $2`,
-                defaultPerms,
-                user.id
-            );
-
-            // Build the password-setup link
-            const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://wlasniewski.pl';
-            const setupUrl = `${appUrl}/logowanie/ustaw-haslo?token=${resetToken}`;
 
             // NOTE: Email is NOT sent automatically anymore
             // Admin must manually send the welcome email after setting up offers
             // Use the endpoint: POST /api/admin/clients/[id]/send-welcome-email
             
-            await logSystem('INFO', 'SYSTEM', `Client created: ${name} (${email}) - welcome email NOT sent yet`, { clientId: user.id });
+            await logSystem('INFO', 'SYSTEM', `Client created: ${name} (${normalizedEmail}) - welcome email NOT sent yet`, { clientId: user.id });
 
             return NextResponse.json({ 
                 success: true, 

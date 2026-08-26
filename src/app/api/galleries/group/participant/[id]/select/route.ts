@@ -1,277 +1,247 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { randomUUID } from 'node:crypto';
+import { NextRequest } from 'next/server';
 import prisma from '@/lib/db/prisma';
-import { verifyParentToken, extractTokenFromHeader } from '@/lib/auth/parent-jwt';
+import { extractTokenFromHeader, verifyParentToken } from '@/lib/auth/parent-jwt';
+import { jsonWithCorrelation } from '@/lib/http/correlation';
+import { recordAdminIncidentSafely } from '@/lib/admin-incidents';
 
-/**
- * POST /api/galleries/group/participant/[id]/select
- * Toggle photo selection for a participant
- * REQUIRES: Valid parent JWT token with matching participant_id
- */
+class SelectionRequestError extends Error {
+  constructor(message: string, readonly status: number, readonly code: string) {
+    super(message);
+  }
+}
+
+async function authenticatedPayload(request: NextRequest, participantId: number) {
+  const token = extractTokenFromHeader(request.headers.get('authorization'));
+  const payload = token ? await verifyParentToken(token) : null;
+  if (!payload) throw new SelectionRequestError('Sesja wygasła. Zaloguj się ponownie.', 401, 'INVALID_SESSION');
+  if (payload.participant_id !== participantId || payload.participant_id <= 0) {
+    throw new SelectionRequestError('Brak dostępu do tego profilu.', 403, 'PARTICIPANT_MISMATCH');
+  }
+  return payload;
+}
+
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
+  const correlationId = randomUUID();
+  let participantId: number | null = null;
   try {
-    const { id } = await params;
-    const participantId = parseInt(id, 10);
-    const { photo_id } = await request.json();
-
-    if (isNaN(participantId) || !photo_id) {
-      return NextResponse.json(
-        { error: 'Nieprawidłowe dane' },
-        { status: 400 }
-      );
+    participantId = Number((await params).id);
+    const body = await request.json().catch(() => ({}));
+    const photoId = Number(body.photo_id);
+    const desiredSelected = body.selected;
+    if (!Number.isInteger(participantId) || participantId <= 0
+      || !Number.isInteger(photoId) || photoId <= 0
+      || typeof desiredSelected !== 'boolean') {
+      throw new SelectionRequestError('Podaj zdjęcie i oczekiwany stan wyboru.', 400, 'INVALID_INPUT');
     }
+    const payload = await authenticatedPayload(request, participantId);
 
-    // SECURITY: Verify parent JWT token
-    const authHeader = request.headers.get('Authorization');
-    const token = extractTokenFromHeader(authHeader);
-    
-    if (!token) {
-      return NextResponse.json(
-        { error: 'Brak autoryzacji' },
-        { status: 401 }
-      );
-    }
-
-    const payload = await verifyParentToken(token);
-    
-    if (!payload) {
-      return NextResponse.json(
-        { error: 'Nieprawidłowy token autoryzacyjny' },
-        { status: 401 }
-      );
-    }
-
-    // SECURITY: Verify token participant_id matches requested participant_id
-    if (payload.participant_id !== participantId) {
-      return NextResponse.json(
-        { error: 'Brak dostępu do tego uczestnika' },
-        { status: 403 }
-      );
-    }
-
-    // Get participant info
-    const participant = await prisma.galleryParticipant.findUnique({
-      where: { id: participantId },
-      include: {
-        selections: true,
-        gallery: {
-          select: {
-            allow_extra_photo_purchase: true,
-            gallery_mode: true,
-            is_active: true,
-          },
+    const result = await prisma.$transaction(async tx => {
+      await tx.$queryRaw`SELECT pg_advisory_xact_lock(7717, ${participantId!})`;
+      const participant = await tx.galleryParticipant.findUnique({
+        where: { id: participantId! },
+        include: {
+          selections: { select: { photo_id: true } },
+          gallery: { select: { id: true, gallery_mode: true, is_active: true, expires_at: true } },
         },
-      },
-    });
-
-    if (!participant || participant.gallery.gallery_mode !== 'GROUP') {
-      return NextResponse.json(
-        { error: 'Uczestnik nie istnieje' },
-        { status: 404 }
-      );
-    }
-
-    if (!participant.gallery.is_active) {
-      return NextResponse.json(
-        { error: 'Galeria jest nieaktywna' },
-        { status: 403 }
-      );
-    }
-
-    // SECURITY: Verify photo belongs to this gallery
-    const photo = await prisma.galleryPhoto.findFirst({
-      where: {
-        id: photo_id,
-        gallery_id: participant.gallery_id,
-      },
-    });
-
-    if (!photo) {
-      return NextResponse.json(
-        { error: 'Zdjęcie nie istnieje w tej galerii' },
-        { status: 404 }
-      );
-    }
-
-    // Check if photo already selected
-    const existingSelection = await prisma.photoSelection.findUnique({
-      where: {
-        participant_id_photo_id: {
-          participant_id: participantId,
-          photo_id: photo_id,
-        },
-      },
-    });
-
-    if (existingSelection) {
-      // Remove selection (toggle off)
-      await prisma.photoSelection.delete({
-        where: { id: existingSelection.id },
       });
-
-      return NextResponse.json({
-        action: 'removed',
-        selected_count: participant.selections.length - 1,
-        max_selections: participant.max_selections,
+      if (!participant
+        || participant.gallery_id !== payload.gallery_id
+        || participant.parent_identifier !== payload.parent_identifier
+        || participant.gallery.gallery_mode !== 'GROUP') {
+        throw new SelectionRequestError('Brak dostępu do tego profilu.', 403, 'STALE_OR_MISMATCHED_SESSION');
+      }
+      if (!participant.gallery.is_active
+        || (participant.gallery.expires_at && participant.gallery.expires_at <= new Date())) {
+        throw new SelectionRequestError('Galeria jest nieaktywna albo wygasła.', 403, 'GALLERY_UNAVAILABLE');
+      }
+      if (participant.selection_status !== 'DRAFT') {
+        const message = participant.selection_status === 'LEGACY_REVIEW_REQUIRED'
+          ? 'Historyczny wybór oczekuje na sprawdzenie przez administratora i nie może być samoczynnie zmieniany.'
+          : 'Wybór został już zatwierdzony. Poproś administratora o ponowne otwarcie, jeśli wymaga zmiany.';
+        throw new SelectionRequestError(message, 409, 'SELECTION_LOCKED');
+      }
+      const photo = await tx.galleryPhoto.findFirst({
+        where: { id: photoId, gallery_id: participant.gallery_id },
+        select: { id: true },
       });
-    } else {
-      // Check selection limit
-      if (participant.selections.length >= participant.max_selections) {
-        return NextResponse.json(
-          { 
-            error: `Możesz wybrać maksymalnie ${participant.max_selections} zdjęć`,
-            max_selections: participant.max_selections,
-            current_count: participant.selections.length,
-          },
-          { status: 400 }
-        );
+      if (!photo) throw new SelectionRequestError('Zdjęcie nie należy do tej galerii.', 404, 'PHOTO_NOT_FOUND');
+
+      const currentIds = participant.selections.map(item => item.photo_id);
+      const exists = currentIds.includes(photoId);
+      let action = 'UNCHANGED';
+      if (desiredSelected && !exists) {
+        if (currentIds.length >= participant.max_selections) {
+          await tx.groupGalleryActivity.create({
+            data: {
+              gallery_id: participant.gallery_id,
+              participant_id: participant.id,
+              photo_id: photoId,
+              action: 'SELECTION_LIMIT_REJECTED',
+              result: 'REJECTED',
+              correlation_id: correlationId,
+              details: { selected_count: currentIds.length, max_selections: participant.max_selections },
+            },
+          });
+          return {
+            rejected: true as const,
+            error: `Możesz wybrać maksymalnie ${participant.max_selections} zdjęć.`,
+            code: 'SELECTION_LIMIT_REACHED',
+          };
+        }
+        await tx.photoSelection.create({ data: { participant_id: participant.id, photo_id: photoId } });
+        currentIds.push(photoId);
+        action = 'ADDED';
+      } else if (!desiredSelected && exists) {
+        await tx.photoSelection.delete({
+          where: { participant_id_photo_id: { participant_id: participant.id, photo_id: photoId } },
+        });
+        currentIds.splice(currentIds.indexOf(photoId), 1);
+        action = 'REMOVED';
       }
 
-      // Add selection
-      await prisma.photoSelection.create({
+      if (action !== 'UNCHANGED') {
+        await tx.galleryParticipant.update({
+          where: { id: participant.id },
+          data: { selection_version: { increment: 1 } },
+        });
+      }
+      await tx.groupGalleryActivity.create({
         data: {
-          participant_id: participantId,
-          photo_id: photo_id,
+          gallery_id: participant.gallery_id,
+          participant_id: participant.id,
+          photo_id: photoId,
+          action: `SELECTION_${action}`,
+          result: 'SUCCESS',
+          correlation_id: correlationId,
+          details: { desired_selected: desiredSelected, selected_count: currentIds.length },
         },
       });
+      return {
+        rejected: false as const,
+        action: action.toLowerCase(),
+        selectedPhotoIds: [...currentIds].sort((a, b) => a - b),
+        maxSelections: participant.max_selections,
+        selectionVersion: participant.selection_version + (action === 'UNCHANGED' ? 0 : 1),
+      };
+    });
 
-      return NextResponse.json({
-        action: 'added',
-        selected_count: participant.selections.length + 1,
-        max_selections: participant.max_selections,
-      });
+    if (result.rejected) {
+      return jsonWithCorrelation({ error: result.error, code: result.code }, correlationId, 409);
     }
 
+    return jsonWithCorrelation({
+      success: true,
+      action: result.action,
+      selected_count: result.selectedPhotoIds.length,
+      selected_photo_ids: result.selectedPhotoIds,
+      max_selections: result.maxSelections,
+      selection_version: result.selectionVersion,
+    }, correlationId);
   } catch (error) {
-    console.error('Select photo error:', error);
-    return NextResponse.json(
-      { error: 'Wystąpił błąd podczas zapisywania wyboru' },
-      { status: 500 }
+    if (error instanceof SelectionRequestError) {
+      return jsonWithCorrelation({ error: error.message, code: error.code }, correlationId, error.status);
+    }
+    await recordAdminIncidentSafely({
+      severity: 'P1',
+      category: 'CLIENT_WRITE',
+      reasonCode: 'GROUP_GALLERY_SELECTION_WRITE_FAILED',
+      summary: 'Nie udało się zapisać wyboru zdjęcia w galerii grupowej',
+      entityType: 'gallery_participant',
+      entityId: participantId,
+      correlationId,
+      details: { error: error instanceof Error ? error.message : String(error) },
+    });
+    return jsonWithCorrelation(
+      { error: 'Nie udało się zapisać wyboru. Administrator otrzymał zgłoszenie.' },
+      correlationId,
+      500,
     );
   }
 }
 
-/**
- * GET /api/galleries/group/participant/[id]/select
- * Get all selected photos for a participant
- * REQUIRES: Valid parent JWT token with matching participant_id
- */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
+  const correlationId = randomUUID();
   try {
-    const { id } = await params;
-    const participantId = parseInt(id, 10);
-
-    if (isNaN(participantId)) {
-      return NextResponse.json(
-        { error: 'Nieprawidłowe ID uczestnika' },
-        { status: 400 }
-      );
+    const participantId = Number((await params).id);
+    if (!Number.isInteger(participantId) || participantId <= 0) {
+      throw new SelectionRequestError('Nieprawidłowy profil.', 400, 'INVALID_INPUT');
     }
-
-    // SECURITY: Verify parent JWT token
-    const authHeader = request.headers.get('Authorization');
-    const token = extractTokenFromHeader(authHeader);
-    
-    if (!token) {
-      return NextResponse.json(
-        { error: 'Brak autoryzacji' },
-        { status: 401 }
-      );
-    }
-
-    const payload = await verifyParentToken(token);
-    
-    if (!payload) {
-      return NextResponse.json(
-        { error: 'Nieprawidłowy token autoryzacyjny' },
-        { status: 401 }
-      );
-    }
-
-    // SECURITY: Verify token participant_id matches requested participant_id
-    if (payload.participant_id !== participantId) {
-      return NextResponse.json(
-        { error: 'Brak dostępu do tego uczestnika' },
-        { status: 403 }
-      );
-    }
-
+    const payload = await authenticatedPayload(request, participantId);
     const participant = await prisma.galleryParticipant.findUnique({
       where: { id: participantId },
       include: {
         selections: {
-          include: {
-            photo: {
-              select: {
-                id: true,
-                file_url: true,
-                thumbnail_url: true,
-              },
-            },
-          },
+          include: { photo: { select: { id: true, file_url: true, thumbnail_url: true } } },
+          orderBy: { selected_at: 'asc' },
         },
         gallery: {
-          select: {
-            allow_extra_photo_purchase: true,
-          },
+          select: { id: true, gallery_mode: true, is_active: true, expires_at: true, allow_extra_photo_purchase: true },
         },
       },
     });
-
-    if (!participant) {
-      return NextResponse.json(
-        { error: 'Uczestnik nie istnieje' },
-        { status: 404 }
-      );
+    if (!participant
+      || participant.gallery_id !== payload.gallery_id
+      || participant.parent_identifier !== payload.parent_identifier
+      || participant.gallery.gallery_mode !== 'GROUP') {
+      throw new SelectionRequestError('Brak dostępu do tego profilu.', 403, 'STALE_OR_MISMATCHED_SESSION');
+    }
+    if (!participant.gallery.is_active
+      || (participant.gallery.expires_at && participant.gallery.expires_at <= new Date())) {
+      throw new SelectionRequestError('Galeria jest nieaktywna albo wygasła.', 403, 'GALLERY_UNAVAILABLE');
     }
 
     const paidOrders = await prisma.photoOrder.findMany({
-      where: {
-        gallery_id: participant.gallery_id,
-        participant_id: participant.id,
-        payment_status: 'paid',
-      },
+      where: { gallery_id: participant.gallery_id, participant_id, payment_status: 'paid' },
       select: { photo_ids: true },
     });
-
     const paidExtraPhotoIds = new Set<number>();
-    paidOrders.forEach(order => {
+    for (const order of paidOrders) {
       try {
-        const ids = JSON.parse(order.photo_ids) as number[];
-        ids.forEach(id => paidExtraPhotoIds.add(id));
+        const ids = JSON.parse(order.photo_ids);
+        if (Array.isArray(ids)) ids.map(Number).filter(Number.isInteger).forEach(id => paidExtraPhotoIds.add(id));
       } catch {
-        // ignore broken payloads
+        // Invalid legacy payload is reported in the admin data-integrity audit.
       }
-    });
-
-    return NextResponse.json({
+    }
+    return jsonWithCorrelation({
       parent_name: participant.parent_name,
       parent_identifier: participant.parent_identifier,
       avatar: participant.avatar,
-      selected_photos: participant.selections.map(s => ({
-        photo_id: s.photo_id,
-        file_url: s.photo.file_url,
-        thumbnail_url: s.photo.thumbnail_url,
-        selected_at: s.selected_at,
+      selected_photos: participant.selections.map(selection => ({
+        photo_id: selection.photo_id,
+        file_url: selection.photo.file_url,
+        thumbnail_url: selection.photo.thumbnail_url,
+        selected_at: selection.selected_at,
       })),
       selected_count: participant.selections.length,
       max_selections: participant.max_selections,
-      allow_extra_photo_purchase: participant.allow_extra_photo_purchase || participant.gallery.allow_extra_photo_purchase,
-      paid_extra_photo_ids: Array.from(paidExtraPhotoIds),
+      selection_status: participant.selection_status,
+      selection_submitted_at: participant.selection_submitted_at,
+      selection_version: participant.selection_version,
       publication_consent: participant.publication_consent,
       consent_scope: participant.consent_scope,
-    });
-
+      allow_extra_photo_purchase: participant.gallery.allow_extra_photo_purchase,
+      paid_extra_photo_ids: [...paidExtraPhotoIds],
+    }, correlationId);
   } catch (error) {
-    console.error('Get selections error:', error);
-    return NextResponse.json(
-      { error: 'Wystąpił błąd podczas pobierania wyborów' },
-      { status: 500 }
-    );
+    if (error instanceof SelectionRequestError) {
+      return jsonWithCorrelation({ error: error.message, code: error.code }, correlationId, error.status);
+    }
+    await recordAdminIncidentSafely({
+      severity: 'P1',
+      category: 'CLIENT_READ',
+      reasonCode: 'GROUP_GALLERY_SELECTION_LOAD_FAILED',
+      summary: 'Nie udało się pobrać wyborów rodzica',
+      correlationId,
+      details: { error: error instanceof Error ? error.message : String(error) },
+    });
+    return jsonWithCorrelation({ error: 'Nie udało się pobrać wyborów.' }, correlationId, 500);
   }
 }

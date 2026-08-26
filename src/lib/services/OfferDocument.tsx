@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatPlnAmount, parsePlnAmount } from '@/lib/money/pln';
 import { Document, Page, Text, View, StyleSheet, Font, Image } from '@react-pdf/renderer';
 import path from 'path';
 
@@ -582,13 +583,13 @@ export const OfferDocument: React.FC<{ offer: any, generationDate?: string }> = 
                                     const actualIdx = idx + 1;
                                     const count = clientSelection.splitPackageCounts[actualIdx] || 0;
                                     const priceStr = safeFooterPrices[actualIdx] || '0';
-                                    const priceNum = parseInt(String(priceStr).replace(/[^0-9]/g, '')) || 0;
+                                    const priceNum = parsePlnAmount(priceStr) ?? 0;
                                     const subtotal = count * priceNum;
 
                                     return (
                                         <View key={actualIdx} style={[styles.tableCell, { width: `${100 / (safePricingHeaders.length || 1)}%` }]}>
                                             <Text style={[styles.bold, styles.communionSelectionLabel]}>{count} os.</Text>
-                                            {count > 0 ? <Text style={styles.communionSubtotal}>Razem: {subtotal.toLocaleString('pl-PL')} PLN</Text> : null}
+                                            {count > 0 ? <Text style={styles.communionSubtotal}>Razem: {formatPlnAmount(subtotal)}</Text> : null}
                                         </View>
                                     );
                                 })}

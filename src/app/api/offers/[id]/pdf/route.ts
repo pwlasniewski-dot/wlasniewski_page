@@ -2,25 +2,31 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { generateOfferPDF } from '@/lib/services/pdf';
 import { verifyToken, extractToken } from '@/lib/auth/jwt';
+import { isClientRecordOwner, isVerifiedAdminIdentity } from '@/lib/auth/document-access';
+import { isClientVisibleOfferStatus } from '@/lib/offers/status';
+import { getPrivateS3DownloadUrl } from '@/lib/storage/s3';
+import { revalidateActiveClient } from '@/lib/auth/active-client';
+import { randomUUID } from 'node:crypto';
+import { recordAdminIncidentSafely } from '@/lib/admin-incidents';
+import { clientJson } from '@/lib/client-operations';
 
 export async function GET(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
+    const correlationId = randomUUID();
     try {
-        // Try token sources in order and accept the first valid one.
-        // This prevents stale cookies from overriding a valid `token` query param.
-        const url = new URL(request.url);
+        // JWT w query stringu trafiał do historii, logów i referrerów. PDF korzysta
+        // wyłącznie z nagłówka autoryzacji albo HttpOnly cookie.
         const tokenCandidates = [
             extractToken(request.headers.get('authorization')),
             extractToken(request.headers.get('Authorization')),
-            url.searchParams.get('token'),
             request.cookies.get('client_token')?.value || null,
             request.cookies.get('admin_token')?.value || null,
             request.cookies.get('user_token')?.value || null,
         ].filter((value): value is string => Boolean(value));
 
-        let payload: { id: number; email: string } | null = null;
+        let payload: { id: number; email: string; role?: string; type?: string } | null = null;
         for (const candidate of tokenCandidates) {
             payload = await verifyToken(candidate);
             if (payload) break;
@@ -48,12 +54,31 @@ export async function GET(
         }
 
         // Security check: Only owner or admin
-        const isAdmin = await prisma.adminUser.findUnique({ where: { id: payload.id } });
-        const isClientOwner = payload.email === offer.client_email || payload.id === offer.client_id;
+        const admin = payload.type === 'admin' && payload.role === 'ADMIN'
+            ? await prisma.adminUser.findUnique({ where: { id: payload.id }, select: { id: true, email: true, role: true } })
+            : null;
+        const isAdmin = isVerifiedAdminIdentity(payload, admin);
+        const activeClient = isAdmin ? null : await revalidateActiveClient(payload);
+        if (!isAdmin && !activeClient) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+        const isClientOwner = activeClient ? isClientRecordOwner(offer, activeClient) : false;
 
         if (!isAdmin && !isClientOwner) {
             console.warn(`[PDF API] Forbidden access attempt by ${payload.email} to offer ${offerId}`);
-            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+            if (activeClient && offer.client_id !== null && offer.client_id !== activeClient.id
+                && offer.client_email?.trim().toLowerCase() === activeClient.email.trim().toLowerCase()) {
+                await recordAdminIncidentSafely({
+                    severity: 'P1', category: 'DATA_INTEGRITY', reasonCode: 'CLIENT_OFFER_OWNERSHIP_CONFLICT',
+                    summary: 'E-mail oferty PDF wskazuje inne konto niż nadrzędny client_id',
+                    clientId: activeClient.id, clientEmail: activeClient.email, entityType: 'offer', entityId: offerId,
+                    correlationId, details: { authoritative_client_id: offer.client_id, operation: 'pdf' },
+                });
+            }
+            return clientJson({ error: 'Offer not found' }, { status: 404, correlationId });
+        }
+        if (!isAdmin && !isClientVisibleOfferStatus(offer.status)) {
+            return NextResponse.json({ error: 'Offer not found' }, { status: 404 });
         }
 
         // PROTECT standalone/uploaded PDFs — if no sections, always serve original file
@@ -62,7 +87,13 @@ export async function GET(
         // If a stored PDF URL exists and offer has no sections (standalone upload), always redirect to original
         if (offer.pdf_url && !hasSections) {
             console.log(`[PDF API] Offer ${offerId} is standalone PDF — redirecting to original file`);
-            return NextResponse.redirect(offer.pdf_url, { status: 302 });
+            return NextResponse.redirect(await getPrivateS3DownloadUrl(offer.pdf_url), { status: 302 });
+        }
+
+        // Persisted documents are private objects. Always mint a short-lived
+        // URL after authorization instead of exposing the stored key/URL.
+        if (offer.pdf_url) {
+            return NextResponse.redirect(await getPrivateS3DownloadUrl(offer.pdf_url), { status: 302 });
         }
 
         // Custom Logic: If Communion AND Accepted AND has sections, dynamically generate the PDF
@@ -81,11 +112,6 @@ export async function GET(
                     'Content-Disposition': `inline; filename="Oferta_Komunia_${offer.id}.pdf"`,
                 },
             });
-        }
-
-        // If a stored PDF URL exists (uploaded via S3), redirect to it
-        if (offer.pdf_url) {
-            return NextResponse.redirect(offer.pdf_url, { status: 302 });
         }
 
         // No stored PDF: return a helpful HTML splash page

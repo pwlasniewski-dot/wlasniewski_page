@@ -7,6 +7,34 @@ import prisma from '@/lib/db/prisma';
 // Use standard import for library
 import { createPayUOrder, extractClientIpv4 } from '@/lib/payu';
 import { authorizeIndividualGallery, galleryAccessDenied } from '@/lib/galleries/individual-access';
+import { galleryCartFingerprint } from '@/lib/galleries/order-idempotency';
+
+function existingOrderResponse(order: {
+    id: number;
+    gallery_id: number;
+    photo_count: number;
+    total_amount: number;
+    payment_status: string;
+    payment_url: string | null;
+}) {
+    if (order.payment_status === 'paid') {
+        return NextResponse.json({ success: true, idempotent: true, alreadyPaid: true, order });
+    }
+    if (order.payment_status === 'pending' && order.payment_url) {
+        return NextResponse.json({ success: true, idempotent: true, order, paymentUrl: order.payment_url });
+    }
+    const retryable = order.payment_status === 'failed_init';
+    return NextResponse.json({
+        success: false,
+        idempotent: true,
+        processing: !retryable,
+        retryable,
+        error: retryable
+            ? 'Poprzednia inicjalizacja płatności nie powiodła się. Spróbuj ponownie.'
+            : 'Płatność jest przygotowywana. Odczekaj chwilę i ponów sprawdzenie.',
+        order,
+    }, { status: retryable ? 409 : 202 });
+}
 
 export async function POST(
     request: NextRequest,
@@ -14,6 +42,10 @@ export async function POST(
 ) {
     try {
         const { accessCode } = await params;
+        const idempotencyKey = request.headers.get('idempotency-key')?.trim() || '';
+        if (!/^[A-Za-z0-9_-]{16,128}$/.test(idempotencyKey)) {
+            return NextResponse.json({ success: false, error: 'Brak poprawnego klucza idempotencji zamówienia' }, { status: 400 });
+        }
         const body = await request.json();
         const photoIds = Array.from(new Set(
             (Array.isArray(body.photo_ids) ? body.photo_ids : [])
@@ -63,6 +95,21 @@ export async function POST(
 
         const access = await authorizeIndividualGallery(request, gallery);
         if (!access.allowed) return galleryAccessDenied(access);
+        const checkoutFingerprint = galleryCartFingerprint({ galleryId: gallery.id, photoIds, productIds });
+
+        const existingOrder = await prisma.photoOrder.findUnique({
+            where: { idempotency_key: idempotencyKey },
+            select: {
+                id: true, gallery_id: true, photo_count: true, total_amount: true,
+                payment_status: true, payment_url: true, checkout_fingerprint: true,
+            },
+        });
+        if (existingOrder) {
+            if (existingOrder.gallery_id !== gallery.id || existingOrder.checkout_fingerprint !== checkoutFingerprint) {
+                return NextResponse.json({ success: false, error: 'Nieprawidłowy klucz operacji' }, { status: 409 });
+            }
+            return existingOrderResponse(existingOrder);
+        }
 
         const paidOrders = await prisma.photoOrder.findMany({
             where: { gallery_id: gallery.id, payment_status: 'paid' },
@@ -125,16 +172,27 @@ export async function POST(
         const total_amount = photos_total + products_total;
 
         // Create order in database first
-        const order = await prisma.photoOrder.create({
-            data: {
-                gallery_id: gallery.id,
-                photo_ids: JSON.stringify(photoIds),
-                product_ids: JSON.stringify(productIds),
-                photo_count,
-                total_amount,
-                payment_status: 'pending',
-            }
-        });
+        let order;
+        try {
+            order = await prisma.photoOrder.create({
+                data: {
+                    gallery_id: gallery.id,
+                    photo_ids: JSON.stringify(photoIds),
+                    product_ids: JSON.stringify(productIds),
+                    photo_count,
+                    total_amount,
+                    payment_status: 'initializing',
+                    idempotency_key: idempotencyKey,
+                    checkout_fingerprint: checkoutFingerprint,
+                }
+            });
+        } catch (error: any) {
+            if (error?.code !== 'P2002') throw error;
+            const racedOrder = await prisma.photoOrder.findUnique({ where: { idempotency_key: idempotencyKey } });
+            if (!racedOrder || racedOrder.gallery_id !== gallery.id
+                || racedOrder.checkout_fingerprint !== checkoutFingerprint) throw error;
+            return existingOrderResponse(racedOrder);
+        }
 
         // Integrate with PayU
         let paymentUrl = '';
@@ -186,15 +244,20 @@ export async function POST(
                 where: { id: order.id },
                 data: {
                     payment_id: paymentId,
-                    payment_url: paymentUrl
+                    payment_url: paymentUrl,
+                    payment_status: 'pending',
                 }
             });
 
         } catch (payuError) {
             console.error('PayU Error:', payuError);
-            // Don't fail the request, but return order detail with failure note
+            await prisma.photoOrder.update({
+                where: { id: order.id },
+                data: { payment_status: 'failed_init' },
+            });
             return NextResponse.json({
-                success: true, // Order created but payment failed init
+                success: false,
+                error: 'Nie udało się zainicjować płatności PayU.',
                 order: {
                     id: order.id,
                     photo_count: order.photo_count,
@@ -202,7 +265,7 @@ export async function POST(
                     payment_status: 'failed_init',
                 },
                 message: 'Zamówienie utworzone, ale błąd inicjalizacji płatności (PayU).'
-            });
+            }, { status: 502 });
         }
 
         return NextResponse.json({

@@ -35,11 +35,27 @@ import AccountTabButton from '@/components/client/AccountTabButton';
 
 type Tab = 'overview' | 'sessions' | 'bookings' | 'documents' | 'gift_cards' | 'workshops' | 'preparation' | 'settings' | 'partner';
 
+type ActionSummary = {
+    nextAction: null | {
+        kind: 'offer' | 'contract' | 'gallery' | 'challenge';
+        label: string;
+        statusLabel: string;
+        ctaLabel: string;
+        href: string;
+    };
+    counts: { offers: number; contracts: number; galleries: number; challenges: number; bookings: number; giftCards: number };
+    modules: { workshops: boolean; galleries: boolean };
+};
+
 export default function AccountPage() {
     const router = useRouter();
     const { user, token, logout, isLoading: authLoading } = useAuth();
     const [activeTab, setActiveTab] = useState<Tab>('overview');
     const [loading, setLoading] = useState(true);
+    const [actionSummary, setActionSummary] = useState<ActionSummary | null>(null);
+    const [dashboardError, setDashboardError] = useState<{ message: string; caseCode?: string } | null>(null);
+    const [moduleError, setModuleError] = useState<{ message: string; caseCode?: string } | null>(null);
+    const [loadedModules, setLoadedModules] = useState<Record<string, boolean>>({});
     const [giftCards, setGiftCards] = useState<any[]>([]);
     const [bookings, setBookings] = useState<any[]>([]);
     const [challenges, setChallenges] = useState<any[]>([]);
@@ -74,75 +90,103 @@ export default function AccountPage() {
         }
 
         if (token) {
-            const fetchData = async (silent: boolean = false) => {
+            let cancelled = false;
+            const fetchSummary = async (silent = false) => {
                 try {
-                    const [userRes, challengeRes, galleriesRes, fmRes, fmSettingsRes] = await Promise.all([
-                        fetch('/api/user/me', { headers: { 'Authorization': `Bearer ${token}` } }),
-                        fetch('/api/photo-challenge/client/challenges', { headers: { 'Authorization': `Bearer ${token}` } }),
-                        fetch('/api/galleries/client', { headers: { 'Authorization': `Bearer ${token}` } }),
-                        fetch('/api/foto-match/profile/me', { headers: { 'Authorization': `Bearer ${token}` } }),
-                        fetch('/api/foto-match/settings/public')
-                    ]);
-
-                    // Warsztaty (cicho ignorujemy jesli endpoint padnie)
-                    fetch('/api/user/workshops', { headers: { Authorization: `Bearer ${token}` } })
-                        .then(r => r.ok ? r.json() : { workshops: [] })
-                        .then(d => setWorkshops(d.workshops || []))
-                        .catch(() => {});
-
-                    if (userRes.ok) {
-                        const data = await userRes.json();
-                        setGiftCards(data.user.gift_cards || []);
-                        setBookings(data.user.bookings || []);
-                        setOffers(data.user.offers || []);
-                        setContracts(data.user.contracts || []);
-                        setPhotoOrders(data.user.photo_orders || []);
-                        // Load permissions from API response
-                        if (data.user.permissions && typeof data.user.permissions === 'object') {
-                            setUserPermissions(data.user.permissions);
-                        }
+                    const response = await fetch('/api/user/action-summary', {
+                        headers: { Authorization: `Bearer ${token}` },
+                        cache: 'no-store',
+                    });
+                    const data = await response.json().catch(() => ({}));
+                    if (!response.ok) throw Object.assign(new Error(data.error || 'Nie udało się załadować panelu.'), {
+                        caseCode: data.caseCode,
+                    });
+                    if (!cancelled) {
+                        setActionSummary(data);
+                        setDashboardError(null);
                     }
-
-                    if (challengeRes.ok) {
-                        const data = await challengeRes.json();
-                        setChallenges(data.challenges || []);
+                } catch (error) {
+                    if (!cancelled) {
+                        setDashboardError({
+                            message: error instanceof Error ? error.message : 'Nie udało się załadować panelu.',
+                            caseCode: typeof error === 'object' && error && 'caseCode' in error ? String(error.caseCode || '') : undefined,
+                        });
                     }
-
-                    if (galleriesRes.ok) {
-                        const data = await galleriesRes.json();
-                        setGalleries(data.galleries || []);
-                    }
-
-                    if (fmRes.ok) {
-                        const data = await fmRes.json();
-                        if (data.profile) {
-                            setFotoMatchProfile({
-                                id: data.profile.id,
-                                status: data.profile.status,
-                                display_name: data.profile.display_name,
-                            });
-                        }
-                    }
-
-                    if (fmSettingsRes.ok) {
-                        const data = await fmSettingsRes.json();
-                        setFotoMatchEnabled(!!data.enabled);
-                    }
-                } catch (e) {
-                    if (!silent) console.error(e);
+                    if (!silent) console.error(error);
                 } finally {
-                    if (!silent) setLoading(false);
+                    if (!silent && !cancelled) setLoading(false);
                 }
             };
-            fetchData();
+            fetchSummary();
 
-            // Live refresh — wykrywa nowe umowy/oferty i zmiany statusu zaliczki bez F5
             const iv = setInterval(() => {
-                if (document.visibilityState === 'visible') fetchData(true);
-            }, 30000);
-            return () => clearInterval(iv);
+                if (document.visibilityState === 'visible') fetchSummary(true);
+            }, 120000);
+            return () => {
+                cancelled = true;
+                clearInterval(iv);
+            };
         }
     }, [token, authLoading, router]);
+
+    useEffect(() => {
+        if (!token) return;
+        const moduleKey = activeTab === 'sessions'
+            ? 'sessions'
+            : activeTab === 'workshops'
+                ? 'workshops'
+                : ['documents', 'bookings', 'gift_cards', 'preparation'].includes(activeTab)
+                    ? 'account'
+                    : null;
+        if (!moduleKey || loadedModules[moduleKey]) return;
+
+        let cancelled = false;
+        setLoadedModules(previous => ({ ...previous, [moduleKey]: true }));
+        setModuleError(null);
+        const requireOk = async (response: Response) => {
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) throw Object.assign(new Error(data.error || 'Nie udało się załadować tej sekcji.'), {
+                caseCode: data.caseCode,
+            });
+            return data;
+        };
+
+        const loadModule = async () => {
+            if (moduleKey === 'account') {
+                const data = await requireOk(await fetch('/api/user/me', { headers: { Authorization: `Bearer ${token}` } }));
+                if (cancelled) return;
+                setGiftCards(data.user.gift_cards || []);
+                setBookings(data.user.bookings || []);
+                setOffers(data.user.offers || []);
+                setContracts(data.user.contracts || []);
+                setPhotoOrders(data.user.photo_orders || []);
+                if (data.user.permissions && typeof data.user.permissions === 'object') setUserPermissions(data.user.permissions);
+                return;
+            }
+            if (moduleKey === 'sessions') {
+                const [galleryData, challengeData] = await Promise.all([
+                    fetch('/api/galleries/client', { headers: { Authorization: `Bearer ${token}` } }).then(requireOk),
+                    fetch('/api/photo-challenge/client/challenges', { headers: { Authorization: `Bearer ${token}` } }).then(requireOk),
+                ]);
+                if (!cancelled) {
+                    setGalleries(galleryData.galleries || []);
+                    setChallenges(challengeData.challenges || []);
+                }
+                return;
+            }
+            const data = await requireOk(await fetch('/api/user/workshops', { headers: { Authorization: `Bearer ${token}` } }));
+            if (!cancelled) setWorkshops(data.workshops || []);
+        };
+
+        loadModule().catch(error => {
+            if (cancelled) return;
+            setModuleError({
+                message: error instanceof Error ? error.message : 'Nie udało się załadować tej sekcji.',
+                caseCode: typeof error === 'object' && error && 'caseCode' in error ? String(error.caseCode || '') : undefined,
+            });
+        });
+        return () => { cancelled = true; };
+    }, [activeTab, loadedModules, token]);
 
     if (authLoading || loading) {
         return (
@@ -203,56 +247,59 @@ export default function AccountPage() {
                     <nav aria-label="Sekcje konta" className="grid grid-cols-1 min-[360px]:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 bg-zinc-900/50 p-2 rounded-2xl border border-zinc-700 backdrop-blur-xl">
                         <AccountTabButton label="Przegląd" active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} icon={<Star className="h-6 w-6" />} />
 
-                        {userPermissions?.galleries !== false && (
+                        {actionSummary && ((actionSummary.modules.galleries && actionSummary.counts.galleries > 0) || actionSummary.counts.challenges > 0) && (
                             <AccountTabButton
                                 label="Galerie" 
                                 active={activeTab === 'sessions'} 
                                 onClick={() => setActiveTab('sessions')} 
                                 icon={<ImageIcon className="h-6 w-6" />}
-                                count={galleries.length + challenges.length}
-                                hasAlert={challenges.some((c: any) => c.role === 'invitee' && (c.status === 'sent' || c.status === 'viewed'))}
+                                count={actionSummary.counts.galleries + actionSummary.counts.challenges}
+                                hasAlert={actionSummary.nextAction?.kind === 'gallery' || actionSummary.nextAction?.kind === 'challenge'}
                             />
                         )}
 
-                        {userPermissions?.bookings !== false && (
-                            <AccountTabButton label="Rezerwacje" active={activeTab === 'bookings'} onClick={() => setActiveTab('bookings')} icon={<Calendar className="h-6 w-6" />} count={bookings.length} />
+                        {(actionSummary?.counts.bookings || 0) > 0 && (
+                            <AccountTabButton label="Rezerwacje" active={activeTab === 'bookings'} onClick={() => setActiveTab('bookings')} icon={<Calendar className="h-6 w-6" />} count={actionSummary?.counts.bookings} />
                         )}
 
-                        {(userPermissions?.offers !== false || userPermissions?.contracts !== false) && (
+                        {((actionSummary?.counts.offers || 0) + (actionSummary?.counts.contracts || 0)) > 0 && (
                             <AccountTabButton
                                 label="Oferty i Umowy" 
                                 active={activeTab === 'documents'} 
                                 onClick={() => setActiveTab('documents')} 
                                 icon={<FileText className="h-6 w-6" />}
-                                count={offers.length + contracts.length}
-                                hasAlert={offers.some((o: any) => o.status === 'sent' || o.status === 'pending' || o.status === 'draft' || o.status === 'unlock_requested')}
+                                count={(actionSummary?.counts.offers || 0) + (actionSummary?.counts.contracts || 0)}
+                                hasAlert={actionSummary?.nextAction?.kind === 'offer' || actionSummary?.nextAction?.kind === 'contract'}
                             />
                         )}
 
-                        {userPermissions?.gift_cards !== false && (
-                            <AccountTabButton label="Karty Podarunkowe" active={activeTab === 'gift_cards'} onClick={() => setActiveTab('gift_cards')} icon={<Gift className="h-6 w-6" />} count={giftCards.length} />
+                        {(actionSummary?.counts.giftCards || 0) > 0 && (
+                            <AccountTabButton label="Karty Podarunkowe" active={activeTab === 'gift_cards'} onClick={() => setActiveTab('gift_cards')} icon={<Gift className="h-6 w-6" />} count={actionSummary?.counts.giftCards} />
                         )}
 
-                        {/* Warsztaty — zawsze widoczna jako bajer; jesli brak dostepu -> zablokowany widok */}
-                        <AccountTabButton
-                            label="Warsztaty" 
-                            active={activeTab === 'workshops'} 
-                            onClick={() => setActiveTab('workshops')} 
-                            icon={<GraduationCap className="h-6 w-6" />}
-                            count={workshops.length || undefined}
-                            hasAlert={workshops.some((w: any) => {
-                                const isDepositOverdue = w.deposit_due_at && !w.deposit_paid_at && new Date(w.deposit_due_at) < new Date();
-                                const canPayDeposit = w.deposit_amount && !w.deposit_paid_at;
-                                return isDepositOverdue || canPayDeposit;
-                            })}
-                        />
+                        {actionSummary?.modules.workshops && (
+                            <AccountTabButton
+                                label="Warsztaty"
+                                active={activeTab === 'workshops'}
+                                onClick={() => setActiveTab('workshops')}
+                                icon={<GraduationCap className="h-6 w-6" />}
+                                count={workshops.length || undefined}
+                                hasAlert={workshops.some((w: any) => {
+                                    const isDepositOverdue = w.deposit_due_at && !w.deposit_paid_at && new Date(w.deposit_due_at) < new Date();
+                                    const canPayDeposit = w.deposit_amount && !w.deposit_paid_at;
+                                    return isDepositOverdue || canPayDeposit;
+                                })}
+                            />
+                        )}
 
-                        <AccountTabButton
-                            label="Przygotowanie"
-                            active={activeTab === 'preparation'}
-                            onClick={() => setActiveTab('preparation')}
-                            icon={<BookOpen className="h-6 w-6" />}
-                        />
+                        {((actionSummary?.counts.offers || 0) + (actionSummary?.counts.contracts || 0)) > 0 && (
+                            <AccountTabButton
+                                label="Przygotowanie"
+                                active={activeTab === 'preparation'}
+                                onClick={() => setActiveTab('preparation')}
+                                icon={<BookOpen className="h-6 w-6" />}
+                            />
+                        )}
 
                         <AccountTabButton label="Ustawienia" active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} icon={<UserIcon className="h-6 w-6" />} />
                         {user?.role === 'PHOTOGRAPHER' && (
@@ -271,6 +318,12 @@ export default function AccountPage() {
             </div>
 
             <main className="max-w-6xl mx-auto px-4">
+                {moduleError && activeTab !== 'overview' && (
+                    <div role="alert" className="mb-6 rounded-2xl border border-red-500/40 bg-red-500/10 p-4 text-sm text-red-100">
+                        <p>{moduleError.message}</p>
+                        {moduleError.caseCode && <p className="mt-2 font-mono text-xs">Kod sprawy: {moduleError.caseCode}</p>}
+                    </div>
+                )}
                 <AnimatePresence mode="wait">
                     <motion.div
                         key={activeTab}
@@ -328,10 +381,10 @@ export default function AccountPage() {
             const canPayDeposit = w.deposit_amount && !w.deposit_paid_at;
             return isDepositOverdue || canPayDeposit;
         });
-        const offerNeedsAction = activeOffer && (activeOffer.status === 'pending' || activeOffer.status === 'sent' || activeOffer.status === 'draft' || activeOffer.status === 'unlock_requested');
-        const canShowOfferTile = userPermissions?.offers !== false && !offerNeedsAction;
-        const canShowContractTile = userPermissions?.contracts !== false;
-        const canShowGalleryTile = userPermissions?.galleries !== false;
+        const offerNeedsAction = activeOffer && (activeOffer.status === 'sent' || activeOffer.status === 'open');
+        const canShowOfferTile = Boolean(loadedModules.account && actionSummary?.counts.offers && !offerNeedsAction);
+        const canShowContractTile = Boolean(loadedModules.account && actionSummary?.counts.contracts);
+        const canShowGalleryTile = Boolean(loadedModules.sessions && actionSummary?.counts.galleries);
         const visibleStatusTileCount = [canShowOfferTile, canShowContractTile, canShowGalleryTile].filter(Boolean).length;
         const statusGridClass = visibleStatusTileCount <= 1
             ? 'grid-cols-1'
@@ -341,8 +394,33 @@ export default function AccountPage() {
 
         return (
             <div className="space-y-10">
+                {dashboardError ? (
+                    <div role="alert" className="rounded-3xl border border-red-500/50 bg-red-500/10 p-6">
+                        <h2 className="text-lg font-bold text-red-100">Panel jest chwilowo niedostępny</h2>
+                        <p className="mt-2 text-sm text-red-100/80">{dashboardError.message}</p>
+                        {dashboardError.caseCode && <p className="mt-3 font-mono text-xs text-red-200">Kod sprawy: {dashboardError.caseCode}</p>}
+                    </div>
+                ) : actionSummary?.nextAction ? (
+                    <section aria-labelledby="next-action-heading" className="rounded-3xl border-2 border-gold-500/60 bg-gradient-to-br from-gold-500/15 via-zinc-900/80 to-zinc-950 p-6 shadow-[0_0_40px_rgba(212,175,55,0.18)] sm:p-8">
+                        <p className="text-xs font-black uppercase tracking-[0.18em] text-gold-400">Następny krok</p>
+                        <h2 id="next-action-heading" className="mt-2 text-2xl font-bold text-white">{actionSummary.nextAction.statusLabel}</h2>
+                        <p className="mt-2 text-zinc-300">{actionSummary.nextAction.label}</p>
+                        <Link href={actionSummary.nextAction.href} className="mt-6 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-gold-500 px-6 py-3 font-bold text-black transition-colors hover:bg-gold-400">
+                            {actionSummary.nextAction.ctaLabel}
+                            <ChevronRight className="h-5 w-5" aria-hidden />
+                        </Link>
+                    </section>
+                ) : actionSummary ? (
+                    <section className="rounded-3xl border border-emerald-500/30 bg-emerald-500/10 p-6">
+                        <div className="flex items-center gap-3">
+                            <CheckCircle2 className="h-6 w-6 text-emerald-400" aria-hidden />
+                            <h2 className="font-bold text-emerald-100">Nie masz teraz działania do wykonania</h2>
+                        </div>
+                    </section>
+                ) : null}
+
                 {/* SEKCJA AKCJI — Wszystko co wymaga reakcji klienta */}
-                {(pendingChallenges.length > 0 || pendingWorkshops.length > 0 || offerNeedsAction) && (
+                {!actionSummary?.nextAction && (pendingChallenges.length > 0 || pendingWorkshops.length > 0 || offerNeedsAction) && (
                     <div className="space-y-4">
                         <div className="flex items-center gap-3">
                             <div className="relative flex h-2 w-2">
@@ -428,7 +506,7 @@ export default function AccountPage() {
                     </div>
                 )}
 
-                <button
+                {((actionSummary?.counts.offers || 0) + (actionSummary?.counts.contracts || 0)) > 0 && <button
                     type="button"
                     onClick={() => setActiveTab('preparation')}
                     aria-label="Otwórz poradnik Przygotowanie do sesji"
@@ -449,7 +527,7 @@ export default function AccountPage() {
                             <ChevronRight className="h-4 w-4" aria-hidden />
                         </span>
                     </div>
-                </button>
+                </button>}
 
                 {/* Foto-Match block (tylko gdy enabled lub klient ma profil) */}
                 {(fotoMatchEnabled || fotoMatchProfile) && (
@@ -481,7 +559,7 @@ export default function AccountPage() {
                             </button>
                         </div>
 
-                        {userPermissions?.gift_cards !== false && (
+                        {(actionSummary?.counts.giftCards || 0) > 0 && (
                             <div className="bg-zinc-900/30 backdrop-blur-xl border border-zinc-800/50 rounded-3xl p-4 md:p-6 hover:border-gold-500/30 transition-all hover:shadow-lg hover:shadow-gold-500/10">
                                 <h4 className="font-bold mb-3 flex items-center gap-2 text-gold-500">
                                     <Gift className="w-4 h-4 text-gold-500" />
@@ -555,7 +633,7 @@ export default function AccountPage() {
                         </div>
 
                         <div className="grid md:grid-cols-2 gap-6">
-                            {userPermissions?.galleries !== false && (
+                            {(actionSummary?.counts.galleries || 0) > 0 && (
                                 <QuickCard
                                     title="Ostatnia sesja"
                                     value={challenges[0]?.invitee_name ? `Wyzwanie dla ${challenges[0].invitee_name}` : (galleries[0]?.client_name || 'Brak sesji')}
@@ -564,7 +642,7 @@ export default function AccountPage() {
                                     onAction={() => setActiveTab('sessions')}
                                 />
                             )}
-                            {(userPermissions?.offers !== false || userPermissions?.contracts !== false) && (
+                            {((actionSummary?.counts.offers || 0) + (actionSummary?.counts.contracts || 0)) > 0 && (
                                 <QuickCard
                                     title="Twoje dokumenty"
                                     value={(offers.length + contracts.length) > 0 ? `${offers.length + contracts.length} dokumentów` : 'Brak dokumentów'}
@@ -574,7 +652,7 @@ export default function AccountPage() {
                                 />
                             )}
                         </div>
-                        {userPermissions?.gift_cards !== false && renderGiftCards()}
+                        {(actionSummary?.counts.giftCards || 0) > 0 && loadedModules.account && renderGiftCards()}
                     </div>
                 </div>
             </div>
@@ -951,7 +1029,7 @@ export default function AccountPage() {
                                             <div className="flex items-center gap-3 w-full md:w-auto justify-end">
                                                 {/* PDF always available for signed contracts (dynamic generation) */}
                                                 <a
-                                                    href={`/api/contracts/${contract.id}/pdf?token=${token}`}
+                                                    href={`/api/contracts/${contract.id}/pdf`}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
                                                     className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-gold-600 text-zinc-400 hover:text-black rounded-xl transition-all text-sm font-bold"

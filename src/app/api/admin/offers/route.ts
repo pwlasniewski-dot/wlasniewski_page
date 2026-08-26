@@ -3,8 +3,9 @@ import prisma from '@/lib/db/prisma';
 import { parsePolishDate, parsePolishTime } from '@/lib/calendar/polishDate';
 import { requireAuth } from '@/lib/auth/middleware';
 import { generateOfferNumber } from '@/lib/services/numbering';
-import { sendEmail } from '@/lib/email/sender';
-import { generateOfferEmail } from '@/lib/email-templates';
+import { calculateDraftOfferTotal } from '@/lib/offers/draft-total';
+import { normalizeEmail } from '@/lib/crm/delivery';
+import { parsePlnAmount } from '@/lib/money/pln';
 
 export const dynamic = 'force-dynamic';
 
@@ -147,30 +148,37 @@ export async function POST(request: NextRequest) {
         // Generate unique offer number
         const offerNumber = await generateOfferNumber(type === 'b2b' ? 'B2B' : 'B2C');
 
-        // Initial total price calculation
-        let totalPrice = 0;
-
-        // Handle template_data (A4 Builder context)
-        if (template_data) {
-            // Extract total price from footerPrices if possible
-            const prices = template_data.footerPrices || [];
-            if (prices.length > 1) {
-                // Try to find the recommended column total or just the first price column
-                const colIdx = template_data.recommendationColumnIndex > 0 ? template_data.recommendationColumnIndex : 1;
-                const priceStr = prices[colIdx] || prices[1] || '0';
-                totalPrice = parseInt(priceStr.replace(/[^\d]/g, ''), 10) || 0;
-            }
-        } else {
-            // Legacy/Relational calculation
-            sections.forEach((s: any) => {
-                (s.items || []).forEach((item: any) => {
-                    if (!item.is_optional) {
-                        const p = Number(item.price) || 0;
-                        const q = Number(item.quantity) || 1;
-                        totalPrice += p * q;
+        let normalizedSections: any[];
+        try {
+            normalizedSections = (Array.isArray(sections) ? sections : []).map((section: any) => ({
+                ...section,
+                items: (Array.isArray(section.items) ? section.items : []).map((item: any) => {
+                    const price = parsePlnAmount(item.price ?? 0);
+                    const quantity = Number(item.quantity ?? 1);
+                    if (price === null || !Number.isInteger(quantity) || quantity <= 0) {
+                        throw new Error('INVALID_OFFER_ITEM');
                     }
-                });
+                    return { ...item, price, quantity };
+                }),
+            }));
+        } catch {
+            return NextResponse.json({ error: 'Pozycja oferty ma nieprawidłową cenę PLN lub ilość.' }, { status: 400 });
+        }
+        const totalPrice = calculateDraftOfferTotal(template_data, normalizedSections);
+        let normalizedClientEmail = client_email ? normalizeEmail(client_email) : null;
+        if (parsedClientId) {
+            const clientAccount = await prisma.user.findUnique({
+                where: { id: parsedClientId },
+                select: { email: true, role: true },
             });
+            if (!clientAccount || clientAccount.role !== 'CLIENT') {
+                return NextResponse.json({ error: 'Nieprawidłowe konto klienta' }, { status: 409 });
+            }
+            const accountEmail = normalizeEmail(clientAccount.email);
+            if (normalizedClientEmail && normalizedClientEmail !== accountEmail) {
+                return NextResponse.json({ error: 'Adres e-mail oferty nie zgadza się z kontem klienta' }, { status: 409 });
+            }
+            normalizedClientEmail = accountEmail;
         }
 
         // Wyznacz session_date (priorytet: jawnie podane > template_data.eventDate)
@@ -197,10 +205,12 @@ export async function POST(request: NextRequest) {
                 category,
                 offerNumber,
                 client_id: parsedClientId,
-                client_email,
+                client_email: normalizedClientEmail,
                 is_template: is_template || false,
                 valid_until: valid_until ? new Date(valid_until) : null,
-                status: (parsedClientId || client_email) && !is_template ? 'pending' : 'draft',
+                // Samo przypięcie klienta nie jest wysyłką. Dopiero dedykowana
+                // trasa send-email publikuje snapshot i ustawia status `sent`.
+                status: 'draft',
                 template_data: template_data,
                 total_price: totalPrice,
                 negotiation_enabled: negotiation_enabled !== false, // Default to true if not specified
@@ -211,15 +221,15 @@ export async function POST(request: NextRequest) {
                 session_location: resolvedSessionLocation,
                 photographer_id: parsedPhotographerId && !isNaN(parsedPhotographerId) ? parsedPhotographerId : null,
                 sections: template_data ? undefined : {
-                    create: sections.map((section: any, idx: number) => ({
+                    create: normalizedSections.map((section: any, idx: number) => ({
                         title: String(section.title || ''),
                         description: String(section.description || ''),
                         order: idx,
                         items: {
                             create: (section.items || []).map((item: any) => ({
                                 title: String(item.title || ''),
-                                price: Number(item.price) || 0,
-                                quantity: Number(item.quantity) || 1,
+                                price: item.price,
+                                quantity: item.quantity,
                             }))
                         }
                     }))
@@ -228,7 +238,7 @@ export async function POST(request: NextRequest) {
         });
 
         // Resolve recipient for notification email
-        let recipientEmail = client_email?.trim() || null;
+        let recipientEmail = normalizedClientEmail;
         let recipientName = 'Kliencie';
 
         if (!recipientEmail && parsedClientId) {

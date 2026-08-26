@@ -9,7 +9,7 @@ import archiver from 'archiver';
 import { PassThrough } from 'stream';
 import sharp from 'sharp';
 import { withAuthWithQueryToken } from '@/lib/auth/middleware';
-import { uploadStreamToS3 } from '@/lib/storage/s3';
+import { deleteFromS3, uploadStreamToS3 } from '@/lib/storage/s3';
 
 export const maxDuration = 60; // seconds — Netlify Pro
 
@@ -136,12 +136,7 @@ export async function GET(
       }
 
       const participants = await prisma.galleryParticipant.findMany({
-        where: {
-          gallery_id: galleryId,
-          selections: {
-            some: {},
-          },
-        },
+        where: { gallery_id: galleryId },
         include: {
           selections: {
             include: {
@@ -198,10 +193,27 @@ export async function GET(
           })
         : [];
       const paidPhotoUrlById = new Map(
-        paidPhotos.map((p) => [p.id, p.download_source_url || p.file_url])
+        paidPhotos.map((p) => [p.id, p.download_source_url])
       );
 
-      const hasAnyStandard = participants.some((p) => p.selections.length > 0);
+      const missingHqIds = new Set<number>();
+      participants.forEach(participant => {
+        if (participant.selection_status !== 'SUBMITTED') return;
+        participant.selections.forEach(selection => {
+          if (!selection.photo.download_source_url) missingHqIds.add(selection.photo.id);
+        });
+      });
+      allPaidPhotoIds.forEach(photoId => {
+        if (!paidPhotoUrlById.get(photoId)) missingHqIds.add(photoId);
+      });
+      if (missingHqIds.size > 0) {
+        return NextResponse.json({
+          error: `Eksport zablokowany: ${missingHqIds.size} zdjęć nie ma zweryfikowanego JPG HQ.`,
+          missing_hq_photo_ids: [...missingHqIds],
+        }, { status: 409 });
+      }
+
+      const hasAnyStandard = participants.some((p) => p.selection_status === 'SUBMITTED' && p.selections.length > 0);
       const hasAnyPaid = paidOrders.length > 0;
 
       if (!hasAnyStandard && !hasAnyPaid) {
@@ -244,12 +256,12 @@ export async function GET(
         const folderName = `${String(participant.id).padStart(3, '0')}-${normalizeFolderName(displayName)}`;
         const fileNameBase = normalizeFilePart(displayName);
 
-        const standardPhotos = participant.selections.map((sel) => ({
+        const standardPhotos = participant.selection_status === 'SUBMITTED' ? participant.selections.map((sel) => ({
           id: sel.photo.id,
-          file_url: sel.photo.download_source_url || sel.photo.file_url,
+          file_url: sel.photo.download_source_url!,
           source: 'STANDARD' as const,
           format: '15x21',
-        }));
+        })) : [];
 
         const paidItems = paidItemsByParticipant.get(participant.id) || [];
         const paidPhotosForParticipant = paidItems
@@ -339,17 +351,22 @@ export async function GET(
       }
 
       if (appendedFiles === 0) {
-        const details = skippedPhotos.length
-          ? skippedPhotos.join('\n')
-          : 'Brak plików do dodania (0 pozycji po filtrowaniu).';
-        archive.append(
-          `ZIP utworzony, ale nie dodano żadnego zdjęcia.\n\nSzczegóły:\n${details}\n`,
-          { name: '_ZIP_ERROR_README.txt' }
-        );
+        archive.abort();
+        await uploadPromise.catch(() => null);
+        await deleteFromS3(s3Key).catch(() => false);
+        return NextResponse.json({ error: 'Eksport nie zawiera żadnych zatwierdzonych ani opłaconych pozycji.' }, { status: 409 });
       }
 
       await archive.finalize();
       const downloadUrl = await uploadPromise;
+
+      if (skippedPhotos.length > 0) {
+        await deleteFromS3(s3Key).catch(() => false);
+        return NextResponse.json(
+          { error: `Eksport przerwany: nie udało się bezbłędnie przygotować ${skippedPhotos.length} plików.` },
+          { status: 502 },
+        );
+      }
 
       return NextResponse.json({
         success: true,

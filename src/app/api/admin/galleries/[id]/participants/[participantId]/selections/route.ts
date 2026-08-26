@@ -67,6 +67,9 @@ export async function GET(
           consent_scope: participant.consent_scope,
           consent_given_at: participant.consent_given_at,
           first_login_at: participant.first_login_at,
+          selection_status: participant.selection_status,
+          selection_submitted_at: participant.selection_submitted_at,
+          selection_version: participant.selection_version,
         },
         selections: participant.selections.map(s => ({
           selection_id: s.id,

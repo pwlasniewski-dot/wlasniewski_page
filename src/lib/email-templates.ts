@@ -91,6 +91,9 @@ export interface GalleryEmailData {
   clientName: string;
   accessCode: string;
   galleryUrl: string;
+  primaryUrl?: string;
+  primaryCtaLabel?: string;
+  groupPassword?: string;
   expiresAt: string;
   standardCount?: number;
 }
@@ -211,12 +214,14 @@ function subtext(text: string): string {
 
 // ─── 1. WELCOME — NOWY KLIENT ────────────────────────────────
 
-export function generateWelcomeClientEmail(data: { name: string; email: string; password?: string; loginUrl?: string }): string {
+export function generateWelcomeClientEmail(data: { name: string; email: string; password?: string; loginUrl?: string; isExistingAccess?: boolean }): string {
   const loginUrl = data.loginUrl || `${process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL || 'https://wlasniewski.pl'}/logowanie`;
 
   const content = `
-      ${heading(`Witaj, ${data.name}! 👋`)}
-      ${subtext('Twoje konto klienta zostało właśnie utworzone. Masz teraz dostęp do prywatnego panelu, w którym znajdziesz swoje oferty, umowy i galerie zdjęć.')}
+      ${heading(data.isExistingAccess ? `Cześć, ${data.name}!` : `Witaj, ${data.name}! 👋`)}
+      ${subtext(data.isExistingAccess
+        ? 'Na Twoją prośbę przygotowałem nowy, jednorazowy link do ustawienia hasła i odzyskania dostępu do panelu klienta.'
+        : 'Utworzyłem dla Ciebie konto klienta. Ustaw własne hasło, a od razu przejdziesz do prywatnego panelu z ofertami, umowami i galeriami.')}
 
       ${infoBox(`
         <div style="color:#888;font-size:11px;text-transform:uppercase;letter-spacing:2px;margin-bottom:16px;">Dane do logowania</div>
@@ -238,7 +243,7 @@ export function generateWelcomeClientEmail(data: { name: string; email: string; 
         </td></tr>
       </table>
 
-      ${ctaButton('Zaloguj się do Panelu →', loginUrl)}
+      ${ctaButton('Ustaw hasło i otwórz panel →', loginUrl)}
 
       ${goldDivider()}
       <p style="color:#555;font-size:12px;text-align:center;margin:0;">Cieszę się na naszą współpracę! W razie pytań — odpowiedz na tego maila.</p>
@@ -347,6 +352,7 @@ export function generateGalleryEmail(data: GalleryEmailData): string {
         <div style="text-align:center;padding:8px 0;">
           <div style="color:#888;font-size:11px;text-transform:uppercase;letter-spacing:3px;margin-bottom:12px;">Kod dostępu do galerii</div>
           <div style="font-family:monospace;font-size:36px;font-weight:700;color:#c5a059;letter-spacing:6px;padding:12px 0;">${data.accessCode}</div>
+          ${data.groupPassword ? `<div style="color:#888;font-size:12px;margin-top:8px;">Hasło: <strong style="color:#f5f5f5;">${data.groupPassword}</strong></div>` : ''}
           <div style="color:#555;font-size:11px;margin-top:8px;">Galeria dostępna do: <span style="color:#888;">${data.expiresAt}</span></div>
         </div>
       `)}
@@ -364,9 +370,9 @@ export function generateGalleryEmail(data: GalleryEmailData): string {
         </table>
       ` : ''}
 
-      ${ctaButton('Otwórz Galerię →', data.galleryUrl)}
+      ${ctaButton(data.primaryCtaLabel || 'Otwórz Galerię →', data.primaryUrl || data.galleryUrl)}
 
-      <p style="color:#555;font-size:12px;text-align:center;margin:16px 0 0;">Lub wejdź bezpośrednio: <a href="${data.galleryUrl}" style="color:#c5a059;word-break:break-all;">${data.galleryUrl}</a></p>
+      <p style="color:#555;font-size:12px;text-align:center;margin:16px 0 0;">Bezpośredni adres galerii: <a href="${data.galleryUrl}" style="color:#c5a059;word-break:break-all;">${data.galleryUrl}</a></p>
 
       ${goldDivider()}
       <p style="color:#555;font-size:12px;text-align:center;margin:0;">Masz pytania? Odpowiedz na tego maila lub zadzwoń: <a href="tel:+48530788694" style="color:#c5a059;text-decoration:none;">530 788 694</a></p>

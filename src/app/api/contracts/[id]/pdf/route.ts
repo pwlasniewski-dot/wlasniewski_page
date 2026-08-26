@@ -2,23 +2,25 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { verifyToken, extractToken } from '@/lib/auth/jwt';
 import { generateContractPDF } from '@/lib/services/pdf';
+import { isContractRecordOwner, isVerifiedAdminIdentity } from '@/lib/auth/document-access';
+import { getPrivateS3DownloadUrl } from '@/lib/storage/s3';
+import { revalidateActiveClient } from '@/lib/auth/active-client';
+import { isClientVisibleContractStatus } from '@/lib/contracts/status';
 
 export async function GET(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const url = new URL(request.url);
         const tokenCandidates = [
             extractToken(request.headers.get('authorization')),
             extractToken(request.headers.get('Authorization')),
-            url.searchParams.get('token'),
             request.cookies.get('client_token')?.value || null,
             request.cookies.get('admin_token')?.value || null,
             request.cookies.get('user_token')?.value || null,
         ].filter((value): value is string => Boolean(value));
 
-        let payload: { id: number; email: string } | null = null;
+        let payload: { id: number; email: string; role?: string; type?: string } | null = null;
         for (const candidate of tokenCandidates) {
             payload = await verifyToken(candidate);
             if (payload) break;
@@ -45,12 +47,26 @@ export async function GET(
         }
 
         // Security check: Only owner or admin
-        const isAdmin = await prisma.adminUser.findUnique({ where: { id: payload.id } });
-        const isClientOwner = payload.email === contract.user?.email || payload.id === contract.client_id || (contract.offer && (payload.email === contract.offer.client_email || payload.id === contract.offer.client_id));
+        const admin = payload.type === 'admin' && payload.role === 'ADMIN'
+            ? await prisma.adminUser.findUnique({ where: { id: payload.id }, select: { id: true, email: true, role: true } })
+            : null;
+        const isAdmin = isVerifiedAdminIdentity(payload, admin);
+        const activeClient = isAdmin ? null : await revalidateActiveClient(payload);
+        if (!isAdmin && !activeClient) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+        const isClientOwner = activeClient ? isContractRecordOwner(contract, activeClient) : false;
 
         if (!isAdmin && !isClientOwner) {
             console.warn(`[CONTRACT PDF API] Forbidden access attempt by ${payload.email} to contract ${contractId}`);
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
+        if (!isAdmin && !isClientVisibleContractStatus(contract.status)) {
+            return NextResponse.json({ error: 'Contract not found' }, { status: 404 });
+        }
+
+        if (contract.status.toLowerCase() === 'signed' && contract.signed_pdf_url) {
+            return NextResponse.redirect(await getPrivateS3DownloadUrl(contract.signed_pdf_url), { status: 302 });
         }
 
         // PROTECT standalone/uploaded PDFs — if content is just a marker, always serve original
@@ -59,7 +75,7 @@ export async function GET(
 
         if (isStandalonePdf) {
             console.log(`[CONTRACT PDF API] Contract ${contractId} is standalone PDF — redirecting to original file`);
-            return NextResponse.redirect(contract.pdf_url, { status: 302 });
+            return NextResponse.redirect(await getPrivateS3DownloadUrl(contract.pdf_url), { status: 302 });
         }
 
         // Custom Logic: If Signed, always dynamically generate the PDF to stamp dates
@@ -84,7 +100,7 @@ export async function GET(
 
         // If a stored PDF URL exists (uploaded via S3), redirect to it
         if (contract.pdf_url) {
-            return NextResponse.redirect(contract.pdf_url, { status: 302 });
+            return NextResponse.redirect(await getPrivateS3DownloadUrl(contract.pdf_url), { status: 302 });
         }
 
         // No stored PDF: return a helpful HTML splash page

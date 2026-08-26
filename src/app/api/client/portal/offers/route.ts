@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { verifyToken, extractToken } from '@/lib/auth/jwt';
+import { CLIENT_VISIBLE_OFFER_STATUS_VALUES } from '@/lib/offers/status';
+import { revalidateActiveClient } from '@/lib/auth/active-client';
+import { clientOwnershipWhere } from '@/lib/auth/document-access';
+import { isClientVisibleContractStatus } from '@/lib/contracts/status';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,13 +28,17 @@ export async function GET(request: NextRequest) {
                 { status: 401 }
             );
         }
+        const client = await revalidateActiveClient(decoded);
+        if (!client) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
 
         // Fetch all offers for this client (both by user_id and client_email)
         const offers = await prisma.offer.findMany({
             where: {
-                OR: [
-                    { client_id: decoded.id },
-                    { client_email: decoded.email },
+                AND: [
+                    { OR: clientOwnershipWhere(client) },
+                    { status: { in: CLIENT_VISIBLE_OFFER_STATUS_VALUES } },
                 ],
             },
             include: {
@@ -45,7 +53,14 @@ export async function GET(request: NextRequest) {
             orderBy: { created_at: 'desc' },
         });
 
-        return NextResponse.json({ offers });
+        return NextResponse.json({
+            offers: offers.map(offer => ({
+                ...offer,
+                contract: offer.contract && isClientVisibleContractStatus(offer.contract.status)
+                    ? offer.contract
+                    : null,
+            })),
+        });
     } catch (error) {
         console.error('Error fetching client offers:', error);
         return NextResponse.json(

@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { verifyToken, extractToken } from '@/lib/auth/jwt';
 import { logClientActivity } from '@/lib/crm-activity';
+import { isContractRecordOwner, isVerifiedAdminIdentity } from '@/lib/auth/document-access';
+import { revalidateActiveClient } from '@/lib/auth/active-client';
+import { isClientVisibleContractStatus } from '@/lib/contracts/status';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,10 +26,13 @@ export async function GET(
         }
 
         // Check if this is an admin user
-        let isAdmin = false;
-        if (decoded.id) {
-            const adminUser = await prisma.adminUser.findUnique({ where: { id: decoded.id }, select: { id: true } });
-            isAdmin = !!adminUser;
+        const adminUser = decoded.type === 'admin' && decoded.role === 'ADMIN'
+            ? await prisma.adminUser.findUnique({ where: { id: decoded.id }, select: { id: true, email: true, role: true } })
+            : null;
+        const isAdmin = isVerifiedAdminIdentity(decoded, adminUser);
+        const activeClient = isAdmin ? null : await revalidateActiveClient(decoded);
+        if (!isAdmin && !activeClient) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
         const { id } = await params;
@@ -59,13 +65,13 @@ export async function GET(
         if (!contract) {
             return NextResponse.json({ error: 'Contract not found' }, { status: 404 });
         }
+        if (!isAdmin && !isClientVisibleContractStatus(contract.status)) {
+            return NextResponse.json({ error: 'Contract not found' }, { status: 404 });
+        }
 
         // Verify client owns this contract (skip for admin)
         if (!isAdmin) {
-            const isOwner =
-                contract.client_id === decoded.id ||
-                contract.offer?.client_id === decoded.id ||
-                contract.offer?.client_email === decoded.email;
+            const isOwner = isContractRecordOwner(contract, activeClient!);
 
             if (!isOwner) {
                 return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
@@ -87,12 +93,8 @@ export async function GET(
         let userName = 'Kliencie';
         let userEmail = decoded.email || '';
         if (!isAdmin) {
-            const user = await prisma.user.findUnique({
-                where: { id: decoded.id },
-                select: { name: true, email: true }
-            });
-            userName = user?.name || decoded.email || 'Kliencie';
-            userEmail = user?.email || decoded.email || '';
+            userName = activeClient?.name || decoded.email || 'Kliencie';
+            userEmail = activeClient?.email || decoded.email || '';
         } else if (contract.client_id) {
             const clientUser = await prisma.user.findUnique({
                 where: { id: contract.client_id },
@@ -125,7 +127,7 @@ export async function GET(
 
         // CRM Activity: contract viewed (skip for admin)
         if (!isAdmin) {
-            logClientActivity(decoded, 'contract_viewed', {
+            await logClientActivity(decoded, 'contract_viewed', {
                 entityType: 'contract',
                 entityId: contractId,
                 details: { contract_number: contract.contract_number, status: contract.status },

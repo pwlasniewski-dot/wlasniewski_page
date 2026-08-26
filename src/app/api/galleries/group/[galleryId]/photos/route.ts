@@ -65,6 +65,22 @@ export async function GET(
         { status: 404 }
       );
     }
+    if (gallery.expires_at && gallery.expires_at <= new Date()) {
+      return NextResponse.json({ error: 'Galeria wygasła' }, { status: 403 });
+    }
+    if (payload.participant_id > 0) {
+      const participant = await prisma.galleryParticipant.findFirst({
+        where: {
+          id: payload.participant_id,
+          gallery_id: galleryId,
+          parent_identifier: payload.parent_identifier,
+        },
+        select: { id: true },
+      });
+      if (!participant) {
+        return NextResponse.json({ error: 'Sesja profilu nie jest już aktywna' }, { status: 403 });
+      }
+    }
 
     // Get all photos
     const photos = await prisma.galleryPhoto.findMany({

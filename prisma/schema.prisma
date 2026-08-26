@@ -473,6 +473,7 @@ model Booking {
 
   @@index([client_id])
   @@index([drone_package_slug])
+  @@index([email, status, date])
   @@map("bookings")
 }
 
@@ -539,6 +540,7 @@ model GiftCardOrder {
   gift_card         GiftCard? @relation(fields: [gift_card_id], references: [id])
   user              User?     @relation(fields: [user_id], references: [id])
 
+  @@index([user_id, created_at])
   @@map("gift_card_orders")
 }
 
@@ -568,6 +570,7 @@ model GiftCard {
   orders           GiftCardOrder[]
   owner            User?           @relation("UserGiftCards", fields: [owner_id], references: [id])
 
+  @@index([owner_id, created_at])
   @@map("gift_cards")
 }
 
@@ -611,6 +614,7 @@ model User {
   provider_availability   provider_availability[]
   photographer_profile    PhotographerProfile?    @relation(fields: [photographer_profile_id], references: [id])
   crm_activities          CrmActivity[]
+  admin_incidents         AdminIncident[]
   challenge_invites       PhotoChallenge[]        @relation("ChallengeInvitee")
   challenges_initiated    PhotoChallenge[]        @relation("ChallengeInviter")
   foto_match_profile      FotoMatchProfile?
@@ -628,6 +632,53 @@ model User {
   deletion_requested_at   DateTime?
 
   @@map("users")
+}
+
+enum AdminIncidentSeverity {
+  P0
+  P1
+  P2
+  P3
+}
+
+enum AdminIncidentStatus {
+  OPEN
+  ACKNOWLEDGED
+  RESOLVED
+}
+
+/// Trwałe centrum problemów operacyjnych widocznych dla administratora.
+/// Model jest additive; nie zastępuje SystemLog ani CrmActivity.
+model AdminIncident {
+  id              String                @id @default(uuid()) @db.Uuid
+  severity        AdminIncidentSeverity
+  category        String
+  status          AdminIncidentStatus   @default(OPEN)
+  reason_code     String
+  summary         String
+  client_id       Int?
+  client_email    String?
+  entity_type     String?
+  entity_id       Int?
+  correlation_id  String?               @db.Uuid
+  details         Json?
+  occurred_at     DateTime              @default(now())
+  acknowledged_at DateTime?
+  resolved_at     DateTime?
+  notification_status       String    @default("PENDING")
+  notification_attempted_at DateTime?
+  notification_sent_at      DateTime?
+  notification_error        String?
+
+  client User? @relation(fields: [client_id], references: [id], onDelete: SetNull)
+
+  @@index([status, severity, occurred_at])
+  @@index([category, status, occurred_at])
+  @@index([client_id, occurred_at])
+  @@index([correlation_id])
+  @@index([occurred_at])
+  @@index([notification_status, occurred_at])
+  @@map("admin_incidents")
 }
 
 model Offer {
@@ -652,6 +703,10 @@ model Offer {
   selected_addons     Json?          @default("[]")
   negotiation_enabled Boolean        @default(true)
   client_note         String? // Notatka klienta widoczna dla fotografa
+  // Audytowalne zamknięcie starej/roboczej oferty bez kasowania historii.
+  superseded_by_offer_id Int?
+  superseded_at          DateTime?
+  superseded_reason      String?
   // Data sesji (kanoniczna, indeksowana — uzupełnia/zastępuje template_data.eventDate)
   session_date         DateTime?
   session_time         String?       // "HH:MM"
@@ -664,9 +719,15 @@ model Offer {
   gallery             ClientGallery?
   negotiations        Negotiation[]
   sections            OfferSection[]
+  versions            OfferVersion[]
   user                User?          @relation(fields: [client_id], references: [id])
+  superseded_by       Offer?         @relation("OfferSupersession", fields: [superseded_by_offer_id], references: [id], onDelete: SetNull)
+  supersedes          Offer[]        @relation("OfferSupersession")
 
   @@index([session_date])
+  @@index([client_id, status, created_at])
+  @@index([client_email, status, created_at])
+  @@index([superseded_by_offer_id])
   @@map("offers")
 }
 
@@ -723,8 +784,10 @@ model Contract {
   user            User?     @relation(fields: [client_id], references: [id])
   offer           Offer?    @relation(fields: [offer_id], references: [id])
   gallery         ClientGallery?
+  versions        ContractVersion[]
 
   @@index([session_date])
+  @@index([client_id, status, created_at])
   @@map("contracts")
 }
 
@@ -994,7 +1057,11 @@ model ClientGallery {
   products          GalleryProduct[]
   orders            PhotoOrder[]
   participants      GalleryParticipant[]
+  group_login_tokens GroupGalleryLoginToken[]
+  selection_submissions GroupSelectionSubmission[]
 
+  @@index([client_id, is_active, created_at])
+  @@index([client_email, is_active, created_at])
   @@map("client_galleries")
 }
 
@@ -1044,15 +1111,21 @@ model GalleryParticipant {
   parent_email         String? // Email rodzica (opcjonalny)
   parent_phone         String? // Telefon rodzica (opcjonalny)
   first_login_at       DateTime? // Kiedy rodzic się pierwszy raz zalogował
+  selection_status     String           @default("DRAFT") // DRAFT | SUBMITTED | LEGACY_REVIEW_REQUIRED
+  selection_submitted_at DateTime?
+  selection_version    Int              @default(0)
   
   created_at           DateTime         @default(now())
   updated_at           DateTime         @updatedAt
   gallery              ClientGallery    @relation(fields: [gallery_id], references: [id], onDelete: Cascade)
   selections           PhotoSelection[]
+  login_tokens         GroupGalleryLoginToken[]
+  selection_submissions GroupSelectionSubmission[]
   
   @@unique([gallery_id, parent_identifier])
   @@unique([gallery_id, avatar])
   @@index([gallery_id, parent_email])
+  @@index([gallery_id, selection_status])
   @@map("gallery_participants")
 }
 
@@ -1067,6 +1140,60 @@ model PhotoSelection {
 
   @@unique([participant_id, photo_id])
   @@map("photo_selections")
+}
+
+model GroupGalleryActivity {
+  id             Int      @id @default(autoincrement())
+  gallery_id     Int
+  participant_id Int?
+  photo_id       Int?
+  action         String
+  result         String
+  correlation_id String?  @db.Uuid
+  details        Json?
+  created_at     DateTime @default(now())
+
+  @@index([gallery_id, created_at])
+  @@index([participant_id, created_at])
+  @@index([action, result, created_at])
+  @@map("group_gallery_activities")
+}
+
+model GroupGalleryLoginToken {
+  id             String    @id @default(uuid()) @db.Uuid
+  token_hash     String    @unique @db.Char(64)
+  gallery_id     Int
+  participant_id Int
+  email          String
+  expires_at     DateTime
+  used_at        DateTime?
+  created_at     DateTime  @default(now())
+  gallery        ClientGallery @relation(fields: [gallery_id], references: [id], onDelete: Cascade)
+  participant    GalleryParticipant @relation(fields: [participant_id], references: [id], onDelete: Cascade)
+
+  @@index([participant_id, expires_at])
+  @@index([gallery_id, email, created_at])
+  @@map("group_gallery_login_tokens")
+}
+
+model GroupSelectionSubmission {
+  id                         String    @id @default(uuid()) @db.Uuid
+  gallery_id                 Int
+  participant_id             Int?
+  parent_identifier_snapshot String?
+  version                    Int
+  photo_ids                  Json
+  payload_hash               String    @db.Char(64)
+  status                     String    @default("SUBMITTED")
+  submitted_at               DateTime  @default(now())
+  created_at                 DateTime  @default(now())
+  gallery                    ClientGallery @relation(fields: [gallery_id], references: [id], onDelete: Restrict)
+  participant                GalleryParticipant? @relation(fields: [participant_id], references: [id], onDelete: SetNull)
+
+  @@unique([participant_id, version])
+  @@index([gallery_id, status, submitted_at])
+  @@index([payload_hash])
+  @@map("group_selection_submissions")
 }
 
 model GalleryProduct {
@@ -1178,8 +1305,11 @@ model PhotoOrder {
   created_at     DateTime      @default(now())
   updated_at     DateTime      @updatedAt
   product_ids    String?
+  idempotency_key String?       @unique
+  checkout_fingerprint String?
   gallery        ClientGallery @relation(fields: [gallery_id], references: [id], onDelete: Cascade)
 
+  @@index([gallery_id, created_at])
   @@map("photo_orders")
 }
 
@@ -1220,6 +1350,84 @@ model ReportDelivery {
 
   @@index([report_type, period])
   @@map("report_deliveries")
+}
+
+model MessageOutbox {
+  id              String            @id @default(uuid()) @db.Uuid
+  idempotency_key String            @unique
+  message_type    String
+  channel         String            @default("EMAIL")
+  recipient       String
+  subject         String
+  payload         Json
+  payload_hash    String
+  entity_type     String?
+  entity_id       Int?
+  status          String            @default("PENDING")
+  attempts        Int               @default(0)
+  available_at    DateTime          @default(now())
+  sent_at         DateTime?
+  last_error      String?
+  created_at      DateTime          @default(now())
+  updated_at      DateTime          @updatedAt
+  deliveries      MessageDelivery[]
+
+  @@index([status, available_at])
+  @@index([entity_type, entity_id, created_at])
+  @@index([recipient, created_at])
+  @@map("message_outbox")
+}
+
+model MessageDelivery {
+  id                  String        @id @default(uuid()) @db.Uuid
+  outbox_id           String        @db.Uuid
+  attempt_no          Int
+  status              String
+  provider_message_id String?
+  error               String?
+  attempted_at        DateTime      @default(now())
+  completed_at        DateTime?
+  outbox              MessageOutbox @relation(fields: [outbox_id], references: [id], onDelete: Cascade)
+
+  @@unique([outbox_id, attempt_no])
+  @@index([status, attempted_at])
+  @@map("message_deliveries")
+}
+
+model OfferVersion {
+  id           String   @id @default(uuid()) @db.Uuid
+  offer_id     Int
+  version      Int
+  payload      Json
+  payload_hash String
+  pdf_key      String?
+  status       String
+  created_at   DateTime @default(now())
+  sent_at      DateTime?
+  offer        Offer    @relation(fields: [offer_id], references: [id], onDelete: Restrict)
+
+  @@unique([offer_id, version])
+  @@index([offer_id, created_at])
+  @@index([payload_hash])
+  @@map("offer_versions")
+}
+
+model ContractVersion {
+  id           String   @id @default(uuid()) @db.Uuid
+  contract_id  Int
+  version      Int
+  payload      Json
+  payload_hash String
+  pdf_key      String?
+  status       String
+  created_at   DateTime @default(now())
+  sent_at      DateTime?
+  contract     Contract @relation(fields: [contract_id], references: [id], onDelete: Restrict)
+
+  @@unique([contract_id, version])
+  @@index([contract_id, created_at])
+  @@index([payload_hash])
+  @@map("contract_versions")
 }
 
 model SystemSettings {

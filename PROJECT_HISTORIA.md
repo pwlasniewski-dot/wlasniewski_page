@@ -1,5 +1,24 @@
 # PROJECT_HISTORIA & VADEMECUM STABILNOŚCI
 
+## 2026-08-24 — model galerii komunijnych i audyt produkcji FotoDron
+
+- Właściciel formalnie potwierdził, że każdy uwierzytelniony rodzic może pobrać całą cyfrową galerię grupy. Wybory zdjęć służą wyłącznie zleceniu odbitek, płatne dodatki są osobnym zamówieniem, a zgoda na publikację jest niezależna.
+- Link Adobe pozostaje pełnoprawnym kanałem dostawy pełnej galerii. Cofnięto robocze ograniczenia, które błędnie uzależniały pobieranie cyfrowe od wyborów lub płatności.
+- Read-only audyt produkcyjnego Neon wykazał 49 różnych ZIP-ów dla 3 rodziców i około 8 klastrów interakcji. Trzy niepełne paczki zapisano jako sukces; brakowało job/run/correlation ID i danych pozwalających odróżnić kliknięcie od ponowienia.
+- Dla galerii #20 wykryto brak 11 źródeł HQ (w tym dwóch użytych w wyborach), stare płatności `PENDING`, lukę starszych wpłat w `PaymentLedger` oraz możliwy duplikat profilu. Dla #16 brakuje źródła HQ wszystkich 244 zdjęć i 51 unikalnych wyborów odbitek. Galeria #19 ma komplet 299 źródeł HQ, ale opłacone zamówienie #23 nie ma odnalezionego wpisu `PaymentLedger`, a profile #47/#48 wymagają ręcznej oceny.
+- Globalny preflight potwierdził brak przekroczeń limitu wyborów, brak wyborów między galeriami, brak powtórzonych znormalizowanych e-maili i 64/64 poprawne składniowo e-maile rodziców.
+- Dokument `docs/GROUP_GALLERY_SELECTION.md` jest aktualnym źródłem prawdy. Dane produkcyjne pozostały niezmienione; migracja i porządki wymagają kopii, preflightu, stagingu i osobnej zgody na wdrożenie.
+- Pełny raport z ofertami, płatnościami, wszystkimi trzema galeriami grupowymi, telemetrią logowania i kandydatami tabel legacy zapisano w `docs/FOTODRON_PRODUCTION_AUDIT_2026-08-24.md`.
+
+### 2026-08-26 — wynik migracji stagingowej
+
+- Dedykowaną gałąź Neon `staging-crm-observability-20260823` odświeżono z aktualnego produkcyjnego `main`; przed resetem miała 0 bajtów zapisów.
+- Jedenaście brakujących migracji zastosowano w jednej transakcji. Historia Prisma po operacji: 18/18 migracji zakończonych, 0 błędnych lub wycofanych.
+- Liczby danych przed i po migracji pozostały identyczne: 31 użytkowników, 22 oferty, 7 umów, 10 galerii, 64 uczestników, 244 wybory, 14 zamówień zdjęć i 1 wpis rejestru płatności.
+- Po backfillu 46 kompletnych zestawów ma `LEGACY_REVIEW_REQUIRED`, a 18 częściowych lub pustych `DRAFT`. Nie utracono żadnego wyboru.
+- Kontrola wykazała zero osieroconych ofert, umów, galerii i wyborów, zero powtórzonych e-maili rodziców w galerii, zero przekroczeń limitu i zero wyborów między galeriami.
+- Produkcyjna baza Neon nie została w tym kroku zmieniona. Kolejna bramka to build wdrożeniowy, testy S3/ZIP oraz canary.
+
 ## 2026-08-21 — przebudowa Aero Analiza pod zapytania techniczne
 
 - Publiczna domena Aero Analiza otrzymała własny shell, nawigację, stopkę, manifest, ikony, metadane i graf encji. Nie montuje konta, koszyka, promocji, galerii ani kontaktu marki fotograficznej.

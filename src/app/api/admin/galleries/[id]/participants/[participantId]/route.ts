@@ -58,9 +58,15 @@ export async function DELETE(
 
             const existing = await prisma.galleryParticipant.findFirst({
                 where: { id: Number(participantId), gallery_id: Number(id) },
-                select: { id: true },
+                select: { id: true, gallery: { select: { gallery_mode: true } } },
             });
             if (!existing) return NextResponse.json({ error: 'Uczestnik nie należy do tej galerii' }, { status: 404 });
+            if (existing.gallery.gallery_mode === 'GROUP') {
+                return NextResponse.json(
+                    { error: 'Profilu rodzica nie wolno usuwać z historią wyborów. Użyj kontrolowanej archiwizacji.' },
+                    { status: 409 },
+                );
+            }
 
             await prisma.galleryParticipant.delete({
                 where: { id: Number(participantId) }

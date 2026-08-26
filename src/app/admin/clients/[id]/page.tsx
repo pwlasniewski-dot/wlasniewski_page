@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import GalleryAdmin from '@/components/admin/GalleryAdmin';
+import { parsePlnAmount } from '@/lib/money/pln';
 
 interface ClientDetails {
     id: number;
@@ -47,16 +48,6 @@ interface ClientDetails {
         time: string | null;
         location: string | null;
     } | null;
-}
-
-function parsePriceFromText(input: unknown): number {
-    if (typeof input === 'number' && Number.isFinite(input)) return input;
-    if (typeof input !== 'string') return 0;
-    const normalized = input.replace(/\s/g, '').replace(',', '.');
-    const numeric = normalized.match(/\d+(?:\.\d+)?/);
-    if (!numeric) return 0;
-    const parsed = Number(numeric[0]);
-    return Number.isFinite(parsed) ? parsed : 0;
 }
 
 function formatCurrency(value: number): string {
@@ -113,7 +104,7 @@ function buildAcceptedOfferSummary(offer: any): Array<{ label: string; value: st
         const title = addon?.album_title || addon?.title || addon?.name || 'Album';
         const format = addon?.format || addon?.size || addon?.variant || null;
         const qty = Number(addon?.quantity) || 1;
-        const price = Number(addon?.final_price) || parsePriceFromText(addon?.price);
+        const price = parsePlnAmount(addon?.final_price) || parsePlnAmount(addon?.price) || 0;
         rows.push({
             label: `Album: ${title}`,
             value: `${format ? `${format} • ` : ''}${qty} szt.${price > 0 ? ` • ${formatCurrency(price)}` : ''}`,
@@ -176,6 +167,7 @@ function ClientDetailsContent({ id }: { id: string }) {
     const standaloneContractPdfRef = React.useRef<HTMLInputElement>(null);
     const [uploadingStandaloneOffer, setUploadingStandaloneOffer] = useState(false);
     const [uploadingStandaloneContract, setUploadingStandaloneContract] = useState(false);
+    const [standaloneOfferPrice, setStandaloneOfferPrice] = useState('');
     const [notifyingOffer, setNotifyingOffer] = useState<number | null>(null);
     const [notifyingContract, setNotifyingContract] = useState<number | null>(null);
 
@@ -219,6 +211,11 @@ function ClientDetailsContent({ id }: { id: string }) {
     }, [activeTab, client?.email]);
 
     const handleStandaloneUpload = async (type: 'offer' | 'contract', file: File) => {
+        const parsedOfferPrice = parsePlnAmount(standaloneOfferPrice);
+        if (type === 'offer' && (parsedOfferPrice === null || parsedOfferPrice <= 0)) {
+            toast.error('Podaj dodatnią cenę oferty w PLN przed wyborem pliku.');
+            return;
+        }
         const setUploading = type === 'offer' ? setUploadingStandaloneOffer : setUploadingStandaloneContract;
         setUploading(true);
         try {
@@ -229,6 +226,7 @@ function ClientDetailsContent({ id }: { id: string }) {
             if (type === 'offer') {
                 formData.append('client_id', String(client.id));
                 formData.append('client_email', client.email);
+                formData.append('total_price', standaloneOfferPrice);
             } else {
                 formData.append('client_id', String(client.id));
             }
@@ -243,6 +241,7 @@ function ClientDetailsContent({ id }: { id: string }) {
             const data = await res.json();
             if (data.success) {
                 toast.success(`PDF ${type === 'offer' ? 'oferty' : 'umowy'} wgrany i utworzony pomyślnie`);
+                if (type === 'offer') setStandaloneOfferPrice('');
                 fetchClientDetails();
             } else {
                 toast.error(data.error || 'Błąd uploadu PDF');
@@ -1221,9 +1220,26 @@ function ClientDetailsContent({ id }: { id: string }) {
                                 <p className="text-zinc-500">Historia propozycji i wycen.</p>
                             </div>
                             <div className="w-full sm:w-auto flex flex-col sm:flex-row gap-3">
+                                <label className="flex items-center gap-2 bg-zinc-950 border border-zinc-700 rounded-lg px-3">
+                                    <span className="text-xs font-bold text-zinc-400">Cena</span>
+                                    <input
+                                        type="text"
+                                        inputMode="decimal"
+                                        value={standaloneOfferPrice}
+                                        onChange={event => setStandaloneOfferPrice(event.target.value)}
+                                        placeholder="np. 2500"
+                                        className="w-28 bg-transparent py-3 text-white outline-none"
+                                        aria-label="Cena samodzielnej oferty w PLN"
+                                    />
+                                    <span className="text-xs font-bold text-gold-400">PLN</span>
+                                </label>
                                 <button
                                     onClick={() => standaloneOfferPdfRef.current?.click()}
-                                    disabled={uploadingStandaloneOffer}
+                                    disabled={
+                                        uploadingStandaloneOffer ||
+                                        parsePlnAmount(standaloneOfferPrice) === null ||
+                                        (parsePlnAmount(standaloneOfferPrice) || 0) <= 0
+                                    }
                                     className="px-5 py-3 bg-amber-600 hover:bg-amber-500 disabled:bg-zinc-700 text-white font-bold rounded-lg flex items-center gap-2 transition-all"
                                 >
                                     {uploadingStandaloneOffer
@@ -1291,20 +1307,6 @@ function ClientDetailsContent({ id }: { id: string }) {
                                                     </NextLink>
 
                                                     <button
-                                                        onClick={() => handleSaveOfferS3(offer.id)}
-                                                        disabled={savingOfferId === offer.id}
-                                                        className={`p-3 rounded-lg border transition-all ${offer.pdf_url
-                                                            ? 'bg-zinc-800 hover:bg-zinc-700 text-white border-zinc-700 hover:border-zinc-500'
-                                                            : 'bg-zinc-900/50 text-gold-500/50 border-zinc-800 hover:border-gold-500/50'
-                                                            }`}
-                                                        title={offer.pdf_url ? "Zaktualizuj PDF w S3" : "Zapisz PDF w S3"}
-                                                    >
-                                                        {savingOfferId === offer.id
-                                                            ? <RefreshCw className="w-5 h-5 animate-spin" />
-                                                            : <Cloud className="w-5 h-5" />}
-                                                    </button>
-
-                                                    <button
                                                         onClick={() => {
                                                             setPendingUploadId({ type: 'offer', id: offer.id });
                                                             offerPdfInputRef.current?.click();
@@ -1322,23 +1324,22 @@ function ClientDetailsContent({ id }: { id: string }) {
                                                     <button
                                                         onClick={() => handleNotifyClient('offer', offer.id)}
                                                         disabled={notifyingOffer === offer.id}
-                                                        className="p-3 rounded-lg border transition-all bg-blue-900/20 hover:bg-blue-900/40 text-blue-400 hover:text-blue-300 border-blue-900/30 hover:border-blue-700"
-                                                        title="Wyślij e-mail do klienta o ofercie"
+                                                        className="px-4 py-3 rounded-lg border transition-all bg-blue-900/20 hover:bg-blue-900/40 text-blue-400 hover:text-blue-300 border-blue-900/30 hover:border-blue-700 flex items-center gap-2 font-semibold text-sm"
+                                                        title="Wygeneruj PDF, dołącz go i wyślij dokładny link do oferty"
                                                     >
                                                         {notifyingOffer === offer.id
                                                             ? <RefreshCw className="w-5 h-5 animate-spin" />
-                                                            : <Mail className="w-5 h-5" />}
+                                                            : <><Mail className="w-5 h-5" /> Wyślij ofertę + PDF</>}
                                                     </button>
 
                                                     <button
                                                         onClick={(e) => {
                                                             e.preventDefault();
-                                                            const token = localStorage.getItem('admin_token');
                                                             if (!offer.pdf_url) {
                                                                 toast.error('PDF nie został jeszcze wygenerowany. Użyj przycisku "S3" obok.');
                                                                 return;
                                                             }
-                                                            window.open(`/api/offers/${offer.id}/pdf?token=${token}`, '_blank');
+                                                            window.open(`/api/offers/${offer.id}/pdf`, '_blank');
                                                         }}
                                                         className={`p-3 rounded-lg border transition-all ${offer.pdf_url
                                                             ? 'bg-zinc-800 hover:bg-zinc-700 text-white border-zinc-700 hover:border-zinc-500'
@@ -1354,8 +1355,7 @@ function ClientDetailsContent({ id }: { id: string }) {
                                                             onClick={(e) => {
                                                                 e.preventDefault();
                                                                 const token = localStorage.getItem('admin_token');
-                                                                const acceptedPdfUrl = offer.pdf_url.replace(/\.pdf$/, '_zatwierdzona.pdf');
-                                                                window.open(acceptedPdfUrl, '_blank');
+                                                                window.open(`/api/offers/${offer.id}/pdf?accepted=true`, '_blank');
                                                             }}
                                                             className="p-3 rounded-lg border transition-all bg-green-600 hover:bg-green-700 text-white border-green-700 hover:border-green-500"
                                                             title="Pobierz ofertę po zatwierdzeniu"
@@ -1532,13 +1532,12 @@ function ClientDetailsContent({ id }: { id: string }) {
                                             <button
                                                 onClick={(e) => {
                                                     e.preventDefault();
-                                                    const token = localStorage.getItem('admin_token');
                                                     const isPdfReady = contract.pdf_url || contract.status === 'signed' || contract.status === 'SIGNED';
                                                     if (!isPdfReady) {
                                                         toast.error('PDF nie został jeszcze wygenerowany. Użyj przycisku obok (chmura), aby zapisać umowę w S3.');
                                                         return;
                                                     }
-                                                    window.open(`/api/contracts/${contract.id}/pdf?token=${token}`, '_blank');
+                                                    window.open(`/api/contracts/${contract.id}/pdf`, '_blank');
                                                 }}
                                                 className={`p-2 rounded-lg border transition-all ${contract.pdf_url || contract.status === 'signed' || contract.status === 'SIGNED'
                                                     ? 'bg-zinc-800 hover:bg-zinc-700 text-white border-zinc-700 hover:border-zinc-500'
@@ -1554,8 +1553,7 @@ function ClientDetailsContent({ id }: { id: string }) {
                                                 <button
                                                     onClick={(e) => {
                                                         e.preventDefault();
-                                                        const signedPdfUrl = contract.pdf_url.replace(/\.pdf$/, '_podpisana.pdf');
-                                                        window.open(signedPdfUrl, '_blank');
+                                                        window.open(`/api/contracts/${contract.id}/pdf`, '_blank');
                                                     }}
                                                     className="p-2 rounded-lg border bg-green-900/20 hover:bg-green-900/40 text-green-500 hover:text-green-400 border-green-900/30 hover:border-green-700 transition-all"
                                                     title="Pobierz umowę z potwierdzeniem podpisu elektronicznego"
@@ -1569,7 +1567,7 @@ function ClientDetailsContent({ id }: { id: string }) {
                                                 <button
                                                     onClick={(e) => {
                                                         e.preventDefault();
-                                                        window.open(contract.signed_pdf_url, '_blank');
+                                                        window.open(`/api/contracts/${contract.id}/pdf`, '_blank');
                                                     }}
                                                     className="p-2 rounded-lg border bg-emerald-900/20 hover:bg-emerald-900/40 text-emerald-400 hover:text-emerald-300 border-emerald-900/30 hover:border-emerald-700 transition-all"
                                                     title="Pobierz skan podpisanej umowy (wgrane przez klienta)"

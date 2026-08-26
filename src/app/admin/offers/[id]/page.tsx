@@ -1,16 +1,19 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import OfferBuilder from '@/components/admin/OfferBuilder';
 import OfferRecommendedAlbumsManager from '@/components/admin/OfferRecommendedAlbumsManager';
-import { MessageCircle, Calendar, User, Send, Shield, UserCheck, Users, Package, CheckCircle2 } from 'lucide-react';
+import { MessageCircle, User, Send, Shield, Archive } from 'lucide-react';
 
 export default function EditOfferPage({ params }: { params: Promise<{ id: string }> }) {
     const [offer, setOffer] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [replyMessage, setReplyMessage] = useState('');
     const [sending, setSending] = useState(false);
+    const [replacementOfferId, setReplacementOfferId] = useState('');
+    const [supersedeReason, setSupersedeReason] = useState('');
+    const [superseding, setSuperseding] = useState(false);
     const router = useRouter();
     const resParams: any = React.use(params);
     const id = resParams.id;
@@ -75,61 +78,40 @@ export default function EditOfferPage({ params }: { params: Promise<{ id: string
         }
     };
 
+    const handleSupersede = async () => {
+        const replacementId = Number(replacementOfferId);
+        if (!Number.isInteger(replacementId) || replacementId <= 0 || supersedeReason.trim().length < 10) {
+            alert('Podaj ID prawidłowej oferty i konkretny powód (minimum 10 znaków).');
+            return;
+        }
+        if (!window.confirm(`Oznaczyć ofertę #${id} jako zastąpioną przez ofertę #${replacementId}? Historia pozostanie zachowana.`)) return;
+        setSuperseding(true);
+        try {
+            const token = localStorage.getItem('admin_token');
+            const response = await fetch(`/api/admin/offers/${id}/supersede`, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    replacement_offer_id: replacementId,
+                    reason: supersedeReason.trim(),
+                    expected_updated_at: offer.updated_at,
+                }),
+            });
+            const payload = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(payload.error || 'Nie udało się zastąpić oferty.');
+            await fetchOffer();
+        } catch (error) {
+            alert(error instanceof Error ? error.message : 'Nie udało się zastąpić oferty.');
+        } finally {
+            setSuperseding(false);
+        }
+    };
+
     const pluralizeMessages = (count: number) => {
         if (count === 1) return '1 wiadomość';
         if (count >= 2 && count <= 4) return `${count} wiadomości`;
         return `${count} wiadomości`;
     };
-
-    const [splitCounts, setSplitCounts] = useState<{ [key: number]: number }>({});
-    const [acceptingForClient, setAcceptingForClient] = useState(false);
-    const [manualPrice, setManualPrice] = useState<number>(0);
-
-    const templateData = offer?.template_data;
-    const isCommunion = offer?.category?.toLowerCase() === 'komunia';
-    const isPending = offer?.status === 'sent' || offer?.status === 'pending';
-
-    // Suma z sekcji oferty (price * quantity wszystkich pozycji) — autoryzowane zrodlo prawdy o kwocie
-    const sectionsTotal = useMemo(() => {
-        if (!offer?.sections) return 0;
-        let sum = 0;
-        for (const sec of offer.sections) {
-            for (const it of (sec.items || [])) {
-                const p = Number(it.price) || 0;
-                const q = Number(it.quantity) || 1;
-                sum += p * q;
-            }
-        }
-        return sum;
-    }, [offer?.sections]);
-
-    // Auto-fill "Kwota oferty" — wypelnia sie automatycznie z total_price oferty lub z sumy pozycji.
-    // Admin moze nadpisac recznie jesli chce negocjowac, ale nie musi przepisywac.
-    useEffect(() => {
-        if (!offer || isCommunion) return;
-        const auto = (offer.total_price && offer.total_price > 0) ? offer.total_price : sectionsTotal;
-        if (auto > 0) setManualPrice(auto);
-    }, [offer?.id, offer?.total_price, sectionsTotal, isCommunion]);
-
-    const totalChildren = useMemo(() => {
-        return Object.values(splitCounts).reduce((a: number, b: number) => a + (b as number), 0);
-    }, [splitCounts]);
-
-    const calculatedTotal = useMemo(() => {
-        if (!templateData?.footerPrices) return 0;
-        let total = 0;
-        if (isCommunion) {
-            templateData.footerPrices.forEach((priceStr: string, idx: number) => {
-                if (idx === 0) return;
-                const count = splitCounts[idx] || 0;
-                if (count > 0) {
-                    const price = parseInt(priceStr.replace(/[^0-9]/g, '')) || 0;
-                    total += price * count;
-                }
-            });
-        }
-        return total;
-    }, [templateData, splitCounts, isCommunion]);
 
     if (loading) {
         return <div className="text-center py-8">Ładowanie...</div>;
@@ -155,65 +137,6 @@ export default function EditOfferPage({ params }: { params: Promise<{ id: string
         initialBuilderData.sessionDurationMin = offer.session_duration_min;
     }
 
-    const handleAcceptForClient = async () => {
-        const finalPrice = isCommunion ? calculatedTotal : manualPrice;
-        if (isCommunion && totalChildren === 0) {
-            alert('Wprowadź liczbę dzieci dla przynajmniej jednego pakietu.');
-            return;
-        }
-        if (!isCommunion && finalPrice <= 0) {
-            alert('Wprowadź kwotę oferty.');
-            return;
-        }
-        const confirmMsg = isCommunion 
-            ? `Czy na pewno chcesz zaakceptować ofertę za klienta?\n\nLiczba dzieci: ${totalChildren}\nKwota: ${finalPrice.toLocaleString('pl-PL')} PLN`
-            : `Czy na pewno chcesz zaakceptować ofertę za klienta?\n\nKwota: ${finalPrice.toLocaleString('pl-PL')} PLN`;
-        if (!confirm(confirmMsg)) {
-            return;
-        }
-        setAcceptingForClient(true);
-        try {
-            const token = localStorage.getItem('admin_token');
-            const clientSelection: any = {
-                totalPrice: finalPrice,
-                acceptedByAdmin: true,
-            };
-            if (isCommunion) {
-                clientSelection.childCount = totalChildren;
-                clientSelection.splitPackageCounts = splitCounts;
-                clientSelection.packagesBreakdown = Object.entries(splitCounts).map(([idx, count]) => ({
-                    name: templateData.pricingHeaders?.[parseInt(idx)] || `Pakiet ${idx}`,
-                    price: templateData.footerPrices?.[parseInt(idx)] || '0',
-                    count: count,
-                    subtotal: (parseInt((templateData.footerPrices?.[parseInt(idx)] || '0').replace(/[^0-9]/g, '')) || 0) * (count as number)
-                }));
-            }
-            const res = await fetch(`/api/admin/offers/${id}`, {
-                method: 'PATCH',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    status: 'accepted',
-                    client_selection: clientSelection,
-                }),
-            });
-            if (res.ok) {
-                alert('✅ Oferta zaakceptowana za klienta!');
-                fetchOffer();
-            } else {
-                const err = await res.json().catch(() => ({}));
-                alert('Błąd: ' + (err.error || 'Nie udało się zaakceptować'));
-            }
-        } catch (err) {
-            console.error(err);
-            alert('Błąd połączenia');
-        } finally {
-            setAcceptingForClient(false);
-        }
-    };
-
     // Sort negotiations by created_at ascending (oldest first) for chat flow
     const sortedNegotiations = offer.negotiations
         ? [...offer.negotiations].sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
@@ -221,6 +144,58 @@ export default function EditOfferPage({ params }: { params: Promise<{ id: string
 
     return (
         <div className="space-y-6">
+            {offer.status === 'superseded' ? (
+                <section className="rounded-xl border border-amber-300 bg-amber-50 p-5 text-amber-950">
+                    <div className="flex items-start gap-3">
+                        <Archive className="mt-0.5 h-5 w-5 shrink-0" />
+                        <div>
+                            <h2 className="font-bold">Oferta historyczna — zastąpiona</h2>
+                            <p className="mt-1 text-sm">
+                                Klient nie widzi tej oferty. Zastąpiła ją{' '}
+                                {offer.supersededBy
+                                    ? `${offer.supersededBy.offerNumber || `#${offer.supersededBy.id}`} — ${offer.supersededBy.title}`
+                                    : `oferta #${offer.superseded_by_offer_id}`}.
+                            </p>
+                            {offer.superseded_reason && <p className="mt-2 text-sm"><strong>Powód:</strong> {offer.superseded_reason}</p>}
+                        </div>
+                    </div>
+                </section>
+            ) : !offer.is_template && (
+                <section className="rounded-xl border border-zinc-300 bg-white p-5 shadow-sm">
+                    <div className="flex items-start gap-3">
+                        <Archive className="mt-0.5 h-5 w-5 shrink-0 text-zinc-600" />
+                        <div className="w-full">
+                            <h2 className="font-bold text-zinc-900">Zastąp starą lub błędną ofertę</h2>
+                            <p className="mt-1 text-sm text-zinc-600">Nie usuwa danych. Ukrywa starą ofertę klientowi i zachowuje pełny ślad audytowy.</p>
+                            <div className="mt-3 grid gap-3 md:grid-cols-[180px_1fr_auto]">
+                                <input
+                                    type="number"
+                                    min="1"
+                                    value={replacementOfferId}
+                                    onChange={event => setReplacementOfferId(event.target.value)}
+                                    placeholder="ID nowej oferty"
+                                    className="rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+                                />
+                                <input
+                                    value={supersedeReason}
+                                    onChange={event => setSupersedeReason(event.target.value)}
+                                    maxLength={500}
+                                    placeholder="Powód, np. błędny email — zastąpiona poprawną ofertą"
+                                    className="rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={handleSupersede}
+                                    disabled={superseding}
+                                    className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                                >
+                                    {superseding ? 'Zapisuję…' : 'Oznacz jako zastąpioną'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            )}
             {/* Negotiations Chat Section */}
             {sortedNegotiations.length > 0 && (
                 <div className="bg-white rounded-lg shadow-lg border-l-4 border-orange-500 p-6">
@@ -304,111 +279,6 @@ export default function EditOfferPage({ params }: { params: Promise<{ id: string
                         </div>
                         <p className="text-xs text-gray-500 mt-2">Enter wysyła, Shift+Enter nowa linia. Klient dostanie email z Twoją odpowiedzią.</p>
                     </div>
-                </div>
-            )}
-
-            {/* Accept for Client Section */}
-            {isPending && (
-                <div className="bg-white rounded-lg shadow-lg border-l-4 border-green-500 p-6">
-                    <div className="flex items-center gap-3 mb-4">
-                        <UserCheck className="w-6 h-6 text-green-600" />
-                        <h2 className="text-xl font-bold text-gray-900">Wypełnij za klienta</h2>
-                        <span className="ml-auto text-xs bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full font-semibold">
-                            Status: {offer.status}
-                        </span>
-                    </div>
-                    <p className="text-sm text-gray-600 mb-4">
-                        {isCommunion 
-                            ? 'Wprowadź liczbę dzieci dla każdego pakietu i zaakceptuj ofertę w imieniu klienta.'
-                            : 'Wprowadź kwotę i zaakceptuj ofertę w imieniu klienta.'}
-                    </p>
-
-                    {isCommunion && templateData ? (
-                        <>
-                            <div className="grid gap-3 mb-6">
-                                {templateData.pricingHeaders?.map((header: string, idx: number) => {
-                                    if (idx === 0) return null;
-                                    const price = templateData.footerPrices?.[idx] || '—';
-                                    const count = splitCounts[idx] || 0;
-                                    return (
-                                        <div key={idx} className="flex items-center gap-4 bg-gray-50 rounded-lg p-4 border border-gray-200">
-                                            <div className="flex-1">
-                                                <div className="flex items-center gap-2">
-                                                    <Package className="w-4 h-4 text-blue-600" />
-                                                    <span className="font-semibold text-gray-900">{header}</span>
-                                                </div>
-                                                <span className="text-sm text-gray-500">Cena: {price}</span>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <button
-                                                    onClick={() => setSplitCounts(p => ({ ...p, [idx]: Math.max(0, (p[idx] || 0) - 1) }))}
-                                                    className="w-8 h-8 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold text-lg flex items-center justify-center"
-                                                >−</button>
-                                                <input
-                                                    type="number"
-                                                    min="0"
-                                                    value={count}
-                                                    onChange={(e) => setSplitCounts(p => ({ ...p, [idx]: Math.max(0, parseInt(e.target.value) || 0) }))}
-                                                    className="w-16 text-center border border-gray-300 rounded-lg py-1 text-gray-900 font-bold"
-                                                />
-                                                <button
-                                                    onClick={() => setSplitCounts(p => ({ ...p, [idx]: (p[idx] || 0) + 1 }))}
-                                                    className="w-8 h-8 rounded-lg bg-blue-500 hover:bg-blue-600 text-white font-bold text-lg flex items-center justify-center"
-                                                >+</button>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-
-                            {totalChildren > 0 && (
-                                <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <Users className="w-5 h-5 text-green-600" />
-                                            <span className="font-bold text-green-900">Łącznie dzieci: {totalChildren}</span>
-                                        </div>
-                                        <span className="text-lg font-bold text-green-700">{calculatedTotal.toLocaleString('pl-PL')} PLN</span>
-                                    </div>
-                                </div>
-                            )}
-                        </>
-                    ) : (
-                        <div className="mb-6">
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">Kwota oferty (PLN)</label>
-                            <input
-                                type="number"
-                                min="0"
-                                value={manualPrice || ''}
-                                onChange={(e) => setManualPrice(Math.max(0, parseInt(e.target.value) || 0))}
-                                placeholder="np. 2500"
-                                className="w-full max-w-xs px-4 py-3 border border-gray-300 rounded-lg text-gray-900 font-bold text-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                            />
-                            {sectionsTotal > 0 && (
-                                <p className="text-xs text-gray-500 mt-2">
-                                    Wypełnione automatycznie z pozycji oferty ({sectionsTotal.toLocaleString('pl-PL')} PLN).
-                                    {manualPrice !== sectionsTotal && (
-                                        <button
-                                            type="button"
-                                            onClick={() => setManualPrice(sectionsTotal)}
-                                            className="ml-2 text-blue-600 underline hover:text-blue-700"
-                                        >
-                                            Przywróć z oferty
-                                        </button>
-                                    )}
-                                </p>
-                            )}
-                        </div>
-                    )}
-
-                    <button
-                        onClick={handleAcceptForClient}
-                        disabled={acceptingForClient || (isCommunion ? totalChildren === 0 : manualPrice <= 0)}
-                        className="w-full py-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white rounded-lg font-bold text-lg transition-colors flex items-center justify-center gap-2"
-                    >
-                        <CheckCircle2 className="w-5 h-5" />
-                        {acceptingForClient ? 'Akceptowanie...' : 'Akceptuj ofertę za klienta'}
-                    </button>
                 </div>
             )}
 

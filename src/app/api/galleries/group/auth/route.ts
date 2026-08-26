@@ -1,33 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { checkRateLimit, getClientIp } from '@/lib/auth/rate-limit';
-
-const DEFAULT_GROUP_PRINT_PRICE_10X15 = 150;
-const DEFAULT_GROUP_PRINT_PRICE_15X21 = 250;
-
-async function getGroupPrintPrices() {
-  const rows = await prisma.setting.findMany({
-    where: {
-      setting_key: {
-        in: ['group_print_price_10x15', 'group_print_price_15x21'],
-      },
-    },
-    select: {
-      setting_key: true,
-      setting_value: true,
-    },
-  });
-
-  const byKey = new Map(rows.map((row) => [row.setting_key, row.setting_value]));
-
-  const price10x15 = Number(byKey.get('group_print_price_10x15'));
-  const price15x21 = Number(byKey.get('group_print_price_15x21'));
-
-  return {
-    price10x15: Number.isFinite(price10x15) && price10x15 > 0 ? Math.round(price10x15) : DEFAULT_GROUP_PRINT_PRICE_10X15,
-    price15x21: Number.isFinite(price15x21) && price15x21 > 0 ? Math.round(price15x21) : DEFAULT_GROUP_PRINT_PRICE_15X21,
-  };
-}
+import { generateGroupGalleryAccessToken } from '@/lib/auth/group-gallery-access';
+import { getGroupPrintPrices } from '@/lib/galleries/group-settings';
 
 /**
  * POST /api/galleries/group/auth
@@ -67,24 +42,26 @@ export async function POST(request: NextRequest) {
     const normalizedCode = access_code.trim().toUpperCase();
 
     // group_access_code is unique - use findUnique for index-friendly lookup
-    const gallery = await prisma.clientGallery.findUnique({
-      where: {
-        group_access_code: normalizedCode,
-      },
-      select: {
-        id: true,
-        client_name: true,
-        description: true,
-        group_password: true,
-        external_download_url: true,
-        max_photos_for_print: true,
+    const [gallery, printPrices] = await Promise.all([
+      prisma.clientGallery.findUnique({
+        where: {
+          group_access_code: normalizedCode,
+        },
+        select: {
+          id: true,
+          client_name: true,
+          description: true,
+          group_password: true,
+          max_photos_for_print: true,
           allow_extra_photo_purchase: true,
-        price_per_premium: true,
-        expires_at: true,
-        gallery_mode: true,
-        is_active: true,
-      },
-    });
+          price_per_premium: true,
+          expires_at: true,
+          gallery_mode: true,
+          is_active: true,
+        },
+      }),
+      getGroupPrintPrices(),
+    ]);
 
     if (!gallery || gallery.gallery_mode !== 'GROUP' || !gallery.is_active) {
       return NextResponse.json(
@@ -121,7 +98,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const printPrices = await getGroupPrintPrices();
+    const accessToken = await generateGroupGalleryAccessToken(gallery.id);
 
     // Return gallery info
     return NextResponse.json({
@@ -134,7 +111,7 @@ export async function POST(request: NextRequest) {
       group_print_price_10x15: printPrices.price10x15,
       group_print_price_15x21: printPrices.price15x21,
       expires_at: gallery.expires_at,
-      external_download_url: gallery.external_download_url,
+      access_token: accessToken,
     });
 
   } catch (error) {

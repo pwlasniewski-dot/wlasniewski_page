@@ -34,6 +34,15 @@ export async function GET(request: NextRequest) {
     if (!user) {
         return NextResponse.json({ success: false, error: 'Konto nie istnieje' }, { status: 404 });
     }
+    if (
+        user.role !== 'CLIENT' ||
+        !user.is_active ||
+        user.deleted_at ||
+        user.password_reset_required ||
+        user.email.trim().toLowerCase() !== payload.email.trim().toLowerCase()
+    ) {
+        return NextResponse.json({ success: false, error: 'Konto wymaga ponownej aktywacji lub jest niedostępne' }, { status: 403 });
+    }
 
     // Aktualizuj last_login
     try {
@@ -43,15 +52,23 @@ export async function GET(request: NextRequest) {
         });
     } catch {}
 
-    const sessionToken = await generateToken({ id: user.id, email: user.email });
+    const sessionToken = await generateToken({ id: user.id, email: user.email, role: 'CLIENT', type: 'client' });
 
     // Po zalogowaniu klient ląduje w zunifikowanej strefie klienta (/konto).
     const redirectTo = '/konto';
 
-    return NextResponse.json({
+    const response = NextResponse.json({
         success: true,
         token: sessionToken,
-        user: { id: user.id, email: user.email, name: user.name },
+        user: { id: user.id, email: user.email, name: user.name, role: 'CLIENT' },
         redirectTo,
     });
+    response.cookies.set('client_token', sessionToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 7 * 24 * 60 * 60,
+    });
+    return response;
 }

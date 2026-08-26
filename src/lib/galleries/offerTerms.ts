@@ -1,3 +1,5 @@
+import { parsePlnAmount } from '../money/pln.ts';
+
 type AcceptedOffer = {
     id: number;
     status: string;
@@ -8,12 +10,13 @@ type AcceptedOffer = {
     title?: string | null;
 };
 
-function numericValue(value: unknown): number | null {
-    if (typeof value !== 'string' && typeof value !== 'number') return null;
-    const match = String(value).replace(/\s/g, '').match(/\d+(?:[.,]\d+)?/);
+function strictPhotoCount(value: unknown): number | null {
+    if (typeof value === 'number') return Number.isInteger(value) && value >= 0 ? value : null;
+    if (typeof value !== 'string') return null;
+    const match = value.trim().match(/^(\d+)(?:\s*(?:zdję(?:ć|cia)?|zdjec(?:ia)?|fotografii|szt\.?))?$/iu);
     if (!match) return null;
-    const number = Number(match[0].replace(',', '.'));
-    return Number.isFinite(number) ? number : null;
+    const number = Number(match[1]);
+    return Number.isSafeInteger(number) && number >= 0 ? number : null;
 }
 
 export function galleryTermsFromAcceptedOffer(offer: AcceptedOffer) {
@@ -34,12 +37,24 @@ export function galleryTermsFromAcceptedOffer(offer: AcceptedOffer) {
         const label = String(row?.values?.[0] || '').toLowerCase();
         return /(liczba|ilość|ilosc).*(finaln|gotow|obrobion).*(zdję|zdjec)|finaln.*zdję|finaln.*zdjec/.test(label);
     });
-    const includedPhotoCount = numericValue(includedRow?.values?.[selectedIndex]);
-    const configuredExtraPrice = numericValue(template.extraPhotoPrice ?? template.pricePerExtraPhoto);
+    const includedPhotoRaw = includedRow?.values?.[selectedIndex];
+    const includedPhotoCount = includedPhotoRaw === undefined || includedPhotoRaw === null || includedPhotoRaw === ''
+        ? null
+        : strictPhotoCount(includedPhotoRaw);
+    if (includedPhotoRaw !== undefined && includedPhotoRaw !== null && includedPhotoRaw !== '' && includedPhotoCount === null) {
+        throw new Error('Liczba zdjęć w zaakceptowanym pakiecie ma nieprawidłowy format.');
+    }
+    const configuredExtraPriceRaw = template.extraPhotoPrice ?? template.pricePerExtraPhoto;
+    const configuredExtraPrice = configuredExtraPriceRaw === undefined || configuredExtraPriceRaw === null || configuredExtraPriceRaw === ''
+        ? null
+        : parsePlnAmount(configuredExtraPriceRaw);
+    if (configuredExtraPriceRaw !== undefined && configuredExtraPriceRaw !== null && configuredExtraPriceRaw !== '' && configuredExtraPrice === null) {
+        throw new Error('Cena dodatkowego zdjęcia ma nieprawidłowy lub niejednoznaczny format PLN.');
+    }
 
     return {
-        includedPhotoCount: includedPhotoCount !== null ? Math.round(includedPhotoCount) : null,
-        extraPhotoPriceGrosz: configuredExtraPrice !== null ? Math.round(configuredExtraPrice * 100) : null,
+        includedPhotoCount,
+        extraPhotoPriceGrosz: configuredExtraPrice !== null ? configuredExtraPrice * 100 : null,
         snapshot: {
             version: 1,
             offerId: offer.id,
@@ -47,8 +62,8 @@ export function galleryTermsFromAcceptedOffer(offer: AcceptedOffer) {
             offerTitle: offer.title || null,
             acceptedTotal: offer.total_price,
             package: selection.selectedPackage,
-            includedPhotoCount: includedPhotoCount !== null ? Math.round(includedPhotoCount) : null,
-            extraPhotoPriceGrosz: configuredExtraPrice !== null ? Math.round(configuredExtraPrice * 100) : null,
+            includedPhotoCount,
+            extraPhotoPriceGrosz: configuredExtraPrice !== null ? configuredExtraPrice * 100 : null,
             capturedAt: new Date().toISOString(),
         },
     };

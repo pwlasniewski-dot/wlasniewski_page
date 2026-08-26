@@ -1,5 +1,24 @@
 # Aktualny plan prac
 
+## 2026-08-24 — FotoDron: CRM, galerie grupowe i widoczność administratora
+
+- [x] Formalny model galerii komunijnej: pełne pobranie dla uwierzytelnionego rodzica, wybory tylko do odbitek, płatne dodatki osobno, zgoda publikacyjna niezależnie, Adobe pozostaje.
+- [x] Read-only audyt produkcyjnego Neon dla ofert Damian Liszaj / Smykowska oraz wszystkich galerii grupowych #16, #19 i #20.
+- [x] Rozpoznanie anomalii 49 różnych ZIP-ów dla 3 rodziców, częściowych paczek oznaczonych sukcesem i braku telemetrii.
+- [x] Cofnięcie roboczych ograniczeń UI/API, które uzależniały cyfrowe pobieranie od wyborów lub płatności.
+- [x] Projekt transakcyjnego wyboru odbitek, statusu `DRAFT/SUBMITTED`, niezmiennego snapshotu i dziennika aktywności galerii.
+- [x] Kod atomowego, współdzielonego per hash manifestu generatora ZIP; jeden artefakt, osobny audyt żądań rodziców i poprawne `READY/FAILED`.
+- [x] Audytowane wydanie linku Adobe oraz telemetry `REQUESTED/CREATED/REUSED/BUILD_STARTED/READY/FAILED/LINK_ISSUED`.
+- [ ] Jeden background eksport manifestu drukarni z zatwierdzonych wyborów i opłaconych dodatków zamiast serii paczek per rodzic.
+- [x] Usunięcie adminowej pętli paczek per rodzic; pozostawienie jednego eksportu wszystkich manifestów i osobnego eksportu pojedynczego profilu.
+- [x] Panel incydentów i codzienny raport administratora: logowanie, rejestracja, wybory, ZIP, brak HQ i osobne metryki Adobe/internal.
+- [x] Inwentaryzacja pustych tabel i wskazanie kandydatów legacy bez usuwania danych; raport w `docs/FOTODRON_PRODUCTION_AUDIT_2026-08-24.md`.
+- [ ] Bezpieczna naprawa danych #20 i #16 po backupie, kopii produkcji, uzgodnieniu nazw/profili/płatności i akceptacji właściciela.
+- [x] Migracje danych na Neon staging: świeży reset z produkcyjnego `main`, 11 brakujących migracji zastosowanych atomowo, historia Prisma 18/18 poprawna, liczby rekordów before/after bez zmian, zero osieroconych relacji.
+- [x] Backfill galerii na stagingu: 46 kompletnych historycznych zestawów `LEGACY_REVIEW_REQUIRED`, 18 częściowych/pustych `DRAFT`, bez utraty 244 wyborów.
+- [ ] QA końcowe: test kontraktu galerii 5/5 i CRM 53/53 przechodzą; nadal wymagane typecheck/build w CI/Netlify, prawdziwy S3 100/300/500, eksport odbitek i alarmy e-mail.
+- [ ] Produkcja pozostaje NO-GO do wyniku buildu wdrożeniowego, testów prawdziwego S3 i kontroli canary; produkcyjny Neon nie został jeszcze zmieniony.
+
 ## 2026-08-21 — profesjonalna przebudowa Aero Analiza
 
 - [x] Osobny publiczny shell, menu, stopka, manifest, metadata i schema bez elementów fotografii.
