@@ -4,9 +4,11 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ChevronLeft, Mail, CheckCircle2, AlertCircle } from 'lucide-react';
+import { safeReturnTo } from '@/lib/auth/return-to';
 
 export default function ForgotPasswordPage() {
     const searchParams = useSearchParams();
+    const returnTo = safeReturnTo(searchParams.get('returnTo'));
     const [email, setEmail] = useState('');
     const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
     const [message, setMessage] = useState('');
@@ -27,7 +29,7 @@ export default function ForgotPasswordPage() {
             const res = await fetch('/api/auth/forgot-password', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email })
+                body: JSON.stringify({ email, returnTo })
             });
 
             const data = await res.json();
@@ -50,7 +52,7 @@ export default function ForgotPasswordPage() {
             <div className="w-full max-w-md bg-zinc-900 border border-zinc-800 p-8 rounded-2xl relative overflow-hidden">
                 <div className="absolute top-0 w-full h-1 bg-gradient-to-r from-gold-600 to-gold-300"></div>
 
-                <Link href="/logowanie" className="inline-flex items-center gap-2 text-zinc-500 hover:text-white text-sm mb-8 transition-colors">
+                <Link href={`/logowanie?returnTo=${encodeURIComponent(returnTo)}`} className="inline-flex items-center gap-2 text-zinc-500 hover:text-white text-sm mb-8 transition-colors">
                     <ChevronLeft className="w-4 h-4" /> Powrót do logowania
                 </Link>
 

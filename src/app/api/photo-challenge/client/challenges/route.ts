@@ -1,75 +1,60 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import prisma from '@/lib/db/prisma';
-import { verify } from 'jsonwebtoken';
+import { extractToken, verifyToken } from '@/lib/auth/jwt';
+import { revalidateActiveClient } from '@/lib/auth/active-client';
+import { beginClientOperation, clientJson, recordSlowClientOperation } from '@/lib/client-operations';
+import { recordAdminIncidentSafely } from '@/lib/admin-incidents';
 
 export async function GET(request: NextRequest) {
+    const operation = beginClientOperation();
+    let clientId: number | null = null;
+    let clientEmail: string | null = null;
     try {
-        const authHeader = request.headers.get('Authorization');
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
-        }
-
-        const token = authHeader.split(' ')[1];
-        const secret = process.env.JWT_SECRET;
-        if (!secret) {
-            return NextResponse.json({ success: false, error: 'Server misconfiguration' }, { status: 500 });
-        }
-
-        let decoded: any;
-        try {
-            decoded = verify(token, secret);
-        } catch (err) {
-            return NextResponse.json({ success: false, error: 'Invalid token' }, { status: 401 });
-        }
-
-        // Wsparcie zarówno standardowego tokenu (/konto: { id, email }) jak i starszego challenge_user ({ userId, role }).
-        const userId: number | undefined = decoded.id ?? decoded.userId;
-        if (!userId) {
-            return NextResponse.json({ success: false, error: 'Invalid token payload' }, { status: 401 });
-        }
-
-        // Pobierz user zeby znać email (do wyzwań jako inviter)
-        const me = await prisma.user.findUnique({
-            where: { id: userId },
-            select: { id: true, name: true, email: true },
-        });
-        if (!me) {
-            return NextResponse.json({ success: false, error: 'User not found' }, { status: 404 });
-        }
+        const token = extractToken(request.headers.get('authorization')) || request.cookies.get('client_token')?.value;
+        const identity = token ? await verifyToken(token) : null;
+        if (!identity) return clientJson({ success: false, error: 'Unauthorized' }, { status: 401, correlationId: operation.correlationId });
+        const client = await revalidateActiveClient(identity);
+        if (!client) return clientJson({ success: false, error: 'Unauthorized' }, { status: 401, correlationId: operation.correlationId });
+        clientId = client.id;
+        clientEmail = client.email;
 
         const challenges = await prisma.photoChallenge.findMany({
             where: {
                 OR: [
-                    { invitee_user_id: userId },
-                    { inviter_user_id: userId },
-                    ...(me?.email ? [
-                        { inviter_email: me.email },
-                        { inviter_contact: me.email },
-                    ] : []),
+                    { invitee_user_id: client.id },
+                    { inviter_user_id: client.id },
+                    { invitee_user_id: null, invitee_contact: client.email },
+                    { inviter_user_id: null, inviter_email: client.email },
+                    { inviter_user_id: null, inviter_contact: client.email },
                 ],
             },
             include: {
                 package: true,
                 location: true,
-                gallery: {
-                    select: {
-                        is_published: true
-                    }
-                }
+                gallery: { select: { is_published: true } },
             },
-            orderBy: { created_at: 'desc' }
+            orderBy: { created_at: 'desc' },
         });
-
-        // Dorzuć pole `role` żeby UI mogło pokazać "Zapraszasz" vs "Zaproszony/a"
-        const enriched = challenges.map((ch) => ({
-            ...ch,
-            role: ch.invitee_user_id === userId ? 'invitee' : 'inviter',
+        const enriched = challenges.map(challenge => ({
+            ...challenge,
+            role: challenge.invitee_user_id === client.id
+                || (challenge.invitee_user_id === null && challenge.invitee_contact.toLowerCase() === client.email.toLowerCase())
+                ? 'invitee'
+                : 'inviter',
         }));
-
-        return NextResponse.json({ success: true, user: me, challenges: enriched });
-
+        await recordSlowClientOperation({
+            operation: 'challenge_list', startedAt: operation.startedAt, correlationId: operation.correlationId,
+            clientId, clientEmail, entityType: 'photo_challenge', outcome: 'success',
+        });
+        return clientJson({ success: true, user: client, challenges: enriched }, { correlationId: operation.correlationId });
     } catch (error) {
-        console.error('Fetch client challenges error:', error);
-        return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
+        console.error('[PHOTO_CHALLENGE_LIST] Failed', { correlationId: operation.correlationId, error });
+        await recordAdminIncidentSafely({
+            severity: 'P1', category: 'PORTAL', reasonCode: 'PHOTO_CHALLENGE_LIST_FAILED',
+            summary: 'Nie udało się załadować wyzwań klienta', clientId, clientEmail,
+            entityType: 'photo_challenge', correlationId: operation.correlationId,
+            details: { error: error instanceof Error ? error.message : String(error) },
+        });
+        return clientJson({ success: false, error: 'Nie udało się załadować wyzwań.' }, { status: 500, correlationId: operation.correlationId });
     }
 }

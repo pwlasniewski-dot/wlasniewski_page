@@ -4,11 +4,15 @@ import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ChevronLeft, Lock, CheckCircle2, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
+import { safeReturnTo } from '@/lib/auth/return-to';
 
 function ResetPasswordForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const { login } = useAuth();
     const token = searchParams.get('token');
+    const returnTo = safeReturnTo(searchParams.get('returnTo'));
 
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -37,14 +41,17 @@ function ResetPasswordForm() {
             const res = await fetch('/api/auth/reset-password', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ token, password })
+                body: JSON.stringify({ token, password, returnTo })
             });
 
             const data = await res.json();
 
             if (res.ok) {
+                if (data.token && data.user) login(data.token, data.user);
                 setStatus('success');
-                setTimeout(() => router.push('/logowanie'), 3000);
+                setTimeout(() => router.replace(data.sessionEstablished
+                    ? (data.returnTo || returnTo)
+                    : (data.loginUrl || `/logowanie?returnTo=${encodeURIComponent(returnTo)}`)), 800);
             } else {
                 setStatus('error');
                 setMessage(data.error || 'Wystąpił błąd.');
@@ -61,7 +68,10 @@ function ResetPasswordForm() {
                 <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
                 <h2 className="text-xl font-bold mb-2">Brak tokenu</h2>
                 <p className="text-zinc-400 mb-6">Link do resetowania hasła jest nieprawidłowy.</p>
-                <Link href="/logowanie/przypomnij-haslo" className="text-gold-400 hover:underline">Zawnioskuj ponownie</Link>
+                <div className="flex justify-center gap-4 text-sm">
+                    <Link href={`/logowanie?returnTo=${encodeURIComponent(returnTo)}`} className="text-gold-400 hover:underline">Zaloguj się</Link>
+                    <Link href={`/logowanie/przypomnij-haslo?returnTo=${encodeURIComponent(returnTo)}`} className="text-gold-400 hover:underline">Wyślij nowy link</Link>
+                </div>
             </div>
         );
     }
@@ -71,8 +81,8 @@ function ResetPasswordForm() {
             <div className="bg-green-500/10 border border-green-500/20 text-green-400 p-8 rounded-xl flex flex-col items-center text-center">
                 <CheckCircle2 className="w-12 h-12 mb-4" />
                 <h2 className="text-xl font-bold mb-2">Hasło zmienione!</h2>
-                <p className="text-sm opacity-80 mb-6">Twoje nowe hasło zostało zapisane. Za chwilę zostaniesz przekierowany do logowania.</p>
-                <Link href="/logowanie" className="text-white font-bold underline">Przejdź do logowania</Link>
+                <p className="text-sm opacity-80 mb-6">Twoje nowe hasło zostało zapisane. Jesteś zalogowany — otwieram panel.</p>
+                <Link href={returnTo} className="text-white font-bold underline">Przejdź do panelu</Link>
             </div>
         );
     }
@@ -117,9 +127,12 @@ function ResetPasswordForm() {
             </div>
 
             {status === 'error' && (
-                <div className="flex items-center gap-2 text-red-400 text-sm bg-red-400/5 p-3 rounded-lg border border-red-400/10">
-                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                    {message}
+                <div className="space-y-3 text-red-400 text-sm bg-red-400/5 p-3 rounded-lg border border-red-400/10">
+                    <div className="flex items-center gap-2"><AlertCircle className="w-4 h-4 flex-shrink-0" />{message}</div>
+                    <div className="flex gap-4">
+                        <Link href={`/logowanie?returnTo=${encodeURIComponent(returnTo)}`} className="font-bold text-gold-400 hover:underline">Zaloguj się</Link>
+                        <Link href={`/logowanie/przypomnij-haslo?returnTo=${encodeURIComponent(returnTo)}`} className="font-bold text-gold-400 hover:underline">Wyślij nowy link</Link>
+                    </div>
                 </div>
             )}
 

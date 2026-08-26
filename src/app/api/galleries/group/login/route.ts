@@ -1,111 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server';
-import prisma from '@/lib/db/prisma';
-import { generateParentToken } from '@/lib/auth/parent-jwt';
-import { checkRateLimit, getClientIp } from '@/lib/auth/rate-limit';
+import { NextResponse } from 'next/server';
 
 /**
- * POST /api/galleries/group/login
- * Login existing parent profile from another device.
+ * Legacy name + identifier login was knowledge-based authentication and could
+ * expose another parent's selections. It is intentionally retired.
  */
-export async function POST(request: NextRequest) {
-  try {
-    const clientIp = getClientIp(request);
-    const rateLimit = checkRateLimit(`group-login:${clientIp}`, 15, 15 * 60 * 1000);
-    if (!rateLimit.allowed) {
-      return NextResponse.json(
-        { error: 'Zbyt wiele prób logowania. Spróbuj ponownie za 15 minut.' },
-        { status: 429 }
-      );
-    }
-
-    const { gallery_id, access_code, parent_identifier, parent_name } = await request.json();
-
-    if (!gallery_id || !access_code || !parent_identifier || !parent_name) {
-      return NextResponse.json(
-        { error: 'ID galerii, kod, ID rodzica i imię i nazwisko są wymagane' },
-        { status: 400 }
-      );
-    }
-
-    const galleryId = Number(gallery_id);
-    if (!Number.isFinite(galleryId)) {
-      return NextResponse.json({ error: 'Nieprawidłowe ID galerii' }, { status: 400 });
-    }
-
-    const normalizedCode = String(access_code).trim().toUpperCase();
-
-    const gallery = await prisma.clientGallery.findUnique({
-      where: {
-        group_access_code: normalizedCode,
-      },
-      select: {
-        id: true,
-        expires_at: true,
-        gallery_mode: true,
-        is_active: true,
-        allow_extra_photo_purchase: true,
-      },
-    });
-
-    if (!gallery || gallery.id !== galleryId || gallery.gallery_mode !== 'GROUP' || !gallery.is_active) {
-      return NextResponse.json({ error: 'Nieprawidłowy kod dostępu' }, { status: 404 });
-    }
-
-    if (gallery.expires_at && new Date(gallery.expires_at) < new Date()) {
-      return NextResponse.json({ error: 'Galeria wygasła' }, { status: 403 });
-    }
-
-    const participant = await prisma.galleryParticipant.findFirst({
-      where: {
-        gallery_id: galleryId,
-        parent_identifier: String(parent_identifier).trim().toUpperCase(),
-      },
-      select: {
-        id: true,
-        parent_identifier: true,
-        parent_name: true,
-        avatar: true,
-        max_selections: true,
-        allow_extra_photo_purchase: true,
-      },
-    });
-
-    if (!participant) {
-      return NextResponse.json(
-        { error: 'Nie znaleziono rodzica o podanym ID w tej galerii' },
-        { status: 404 }
-      );
-    }
-
-    const providedName = String(parent_name).trim().toLowerCase();
-    const savedName = String(participant.parent_name || '').trim().toLowerCase();
-    if (!savedName || providedName !== savedName) {
-      return NextResponse.json(
-        { error: 'Imię i nazwisko nie zgadza się z tym profilem rodzica' },
-        { status: 401 }
-      );
-    }
-
-    const token = await generateParentToken({
-      participant_id: participant.id,
-      gallery_id: galleryId,
-      parent_identifier: participant.parent_identifier,
-    });
-
-    return NextResponse.json({
-      participant_id: participant.id,
-      parent_identifier: participant.parent_identifier,
-      parent_name: participant.parent_name,
-      avatar: participant.avatar,
-      max_selections: participant.max_selections,
-      allow_extra_photo_purchase: participant.allow_extra_photo_purchase,
-      token,
-    });
-  } catch (error) {
-    console.error('Group existing parent login error:', error);
-    return NextResponse.json(
-      { error: 'Wystąpił błąd podczas logowania do istniejącego profilu' },
-      { status: 500 }
-    );
-  }
+export async function POST() {
+  return NextResponse.json(
+    {
+      error: 'Logowanie identyfikatorem zostało zastąpione bezpiecznym, jednorazowym linkiem wysyłanym na email.',
+      code: 'MAGIC_LINK_REQUIRED',
+    },
+    { status: 410 },
+  );
 }

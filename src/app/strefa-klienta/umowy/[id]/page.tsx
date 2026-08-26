@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Download, CheckCircle2, FileText, Upload, RefreshCw } from 'lucide-react';
 import SignaturePad from '@/components/SignaturePad';
+import { isClientActionableContractStatus } from '@/lib/contracts/status';
 
 export default function ContractSigningPage({ params }: { params: Promise<{ id: string }> }) {
     const router = useRouter();
@@ -74,6 +75,7 @@ export default function ContractSigningPage({ params }: { params: Promise<{ id: 
     };
 
     const handleSign = async (signatureData: string, signatureMetadata: { timestamp: string; userAgent: string; ip?: string }) => {
+        if (!isClientActionableContractStatus(contract?.status)) return;
         const token = localStorage.getItem('client_token') || localStorage.getItem('user_token');
         setSigning(true);
         setSignError(null);
@@ -107,6 +109,7 @@ export default function ContractSigningPage({ params }: { params: Promise<{ id: 
     };
 
     const handleUploadSigned = async (file: File) => {
+        if (!isClientActionableContractStatus(contract?.status)) return;
         const token = localStorage.getItem('client_token') || localStorage.getItem('user_token');
         setUploadingScan(true);
         setSignError(null);
@@ -136,9 +139,9 @@ export default function ContractSigningPage({ params }: { params: Promise<{ id: 
     if (loading) return <div className="min-h-screen flex items-center justify-center">Ładowanie...</div>;
     if (!contract) return <div className="min-h-screen flex items-center justify-center">Nie znaleziono umowy.</div>;
 
-    const token = localStorage.getItem('client_token') || localStorage.getItem('user_token');
-    const unsignedPdfUrl = contract.pdf_url || `/api/contracts/${contract.id}/pdf?token=${token}`;
-    const signedPdfUrl = contract.pdf_url?.replace(/\.pdf$/, '_podpisana.pdf') || `${unsignedPdfUrl.replace(/\.pdf/, '_podpisana.pdf')}`;
+    const unsignedPdfUrl = `/api/contracts/${contract.id}/pdf`;
+    const signedPdfUrl = unsignedPdfUrl;
+    const isContractActionable = isClientActionableContractStatus(contract.status);
 
     return (
         <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -183,7 +186,7 @@ export default function ContractSigningPage({ params }: { params: Promise<{ id: 
                 )}
 
                 {/* Sticky sign action — na samej górze, żeby klient nie musiał scrollować */}
-                {contract.status !== 'signed' && (
+                {isContractActionable && (
                     <div className="bg-amber-50 border-b-2 border-amber-300 px-6 py-4 flex flex-wrap items-center justify-between gap-3">
                         <div className="flex items-center gap-2">
                             <span className="text-amber-700 text-lg">✍️</span>
@@ -204,7 +207,7 @@ export default function ContractSigningPage({ params }: { params: Promise<{ id: 
                         {contract.content}
                     </div>
 
-                    {contract.status !== 'signed' && (
+                    {isContractActionable && (
                         <div className="border-t pt-8">
                             <h3 className="text-lg font-bold mb-4 text-black">Notatka dla fotografa (opcjonalnie)</h3>
                             <textarea
@@ -276,7 +279,7 @@ export default function ContractSigningPage({ params }: { params: Promise<{ id: 
                                 <div className="space-y-2">
                                     {contract.pdf_url && (
                                         <a
-                                            href={contract.pdf_url}
+                                            href={unsignedPdfUrl}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="flex items-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors"
@@ -287,7 +290,7 @@ export default function ContractSigningPage({ params }: { params: Promise<{ id: 
                                     )}
                                     {contract.signed_pdf_url && (
                                         <a
-                                            href={contract.signed_pdf_url}
+                                            href={signedPdfUrl}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="flex items-center gap-2 px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-colors"
@@ -324,7 +327,7 @@ export default function ContractSigningPage({ params }: { params: Promise<{ id: 
                             <div className="flex justify-between items-center mb-4">
                                 <h3 className="text-xl font-bold text-gray-800">Podgląd Oferty</h3>
                                 <a
-                                    href={`/api/offers/${contract.offer_id}/pdf?token=${localStorage.getItem('client_token') || localStorage.getItem('user_token')}`}
+                                    href={`/api/offers/${contract.offer_id}/pdf`}
                                     target="_blank"
                                     className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1"
                                 >
@@ -333,7 +336,7 @@ export default function ContractSigningPage({ params }: { params: Promise<{ id: 
                             </div>
                             <div className="aspect-[210/297] w-full bg-white shadow-lg overflow-hidden rounded-lg">
                                 <iframe
-                                    src={`/api/offers/${contract.offer_id}/pdf?token=${localStorage.getItem('client_token') || localStorage.getItem('user_token')}#toolbar=0&navpanes=0`}
+                                    src={`/api/offers/${contract.offer_id}/pdf#toolbar=0&navpanes=0`}
                                     className="w-full h-full border-0"
                                     title="Podgląd Oferty"
                                 />
@@ -343,7 +346,7 @@ export default function ContractSigningPage({ params }: { params: Promise<{ id: 
                 </div>
             </div>
 
-            {showSignatureModal && contract.status !== 'signed' && (
+            {showSignatureModal && isContractActionable && (
                 <SignaturePad
                     onSave={handleSign}
                     onCancel={() => setShowSignatureModal(false)}

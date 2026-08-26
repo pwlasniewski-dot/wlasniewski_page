@@ -24,6 +24,7 @@ interface GalleryInfo {
   price_per_premium?: number;
   group_print_price_10x15?: number;
   group_print_price_15x21?: number;
+  access_token?: string;
   external_download_url?: string | null;
 }
 
@@ -34,6 +35,8 @@ interface ParticipantInfo {
   avatar: string;
   max_selections: number;
   allow_extra_photo_purchase?: boolean;
+  selection_status?: 'DRAFT' | 'SUBMITTED' | 'LEGACY_REVIEW_REQUIRED';
+  selection_submitted_at?: string | null;
   token: string;
 }
 
@@ -80,6 +83,7 @@ export default function GroupGalleryPage() {
   const guestParam = searchParams.get('guest'); // ?guest=1 triggers auto guest mode
   const participantParam = searchParams.get('participant'); // PayU return: restore session
   const orderParam = searchParams.get('order'); // PayU return: order to confirm
+  const groupLoginToken = searchParams.get('group_login_token');
   // SECURITY: We no longer accept password in URL params
 
   // Auth state
@@ -137,7 +141,9 @@ export default function GroupGalleryPage() {
   // Consent state
   const [showConsentModal, setShowConsentModal] = useState(false);
   const [consentGiven, setConsentGiven] = useState(false);
+  const [consentChoice, setConsentChoice] = useState(false);
   const [consentScope, setConsentScope] = useState<'ALL' | 'SELECTED'>('ALL');
+  const [selectionStatus, setSelectionStatus] = useState<'DRAFT' | 'SUBMITTED' | 'LEGACY_REVIEW_REQUIRED'>('DRAFT');
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   // Share modal
@@ -152,8 +158,14 @@ export default function GroupGalleryPage() {
   const [orderLoading, setOrderLoading] = useState(false);
   const [participantOrders, setParticipantOrders] = useState<OrderConfirmation[]>([]);
   const sessionRestoredRef = useRef(false);
+  const magicLoginConsumedRef = useRef(false);
+  const archiveRequestInFlightRef = useRef(false);
+  const archiveAbortRef = useRef<AbortController | null>(null);
+  const [archiveRequestInFlight, setArchiveRequestInFlight] = useState(false);
   // Guest (anonymous) mode — view only, no account
   const [isGuestMode, setIsGuestMode] = useState(false);
+
+  useEffect(() => () => archiveAbortRef.current?.abort(), []);
 
   // Always show registration modal when authenticated - each parent registers separately (not from localStorage)
   // This allows multiple family members to create their own profiles under the same gallery code
@@ -363,7 +375,10 @@ export default function GroupGalleryPage() {
     try {
       const response = await fetch('/api/galleries/group/register', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${galleryInfo.access_token || ''}`,
+        },
         body: JSON.stringify({
           gallery_id: galleryInfo.gallery_id,
           access_code: code.trim(),
@@ -387,11 +402,18 @@ export default function GroupGalleryPage() {
       }
 
       setParticipantInfo(data);
+      setSelectionStatus(data.selection_status || 'DRAFT');
       setPaidExtraPhotoIds(data.paid_extra_photo_ids || []);
       setAuthToken(data.token);
+      const registeredGallery = {
+        ...galleryInfo,
+        external_download_url: data.external_download_url || null,
+      };
+      setGalleryInfo(registeredGallery);
       // Zapisz token dla każdego uczestnika indywidualnie (nie per galerię!)
       // Każdy rodzic ma swój participant_id i własny klucz w localStorage
-      persistParticipant(data, galleryInfo);
+      persistParticipant(data, registeredGallery);
+      try { localStorage.setItem(`group_gallery_${registeredGallery.gallery_id}`, JSON.stringify(registeredGallery)); } catch {}
       setShowRegistrationModal(false);
       toast.success(`Witaj! Twój awatar: ${data.avatar}`);
 
@@ -419,7 +441,10 @@ export default function GroupGalleryPage() {
     try {
       const response = await fetch('/api/galleries/group/login-email', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${galleryInfo.access_token || ''}`,
+        },
         body: JSON.stringify({
           gallery_id: galleryInfo.gallery_id,
           access_code: code.trim(),
@@ -433,16 +458,7 @@ export default function GroupGalleryPage() {
         return;
       }
 
-      setParticipantInfo(data);
-      setPaidExtraPhotoIds(data.paid_extra_photo_ids || []);
-      setAuthToken(data.token);
-      persistParticipant(data, galleryInfo);
-      setShowRegistrationModal(false);
-      toast.success(`Witaj ponownie, ${data.parent_name || 'Rodzicu'}!`);
-
-      loadPhotos(galleryInfo.gallery_id, data.token);
-      loadSelections(data.participant_id, data.token);
-      loadOrders(data.participant_id, data.token);
+      toast.success(data.message || 'Wysłaliśmy jednorazowy link logowania na zapisany email.');
     } catch (error) {
       console.error('Existing parent email login error:', error);
       toast.error('Wystąpił błąd podczas logowania');
@@ -521,7 +537,14 @@ export default function GroupGalleryPage() {
         setSelectedPhotos(data.selected_photos.map((p: any) => p.photo_id));
         setPaidExtraPhotoIds(data.paid_extra_photo_ids || []);
         setConsentGiven(data.publication_consent || false);
+        setConsentChoice(data.publication_consent || false);
         setConsentScope(data.consent_scope || 'ALL');
+        setSelectionStatus(data.selection_status || 'DRAFT');
+        setParticipantInfo(prev => prev ? {
+          ...prev,
+          selection_status: data.selection_status || 'DRAFT',
+          selection_submitted_at: data.selection_submitted_at || null,
+        } : prev);
         loadOrders(participantId, token);
         if (typeof data.allow_extra_photo_purchase === 'boolean') {
           setParticipantInfo(prev => prev ? { ...prev, allow_extra_photo_purchase: data.allow_extra_photo_purchase } : prev);
@@ -551,6 +574,46 @@ export default function GroupGalleryPage() {
       console.error('Load selections error:', error);
     }
   };
+
+  useEffect(() => {
+    if (!groupLoginToken || magicLoginConsumedRef.current) return;
+    magicLoginConsumedRef.current = true;
+    setLoading(true);
+    fetch('/api/galleries/group/login-email/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: groupLoginToken }),
+    })
+      .then(async response => ({ response, data: await response.json().catch(() => ({})) }))
+      .then(({ response, data }) => {
+        if (!response.ok || !data?.token || !data?.participant || !data?.gallery) {
+          toast.error(data?.error || 'Link logowania wygasł. Wyślij nowy link.');
+          return;
+        }
+        const participant = { ...data.participant, token: data.token };
+        setCode(codeParam || '');
+        setGalleryInfo(data.gallery);
+        setParticipantInfo(participant);
+        setSelectionStatus(participant.selection_status || 'DRAFT');
+        setAuthToken(data.token);
+        setIsAuthenticated(true);
+        setShowRegistrationModal(false);
+        persistParticipant(participant, data.gallery);
+        loadPhotos(data.gallery.gallery_id, data.token);
+        loadSelections(participant.participant_id, data.token);
+        loadOrders(participant.participant_id, data.token);
+        toast.success(`Witaj ponownie, ${participant.parent_name || 'Rodzicu'}!`);
+      })
+      .catch(() => toast.error('Nie udało się zweryfikować linku logowania.'))
+      .finally(() => {
+        setLoading(false);
+        const url = new URL(window.location.href);
+        url.searchParams.delete('group_login_token');
+        window.history.replaceState({}, '', url.toString());
+      });
+    // Token is intentionally consumed once. Loading helpers are stable for this page lifetime.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [groupLoginToken]);
 
   // Pobranie pojedynczego zamówienia do ekranu potwierdzenia (po powrocie z PayU).
   // Jeśli płatność jeszcze nie potwierdzona przez webhook — odpytujemy kilkukrotnie.
@@ -673,6 +736,14 @@ export default function GroupGalleryPage() {
 
   const handlePhotoClick = async (photoId: number) => {
     if (!participantInfo || !authToken) return;
+    if (selectionStatus !== 'DRAFT') {
+      toast.error(selectionStatus === 'LEGACY_REVIEW_REQUIRED'
+        ? 'Twoje dotychczasowe wybory są zabezpieczone i oczekują na sprawdzenie przez fotografa.'
+        : 'Wybór został zatwierdzony. Skontaktuj się z fotografem, aby go ponownie otworzyć.');
+      return;
+    }
+
+    const desiredSelected = !selectedPhotos.includes(photoId);
 
     try {
       const response = await fetch(`/api/galleries/group/participant/${participantInfo.participant_id}/select`, {
@@ -681,7 +752,7 @@ export default function GroupGalleryPage() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${authToken}`,
         },
-        body: JSON.stringify({ photo_id: photoId }),
+        body: JSON.stringify({ photo_id: photoId, selected: desiredSelected }),
       });
 
       const data = await response.json();
@@ -698,11 +769,12 @@ export default function GroupGalleryPage() {
         return;
       }
 
+      if (Array.isArray(data.selected_photo_ids)) {
+        setSelectedPhotos(data.selected_photo_ids);
+      }
       if (data.action === 'added') {
-        setSelectedPhotos([...selectedPhotos, photoId]);
         toast.success(`Wybrano ${data.selected_count}/${data.max_selections}`);
-      } else {
-        setSelectedPhotos(selectedPhotos.filter(id => id !== photoId));
+      } else if (data.action === 'removed') {
         toast.success(`Odznaczono (${data.selected_count}/${data.max_selections})`);
       }
 
@@ -715,6 +787,14 @@ export default function GroupGalleryPage() {
   const handleConsentSubmit = async () => {
     if (!participantInfo || !authToken) return;
 
+    let confirmIncomplete = false;
+    if (selectionStatus === 'DRAFT' && selectedPhotos.length < participantInfo.max_selections) {
+      confirmIncomplete = confirm(
+        `Wybrano ${selectedPhotos.length} z ${participantInfo.max_selections} zdjęć.\n\nCzy na pewno zatwierdzić mniejszą liczbę? Po zatwierdzeniu wybór zostanie zablokowany.`,
+      );
+      if (!confirmIncomplete) return;
+    }
+
     setLoading(true);
     try {
       const response = await fetch(`/api/galleries/group/participant/${participantInfo.participant_id}/consent`, {
@@ -724,8 +804,9 @@ export default function GroupGalleryPage() {
           'Authorization': `Bearer ${authToken}`,
         },
         body: JSON.stringify({
-          consent: true,
-          scope: consentScope,
+          consent: consentChoice,
+          scope: consentChoice ? consentScope : null,
+          confirm_incomplete: confirmIncomplete,
         }),
       });
 
@@ -743,10 +824,16 @@ export default function GroupGalleryPage() {
         return;
       }
 
-      setConsentGiven(true);
+      setConsentGiven(data.publication_consent || false);
+      setSelectionStatus(data.selection_status || 'SUBMITTED');
+      setParticipantInfo(prev => prev ? {
+        ...prev,
+        selection_status: data.selection_status || 'SUBMITTED',
+        selection_submitted_at: data.selection_submitted_at || null,
+      } : prev);
       setShowConsentModal(false);
       setShowSuccessModal(true);
-      toast.success('Zgoda została zapisana');
+      toast.success(data.message || 'Wybór został zatwierdzony');
 
     } catch (error) {
       console.error('Consent error:', error);
@@ -830,37 +917,87 @@ export default function GroupGalleryPage() {
       toast.error('Brak autoryzacji — zaloguj się ponownie');
       return;
     }
+    if (archiveRequestInFlightRef.current) {
+      toast('Paczka jest już przygotowywana. Postęp widzisz w bieżącym komunikacie.');
+      return;
+    }
+    archiveRequestInFlightRef.current = true;
+    setArchiveRequestInFlight(true);
+    const controller = new AbortController();
+    archiveAbortRef.current = controller;
     const tid = toast.loading('Pakuję zdjęcia do ZIP... to może potrwać chwilę');
     try {
       const parsed = new URL(url, window.location.origin);
-      const photoIds = (parsed.searchParams.get('photo_ids') || '').split(',').map(Number).filter(Number.isInteger);
+      const photoIds = (parsed.searchParams.get('photo_ids') || '').split(',')
+        .map(Number)
+        .filter(Number.isInteger)
+        .sort((a, b) => a - b);
       parsed.search = '';
       const endpoint = parsed.pathname;
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${authToken}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ photoIds }),
-        cache: 'no-store',
-      });
-      const data = await res.json().catch(() => null);
-      if (!res.ok || !data?.jobId) {
-        const message = (data && typeof data.error === 'string')
-          ? data.error
-          : `Nie udało się uruchomić pakowania (HTTP ${res.status})`;
-        toast.error(message, { id: tid, duration: 6000 });
-        return;
-      }
+      const cacheKey = `group_archive_job:${endpoint}:${photoIds.join(',') || 'ALL'}`;
+      let jobId = sessionStorage.getItem(cacheKey);
+      let resumed = Boolean(jobId);
+
+      const startJob = async () => {
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ photoIds }),
+          cache: 'no-store',
+          signal: controller.signal,
+        });
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data?.jobId) {
+          const message = (data && typeof data.error === 'string')
+            ? data.error
+            : `Nie udało się uruchomić pakowania (HTTP ${res.status})`;
+          throw new Error(message);
+        }
+        sessionStorage.setItem(cacheKey, data.jobId);
+        return data.jobId as string;
+      };
+
+      if (!jobId) jobId = await startJob();
       let ready: any = null;
       for (let attempt = 0; attempt < 180; attempt += 1) {
-        const statusRes = await fetch(`${endpoint}?job_id=${encodeURIComponent(data.jobId)}&_ts=${Date.now()}`, {
-          headers: { Authorization: `Bearer ${authToken}` }, cache: 'no-store',
+        const statusRes = await fetch(`${endpoint}?job_id=${encodeURIComponent(jobId)}&_ts=${Date.now()}`, {
+          headers: { Authorization: `Bearer ${authToken}` },
+          cache: 'no-store',
+          signal: controller.signal,
         });
         ready = await statusRes.json().catch(() => null);
-        if (!statusRes.ok) throw new Error(ready?.error || 'Błąd sprawdzania postępu');
+        if (!statusRes.ok) {
+          if (resumed && statusRes.status === 404) {
+            sessionStorage.removeItem(cacheKey);
+            jobId = await startJob();
+            resumed = false;
+            continue;
+          }
+          throw new Error(ready?.error || 'Błąd sprawdzania postępu');
+        }
         if (ready.status === 'ready' && ready.downloadUrl) break;
-        if (ready.status === 'failed') throw new Error(ready.error || 'Generator ZIP zakończył się błędem');
+        if (ready.status === 'failed') {
+          if (resumed) {
+            sessionStorage.removeItem(cacheKey);
+            jobId = await startJob();
+            resumed = false;
+            continue;
+          }
+          throw new Error(ready.error || 'Generator ZIP zakończył się błędem');
+        }
         toast.loading(`Pakuję zdjęcia… ${ready.progress || 0}% (${ready.completed || 0}/${ready.total || '?'})`, { id: tid });
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        const pollingDelay = attempt < 5 ? 1000 : attempt < 15 ? 2000 : 5000;
+        await new Promise((resolve, reject) => {
+          const onAbort = () => {
+            window.clearTimeout(timeout);
+            reject(new DOMException('Aborted', 'AbortError'));
+          };
+          const timeout = window.setTimeout(() => {
+            controller.signal.removeEventListener('abort', onAbort);
+            resolve(undefined);
+          }, pollingDelay);
+          controller.signal.addEventListener('abort', onAbort, { once: true });
+        });
       }
       if (!ready?.downloadUrl) throw new Error('Pakowanie trwa dłużej. Uruchom pobieranie ponownie za chwilę — zadanie nie zacznie się od początku.');
       const a = document.createElement('a');
@@ -875,8 +1012,16 @@ export default function GroupGalleryPage() {
         : '';
       toast.success(`Pobieranie rozpoczęte — ${ready.completed} zdjęć${failedNote}`, { id: tid, duration: 5000 });
     } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        toast.dismiss(tid);
+        return;
+      }
       console.error('Download ZIP error:', err);
-      toast.error('Błąd pobierania — sprawdź połączenie i spróbuj ponownie', { id: tid });
+      toast.error(err instanceof Error ? err.message : 'Błąd pobierania — sprawdź połączenie i spróbuj ponownie', { id: tid, duration: 6000 });
+    } finally {
+      archiveRequestInFlightRef.current = false;
+      setArchiveRequestInFlight(false);
+      if (archiveAbortRef.current === controller) archiveAbortRef.current = null;
     }
   }, [authToken]);
 
@@ -890,6 +1035,20 @@ export default function GroupGalleryPage() {
       `/api/galleries/group/${galleryInfo.gallery_id}/download-all`
     );
   };
+
+  const auditExternalDownload = useCallback(() => {
+    if (!galleryInfo?.gallery_id || !authToken) return;
+    void fetch(`/api/galleries/group/${galleryInfo.gallery_id}/external-download`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${authToken}` },
+      keepalive: true,
+      cache: 'no-store',
+    }).catch((error) => {
+      // Audyt nie może zablokować prawidłowego linku Adobe. Awaria samego
+      // zapisu będzie widoczna w monitoringu endpointu.
+      console.error('External gallery link audit failed:', error);
+    });
+  }, [authToken, galleryInfo?.gallery_id]);
 
   // Download selection mode (separate from print selection)
   const [prevViewMode, setPrevViewMode] = useState<'grid' | 'story' | null>(null);
@@ -922,7 +1081,7 @@ export default function GroupGalleryPage() {
   };
 
   const selectAllForDownload = () => {
-    setDownloadSelection(new Set(photos.map((p) => p.id)));
+    setDownloadSelection(new Set(photos.map((photo) => photo.id)));
   };
 
   const handleConfirmDownloadSelection = async () => {
@@ -983,7 +1142,7 @@ export default function GroupGalleryPage() {
   };
 
   const selectedPhotoItems = photos.filter((p) => selectedPhotos.includes(p.id));
-  const extraPurchaseEnabled = !!participantInfo && !!galleryInfo && !isGuestMode && (participantInfo.allow_extra_photo_purchase || galleryInfo.allow_extra_photo_purchase);
+  const extraPurchaseEnabled = !!participantInfo && !!galleryInfo && !isGuestMode && !!galleryInfo.allow_extra_photo_purchase;
   const globalPrice10x15 = galleryInfo?.group_print_price_10x15 || 150;
   const globalPrice15x21 = galleryInfo?.group_print_price_15x21 || 250;
   const DEFAULT_EXTRA_SIZE: GroupExtraPrintSize = '10x15';
@@ -1245,7 +1404,7 @@ export default function GroupGalleryPage() {
 
           <div className="bg-zinc-800/40 border border-zinc-700 rounded-lg p-4 mb-6">
             <h3 className="text-sm font-semibold text-white mb-1">Masz już profil rodzica?</h3>
-            <p className="text-xs text-zinc-400 mb-3">Wpisz swój email lub identyfikator (np. <span className="font-mono text-gold-400">PW-7475</span>) i od razu wejdziesz do galerii.</p>
+            <p className="text-xs text-zinc-400 mb-3">Wpisz email lub identyfikator profilu. Na zapisany adres wyślemy jednorazowy link ważny 15 minut.</p>
             <div className="flex gap-2">
               <input
                 type="text"
@@ -1266,7 +1425,7 @@ export default function GroupGalleryPage() {
                 disabled={loading || !existingEmail.trim()}
                 className="px-3 py-2 bg-gold-500 text-black text-xs font-bold rounded-lg hover:bg-gold-400 transition-all disabled:opacity-50"
               >
-                Wejdź
+                Wyślij link
               </button>
             </div>
           </div>
@@ -1718,7 +1877,7 @@ Hasło: ${password}` : ''}`}
                 </button>
                 <button
                   onClick={handleConfirmDownloadSelection}
-                  disabled={downloadSelection.size === 0}
+                  disabled={downloadSelection.size === 0 || archiveRequestInFlight}
                   className="flex items-center gap-2 px-5 py-2.5 bg-gold-500 hover:bg-gold-400 text-black text-sm font-bold rounded-lg transition-all shadow-lg shadow-gold-500/20 disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
                 >
                   <Download className="w-4 h-4" />
@@ -1753,7 +1912,7 @@ Hasło: ${password}` : ''}`}
                 </button>
                 <button
                   onClick={toggleDownloadMode}
-                  disabled={photos.length === 0}
+                  disabled={photos.length === 0 || archiveRequestInFlight}
                   className="flex items-center gap-2 px-5 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-white text-sm font-bold rounded-lg transition-all shadow-lg hover:scale-105 disabled:opacity-40 disabled:cursor-not-allowed"
                   title="Wejdź w tryb wybierania zdjęć do pobrania"
                 >
@@ -1765,17 +1924,18 @@ Hasło: ${password}` : ''}`}
                     href={galleryInfo.external_download_url}
                     target="_blank"
                     rel="noopener noreferrer"
+                    onClick={auditExternalDownload}
                     className="text-xs text-zinc-500 hover:text-zinc-300 underline underline-offset-4 decoration-zinc-700 hover:decoration-zinc-400 transition-colors"
-                    title="Pobierz całą galerię"
+                    title="Otwórz link do pobrania pełnej galerii"
                   >
-                    lub pobierz całą galerię
+                    Pobierz całą galerię w Adobe
                   </a>
                 ) : (
                   <button
                     onClick={handleDownloadAll}
-                    disabled={photos.length === 0}
+                    disabled={photos.length === 0 || archiveRequestInFlight}
                     className="text-xs text-zinc-500 hover:text-zinc-300 underline underline-offset-4 decoration-zinc-700 hover:decoration-zinc-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                    title="Pobierz wszystkie zdjęcia z galerii w pełnej rozdzielczości jako ZIP (większy plik)"
+                    title="Pobierz pełną galerię"
                   >
                     lub pobierz całą galerię
                   </button>
@@ -2202,27 +2362,33 @@ Hasło: ${password}` : ''}`}
                     />
                   </div>
                 </div>
-                {consentGiven && (
+                {selectionStatus === 'SUBMITTED' && (
                   <div className="hidden sm:flex items-center gap-1.5 text-xs text-green-400 px-3 py-1.5 bg-green-500/10 border border-green-500/20 rounded-full">
                     <Check className="w-3.5 h-3.5" />
-                    Zgoda RODO: {consentScope === 'ALL' ? 'wszystkie' : 'wybrane'}
+                    Wybór zatwierdzony{consentGiven ? ` • zgoda: ${consentScope === 'ALL' ? 'wszystkie' : 'wybrane'}` : ' • bez zgody publikacyjnej'}
                   </div>
                 )}
               </div>
+              {selectionStatus === 'LEGACY_REVIEW_REQUIRED' ? (
+                <div className="max-w-md rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+                  Twoje wcześniejsze wybory są zachowane i zablokowane przed przypadkową zmianą. Fotograf sprawdzi je i potwierdzi.
+                </div>
+              ) : (
               <button
-                onClick={() => setShowConsentModal(true)}
-                disabled={selectedPhotos.length === 0 && !consentGiven}
+                onClick={() => { setConsentChoice(consentGiven); setShowConsentModal(true); }}
+                disabled={selectionStatus === 'DRAFT' && selectedPhotos.length === 0}
                 className={`flex items-center gap-2 px-6 py-3 rounded-full font-bold transition-all shadow-lg ${
-                  consentGiven
+                  selectionStatus === 'SUBMITTED'
                     ? 'bg-zinc-700 text-white hover:bg-zinc-600'
                     : selectedPhotos.length > 0
                       ? 'bg-gold-500 text-black hover:bg-gold-400 hover:scale-105'
                       : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
                 }`}
               >
-                <Heart className="w-4 h-4" />
-                {consentGiven ? 'Zaktualizuj zgodę RODO' : 'Zatwierdź wybory + zgoda RODO'}
+                <CheckCheck className="w-4 h-4" />
+                {selectionStatus === 'SUBMITTED' ? 'Zmień zgodę publikacyjną' : 'Potwierdzam wybór zdjęć'}
               </button>
+              )}
             </div>
           </div>
         </div>
@@ -2232,12 +2398,19 @@ Hasło: ${password}` : ''}`}
       {showConsentModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <h2 className="text-2xl font-bold text-white mb-6">Zgoda na publikację wizerunku</h2>
+            <h2 className="text-2xl font-bold text-white mb-2">Potwierdzenie wyboru zdjęć</h2>
+            <p className="text-sm text-zinc-400 mb-6">Zatwierdzenie zdjęć do realizacji jest niezależne od dobrowolnej zgody na publikację.</p>
             
             <div className="bg-zinc-800 border border-zinc-700 rounded-lg p-6 mb-6 space-y-4">
-              <p className="text-zinc-300 text-sm">
-                Wyrażam zgodę na nieodpłatne wykorzystanie wizerunku uwiecznionego na wybranych fotografiach, w szczególności na:
-              </p>
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={consentChoice}
+                  onChange={event => setConsentChoice(event.target.checked)}
+                  className="mt-1"
+                />
+                <span className="text-zinc-200 text-sm font-semibold">Dobrowolnie wyrażam zgodę na publikację wizerunku.</span>
+              </label>
               
               <ul className="list-disc list-inside space-y-2 pl-4 text-sm text-zinc-300">
                 <li>publikację na stronie internetowej fotografa (wlasniewski.pl)</li>
@@ -2258,6 +2431,7 @@ Hasło: ${password}` : ''}`}
                       value="SELECTED"
                       checked={consentScope === 'SELECTED'}
                       onChange={() => setConsentScope('SELECTED')}
+                      disabled={!consentChoice}
                       className="mt-1"
                     />
                     <div>
@@ -2272,6 +2446,7 @@ Hasło: ${password}` : ''}`}
                       value="ALL"
                       checked={consentScope === 'ALL'}
                       onChange={() => setConsentScope('ALL')}
+                      disabled={!consentChoice}
                       className="mt-1"
                     />
                     <div>
@@ -2304,7 +2479,7 @@ Hasło: ${password}` : ''}`}
                 disabled={loading}
                 className="flex-1 bg-gold-500 text-black font-bold py-4 rounded-lg hover:bg-gold-400 transition-colors disabled:opacity-50"
               >
-                {loading ? 'Zapisywanie...' : 'Wyrażam zgodę'}
+                {loading ? 'Zapisywanie...' : selectionStatus === 'SUBMITTED' ? 'Zapisz ustawienie zgody' : 'Zatwierdź i zablokuj wybór'}
               </button>
             </div>
           </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Download, ShoppingCart, Check, X, ArrowLeft, ArrowUpRight, Calendar, ImageIcon, Plus, Minus, ChevronLeft, ChevronRight, Layers } from 'lucide-react';
@@ -68,6 +68,7 @@ export default function ClientGalleryPage() {
     const [sharePassword, setSharePassword] = useState('');
     const [authorizingShare, setAuthorizingShare] = useState(false);
     const [selectedPremium, setSelectedPremium] = useState<Set<number>>(new Set());
+    const checkoutIdempotencyKey = useRef<string | null>(null);
     const [selectedStandard, setSelectedStandard] = useState<Set<number>>(new Set());
     const [downloadingAll, setDownloadingAll] = useState(false);
     const [downloadProgress, setDownloadProgress] = useState<DownloadProgressState | null>(null);
@@ -178,6 +179,7 @@ export default function ClientGalleryPage() {
         } else {
             newSelected.add(photoId);
         }
+        checkoutIdempotencyKey.current = null;
         setSelectedPremium(newSelected);
     };
 
@@ -403,23 +405,34 @@ export default function ClientGalleryPage() {
         } else {
             newSelected.add(productId);
         }
+        checkoutIdempotencyKey.current = null;
         setSelectedProducts(newSelected);
     };
 
     const handleCheckout = async () => {
         if (selectedPremium.size === 0 && selectedProducts.size === 0) return;
         try {
+            const idempotencyKey = checkoutIdempotencyKey.current || crypto.randomUUID();
+            checkoutIdempotencyKey.current = idempotencyKey;
             const res = await fetch(`/api/galleries/${accessCode}/order`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Idempotency-Key': idempotencyKey,
+                },
                 body: JSON.stringify({
                     photo_ids: Array.from(selectedPremium),
                     product_ids: Array.from(selectedProducts)
                 })
             });
             const data = await res.json();
-            if (data.success && data.paymentUrl) {
+            if (data.success && data.alreadyPaid && data.order?.id) {
+                window.location.href = `/galeria/${accessCode}/order/${data.order.id}/success`;
+            } else if (data.success && data.paymentUrl) {
                 window.location.href = data.paymentUrl;
+            } else if (data.retryable) {
+                checkoutIdempotencyKey.current = null;
+                alert(data.error || 'Nie udało się uruchomić płatności. Spróbuj ponownie.');
             } else if (data.success) {
                 alert(data.message || 'Zamówienie zostało utworzone w systemie, jednak wystąpił błąd bramki płatności PayU (brak konfiguracji po stronie fotografa). Skontaktuj się z administratorem, aby opłacić zamówienie.');
             } else {

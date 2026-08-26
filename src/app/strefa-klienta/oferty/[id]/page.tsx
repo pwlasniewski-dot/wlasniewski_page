@@ -8,6 +8,8 @@ import SignaturePad from '@/components/SignaturePad';
 import ClientOfferAddonCheckbox, { type OfferAddon } from '@/components/client/ClientOfferAddonCheckbox';
 import ClientStyleGuidePanel from '@/components/StyleGuide/ClientStyleGuidePanel';
 import FamilyOfferVoucherPreview from '@/components/offers/FamilyOfferVoucherPreview';
+import { formatPlnAmount, parsePlnAmount } from '@/lib/money/pln';
+import { isClientActionableOfferStatus } from '@/lib/offers/status';
 
 export default function OfferDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const router = useRouter();
@@ -50,6 +52,8 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
 
     const isCommunion = offer?.category?.toLowerCase() === 'komunia';
     const isFamilySession = (offer?.category || '').toLowerCase().includes('rodzin') || (offer?.category || '').toLowerCase() === 'family';
+    const isOfferExpired = Boolean(offer?.valid_until && new Date(offer.valid_until).getTime() < Date.now());
+    const isOfferMutable = isClientActionableOfferStatus(offer?.status) && !isOfferExpired;
 
     useEffect(() => {
         const unwrapParams = async () => {
@@ -93,6 +97,13 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
                         setAdultCount(Number(cs.groupBreakdown.adults) || 0);
                         setFamilyChildCount(Number(cs.groupBreakdown.children) || 0);
                     }
+                    if (Array.isArray(cs.selectedOptionalItems)) {
+                        setSelectedOptionalItems(new Set(
+                            cs.selectedOptionalItems
+                                .map((value: unknown) => Number(value))
+                                .filter((value: number) => Number.isInteger(value)),
+                        ));
+                    }
                     if (cs.familyVoucher) {
                         setFamilyVoucherEnabled(true);
                         setVoucherSenderName(cs.familyVoucher.senderName || '');
@@ -114,11 +125,7 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
                     setVoucherSenderName(data.offer?.template_data?.contactName || '');
                 }
 
-                // Prepare PDF URL with token
-                const authToken = getPreferredToken();
-                if (authToken) {
-                    setPdfUrl(`/api/offers/${id}/pdf?token=${authToken}`);
-                }
+                setPdfUrl(`/api/offers/${id}/pdf`);
             } else if (response.status === 401) {
                 router.push('/logowanie');
             }
@@ -144,6 +151,9 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
     // Calculate total price based on selected items AND selected package(s)
     const calculatedTotal = useMemo(() => {
         if (!offer) return 0;
+        // A terminal offer is an immutable snapshot. Its displayed amount must
+        // come from the server-side CAS result, never from mutable local state.
+        if (!isOfferMutable) return Math.max(0, Number(offer.total_price) || 0);
 
         let total = 0;
 
@@ -154,14 +164,14 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
                     if (idx === 0) return; // Skip label column
                     const count = splitPackageCounts[idx] || 0;
                     if (count > 0) {
-                        const price = parseInt(priceStr.replace(/[^0-9]/g, '')) || 0;
+                        const price = parsePlnAmount(priceStr) ?? 0;
                         total += price * count;
                     }
                 });
             } else if (selectedPackageIndex !== null) {
                 // Standard Logic: Single Package Price
                 const priceStr = templateData.footerPrices[selectedPackageIndex];
-                const price = parseInt(priceStr.replace(/[^0-9]/g, '')) || 0;
+                const price = parsePlnAmount(priceStr) ?? 0;
                 total += price;
             }
         }
@@ -183,7 +193,7 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
         selectedAddons.forEach(a => { total += (a.final_price || 0); });
 
         return total;
-    }, [offer, selectedOptionalItems, selectedPackageIndex, templateData, splitPackageCounts, isCommunion, selectedAddons]);
+    }, [offer, isOfferMutable, selectedOptionalItems, selectedPackageIndex, templateData, splitPackageCounts, isCommunion, selectedAddons]);
 
     // Total Children Count Helper
     const totalChildren = useMemo(() => {
@@ -222,7 +232,6 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
 
     const familyVoucherPdfUrl = useMemo(() => {
         if (!offerId || !familyVoucherEnabled || !selectedPackageName) return null;
-        const token = getPreferredToken();
         const params = new URLSearchParams({
             senderName: voucherSenderName || (templateData?.contactName || ''),
             recipientName: voucherRecipientName || 'Rodzice',
@@ -233,12 +242,12 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
             sessionTime: resolvedVoucherSessionTime,
             location: resolvedVoucherLocation,
             verificationCode: familyVoucherCode,
-            ...(token ? { token } : {}),
         });
         return `/api/client/portal/offers/${offerId}/family-voucher?${params.toString()}`;
     }, [familyVoucherCode, familyVoucherEnabled, offerId, resolvedVoucherLocation, resolvedVoucherPackageName, resolvedVoucherPriceLabel, resolvedVoucherSessionDate, resolvedVoucherSessionTime, templateData, voucherHidePrice, voucherRecipientName, voucherSenderName, selectedPackageName]);
 
     const updateSplitCount = (index: number, delta: number) => {
+        if (!isOfferMutable) return;
         setSplitPackageCounts(prev => {
             const current = prev[index] || 0;
             const newVal = Math.max(0, current + delta);
@@ -252,11 +261,13 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
     };
 
     const setSplitCountDirect = (index: number, val: string) => {
+        if (!isOfferMutable) return;
         const num = parseInt(val) || 0;
         setSplitPackageCounts(prev => ({ ...prev, [index]: Math.max(0, num) }));
     };
 
     const toggleOptionalItem = (itemIndex: number) => {
+        if (!isOfferMutable) return;
         setSelectedOptionalItems(prev => {
             const newSet = new Set(prev);
             if (newSet.has(itemIndex)) {
@@ -284,7 +295,7 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
                 name: templateData.pricingHeaders[parseInt(idx)],
                 price: templateData.footerPrices[parseInt(idx)],
                 count: count,
-                subtotal: (parseInt(templateData.footerPrices[parseInt(idx)].replace(/[^0-9]/g, '')) || 0) * count
+                subtotal: (parsePlnAmount(templateData.footerPrices[parseInt(idx)]) ?? 0) * count
             }));
         }
 
@@ -324,6 +335,7 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
 
     const handleAction = async (action: string) => {
         try {
+            if (['accept', 'reject', 'negotiate'].includes(action) && !isOfferMutable) return;
             const token = getPreferredToken();
             if (!token) {
                 router.push('/logowanie');
@@ -459,7 +471,7 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
         );
     }
 
-    const isPending = offer.status === 'sent' || offer.status === 'pending' || offer.status === 'unlock_requested';
+    const isPending = isOfferMutable;
     const canAccept = isPending;
     const canReject = isPending;
     const canNegotiate = isPending && (offer.negotiation_enabled !== false);
@@ -482,6 +494,7 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
                         <span className={`px-4 py-2 rounded-full text-sm font-bold border backdrop-blur-sm ${isPending ? 'bg-sky-500/20 border-sky-300/40 text-sky-100' :
                             offer.status === 'accepted' ? 'bg-emerald-500/20 border-emerald-300/40 text-emerald-100' : 'bg-zinc-500/20 border-zinc-300/40 text-zinc-100'
                             }`}>
+                            {isOfferExpired && '⌛ Termin minął'}
                             {isPending && '📨 Oczekuje na akcję'}
                             {offer.status === 'accepted' && '✅ Zaakceptowana'}
                             {offer.status === 'rejected' && '❌ Odrzucona'}
@@ -506,12 +519,7 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
                         </a>
                         {offer.status === 'accepted' && (
                             <a
-                                href={offer.pdf_url && offer.pdf_url.includes('_zatwierdzona')
-                                    ? offer.pdf_url
-                                    : offer.pdf_url
-                                        ? offer.pdf_url.replace(/\.pdf$/, '_zatwierdzona.pdf')
-                                        : `/api/offers/${offerId}/pdf?token=${typeof window !== 'undefined' ? (localStorage.getItem('client_token') || localStorage.getItem('user_token') || '') : ''}&accepted=true`
-                                }
+                                href={`/api/offers/${offerId}/pdf?accepted=true`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="px-5 py-2.5 bg-emerald-500/90 text-white rounded-full hover:bg-emerald-500 font-semibold transition-all flex items-center gap-2 border border-emerald-300/60"
@@ -531,6 +539,12 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
             </header>
 
             <main className="max-w-6xl mx-auto px-6 py-12">
+                {isOfferExpired && (
+                    <div role="status" className="mb-8 rounded-2xl border border-amber-300 bg-amber-50 px-6 py-5 text-amber-950">
+                        <p className="font-bold">Termin ważności tej oferty minął.</p>
+                        <p className="mt-1 text-sm">Opcje akceptacji, odrzucenia i negocjacji są wyłączone. Skontaktuj się z fotografem, aby otrzymać aktualną ofertę.</p>
+                    </div>
+                )}
                 {/* Price Summary Card (Sticky) */}
                 <div className="sticky top-4 z-20 mb-8">
                     <div className="bg-white rounded-3xl shadow-xl p-8 border border-slate-200">
@@ -540,7 +554,7 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
                                     {isCommunion ? 'Przewidywany koszt całkowity' : 'Łączna wartość oferty'}
                                 </p>
                                 <p className="text-4xl font-bold bg-gradient-to-r from-gold-600 to-amber-600 bg-clip-text text-transparent">
-                                    {calculatedTotal.toLocaleString('pl-PL')} PLN
+                                    {formatPlnAmount(calculatedTotal)}
                                 </p>
                                 {selectedAddons.length > 0 && (
                                     <p className="text-xs text-emerald-700 mt-1 font-semibold">
@@ -637,7 +651,7 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
                             <div>
                                 <p className="text-sm text-slate-600 mb-1">💰 Kwota oferty:</p>
                                 <p className="text-2xl font-bold text-emerald-700">
-                                    {calculatedTotal.toLocaleString('pl-PL')} PLN
+                                    {formatPlnAmount(calculatedTotal)}
                                 </p>
                                 {selectedAddons.length > 0 && (
                                     <div className="mt-2 text-xs text-slate-700 space-y-0.5">
@@ -696,7 +710,7 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
                                         if (idxNum === 0) return null; // Skip labels column
                                         const packageName = offer.template_data.pricingHeaders[idxNum];
                                         const packagePrice = offer.template_data.footerPrices[idxNum];
-                                        const itemTotal = count > 0 ? count * (parseInt(packagePrice.replace(/[^0-9]/g, '')) || 0) : 0;
+                                        const itemTotal = count > 0 ? count * (parsePlnAmount(packagePrice) ?? 0) : 0;
                                         
                                         return count > 0 ? (
                                             <div key={idx} className="bg-white rounded-xl p-4 border border-slate-200">
@@ -706,7 +720,7 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
                                                 </p>
                                                 {itemTotal > 0 && (
                                                     <p className="text-sm font-bold text-blue-700 mt-2">
-                                                        Razem: {itemTotal.toLocaleString('pl-PL')} PLN
+                                                        Razem: {formatPlnAmount(itemTotal)}
                                                     </p>
                                                 )}
                                             </div>
@@ -872,11 +886,11 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
                                                                 onClick={() => {
                                                                     // Only allow selecting via radio/click if NOT communion or if logic requires it
                                                                     // For communion, selection is implied by child count > 0, so we disable column selection to avoid confusion
-                                                                    if (!isCommunion && isPackageColumn) {
+                                                                    if (isOfferMutable && !isCommunion && isPackageColumn) {
                                                                         setSelectedPackageIndex(idx);
                                                                     }
                                                                 }}
-                                                                className={`offer-th ${idx === 0 ? 'left' : ''} ${isRec ? 'rec' : ''} ${isSelected ? 'selected-package' : ''} ${!isCommunion && isPackageColumn ? 'cursor-pointer hover:bg-gold-50 transition-colors' : ''}`}
+                                                                className={`offer-th ${idx === 0 ? 'left' : ''} ${isRec ? 'rec' : ''} ${isSelected ? 'selected-package' : ''} ${isOfferMutable && !isCommunion && isPackageColumn ? 'cursor-pointer hover:bg-gold-50 transition-colors' : ''}`}
                                                                 style={{ width: `${100 / offer.template_data.pricingHeaders.length}%` }}
                                                             >
                                                                 {isRec && <div className="rec-label">{offer.template_data.recommendationLabel}</div>}
@@ -908,11 +922,11 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
                                                                 <td
                                                                     key={colIdx}
                                                                     onClick={() => {
-                                                                        if (!isCommunion && colIdx > 0) {
+                                                                        if (isOfferMutable && !isCommunion && colIdx > 0) {
                                                                             setSelectedPackageIndex(colIdx);
                                                                         }
                                                                     }}
-                                                                    className={`offer-td ${colIdx === 0 ? 'left' : ''} ${isRec ? 'rec' : ''} ${isSelected ? 'selected-package-cell' : ''} ${!isCommunion && colIdx > 0 ? 'cursor-pointer' : ''}`}
+                                                                    className={`offer-td ${colIdx === 0 ? 'left' : ''} ${isRec ? 'rec' : ''} ${isSelected ? 'selected-package-cell' : ''} ${isOfferMutable && !isCommunion && colIdx > 0 ? 'cursor-pointer' : ''}`}
                                                                     dangerouslySetInnerHTML={{ __html: displayVal }}
                                                                 />
                                                             );
@@ -926,8 +940,8 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
                                                         return (
                                                             <td
                                                                 key={idx}
-                                                                onClick={() => idx > 0 && setSelectedPackageIndex(idx)}
-                                                                className={`offer-td ${idx === 0 ? 'left' : ''} ${isRec ? 'rec' : ''} ${isSelected ? 'selected-package-footer' : ''} ${idx > 0 ? 'cursor-pointer hover:bg-gold-50' : ''}`}
+                                                                onClick={() => isOfferMutable && idx > 0 && setSelectedPackageIndex(idx)}
+                                                                className={`offer-td ${idx === 0 ? 'left' : ''} ${isRec ? 'rec' : ''} ${isSelected ? 'selected-package-footer' : ''} ${isOfferMutable && idx > 0 ? 'cursor-pointer hover:bg-gold-50' : ''}`}
                                                             >
                                                                 {idx === 0 ? price : <span className="price-tag">{price}</span>}
                                                             </td>
@@ -969,7 +983,7 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
                                                                         </div>
                                                                         {count > 0 && (
                                                                             <span className="text-[10px] text-blue-800 font-bold">
-                                                                                {(count * (parseInt(offer.template_data.footerPrices[idx].replace(/[^0-9]/g, '')) || 0)).toLocaleString()} PLN
+                                                                                {formatPlnAmount(count * (parsePlnAmount(offer.template_data.footerPrices[idx]) ?? 0))}
                                                                             </span>
                                                                         )}
                                                                     </div>
@@ -1182,7 +1196,7 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
                                                         ? 'border-gold-400 bg-gold-50'
                                                         : 'border-slate-200 bg-white hover:border-slate-300'
                                                         } ${item.is_optional ? 'cursor-pointer' : ''}`}
-                                                    onClick={() => item.is_optional && toggleOptionalItem(globalIndex)}
+                                                    onClick={() => isOfferMutable && item.is_optional && toggleOptionalItem(globalIndex)}
                                                 >
                                                     <div className="flex items-start justify-between">
                                                         <div className="flex-1">
@@ -1191,6 +1205,7 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
                                                                     <input
                                                                         type="checkbox"
                                                                         checked={isSelected}
+                                                                        disabled={!isOfferMutable}
                                                                         onChange={() => toggleOptionalItem(globalIndex)}
                                                                         className="w-5 h-5 text-gold-600 rounded focus:ring-2 focus:ring-gold-500"
                                                                         onClick={(e) => e.stopPropagation()}
@@ -1293,6 +1308,7 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
                                     placeholder="Wpisz swoją wiadomość, pytania lub proponowane zmiany..."
                                     className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mb-2 text-slate-900 placeholder-slate-500 bg-white font-sans"
                                     rows={4}
+                                    maxLength={2000}
                                 />
                                 <div className="text-xs text-slate-500 text-right">
                                     {negotiationMessage.length} znaków
@@ -1363,7 +1379,7 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
                     <div className="bg-white rounded-2xl shadow p-6 flex flex-wrap gap-3 border border-slate-200">
                         {offer.pdf_url && (
                             <a
-                                href={offer.pdf_url}
+                                href={`/api/offers/${offerId}/pdf`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="px-5 py-2.5 bg-slate-900 text-white rounded-full hover:bg-slate-800 font-semibold border border-slate-800 flex items-center gap-2"
@@ -1374,12 +1390,7 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
                         )}
                         {offer.status === 'accepted' && (
                             <a
-                                href={offer.pdf_url && offer.pdf_url.includes('_zatwierdzona')
-                                    ? offer.pdf_url
-                                    : offer.pdf_url
-                                        ? offer.pdf_url.replace(/\.pdf$/, '_zatwierdzona.pdf')
-                                        : `/api/offers/${offerId}/pdf?token=${getPreferredToken()}&accepted=true`
-                                }
+                                href={`/api/offers/${offerId}/pdf?accepted=true`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="px-5 py-2.5 bg-emerald-600 text-white rounded-full hover:bg-emerald-700 font-semibold border border-emerald-700 flex items-center gap-2"

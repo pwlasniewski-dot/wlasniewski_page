@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { withAuth } from '@/lib/auth/middleware';
+import { isImmutableContractStatus, normalizeContractStatus } from '@/lib/contracts/status';
+import { randomUUID } from 'node:crypto';
+import { jsonWithCorrelation } from '@/lib/http/correlation';
+import { recordAdminIncidentSafely } from '@/lib/admin-incidents';
 
 // GET /api/admin/contracts/[id] - admin podglad umowy (rowniez standalone bez offer_id)
 export async function GET(
@@ -41,12 +45,21 @@ export async function PATCH(
     context: { params: Promise<{ id: string }> }
 ) {
     return withAuth(request, async (req) => {
+        const correlationId = randomUUID();
         try {
             const params = await context.params;
             const contractId = parseInt(params.id);
             const body = await req.json();
             const { session_date, session_time, session_location, photographer_id, status, client_note,
                 deposit_amount, deposit_due_at, deposit_paid_at, deposit_note, content } = body;
+            const existing = await prisma.contract.findUnique({ where: { id: contractId }, select: { status: true, updated_at: true } });
+            if (!existing) return NextResponse.json({ error: 'Contract not found' }, { status: 404 });
+            if (isImmutableContractStatus(existing.status)) {
+                return NextResponse.json({ error: 'Wysłana lub podpisana umowa jest niezmienna. Utwórz aneks.' }, { status: 409 });
+            }
+            if (status !== undefined && normalizeContractStatus(status) !== normalizeContractStatus(existing.status)) {
+                return NextResponse.json({ error: 'Status umowy zmienia wyłącznie dedykowana akcja wysyłki lub podpisu.' }, { status: 409 });
+            }
 
             const data: Record<string, unknown> = {};
             if (content !== undefined) data.content = content;
@@ -67,11 +80,23 @@ export async function PATCH(
             if (deposit_paid_at !== undefined) data.deposit_paid_at = deposit_paid_at ? new Date(deposit_paid_at) : null;
             if (deposit_note !== undefined) data.deposit_note = deposit_note;
 
-            const updated = await prisma.contract.update({ where: { id: contractId }, data });
-            return NextResponse.json({ contract: updated });
+            const claimed = await prisma.contract.updateMany({
+                where: { id: contractId, status: existing.status, updated_at: existing.updated_at },
+                data,
+            });
+            if (claimed.count !== 1) {
+                return jsonWithCorrelation({ error: 'Umowa została równolegle zmieniona lub wysłana. Odśwież dane.', correlation_id: correlationId }, correlationId, 409);
+            }
+            const updated = await prisma.contract.findUniqueOrThrow({ where: { id: contractId } });
+            return jsonWithCorrelation({ contract: updated }, correlationId);
         } catch (error) {
             console.error('Patch contract error:', error);
-            return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+            await recordAdminIncidentSafely({
+                severity: 'P1', category: 'ADMIN_WRITE', reasonCode: 'ADMIN_CONTRACT_UPDATE_FAILED',
+                summary: 'Aktualizacja umowy w panelu nie powiodła się', correlationId,
+                details: { error: error instanceof Error ? error.message : String(error) },
+            });
+            return jsonWithCorrelation({ error: 'Internal server error', correlation_id: correlationId }, correlationId, 500);
         }
     });
 }
@@ -82,6 +107,7 @@ export async function DELETE(
     context: { params: Promise<{ id: string }> }
 ) {
     return withAuth(request, async (req) => {
+        const correlationId = randomUUID();
         try {
             const params = await context.params;
             const contractId = parseInt(params.id);
@@ -94,12 +120,24 @@ export async function DELETE(
                 return NextResponse.json({ error: 'Contract not found' }, { status: 404 });
             }
 
-            // Allow admin to delete signed contracts if needed
-            // (Removed restriction per user request)
+            if (isImmutableContractStatus(contract.status)) {
+                return NextResponse.json({ error: 'Wysłanej ani podpisanej umowy nie można usunąć. Utwórz aneks lub archiwizuj dokument.' }, { status: 409 });
+            }
 
-            await prisma.contract.delete({
-                where: { id: contractId }
+            const deleted = await prisma.$transaction(async (tx) => {
+                const claimedAt = new Date();
+                const claimed = await tx.contract.updateMany({
+                    where: { id: contractId, status: contract.status, updated_at: contract.updated_at },
+                    data: { updated_at: claimedAt },
+                });
+                if (claimed.count !== 1) return { count: 0 };
+                return tx.contract.deleteMany({
+                    where: { id: contractId, status: contract.status, updated_at: claimedAt },
+                });
             });
+            if (deleted.count !== 1) {
+                return jsonWithCorrelation({ error: 'Umowa została równolegle zmieniona lub wysłana. Odśwież dane.', correlation_id: correlationId }, correlationId, 409);
+            }
 
             return NextResponse.json({ success: true, message: 'Umowa została pomyślnie usunięta.' });
         } catch (error) {

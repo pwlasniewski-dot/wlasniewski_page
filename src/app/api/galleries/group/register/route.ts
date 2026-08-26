@@ -4,6 +4,9 @@ import crypto from 'crypto';
 import { generateParentToken } from '@/lib/auth/parent-jwt';
 import { AVAILABLE_AVATARS } from '@/lib/gallery/avatars';
 import { sendEmail, getAdminEmail } from '@/lib/email/sender';
+import { checkRateLimit, getClientIp } from '@/lib/auth/rate-limit';
+import { bearerToken, verifyGroupGalleryAccessToken } from '@/lib/auth/group-gallery-access';
+import { recordAdminIncidentSafely } from '@/lib/admin-incidents';
 
 /**
  * Generate initials from full name
@@ -61,13 +64,31 @@ async function generateParentIdentifier(
  * Register a parent in GROUP mode gallery
  */
 export async function POST(request: NextRequest) {
+  const correlationId = crypto.randomUUID();
+  let incidentGalleryId: number | null = null;
   try {
+    const clientIp = getClientIp(request);
+    const rateLimit = checkRateLimit(`group-register:${clientIp}`, 8, 15 * 60 * 1000);
+    if (!rateLimit.allowed) {
+      return NextResponse.json({ error: 'Zbyt wiele prób. Spróbuj ponownie za 15 minut.' }, { status: 429 });
+    }
     const { gallery_id, access_code, parent_name, avatar, parent_email, parent_phone } = await request.json();
 
     if (!gallery_id || !access_code || !parent_name || !avatar || !parent_email) {
       return NextResponse.json(
         { error: 'ID galerii, kod dostępu, imię rodzica, email i awatar są wymagane' },
         { status: 400 }
+      );
+    }
+
+    const galleryId = Number(gallery_id);
+    incidentGalleryId = Number.isInteger(galleryId) ? galleryId : null;
+    const entryToken = bearerToken(request.headers.get('authorization'));
+    if (!Number.isInteger(galleryId) || galleryId <= 0
+      || !(await verifyGroupGalleryAccessToken(entryToken, galleryId))) {
+      return NextResponse.json(
+        { error: 'Sesja wejścia do galerii wygasła. Wpisz ponownie kod i hasło.' },
+        { status: 401 },
       );
     }
 
@@ -114,7 +135,7 @@ export async function POST(request: NextRequest) {
     // Verify gallery exists, is in GROUP mode, and access_code matches
     const gallery = await prisma.clientGallery.findFirst({
       where: {
-        id: gallery_id,
+        id: galleryId,
         group_access_code: access_code.trim().toUpperCase(),
         gallery_mode: 'GROUP',
         is_active: true,
@@ -124,7 +145,9 @@ export async function POST(request: NextRequest) {
         client_name: true,
         max_photos_for_print: true,
         allow_extra_photo_purchase: true,
+        external_download_url: true,
         group_password: true,
+        expires_at: true,
       },
     });
 
@@ -134,11 +157,14 @@ export async function POST(request: NextRequest) {
         { status: 404 }
       );
     }
+    if (gallery.expires_at && gallery.expires_at < new Date()) {
+      return NextResponse.json({ error: 'Galeria wygasła' }, { status: 403 });
+    }
 
     // SECURITY: Check if avatar is still available (race condition protection)
     const avatarTaken = await prisma.galleryParticipant.findFirst({
       where: {
-        gallery_id: gallery_id,
+        gallery_id: galleryId,
         avatar: avatar,
       },
       select: { id: true },
@@ -154,7 +180,7 @@ export async function POST(request: NextRequest) {
     // One parent profile per email in a gallery to simplify cross-device login.
     let existingByEmail = await prisma.galleryParticipant.findFirst({
       where: {
-        gallery_id: gallery_id,
+        gallery_id: galleryId,
         parent_email: normalizedEmail,
       },
       select: { id: true, parent_identifier: true },
@@ -163,7 +189,7 @@ export async function POST(request: NextRequest) {
     if (!existingByEmail) {
       existingByEmail = await prisma.galleryParticipant.findFirst({
         where: {
-          gallery_id: gallery_id,
+          gallery_id: galleryId,
           parent_email: { equals: normalizedEmail, mode: 'insensitive' },
         },
         select: { id: true, parent_identifier: true },
@@ -182,29 +208,41 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate unique parent identifier
-    const parentIdentifier = await generateParentIdentifier(gallery_id, parent_name);
+    const parentIdentifier = await generateParentIdentifier(galleryId, parent_name);
 
     // Create participant record
-    const participant = await prisma.galleryParticipant.create({
-      data: {
-        gallery_id: gallery_id,
-        parent_identifier: parentIdentifier,
-        avatar: avatar,
-        parent_name: parent_name.trim(),
-        parent_email: normalizedEmail,
-        parent_phone: parent_phone?.trim() || null,
-        first_login_at: new Date(),
-        name: parent_name.trim(), // Pole wymagane przez schemę - używamy imienia rodzica
-        max_selections: gallery.max_photos_for_print || 5,
-        allow_extra_photo_purchase: gallery.allow_extra_photo_purchase,
-        publication_consent: false,
-      },
+    const participant = await prisma.$transaction(async tx => {
+      const created = await tx.galleryParticipant.create({
+        data: {
+          gallery_id: galleryId,
+          parent_identifier: parentIdentifier,
+          avatar: avatar,
+          parent_name: parent_name.trim(),
+          parent_email: normalizedEmail,
+          parent_phone: parent_phone?.trim() || null,
+          first_login_at: new Date(),
+          name: parent_name.trim(), // Pole wymagane przez schemę - używamy imienia rodzica
+          max_selections: gallery.max_photos_for_print || 5,
+          allow_extra_photo_purchase: gallery.allow_extra_photo_purchase,
+          publication_consent: false,
+        },
+      });
+      await tx.groupGalleryActivity.create({
+        data: {
+          gallery_id: galleryId,
+          participant_id: created.id,
+          action: 'PARENT_ACCOUNT_CREATED',
+          result: 'SUCCESS',
+          correlation_id: correlationId,
+        },
+      });
+      return created;
     });
 
     // Generate JWT token for parent authorization
     const token = await generateParentToken({
       participant_id: participant.id,
-      gallery_id: gallery_id,
+      gallery_id: galleryId,
       parent_identifier: parentIdentifier,
     });
 
@@ -224,7 +262,7 @@ export async function POST(request: NextRequest) {
               <p style="margin:0 0 6px;"><strong>Twój identyfikator rodzica:</strong></p>
               <p style="margin:0;font-size:22px;letter-spacing:1px;"><strong>${participant.parent_identifier}</strong></p>
             </div>
-            <p>Możesz logować się na innym urządzeniu po emailu lub po identyfikatorze.</p>
+            <p>Na innym urządzeniu podaj swój email, a wyślemy bezpieczny, jednorazowy link logowania.</p>
             <p><a href="${galleryUrl}" style="display:inline-block;background:#111;color:#fff;text-decoration:none;padding:10px 16px;border-radius:8px;">Przejdź do galerii</a></p>
           </div>
         `,
@@ -263,11 +301,14 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       participant_id: participant.id,
-      gallery_id: gallery_id,
+      gallery_id: galleryId,
       parent_identifier: parentIdentifier,
       parent_name: participant.parent_name,
       avatar: avatar,
       max_selections: participant.max_selections,
+      selection_status: participant.selection_status,
+      selection_submitted_at: participant.selection_submitted_at,
+      external_download_url: gallery.external_download_url,
       token: token,
     });
 
@@ -282,8 +323,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    await recordAdminIncidentSafely({
+      severity: 'P1',
+      category: 'AUTHENTICATION',
+      reasonCode: 'GROUP_GALLERY_REGISTRATION_FAILED',
+      summary: 'Nie udało się utworzyć konta rodzica w galerii grupowej',
+      entityType: 'gallery',
+      entityId: incidentGalleryId,
+      correlationId,
+      details: { error: error instanceof Error ? error.message : String(error) },
+    });
+
     return NextResponse.json(
-      { error: 'Wystąpił błąd podczas rejestracji' },
+      { error: 'Wystąpił błąd podczas rejestracji. Administrator otrzymał zgłoszenie.' },
       { status: 500 }
     );
   }

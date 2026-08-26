@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { withAuth } from '@/lib/auth/middleware';
 import { logSystem } from '@/lib/logger';
+import { normalizeEmail } from '@/lib/crm/delivery';
+import { randomUUID } from 'node:crypto';
+import { recordAdminIncidentSafely } from '@/lib/admin-incidents';
+import { jsonWithCorrelation } from '@/lib/http/correlation';
 
 export const dynamic = 'force-dynamic';
 
@@ -59,6 +63,7 @@ function mergeSessionPlan(permissions: unknown, next: Partial<SessionPlan>): Rec
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
     return withAuth(request, async (req) => {
+        const correlationId = randomUUID();
         try {
             const userId = parseInt(id);
 
@@ -90,16 +95,16 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
                     where: { user_id: userId },
                     orderBy: { created_at: 'desc' },
                     include: { gift_card: true }
-                }).catch(() => []),
+                }),
                 prisma.booking.findMany({
                     where: { email: clientEmail },
                     orderBy: { date: 'desc' }
-                }).catch(() => []),
+                }),
                 prisma.clientGallery.findMany({
                     where: { client_id: userId },
                     orderBy: { created_at: 'desc' },
                     include: { photos: { take: 1 } }
-                }).catch(() => []),
+                }),
                 prisma.clientGallery.findMany({
                     where: {
                         client_email: clientEmail,
@@ -107,22 +112,22 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
                     },
                     orderBy: { created_at: 'desc' },
                     include: { photos: { take: 1 } }
-                }).catch(() => []),
+                }),
                 prisma.clientGallery.findMany({
                     where: { photographer_id: userId }, // "assigned" context
                     orderBy: { created_at: 'desc' },
                     include: { photos: { take: 1 } }
-                }).catch(() => []),
+                }),
                 prisma.basket.findFirst({
                     where: { user_id: userId },
                     include: { items: true },
                     orderBy: { updated_at: 'desc' }
-                }).catch(() => null),
+                }),
                 prisma.offer.findMany({
                     where: { client_id: userId },
                     orderBy: { created_at: 'desc' },
                     include: { sections: { include: { items: true } } }
-                }).catch(() => []),
+                }),
                 prisma.offer.findMany({
                     where: {
                         client_email: clientEmail,
@@ -130,7 +135,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
                     },
                     orderBy: { created_at: 'desc' },
                     include: { sections: { include: { items: true } } }
-                }).catch(() => []),
+                }),
                 prisma.contract.findMany({
                     where: {
                         OR: [
@@ -140,7 +145,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
                     },
                     orderBy: { created_at: 'desc' },
                     include: { offer: true }
-                }).catch(() => []),
+                }),
                 prisma.crmActivity.findFirst({
                     where: {
                         action: 'login',
@@ -151,7 +156,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
                     },
                     orderBy: { created_at: 'desc' },
                     select: { created_at: true }
-                }).catch(() => null)
+                })
             ]);
 
             // Foto Wyzwania powi\u0105zane z klientem (jako zaproszony LUB zapraszaj\u0105cy po emailu)
@@ -177,7 +182,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
                         take: 30,
                     },
                 },
-            }).catch(() => []);
+            });
 
             // Deduplicate offers (by ID + by Email)
             const allOffers = [...offersById, ...offersByEmail]
@@ -202,11 +207,18 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
                 challenges,
             };
 
-            return NextResponse.json({ success: true, client: fullClient });
+            return jsonWithCorrelation({ success: true, client: fullClient }, correlationId);
         } catch (error: any) {
             console.error('Fetch client details error:', error);
             await logSystem('ERROR', 'SYSTEM', `Failed to fetch client detail for ${id}`, { error: error.message, stack: error.stack });
-            return NextResponse.json({ error: 'Failed to fetch details' }, { status: 500 });
+            await recordAdminIncidentSafely({
+                severity: 'P1', category: 'ADMIN_PROFILE', reasonCode: 'ADMIN_CLIENT_PROFILE_LOAD_FAILED',
+                summary: 'Nie udało się pobrać pełnego profilu klienta w panelu administratora',
+                clientId: Number.isInteger(Number(id)) ? Number(id) : null,
+                entityType: 'client', entityId: Number.isInteger(Number(id)) ? Number(id) : null,
+                correlationId, details: { error: error instanceof Error ? error.message : String(error) },
+            });
+            return jsonWithCorrelation({ error: 'Nie udało się pobrać pełnych danych klienta', correlation_id: correlationId }, correlationId, 500);
         }
     });
 }
@@ -259,7 +271,11 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
                 return NextResponse.json({ error: 'User not found' }, { status: 404 });
             }
 
-            const emailChanged = body.email && body.email !== currentUser.email;
+            const normalizedEmail = body.email !== undefined ? normalizeEmail(body.email) : currentUser.email;
+            if (!normalizedEmail) {
+                return NextResponse.json({ error: 'Email is required' }, { status: 400 });
+            }
+            const emailChanged = normalizedEmail !== normalizeEmail(currentUser.email);
             const sessionPlanPayload = body.session_plan && typeof body.session_plan === 'object'
                 ? {
                     date: typeof body.session_plan.date === 'string' ? body.session_plan.date : null,
@@ -281,7 +297,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
                     where: { id: userId },
                     data: {
                         name: body.name,
-                        email: body.email,
+                        email: normalizedEmail,
                         phone: body.phone,
                         address: body.address,
                         city: body.city,
@@ -292,9 +308,9 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
                 });
 
                 if (emailChanged) {
-                    console.log(`[CRM] Email changed from ${currentUser.email} to ${body.email}. Syncing records...`);
-                    await tx.offer.updateMany({ where: { client_id: userId }, data: { client_email: body.email } });
-                    await tx.clientGallery.updateMany({ where: { client_id: userId }, data: { client_email: body.email } });
+                    console.log(`[CRM] Email changed from ${currentUser.email} to ${normalizedEmail}. Syncing records...`);
+                    await tx.offer.updateMany({ where: { client_id: userId }, data: { client_email: normalizedEmail } });
+                    await tx.clientGallery.updateMany({ where: { client_id: userId }, data: { client_email: normalizedEmail } });
                 }
 
                 return updated;

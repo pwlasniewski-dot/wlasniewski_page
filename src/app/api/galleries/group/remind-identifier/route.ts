@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { checkRateLimit, getClientIp } from '@/lib/auth/rate-limit';
 import { sendEmail } from '@/lib/email/sender';
+import { bearerToken, verifyGroupGalleryAccessToken } from '@/lib/auth/group-gallery-access';
 
 /**
  * POST /api/galleries/group/remind-identifier
@@ -28,6 +29,15 @@ export async function POST(request: NextRequest) {
     const galleryId = Number(gallery_id);
     if (!Number.isFinite(galleryId)) {
       return NextResponse.json({ error: 'Nieprawidłowe ID galerii' }, { status: 400 });
+    }
+    if (!(await verifyGroupGalleryAccessToken(
+      bearerToken(request.headers.get('authorization')),
+      galleryId,
+    ))) {
+      return NextResponse.json(
+        { error: 'Sesja wejścia do galerii wygasła. Wpisz ponownie kod i hasło.' },
+        { status: 401 },
+      );
     }
 
     const normalizedEmail = String(parent_email).trim().toLowerCase();
@@ -98,7 +108,7 @@ export async function POST(request: NextRequest) {
             <div style="background:#f5f5f5;border:1px solid #e5e5e5;border-radius:10px;padding:14px 16px;margin:16px 0;">
               <p style="margin:0;font-size:22px;letter-spacing:1px;"><strong>${participant.parent_identifier}</strong></p>
             </div>
-            <p>Możesz logować się po emailu albo po tym identyfikatorze.</p>
+            <p>Do profilu zalogujesz się bezpiecznym, jednorazowym linkiem wysyłanym na ten adres email.</p>
             <p><a href="${galleryUrl}" style="display:inline-block;background:#111;color:#fff;text-decoration:none;padding:10px 16px;border-radius:8px;">Przejdź do galerii</a></p>
           </div>
         `,

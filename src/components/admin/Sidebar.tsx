@@ -33,7 +33,8 @@ import {
     GraduationCap,
     MapPin,
     Mail,
-    BookOpen
+    BookOpen,
+    AlertTriangle
 } from 'lucide-react';
 
 const navigation = [
@@ -124,6 +125,7 @@ const navigation = [
     },
     { name: 'Local SEO / Maps', href: '/admin/local-seo', icon: MapPin },
     { name: 'Logi', href: '/admin/logs', icon: List },
+    { name: 'Incydenty', href: '/admin/incidents', icon: AlertTriangle },
     { name: 'Stopka', href: '/admin/footer', icon: FileText },
     {
         name: 'Ustawienia',

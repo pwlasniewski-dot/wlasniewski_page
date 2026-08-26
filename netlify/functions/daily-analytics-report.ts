@@ -2,6 +2,8 @@ import prisma from '../../src/lib/db/prisma';
 import { sendEmail } from '../../src/lib/email/sender';
 import { getAverageMonthlyBookingValue, getAverageMonthlyNetPayments, getFinanceSummary } from '../../src/lib/analytics/finance';
 import { diagnoseFunnel } from '../../src/lib/analytics/funnelDiagnostics';
+import { buildCrmDailySnapshot, renderCrmDailyHtml } from '../../src/lib/crm/daily-report';
+import { recordAdminIncidentSafely } from '../../src/lib/admin-incidents';
 
 const DAY = 24 * 60 * 60 * 1000;
 const WARSAW = 'Europe/Warsaw';
@@ -254,6 +256,17 @@ export default async () => {
     getAverageMonthlyNetPayments(fullMonthRanges(now, 6)),
     getAverageMonthlyBookingValue(fullMonthRanges(now, 6)),
   ]);
+  let crmHtml: string;
+  try {
+    crmHtml = renderCrmDailyHtml(await buildCrmDailySnapshot(dayStart, todayStart));
+  } catch (error) {
+    await recordAdminIncidentSafely({
+      severity: 'P1', category: 'REPORTING', reasonCode: 'DAILY_CRM_REPORT_FAILED',
+      summary: 'Nie udało się zbudować sekcji CRM raportu dziennego',
+      details: { error: error instanceof Error ? error.message : String(error), report_period: reportPeriod },
+    });
+    throw error;
+  }
 
   const notes = insights(day, week, month);
   const diagnostics = diagnoseFunnel(slice(dayStart, todayStart).map(row => ({
@@ -275,6 +288,7 @@ export default async () => {
   <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:16px"><strong>Co wymaga działania teraz</strong>${actionRows || '<p style="margin-bottom:0;color:#6b7280">Brak wystarczających dowodów na problem w ostatniej dobie.</p>'}</div>
   ${notes.length ? `<div style="background:#ecfdf5;border:1px solid #a7f3d0;border-radius:12px;padding:16px"><strong>Co dziś zwraca uwagę</strong><ul style="margin-bottom:0">${notes.map(n => `<li style="margin:6px 0">${esc(n)}</li>`).join('')}</ul></div>` : ''}
   ${section('Wczoraj — dzień kalendarzowy Europe/Warsaw', day, prevDay)}
+  ${crmHtml}
   ${section('Ostatnie 7 dni', week, prevWeek)}
   ${section('Ostatnie 30 dni', month)}
   <h2 style="font-size:20px;margin:30px 0 12px">SEO — ruch organiczny z Google (30 dni)</h2>
@@ -342,6 +356,11 @@ export default async () => {
         error: (error instanceof Error ? error.message : String(error)).slice(0, 2000),
       },
     }).catch(() => null);
+    await recordAdminIncidentSafely({
+      severity: 'P1', category: 'REPORTING', reasonCode: 'DAILY_REPORT_DELIVERY_FAILED',
+      summary: 'Nie udało się wysłać dziennego raportu biznesowego',
+      details: { error: error instanceof Error ? error.message : String(error), report_period: reportPeriod },
+    });
     throw error;
   }
   await prisma.systemLog.create({

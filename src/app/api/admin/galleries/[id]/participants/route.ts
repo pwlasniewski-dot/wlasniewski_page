@@ -48,6 +48,9 @@ export async function GET(
                     publication_consent: p.publication_consent,
                     consent_scope: p.consent_scope,
                     consent_given_at: p.consent_given_at,
+                    selection_status: p.selection_status,
+                    selection_submitted_at: p.selection_submitted_at,
+                    selection_version: p.selection_version,
                     notes: p.notes,
                     created_at: p.created_at,
                 }))

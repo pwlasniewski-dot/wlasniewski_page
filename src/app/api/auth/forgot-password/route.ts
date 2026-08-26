@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
-import crypto from 'crypto';
 import { sendEmail } from '@/lib/email/sender';
 import { getClientIp, rateLimit } from '@/lib/rate-limit';
+import { buildPasswordSetupUrl } from '@/lib/crm/delivery';
+import { ensurePasswordSetupToken } from '@/lib/auth/password-setup-token';
+import { safeReturnTo } from '@/lib/auth/return-to';
 
 export async function POST(req: NextRequest) {
     try {
-        const { email } = await req.json();
+        const { email, returnTo } = await req.json();
         const normalizedEmail = String(email || '').trim().toLowerCase();
 
         if (!normalizedEmail) {
@@ -27,24 +29,14 @@ export async function POST(req: NextRequest) {
             where: { email: normalizedEmail }
         });
 
-        if (!user) {
+        if (!user || user.role !== 'CLIENT' || !user.is_active || user.deleted_at) {
             // We return 200 for security reasons even if user doesn't exist
             return NextResponse.json({ success: true, message: 'Jeśli adres istnieje, wysłano instrukcje resetowania' });
         }
 
-        // Generate secure reset token
-        const resetToken = crypto.randomBytes(32).toString('hex');
-        const resetTokenExpires = new Date(Date.now() + 3600000); // 1 hour
+        const resetToken = await ensurePasswordSetupToken(user, 60 * 60 * 1000);
 
-        await prisma.user.update({
-            where: { id: user.id },
-            data: {
-                reset_token: resetToken,
-                reset_token_expires: resetTokenExpires
-            }
-        });
-
-        const resetLink = `${process.env.NEXT_PUBLIC_BASE_URL || 'https://wlasniewski.pl'}/logowanie/ustaw-nowe-haslo?token=${resetToken}`;
+        const resetLink = buildPasswordSetupUrl(resetToken, safeReturnTo(returnTo));
 
         await sendEmail({
             to: user.email,

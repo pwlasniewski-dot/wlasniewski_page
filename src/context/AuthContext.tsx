@@ -16,7 +16,7 @@ interface AuthContextType {
     isLoading: boolean;
     isAuthenticated: boolean;
     login: (token: string, user: User) => void;
-    logout: () => void;
+    logout: () => Promise<void>;
     refreshUser: () => Promise<void>;
 }
 
@@ -76,9 +76,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(newUser);
     };
 
-    const logout = () => {
-        clearSession();
-        window.location.href = '/logowanie';
+    const logout = async () => {
+        try {
+            await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
+        } catch (error) {
+            console.error('Server logout failed:', error);
+        } finally {
+            clearSession();
+            window.location.href = '/logowanie';
+        }
     };
 
     return (

@@ -8,7 +8,7 @@ import archiver from 'archiver';
 import { PassThrough } from 'stream';
 import sharp from 'sharp';
 import { withAuthWithQueryToken } from '@/lib/auth/middleware';
-import { uploadStreamToS3 } from '@/lib/storage/s3';
+import { deleteFromS3, uploadStreamToS3 } from '@/lib/storage/s3';
 
 export const maxDuration = 60; // seconds — Netlify Pro
 
@@ -154,6 +154,12 @@ export async function GET(
       if (!participant) {
         return NextResponse.json({ error: 'Uczestnik nie istnieje' }, { status: 404 });
       }
+      if (participant.selection_status !== 'SUBMITTED' && participant.selections.length > 0) {
+        return NextResponse.json(
+          { error: 'Wybór rodzica nie jest zatwierdzonym manifestem i nie może trafić do druku.' },
+          { status: 409 },
+        );
+      }
 
       const hasStandard = participant.selections.length > 0;
       const hasPaid = paidOrders.length > 0;
@@ -188,12 +194,26 @@ export async function GET(
         : [];
 
       const paidPhotoUrlById = new Map(
-        paidPhotos.map((photo) => [photo.id, photo.download_source_url || photo.file_url])
+        paidPhotos.map((photo) => [photo.id, photo.download_source_url])
       );
+
+      const missingHqIds = new Set<number>();
+      participant.selections.forEach(selection => {
+        if (!selection.photo.download_source_url) missingHqIds.add(selection.photo.id);
+      });
+      paidPhotoIds.forEach(photoId => {
+        if (!paidPhotoUrlById.get(photoId)) missingHqIds.add(photoId);
+      });
+      if (missingHqIds.size > 0) {
+        return NextResponse.json({
+          error: `Eksport zablokowany: ${missingHqIds.size} zdjęć nie ma zweryfikowanego JPG HQ.`,
+          missing_hq_photo_ids: [...missingHqIds],
+        }, { status: 409 });
+      }
 
       const standardItems = participant.selections.map((selection) => ({
         id: selection.photo.id,
-        file_url: selection.photo.download_source_url || selection.photo.file_url,
+        file_url: selection.photo.download_source_url!,
         source: 'STANDARD' as const,
         format: DEFAULT_STANDARD_PRINT_FORMAT,
       }));
@@ -201,11 +221,10 @@ export async function GET(
       const paidPrintItems = paidItems
         .map((item) => ({
           id: item.id,
-          file_url: paidPhotoUrlById.get(item.id) || null,
+          file_url: paidPhotoUrlById.get(item.id)!,
           source: 'PLATNE' as const,
           format: item.format || '10x15',
-        }))
-        .filter((item): item is { id: number; file_url: string; source: 'PLATNE'; format: string } => Boolean(item.file_url));
+        }));
 
       const mergedItems: Array<{ id: number; file_url: string; source: 'STANDARD' | 'PLATNE'; format: string }> = [
         ...standardItems,
@@ -273,6 +292,14 @@ export async function GET(
 
       await archive.finalize();
       const downloadUrl = await uploadPromise;
+
+      if (skipped > 0 || appended !== mergedItems.length) {
+        await deleteFromS3(s3Key).catch(() => false);
+        return NextResponse.json(
+          { error: `Eksport przerwany: nie udało się bezbłędnie przygotować ${skipped} plików.` },
+          { status: 502 },
+        );
+      }
 
       return NextResponse.json({
         success: true,

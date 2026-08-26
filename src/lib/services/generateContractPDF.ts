@@ -169,6 +169,7 @@ export async function generateContractPDFBuffer(
 
             // Signature section (if contract is signed)
             if (includeSignatureSection && contract.signed_at) {
+                if (doc.y > doc.page.height - 190) doc.addPage();
                 doc.moveDown(1);
                 doc.strokeColor('#E5E7EB');
                 doc.moveTo(40, doc.y).lineTo(doc.page.width - 40, doc.y).stroke();
@@ -196,6 +197,19 @@ export async function generateContractPDFBuffer(
                     align: 'center',
                 });
                 doc.moveDown(0.3);
+
+                if (Buffer.isBuffer(contract._signaturePng) && contract._signaturePng.length) {
+                    const imageY = doc.y;
+                    doc.image(contract._signaturePng, 187.5, imageY, {
+                        fit: [220, 90],
+                        align: 'center',
+                        valign: 'center',
+                    });
+                    doc.y = imageY + 96;
+                    doc.font('Montserrat', 7).fillColor('#6B7280');
+                    doc.text(`SHA-256 podpisu: ${contract._signatureHash || 'brak'}`, { align: 'center' });
+                    doc.moveDown(0.3);
+                }
 
                 // Client notes (if provided)
                 if (contract.client_note) {

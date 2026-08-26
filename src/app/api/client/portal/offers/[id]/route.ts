@@ -3,9 +3,22 @@ import prisma from '@/lib/db/prisma';
 import { verifyToken, extractToken } from '@/lib/auth/jwt';
 import { sendEmail, getAdminEmail } from '@/lib/email/sender';
 import { generateOfferPDF } from '@/lib/services/pdf';
-import { uploadToS3 } from '@/lib/storage/s3';
-import { logClientActivity } from '@/lib/crm-activity';
+import { deleteFromS3, uploadToS3 } from '@/lib/storage/s3';
+import { logClientActivity, logClientActivityStrict } from '@/lib/crm-activity';
 import { canonicalizeAcceptedOfferSelection, OfferSelectionError } from '@/lib/offers/calculateAcceptedOfferTotal';
+import {
+    CLIENT_ACTIONABLE_OFFER_STATUS_VALUES,
+    isClientActionableOfferStatus,
+    isClientVisibleOfferStatus,
+    normalizeOfferStatus,
+} from '@/lib/offers/status';
+import { randomUUID } from 'crypto';
+import { revalidateActiveClient } from '@/lib/auth/active-client';
+import { recordAdminIncidentSafely } from '@/lib/admin-incidents';
+import { isClientRecordOwner } from '@/lib/auth/document-access';
+import { isClientVisibleContractStatus } from '@/lib/contracts/status';
+import { clientJson, clientOperationTotalMs, recordSlowClientOperation } from '@/lib/client-operations';
+import { escapeHtml } from '@/lib/security/output';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,6 +26,8 @@ export async function GET(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
+    const correlationId = randomUUID();
+    const startedAt = performance.now();
     try {
         // Extract and verify token
         const token = extractToken(request.headers.get('authorization')) ||
@@ -31,6 +46,10 @@ export async function GET(
                 { error: 'Unauthorized' },
                 { status: 401 }
             );
+        }
+        const client = await revalidateActiveClient(decoded);
+        if (!client) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
         const { id } = await params;
@@ -57,32 +76,56 @@ export async function GET(
             );
         }
 
+        if (!isClientVisibleOfferStatus(offer.status)) {
+            return NextResponse.json({ error: 'Offer not found' }, { status: 404 });
+        }
+
         // Verify client owns this offer
-        if (
-            offer.client_id !== decoded.id &&
-            offer.client_email !== decoded.email
-        ) {
-            return NextResponse.json(
-                { error: 'Unauthorized' },
-                { status: 403 }
-            );
+        if (!isClientRecordOwner(offer, client)) {
+            if (offer.client_id !== null
+                && offer.client_id !== client.id
+                && offer.client_email?.trim().toLowerCase() === client.email.trim().toLowerCase()) {
+                await recordAdminIncidentSafely({
+                    severity: 'P1', category: 'DATA_INTEGRITY', reasonCode: 'CLIENT_OFFER_OWNERSHIP_CONFLICT',
+                    summary: 'E-mail oferty wskazuje inne konto niż nadrzędny client_id',
+                    clientId: client.id, clientEmail: client.email, entityType: 'offer', entityId: offerId,
+                    correlationId, details: { authoritative_client_id: offer.client_id },
+                });
+            }
+            return clientJson({ error: 'Offer not found' }, { status: 404, correlationId });
         }
 
         // CRM Activity: offer viewed
-        logClientActivity(decoded, 'offer_viewed', {
+        await logClientActivity(decoded, 'offer_viewed', {
             entityType: 'offer',
             entityId: offerId,
-            details: { title: offer.title, status: offer.status },
+            details: {
+                title: offer.title, status: offer.status, correlation_id: correlationId,
+                total_ms: clientOperationTotalMs(startedAt), outcome: 'success',
+            },
             request,
         });
+        await recordSlowClientOperation({
+            operation: 'offer_open', startedAt, correlationId, clientId: client.id, clientEmail: client.email,
+            entityType: 'offer', entityId: offerId, outcome: 'success',
+        });
 
-        return NextResponse.json({ offer });
+        return clientJson({
+            offer: {
+                ...offer,
+                contract: offer.contract && isClientVisibleContractStatus(offer.contract.status)
+                    ? offer.contract
+                    : null,
+            },
+        }, { correlationId });
     } catch (error) {
         console.error('Error fetching offer:', error);
-        return NextResponse.json(
-            { error: 'Failed to fetch offer' },
-            { status: 500 }
-        );
+        await recordAdminIncidentSafely({
+            severity: 'P1', category: 'CLIENT_PORTAL', reasonCode: 'OFFER_OPEN_FAILED',
+            summary: 'Nie udało się otworzyć oferty klienta', correlationId,
+            details: { error: error instanceof Error ? error.message : String(error) },
+        });
+        return clientJson({ error: 'Nie udało się otworzyć oferty.' }, { status: 500, correlationId });
     }
 }
 
@@ -90,6 +133,10 @@ export async function PATCH(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
+    const correlationId = randomUUID();
+    const startedAt = performance.now();
+    let decisionCommitted = false;
+    let committedOfferSnapshot: Record<string, unknown> | null = null;
     try {
         // Extract and verify token
         const token = extractToken(request.headers.get('authorization')) ||
@@ -109,11 +156,19 @@ export async function PATCH(
                 { status: 401 }
             );
         }
+        const client = await revalidateActiveClient(decoded);
+        if (!client) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
 
         const { id } = await params;
         const offerId = parseInt(id);
         const body = await request.json();
-        const { action, message, new_status } = body;
+        const { action, message } = body;
+
+        if (!['accept', 'reject', 'negotiate', 'request_unlock'].includes(action)) {
+            return NextResponse.json({ error: 'Nieznana akcja oferty' }, { status: 400 });
+        }
 
         // Fetch offer and verify ownership
         const offer = await prisma.offer.findUnique({
@@ -129,39 +184,85 @@ export async function PATCH(
         }
 
         // Verify client owns this offer
-        if (
-            offer.client_id !== decoded.id &&
-            offer.client_email !== decoded.email
-        ) {
-            return NextResponse.json(
-                { error: 'Unauthorized' },
-                { status: 403 }
-            );
+        if (!isClientRecordOwner(offer, client)) {
+            if (offer.client_id !== null
+                && offer.client_id !== client.id
+                && offer.client_email?.trim().toLowerCase() === client.email.trim().toLowerCase()) {
+                await recordAdminIncidentSafely({
+                    severity: 'P1', category: 'DATA_INTEGRITY', reasonCode: 'CLIENT_OFFER_OWNERSHIP_CONFLICT',
+                    summary: 'E-mail oferty wskazuje inne konto niż nadrzędny client_id',
+                    clientId: client.id, clientEmail: client.email, entityType: 'offer', entityId: offerId,
+                    correlationId, details: { authoritative_client_id: offer.client_id, action },
+                });
+            }
+            return clientJson({ error: 'Offer not found' }, { status: 404, correlationId });
         }
 
-        // CRM Activity: track action
-        logClientActivity(decoded, 
-            action === 'accept' ? 'offer_accepted' : 
-            action === 'reject' ? 'offer_rejected' : 
-            action === 'negotiate' ? 'offer_negotiate' : 
-            'offer_selection_changed', {
+        const recordNotificationFailure = async (
+            reasonCode: string,
+            summary: string,
+            notificationError: unknown,
+        ) => recordAdminIncidentSafely({
+            severity: 'P1',
+            category: 'COMMUNICATION',
+            reasonCode,
+            summary,
+            clientId: client.id,
+            clientEmail: client.email,
             entityType: 'offer',
             entityId: offerId,
-            details: { action, status: offer.status, message: message?.substring(0, 200) },
-            request,
+            correlationId,
+            details: {
+                action,
+                error: notificationError instanceof Error ? notificationError.message : String(notificationError),
+            },
         });
+
+        const currentStatus = normalizeOfferStatus(offer.status);
+        const isActionable = isClientActionableOfferStatus(currentStatus);
+
+        if ((action === 'accept' && currentStatus === 'accepted')
+            || (action === 'reject' && currentStatus === 'rejected')) {
+            return clientJson({ success: true, idempotent: true, offer }, { correlationId });
+        }
+
+        if (action === 'request_unlock') {
+            if (currentStatus !== 'accepted') {
+                return NextResponse.json({ error: 'Prośbę o zmianę można wysłać tylko dla zaakceptowanej oferty.' }, { status: 409 });
+            }
+        } else if (!isActionable) {
+            return NextResponse.json({
+                error: `Akcja ${action} nie jest dostępna dla oferty ze statusem ${currentStatus || 'nieznanym'}.`,
+            }, { status: 409 });
+        }
+        const negotiationMessage = typeof message === 'string' ? message.trim() : '';
+        if (action === 'negotiate' && !negotiationMessage) {
+            return NextResponse.json({ error: 'Wiadomość negocjacyjna jest wymagana.' }, { status: 400 });
+        }
+        if (action === 'negotiate' && negotiationMessage.length > 2000) {
+            return NextResponse.json({ error: 'Wiadomość negocjacyjna może mieć maksymalnie 2000 znaków.' }, { status: 400 });
+        }
+        if (action === 'negotiate' && isActionable) {
+            const existingNegotiation = await prisma.negotiation.findFirst({
+                where: { offer_id: offerId, sender: 'client', message: negotiationMessage },
+                orderBy: { created_at: 'desc' },
+                select: { id: true },
+            });
+            if (existingNegotiation) {
+                return clientJson({ success: true, idempotent: true, offer }, { correlationId });
+            }
+        }
+        if (action !== 'request_unlock' && offer.valid_until && offer.valid_until < new Date()) {
+            return NextResponse.json({ error: 'Termin ważności oferty minął.' }, { status: 410 });
+        }
 
         // Handle different actions
         if (action === 'accept') {
-            const acceptableStatuses = ['sent', 'pending', 'open'];
-            if (offer.is_template || !acceptableStatuses.includes(offer.status)) {
+            if (offer.is_template || !isClientActionableOfferStatus(offer.status)) {
                 return NextResponse.json(
                     { error: 'Tej wersji oferty nie można zaakceptować. Poproś fotografa o aktualną wersję.' },
                     { status: 409 },
                 );
-            }
-            if (offer.valid_until && offer.valid_until < new Date()) {
-                return NextResponse.json({ error: 'Termin ważności oferty minął.' }, { status: 410 });
             }
             let parsedTotalPrice: number;
             let trustedSelection: Record<string, unknown>;
@@ -176,74 +277,97 @@ export async function PATCH(
                 return NextResponse.json({ error: message }, { status: 409 });
             }
 
-            const accepted = await prisma.offer.updateMany({
-                where: {
-                    id: offerId,
-                    is_template: false,
-                    status: { in: acceptableStatuses },
-                    OR: [{ valid_until: null }, { valid_until: { gte: new Date() } }],
-                },
-                data: {
+            const shouldGenerateAcceptedPdf = Boolean(offer.template_data) || offer.sections.length > 0;
+            let acceptedPdfKey = offer.pdf_url;
+            let uploadedAcceptedPdf: string | null = null;
+
+            if (shouldGenerateAcceptedPdf) {
+                const acceptedSnapshot = {
+                    ...offer,
                     status: 'accepted',
-                    client_selection: trustedSelection as any,
-                    total_price: parsedTotalPrice
-                },
-            });
+                    client_selection: trustedSelection,
+                    total_price: parsedTotalPrice,
+                };
+                const pdfBuffer = await generateOfferPDF(acceptedSnapshot, true);
+                if (!pdfBuffer.length) throw new Error('Wygenerowany PDF zaakceptowanej oferty jest pusty');
+                const key = `offers/oferta_${offer.offerNumber || offerId}_zatwierdzona_${randomUUID()}.pdf`;
+                uploadedAcceptedPdf = await uploadToS3(pdfBuffer, key, 'application/pdf', { access: 'private' });
+                acceptedPdfKey = uploadedAcceptedPdf;
+            } else if (!acceptedPdfKey) {
+                return NextResponse.json({ error: 'Oferta nie ma dokumentu PDF do zaakceptowania.' }, { status: 409 });
+            }
+
+            const acceptedAt = new Date();
+            let accepted: { count: number };
+            try {
+                accepted = await prisma.$transaction(async (tx) => {
+                    const claimed = await tx.offer.updateMany({
+                        where: {
+                            id: offerId,
+                            client_id: client.id,
+                            updated_at: offer.updated_at,
+                            is_template: false,
+                            status: { in: CLIENT_ACTIONABLE_OFFER_STATUS_VALUES },
+                            OR: [{ valid_until: null }, { valid_until: { gte: acceptedAt } }],
+                        },
+                        data: {
+                            status: 'accepted',
+                            client_selection: trustedSelection as any,
+                            total_price: parsedTotalPrice,
+                            pdf_url: acceptedPdfKey,
+                        },
+                    });
+                    if (claimed.count !== 1) return claimed;
+                    await tx.crmActivity.create({
+                        data: {
+                            client_id: client.id,
+                            client_email: client.email,
+                            action: 'offer_accepted',
+                            entity_type: 'offer',
+                            entity_id: offerId,
+                            details: JSON.stringify({
+                                action, status: 'accepted', correlation_id: correlationId,
+                                total_ms: clientOperationTotalMs(startedAt), outcome: 'success',
+                            }),
+                            ip_address: request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+                                || request.headers.get('x-real-ip') || null,
+                            user_agent: request.headers.get('user-agent')?.slice(0, 500) || null,
+                        },
+                    });
+                    return claimed;
+                });
+            } catch (error) {
+                if (uploadedAcceptedPdf) {
+                    await deleteFromS3(uploadedAcceptedPdf).catch(cleanupError => console.error('[CLIENT_ACCEPT] Orphan cleanup failed:', cleanupError));
+                }
+                throw error;
+            }
             if (accepted.count !== 1) {
+                if (uploadedAcceptedPdf) {
+                    await deleteFromS3(uploadedAcceptedPdf).catch(cleanupError => console.error('[CLIENT_ACCEPT] Lost-CAS cleanup failed:', cleanupError));
+                }
+                const latest = await prisma.offer.findUnique({ where: { id: offerId } });
+                if (latest && normalizeOfferStatus(latest.status) === 'accepted' && isClientRecordOwner(latest, client)) {
+                    return clientJson({ success: true, idempotent: true, offer: latest }, { correlationId });
+                }
                 return NextResponse.json({ error: 'Oferta została już zmieniona lub zaakceptowana. Odśwież stronę.' }, { status: 409 });
             }
-
-            // Generate and upload accepted offer PDF to S3
-            // SKIP for standalone/uploaded PDFs — they have no sections, regeneration would produce empty PDF
-            try {
-                const updatedOffer = await prisma.offer.findUnique({
-                    where: { id: offerId },
-                    include: {
-                        sections: {
-                            include: { items: true }
-                        }
-                    }
-                });
-
-                const hasSections = updatedOffer?.sections && updatedOffer.sections.length > 0;
-
-                if (updatedOffer && hasSections) {
-                    console.log(`[CLIENT_ACCEPT] Generating acceptance PDF for offer ${offerId}...`);
-                    
-                    // Generate post-acceptance PDF with client selection
-                    const pdfBuffer = await generateOfferPDF(updatedOffer, true);
-                    console.log(`[CLIENT_ACCEPT] PDF generated, size: ${pdfBuffer.length} bytes`);
-
-                    const fileNameAccepted = `oferta_${updatedOffer.offerNumber || offerId}_zatwierdzona.pdf`;
-                    const s3KeyAccepted = `offers/${fileNameAccepted}`;
-
-                    console.log(`[CLIENT_ACCEPT] Uploading to S3: ${s3KeyAccepted}...`);
-                    const s3Url = await uploadToS3(pdfBuffer, s3KeyAccepted, 'application/pdf');
-                    console.log(`[CLIENT_ACCEPT] Successfully uploaded acceptance PDF to S3: ${s3Url}`);
-
-                    // Update offer with the S3 URL
-                    await prisma.offer.update({
-                        where: { id: offerId },
-                        data: { 
-                            pdf_url: s3Url
-                        }
-                    });
-                    console.log(`[CLIENT_ACCEPT] Updated offer with S3 URL`);
-                } else if (updatedOffer) {
-                    console.log(`[CLIENT_ACCEPT] Offer ${offerId} is standalone PDF — preserving original file, skipping regeneration`);
-                }
-            } catch (pdfError) {
-                console.error(`[CLIENT_ACCEPT] Failed to generate/upload acceptance PDF:`, pdfError);
-                // Don't fail the whole request if PDF generation fails
-            }
+            decisionCommitted = true;
+            committedOfferSnapshot = {
+                ...offer,
+                status: 'accepted',
+                client_selection: trustedSelection,
+                total_price: parsedTotalPrice,
+                pdf_url: acceptedPdfKey,
+            };
 
             // Notify admin
             try {
                 const adminEmail = await getAdminEmail();
                 const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://wlasniewski.pl';
                 const selectionInfo = `Cena została obliczona i potwierdzona po stronie serwera.`;
-                if (adminEmail) {
-                    await sendEmail({
+                if (!adminEmail) throw new Error('Brak adresu administratora');
+                await sendEmail({
                         to: adminEmail,
                         subject: `✅ Oferta zaakceptowana — ${offer.title}`,
                         html: `
@@ -261,22 +385,58 @@ export async function PATCH(
   </div>
 </div>`
                     });
-                }
             } catch (emailError) {
                 console.error('[Offer Accept] Failed to send admin notification:', emailError);
+                await recordNotificationFailure(
+                    'OFFER_ACCEPT_ADMIN_NOTIFICATION_FAILED',
+                    'Nie udało się powiadomić administratora o akceptacji oferty',
+                    emailError,
+                );
             }
         } else if (action === 'reject') {
-            await prisma.offer.update({
-                where: { id: offerId },
-                data: { status: 'rejected' },
+            const rejected = await prisma.$transaction(async (tx) => {
+                const claimed = await tx.offer.updateMany({
+                    where: {
+                        id: offerId,
+                        client_id: client.id,
+                        updated_at: offer.updated_at,
+                        status: { in: CLIENT_ACTIONABLE_OFFER_STATUS_VALUES },
+                        OR: [{ valid_until: null }, { valid_until: { gte: new Date() } }],
+                    },
+                    data: { status: 'rejected' },
+                });
+                if (claimed.count !== 1) return claimed;
+                await tx.crmActivity.create({
+                    data: {
+                        client_id: client.id, client_email: client.email,
+                        action: 'offer_rejected', entity_type: 'offer', entity_id: offerId,
+                        details: JSON.stringify({
+                            action, status: 'rejected', correlation_id: correlationId,
+                            total_ms: clientOperationTotalMs(startedAt), outcome: 'success',
+                        }),
+                        ip_address: request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+                            || request.headers.get('x-real-ip') || null,
+                        user_agent: request.headers.get('user-agent')?.slice(0, 500) || null,
+                    },
+                });
+                return claimed;
             });
+            if (rejected.count !== 1) {
+                const latest = await prisma.offer.findUnique({ where: { id: offerId } });
+                if (latest && normalizeOfferStatus(latest.status) === 'rejected' && isClientRecordOwner(latest, client)) {
+                    return clientJson({ success: true, idempotent: true, offer: latest }, { correlationId });
+                }
+                return NextResponse.json({ error: 'Oferta została już zmieniona. Odśwież stronę.' }, { status: 409 });
+            }
+            decisionCommitted = true;
+            committedOfferSnapshot = { ...offer, status: 'rejected' };
 
             // Notify admin
             try {
                 const adminEmail = await getAdminEmail();
                 const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://wlasniewski.pl';
-                if (adminEmail) {
-                    await sendEmail({
+                if (!adminEmail) throw new Error('Brak adresu administratora');
+                await sendEmail({
                         to: adminEmail,
                         subject: `❌ Oferta odrzucona — ${offer.title}`,
                         html: `
@@ -288,26 +448,70 @@ export async function PATCH(
   </div>
 </div>`
                     });
-                }
             } catch (emailError) {
                 console.error('[Offer Reject] Failed to send admin notification:', emailError);
+                await recordNotificationFailure(
+                    'OFFER_REJECT_ADMIN_NOTIFICATION_FAILED',
+                    'Nie udało się powiadomić administratora o odrzuceniu oferty',
+                    emailError,
+                );
             }
-        } else if (action === 'negotiate' && message) {
-            await prisma.negotiation.create({
-                data: {
-                    offer_id: offerId,
-                    message,
-                    status: 'open',
-                    sender: 'client',
-                },
+        } else if (action === 'negotiate') {
+            const negotiated = await prisma.$transaction(async (tx) => {
+                const claimed = await tx.offer.updateMany({
+                    where: {
+                        id: offerId,
+                        client_id: client.id,
+                        updated_at: offer.updated_at,
+                        status: { in: CLIENT_ACTIONABLE_OFFER_STATUS_VALUES },
+                        OR: [{ valid_until: null }, { valid_until: { gte: new Date() } }],
+                    },
+                    data: { updated_at: new Date() },
+                });
+                if (claimed.count !== 1) return claimed;
+                await tx.negotiation.create({
+                    data: {
+                        offer_id: offerId,
+                        message: negotiationMessage,
+                        status: 'open',
+                        sender: 'client',
+                    },
+                });
+                await tx.crmActivity.create({
+                    data: {
+                        client_id: client.id, client_email: client.email,
+                        action: 'offer_negotiate', entity_type: 'offer', entity_id: offerId,
+                        details: JSON.stringify({
+                            action, status: offer.status, message: negotiationMessage.slice(0, 200),
+                            correlation_id: correlationId,
+                            total_ms: clientOperationTotalMs(startedAt), outcome: 'success',
+                        }),
+                        ip_address: request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+                            || request.headers.get('x-real-ip') || null,
+                        user_agent: request.headers.get('user-agent')?.slice(0, 500) || null,
+                    },
+                });
+                return claimed;
             });
+            if (negotiated.count !== 1) {
+                const existingNegotiation = await prisma.negotiation.findFirst({
+                    where: { offer_id: offerId, sender: 'client', message: negotiationMessage },
+                    select: { id: true },
+                });
+                if (existingNegotiation) {
+                    return clientJson({ success: true, idempotent: true, offer }, { correlationId });
+                }
+                return clientJson({ error: 'Oferta została już zmieniona. Odśwież stronę.' }, { status: 409, correlationId });
+            }
+            decisionCommitted = true;
+            committedOfferSnapshot = offer as unknown as Record<string, unknown>;
 
             // Notify admin about negotiation
             try {
                 const adminEmail = await getAdminEmail();
                 const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://wlasniewski.pl';
-                if (adminEmail) {
-                    await sendEmail({
+                if (!adminEmail) throw new Error('Brak adresu administratora');
+                await sendEmail({
                         to: adminEmail,
                         subject: `💬 Nowa negocjacja — ${offer.title}`,
                         html: `
@@ -315,33 +519,33 @@ export async function PATCH(
   <h2 style="color:#f59e0b;">💬 Klient chce negocjować ofertę</h2>
   <div style="background:#111;border:1px solid #222;border-radius:8px;padding:20px;margin:16px 0;">
     <p style="color:#888;margin:0 0 4px;font-size:12px;text-transform:uppercase;letter-spacing:2px;">Oferta</p>
-    <p style="color:#c5a059;font-size:18px;font-weight:bold;margin:0;">${offer.title}</p>
-    <p style="color:#555;font-size:12px;margin:6px 0 0;">Klient: ${decoded.email}</p>
+    <p style="color:#c5a059;font-size:18px;font-weight:bold;margin:0;">${escapeHtml(offer.title)}</p>
+    <p style="color:#555;font-size:12px;margin:6px 0 0;">Klient: ${escapeHtml(decoded.email)}</p>
   </div>
   <div style="background:#1a1a1a;border:1px solid #333;border-radius:8px;padding:16px;margin:16px 0;">
     <p style="color:#888;font-size:12px;text-transform:uppercase;letter-spacing:1px;margin:0 0 8px;">Wiadomość klienta:</p>
-    <p style="color:#ccc;font-size:14px;margin:0;white-space:pre-wrap;line-height:1.6;">${message}</p>
+    <p style="color:#ccc;font-size:14px;margin:0;white-space:pre-wrap;line-height:1.6;">${escapeHtml(negotiationMessage)}</p>
   </div>
   <div style="text-align:center;margin:24px 0;">
     <a href="${appUrl}/admin/offers/${offer.id}" style="display:inline-block;background:#c5a059;color:#000;text-decoration:none;padding:14px 32px;border-radius:8px;font-weight:bold;">Odpowiedz w panelu →</a>
   </div>
 </div>`
                     });
-                }
             } catch (emailError) {
                 console.error('[Offer Negotiate] Failed to send admin notification:', emailError);
+                await recordNotificationFailure(
+                    'OFFER_NEGOTIATE_ADMIN_NOTIFICATION_FAILED',
+                    'Nie udało się powiadomić administratora o negocjacji oferty',
+                    emailError,
+                );
             }
         } else if (action === 'request_unlock') {
-            if (offer.status !== 'accepted') {
-                return NextResponse.json({ error: 'Prośbę o zmianę można wysłać tylko dla zaakceptowanej oferty.' }, { status: 409 });
-            }
-
             // Notify admin about the unlock request
             try {
                 const adminEmail = await getAdminEmail();
                 const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://wlasniewski.pl';
-                if (adminEmail) {
-                    await sendEmail({
+                if (!adminEmail) throw new Error('Brak adresu administratora');
+                await sendEmail({
                         to: adminEmail,
                         subject: `🔓 Prośba o odblokowanie oferty — ${offer.title}`,
                         html: `
@@ -359,11 +563,35 @@ export async function PATCH(
   </div>
 </div>`
                     });
-                }
             } catch (emailError) {
                 console.error('[Offer Unlock Request] Failed to send admin notification:', emailError);
+                await recordNotificationFailure(
+                    'OFFER_UNLOCK_ADMIN_NOTIFICATION_FAILED',
+                    'Nie udało się powiadomić administratora o prośbie odblokowania oferty',
+                    emailError,
+                );
             }
         }
+
+        // Decyzje accept/reject/negotiate zapisują audit w tej samej transakcji
+        // co zmianę stanu. request_unlock nie zmienia snapshotu dokumentu.
+        if (action === 'request_unlock') await logClientActivityStrict(decoded, 'offer_selection_changed', {
+                entityType: 'offer',
+                entityId: offerId,
+                details: {
+                    action,
+                    status: offer.status,
+                    message: typeof message === 'string' ? message.substring(0, 200) : undefined,
+                    correlation_id: correlationId,
+                    total_ms: clientOperationTotalMs(startedAt),
+                    outcome: 'success',
+                },
+                request,
+            });
+        await recordSlowClientOperation({
+            operation: 'offer_decide', startedAt, correlationId, clientId: client.id, clientEmail: client.email,
+            entityType: 'offer', entityId: offerId, outcome: action,
+        });
 
         // Fetch updated offer
         const updated = await prisma.offer.findUnique({
@@ -379,12 +607,22 @@ export async function PATCH(
             },
         });
 
-        return NextResponse.json({ offer: updated });
+        return clientJson({ offer: updated }, { correlationId });
     } catch (error) {
         console.error('Error updating offer:', error);
-        return NextResponse.json(
-            { error: 'Failed to update offer' },
-            { status: 500 }
-        );
+        await recordAdminIncidentSafely({
+            severity: 'P1', category: 'CLIENT_PORTAL', reasonCode: 'OFFER_DECISION_FAILED',
+            summary: 'Nie udało się zapisać decyzji klienta dotyczącej oferty', correlationId,
+            details: { error: error instanceof Error ? error.message : String(error) },
+        });
+        if (decisionCommitted && committedOfferSnapshot) {
+            return clientJson({
+                success: true,
+                decisionCommitted: true,
+                reconciliationRequired: true,
+                offer: committedOfferSnapshot,
+            }, { status: 202, correlationId });
+        }
+        return clientJson({ error: 'Nie udało się zapisać decyzji.' }, { status: 500, correlationId });
     }
 }

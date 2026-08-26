@@ -19,6 +19,9 @@ interface Participant {
   consent_scope: string | null;
   consent_given_at: string | null;
   selections_count: number;
+  selection_status: 'DRAFT' | 'SUBMITTED' | 'LEGACY_REVIEW_REQUIRED';
+  selection_submitted_at: string | null;
+  selection_version: number;
 }
 
 interface GalleryInfo {
@@ -46,7 +49,6 @@ export default function GalleryParticipantsManager({ galleryId }: GalleryPartici
   const [deadlineDate, setDeadlineDate] = useState('');
   const [sendingReminder, setSendingReminder] = useState(false);
   const [savingGallerySettings, setSavingGallerySettings] = useState(false);
-  const [bulkPerParent, setBulkPerParent] = useState(false);
   const toggleExpand = async (participantId: number) => {
     if (expandedId === participantId) {
       setExpandedId(null);
@@ -245,58 +247,6 @@ export default function GalleryParticipantsManager({ galleryId }: GalleryPartici
     }
   };
 
-  // Pobieranie osobnej paczki ZIP dla KAŻDEGO rodzica (osobne żądania).
-  // Dzięki temu duże galerie nie wywalają funkcji serverless (jeden rodzic = mało zdjęć).
-  const downloadPerParentPackages = async () => {
-    const targets = participants.filter((p) => p.selections_count > 0);
-    if (targets.length === 0) {
-      toast.error('Brak rodziców z wybranymi zdjęciami');
-      return;
-    }
-    const token = localStorage.getItem('admin_token');
-    if (!token) {
-      toast.error('Brak sesji admina - zaloguj się ponownie');
-      return;
-    }
-
-    setBulkPerParent(true);
-    const toastId = toast.loading(`Pakuję paczki: 0/${targets.length} rodziców...`);
-    let done = 0;
-    let failed = 0;
-
-    for (const p of targets) {
-      try {
-        const res = await fetch(
-          `/api/admin/galleries/${galleryId}/participants/${p.id}/download-all?_ts=${Date.now()}`,
-          { headers: { Authorization: `Bearer ${token}`, 'Cache-Control': 'no-cache' }, cache: 'no-store' }
-        );
-        const data = await res.json().catch(() => null);
-        if (!res.ok || !data?.downloadUrl) {
-          failed += 1;
-          console.error(`Paczka dla ${p.name} nie powstała:`, data?.error || res.status);
-        } else {
-          const a = document.createElement('a');
-          a.href = data.downloadUrl;
-          a.download = data.fileName || `${p.name}.zip`;
-          document.body.appendChild(a);
-          a.click();
-          a.remove();
-          done += 1;
-        }
-      } catch (err) {
-        failed += 1;
-        console.error(`Błąd paczki dla ${p.name}:`, err);
-      }
-      toast.loading(`Pakuję paczki: ${done + failed}/${targets.length} rodziców...`, { id: toastId });
-      // krótka przerwa, aby przeglądarka zdążyła obsłużyć kolejne pobrania
-      await new Promise((r) => setTimeout(r, 800));
-    }
-
-    setBulkPerParent(false);
-    const failNote = failed > 0 ? ` (${failed} nie powstało)` : '';
-    toast.success(`Gotowe — pobrano ${done} paczek${failNote}`, { id: toastId, duration: 6000 });
-  };
-
   const handleDeleteParticipant = async (participantId: number) => {
     if (!confirm('Czy na pewno usunąć uczestnika?')) return;
 
@@ -316,6 +266,46 @@ export default function GalleryParticipantsManager({ galleryId }: GalleryPartici
     } catch (error) {
       console.error('Delete participant error:', error);
       toast.error('Wystąpił błąd');
+    }
+  };
+
+  const reviewSelection = async (participant: Participant, action: 'CONFIRM' | 'REOPEN') => {
+    const prompt = action === 'CONFIRM'
+      ? `Potwierdzić historyczny wybór ${participant.selections_count}/${participant.max_selections} dla ${participant.parent_name || participant.parent_identifier}?`
+      : `Ponownie otworzyć wybór dla ${participant.parent_name || participant.parent_identifier}? Rodzic będzie mógł go zmienić i zatwierdzić od nowa.`;
+    if (!confirm(prompt)) return;
+    const toastId = toast.loading(action === 'CONFIRM' ? 'Potwierdzam wybór...' : 'Otwieram wybór...');
+    try {
+      const token = localStorage.getItem('admin_token');
+      const response = await fetch(
+        `/api/admin/galleries/${galleryId}/participants/${participant.id}/review-selection`,
+        {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action, expected_selection_version: participant.selection_version }),
+        },
+      );
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        toast.error(data.error || 'Nie udało się zapisać przeglądu', { id: toastId });
+        return;
+      }
+      setParticipants(items => items.map(item => item.id === participant.id
+        ? {
+            ...item,
+            selection_status: data.selection_status,
+            selection_version: data.selection_version,
+            selection_submitted_at: data.selection_status === 'SUBMITTED' ? new Date().toISOString() : null,
+          }
+        : item));
+      setSelectionsMap(current => {
+        const next = { ...current };
+        delete next[participant.id];
+        return next;
+      });
+      toast.success(action === 'CONFIRM' ? 'Historyczny wybór został potwierdzony.' : 'Wybór został ponownie otwarty.', { id: toastId });
+    } catch {
+      toast.error('Błąd połączenia', { id: toastId });
     }
   };
 
@@ -442,8 +432,8 @@ export default function GalleryParticipantsManager({ galleryId }: GalleryPartici
     }
   };
 
-  const participantsWithSelections = participants.filter(p => p.selections_count > 0).length;
-  const participantsWithoutSelections = participants.length - participantsWithSelections;
+  const participantsWithSelections = participants.filter(p => p.selection_status === 'SUBMITTED').length;
+  const participantsWithoutSelections = participants.filter(p => p.selection_status === 'DRAFT' && p.selections_count === 0).length;
   const participantsWithEmail = participants.filter(p => !!p.parent_email).length;
 
   if (loading) {
@@ -641,18 +631,6 @@ export default function GalleryParticipantsManager({ galleryId }: GalleryPartici
                   Pobierz do Nphoto (wszyscy, pelny rozmiar)
                 </button>
               )}
-              {participants.some(p => p.selections_count > 0) && (
-                <button
-                  type="button"
-                  onClick={downloadPerParentPackages}
-                  disabled={bulkPerParent}
-                  className="flex items-center gap-2 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-bold rounded-lg transition-colors disabled:opacity-50"
-                  title="Pobiera osobną paczkę ZIP dla każdego rodzica (niezawodne dla dużych galerii)"
-                >
-                  <Package className="w-3.5 h-3.5" />
-                  {bulkPerParent ? 'Pakowanie...' : 'Pobierz paczki per rodzic'}
-                </button>
-              )}
             </div>
 
             {participants.length === 0 ? (
@@ -699,6 +677,18 @@ export default function GalleryParticipantsManager({ galleryId }: GalleryPartici
                             <span>
                               Wybrano: <strong className="text-white">{participant.selections_count}/{participant.max_selections}</strong>
                             </span>
+                            <span className={`px-2 py-1 rounded-full border font-bold ${participant.selection_status === 'SUBMITTED'
+                              ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300'
+                              : participant.selection_status === 'LEGACY_REVIEW_REQUIRED'
+                                ? 'border-amber-500/50 bg-amber-500/10 text-amber-200'
+                                : 'border-zinc-700 bg-zinc-800 text-zinc-300'
+                            }`}>
+                              {participant.selection_status === 'SUBMITTED'
+                                ? 'ZATWIERDZONY'
+                                : participant.selection_status === 'LEGACY_REVIEW_REQUIRED'
+                                  ? 'WYMAGA SPRAWDZENIA'
+                                  : participant.selections_count > 0 ? 'ROBOCZY' : 'BRAK WYBORU'}
+                            </span>
                             <button
                               type="button"
                               onClick={() => toggleParticipantExtraPurchase(participant)}
@@ -730,6 +720,26 @@ export default function GalleryParticipantsManager({ galleryId }: GalleryPartici
                               )}
                             </div>
                           )}
+                          <div className="flex flex-wrap gap-2 mt-3">
+                            {participant.selection_status === 'LEGACY_REVIEW_REQUIRED' && (
+                              <button
+                                type="button"
+                                onClick={(event) => { event.stopPropagation(); reviewSelection(participant, 'CONFIRM'); }}
+                                className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-500"
+                              >
+                                Sprawdziłem — potwierdź wybór
+                              </button>
+                            )}
+                            {['LEGACY_REVIEW_REQUIRED', 'SUBMITTED'].includes(participant.selection_status) && (
+                              <button
+                                type="button"
+                                onClick={(event) => { event.stopPropagation(); reviewSelection(participant, 'REOPEN'); }}
+                                className="px-3 py-1.5 rounded-lg border border-amber-500/40 text-amber-200 text-xs font-bold hover:bg-amber-500/10"
+                              >
+                                Otwórz do poprawy
+                              </button>
+                            )}
+                          </div>
                         </div>
                         <div className="flex items-center gap-2 text-zinc-500">
                           <ImageIcon className="w-4 h-4" />

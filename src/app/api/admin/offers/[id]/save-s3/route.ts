@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { withAuth } from '@/lib/auth/middleware';
 import { generateOfferPDF } from '@/lib/services/pdf';
-import { uploadToS3 } from '@/lib/storage/s3';
+import { deleteFromS3, uploadToS3 } from '@/lib/storage/s3';
+import { isAdminImmutableOfferStatus } from '@/lib/offers/status';
+import { randomUUID } from 'node:crypto';
+import { jsonWithCorrelation } from '@/lib/http/correlation';
+import { recordAdminIncidentSafely } from '@/lib/admin-incidents';
 
 // POST /api/admin/offers/[id]/save-s3
 export async function POST(
@@ -10,6 +14,7 @@ export async function POST(
     context: { params: Promise<{ id: string }> }
 ) {
     return withAuth(request, async (req) => {
+        const correlationId = randomUUID();
         try {
             const params = await context.params;
             const offerId = parseInt(params.id);
@@ -28,6 +33,9 @@ export async function POST(
             if (!offer) {
                 console.error(`[S3_SAVE] Offer ${offerId} not found`);
                 return NextResponse.json({ error: 'Offer not found' }, { status: 404 });
+            }
+            if (isAdminImmutableOfferStatus(offer.status)) {
+                return NextResponse.json({ error: 'Wysłana lub zaakceptowana oferta jest niezmiennym snapshotem.' }, { status: 409 });
             }
 
             // PROTECT standalone/uploaded PDFs — never regenerate if no sections exist
@@ -49,40 +57,37 @@ export async function POST(
             const pdfBufferPre = await generateOfferPDF(offer, false);
             console.log(`[S3_SAVE] Pre-acceptance PDF generated, size: ${pdfBufferPre.length} bytes`);
 
-            const fileNamePre = `oferta_${offer.offerNumber || offerId}.pdf`;
+            const fileNamePre = `oferta_${offer.offerNumber || offerId}_${randomUUID()}.pdf`;
             const s3KeyPre = `offers/${fileNamePre}`;
 
             console.log(`[S3_SAVE] Uploading pre-acceptance PDF to S3: ${s3KeyPre}...`);
-            const pdfUrlPre = await uploadToS3(pdfBufferPre, s3KeyPre, 'application/pdf');
+            const pdfUrlPre = await uploadToS3(pdfBufferPre, s3KeyPre, 'application/pdf', { access: 'private' });
             console.log(`[S3_SAVE] Pre-acceptance S3 upload successful, URL: ${pdfUrlPre}`);
 
-            // If offer is accepted, also generate POST-acceptance version with client selection
-            if (offer.status === 'accepted' && offer.client_selection) {
-                console.log(`[S3_SAVE] Offer is accepted, generating post-acceptance version...`);
-                const pdfBufferPost = await generateOfferPDF(offer, true);
-                console.log(`[S3_SAVE] Post-acceptance PDF generated, size: ${pdfBufferPost.length} bytes`);
-
-                const fileNamePost = `oferta_${offer.offerNumber || offerId}_zatwierdzona.pdf`;
-                const s3KeyPost = `offers/${fileNamePost}`;
-
-                console.log(`[S3_SAVE] Uploading post-acceptance PDF to S3: ${s3KeyPost}...`);
-                const pdfUrlPost = await uploadToS3(pdfBufferPost, s3KeyPost, 'application/pdf');
-                console.log(`[S3_SAVE] Post-acceptance S3 upload successful, URL: ${pdfUrlPost}`);
+            console.log(`[S3_SAVE] Updating DB with PDF URL`);
+            let updated;
+            try {
+                updated = await prisma.offer.updateMany({
+                    where: { id: offerId, status: offer.status, updated_at: offer.updated_at },
+                    data: { pdf_url: pdfUrlPre },
+                });
+            } catch (error) {
+                await deleteFromS3(pdfUrlPre).catch(cleanupError => console.error('[S3_SAVE] Error cleanup failed', cleanupError));
+                throw error;
+            }
+            if (updated.count !== 1) {
+                await deleteFromS3(pdfUrlPre).catch(cleanupError => console.error('[S3_SAVE] Lost-CAS cleanup failed', cleanupError));
+                return jsonWithCorrelation({
+                    error: 'Oferta została równolegle zmieniona lub wysłana. Odśwież dane.',
+                    correlation_id: correlationId,
+                }, correlationId, 409);
             }
 
-            console.log(`[S3_SAVE] Updating DB with PDF URL`);
-            await prisma.offer.update({
-                where: { id: offerId },
-                data: { 
-                    pdf_url: pdfUrlPre
-                }
-            });
-
             console.log(`[S3_SAVE] Success! Offer ${offerId} saved to S3`);
-            return NextResponse.json({ 
+            return jsonWithCorrelation({
                 success: true, 
                 pdfUrl: pdfUrlPre
-            });
+            }, correlationId);
         } catch (error: any) {
             console.error('[S3_SAVE] Error in save-s3:', error);
             console.error('[S3_SAVE] Error details:', {
@@ -91,11 +96,17 @@ export async function POST(
                 stack: error.stack
             });
             // Enhanced error details for debugging
-            return NextResponse.json({
+            await recordAdminIncidentSafely({
+                severity: 'P1', category: 'ADMIN_WRITE', reasonCode: 'ADMIN_OFFER_S3_SAVE_FAILED',
+                summary: 'Nie udało się wygenerować lub zapisać PDF oferty', correlationId,
+                details: { error: error instanceof Error ? error.message : String(error) },
+            });
+            return jsonWithCorrelation({
                 error: 'Failed to save to S3',
                 details: error.message,
                 code: error.code,
-            }, { status: 500 });
+                correlation_id: correlationId,
+            }, correlationId, 500);
         }
     });
 }

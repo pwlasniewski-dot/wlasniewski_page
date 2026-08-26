@@ -1,12 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { safeReturnTo } from '@/lib/auth/return-to';
 
-export default function LoginPage() {
+function LoginForm() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const returnTo = safeReturnTo(searchParams.get('returnTo'));
     const { login } = useAuth();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -28,7 +31,7 @@ export default function LoginPage() {
 
             if (res.ok) {
                 login(data.token, data.user);
-                router.push('/konto');
+                router.replace(returnTo);
             } else {
                 // Check if password reset is required
                 if (data.error === 'PASSWORD_RESET_REQUIRED') {
@@ -50,7 +53,7 @@ export default function LoginPage() {
                 <h1 className="text-3xl font-bold text-gold-400 mb-6 text-center">Logowanie</h1>
 
                 <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-3 mb-5 text-xs text-zinc-300">
-                    <strong className="text-emerald-300">Pierwszy raz?</strong> Jeśli dostałeś maila z foto-wyzwania, kliknij <Link href="/logowanie/przypomnij-haslo" className="text-gold-400 hover:text-gold-300 font-medium">„Nie pamiętasz hasła?"</Link> — wyślemy link do ustawienia hasła.
+                    <strong className="text-emerald-300">Pierwszy raz?</strong> Jeśli dostałeś maila z foto-wyzwania, kliknij <Link href={`/logowanie/przypomnij-haslo?returnTo=${encodeURIComponent(returnTo)}`} className="text-gold-400 hover:text-gold-300 font-medium">„Nie pamiętasz hasła?"</Link> — wyślemy link do ustawienia hasła.
                 </div>
 
                 {passwordExpired && (
@@ -63,7 +66,7 @@ export default function LoginPage() {
                                     Ze względów bezpieczeństwa Twoje hasło zostało zresetowane. Aby kontynuować, musisz ustawić nowe hasło.
                                 </p>
                                 <Link 
-                                    href={`/logowanie/przypomnij-haslo${email ? `?email=${encodeURIComponent(email)}` : ''}`}
+                                    href={`/logowanie/przypomnij-haslo?${new URLSearchParams({ ...(email ? { email } : {}), returnTo }).toString()}`}
                                     className="inline-block bg-amber-500 text-black font-bold px-4 py-2 rounded text-sm hover:bg-amber-400 transition-colors"
                                 >
                                     Resetuj hasło →
@@ -89,7 +92,7 @@ export default function LoginPage() {
                     <div>
                         <div className="flex justify-between items-center mb-1">
                             <label className="block text-sm text-zinc-400">Hasło</label>
-                            <Link href="/logowanie/przypomnij-haslo" className="text-xs text-gold-500 hover:text-gold-400">Nie pamiętasz hasła?</Link>
+                            <Link href={`/logowanie/przypomnij-haslo?returnTo=${encodeURIComponent(returnTo)}`} className="text-xs text-gold-500 hover:text-gold-400">Nie pamiętasz hasła?</Link>
                         </div>
                         <input
                             type="password"
@@ -114,4 +117,8 @@ export default function LoginPage() {
             </div>
         </main>
     );
+}
+
+export default function LoginPage() {
+    return <Suspense fallback={<main className="min-h-screen bg-black" />}><LoginForm /></Suspense>;
 }

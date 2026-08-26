@@ -8,6 +8,8 @@ import sharp from 'sharp';
 import { verifyParentToken, extractTokenFromHeader } from '@/lib/auth/parent-jwt';
 import { logSystem } from '@/lib/logger';
 import { getPrivateS3Object } from '@/lib/storage/s3';
+import { randomUUID } from 'crypto';
+import { recordAdminIncidentSafely } from '@/lib/admin-incidents';
 
 export async function GET(
   request: NextRequest,
@@ -55,16 +57,17 @@ export async function GET(
       return NextResponse.json({ error: 'Brak dostępu' }, { status: 403 });
     }
 
-    const participant = await prisma.galleryParticipant.findFirst({
-      where: { id: payload.participant_id, gallery_id: galleryId },
-      select: { id: true },
-    });
+    const [participant, gallery] = await Promise.all([
+      prisma.galleryParticipant.findFirst({
+        where: { id: payload.participant_id, gallery_id: galleryId },
+        select: { id: true, parent_identifier: true },
+      }),
+      prisma.clientGallery.findFirst({
+        where: { id: galleryId, gallery_mode: 'GROUP', is_active: true },
+        select: { id: true, expires_at: true },
+      }),
+    ]);
     if (!participant) return NextResponse.json({ error: 'Brak dostępu' }, { status: 403 });
-
-    const gallery = await prisma.clientGallery.findFirst({
-      where: { id: galleryId, gallery_mode: 'GROUP', is_active: true },
-      select: { id: true, expires_at: true },
-    });
 
     if (!gallery) {
       await logSystem('WARN', 'BASKET', 'GROUP_DOWNLOAD_SINGLE_GALLERY_UNAVAILABLE', {
@@ -83,7 +86,6 @@ export async function GET(
       });
       return NextResponse.json({ error: 'Galeria wygasła' }, { status: 403 });
     }
-
     const photo = await prisma.galleryPhoto.findFirst({
       where: { id: photoId, gallery_id: galleryId },
       select: { 
@@ -106,7 +108,18 @@ export async function GET(
     }
 
     if (!photo.download_source_url) {
-      return NextResponse.json({ error: 'Pełny plik JPG nie jest jeszcze gotowy' }, { status: 409 });
+      const correlationId = randomUUID();
+      await recordAdminIncidentSafely({
+        severity: 'P1',
+        category: 'GALLERY_DELIVERY',
+        reasonCode: 'GROUP_SINGLE_HQ_MISSING',
+        summary: `Rodzic nie może pobrać zdjęcia #${photoId}: brak pliku JPG HQ`,
+        entityType: 'gallery_photo',
+        entityId: photoId,
+        correlationId,
+        details: { gallery_id: galleryId, participant_id: payload.participant_id },
+      });
+      return NextResponse.json({ error: 'Pełny plik JPG nie jest jeszcze gotowy. Administrator otrzymał zgłoszenie.' }, { status: 409 });
     }
     const source = await getPrivateS3Object(photo.download_source_url);
     if (source.contentLength && source.contentLength > 80 * 1024 * 1024) {

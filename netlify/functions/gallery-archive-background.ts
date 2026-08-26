@@ -1,10 +1,12 @@
 import prisma from '../../src/lib/db/prisma';
 import { buildGalleryArchive } from '../../src/lib/galleries/build-gallery-archive';
 import {
+    createGalleryArchiveContentFingerprint,
     readGalleryArchiveJob,
     verifyGalleryArchiveDispatchToken,
     writeGalleryArchiveJob,
 } from '../../src/lib/galleries/archive-jobs';
+import { recordAdminIncidentSafely } from '../../src/lib/admin-incidents';
 
 function safeFileName(value: string) {
     return (value || 'galeria').normalize('NFKD').replace(/[\u0300-\u036f]/g, '')
@@ -12,6 +14,7 @@ function safeFileName(value: string) {
 }
 
 export const handler = async (event: { body?: string | null }) => {
+    const handlerStartedAt = Date.now();
     try {
         const body = JSON.parse(event.body || '{}');
         if (typeof body.token !== 'string') return { statusCode: 401 };
@@ -52,15 +55,35 @@ export const handler = async (event: { body?: string | null }) => {
             const requested = new Set(job.requestedPhotoIds);
             allowedIds = new Set([...allowedIds].filter(id => requested.has(id)));
         }
-        const photos = gallery.photos
-            .filter(photo => allowedIds.has(photo.id) && !!photo.download_source_url)
+        const expectedPhotos = gallery.photos.filter(photo => allowedIds.has(photo.id));
+        const photos = expectedPhotos
+            .filter(photo => !!photo.download_source_url)
             .map(photo => ({ id: photo.id, downloadSourceUrl: photo.download_source_url! }));
         if (!photos.length) throw new Error('Brak przygotowanych plików JPG HQ');
+        if (photos.length !== expectedPhotos.length) {
+            throw new Error(`${expectedPhotos.length - photos.length} zdjęć nie ma przygotowanego pliku JPG HQ`);
+        }
+        if (job.contentFingerprint) {
+            const currentFingerprint = createGalleryArchiveContentFingerprint(expectedPhotos);
+            if (currentFingerprint !== job.contentFingerprint) {
+                throw new Error('Manifest źródeł galerii zmienił się po utworzeniu zadania');
+            }
+        }
 
         job.status = 'processing';
         job.total = photos.length;
         job.progress = 0;
         await writeGalleryArchiveJob(job);
+        if (job.kind === 'group') {
+            await prisma.groupGalleryActivity.create({
+                data: {
+                    gallery_id: job.galleryId,
+                    action: 'DOWNLOAD_ARCHIVE_BUILD_STARTED',
+                    result: 'SUCCESS',
+                    details: { job_id: job.jobId, run_id: job.runId, expected_count: photos.length },
+                },
+            }).catch(error => console.error('[GALLERY_ARCHIVE_AUDIT_STARTED]', error));
+        }
 
         const fileName = job.kind === 'individual'
             ? `${safeFileName(gallery.client_name)}-zdjecia-jpg.zip`
@@ -93,6 +116,22 @@ export const handler = async (event: { body?: string | null }) => {
         current.zipKey = zipKey;
         current.fileName = fileName;
         await writeGalleryArchiveJob(current);
+        if (current.kind === 'group') {
+            await prisma.groupGalleryActivity.create({
+                data: {
+                    gallery_id: current.galleryId,
+                    action: 'DOWNLOAD_ARCHIVE_READY',
+                    result: 'SUCCESS',
+                    details: {
+                        job_id: current.jobId,
+                        run_id: current.runId,
+                        completed: current.completed,
+                        failed_count: current.failedCount,
+                        duration_ms: Date.now() - handlerStartedAt,
+                    },
+                },
+            }).catch(error => console.error('[GALLERY_ARCHIVE_AUDIT_READY]', error));
+        }
         return { statusCode: 202 };
     } catch (error) {
         console.error('[GALLERY_ARCHIVE_BACKGROUND]', error);
@@ -105,6 +144,39 @@ export const handler = async (event: { body?: string | null }) => {
                     job.status = 'failed';
                     job.error = (error instanceof Error ? error.message : String(error)).slice(0, 500);
                     await writeGalleryArchiveJob(job);
+                    if (job.kind === 'group') {
+                        await prisma.groupGalleryActivity.create({
+                            data: {
+                                gallery_id: job.galleryId,
+                                action: 'DOWNLOAD_ARCHIVE_FAILED',
+                                result: 'ERROR',
+                                details: {
+                                    job_id: job.jobId,
+                                    run_id: job.runId,
+                                    completed: job.completed,
+                                    failed_count: job.failedCount,
+                                    duration_ms: Date.now() - handlerStartedAt,
+                                    error: job.error,
+                                },
+                            },
+                        }).catch(auditError => console.error('[GALLERY_ARCHIVE_AUDIT_FAILED]', auditError));
+                        await recordAdminIncidentSafely({
+                            severity: 'P1',
+                            category: 'GALLERY_DELIVERY',
+                            reasonCode: 'GROUP_ARCHIVE_BUILD_FAILED',
+                            summary: `Generator ZIP galerii #${job.galleryId} zakończył się błędem`,
+                            entityType: 'gallery',
+                            entityId: job.galleryId,
+                            details: {
+                                job_id: job.jobId,
+                                run_id: job.runId,
+                                completed: job.completed,
+                                failed_count: job.failedCount,
+                                duration_ms: Date.now() - handlerStartedAt,
+                                error: job.error,
+                            },
+                        });
+                    }
                 }
             }
         } catch { /* do not hide the original worker failure */ }

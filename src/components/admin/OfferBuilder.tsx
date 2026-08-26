@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useReactToPrint } from 'react-to-print';
 import {
     Printer, Eye, Save, Plus, Trash2, ArrowRight, ChevronLeft, ChevronRight,
-    Share2, Cloud, Mail, FileCheck, X, Check, ExternalLink, Settings, Image as ImageIcon, FileText,
+    FileCheck, X, Check, ExternalLink, Settings, Image as ImageIcon, FileText,
     BookCopy, Download
 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -386,6 +386,7 @@ export default function OfferBuilder({ offerId, templateId, templateName, initia
     const clientEmailParam = searchParams.get('clientEmail');
     const type = searchParams.get('type')?.toLowerCase() || 'b2c';
     const templateParam = searchParams.get('template')?.toLowerCase();
+    const isSuperseded = offerStatus?.trim().toLowerCase() === 'superseded';
 
     // Choose initial preset based on URL parameter
     const getInitialPreset = () => {
@@ -459,6 +460,10 @@ export default function OfferBuilder({ offerId, templateId, templateName, initia
     });
 
     const handleSave = async () => {
+        if (isSuperseded) {
+            toast.error('Oferta zastąpiona jest tylko do odczytu. Edytuj ofertę, która ją zastąpiła.');
+            return;
+        }
         setIsSaving(true);
         try {
             const token = localStorage.getItem('admin_token');
@@ -529,6 +534,10 @@ export default function OfferBuilder({ offerId, templateId, templateName, initia
     };
 
     const handleAction = async (action: 's3' | 'drive' | 'email' | 'all') => {
+        if (isSuperseded) {
+            toast.error('Nie można ponownie wysłać oferty zastąpionej.');
+            return;
+        }
         if (!lastSavedId) {
             alert('Najpierw zapisz ofertę!');
             return;
@@ -536,7 +545,7 @@ export default function OfferBuilder({ offerId, templateId, templateName, initia
         // ✋ Email-sending actions require explicit confirmation. Default = OFF.
         if (action === 'email' || action === 'all') {
             const label = action === 'all'
-                ? 'WYKONAĆ pełną akcję (zapis PDF + Drive + WYSŁANIE MAILA z ofertą i PDF do klienta)?'
+                ? 'Wygenerować PDF i wysłać ofertę do klienta?'
                 : 'WYSŁAĆ teraz maila z ofertą i PDF do klienta?';
             const ok = confirm(label + '\n\nOK = tak, wyślij\nAnuluj = NIE wysyłaj nic');
             if (!ok) {
@@ -590,6 +599,10 @@ export default function OfferBuilder({ offerId, templateId, templateName, initia
     };
 
     const handleSaveAsTemplate = async () => {
+        if (isSuperseded) {
+            toast.error('Nie zapisuj błędnej, zastąpionej oferty jako szablonu.');
+            return;
+        }
         setSaveTemplateMode(loadedTemplateId ? 'overwrite' : 'new');
         setSaveTemplateDraftName(data.title || 'Nowy szablon');
         setShowSaveTemplateDialog(true);
@@ -712,6 +725,10 @@ export default function OfferBuilder({ offerId, templateId, templateName, initia
 
     const handleDelete = async () => {
         if (!lastSavedId) return;
+        if (isSuperseded) {
+            toast.error('Oferta zastąpiona pozostaje w historii audytowej i nie może być usunięta.');
+            return;
+        }
         if (!confirm('Czy na pewno chcesz USUNĄĆ tę ofertę? Ta operacja jest nieodwracalna.')) return;
 
         try {
@@ -734,52 +751,6 @@ export default function OfferBuilder({ offerId, templateId, templateName, initia
         } catch (error) {
             console.error(error);
             toast.error('Błąd serwera.');
-        }
-    };
-
-    const handleUpdateStatus = async (newStatus: string) => {
-        if (!lastSavedId) {
-            alert('Najpierw zapisz ofertę!');
-            return;
-        }
-        setIsSaving(true);
-        try {
-            const token = localStorage.getItem('admin_token');
-            const res = await fetch(`/api/admin/offers/${lastSavedId}`, {
-                method: 'PATCH',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ status: newStatus })
-            });
-            if (res.ok) {
-                toast.success(`Status zmieniony`);
-                if (newStatus === 'pending') {
-                    // ✋ Świadoma decyzja admina — domyślnie NIC nie wysyłamy.
-                    const sendNow = confirm(
-                        'Status zmieniony na „pending".\n\n' +
-                        'Czy WYSŁAĆ teraz maila z ofertą i PDF do klienta?\n\n' +
-                        'OK = wyślij teraz\nAnuluj = nie wysyłaj (możesz zrobić to później przyciskiem 📧 Email)'
-                    );
-                    if (sendNow) {
-                        await fetch(`/api/admin/offers/${lastSavedId}/send-email`, {
-                            method: 'POST',
-                            headers: { 'Authorization': `Bearer ${token}` }
-                        });
-                        toast.success('Powiadomienie email wysłane do klienta.');
-                    } else {
-                        toast('Mail NIE został wysłany.', { icon: '✋' });
-                    }
-                }
-                setTimeout(() => window.location.reload(), 1500);
-            } else {
-                toast.error('Błąd zmiany statusu');
-            }
-        } catch (error) {
-            toast.error('Błąd serwera');
-        } finally {
-            setIsSaving(false);
         }
     };
 
@@ -954,13 +925,15 @@ export default function OfferBuilder({ offerId, templateId, templateName, initia
                         {offerStatus && (
                             <div className={`px-3 py-1 text-xs font-bold uppercase rounded-full border ${offerStatus === 'accepted' ? 'bg-green-500/10 text-green-500 border-green-500/20' :
                                 offerStatus === 'rejected' ? 'bg-red-500/10 text-red-500 border-red-500/20' :
+                                    offerStatus === 'superseded' ? 'bg-amber-500/10 text-amber-400 border-amber-500/30' :
                                     offerStatus === 'pending' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
                                         'bg-zinc-500/10 text-zinc-400 border-zinc-500/20'
                                 }`}>
                                 {offerStatus === 'draft' ? 'Szkic' :
                                     offerStatus === 'pending' ? 'Oczekuje na klienta' :
                                         offerStatus === 'accepted' ? 'Zaakceptowana' :
-                                            offerStatus === 'rejected' ? 'Odrzucona' : offerStatus}
+                                            offerStatus === 'rejected' ? 'Odrzucona' :
+                                                offerStatus === 'superseded' ? 'Zastąpiona' : offerStatus}
                             </div>
                         )}
                     </div>
@@ -983,8 +956,9 @@ export default function OfferBuilder({ offerId, templateId, templateName, initia
                         {lastSavedId && (
                             <button
                                 onClick={handleDelete}
+                                disabled={isSuperseded}
                                 className="flex items-center justify-center gap-2 bg-red-600/10 text-red-500 hover:bg-red-600 hover:text-white px-3 py-2 rounded shadow transition font-bold border border-red-500/20 whitespace-nowrap"
-                                title="Usuń ofertę"
+                                title={isSuperseded ? 'Oferta pozostaje w historii audytowej' : 'Usuń ofertę'}
                             >
                                 <Trash2 size={18} />
                             </button>
@@ -995,39 +969,21 @@ export default function OfferBuilder({ offerId, templateId, templateName, initia
                                 type="checkbox"
                                 checked={data.negotiation_enabled ?? true}
                                 onChange={e => update('negotiation_enabled', e.target.checked)}
+                                disabled={isSuperseded}
                                 className="w-4 h-4 accent-green-500"
                             />
                             <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">Negocjacje</span>
                         </label>
                         <button
                             onClick={handleSave}
-                            disabled={isSaving}
+                            disabled={isSaving || isSuperseded}
+                            title={isSuperseded ? 'Oferta zastąpiona jest tylko do odczytu' : undefined}
                             className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded shadow hover:bg-green-700 transition disabled:opacity-50 font-bold"
                         >
                             <Save size={18} /> {isSaving ? 'Zapisywanie...' : lastSavedId ? 'Aktualizuj' : 'Zapisz'}
                         </button>
 
-                        {/* Dynamic status buttons */}
-                        {lastSavedId && offerStatus === 'draft' && (
-                            <button
-                                onClick={() => handleUpdateStatus('pending')}
-                                disabled={isSaving}
-                                className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700 transition disabled:opacity-50 font-bold"
-                            >
-                                <Share2 size={18} /> Wyślij do zatwierdzenia
-                            </button>
-                        )}
-                        {lastSavedId && (offerStatus === 'rejected' || offerStatus === 'accepted') && (
-                            <button
-                                onClick={() => handleUpdateStatus('pending')}
-                                disabled={isSaving}
-                                className="flex items-center gap-2 bg-orange-600 text-white px-4 py-2 rounded shadow hover:bg-orange-700 transition disabled:opacity-50 font-bold"
-                            >
-                                <Share2 size={18} /> Wyślij ponownie
-                            </button>
-                        )}
-
-                        {lastSavedId && (
+                        {lastSavedId && !isSuperseded && (
                             <a
                                 href={`/strefa-klienta/oferty/${lastSavedId}`}
                                 target="_blank"
@@ -1046,7 +1002,7 @@ export default function OfferBuilder({ offerId, templateId, templateName, initia
                         {/* Template buttons */}
                         <button
                             onClick={handleSaveAsTemplate}
-                            disabled={savingTemplate}
+                            disabled={savingTemplate || isSuperseded}
                             className="flex items-center gap-2 bg-amber-600 text-white px-4 py-2 rounded shadow hover:bg-amber-700 transition disabled:opacity-50 font-bold"
                             title="Zapisz aktualną ofertę jako szablon do ponownego użycia"
                         >
@@ -1063,19 +1019,10 @@ export default function OfferBuilder({ offerId, templateId, templateName, initia
                 </div>
 
                 {/* Storage Actions (Persistent once saved) */}
-                {lastSavedId && (
+                {lastSavedId && !isSuperseded && (
                     <div className="bg-zinc-800/50 border border-zinc-700 rounded-xl p-4 mb-6 flex flex-wrap gap-2 justify-center shadow-inner">
-                        <button onClick={() => handleAction('s3')} className="flex items-center gap-1.5 bg-blue-600/10 text-blue-400 border border-blue-500/30 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-blue-600/20 transition">
-                            <Cloud size={14} /> S3
-                        </button>
-                        <button onClick={() => handleAction('drive')} className="flex items-center gap-1.5 bg-green-600/10 text-green-400 border border-green-500/30 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-green-600/20 transition">
-                            <Share2 size={14} /> Drive
-                        </button>
-                        <button onClick={() => handleAction('email')} className="flex items-center gap-1.5 bg-purple-600/10 text-purple-400 border border-purple-500/30 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-purple-600/20 transition">
-                            <Mail size={14} /> Email
-                        </button>
                         <button onClick={() => handleAction('all')} className="flex items-center gap-1.5 bg-orange-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-orange-700 transition shadow-lg">
-                            <FileCheck size={14} /> Wyślij Wszystko
+                            <FileCheck size={14} /> Wyślij ofertę + PDF
                         </button>
                     </div>
                 )}
@@ -1159,8 +1106,8 @@ export default function OfferBuilder({ offerId, templateId, templateName, initia
                     <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl flex items-start gap-3">
                         <span className="text-amber-500 mt-0.5">⚠️</span>
                         <div>
-                            <p className="text-amber-500 font-bold text-sm mb-1">Status: Szkic (Tylko do odczytu dla klienta)</p>
-                            <p className="text-amber-400/80 text-xs">Klient widzi tę ofertę pod linkiem, ale <b>nie ma możliwości</b> jej akceptacji, odrzucenia ani negocjacji. Użyj przycisku <span className="text-white">„Wyślij do zatwierdzenia”</span>, aby odblokować te opcje dla klienta.</p>
+                            <p className="text-amber-500 font-bold text-sm mb-1">Status: Szkic — niewidoczny dla klienta</p>
+                            <p className="text-amber-400/80 text-xs">Sprawdź treść i cenę, a następnie użyj jednego przycisku <span className="text-white">„Wyślij ofertę + PDF”</span>. Dopiero udana wysyłka zmieni status na wysłany.</p>
                         </div>
                     </div>
                 )}
@@ -1170,6 +1117,15 @@ export default function OfferBuilder({ offerId, templateId, templateName, initia
                         <div>
                             <p className="text-blue-400 font-bold text-sm mb-1">Status: Oczekuje na decyzję</p>
                             <p className="text-blue-300/80 text-xs">Klient ma pełny dostęp do oferty. Może ją przeglądać, akceptować pakiety (odblokowane przyciski), odrzucać lub przesyłać wiadomości w ramach negocjacji.</p>
+                        </div>
+                    </div>
+                )}
+                {lastSavedId && isSuperseded && (
+                    <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl flex items-start gap-3">
+                        <span className="text-amber-400 mt-0.5">🗄️</span>
+                        <div>
+                            <p className="text-amber-400 font-bold text-sm mb-1">Status: Zastąpiona — klient jej nie widzi</p>
+                            <p className="text-amber-300/80 text-xs">Ten rekord jest tylko do odczytu i pozostaje w historii audytowej. Nie można go edytować, wysłać ponownie ani usunąć.</p>
                         </div>
                     </div>
                 )}

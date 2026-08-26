@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { withAuth } from '@/lib/auth/middleware';
 import { generateContractPDF } from '@/lib/services/pdf';
-import { uploadToS3 } from '@/lib/storage/s3';
+import { deleteFromS3, uploadToS3 } from '@/lib/storage/s3';
+import { isImmutableContractStatus } from '@/lib/contracts/status';
+import { randomUUID } from 'node:crypto';
+import { jsonWithCorrelation } from '@/lib/http/correlation';
+import { recordAdminIncidentSafely } from '@/lib/admin-incidents';
 
 // POST /api/admin/contracts/[id]/save-s3
 export async function POST(
@@ -10,6 +14,7 @@ export async function POST(
     context: { params: Promise<{ id: string }> }
 ) {
     return withAuth(request, async (req) => {
+        const correlationId = randomUUID();
         try {
             const params = await context.params;
             const contractId = parseInt(params.id);
@@ -26,6 +31,9 @@ export async function POST(
 
             if (!contract) {
                 return NextResponse.json({ error: 'Contract not found' }, { status: 404 });
+            }
+            if (isImmutableContractStatus(contract.status)) {
+                return NextResponse.json({ error: 'Wysłana lub podpisana umowa jest niezmiennym snapshotem.' }, { status: 409 });
             }
 
             // PROTECT standalone/uploaded PDFs — never regenerate if content is just a marker string
@@ -46,41 +54,46 @@ export async function POST(
             const pdfBufferUnsigned = await generateContractPDF(contract, false);
             console.log(`[CONTRACT_S3_SAVE] Unsigned PDF generated, size: ${pdfBufferUnsigned.length} bytes`);
 
-            const fileNameUnsigned = `umowa_${contract.contract_number || contractId}.pdf`;
+            const fileNameUnsigned = `umowa_${contract.contract_number || contractId}_${randomUUID()}.pdf`;
             const s3KeyUnsigned = `contracts/${fileNameUnsigned}`;
 
             console.log(`[CONTRACT_S3_SAVE] Uploading unsigned PDF to S3: ${s3KeyUnsigned}...`);
-            const pdfUrlUnsigned = await uploadToS3(pdfBufferUnsigned, s3KeyUnsigned, 'application/pdf');
+            const pdfUrlUnsigned = await uploadToS3(pdfBufferUnsigned, s3KeyUnsigned, 'application/pdf', { access: 'private' });
             console.log(`[CONTRACT_S3_SAVE] Unsigned S3 upload successful, URL: ${pdfUrlUnsigned}`);
 
-            // If contract is signed, also generate POST-signature version with signature section
-            if (contract.status === 'signed' && contract.signed_at) {
-                console.log(`[CONTRACT_S3_SAVE] Contract is signed, generating signed PDF version...`);
-                const pdfBufferSigned = await generateContractPDF(contract, true);
-                console.log(`[CONTRACT_S3_SAVE] Signed PDF generated, size: ${pdfBufferSigned.length} bytes`);
-
-                const fileNameSigned = `umowa_${contract.contract_number || contractId}_podpisana.pdf`;
-                const s3KeySigned = `contracts/${fileNameSigned}`;
-
-                console.log(`[CONTRACT_S3_SAVE] Uploading signed PDF to S3: ${s3KeySigned}...`);
-                const pdfUrlSigned = await uploadToS3(pdfBufferSigned, s3KeySigned, 'application/pdf');
-                console.log(`[CONTRACT_S3_SAVE] Signed S3 upload successful, URL: ${pdfUrlSigned}`);
+            console.log(`[CONTRACT_S3_SAVE] Updating DB with PDF URL`);
+            let updated;
+            try {
+                updated = await prisma.contract.updateMany({
+                    where: { id: contractId, status: contract.status, updated_at: contract.updated_at },
+                    data: { pdf_url: pdfUrlUnsigned },
+                });
+            } catch (error) {
+                await deleteFromS3(pdfUrlUnsigned).catch(cleanupError => console.error('[CONTRACT_S3_SAVE] Error cleanup failed', cleanupError));
+                throw error;
+            }
+            if (updated.count !== 1) {
+                await deleteFromS3(pdfUrlUnsigned).catch(cleanupError => console.error('[CONTRACT_S3_SAVE] Lost-CAS cleanup failed', cleanupError));
+                return jsonWithCorrelation({
+                    error: 'Umowa została równolegle zmieniona lub wysłana. Odśwież dane.',
+                    correlation_id: correlationId,
+                }, correlationId, 409);
             }
 
-            console.log(`[CONTRACT_S3_SAVE] Updating DB with PDF URL`);
-            await prisma.contract.update({
-                where: { id: contractId },
-                data: { pdf_url: pdfUrlUnsigned }
-            });
-
             console.log(`[CONTRACT_S3_SAVE] Success! Contract ${contractId} saved to S3`);
-            return NextResponse.json({ success: true, pdfUrl: pdfUrlUnsigned });
+            return jsonWithCorrelation({ success: true, pdfUrl: pdfUrlUnsigned }, correlationId);
         } catch (error: any) {
             console.error('Error saving contract to S3:', error);
-            return NextResponse.json({
+            await recordAdminIncidentSafely({
+                severity: 'P1', category: 'ADMIN_WRITE', reasonCode: 'ADMIN_CONTRACT_S3_SAVE_FAILED',
+                summary: 'Nie udało się wygenerować lub zapisać PDF umowy', correlationId,
+                details: { error: error instanceof Error ? error.message : String(error) },
+            });
+            return jsonWithCorrelation({
                 error: 'Failed to save to S3',
-                details: error.message
-            }, { status: 500 });
+                details: error.message,
+                correlation_id: correlationId,
+            }, correlationId, 500);
         }
     });
 }

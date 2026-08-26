@@ -67,7 +67,7 @@ export default function AdminContractViewPage({ params }: { params: Promise<{ id
     );
     if (!contract) return <div className="min-h-screen flex items-center justify-center">Nie znaleziono umowy.</div>;
 
-    const pdfUrl = contract.signed_pdf_url || contract.pdf_url || `/api/contracts/${contract.id}/pdf?token=${encodeURIComponent(token)}`;
+    const pdfUrl = `/api/contracts/${contract.id}/pdf`;
     const sessionDate = contract.session_date || contract.offer?.session_date;
     const sessionTime = contract.session_time || contract.offer?.session_time;
     const sessionLocation = contract.session_location || contract.offer?.session_location;

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { withAuth } from '@/lib/auth/middleware';
+import { isAdminImmutableOfferStatus } from '@/lib/offers/status';
 
 // POST /api/admin/offers/[id]/save-drive
 export async function POST(
@@ -16,17 +17,11 @@ export async function POST(
             if (!offer) {
                 return NextResponse.json({ error: 'Offer not found' }, { status: 404 });
             }
+            if (isAdminImmutableOfferStatus(offer.status)) {
+                return NextResponse.json({ error: 'Wysłana lub zaakceptowana oferta jest niezmiennym snapshotem.' }, { status: 409 });
+            }
 
-            // TODO: Actual Google Drive upload implementation
-            // Placeholder URL
-            const driveUrl = `https://drive.google.com/file/d/offer-${offer.offerNumber || offerId}/view`;
-
-            await prisma.offer.update({
-                where: { id: offerId },
-                data: { drive_url: driveUrl }
-            });
-
-            return NextResponse.json({ success: true, driveUrl });
+            return NextResponse.json({ error: 'Integracja Google Drive nie jest zaimplementowana.' }, { status: 501 });
         } catch (error) {
             console.error('Error saving to Drive:', error);
             return NextResponse.json({ error: 'Failed to save to Drive' }, { status: 500 });

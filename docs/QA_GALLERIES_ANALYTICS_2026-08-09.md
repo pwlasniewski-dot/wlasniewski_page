@@ -3,6 +3,18 @@
 Data: 2026-08-09
 Zakres: PR #21, #23, #32 i #33 oraz gałąź integracyjna `qa/gallery-analytics-release`.
 
+## Aneks 2026-08-24 — formalna decyzja dla galerii grupowych
+
+Właściciel zatwierdził model biznesowy, który był nierozstrzygnięty w raporcie z 9 sierpnia:
+
+- każdy poprawnie uwierzytelniony rodzic ma prawo oglądać i pobrać całą cyfrową galerię grupy;
+- `PhotoSelection` służy wyłącznie wskazaniu odbitek do zamówienia przez fotografa;
+- płatne dodatki są osobnym zamówieniem odbitek;
+- zgoda na publikację jest niezależna od wyboru i prawa do pobrania;
+- zewnętrzny link do pełnej galerii, w tym Adobe, jest prawidłowym kanałem dostawy i nie może zostać usunięty.
+
+Pozycja „formalnie zatwierdzić zakres dostępu” jest zatem zamknięta decyzyjnie. Wdrożenie nadal pozostaje **NO-GO**, dopóki UI, wszystkie endpointy, testy i monitoring nie realizują identycznej reguły. Szczegóły i anomalie produkcyjne opisuje `docs/GROUP_GALLERY_SELECTION.md`.
+
 ## Decyzja
 
 **NO-GO dla produkcji.** Poprawki zamykają najgroźniejsze podatności i porządkują raport finansowy, ale pełny proces sprzedażowy oraz obsługa dużych i grupowych galerii wymagają jeszcze prac opisanych w bramce poniżej.
@@ -31,7 +43,7 @@ Zakres: PR #21, #23, #32 i #33 oraz gałąź integracyjna `qa/gallery-analytics-
 | P0 | Odbiór staging | Migracja na kopii produkcji oraz E2E oferta → umowa → galeria → PayU → pobranie. |
 | P1 | Proces sprzedaży | Snapshot zaakceptowanej oferty, blokadę reakceptacji i zakaz cichego fallbacku dodano; pozostał pełny E2E przez umowę, rezerwację i uprawnienia galerii. |
 | P1 | Wybór klienta | Klient wybiera zdjęcia zawarte w pakiecie, a dopiero nadwyżkę kupuje; administrator nie klasyfikuje ręcznie finalnego wyboru. |
-| P1 | Galerie grupowe | Gość nie może pobierać, źródła i ZIP są prywatne; trzeba formalnie zatwierdzić, czy zalogowany rodzic ma prawo do całej galerii, czy wyłącznie swoich wyborów. |
+| P1 | Galerie grupowe | Decyzja 2026-08-24: zalogowany rodzic ma prawo do całej galerii; przed wdrożeniem trzeba potwierdzić spójność UI/API/Adobe, idempotencję ZIP oraz pełny audyt zdarzeń. |
 | P1 | SEO | Google Search Console: kliknięcia, wyświetlenia, CTR, pozycja, query/page/device/country i porównania okresów dla obu domen. |
 | P1 | Finanse | Uzgodnienie i backfill kanonicznego rejestru płatności oraz deduplikacja starszych pól; osobna księga kosztów. Dopiero wtedy wolno raportować dochód. |
 | P1 | Integralność analityki | Migracja współdzielonego limitera i krótki test obciążenia na realnym Neon/Netlify; monitoring odrzuconych paczek jest już widoczny w panelu. |
