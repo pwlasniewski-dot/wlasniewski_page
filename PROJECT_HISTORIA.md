@@ -17,7 +17,18 @@
 - Liczby danych przed i po migracji pozostały identyczne: 31 użytkowników, 22 oferty, 7 umów, 10 galerii, 64 uczestników, 244 wybory, 14 zamówień zdjęć i 1 wpis rejestru płatności.
 - Po backfillu 46 kompletnych zestawów ma `LEGACY_REVIEW_REQUIRED`, a 18 częściowych lub pustych `DRAFT`. Nie utracono żadnego wyboru.
 - Kontrola wykazała zero osieroconych ofert, umów, galerii i wyborów, zero powtórzonych e-maili rodziców w galerii, zero przekroczeń limitu i zero wyborów między galeriami.
-- Produkcyjna baza Neon nie została w tym kroku zmieniona. Kolejna bramka to build wdrożeniowy, testy S3/ZIP oraz canary.
+- Produkcyjna baza Neon nie została zmieniona w tym kroku stagingowym. Wynik posłużył jako bramka przed wdrożeniem produkcyjnym opisanym poniżej.
+
+### 2026-08-26 — wydanie produkcyjne CRM i galerii
+
+- Przed zapisem utworzono gałąź bezpieczeństwa Neon `predeploy-backup-crm-20260826` (`br-misty-glade-aek73etq`).
+- Te same 11 migracji zastosowano atomowo na produkcyjnym `main`. Historia Prisma po wdrożeniu: 18/18 zakończonych migracji i 0 błędnych.
+- Kontrola before/after potwierdziła niezmienione liczby: 31 użytkowników, 22 oferty, 7 umów, 10 galerii, 64 uczestników, 244 wybory, 14 zamówień zdjęć i 1 wpis rejestru płatności.
+- Backfill pozostawił 46 kompletnych zestawów jako `LEGACY_REVIEW_REQUIRED` i 18 częściowych lub pustych jako `DRAFT`. Kontrola wykazała zero osieroconych relacji, duplikatów znormalizowanych e-maili, przekroczeń limitu i wyborów między galeriami.
+- Za zgodą właściciela oferta #67 została jawnie zastąpiona przez #68, a #75 przez #78. Rekordy historyczne zachowano, a operacje zapisano w `crm_activities` jako `offer_superseded`.
+- PR #48 (`fix/crm-client-delivery-flow`) został scalony do `main`; commit produkcyjny: `cbdcd5264d904f57fa5c4dfb82c33a95f11baf61`. Netlify opublikował wydanie w 2 min 37 s.
+- Smoke test potwierdził działanie `/logowanie`, wejścia do `/galeria/grupowa` i ochronę `/admin/incidents` przekierowaniem do logowania administratora. Po wdrożeniu nie stwierdzono nowych incydentów aplikacyjnych.
+- Otwarte pozostają testy wymagające rzeczywistych danych i plików: pełne E2E na koncie klienta oraz obciążeniowy test S3/ZIP 100/300/500. Nie są one zastępowane przez testy kontraktowe ani smoke test.
 
 ## 2026-08-21 — przebudowa Aero Analiza pod zapytania techniczne
 
