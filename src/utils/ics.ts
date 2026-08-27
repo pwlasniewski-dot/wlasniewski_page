@@ -74,7 +74,8 @@ export function buildICS(args: BuildIcsArgs): string {
     lines.push(`DTEND;VALUE=DATE:${nd.replaceAll("-", "")}`);
   } else {
     lines.push(`DTSTART:${dtLocal(date, start)}`);
-    lines.push(`DTEND:${dtLocal(date, end)}`);
+    const endDate = end! <= start! ? nextDay(date) : date;
+    lines.push(`DTEND:${dtLocal(endDate, end)}`);
   }
 
   if (organizerEmail) {

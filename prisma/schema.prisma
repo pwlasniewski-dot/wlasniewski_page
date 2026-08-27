@@ -252,6 +252,8 @@ model PromoCode {
   valid_from               DateTime  @default(now())
   valid_until              DateTime?
   is_active                Boolean   @default(true)
+  show_in_gallery          Boolean   @default(false)
+  show_in_banner           Boolean   @default(false)
   max_usage                Int?
   usage_count              Int       @default(0)
   auto_generated_for_email String?
@@ -261,20 +263,29 @@ model PromoCode {
 }
 
 model Inquiry {
-  id             Int       @id @default(autoincrement())
-  external_id    String?   @unique
-  name           String
-  email          String
-  phone          String?
-  message        String
-  session_type   String?
-  preferred_date DateTime?
-  promo_code     String?
-  source         String?
-  status         String    @default("new")
-  notes          String?
-  created_at     DateTime  @default(now())
+  id                   Int       @id @default(autoincrement())
+  external_id          String?   @unique
+  name                 String
+  email                String
+  phone                String?
+  message              String
+  session_type         String?
+  preferred_date       DateTime?
+  promo_code           String?
+  source               String?
+  analytics_session_id String?   @db.VarChar(120)
+  landing_page         String?   @db.VarChar(500)
+  utm_source           String?   @db.VarChar(80)
+  utm_medium           String?   @db.VarChar(80)
+  utm_campaign         String?   @db.VarChar(80)
+  city_slug            String?   @db.VarChar(120)
+  package_slug         String?   @db.VarChar(120)
+  status               String    @default("new")
+  notes                String?
+  created_at           DateTime  @default(now())
 
+  @@index([analytics_session_id])
+  @@index([source, created_at])
   @@map("inquiries")
 }
 
@@ -426,6 +437,11 @@ model Booking {
   // Jedna rezerwacja dla fotografii standardowej i usług z drona.
   client_id                 Int?
   booking_source            String?   @db.VarChar(120)
+  analytics_session_id      String?   @db.VarChar(120)
+  landing_page              String?   @db.VarChar(500)
+  utm_source                String?   @db.VarChar(80)
+  utm_medium                String?   @db.VarChar(80)
+  utm_campaign              String?   @db.VarChar(80)
   booking_kind              String?   @default("STANDARD") @db.VarChar(30)
   company_name              String?
   base_price                Int?
@@ -473,6 +489,7 @@ model Booking {
 
   @@index([client_id])
   @@index([drone_package_slug])
+  @@index([analytics_session_id])
   @@index([email, status, date])
   @@map("bookings")
 }
@@ -513,6 +530,39 @@ model Package {
 
   @@unique([service_id, name])
   @@map("packages")
+}
+
+model BookingAvailabilityRule {
+  id                    Int      @id @default(autoincrement())
+  service_key           String   @db.VarChar(30)
+  day_of_week           Int
+  enabled               Boolean  @default(true)
+  start_minute          Int
+  end_minute            Int
+  slot_interval_minutes Int      @default(60)
+  created_at            DateTime @default(now())
+  updated_at            DateTime @updatedAt
+
+  @@unique([service_key, day_of_week])
+  @@index([service_key, enabled])
+  @@map("booking_availability_rules")
+}
+
+model BookingAvailabilityException {
+  id                    Int      @id @default(autoincrement())
+  service_key           String   @db.VarChar(30)
+  date                  DateTime @db.Date
+  mode                  String   @db.VarChar(20)
+  start_minute          Int?
+  end_minute            Int?
+  slot_interval_minutes Int?
+  note                  String?  @db.VarChar(160)
+  created_at            DateTime @default(now())
+  updated_at            DateTime @updatedAt
+
+  @@unique([service_key, date])
+  @@index([date])
+  @@map("booking_availability_exceptions")
 }
 
 model GiftCardOrder {

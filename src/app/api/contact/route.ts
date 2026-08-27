@@ -4,6 +4,10 @@ import prisma from "@/lib/db/prisma";
 import { getAdminEmail, sendEmail } from "@/lib/email/sender";
 import { logSystem } from "@/lib/logger";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
+import {
+    safeSalesSlug,
+    salesAttributionFromPayload,
+} from "@/lib/analytics/salesAttribution";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -41,8 +45,9 @@ export async function POST(request: Request) {
         const leadSource = optionalString(body.lead_source, 120);
         const leadCampaign = optionalString(body.lead_campaign, 120);
         const formContext = optionalString(body.form_context, 20);
+        const preferredDateRaw = optionalString(body.preferred_date, 10);
 
-        if ([name, email, message, company, phone, serviceType, leadSource, leadCampaign, formContext].includes(null)) {
+        if ([name, email, message, company, phone, serviceType, leadSource, leadCampaign, formContext, preferredDateRaw].includes(null)) {
             return NextResponse.json({ error: "Nieprawidłowe dane formularza" }, { status: 400 });
         }
 
@@ -65,9 +70,16 @@ export async function POST(request: Request) {
 
         const isB2B = formContext === "b2b";
         const source = leadSource || (isB2B ? "b2b-contact" : "website-contact");
+        const attribution = salesAttributionFromPayload(body);
+        const citySlug = safeSalesSlug(body.city_slug);
+        const packageSlug = safeSalesSlug(body.package_slug);
+        const preferredDate = preferredDateRaw && /^\d{4}-\d{2}-\d{2}$/.test(preferredDateRaw)
+            ? new Date(`${preferredDateRaw}T12:00:00.000Z`)
+            : null;
         const notes = [
             company ? `Firma: ${company}` : "",
             leadCampaign && leadCampaign !== "none" ? `Kampania: ${leadCampaign}` : "",
+            preferredDateRaw && !preferredDate ? `Preferowany okres: ${preferredDateRaw}` : "",
         ].filter(Boolean).join("\n") || null;
 
         // Najpierw zapisujemy lead. Awaria SMTP nie może powodować utraty klienta.
@@ -78,7 +90,11 @@ export async function POST(request: Request) {
                 phone: phone || null,
                 message,
                 session_type: serviceType || null,
+                preferred_date: preferredDate && !Number.isNaN(preferredDate.getTime()) ? preferredDate : null,
                 source,
+                ...attribution,
+                city_slug: citySlug,
+                package_slug: packageSlug,
                 notes,
                 status: "new",
             },
@@ -101,6 +117,9 @@ export async function POST(request: Request) {
             serviceType: escapeHtml(serviceType),
             source: escapeHtml(source),
             campaign: escapeHtml(leadCampaign),
+            preferredDate: escapeHtml(preferredDateRaw),
+            city: escapeHtml(citySlug),
+            package: escapeHtml(packageSlug),
         };
 
         try {
@@ -115,6 +134,9 @@ export async function POST(request: Request) {
 ${company ? `<p><strong>Firma:</strong> ${safe.company}</p>` : ""}
 ${phone ? `<p><strong>Telefon:</strong> ${safe.phone}</p>` : ""}
 ${serviceType ? `<p><strong>Usługa:</strong> ${safe.serviceType}</p>` : ""}
+${citySlug ? `<p><strong>Miasto:</strong> ${safe.city}</p>` : ""}
+${packageSlug ? `<p><strong>Pakiet:</strong> ${safe.package}</p>` : ""}
+${preferredDateRaw ? `<p><strong>Preferowany termin:</strong> ${safe.preferredDate}</p>` : ""}
 <p><strong>Źródło:</strong> ${safe.source}${leadCampaign && leadCampaign !== "none" ? ` (${safe.campaign})` : ""}</p>
 <hr />
 <p><strong>Wiadomość:</strong></p>

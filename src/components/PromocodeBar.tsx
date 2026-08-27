@@ -14,8 +14,8 @@ interface PromoBarProps {
 
 export default function PromocodeBar({
     code,
-    discount = 20,
-    discountType = 'percentage',
+    discount,
+    discountType,
     expiryDate,
     onDismiss
 }: PromoBarProps) {
@@ -36,7 +36,12 @@ export default function PromocodeBar({
         }
     };
 
-    const [fetchedSettings, setFetchedSettings] = useState<any>(null);
+    const [fetchedSettings, setFetchedSettings] = useState<{
+        code: string;
+        discount: number;
+        discountType: 'percentage' | 'fixed';
+        expiryDate?: string;
+    } | null>(null);
 
     useEffect(() => {
         // If code is provided as prop, use it (manual mode)
@@ -60,10 +65,19 @@ export default function PromocodeBar({
                         : '';
                     if (!codeToUse) return;
 
+                    const fetchedDiscount = Number(settings.promo_code_discount_amount);
+                    const fetchedType = settings.promo_code_discount_type;
+                    if (
+                        !Number.isFinite(fetchedDiscount)
+                        || fetchedDiscount <= 0
+                        || (fetchedType !== 'percentage' && fetchedType !== 'fixed')
+                        || (fetchedType === 'percentage' && fetchedDiscount > 100)
+                    ) return;
+
                     setFetchedSettings({
                         code: codeToUse,
-                        discount: settings.promo_code_discount_amount || 10,
-                        discountType: settings.promo_code_discount_type || 'percentage',
+                        discount: fetchedDiscount,
+                        discountType: fetchedType,
                         expiryDate: settings.promo_code_expiry
                     });
                 }
@@ -76,10 +90,11 @@ export default function PromocodeBar({
     }, [code]);
 
     // Use props or fetched settings
-    const activeCode = code || fetchedSettings?.code;
-    const activeDiscount = discount || fetchedSettings?.discount;
-    const activeDiscountType = discountType || fetchedSettings?.discountType;
-    const activeExpiry = expiryDate || fetchedSettings?.expiryDate;
+    const manualMode = Boolean(code);
+    const activeCode = manualMode ? code : fetchedSettings?.code;
+    const activeDiscount = manualMode ? discount : fetchedSettings?.discount;
+    const activeDiscountType = manualMode ? discountType : fetchedSettings?.discountType;
+    const activeExpiry = manualMode ? expiryDate : fetchedSettings?.expiryDate;
 
     // Auto-dismiss if localStorage has a marker for this code
     useEffect(() => {
@@ -91,7 +106,13 @@ export default function PromocodeBar({
         }
     }, [activeCode]);
 
-    if (!isVisible || !activeCode) return null;
+    if (
+        !isVisible
+        || !activeCode
+        || !Number.isFinite(activeDiscount)
+        || Number(activeDiscount) <= 0
+        || (activeDiscountType !== 'percentage' && activeDiscountType !== 'fixed')
+    ) return null;
 
     const discountText = activeDiscountType === 'percentage' ? `${activeDiscount}%` : `${activeDiscount} zł`;
 

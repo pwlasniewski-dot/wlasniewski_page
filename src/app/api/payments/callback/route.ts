@@ -3,7 +3,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
-import { verifyPayUSignature } from '@/lib/payu';
+import { verifyPayUNotificationSignature } from '@/lib/payments/payuNotification';
 
 // Simple logger helper if lib/logger doesn't exist or is problematic
 async function logSystem(level: string, module: string, message: string, metadata?: any) {
@@ -32,9 +32,17 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Missing signature' }, { status: 400 });
         }
 
-        // Verify signature
-        // We pass empty merchant key for now as our simple implementation returns true
-        const isValid = verifyPayUSignature(signature, bodyText, '');
+        const setting = await prisma.setting.findFirst({
+            where: { payu_md5_key: { not: null } },
+            orderBy: { id: 'asc' },
+            select: { payu_md5_key: true },
+        });
+        if (!setting?.payu_md5_key) {
+            await logSystem('ERROR', 'PAYMENT', 'PayU Callback: MD5 key is not configured');
+            return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+        }
+
+        const isValid = verifyPayUNotificationSignature(signature, bodyText, setting.payu_md5_key);
         if (!isValid) {
             console.error('Invalid PayU signature');
             await logSystem('ERROR', 'PAYMENT', 'PayU Callback: Invalid signature', { signature, bodySnippet: bodyText.slice(0, 100) });

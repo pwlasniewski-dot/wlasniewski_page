@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, MapPin, Clock, User } from 'lucide-react';
+import { formatBookingTimeRange } from '@/lib/bookingSchedule';
 
 export type CalendarBooking = {
     id: number | string;
@@ -303,7 +304,7 @@ function BookingRow({ b, showDate, onClick }: { b: CalendarBooking; showDate?: b
                     )}
                     {b.start_time && (
                         <span className="text-xs font-semibold text-zinc-700 inline-flex items-center gap-1">
-                            <Clock className="w-3 h-3" />{b.start_time}{b.end_time ? `\u2013${b.end_time}` : ''}
+                            <Clock className="w-3 h-3" />{formatBookingTimeRange(b.start_time, b.end_time)}
                         </span>
                     )}
                     <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded border ${colors}`}>{label}</span>

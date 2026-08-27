@@ -4,6 +4,7 @@ import prisma from '@/lib/db/prisma';
 import { sendEmail } from '@/lib/email/sender';
 import { generateGoogleReviewRequestEmail } from '@/lib/email-templates';
 import { logSystem } from '@/lib/logger';
+import { normalizeGoogleReviewUrl } from '@/lib/marketing/gallery-trust';
 
 export async function POST(request: NextRequest) {
     const authError = await requireAuth(request);
@@ -23,17 +24,11 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ ok: false, message: 'Booking not found' }, { status: 404 });
         }
 
-        const placeIdSetting = await prisma.setting.findFirst({
-            where: { setting_key: 'google_place_id' },
-        });
-        const reviewLinkSetting = await prisma.setting.findFirst({
+        const reviewLinkSetting = await prisma.setting.findUnique({
             where: { setting_key: 'gbp_review_link' },
         });
 
-        const reviewLink = reviewLinkSetting?.setting_value
-            || (placeIdSetting?.setting_value
-                ? `https://search.google.com/local/writereview?placeid=${placeIdSetting.setting_value}`
-                : null);
+        const reviewLink = normalizeGoogleReviewUrl(reviewLinkSetting?.setting_value);
 
         if (!reviewLink) {
             return NextResponse.json(

@@ -14,10 +14,33 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     try {
         const { id } = await params;
         const body = await request.json();
+        const promoId = Number(id);
+        if (!Number.isInteger(promoId) || promoId <= 0) {
+            return NextResponse.json({ success: false, message: 'Nieprawidłowy identyfikator' }, { status: 400 });
+        }
 
-        const promoCode = await prisma.promoCode.update({
-            where: { id: parseInt(id) },
-            data: body,
+        const data: { is_active?: boolean; show_in_gallery?: boolean; show_in_banner?: boolean } = {};
+        if (typeof body.is_active === 'boolean') data.is_active = body.is_active;
+        if (typeof body.show_in_gallery === 'boolean') data.show_in_gallery = body.show_in_gallery;
+        if (typeof body.show_in_banner === 'boolean') data.show_in_banner = body.show_in_banner;
+        if (Object.keys(data).length === 0) {
+            return NextResponse.json({ success: false, message: 'Brak obsługiwanych zmian' }, { status: 400 });
+        }
+
+        const promoCode = await prisma.$transaction(async tx => {
+            if (data.show_in_gallery === true) {
+                await tx.promoCode.updateMany({
+                    where: { show_in_gallery: true, id: { not: promoId } },
+                    data: { show_in_gallery: false },
+                });
+            }
+            if (data.show_in_banner === true) {
+                await tx.promoCode.updateMany({
+                    where: { show_in_banner: true, id: { not: promoId } },
+                    data: { show_in_banner: false },
+                });
+            }
+            return tx.promoCode.update({ where: { id: promoId }, data });
         });
 
         return NextResponse.json({ success: true, code: promoCode });

@@ -9,7 +9,6 @@ import {
     Check, Shield, Award, Star, ChevronDown, Users
 } from 'lucide-react';
 import prisma from '@/lib/db/prisma';
-import PromocodeBar from '@/components/PromocodeBar';
 import QuickStartForm from './_components/QuickStartForm';
 import FAQAccordion from './_components/FAQAccordion';
 import { getText, interpolate } from '@/lib/photo-challenge/texts';
@@ -129,7 +128,6 @@ export default async function FotoWyzwaniePage() {
 
     return (
         <div className="min-h-screen bg-[#FBF7EF] text-stone-800 overflow-x-hidden">
-            <PromocodeBar code="WYZWANIE20" discount={20} discountType="percentage" />
 
             {/* HERO */}
             <section className="relative pt-28 pb-16 md:pt-36 md:pb-24 px-4 overflow-hidden">

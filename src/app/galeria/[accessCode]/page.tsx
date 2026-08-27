@@ -547,7 +547,6 @@ export default function ClientGalleryPage() {
 
             {(gallery.standard_photos.length + gallery.premium_photos.length) > 0 && (
                 <TopReviewNudge
-                    discountCode="WRACAM15"
                     theme="dark"
                 />
             )}
@@ -901,7 +900,6 @@ export default function ClientGalleryPage() {
             {(gallery.standard_photos.length + gallery.premium_photos.length) > 0 && (
                 <PostGalleryUpsell
                     clientName={gallery.client_name}
-                    discountCode="WRACAM15"
                     theme="dark"
                 />
             )}

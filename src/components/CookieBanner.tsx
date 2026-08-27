@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import Link from 'next/link';
+import { stripAttributionFromStoredCart } from '@/lib/analytics/clientAttribution';
 
 export default function CookieBanner({ variant = 'default' }: { variant?: 'default' | 'aero' }) {
     const [showBanner, setShowBanner] = useState(false);
@@ -28,6 +29,12 @@ export default function CookieBanner({ variant = 'default' }: { variant?: 'defau
         localStorage.setItem('cookie_consent', 'rejected');
         localStorage.removeItem('analytics_v2_user_id');
         localStorage.removeItem('analytics_v2_session');
+        localStorage.removeItem('pw_session_id');
+        localStorage.removeItem('pw_utm_source');
+        localStorage.removeItem('pw_utm_campaign');
+        const sanitizedCart = stripAttributionFromStoredCart(localStorage.getItem('shopping_cart'));
+        if (sanitizedCart) localStorage.setItem('shopping_cart', sanitizedCart);
+        else localStorage.removeItem('shopping_cart');
         for (const cookie of document.cookie.split(';')) {
             const name = cookie.split('=')[0]?.trim();
             if (!name || !/^(_ga|_gid|_gat|_gcl|_fbp|_fbc)/.test(name)) continue;

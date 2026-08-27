@@ -18,4 +18,11 @@ test('V3 dashboard renders traffic sources, ingest quality and expandable sessio
   for (const field of ['data.aero.funnel', 'data.sources.aeroSales.canonicalInquiries', 'data-testid="aero-sales-funnel"']) {
     assert.ok(source.includes(field), `missing separate Aero sales contract: ${field}`);
   }
+  for (const field of ['data.photo.entryFunnel', 'data.photo.branches.inquiry', 'data.photo.branches.booking', 'data.sources.photoSales.canonicalInquiries', 'data.sources.finance.successfulBookings', 'data.overview.bookingAttempts', 'data.overview.successfulBookings', 'data-testid="photo-sales-funnel"', 'page.impact.canonicalInquiries', 'page.impact.canonicalBookings']) {
+    assert.ok(source.includes(field), `missing photography sales contract: ${field}`);
+  }
+  assert.ok(source.includes('Rekord pending jest próbą, nie skutecznym zleceniem.'));
+  assert.ok(source.includes('Skuteczne zlecenia (wybrany okres)'));
+  assert.ok(source.includes('Cel bieżącego miesiąca: 4'));
+  assert.ok(source.includes('data.overview.currentMonthSuccessfulBookings'));
 });

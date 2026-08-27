@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, Save, Edit2, X, Check } from 'lucide-react';
+import { Plus, Trash2, Save, X, Check, Gift } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface PromoCode {
@@ -12,6 +12,8 @@ interface PromoCode {
     valid_from: string;
     valid_until: string | null;
     is_active: boolean;
+    show_in_gallery: boolean;
+    show_in_banner: boolean;
     max_usage: number | null;
     usage_count: number;
     created_at: string;
@@ -73,7 +75,7 @@ export default function PromoCodesPage() {
                 body: JSON.stringify({
                     ...newCode,
                     code: newCode.code.toUpperCase(),
-                    max_usage: newCode.max_usage ? parseInt(newCode.max_usage) : null,
+                    max_usage: newCode.max_usage ? parseInt(newCode.max_usage, 10) : null,
                     valid_until: newCode.valid_until || null,
                 }),
             });
@@ -122,6 +124,46 @@ export default function PromoCodesPage() {
         }
     };
 
+    const handleToggleGallery = async (id: number, currentValue: boolean) => {
+        try {
+            const token = localStorage.getItem('admin_token');
+            const res = await fetch(`/api/promo-codes/${id}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                },
+                body: JSON.stringify({ show_in_gallery: !currentValue }),
+            });
+            const data = await res.json().catch(() => null);
+            if (!res.ok) throw new Error(data?.message || 'update_failed');
+            toast.success(currentValue ? 'Kod ukryty w galerii' : 'Kod wybrany dla galerii');
+            fetchCodes();
+        } catch {
+            toast.error('Nie udało się zmienić kodu galerii');
+        }
+    };
+
+    const handleToggleBanner = async (id: number, currentValue: boolean) => {
+        try {
+            const token = localStorage.getItem('admin_token');
+            const res = await fetch(`/api/promo-codes/${id}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                },
+                body: JSON.stringify({ show_in_banner: !currentValue }),
+            });
+            const data = await res.json().catch(() => null);
+            if (!res.ok) throw new Error(data?.message || 'update_failed');
+            toast.success(currentValue ? 'Kod ukryty w bannerze' : 'Kod wybrany do bannera');
+            fetchCodes();
+        } catch {
+            toast.error('Nie udało się zmienić kodu bannera');
+        }
+    };
+
     const handleDelete = async (id: number) => {
         if (!confirm('Czy na pewno chcesz usunąć ten kod?')) return;
 
@@ -148,7 +190,13 @@ export default function PromoCodesPage() {
     return (
         <div className="max-w-6xl pb-20">
             <div className="flex justify-between items-center mb-8">
-                <h1 className="text-2xl font-display font-semibold text-white">Kody rabatowe</h1>
+                <div>
+                    <h1 className="text-2xl font-display font-semibold text-white">Kody rabatowe</h1>
+                    <p className="mt-2 max-w-2xl text-sm text-zinc-400">
+                        „Galeria” oznacza benefit po odbiorze zdjęć, a „Banner” promocję ogólną. Każde miejsce może mieć
+                        jeden kod; wartość i ważność zawsze pochodzą z rekordu sprawdzanego przez checkout.
+                    </p>
+                </div>
                 <button
                     onClick={() => setShowNewForm(true)}
                     className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-black bg-gold-500 hover:bg-gold-400"
@@ -217,11 +265,13 @@ export default function PromoCodesPage() {
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-zinc-400 mb-1">Max użyć (opcjonalnie)</label>
+                            <label className="block text-sm font-medium text-zinc-400 mb-1">Maksymalna liczba użyć (opcjonalnie)</label>
                             <input
                                 type="number"
+                                min="1"
+                                max="1000000"
                                 value={newCode.max_usage}
-                                onChange={e => setNewCode(c => ({ ...c, max_usage: e.target.value }))}
+                                onChange={e => setNewCode(current => ({ ...current, max_usage: e.target.value }))}
                                 placeholder="bez limitu"
                                 className="block w-full rounded-md border-zinc-700 bg-zinc-800 text-white px-3 py-2"
                             />
@@ -248,8 +298,8 @@ export default function PromoCodesPage() {
             )}
 
             {/* Codes Table */}
-            <div className="bg-zinc-900 rounded-lg border border-zinc-800 overflow-hidden">
-                <table className="w-full">
+            <div className="overflow-x-auto rounded-lg border border-zinc-800 bg-zinc-900">
+                <table className="w-full min-w-[900px]">
                     <thead className="bg-zinc-950">
                         <tr>
                             <th className="px-4 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Kod</th>
@@ -257,13 +307,15 @@ export default function PromoCodesPage() {
                             <th className="px-4 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Ważność</th>
                             <th className="px-4 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Użycia</th>
                             <th className="px-4 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Status</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Galeria</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Banner</th>
                             <th className="px-4 py-3 text-right text-xs font-medium text-zinc-400 uppercase tracking-wider">Akcje</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-zinc-800">
                         {codes.length === 0 ? (
                             <tr>
-                                <td colSpan={6} className="px-4 py-8 text-center text-zinc-500">
+                                <td colSpan={8} className="px-4 py-8 text-center text-zinc-500">
                                     Brak kodów rabatowych. Kliknij "Nowy kod" aby utworzyć pierwszy.
                                 </td>
                             </tr>
@@ -285,8 +337,7 @@ export default function PromoCodesPage() {
                                         )}
                                     </td>
                                     <td className="px-4 py-3 text-sm text-zinc-400">
-                                        {code.usage_count}
-                                        {code.max_usage && <span className="text-zinc-600">/{code.max_usage}</span>}
+                                        {code.usage_count}{code.max_usage !== null && <span className="text-zinc-600">/{code.max_usage}</span>}
                                     </td>
                                     <td className="px-4 py-3">
                                         <button
@@ -301,6 +352,34 @@ export default function PromoCodesPage() {
                                             ) : (
                                                 <><X className="w-3 h-3 mr-1" /> Nieaktywny</>
                                             )}
+                                        </button>
+                                    </td>
+                                    <td className="px-4 py-3">
+                                        <button
+                                            type="button"
+                                            aria-pressed={code.show_in_gallery}
+                                            onClick={() => handleToggleGallery(code.id, code.show_in_gallery)}
+                                            className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${code.show_in_gallery
+                                                ? 'bg-gold-500/20 text-gold-300'
+                                                : 'bg-zinc-800 text-zinc-500 hover:text-zinc-300'
+                                            }`}
+                                        >
+                                            <Gift className="mr-1 h-3 w-3" />
+                                            {code.show_in_gallery ? 'Wybrany' : 'Nie'}
+                                        </button>
+                                    </td>
+                                    <td className="px-4 py-3">
+                                        <button
+                                            type="button"
+                                            aria-pressed={code.show_in_banner}
+                                            onClick={() => handleToggleBanner(code.id, code.show_in_banner)}
+                                            className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${code.show_in_banner
+                                                ? 'bg-sky-500/20 text-sky-300'
+                                                : 'bg-zinc-800 text-zinc-500 hover:text-zinc-300'
+                                            }`}
+                                        >
+                                            <Gift className="mr-1 h-3 w-3" />
+                                            {code.show_in_banner ? 'Wybrany' : 'Nie'}
                                         </button>
                                     </td>
                                     <td className="px-4 py-3 text-right">

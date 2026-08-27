@@ -4,9 +4,9 @@ import prisma from '@/lib/db/prisma';
 import { requireAuth } from '@/lib/auth/middleware';
 import { fetchGscComparison, gscIdentity, propertyHost, type GscMetric } from '@/lib/analytics/gsc';
 import { diagnoseFunnel } from '@/lib/analytics/funnelDiagnostics';
-import { isSemanticCta, pathsBeforeFirstBookingStart } from '@/lib/analytics/v3Attribution';
+import { isSalesIntentStart, isSemanticCta, pathsBeforeFirstBookingStart } from '@/lib/analytics/v3Attribution';
 import { safeAnalyticsSiteHost } from '@/lib/analytics/siteHost';
-import { previousEqualCalendarRange, warsawDateKey, warsawDateRange } from '@/lib/analytics/dateRange';
+import { previousEqualCalendarRange, warsawCalendarMonthRange, warsawDateKey, warsawDateRange } from '@/lib/analytics/dateRange';
 import { growthSignal, shouldCreateZeroBookingAction, trafficSampleStatus } from '@/lib/analytics/sampleStatus';
 import {
   evaluatePageCompleteness, prioritizeDirectorActions, STATIC_PAGE_REGISTRY,
@@ -14,9 +14,11 @@ import {
 } from '@/lib/analytics/pageRegistry';
 import { b2bPublicPath, isB2bCmsPage } from '@/lib/sites/b2b-routing';
 import { buildGscQueryReport } from '@/lib/analytics/gscQueryReport';
+import { isPhotoInquirySource } from '@/lib/analytics/salesAttribution';
 
 export const dynamic = 'force-dynamic';
 const MAX_RANGE_DAYS = 120;
+const SUCCESSFUL_BOOKING_STATUSES = new Set(['confirmed', 'paid', 'completed', 'deposit_paid']);
 
 type Event = {
   event_type: string; page_url: string | null; user_id: string; session_id: string;
@@ -64,11 +66,11 @@ function countMedia(raw: string | null | undefined) {
 }
 
 function isBookingStart(event: Event) {
-  return ['v2_booking_start', 'v2_booking_started', 'v2_booking_form_started', 'v2_drone_booking_started', 'v2_aero_inquiry_started'].includes(event.event_type);
+  return ['v2_booking_start', 'v2_booking_started', 'v2_booking_form_started', 'v2_drone_booking_started'].includes(event.event_type);
 }
 
 function isClientConversion(event: Event) {
-  return ['v2_booking_created', 'v2_booking_complete', 'v2_booking_completed', 'v2_payment_success', 'v2_drone_booking_submitted', 'v2_aero_inquiry_submitted'].includes(event.event_type);
+  return ['v2_booking_created', 'v2_booking_complete', 'v2_booking_completed', 'v2_payment_success', 'v2_drone_booking_submitted', 'v2_photo_inquiry_submitted', 'v2_aero_inquiry_submitted'].includes(event.event_type);
 }
 
 function pct(current: number, previous: number) {
@@ -128,8 +130,9 @@ export async function GET(request: NextRequest) {
     const baselineNow = now;
     const baselineCurrentStart = new Date(baselineNow.getTime() - 28 * 86_400_000);
     const baselinePreviousStart = new Date(baselineNow.getTime() - 56 * 86_400_000);
+    const currentMonthRange = warsawCalendarMonthRange(now);
     const unavailableSources: string[] = [];
-    const [currentRaw, previousRaw, firstRaw, baselineRaw, cmsPages, blogPosts, portfolios, canonicalBookings, canonicalAeroInquiries, ingestRaw, gsc] = await Promise.all([
+    const [currentRaw, previousRaw, firstRaw, baselineRaw, cmsPages, blogPosts, portfolios, canonicalBookingAttempts, currentMonthBookingCandidates, canonicalInquiryCandidates, canonicalAeroInquiries, ingestRaw, gsc] = await Promise.all([
       fetchDashboardSource('analytics-current', () => prisma.analyticsEvent.findMany({ where: { event_type: { startsWith: 'v2_' }, created_at: { gte: start, lt: end } }, orderBy: { created_at: 'asc' } }), [], unavailableSources),
       fetchDashboardSource('analytics-previous', () => prisma.analyticsEvent.findMany({ where: { event_type: { startsWith: 'v2_' }, created_at: { gte: previousStart, lt: previousEnd } }, orderBy: { created_at: 'asc' } }), [], unavailableSources),
       fetchDashboardSource('analytics-first-seen', () => prisma.$queryRaw<FirstPageRow[]>(Prisma.sql`
@@ -143,7 +146,15 @@ export async function GET(request: NextRequest) {
       fetchDashboardSource('cms-pages', () => prisma.page.findMany({ select: { slug: true, page_type: true, title: true, content: true, meta_title: true, meta_description: true, is_published: true, hero_image: true, content_images: true, sections: true, updated_at: true } }), [], unavailableSources),
       fetchDashboardSource('blog-posts', () => prisma.blogPost.findMany({ select: { slug: true, title: true, content: true, meta_title: true, meta_description: true, status: true, published_at: true, featured_image_id: true, updated_at: true } }), [], unavailableSources),
       fetchDashboardSource('portfolio', () => prisma.portfolioSession.findMany({ select: { slug: true, category: true, title: true, description: true, meta_title: true, meta_description: true, is_published: true, cover_image_id: true, media_ids: true, updated_at: true } }), [], unavailableSources),
-      fetchDashboardSource('bookings', () => prisma.booking.findMany({ where: { created_at: { gte: start, lt: end } }, select: { id: true, created_at: true, price: true, status: true } }), [], unavailableSources),
+      fetchDashboardSource('bookings', () => prisma.booking.findMany({ where: { created_at: { gte: start, lt: end } }, select: { id: true, created_at: true, price: true, status: true, analytics_session_id: true, landing_page: true } }), [], unavailableSources),
+      fetchDashboardSource('bookings-current-month', () => prisma.booking.findMany({ where: { created_at: { gte: currentMonthRange.start, lt: currentMonthRange.end } }, select: { status: true } }), [], unavailableSources),
+      fetchDashboardSource('photo-inquiries', () => prisma.inquiry.findMany({
+        where: {
+          created_at: { gte: start, lt: end },
+          NOT: { source: { startsWith: 'aeroanaliza:' } },
+        },
+        select: { id: true, created_at: true, source: true, session_type: true, analytics_session_id: true, landing_page: true, city_slug: true },
+      }), [], unavailableSources),
       fetchDashboardSource('aero-inquiries', () => prisma.inquiry.findMany({ where: { created_at: { gte: start, lt: end }, source: { startsWith: 'aeroanaliza:' } }, select: { id: true, created_at: true } }), [], unavailableSources),
       fetchIngestMetrics(start, end),
       fetchGscComparison({ start, end, previousStart, previousEnd, now, calendarRanges: startDateParam && endDateParam && previousCalendar ? { current: { startDate: startDateParam, endDate: endDateParam }, previous: previousCalendar } : undefined }),
@@ -151,6 +162,9 @@ export async function GET(request: NextRequest) {
 
     const events: Event[] = currentRaw.map(row => ({ ...row, metadata: parseMetadata(row.metadata) }));
     const previousEvents: Event[] = previousRaw.map(row => ({ ...row, metadata: parseMetadata(row.metadata) }));
+    const canonicalPhotoInquiries = canonicalInquiryCandidates.filter(inquiry => isPhotoInquirySource(inquiry.source));
+    const successfulBookings = canonicalBookingAttempts.filter(booking => SUCCESSFUL_BOOKING_STATUSES.has(String(booking.status || '').toLowerCase()));
+    const currentMonthSuccessfulBookings = currentMonthBookingCandidates.filter(booking => SUCCESSFUL_BOOKING_STATUSES.has(String(booking.status || '').toLowerCase())).length;
     const sessions = new Map<string, Event[]>();
     for (const event of events) sessions.set(event.session_id, [...(sessions.get(event.session_id) || []), event]);
 
@@ -161,6 +175,18 @@ export async function GET(request: NextRequest) {
     const ctaSessions = new Set(events.filter(isSemanticCta).map(event => event.session_id)).size;
     const bookingStartSessions = new Set(events.filter(isBookingStart).map(event => event.session_id)).size;
     const conversionSessions = new Set(events.filter(isClientConversion).map(event => event.session_id)).size;
+    const salesIntentStartSessions = new Set(events.filter(isSalesIntentStart).map(event => event.session_id)).size;
+    const photoEvents = events.filter(event => safeAnalyticsSiteHost(event.metadata.site_host) === 'wlasniewski.pl');
+    const photoSessionIds = new Set(photoEvents.map(event => event.session_id));
+    const photoEngagedSessions = new Set(photoEvents.filter(event => event.event_type === 'v2_engagement' && Number(event.metadata.active_ms || 0) >= 10_000).map(event => event.session_id)).size;
+    const photoCtaSessions = new Set(photoEvents.filter(isSemanticCta).map(event => event.session_id)).size;
+    const photoInquiryStarts = new Set(photoEvents.filter(event => event.event_type === 'v2_photo_inquiry_started').map(event => event.session_id)).size;
+    const photoInquirySubmissions = new Set(photoEvents.filter(event => event.event_type === 'v2_photo_inquiry_submitted').map(event => event.session_id)).size;
+    const photoBookingStarts = new Set(photoEvents.filter(isBookingStart).map(event => event.session_id)).size;
+    const photoCheckoutSubmissions = new Set(photoEvents.filter(event => event.event_type === 'v2_checkout_submit').map(event => event.session_id)).size;
+    // A customer reaches a real payment start only after the server creates a
+    // PayU order and returns its redirect. Button clicks and failed 4xx/5xx are excluded.
+    const photoPaymentStarts = new Set(photoEvents.filter(event => event.event_type === 'v2_payu_redirect').map(event => event.session_id)).size;
     const aeroEvents = events.filter(event => safeAnalyticsSiteHost(event.metadata.site_host) === 'aeroanaliza.pl');
     const aeroSessionIds = new Set(aeroEvents.map(event => event.session_id));
     const aeroSessions = new Map<string, Event[]>();
@@ -180,6 +206,25 @@ export async function GET(request: NextRequest) {
       const set = sourceMap.get(source) || new Set<string>(); set.add(event.session_id); sourceMap.set(source, set);
     }
 
+    const canonicalSalesByPage = new Map<string, { inquiries: number; bookings: number }>();
+    const sessionLandingPath = (sessionId: string | null | undefined) => {
+      if (!sessionId) return null;
+      const firstView = sessions.get(sessionId)?.find(event => event.event_type === 'v2_page_view');
+      return firstView ? normalizePath(firstView.page_url) : null;
+    };
+    const addCanonicalSale = (kind: 'inquiries' | 'bookings', landingPage: string | null | undefined, sessionId: string | null | undefined) => {
+      const path = landingPage ? normalizePath(landingPage) : sessionLandingPath(sessionId);
+      if (!path) return;
+      const identity = `wlasniewski.pl:${path}`;
+      const row = canonicalSalesByPage.get(identity) || { inquiries: 0, bookings: 0 };
+      row[kind] += 1;
+      canonicalSalesByPage.set(identity, row);
+    };
+    for (const inquiry of canonicalPhotoInquiries) addCanonicalSale('inquiries', inquiry.landing_page, inquiry.analytics_session_id);
+    for (const booking of successfulBookings) addCanonicalSale('bookings', booking.landing_page, booking.analytics_session_id);
+    const attributedCanonicalInquiries = Array.from(canonicalSalesByPage.values()).reduce((sum, row) => sum + row.inquiries, 0);
+    const attributedCanonicalBookings = Array.from(canonicalSalesByPage.values()).reduce((sum, row) => sum + row.bookings, 0);
+
     const pageAnalytics = new Map<string, {
       sessions: Set<string>; landing: Set<string>; assisted: Set<string>; cta: Set<string>;
       bookingStarts: Set<string>; clientConversions: Set<string>; firstAt: Date | null; daily: Map<string, Set<string>>;
@@ -192,6 +237,7 @@ export async function GET(request: NextRequest) {
       pageAnalytics.set(path, current);
       return current;
     };
+    for (const identity of canonicalSalesByPage.keys()) ensurePage(identity);
     for (const [sessionId, items] of sessions) {
       const ordered = [...items].sort((a, b) => a.created_at.getTime() - b.created_at.getTime());
       const viewedPages = Array.from(new Map(ordered.filter(event => event.event_type === 'v2_page_view').map(event => {
@@ -288,6 +334,7 @@ export async function GET(request: NextRequest) {
       const identity = `${source.host}:${source.path}`;
       const stored = registry.get(identity);
       const analytics = pageAnalytics.get(identity);
+      const canonicalSales = canonicalSalesByPage.get(identity) || { inquiries: 0, bookings: 0 };
       const google = gscCurrent.get(identity);
       const googlePrevious = gscPrevious.get(identity);
       const googleHistory = gscHistory.get(identity);
@@ -319,8 +366,11 @@ export async function GET(request: NextRequest) {
           sessions: analytics?.sessions.size || 0, landingSessions: analytics?.landing.size || 0,
           assistedBookingStarts: analytics?.assisted.size || 0, ctaSessions: analytics?.cta.size || 0,
           bookingStartSessions: analytics?.bookingStarts.size || 0, clientEventConversions: analytics?.clientConversions.size || 0,
-          canonicalBookings: null,
-          attributionNote: 'Kanoniczne rezerwacje/płatności nie mają session_id ani landing_page, więc nie są przypisywane do podstrony.',
+          canonicalInquiries: canonicalSales.inquiries,
+          canonicalBookings: canonicalSales.bookings,
+          attributionNote: canonicalSales.inquiries || canonicalSales.bookings
+            ? `Przypisane rekordy kanoniczne: ${canonicalSales.inquiries} zapytań i ${canonicalSales.bookings} rezerwacji.`
+            : 'Brak przypisanego zapytania lub rezerwacji dla tej strony w wybranym okresie. Starsze rekordy bez atrybucji pozostają tylko w sumie ogólnej.',
           gsc: {
             clicks: google?.clicks || 0, impressions: google?.impressions || 0,
             ctr: google?.impressions ? google.clicks / google.impressions : 0,
@@ -383,7 +433,7 @@ export async function GET(request: NextRequest) {
     if (torunQuerySignal) actions.push({ priority: 95, kind: 'query_overlap', title: 'Sprawdź rozdzielenie frazy „fotograf Toruń”', evidence: `To samo zapytanie wyświetla ${torunQuerySignal.competingPages.length} URL-e: ${torunQuerySignal.competingPages.join(', ')}. To sygnał, nie automatyczny dowód kanibalizacji.`, recommendation: 'Porównaj kliknięcia, wyświetlenia, CTR i pozycję URL-i; zmieniaj tylko jeden title w kontrolowanym teście 28/28.' });
     const importantIncomplete = pageRows.find(page => page.completeness < 70 && (page.impact.sessions > 0 || page.impact.gsc.impressions > 0));
     if (importantIncomplete) actions.push({ priority: 70, kind: 'completeness', title: `Dokończ ${importantIncomplete.path}`, evidence: `Kompletność ${importantIncomplete.completeness}%. ${importantIncomplete.blockers.slice(0, 2).join('; ')}`, recommendation: 'Usuń wskazane blokery strony, zaczynając od publikacji, meta i CTA.' });
-    if (shouldCreateZeroBookingAction(sessionIds.size, bookingStartSessions)) actions.push({ priority: 60, kind: 'funnel', title: 'Ruch nie rozpoczyna rezerwacji', evidence: `${sessionIds.size} sesji i 0 startów rezerwacji.`, recommendation: 'Sprawdź CTA na najczęstszych landing pages i ręcznie przetestuj rezerwację mobile.' });
+    if (shouldCreateZeroBookingAction(sessionIds.size, salesIntentStartSessions)) actions.push({ priority: 60, kind: 'funnel', title: 'Ruch nie rozpoczyna kontaktu ani rezerwacji', evidence: `${sessionIds.size} sesji i 0 startów zapytania lub pełnej rezerwacji.`, recommendation: 'Sprawdź CTA na najczęstszych landing pages i ręcznie przetestuj obie ścieżki na urządzeniu mobilnym.' });
     const missingPublicationDate = pageRows.find(page => page.isPublished === true && page.publicationRecord.publishedAt === null);
     if (missingPublicationDate) actions.push({ priority: 10, kind: 'publication_history', title: `Uzupełnij historyczną datę publikacji: ${missingPublicationDate.path}`, evidence: 'Strona była opublikowana przed uruchomieniem trwałego rejestru V3, dlatego data pozostaje nieznana.', recommendation: 'Uzupełnij datę tylko na podstawie wiarygodnego źródła; nie używaj updatedAt jako daty publikacji.' });
 
@@ -393,8 +443,56 @@ export async function GET(request: NextRequest) {
       sources: {
         analytics: { status: events.length ? 'connected' : 'no_data', events: events.length, lastEventAt: events.at(-1)?.created_at.toISOString() || null, unknownHostSessions: unknownHostSessions.size, hostNote: 'Starsze zdarzenia bez serwerowego site_host pozostają unknown i nie są przypisywane do domeny.' },
         gsc: { status: gsc.status, comparisonStatus: gsc.comparisonStatus, checkedAt: gsc.checkedAt, latestCompleteDate: gsc.latestCompleteDate, incompleteDays: gsc.incompleteDays, sites: gsc.sites, message: gsc.message },
-        finance: { status: 'connected_unattributed', canonicalBookings: canonicalBookings.length, note: 'Suma kanoniczna jest wiarygodna, ale bezpieczne przypisanie do podstrony nie jest obecnie możliwe.' },
+        finance: {
+          status: attributedCanonicalBookings === successfulBookings.length ? 'connected_attributed' : 'connected_partially_attributed',
+          bookingAttempts: canonicalBookingAttempts.length,
+          successfulBookings: successfulBookings.length,
+          canonicalBookings: successfulBookings.length,
+          attributedBookings: attributedCanonicalBookings,
+          note: `${attributedCanonicalBookings} z ${successfulBookings.length} skutecznych zleceń ma bezpieczne przypisanie do landingu lub sesji. Próby/oczekujące: ${canonicalBookingAttempts.length}.`,
+        },
+        photoSales: {
+          status: attributedCanonicalInquiries === canonicalPhotoInquiries.length ? 'connected_attributed' : 'connected_partially_attributed',
+          canonicalInquiries: canonicalPhotoInquiries.length,
+          attributedInquiries: attributedCanonicalInquiries,
+          note: `${attributedCanonicalInquiries} z ${canonicalPhotoInquiries.length} zapytań foto ma bezpieczne przypisanie do landingu lub sesji.`,
+        },
         aeroSales: { status: 'connected_unattributed', canonicalInquiries: canonicalAeroInquiries.length, note: 'Zapytania Aero są liczone z bazy niezależnie od zgody analitycznej. Nie są przypisywane do sesji.' },
+      },
+      photo: {
+        overview: {
+          sessions: photoSessionIds.size,
+          pageViews: photoEvents.filter(event => event.event_type === 'v2_page_view').length,
+          engagedSessions: photoEngagedSessions,
+          ctaSessions: photoCtaSessions,
+          inquiryStartSessions: photoInquiryStarts,
+          clientInquirySubmissions: photoInquirySubmissions,
+          bookingStartSessions: photoBookingStarts,
+          checkoutSubmitSessions: photoCheckoutSubmissions,
+          paymentStartSessions: photoPaymentStarts,
+          canonicalInquiries: canonicalPhotoInquiries.length,
+          bookingAttempts: canonicalBookingAttempts.length,
+          successfulBookings: successfulBookings.length,
+        },
+        entryFunnel: [
+          { key: 'photo_sessions', label: 'Sesje foto', value: photoSessionIds.size },
+          { key: 'photo_engaged', label: 'Zaangażowane', value: photoEngagedSessions },
+          { key: 'photo_cta', label: 'Kliknięcia CTA', value: photoCtaSessions },
+        ],
+        branches: {
+          inquiry: [
+            { key: 'photo_inquiry_start', label: 'Start zapytania', value: photoInquiryStarts },
+            { key: 'photo_inquiry_submit', label: 'Wysłanie zapytania', value: photoInquirySubmissions, note: 'Sygnał po zgodzie analitycznej.' },
+            { key: 'photo_canonical_inquiry', label: 'Zapytania zapisane', value: canonicalPhotoInquiries.length, note: 'Kanoniczna liczba z CRM, również bez zgody analitycznej.' },
+          ],
+          booking: [
+            { key: 'photo_booking_start', label: 'Start pełnej rezerwacji', value: photoBookingStarts },
+            { key: 'photo_checkout_submit', label: 'Wysłanie checkoutu', value: photoCheckoutSubmissions, note: 'Sygnał po zgodzie analitycznej.' },
+            { key: 'photo_payment_start', label: 'Start płatności PayU', value: photoPaymentStarts, note: 'Tylko po utworzeniu zamówienia i przekierowaniu do PayU.' },
+            { key: 'photo_booking_attempt', label: 'Próby zapisane', value: canonicalBookingAttempts.length, note: 'Wszystkie rekordy Booking, także pending.' },
+            { key: 'photo_booking_success', label: 'Skuteczne zlecenia', value: successfulBookings.length, note: 'Tylko confirmed, paid, completed lub deposit_paid.' },
+          ],
+        },
       },
       aero: {
         overview: {
@@ -417,8 +515,15 @@ export async function GET(request: NextRequest) {
       },
       overview: {
         users: userIds.size, sessions: sessionIds.size, pageViews, engagedSessions, ctaSessions,
-        bookingStartSessions, clientEventConversions: conversionSessions,
-        canonicalBookings: canonicalBookings.length, canonicalBookingValue: canonicalBookings.reduce((sum, item) => sum + (item.price || 0), 0) / 100,
+        bookingStartSessions, salesIntentStartSessions, clientEventConversions: conversionSessions,
+        canonicalPhotoInquiries: canonicalPhotoInquiries.length,
+        bookingAttempts: canonicalBookingAttempts.length,
+        successfulBookings: successfulBookings.length,
+        currentMonthSuccessfulBookings,
+        currentMonthBookingTarget: 4,
+        currentMonth: currentMonthRange.month,
+        canonicalBookings: successfulBookings.length,
+        canonicalBookingValue: successfulBookings.reduce((sum, item) => sum + (item.price || 0), 0) / 100,
         gscImpressions: totalGsc(gsc.current), gscClicks: gsc.current.reduce((sum, row) => sum + row.clicks, 0),
         dataStatus: trafficSampleStatus(sessionIds.size),
         dataStatusNote: trafficSampleStatus(sessionIds.size) === 'small_sample' ? 'Za mała próba do oceny konwersji: potrzeba co najmniej 10 sesji.' : trafficSampleStatus(sessionIds.size) === 'no_data' ? 'Brak sesji w wybranym okresie.' : 'Próba wystarczająca do podstawowej oceny lejka.',
@@ -428,9 +533,9 @@ export async function GET(request: NextRequest) {
         { key: 'sessions', label: 'Sesje', value: sessionIds.size },
         { key: 'engaged', label: 'Zaangażowane', value: engagedSessions },
         { key: 'cta', label: 'Kliknięcia CTA', value: ctaSessions },
-        { key: 'booking_start', label: 'Start rezerwacji', value: bookingStartSessions },
+        { key: 'sales_intent_start', label: 'Start kontaktu lub rezerwacji', value: salesIntentStartSessions },
         { key: 'client_conversion', label: 'Konwersje klienta', value: conversionSessions, note: 'Sygnał zdarzeniowy; nie zastępuje danych kanonicznych.' },
-        { key: 'canonical', label: 'Rezerwacje kanoniczne', value: canonicalBookings.length, note: 'Bez przypisania do sesji/podstrony.' },
+        { key: 'canonical', label: 'Zapytania i skuteczne zlecenia', value: canonicalPhotoInquiries.length + successfulBookings.length, note: 'Dwa równoległe wyniki kanoniczne; nie są jednym kolejnym etapem.' },
       ],
       actions: prioritizeDirectorActions(actions),
       diagnostics,
@@ -451,8 +556,8 @@ export async function GET(request: NextRequest) {
         sessionId, startedAt: items[0]?.created_at, landingPage: normalizePath(items.find(event => event.event_type === 'v2_page_view')?.page_url),
         siteHost: safeAnalyticsSiteHost(items.find(event => event.event_type === 'v2_page_view')?.metadata.site_host),
         pageViews: items.filter(event => event.event_type === 'v2_page_view').length,
-        bookingStarted: items.some(isBookingStart), clientConversion: items.some(isClientConversion),
-        path: items.filter(event => ['v2_page_view', 'v2_click', 'v2_booking_start', 'v2_booking_form_started', 'v2_booking_created', 'v2_payment_success', 'v2_drone_booking_started', 'v2_drone_booking_submitted', 'v2_aero_inquiry_started', 'v2_aero_inquiry_submitted'].includes(event.event_type)).map(event => ({ at: event.created_at, event: event.event_type.replace(/^v2_/, ''), page: normalizePath(event.page_url) })).slice(0, 80),
+        bookingStarted: items.some(isSalesIntentStart), clientConversion: items.some(isClientConversion),
+        path: items.filter(event => ['v2_page_view', 'v2_click', 'v2_booking_start', 'v2_booking_form_started', 'v2_booking_created', 'v2_payment_success', 'v2_drone_booking_started', 'v2_drone_booking_submitted', 'v2_photo_inquiry_started', 'v2_photo_inquiry_submitted', 'v2_aero_inquiry_started', 'v2_aero_inquiry_submitted'].includes(event.event_type)).map(event => ({ at: event.created_at, event: event.event_type.replace(/^v2_/, ''), page: normalizePath(event.page_url) })).slice(0, 80),
       })),
       dataQuality: { syntheticValues: false, unavailableSources: Array.from(new Set(unavailableSources)), privacy: 'Zapytania GSC są dostępne wyłącznie w chronionym panelu administratora; Google może pomijać rzadkie zapytania.', gscFreshness: gsc.message },
     });

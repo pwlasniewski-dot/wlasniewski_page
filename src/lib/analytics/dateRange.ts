@@ -51,3 +51,13 @@ export function warsawDateKey(date: Date) {
   const parts = partsAt(date);
   return `${String(parts.year).padStart(4, '0')}-${String(parts.month).padStart(2, '0')}-${String(parts.day).padStart(2, '0')}`;
 }
+
+export function warsawCalendarMonthRange(date: Date) {
+  const [year, month] = warsawDateKey(date).split('-').map(Number);
+  const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+  const nextMonthDate = new Date(Date.UTC(year, month, 1)).toISOString().slice(0, 10);
+  const start = warsawMidnight(startDate);
+  const end = warsawMidnight(nextMonthDate);
+  if (!start || !end) throw new Error('Nie udało się wyznaczyć granic bieżącego miesiąca.');
+  return { start, end, month: startDate.slice(0, 7) };
+}

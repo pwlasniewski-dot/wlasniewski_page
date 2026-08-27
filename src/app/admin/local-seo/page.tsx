@@ -10,6 +10,7 @@ async function getData() {
             setting_key: {
                 in: [
                     'google_place_id',
+                    'gbp_review_link',
                     'gbp_profile_url',
                     'gbp_categories',
                     'gbp_last_post_at',

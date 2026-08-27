@@ -3,10 +3,12 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import CityPhotoStory, { type CityStoryPhoto } from '@/components/CityPhotoStory';
+import CityLeadSection from '@/components/CityLeadSection';
 import ParallaxSection from '@/components/ParallaxSection';
 import type { PageSection } from '@/components/admin/PageBuilder';
 import { getPortfolioCategories } from '@/lib/portfolio';
-import { loadPublicMinimumPrices, publicPriceLabel } from '@/lib/publicPackagePricing';
+import { loadPhotoFunnelConfig } from '@/lib/marketing/photo-funnel.server';
+import { loadPublicMinimumPrices, publicPriceLabel, type PublicMinimumPricesInCents } from '@/lib/publicPackagePricing';
 
 // ─── City Data with FAQs ─────────────────────────────────────────
 interface CityInfo {
@@ -34,7 +36,7 @@ const CITIES: Record<string, CityInfo> = {
         region: 'kujawsko-pomorskie',
         h1: 'Fotograf w Toruniu — sesje rodzinne i śluby',
         metaTitle: 'Fotograf Toruń | Sesje rodzinne i śluby — Właśniewski',
-        metaDescription: 'Fotograf w Toruniu. Sesje rodzinne od 750 zł, fotografia ślubna od 1900 zł. Zobacz pakiety i sprawdź wolny termin online.',
+        metaDescription: 'Fotograf w Toruniu. Sesje rodzinne i fotografia ślubna. Zobacz aktualne pakiety i sprawdź wolny termin online.',
         keywords: ['fotograf toruń', 'fotografia wizerunkowa toruń', 'fotograf portretowy toruń', 'fotograf toruń starówka', 'profesjonalna fotografia toruń', 'fotograf ślubny toruń', 'fotografia ślubna toruń', 'sesja zdjęciowa toruń', 'fotografia biznesowa toruń', 'sesja narzeczeńska toruń', 'sesja rodzinna toruń', 'plener ślubny toruń', 'zdjęcia biznesowe toruń', 'sesja w mieście toruń', 'fotograf bulwar filadelfijski'],
         heroImage: '/assets/portfolio/family/sesja-rodzinna-torun-plener-07.webp',
         lat: 53.0138,
@@ -95,7 +97,7 @@ const CITIES: Record<string, CityInfo> = {
         region: 'kujawsko-pomorskie',
         h1: 'Fotograf w Grudziądzu — sesje rodzinne i śluby',
         metaTitle: 'Fotograf Grudziądz – sesje rodzinne i śluby | Ceny',
-        metaDescription: 'Sesje rodzinne od 750 zł i fotografia ślubna od 1900 zł w Grudziądzu. Zobacz zakres, wybierz pakiet i sprawdź wolny termin online.',
+        metaDescription: 'Sesje rodzinne i fotografia ślubna w Grudziądzu. Zobacz aktualny zakres, wybierz pakiet i sprawdź wolny termin online.',
         keywords: ['fotograf grudziądz', 'fotograf ślubny grudziądz', 'sesja rodzinna grudziądz', 'fotografia portretowa grudziądz', 'zdjęcia plenerowe grudziądz', 'sesja narzeczeńska grudziądz'],
         heroImage: '/assets/portfolio/family/sesja-rodzinna-torun-plener-07.webp',
         lat: 53.4837,
@@ -156,7 +158,7 @@ const CITIES: Record<string, CityInfo> = {
         region: 'kujawsko-pomorskie',
         h1: 'Fotograf w Chełmnie — sesje rodzinne i śluby',
         metaTitle: 'Fotograf Chełmno – sesje rodzinne i śluby | Ceny',
-        metaDescription: 'Sesje rodzinne od 750 zł i fotografia ślubna od 1900 zł w Chełmnie. Zobacz zakres, wybierz pakiet i sprawdź wolny termin online.',
+        metaDescription: 'Sesje rodzinne i fotografia ślubna w Chełmnie. Zobacz aktualny zakres, wybierz pakiet i sprawdź wolny termin online.',
         keywords: ['fotograf chełmno', 'fotograf ślubny chełmno', 'sesja narzeczeńska chełmno', 'sesja rodzinna chełmno', 'miasto zakochanych zdjęcia', 'fotografia chełmno'],
         heroImage: '/assets/portfolio/family/sesja-rodzinna-torun-plener-07.webp',
         lat: 53.3490,
@@ -216,7 +218,7 @@ const CITIES: Record<string, CityInfo> = {
         region: 'kujawsko-pomorskie',
         h1: 'Fotograf w Wąbrzeźnie — sesje rodzinne i śluby',
         metaTitle: 'Fotograf Wąbrzeźno – sesje rodzinne i śluby | Ceny',
-        metaDescription: 'Sesje rodzinne od 750 zł i fotografia ślubna od 1900 zł w Wąbrzeźnie. Zobacz zakres, wybierz pakiet i sprawdź wolny termin online.',
+        metaDescription: 'Sesje rodzinne i fotografia ślubna w Wąbrzeźnie. Zobacz aktualny zakres, wybierz pakiet i sprawdź wolny termin online.',
         keywords: ['fotograf wąbrzeźno', 'fotograf wabrzeźno', 'sesja rodzinna wąbrzeźno', 'fotografia ślubna wąbrzeźno', 'sesja narzeczeńska wąbrzeźno', 'zdjęcia wąbrzeźno'],
         heroImage: '/assets/portfolio/family/sesja-rodzinna-torun-plener-07.webp',
         lat: 53.2860,
@@ -367,7 +369,7 @@ const CITIES: Record<string, CityInfo> = {
         region: 'kujawsko-pomorskie',
         h1: 'Fotograf w Świeciu — sesje rodzinne i śluby',
         metaTitle: 'Fotograf Świecie – sesje rodzinne i śluby | Ceny',
-        metaDescription: 'Sesje rodzinne od 750 zł i fotografia ślubna od 1900 zł w Świeciu. Zobacz zakres, wybierz pakiet i sprawdź wolny termin online.',
+        metaDescription: 'Sesje rodzinne i fotografia ślubna w Świeciu. Zobacz aktualny zakres, wybierz pakiet i sprawdź wolny termin online.',
         keywords: ['fotograf świecie', 'sesja rodzinna świecie', 'fotografia ślubna świecie', 'zdjęcia świecie', 'fotograf świecie nad wisłą'],
         heroImage: '/assets/portfolio/family/sesja-rodzinna-torun-plener-07.webp',
         lat: 53.4100,
@@ -455,6 +457,18 @@ const CITIES: Record<string, CityInfo> = {
     },
 };
 
+const DYNAMIC_PRICE_META_CITIES = new Set(['torun', 'grudziadz', 'chelmno', 'wabrzezno', 'swiecie']);
+
+function cityMetaDescription(key: string, data: CityInfo, prices: PublicMinimumPricesInCents) {
+    if (!DYNAMIC_PRICE_META_CITIES.has(key) || (!prices.Sesja && !prices['Ślub'])) return data.metaDescription;
+    return `Fotograf ${data.city}. Sesje rodzinne: ${publicPriceLabel(prices, 'Sesja')}; fotografia ślubna: ${publicPriceLabel(prices, 'Ślub')}. Zobacz pakiety i terminy online.`;
+}
+
+function configuredBookingCta(config: Awaited<ReturnType<typeof loadPhotoFunnelConfig>>, service: 'Sesja' | 'Ślub') {
+    const serviceLabel = config.serviceOptions.find(option => option.value === service)?.label || service;
+    return `${serviceLabel} — ${config.copy.packageBookingCtaLabel}`;
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────
 
 function getCityKey(slug: string): string | null {
@@ -491,19 +505,19 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     const key = getCityKey(citySlug);
     if (!key) return { title: 'Strona nie znaleziona' };
     const data = CITIES[key];
-
-
+    const publicMinimumPrices = DYNAMIC_PRICE_META_CITIES.has(key) ? await loadPublicMinimumPrices() : {};
+    const metaDescription = cityMetaDescription(key, data, publicMinimumPrices);
 
     return {
         title: data.metaTitle,
-        description: data.metaDescription,
+        description: metaDescription,
         keywords: data.keywords,
         alternates: {
             canonical: `https://wlasniewski.pl/${data.slug}`,
         },
         openGraph: {
             title: data.metaTitle,
-            description: data.metaDescription,
+            description: metaDescription,
             type: 'website',
             locale: 'pl_PL',
             url: `https://wlasniewski.pl/${data.slug}`,
@@ -513,7 +527,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         twitter: {
             card: 'summary_large_image',
             title: data.metaTitle,
-            description: data.metaDescription,
+            description: metaDescription,
             images: [data.heroImage],
         },
     };
@@ -614,7 +628,10 @@ export default async function CityLandingPage({ params, sections = [] }: PagePro
     const key = getCityKey(citySlug);
     if (!key) notFound();
     const data = CITIES[key];
-    const publicMinimumPrices = await loadPublicMinimumPrices();
+    const [publicMinimumPrices, photoFunnelConfig] = await Promise.all([
+        loadPublicMinimumPrices(),
+        loadPhotoFunnelConfig(),
+    ]);
 
     let cityGalleryImages: CityStoryPhoto[] = [];
     try {
@@ -749,7 +766,7 @@ export default async function CityLandingPage({ params, sections = [] }: PagePro
         '@id': `https://wlasniewski.pl/${data.slug}#service`,
         name: `Usługi fotograficzne — ${data.city}`,
         serviceType: 'Fotografia rodzinna, ślubna i portretowa',
-        description: data.metaDescription,
+        description: cityMetaDescription(key, data, publicMinimumPrices),
         image: heroPhoto.startsWith('http') ? heroPhoto : `https://wlasniewski.pl${heroPhoto}`,
         url: `https://wlasniewski.pl/${data.slug}`,
         provider: { '@id': 'https://wlasniewski.pl/#business' },
@@ -813,16 +830,27 @@ export default async function CityLandingPage({ params, sections = [] }: PagePro
                             <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center">
                                 <Link
                                     href={`/rezerwacja?source=city&city=${encodeURIComponent(data.city)}&service=Sesja`}
+                                    data-analytics="photo-cta-booking-city-family-hero"
                                     className="inline-flex items-center justify-center rounded-full bg-[#292622] px-7 py-3.5 text-sm font-semibold text-white transition hover:bg-[#11100f]"
                                 >
-                                    Sesja rodzinna — pakiety
+                                    {configuredBookingCta(photoFunnelConfig, 'Sesja')}
                                 </Link>
                                 <Link
                                     href={`/rezerwacja?source=city&city=${encodeURIComponent(data.city)}&service=Ślub`}
+                                    data-analytics="photo-cta-booking-city-wedding-hero"
                                     className="inline-flex items-center justify-center rounded-full border border-[#a9a095] px-7 py-3.5 text-sm font-semibold text-[#292622] transition hover:border-[#292622]"
                                 >
-                                    Ślub — pakiety
+                                    {configuredBookingCta(photoFunnelConfig, 'Ślub')}
                                 </Link>
+                                {photoFunnelConfig.display.showHeroInquiryCta && photoFunnelConfig.display.cityModuleEnabled && (
+                                    <Link
+                                        href={`?source=city-hero-inquiry&service=Sesja#szybki-kontakt`}
+                                        data-analytics="photo-cta-inquiry-city-hero"
+                                        className="inline-flex items-center justify-center rounded-full border border-[#a9a095] px-7 py-3.5 text-center text-sm font-semibold text-[#292622] transition hover:border-[#292622]"
+                                    >
+                                        {photoFunnelConfig.copy.inquiryCtaLabel}
+                                    </Link>
+                                )}
                             </div>
                             <div className="mt-10 grid grid-cols-3 gap-4 border-t border-[#cfc7bd] pt-6 text-xs leading-relaxed text-[#6e675f]">
                                 <span>Spokojne prowadzenie</span>
@@ -940,6 +968,16 @@ export default async function CityLandingPage({ params, sections = [] }: PagePro
                 </div>
             </section>
 
+            {photoFunnelConfig.display.cityModuleEnabled && photoFunnelConfig.display.cityPosition === 'before_faq' && (
+                <CityLeadSection
+                    city={data.city}
+                    citySlug={data.slug.replace('fotograf-', '')}
+                    initialService="Sesja"
+                    source="city-soft-inquiry"
+                    funnelConfig={photoFunnelConfig}
+                />
+            )}
+
             <section className="border-y border-[#d9d2c8] bg-white/55 px-6 py-20 sm:px-10 lg:py-28">
                 <div className="mx-auto max-w-4xl">
                     <p className="text-center text-xs font-semibold uppercase tracking-[0.28em] text-[#8d7f6d]">Przed rezerwacją</p>
@@ -958,6 +996,16 @@ export default async function CityLandingPage({ params, sections = [] }: PagePro
                 </div>
             </section>
 
+            {photoFunnelConfig.display.cityModuleEnabled && photoFunnelConfig.display.cityPosition === 'before_closing' && (
+                <CityLeadSection
+                    city={data.city}
+                    citySlug={data.slug.replace('fotograf-', '')}
+                    initialService="Sesja"
+                    source="city-soft-inquiry"
+                    funnelConfig={photoFunnelConfig}
+                />
+            )}
+
             <section className="bg-[#26231f] px-6 py-20 text-[#f7f4ef] sm:px-10 lg:py-28">
                 <div className="mx-auto max-w-5xl text-center">
                     <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#c4b8a8]">Następny krok</p>
@@ -968,17 +1016,28 @@ export default async function CityLandingPage({ params, sections = [] }: PagePro
                         Jeśli przed wyborem chcecie o coś zapytać, zadzwońcie albo napiszcie. Odpowiem konkretnie i pomogę dobrać zakres.
                     </p>
                     <div className="mt-10 flex flex-col justify-center gap-3 sm:flex-row">
+                        {photoFunnelConfig.display.showClosingInquiryCta && photoFunnelConfig.display.cityModuleEnabled && (
+                            <Link
+                                href={`?source=city-end-inquiry&service=Sesja#szybki-kontakt`}
+                                data-analytics="photo-cta-inquiry-city-closing"
+                                className="rounded-full bg-[#eee8de] px-8 py-4 text-sm font-semibold text-[#26231f] transition hover:bg-white"
+                            >
+                                {photoFunnelConfig.copy.inquiryCtaLabel}
+                            </Link>
+                        )}
                         <Link
                             href={`/rezerwacja?source=city-end&city=${encodeURIComponent(data.city)}&service=Sesja`}
-                            className="rounded-full bg-[#eee8de] px-8 py-4 text-sm font-semibold text-[#26231f] transition hover:bg-white"
+                            data-analytics="photo-cta-booking-city-family-closing"
+                            className="rounded-full border border-white/30 px-8 py-4 text-sm font-semibold text-white transition hover:border-white/70"
                         >
-                            Sesja rodzinna — terminy
+                            {configuredBookingCta(photoFunnelConfig, 'Sesja')}
                         </Link>
                         <Link
                             href={`/rezerwacja?source=city-end&city=${encodeURIComponent(data.city)}&service=Ślub`}
+                            data-analytics="photo-cta-booking-city-wedding-closing"
                             className="rounded-full border border-white/30 px-8 py-4 text-sm font-semibold text-white transition hover:border-white/70"
                         >
-                            Ślub — terminy
+                            {configuredBookingCta(photoFunnelConfig, 'Ślub')}
                         </Link>
                     </div>
                     <div className="mt-8 flex flex-wrap justify-center gap-x-5 gap-y-2 text-sm text-[#cfc8bf]">

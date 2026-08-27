@@ -33,6 +33,11 @@
 [functions."daily-analytics-report"]
   schedule = "0 6,7 * * *"
 
+# Verify expired PayU orders before releasing booking slots. Age alone never
+# releases a slot, which prevents a late COMPLETED webhook from double-booking.
+[functions."cleanup-booking-payment-holds"]
+  schedule = "*/15 * * * *"
+
 # Cache headers for static assets
 [[headers]]
   for = "/_next/static/*"

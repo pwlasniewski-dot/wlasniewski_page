@@ -2,36 +2,18 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from '@/lib/db/prisma';
 import { sendGiftCardAccessEmail } from "@/lib/email/giftCardAccess";
 import { logSystem } from '@/lib/logger';
+import { verifyPayUNotificationSignature } from '@/lib/payments/payuNotification';
 
 export async function POST(request: NextRequest) {
     console.log('[PayU NOTIFY] Webhook triggered');
     try {
         const bodyText = await request.text();
-        const body = JSON.parse(bodyText);
-
-        // PayU sends: { order: { orderId, extOrderId, orderCreateDate, notifyUrl, customerIp, merchantPosId, description, currencyCode, totalAmount, buyer, products, status, payMethod } }
-        const order = body.order;
-
-        if (!order) {
-            return NextResponse.json({ error: "Invalid notification" }, { status: 400 });
-        }
-
         // --- Signature Verification Start ---
         const signatureHeader = request.headers.get('OpenPayu-Signature');
         if (!signatureHeader) {
             console.error('❌ [PayU] Missing OpenPayu-Signature header');
             return NextResponse.json({ error: "Missing signature" }, { status: 401 });
         }
-
-        // Parse signature header: signature=...,algorithm=MD5,sender=...
-        const signatureParts = signatureHeader.split(';').reduce((acc: any, part) => {
-            const [key, value] = part.split('=');
-            acc[key] = value;
-            return acc;
-        }, {});
-
-        const signature = signatureParts.signature;
-        const algorithm = signatureParts.algorithm || 'MD5';
 
         // Get MD5 Key from DB. Use deterministic order — multiple Setting rows
         // may exist (legacy schema); pick the row that actually has the key set.
@@ -47,19 +29,25 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
         }
 
-        // Verify Signature
-        const { createHash } = await import('crypto');
-        const concatenated = bodyText + md5Key;
-        const expectedSignature = createHash(algorithm.toLowerCase()).update(concatenated).digest('hex');
-
-        if (expectedSignature !== signature) {
+        if (!verifyPayUNotificationSignature(signatureHeader, bodyText, md5Key)) {
             console.error(`❌ [PayU] Signature Verification Failed!`);
-            console.error(`   Header: ${signatureHeader}`);
-            console.error(`   Computed: ${expectedSignature}`);
             return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
         }
         console.log('✅ [PayU] Signature Verified');
         // --- Signature Verification End ---
+
+        let body: any;
+        try {
+            body = JSON.parse(bodyText);
+        } catch {
+            return NextResponse.json({ error: "Invalid notification" }, { status: 400 });
+        }
+
+        // PayU sends: { order: { orderId, extOrderId, orderCreateDate, notifyUrl, customerIp, merchantPosId, description, currencyCode, totalAmount, buyer, products, status, payMethod } }
+        const order = body.order;
+        if (!order) {
+            return NextResponse.json({ error: "Invalid notification" }, { status: 400 });
+        }
 
         const { extOrderId, orderId, status } = order;
 
@@ -71,7 +59,7 @@ export async function POST(request: NextRequest) {
                 level: "INFO",
                 module: "PAYMENT",
                 message: `PayU Notify: ${status} `,
-                metadata: JSON.stringify({ extOrderId, orderId, status, fullBody: body })
+                metadata: JSON.stringify({ extOrderId, orderId, status })
             }
         });
 
@@ -116,53 +104,87 @@ export async function POST(request: NextRequest) {
                     where: { stripe_session_id: cartId }
                 });
 
-                for (const booking of bookings) {
-                    const isSplit = booking.payment_plan === 'SPLIT';
-                    const isDepositPayment = isSplit && booking.deposit_session_id === cartId && !booking.deposit_paid_at;
-                    const isRemainingPayment = isSplit && booking.remaining_session_id === cartId && !booking.remaining_paid_at;
+                for (const initialBooking of bookings) {
+                    // PayU retries notifications. Serialize the state transition so a
+                    // retry cannot increment a promo limit or send an email twice.
+                    const transition = await prisma.$transaction(async tx => {
+                        await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${`payu-booking:${initialBooking.id}:${cartId}`}))`;
+                        const booking = await tx.booking.findUnique({ where: { id: initialBooking.id } });
+                        if (!booking) return null;
 
-                    let updateData: any;
-                    if (isRemainingPayment) {
-                        updateData = {
-                            status: 'confirmed',
-                            remaining_paid_at: new Date(),
-                            payu_order_id: orderId,
-                            notes: `${booking.notes || ''}\n[PayU] Dopłata zaksięgowana (${cartId}, PayU: ${orderId})`.trim(),
-                        };
-                    } else if (isDepositPayment) {
-                        updateData = {
-                            status: 'deposit_paid',
-                            deposit_paid_at: new Date(),
-                            payu_order_id: orderId,
-                            notes: `${booking.notes || ''}\n[PayU] Zaliczka zaksięgowana (${cartId}, PayU: ${orderId})`.trim(),
-                        };
-                    } else {
-                        // FULL payment (or fallback)
-                        updateData = {
-                            status: 'confirmed',
-                            payu_order_id: orderId,
-                            notes: `Paid via PayU (Cart: ${cartId}, PayU: ${orderId})`,
-                        };
-                    }
+                        const isSplit = booking.payment_plan === 'SPLIT';
+                        const isDepositPayment = isSplit && booking.deposit_session_id === cartId;
+                        const isRemainingPayment = isSplit && booking.remaining_session_id === cartId;
+                        let emailKind: 'confirmation' | 'deposit';
+                        let updateData: any;
+                        let countPromoUse = false;
 
-                    await prisma.booking.update({
-                        where: { id: booking.id },
-                        data: updateData,
+                        if (isRemainingPayment) {
+                            if (booking.remaining_paid_at) return null;
+                            updateData = {
+                                status: 'confirmed',
+                                remaining_paid_at: new Date(),
+                                payu_order_id: orderId,
+                                notes: `${booking.notes || ''}\n[PayU] Dopłata zaksięgowana (${cartId}, PayU: ${orderId})`.trim(),
+                            };
+                            emailKind = 'confirmation';
+                        } else if (isDepositPayment) {
+                            if (booking.deposit_paid_at) return null;
+                            updateData = {
+                                status: 'deposit_paid',
+                                deposit_paid_at: new Date(),
+                                payu_order_id: orderId,
+                                notes: `${booking.notes || ''}\n[PayU] Zaliczka zaksięgowana (${cartId}, PayU: ${orderId})`.trim(),
+                            };
+                            emailKind = 'deposit';
+                            countPromoUse = true;
+                        } else if (!isSplit) {
+                            if (booking.status !== 'pending') return null;
+                            updateData = {
+                                status: 'confirmed',
+                                payu_order_id: orderId,
+                                notes: `Paid via PayU (Cart: ${cartId}, PayU: ${orderId})`,
+                            };
+                            emailKind = 'confirmation';
+                            countPromoUse = true;
+                        } else {
+                            return null;
+                        }
+
+                        if (countPromoUse && booking.promo_code) {
+                            const promoCode = booking.promo_code.trim().toUpperCase();
+                            await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${`promo-code:${promoCode}`}))`;
+                            const promo = await tx.promoCode.findFirst({
+                                where: { code: { equals: promoCode, mode: 'insensitive' } },
+                            });
+                            if (promo) {
+                                await tx.promoCode.update({
+                                    where: { id: promo.id },
+                                    data: { usage_count: { increment: 1 } },
+                                });
+                            }
+                        }
+
+                        const updated = await tx.booking.update({
+                            where: { id: booking.id },
+                            data: updateData,
+                        });
+                        return { booking: updated, emailKind };
                     });
-                    console.log(`[PayU] Booking #${booking.id} → ${updateData.status} from Cart`);
 
-                    // Trigger Confirmation Email (only for non-deposit-only payments)
-                    if (!isDepositPayment) {
+                    if (!transition) continue;
+                    const booking = transition.booking;
+                    console.log(`[PayU] Booking #${booking.id} → ${booking.status} from Cart`);
+
+                    if (transition.emailKind === 'confirmation') {
                         try {
                             const { sendBookingConfirmationEmail } = await import('@/lib/email/booking');
-                            const refreshed = await prisma.booking.findUnique({ where: { id: booking.id } });
-                            if (refreshed) await sendBookingConfirmationEmail(refreshed);
+                            await sendBookingConfirmationEmail(booking);
                             console.log(`[PayU] Email dispatched for booking #${booking.id}`);
                         } catch (e) {
                             console.error(`[PayU] Failed to send email for booking #${booking.id}`, e);
                         }
                     } else {
-                        // Deposit-paid email (lightweight)
                         try {
                             const { sendEmail } = await import('@/lib/email/sender');
                             await sendEmail({
@@ -183,6 +205,23 @@ export async function POST(request: NextRequest) {
                     }
                 }
 
+                // Benefity są zużywane dopiero po potwierdzeniu płatności. Rezerwacja
+                // oczekująca pełni wcześniej rolę krótkiej, 30-minutowej rezerwacji kodu.
+                const giftCardCodes = Array.from(new Set(bookings.map(booking => booking.gift_card_code).filter((code): code is string => Boolean(code))));
+                for (const code of giftCardCodes) {
+                    await prisma.giftCard.updateMany({
+                        where: { code: { equals: code, mode: 'insensitive' }, is_active: true, redeemed_at: null },
+                        data: { is_active: false, redeemed_at: new Date() },
+                    });
+                }
+                const referralVoucherCodes = Array.from(new Set(bookings.map(booking => booking.fm_voucher_code).filter((code): code is string => Boolean(code))));
+                for (const code of referralVoucherCodes) {
+                    await prisma.fotoMatchReferral.updateMany({
+                        where: { reward_voucher_code: code, reward_redeemed_at: null },
+                        data: { reward_redeemed_at: new Date(), reward_redeemed_for: `CART:${cartId}`.slice(0, 40) },
+                    });
+                }
+
                 // 2. Process Gift Cards (Iterate IDs to reuse single-item logic loop below or handle here)
                 // For simplicity/robustness, we'll handle activation here directly.
                 const giftCardOrders = await prisma.giftCardOrder.findMany({
@@ -190,15 +229,19 @@ export async function POST(request: NextRequest) {
                     include: { gift_card: true }
                 });
 
-                for (const giftCardOrder of giftCardOrders) {
-                    const resourceId = giftCardOrder.id; // Local scope ID for logging/logic
+                for (const initialGiftCardOrder of giftCardOrders) {
+                    const provisioned = await prisma.$transaction(async tx => {
+                        await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${`payu-gift-order:${initialGiftCardOrder.id}:${cartId}`}))`;
+                        const giftCardOrder = await tx.giftCardOrder.findUnique({
+                            where: { id: initialGiftCardOrder.id },
+                            include: { gift_card: true },
+                        });
+                        if (!giftCardOrder?.gift_card || giftCardOrder.payment_status === 'completed') return null;
 
-                    if (giftCardOrder.gift_card) {
                         const { generateGiftCardCode } = await import('@/lib/gift-cards');
-                        const uniqueCode = generateGiftCardCode();
-                        const newCard = await prisma.giftCard.create({
+                        const newCard = await tx.giftCard.create({
                             data: {
-                                code: uniqueCode,
+                                code: generateGiftCardCode(),
                                 amount: giftCardOrder.gift_card.amount,
                                 value: giftCardOrder.gift_card.value,
                                 theme: giftCardOrder.gift_card.theme || 'christmas',
@@ -210,55 +253,54 @@ export async function POST(request: NextRequest) {
                                 sender_name: giftCardOrder.sender_name,
                                 message: giftCardOrder.message,
                                 status: 'active',
-                                owner_id: giftCardOrder.user_id
-                            }
-                        });
-
-                        await prisma.giftCardOrder.update({
-                            where: { id: resourceId },
-                            data: {
-                                payment_status: 'completed',
-                                paid_at: new Date(),
-                                gift_card_id: newCard.id
+                                owner_id: giftCardOrder.user_id,
                             },
                         });
 
-                        // Refetch for email
-                        const updatedOrder = await prisma.giftCardOrder.findUnique({
-                            where: { id: resourceId },
-                            include: { gift_card: true }
+                        const updatedOrder = await tx.giftCardOrder.update({
+                            where: { id: giftCardOrder.id },
+                            data: {
+                                payment_status: 'completed',
+                                paid_at: new Date(),
+                                gift_card_id: newCard.id,
+                            },
+                            include: { gift_card: true },
                         });
+                        return { updatedOrder, newCard };
+                    });
 
-                        if (updatedOrder && updatedOrder.gift_card) {
-                            // Send Client Email
-                            try {
-                                await sendGiftCardAccessEmail(
-                                    updatedOrder.customer_email,
-                                    updatedOrder.customer_name,
-                                    updatedOrder.gift_card,
-                                    updatedOrder.access_token || 'missing-token',
-                                    updatedOrder.recipient_name || undefined,
-                                    updatedOrder.recipient_email || undefined,
-                                    updatedOrder.sender_name || undefined,
-                                    updatedOrder.message || undefined,
-                                    updatedOrder.id,
-                                    updatedOrder.gift_card.theme || 'christmas'
-                                );
-                            } catch (e) { console.error('Email failed', e); }
+                    if (provisioned) {
+                        const { updatedOrder, newCard } = provisioned;
+                        const deliveredCard = updatedOrder.gift_card;
+                        if (!deliveredCard) continue;
+                        // Send Client Email
+                        try {
+                            await sendGiftCardAccessEmail(
+                                updatedOrder.customer_email,
+                                updatedOrder.customer_name,
+                                deliveredCard,
+                                updatedOrder.access_token || 'missing-token',
+                                updatedOrder.recipient_name || undefined,
+                                updatedOrder.recipient_email || undefined,
+                                updatedOrder.sender_name || undefined,
+                                updatedOrder.message || undefined,
+                                updatedOrder.id,
+                                deliveredCard.theme || 'christmas'
+                            );
+                        } catch (e) { console.error('Email failed', e); }
 
-                            // Send Admin Email (Simplified inline or import logic)
-                            try {
-                                const { getAdminEmail, sendEmail } = await import('@/lib/email/sender');
-                                const adminEmail = await getAdminEmail();
-                                if (adminEmail) {
-                                    await sendEmail({
-                                        to: adminEmail,
-                                        subject: `💰 [CART] Nowa karta podarunkowa #${newCard.code}`,
-                                        html: `<p>Opłacono kartę w zamówieniu koszykowym ${cartId}. Kwota: ${(updatedOrder.amount_paid / 100).toFixed(2)} PLN.</p>`
-                                    });
-                                }
-                            } catch (e) { }
-                        }
+                        // Send Admin Email (Simplified inline or import logic)
+                        try {
+                            const { getAdminEmail, sendEmail } = await import('@/lib/email/sender');
+                            const adminEmail = await getAdminEmail();
+                            if (adminEmail) {
+                                await sendEmail({
+                                    to: adminEmail,
+                                    subject: `💰 [CART] Nowa karta podarunkowa #${newCard.code}`,
+                                    html: `<p>Opłacono kartę w zamówieniu koszykowym ${cartId}. Kwota: ${(updatedOrder.amount_paid / 100).toFixed(2)} PLN.</p>`
+                                });
+                            }
+                        } catch (e) { }
                     }
                 }
                 handled = true;
@@ -854,6 +896,25 @@ export async function POST(request: NextRequest) {
             const parts = extOrderId.split('_');
             const typeOrId = parts[0];
             const resourceId = parts.length > 1 ? parseInt(parts[1]) : NaN;
+
+            if (typeOrId === 'CART') {
+                await prisma.$transaction([
+                    prisma.booking.updateMany({
+                        where: { stripe_session_id: extOrderId, status: 'pending' },
+                        data: {
+                            status: 'cancelled',
+                            cancelled_at: new Date(),
+                            cancelled_by: 'SYSTEM',
+                            cancellation_reason: `Płatność PayU ${status === 'CANCELED' ? 'anulowana' : 'odrzucona'}.`,
+                        },
+                    }),
+                    prisma.giftCardOrder.updateMany({
+                        where: { payu_order_id: extOrderId, payment_status: 'pending' },
+                        data: { payment_status: status === 'CANCELED' ? 'cancelled' : 'rejected' },
+                    }),
+                ]);
+                await logSystem('INFO', 'PAYMENT', `CART ${extOrderId} released after ${status}`, { orderId });
+            }
 
             if (typeOrId === 'CHALLENGE' && !isNaN(resourceId)) {
                 const challenge = await prisma.photoChallenge.findUnique({

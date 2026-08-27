@@ -1,5 +1,21 @@
 # PROJECT_HISTORIA & VADEMECUM STABILNOŚCI
 
+## 2026-08-27 — profesjonalny grafik usług i rezerwacje nocne
+
+- Zastąpiono wspólną, tekstową listę godzin pakietu grafikiem zależnym od rodzaju usługi i dnia tygodnia. Sesje, wydarzenia i dron nie dziedziczą już przypadkowo tych samych godzin.
+- Domyślnie sesje w dni robocze rozpoczynają się od 18:00. Śluby, przyjęcia i urodziny w piątek oraz weekend mogą kończyć się do 02:00 następnego dnia; dron pozostaje w porach dziennych. Każdy dzień można zmienić w `/admin/rezerwacja`.
+- Administrator może zamknąć konkretną datę albo jednorazowo ustawić inne okno i interwał rozpoczęcia. Reguły oraz wyjątki są walidowane i zapisują się przez chroniony endpoint.
+- Klient nie widzi siatki 24 surowych przycisków. Formularz pokazuje jedno pole z wyłącznie wolnymi godzinami rozpoczęcia i jawnym zakończeniem, również po północy.
+- Checkout ponownie liczy czas z długości pakietu i grafiku. Nocne rezerwacje blokują oba dni, sprawdzają konflikty z dniem poprzednim i następnym oraz zapisują offset zakończenia w wersjonowanym snapshotcie.
+- Dodano addytywną migrację `20260827120000_booking_service_availability`. Kod publicznego odczytu ma bezpieczny grafik startowy przed migracją; zapis administracyjny pozostaje zablokowany do jej zastosowania.
+
+## 2026-08-27 — bezpieczny kalendarz podglądu lejka rezerwacji
+
+- Deploy Preview PR #50 ujawnił, że miesięczny endpoint dostępności pobierał pełne rekordy `Booking`. Przed zastosowaniem addytywnej migracji Prisma zapytanie mogło więc odwołać się do nieistniejących jeszcze kolumn i nie zwrócić minimalnej daty rezerwacji.
+- Oba publiczne odczyty dostępności pobierają teraz wyłącznie pola niezbędne do wykrywania konfliktu: datę, status, godziny i blokadę całego dnia. Dzięki temu podgląd działa także w kontrolowanym oknie przed migracją.
+- `BookingCalendar` działa fail-closed: do czasu poprawnej, walidowanej odpowiedzi dni są nieaktywne; awaria API czyści wybór, blokuje kalendarz i udostępnia jawne ponowienie zamiast udawać wolne terminy.
+- Test regresji lejka przechodzi 15/15. PR #50 pozostaje niescalony do zakończenia nowego Deploy Preview, migracji i kontroli produkcyjnej.
+
 ## 2026-08-24 — model galerii komunijnych i audyt produkcji FotoDron
 
 - Właściciel formalnie potwierdził, że każdy uwierzytelniony rodzic może pobrać całą cyfrową galerię grupy. Wybory zdjęć służą wyłącznie zleceniu odbitek, płatne dodatki są osobnym zamówieniem, a zgoda na publikację jest niezależna.

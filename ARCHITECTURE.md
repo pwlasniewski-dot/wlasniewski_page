@@ -2,6 +2,21 @@
 
 Ten dokument stanowi techniczny blueprint platformy fotograficznej wlasniewski.pl. Jest on przeznaczony dla senior deweloperów i architektów systemowych, opisując strukturę, wzorce projektowe oraz krytyczne protokoły bezpieczeństwa.
 
+## Aktualizacja 2026-08-27 — model grafiku i absolutna oś czasu rezerwacji
+
+- `BookingAvailabilityRule` przechowuje jedno okno per `service_key/day_of_week`; minuty końca mogą przekroczyć 1440 do maksymalnie 1560. `BookingAvailabilityException` nadpisuje konkretną datę trybem `CLOSED` lub `CUSTOM`.
+- `bookingSchedule.ts` jest czystą domeną: normalizuje nazwy usług, scala bezpieczne wartości startowe, rozstrzyga wyjątki, buduje sloty z długości pakietu i waliduje wybór klienta. Repozytorium Prisma jedynie dostarcza konfigurację.
+- Brak tabel podczas addytywnego rollout'u uruchamia tylko publiczny fallback odczytu. Endpoint administratora zwraca `503` przy próbie zapisu bez migracji i nigdy nie udaje trwałego sukcesu.
+- Konflikty są liczone na osi minut zakotwiczonej w wybranej dacie. Koniec wcześniejszy lub równy początkowi oznacza następny dzień; zapytanie obejmuje dzień poprzedni, bieżący i następny.
+- Checkout pobiera blokady doradcze PostgreSQL dla obu dat nocnej rezerwacji w stałej kolejności. Po blokadzie ponownie odczytuje terminy i dopiero wtedy tworzy rekord.
+- Pole `Booking.end_time` pozostaje zgodnym zegarem `HH:mm`; jednoznaczny `endDayOffset` trafia do `booking_snapshot.version=2`. Starsze rekordy są interpretowane przez bezpieczną regułę przejścia przez północ.
+
+## Aktualizacja 2026-08-27 — odporny kontrakt dostępności rezerwacji
+
+- `/api/bookings?mode=availability` oraz `/api/availability` stosują jawne projekcje Prisma zamiast pobierania pełnego modelu `Booking`. Kontrakt rollout'u pozostaje kompatybilny do czasu zastosowania nowych, addytywnych kolumn.
+- `parseCalendarAvailabilityPayload` jest granicą zaufania odpowiedzi: wymaga prawidłowego `minBookingDate`, obiektu dostępności oraz normalizuje godziny i zakresy.
+- `BookingCalendar` ma stany `loading/ready/error`; wybór daty jest możliwy wyłącznie w `ready`. Nieudany odczyt działa fail-closed, usuwa istniejący wybór i pozwala jawnie ponowić żądanie.
+
 ## Aktualizacja 2026-08-21 — izolowana warstwa Aero Analiza
 
 - `middleware.ts` kanonizuje `www.aeroanaliza.pl`, przepuszcza hostowy `/robots.txt`, przepisuje sitemapę do allowlisty Aero i przekierowuje B2C oraz historyczne adresy bez renderowania duplikatów.

@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { withAuth, requireAuth } from '@/lib/auth/middleware';
+import {
+    PHOTO_FUNNEL_SETTING_KEY,
+    serializePhotoFunnelConfig,
+    validatePhotoFunnelConfig,
+} from '@/lib/marketing/photo-funnel';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -94,6 +99,17 @@ export async function POST(request: NextRequest) {
         try {
             const body = await request.json();
 
+            if (Object.prototype.hasOwnProperty.call(body, PHOTO_FUNNEL_SETTING_KEY)) {
+                const validation = validatePhotoFunnelConfig(body[PHOTO_FUNNEL_SETTING_KEY]);
+                if (!validation.success) {
+                    return NextResponse.json(
+                        { success: false, error: 'Nieprawidłowa konfiguracja lejka', details: validation.errors },
+                        { status: 400 }
+                    );
+                }
+                body[PHOTO_FUNNEL_SETTING_KEY] = serializePhotoFunnelConfig(validation.data);
+            }
+
             if (
                 Object.prototype.hasOwnProperty.call(body, 'portfolio_index_layout') &&
                 !['chapters', 'cinematic_contact'].includes(body.portfolio_index_layout)
@@ -134,8 +150,6 @@ export async function POST(request: NextRequest) {
                 'urgency_enabled', 'urgency_slots_remaining', 'urgency_month',
                 // Social Proof
                 'social_proof_total_clients',
-                // Promo Code
-                'promo_code_discount_enabled', 'promo_code_discount_amount', 'promo_code_discount_type',
                 // Gift Card Promo
                 'gift_card_promo_enabled', 'gift_card_promo_title', 'gift_card_promo_description', 'gift_card_promo_rotation_interval',
                 // Gift Card Hero
@@ -157,7 +171,7 @@ export async function POST(request: NextRequest) {
             // Map of boolean fields that need type conversion
             const booleanFields = [
                 'navbar_sticky', 'navbar_transparent',
-                'urgency_enabled', 'promo_code_discount_enabled',
+                'urgency_enabled',
                 'gift_card_promo_enabled', 'p24_test_mode',
                 'p24_method_blik', 'p24_method_card', 'p24_method_transfer',
                 'booking_require_payment', 'social_proof_enabled',
@@ -169,11 +183,23 @@ export async function POST(request: NextRequest) {
                 'navbar_font_size', 'logo_size', 'smtp_port',
                 'urgency_slots_remaining', 'social_proof_total_clients',
                 'booking_min_days_ahead', 'gift_card_promo_rotation_interval',
-                'gift_card_hero_opacity', 'promo_code_discount_amount',
+                'gift_card_hero_opacity',
                 'split_payment_deposit_percent', 'split_payment_remaining_due_days'
             ];
+            const retiredPromotionFields = new Set([
+                'promo_code_discount_enabled',
+                'promo_code_discount_amount',
+                'promo_code_discount_type',
+                'promo_code',
+                'promo_code_expiry',
+            ]);
 
             for (const [key, value] of Object.entries(body)) {
+                // Promocje są zarządzane wyłącznie przez model PromoCode.
+                // Ignorujemy zapis ze starszych wersji panelu, żeby nie odtworzyć
+                // konkurencyjnego źródła oferty.
+                if (retiredPromotionFields.has(key)) continue;
+
                 // Legacy PayU keys -> map to DB columns
                 if (key === 'payu_pos_id' || key === 'payu_merchant_pos_id') {
                     // Always use the non-empty value if both are present, 
@@ -270,6 +296,7 @@ export async function POST(request: NextRequest) {
             const { revalidatePath } = await import('next/cache');
             revalidatePath('/', 'layout');
             revalidatePath('/portfolio', 'layout');
+            revalidatePath('/rezerwacja');
 
             return NextResponse.json({ success: true, message: 'Settings updated' });
         } catch (error) {

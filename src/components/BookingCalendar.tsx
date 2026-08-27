@@ -1,21 +1,18 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import { isCurrentOrPastMonth, isPastBookingDate } from "@/lib/bookingDate";
+import {
+  parseCalendarAvailabilityPayload,
+  type CalendarDayAvailability,
+} from "@/lib/bookingAvailability";
 
 export type ServiceType = "Sesja" | "Ślub" | "Przyjęcie" | "Urodziny" | "Dron";
 
-type DayAvailability =
-  | undefined
-  | {
-    fullDay?: boolean;
-    booked?: string[];
-    ranges?: { start: string; end: string }[];
-  };
-
 type Props = {
   service: ServiceType;
-  durationHours?: 1 | 2;
-  sessionDuration?: 1 | 2; // Alias for durationHours
+  durationHours?: number;
+  sessionDuration?: number; // Alias for durationHours
   // Support both interfaces
   value?: { date: string; start?: string; end?: string } | null;
   selectedDate?: Date | null;
@@ -24,6 +21,8 @@ type Props = {
   onChange?: ((val: { date: string; start?: string; end?: string } | null) => void) | ((date: Date | null) => void);
   onSlotSelect?: ((val: { date: string; start?: string; end?: string } | null) => void) | ((date: Date | null) => void);
   availabilityEndpoint?: string;
+  showTimeSlots?: boolean;
+  blocksEntireDay?: boolean;
 };
 
 const pad = (n: number) => (n < 10 ? `0${n}` : `${n}`);
@@ -42,7 +41,7 @@ function sessionStartsForDate(dateISO: string): string[] {
   return isWeekend ? ["17:00", "19:00"] : ["18:00"];
 }
 
-function buildSessionSlots(dateISO: string, durationHours: 1 | 2): { start: string; end: string }[] {
+function buildSessionSlots(dateISO: string, durationHours: number): { start: string; end: string }[] {
   const starts = sessionStartsForDate(dateISO);
   const durMin = durationHours * 60;
   return starts.map((s) => {
@@ -63,6 +62,8 @@ export default function BookingCalendar(props: Props) {
     selectedSlot,
     onSlotSelect,
     availabilityEndpoint,
+    showTimeSlots = true,
+    blocksEntireDay = false,
   } = props;
 
   // Normalize inputs
@@ -82,28 +83,58 @@ export default function BookingCalendar(props: Props) {
   const [cursor, setCursor] = useState<Date>(() => new Date());
   const ym = useMemo(() => `${cursor.getFullYear()}-${pad(cursor.getMonth() + 1)}`, [cursor]);
 
-  const [availability, setAvailability] = useState<Record<string, DayAvailability>>({});
+  const [availability, setAvailability] = useState<Record<string, CalendarDayAvailability>>({});
+  const [minBookingDate, setMinBookingDate] = useState<string | null>(null);
+  const [availabilityStatus, setAvailabilityStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [availabilityReload, setAvailabilityReload] = useState(0);
 
   useEffect(() => {
     const url =
       availabilityEndpoint ??
-      `/api/bookings?mode=availability&ym=${encodeURIComponent(ym)}&service=${encodeURIComponent(service)}`;
+      `/api/bookings?mode=availability&ym=${encodeURIComponent(ym)}&service=${encodeURIComponent(service)}&durationHours=${encodeURIComponent(String(durationHours))}&exclusiveDay=${blocksEntireDay ? 'true' : 'false'}`;
     let alive = true;
-    fetch(url)
-      .then((r) => r.json())
-      .then((data) => {
+    const controller = new AbortController();
+    setAvailability({});
+    setMinBookingDate(null);
+    setAvailabilityStatus("loading");
+
+    void (async () => {
+      try {
+        const response = await fetch(url, { signal: controller.signal });
+        const data = await response.json();
+        if (!response.ok) throw new Error("availability_request_failed");
+
+        const parsed = parseCalendarAvailabilityPayload(data);
+        if (!parsed) throw new Error("availability_payload_invalid");
         if (!alive) return;
-        const av =
-          (data && (data.availability || data)) && typeof (data.availability || data) === "object"
-            ? (data.availability || data)
-            : {};
-        setAvailability(av);
-      })
-      .catch(() => setAvailability({}));
+
+        setAvailability(parsed.availability);
+        setMinBookingDate(parsed.minBookingDate);
+        setAvailabilityStatus("ready");
+        if (
+          effectiveValue?.date
+          && (parsed.availability[effectiveValue.date]?.fullDay || parsed.availability[effectiveValue.date]?.closed)
+        ) {
+          (effectiveOnChange as ((value: { date: string; start?: string; end?: string } | null) => void) | undefined)?.(null);
+        }
+      } catch (error) {
+        if (!alive || controller.signal.aborted) return;
+        console.error("[BookingCalendar] Availability unavailable", error);
+        setAvailability({});
+        setMinBookingDate(null);
+        setAvailabilityStatus("error");
+        (effectiveOnChange as ((value: { date: string; start?: string; end?: string } | null) => void) | undefined)?.(null);
+      }
+    })();
+
     return () => {
       alive = false;
+      controller.abort();
     };
-  }, [ym, service, availabilityEndpoint]);
+    // effectiveOnChange is intentionally captured for fail-closed cleanup only;
+    // inline consumer callbacks must not cause repeated availability requests.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ym, service, durationHours, blocksEntireDay, availabilityEndpoint, availabilityReload]);
 
   const daysGrid = useMemo(() => {
     const y = cursor.getFullYear();
@@ -121,7 +152,9 @@ export default function BookingCalendar(props: Props) {
   }, [cursor]);
 
   const selectDay = (iso: string) => {
-    if (!iso) return;
+    if (availabilityStatus !== "ready") return;
+    if (!iso || isPastBookingDate(iso) || (minBookingDate !== null && iso < minBookingDate)) return;
+    if (availability[iso]?.fullDay || availability[iso]?.closed) return;
 
     // Check if onChange expects Date | null (for selectedDate interface)
     if (selectedDate !== undefined) {
@@ -132,15 +165,13 @@ export default function BookingCalendar(props: Props) {
       if (service === "Sesja") {
         (effectiveOnChange as (val: { date: string; start?: string; end?: string } | null) => void)({ date: iso, start: undefined, end: undefined });
       } else {
-        const info = availability[iso];
-        if (info?.fullDay) return;
         (effectiveOnChange as (val: { date: string; start?: string; end?: string } | null) => void)({ date: iso });
       }
     }
   };
 
   const sessionSlots = useMemo(() => {
-    if (service !== "Sesja" || !effectiveValue?.date) return [];
+    if (!showTimeSlots || service !== "Sesja" || !effectiveValue?.date) return [];
     const iso = effectiveValue.date;
     const slots = buildSessionSlots(iso, durationHours);
 
@@ -166,15 +197,18 @@ export default function BookingCalendar(props: Props) {
 
       return { ...slot, blocked, picked };
     });
-  }, [service, effectiveValue, durationHours, availability]);
+  }, [showTimeSlots, service, effectiveValue, durationHours, availability]);
+
+  const previousMonthDisabled = isCurrentOrPastMonth(cursor);
 
   return (
     <div className="rounded-xl border border-zinc-300 bg-white p-4 text-zinc-900 shadow-sm">
       <div className="mb-3 flex items-center justify-between">
         <button
           type="button"
-          className="rounded-md border border-zinc-300 px-3 py-1 text-zinc-900 hover:bg-zinc-100"
+          className="min-h-11 min-w-11 rounded-md border border-zinc-300 px-3 py-2 text-zinc-900 hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-35"
           onClick={() => setCursor((d) => new Date(d.getFullYear(), d.getMonth() - 1, 1))}
+          disabled={previousMonthDisabled}
           aria-label="Poprzedni miesiąc"
         >
           ◀
@@ -184,7 +218,7 @@ export default function BookingCalendar(props: Props) {
         </div>
         <button
           type="button"
-          className="rounded-md border border-zinc-300 px-3 py-1 text-zinc-900 hover:bg-zinc-100"
+          className="min-h-11 min-w-11 rounded-md border border-zinc-300 px-3 py-2 text-zinc-900 hover:bg-zinc-100"
           onClick={() => setCursor((d) => new Date(d.getFullYear(), d.getMonth() + 1, 1))}
           aria-label="Następny miesiąc"
         >
@@ -202,7 +236,10 @@ export default function BookingCalendar(props: Props) {
           if (!c.dateISO) return <div key={c.key} />;
           const info = availability[c.dateISO];
           const isSelected = effectiveValue?.date === c.dateISO;
-          const disabled = service !== "Sesja" && info?.fullDay === true;
+          const isPast = isPastBookingDate(c.dateISO);
+          const isBeforeMinimum = minBookingDate !== null && c.dateISO < minBookingDate;
+          const availabilityUnavailable = availabilityStatus !== "ready";
+          const disabled = availabilityUnavailable || isPast || isBeforeMinimum || info?.fullDay === true || info?.closed === true;
 
           return (
             <button
@@ -211,14 +248,24 @@ export default function BookingCalendar(props: Props) {
               onClick={() => selectDay(c.dateISO!)}
               disabled={disabled}
               className={[
-                "h-9 rounded-md border",
+                "min-h-11 rounded-md border",
                 isSelected
                   ? "bg-gold-500 text-black border-gold-500 font-bold shadow-lg shadow-gold-500/20"
                   : "bg-white text-black border-zinc-300 hover:bg-zinc-100",
                 disabled ? "bg-zinc-100 text-zinc-400 cursor-not-allowed" : "",
               ].join(" ")}
               title={
-                disabled
+                availabilityStatus === "loading"
+                  ? "Sprawdzam dostępność"
+                  : availabilityStatus === "error"
+                  ? "Nie udało się sprawdzić dostępności"
+                  : isPast
+                  ? "Miniony termin"
+                  : isBeforeMinimum
+                  ? `Najbliższy możliwy termin: ${minBookingDate}`
+                  : info?.closed
+                  ? "Brak godzin mieszczących wybrany pakiet"
+                  : disabled
                   ? "Dzień zajęty"
                   : c.dateISO
               }
@@ -229,7 +276,32 @@ export default function BookingCalendar(props: Props) {
         })}
       </div>
 
-      {service === "Sesja" && effectiveValue?.date && (
+      {availabilityStatus !== "ready" && (
+        <div
+          className={`mt-4 rounded-lg border p-4 text-sm ${availabilityStatus === "error"
+            ? "border-red-300 bg-red-50 text-red-800"
+            : "border-amber-300 bg-amber-50 text-amber-900"}`}
+          role={availabilityStatus === "error" ? "alert" : "status"}
+          aria-live="polite"
+        >
+          {availabilityStatus === "loading" ? (
+            <p>Sprawdzam dostępne terminy…</p>
+          ) : (
+            <div className="flex flex-col items-start gap-3">
+              <p>Nie udało się pobrać dostępnych terminów. Kalendarz został bezpiecznie zablokowany.</p>
+              <button
+                type="button"
+                className="min-h-11 rounded-md border border-red-400 bg-white px-4 py-2 font-semibold text-red-800 hover:bg-red-100"
+                onClick={() => setAvailabilityReload(current => current + 1)}
+              >
+                Spróbuj ponownie
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {showTimeSlots && service === "Sesja" && effectiveValue?.date && (
         <div className="mt-4">
           <div className="mb-2 text-sm text-zinc-400">
             Wybierz godzinę dla: <span className="font-mono text-gold-400">{effectiveValue?.date}</span>{" "}
@@ -251,7 +323,7 @@ export default function BookingCalendar(props: Props) {
                   }
                 }}
                 className={[
-                  "rounded-md border px-3 py-2 text-sm transition-all",
+                  "min-h-11 rounded-md border px-3 py-2 text-sm transition-all",
                   s.picked ? "bg-gold-500 text-black border-gold-500 font-bold shadow-lg shadow-gold-500/20" : "hover:bg-zinc-800 border-zinc-700",
                   s.blocked ? "opacity-40 cursor-not-allowed" : "",
                 ].join(" ")}

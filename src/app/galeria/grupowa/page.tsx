@@ -1809,7 +1809,6 @@ Hasło: ${password}` : ''}`}
 
       {!isGuestMode && photos.length > 0 && (
         <TopReviewNudge
-          discountCode="KOMUNIA15"
           theme="dark"
         />
       )}
@@ -2335,7 +2334,6 @@ Hasło: ${password}` : ''}`}
       {!isGuestMode && photos.length > 0 && (
         <PostGalleryUpsell
           clientName={participantInfo?.parent_name}
-          discountCode="KOMUNIA15"
           theme="dark"
         />
       )}

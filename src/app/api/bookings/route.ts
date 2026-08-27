@@ -1,243 +1,28 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
 import { sendEmail } from "@/lib/email/sender";
-import { generateClientEmail, generateAdminEmail, generateBookingConfirmedEmail, generateGoogleReviewRequestEmail } from "@/lib/email-templates";
+import { generateBookingConfirmedEmail, generateGoogleReviewRequestEmail } from "@/lib/email-templates";
 import { logSystem } from "@/lib/logger";
 import { requireAuth } from "@/lib/auth/middleware";
+import { normalizeGoogleReviewUrl } from "@/lib/marketing/gallery-trust";
+import { isBookingBlockingAvailability } from '@/lib/bookingStatus';
+import { minimumBookingDateISO } from '@/lib/bookingDate';
+import { buildBookingSlots, normalizeBookingServiceKey, resolveBookingSchedule } from '@/lib/bookingSchedule';
+import { loadBookingScheduleConfiguration } from '@/lib/bookingScheduleRepository';
+import { hasBookingDateTimeConflict } from '@/lib/bookingAvailability';
 
 import prisma from '@/lib/db/prisma';
 
-// Photographer's email for admin notifications
-// Photographer's email for admin notifications
-// const ADMIN_EMAIL = "przemyslaw@wlasniewski.pl"; // Moved to dynamic fetching
-
-export async function POST(request: Request) {
-    try {
-        const body = await request.json();
-        const {
-            service,
-            package: packageName,
-            price,
-            date,
-            start,
-            end,
-            start_time,
-            end_time,
-            name,
-            email,
-            phone,
-            venueCity,
-            venue_city,
-            venuePlace,
-            venue_place,
-            notes,
-            hours,
-            promoCode,
-            promo_code,
-            gift_card_code,
-            fm_voucher_code,
-            photographer_id,
-            payment_plan: requestedPaymentPlan,
-            originalPrice
-        } = body;
-
-        // Basic validation
-        if (!service || !packageName || !date || !name || !email) {
-            await logSystem('WARN', 'BOOKING', 'Booking attempt failed: Missing required data', { email, name, missing: 'service/package/date/name/email' });
-            return NextResponse.json(
-                { ok: false, message: "Brak wymaganych danych" },
-                { status: 400 }
-            );
-        }
-
-        // Foto-Match voucher: walidacja przed stworzeniem rezerwacji.
-        // Frontend już mógł zaaplikować rabat na price; my tylko upewniamy się że voucher istnieje
-        // i jest niewykorzystany, oraz oznaczamy go jako zużyty po stworzeniu rezerwacji.
-        let validatedVoucher: { id: number; code: string } | null = null;
-        if (fm_voucher_code) {
-            const code = String(fm_voucher_code).trim().toUpperCase();
-            const ref = await prisma.fotoMatchReferral.findUnique({
-                where: { reward_voucher_code: code },
-                select: { id: true, status: true, reward_redeemed_at: true, reward_expires_at: true },
-            });
-            const now = new Date();
-            if (!ref || ref.status !== 'REWARDED' || ref.reward_redeemed_at || (ref.reward_expires_at && ref.reward_expires_at < now)) {
-                return NextResponse.json(
-                    { ok: false, message: 'Voucher Foto-Match nieważny lub już użyty' },
-                    { status: 400 }
-                );
-            }
-            validatedVoucher = { id: ref.id, code };
-        }
-
-        // Split payment 50/50: aktywne tylko gdy globalny toggle ON i klient zaznaczył 'SPLIT'.
-        let paymentPlan: 'FULL' | 'SPLIT' = 'FULL';
-        let depositAmount: number | null = null;
-        let remainingAmount: number | null = null;
-        let remainingDueAt: Date | null = null;
-        if (requestedPaymentPlan === 'SPLIT') {
-            const splitSettings = await prisma.setting.findFirst({
-                orderBy: { id: 'asc' },
-                select: {
-                    split_payment_enabled: true,
-                    split_payment_deposit_percent: true,
-                    split_payment_remaining_due_days: true,
-                },
-            });
-            if (splitSettings?.split_payment_enabled) {
-                const pct = Math.max(1, Math.min(99, splitSettings.split_payment_deposit_percent ?? 50));
-                const total = Number(price);
-                depositAmount = Math.round((total * pct) / 100);
-                remainingAmount = total - depositAmount;
-                paymentPlan = 'SPLIT';
-                const dueDays = splitSettings.split_payment_remaining_due_days ?? 7;
-                remainingDueAt = new Date(new Date(date).getTime() - dueDays * 86400_000);
-            }
-        }
-
-        const booking = await prisma.booking.create({
-            data: {
-                service,
-                package: packageName,
-                price: Number(price),
-                date: new Date(date),
-                start_time: start_time || start || null,
-                end_time: end_time || end || null,
-                client_name: name,
-                email,
-                phone: phone || null,
-                venue_city: venue_city || venueCity || null,
-                venue_place: venue_place || venuePlace || null,
-                notes: notes || null,
-                promo_code: promo_code || promoCode || null,
-                gift_card_code: gift_card_code || null,
-                status: Number(price) === 0 ? "confirmed" : "pending",
-                payment_plan: paymentPlan,
-                deposit_amount: depositAmount,
-                remaining_amount: remainingAmount,
-                remaining_due_at: remainingDueAt,
-                photographer_id: photographer_id ? Number(photographer_id) : null,
-            },
-        });
-
-        // Voucher: mark redeemed (best-effort, nie blokuje rezerwacji jeśli się nie uda).
-        if (validatedVoucher) {
-            try {
-                await prisma.fotoMatchReferral.update({
-                    where: { id: validatedVoucher.id },
-                    data: {
-                        reward_redeemed_at: new Date(),
-                        reward_redeemed_for: `BOOKING:${booking.id}`,
-                    },
-                });
-                await logSystem('INFO', 'FOTO_MATCH_VOUCHER', `Voucher ${validatedVoucher.code} redeemed for booking #${booking.id}`);
-            } catch (voucherErr) {
-                console.error('Failed to mark fm voucher redeemed:', voucherErr);
-                await logSystem('ERROR', 'FOTO_MATCH_VOUCHER', `Failed to redeem voucher ${validatedVoucher.code}`, { bookingId: booking.id, error: String(voucherErr) });
-            }
-        }
-
-        // Mark gift card as used if provided
-        if (gift_card_code) {
-            try {
-                await prisma.giftCard.updateMany({
-                    where: {
-                        code: {
-                            equals: gift_card_code,
-                            mode: 'insensitive'
-                        },
-                        redeemed_at: null
-                    },
-                    data: {
-                        redeemed_at: new Date(),
-                        is_active: false,
-                        notes: `Użyto dla rezerwacji #${booking.id}`
-                    }
-                });
-                await logSystem('INFO', 'GIFT_CARD', `Gift card ${gift_card_code} marked as redeemed for booking #${booking.id}`);
-            } catch (giftCardError) {
-                console.error('Failed to mark gift card as redeemed:', giftCardError);
-                await logSystem('ERROR', 'GIFT_CARD', `Failed to redeem gift card ${gift_card_code}`, { bookingId: booking.id, error: String(giftCardError) });
-            }
-        }
-
-        await logSystem('INFO', 'BOOKING', `New booking created: #${booking.id} - ${service}`, { bookingId: booking.id, email, service });
-
-        // Prepare email data
-        const formattedDate = new Date(date).toLocaleDateString('pl-PL', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        });
-
-        const finalStartTime = start_time || start;
-        const finalEndTime = end_time || end;
-
-        const emailData = {
-            clientName: name,
-            service,
-            packageName,
-            date: formattedDate,
-            time: finalStartTime ? (finalEndTime ? `${finalStartTime} - ${finalEndTime}` : finalStartTime) : undefined,
-            location: (venue_city || venueCity) ? (venue_place || venuePlace ? `${venue_city || venueCity}, ${venue_place || venuePlace}` : venue_city || venueCity) : undefined,
-            price: Number(price),
-            originalPrice: originalPrice ? Number(originalPrice) : undefined,
-            promoCode: promo_code || promoCode || undefined,
-            giftCardCode: gift_card_code || undefined,
-            notes: notes || undefined,
-            phone: phone || undefined,
-            email,
-        };
-
-        // Send elegant confirmation email to client
-        try {
-            const isConfirmed = Number(price) === 0;
-            const subject = isConfirmed
-                ? `✅ Rezerwacja POTWIERDZONA! - ${service}`
-                : `✨ Potwierdzenie rezerwacji - ${service}`;
-
-            const html = isConfirmed
-                ? generateBookingConfirmedEmail(emailData)
-                : generateClientEmail(emailData);
-
-            await sendEmail({
-                to: email,
-                subject,
-                html
-            });
-            await logSystem('INFO', 'EMAIL', `Booking confirmation sent to client ${isConfirmed ? '(Confirmed)' : '(Pending)'}`, { bookingId: booking.id, email });
-        } catch (emailError) {
-            await logSystem('ERROR', 'EMAIL', `Failed to send client confirmation email`, { bookingId: booking.id, error: String(emailError) });
-        }
-
-        // Send notification email to photographer/admin
-        try {
-            const { getAdminEmail } = await import('@/lib/email/sender');
-            const adminEmail = await getAdminEmail();
-
-            if (!adminEmail) {
-                console.warn('⚠️ Admin email not set, skipping notification.');
-            } else {
-                await sendEmail({
-                    to: adminEmail,
-                    subject: `🎉 Nowa rezerwacja: ${name} - ${service} (${formattedDate})`,
-                    html: generateAdminEmail(emailData)
-                });
-            }
-        } catch (adminEmailError) {
-            await logSystem('ERROR', 'EMAIL', `Failed to send admin notification email`, { bookingId: booking.id, error: String(adminEmailError) });
-        }
-
-        return NextResponse.json({ ok: true, booking });
-    } catch (error) {
-        console.error("Error creating booking:", error);
-        await logSystem('ERROR', 'BOOKING', `Server error during booking creation`, { error: String(error) });
-        return NextResponse.json(
-            { ok: false, message: "Błąd serwera podczas zapisu rezerwacji" },
-            { status: 500 }
-        );
-    }
+/**
+ * Legacy endpoint disabled deliberately. It accepted package and price values from
+ * the browser, so it could create false confirmed bookings and consume vouchers.
+ * Public bookings are created only by /api/basket/checkout, which resolves the
+ * active package and final amount on the server.
+ */
+export async function POST() {
+    return NextResponse.json(
+        { ok: false, message: "Ten sposób rezerwacji nie jest już obsługiwany. Rozpocznij rezerwację na stronie oferty." },
+        { status: 410 }
+    );
 }
 
 export async function GET(request: Request) {
@@ -247,47 +32,88 @@ export async function GET(request: Request) {
     try {
         if (mode === "availability") {
             const ym = searchParams.get("ym"); // e.g., "2023-10"
-            const service = searchParams.get("service");
-
-            if (!ym) {
+            if (!ym || !/^\d{4}-(0[1-9]|1[0-2])$/.test(ym)) {
                 return NextResponse.json({ availability: {} });
             }
 
             // Parse year and month
             const [year, month] = ym.split("-").map(Number);
-            const startDate = new Date(year, month - 1, 1);
-            const endDate = new Date(year, month, 0); // Last day of month
+            const startDate = new Date(Date.UTC(year, month - 1, 1));
+            const endDate = new Date(Date.UTC(year, month, 1));
 
             // Fetch bookings for this month
-            const bookings = await prisma.booking.findMany({
-                where: {
-                    date: {
-                        gte: startDate,
-                        lte: endDate,
+            const lastMonthDate = new Date(endDate.getTime() - 86_400_000).toISOString().slice(0, 10);
+            const serviceKey = normalizeBookingServiceKey(searchParams.get('service'));
+            const requestedDuration = Number(searchParams.get('durationHours'));
+            const durationMinutes = Number.isFinite(requestedDuration) && requestedDuration > 0
+                ? Math.min(24, requestedDuration) * 60
+                : 60;
+            const exclusiveDay = searchParams.get('exclusiveDay') === 'true';
+            const [bookings, bookingSettings, bookingConfiguration] = await Promise.all([
+                prisma.booking.findMany({
+                    where: {
+                        date: {
+                            gte: new Date(startDate.getTime() - 86_400_000),
+                            lt: new Date(endDate.getTime() + 86_400_000),
+                        },
+                        status: {
+                            notIn: ["cancelled", "rejected", "archived"],
+                        },
                     },
-                    status: {
-                        not: "cancelled",
+                    // Availability must remain readable during additive schema
+                    // rollouts. Selecting the full Booking record would make a
+                    // deploy preview depend on columns that are not migrated yet.
+                    select: {
+                        date: true,
+                        status: true,
+                        start_time: true,
+                        end_time: true,
+                        blocks_entire_day: true,
                     },
-                },
-            });
+                }),
+                prisma.setting.findFirst({ orderBy: { id: 'asc' }, select: { booking_min_days_ahead: true } }),
+                loadBookingScheduleConfiguration({
+                    service: serviceKey,
+                    fromDate: startDate.toISOString().slice(0, 10),
+                    toDate: lastMonthDate,
+                }),
+            ]);
 
             const availability: Record<string, any> = {};
+            const blockingBookings = bookings.filter(booking => isBookingBlockingAvailability(booking));
+
+            for (let day = 1; day <= new Date(Date.UTC(year, month, 0)).getUTCDate(); day += 1) {
+                const dateKey = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const schedule = resolveBookingSchedule({
+                    serviceKey,
+                    date: dateKey,
+                    rules: bookingConfiguration.rules,
+                    exceptions: bookingConfiguration.exceptions,
+                });
+                const candidateSlots = schedule?.enabled ? buildBookingSlots(schedule, durationMinutes) : [];
+                const hasBookableSlot = candidateSlots.some(slot => !hasBookingDateTimeConflict(blockingBookings, {
+                    dateISO: dateKey,
+                    blocksEntireDay: exclusiveDay,
+                    startTime: slot.start,
+                    endTime: slot.end,
+                    endDayOffset: slot.endDayOffset,
+                }));
+                availability[dateKey] = {
+                    fullDay: false,
+                    closed: !schedule?.enabled || !hasBookableSlot,
+                    booked: [],
+                    ranges: [],
+                };
+            }
 
             // Process bookings into availability format
-            bookings.forEach((booking) => {
+            blockingBookings.forEach((booking) => {
                 const dateKey = booking.date.toISOString().split("T")[0];
 
-                if (!availability[dateKey]) {
-                    availability[dateKey] = {
-                        fullDay: false,
-                        booked: [],
-                        ranges: [],
-                    };
-                }
+                if (!availability[dateKey]) return;
 
-                // If it's a full day event (Wedding, Party, Birthday usually)
-                // Or if it's a Session but marks full day (logic can be refined)
-                if (booking.blocks_entire_day || (booking.service !== "Sesja" && booking.service !== "Dron")) {
+                // Wyłącznie jawna konfiguracja pakietu może zablokować cały dzień.
+                if (booking.blocks_entire_day) {
                     availability[dateKey].fullDay = true;
                 } else {
                     // For sessions, mark specific slots as booked
@@ -297,14 +123,19 @@ export async function GET(request: Request) {
                         if (booking.end_time) {
                             availability[dateKey].ranges.push({
                                 start: booking.start_time,
-                                end: booking.end_time
+                                end: booking.end_time,
+                                endDayOffset: booking.end_time <= booking.start_time ? 1 : 0,
                             });
                         }
                     }
                 }
             });
 
-            return NextResponse.json({ availability });
+            const minDaysAhead = Math.max(0, Math.min(365, bookingSettings?.booking_min_days_ahead ?? 7));
+            return NextResponse.json({
+                availability,
+                minBookingDate: minimumBookingDateISO(minDaysAhead, new Date(), 'Europe/Warsaw'),
+            });
         }
 
         // Default: List all bookings (Admin only) — z opcjonalnymi filtrami
@@ -347,6 +178,9 @@ export async function GET(request: Request) {
 
 // PATCH /api/bookings?id=123 - Update booking status
 export async function PATCH(request: Request) {
+    const authError = await requireAuth(request as any);
+    if (authError) return authError;
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
 
@@ -416,7 +250,7 @@ export async function PATCH(request: Request) {
         }
 
         // [STABLE: 2025-12-23] Notify client when status is updated to confirmed
-        if (updateData.status === "confirmed") {
+        if (updateData.status === "confirmed" && previousBooking?.status !== "confirmed") {
             try {
                 const formattedDate = new Date(booking.date).toLocaleDateString('pl-PL', {
                     weekday: 'long',
@@ -449,18 +283,12 @@ export async function PATCH(request: Request) {
             }
         }
 
-        // [LOCAL SEO] When booking is marked as completed, send Google Review request.
-        // Each Google review boosts visibility in Google Maps for "fotograf [city]" queries.
-        if (updateData.status === "completed") {
+        // Send exactly once on the transition to completed. Editing an already
+        // completed booking must never generate another request.
+        if (updateData.status === "completed" && previousBooking?.status !== "completed") {
             try {
-                const [placeIdSetting, reviewLinkSetting] = await Promise.all([
-                    prisma.setting.findFirst({ where: { setting_key: 'google_place_id' } }),
-                    prisma.setting.findFirst({ where: { setting_key: 'gbp_review_link' } }),
-                ]);
-                const reviewLink = reviewLinkSetting?.setting_value
-                    || (placeIdSetting?.setting_value
-                        ? `https://search.google.com/local/writereview?placeid=${placeIdSetting.setting_value}`
-                        : null);
+                const reviewLinkSetting = await prisma.setting.findUnique({ where: { setting_key: 'gbp_review_link' } });
+                const reviewLink = normalizeGoogleReviewUrl(reviewLinkSetting?.setting_value);
 
                 if (reviewLink) {
                     await sendEmail({
@@ -494,6 +322,9 @@ export async function PATCH(request: Request) {
 }
 // DELETE /api/bookings?id=123 - Remove a booking
 export async function DELETE(request: Request) {
+    const authError = await requireAuth(request as any);
+    if (authError) return authError;
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
 

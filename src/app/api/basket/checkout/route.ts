@@ -1,25 +1,84 @@
 import { NextResponse } from 'next/server';
+import type { Prisma } from '@prisma/client';
 import prisma from '@/lib/db/prisma';
 import { logSystem } from '@/lib/logger';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { loadDronePhotographyCmsPage } from '@/lib/dronePhotographyCms';
+import { salesAttributionFromPayload } from '@/lib/analytics/salesAttribution';
+import { hasBookingDateTimeConflict } from '@/lib/bookingAvailability';
+import {
+    normalizeBookingServiceKey,
+    resolveBookingSchedule,
+    validateBookingSlot,
+} from '@/lib/bookingSchedule';
+import { loadBookingScheduleConfiguration } from '@/lib/bookingScheduleRepository';
+import { bookingDateUtcRange, isBookingDateAllowed, isBookingStartInFuture, minimumBookingDateISO } from '@/lib/bookingDate';
+import { isBookingBlockingAvailability } from '@/lib/bookingStatus';
+import { getClientIp, rateLimit } from '@/lib/rate-limit';
+import { calculateFotoMatchDiscount } from '@/lib/fotoMatchDiscount';
+
+class BookingConflictError extends Error {}
+class GiftCardUnavailableError extends Error {}
+class ReferralVoucherUnavailableError extends Error {}
+class PromoCodeUnavailableError extends Error {}
+
+function shiftBookingDate(dateISO: string, days: number) {
+    const shifted = new Date(`${dateISO}T00:00:00.000Z`);
+    shifted.setUTCDate(shifted.getUTCDate() + days);
+    return shifted.toISOString().slice(0, 10);
+}
 
 export async function POST(request: Request) {
     try {
+        const contentLength = Number(request.headers.get('content-length') || 0);
+        if (contentLength > 100_000) {
+            return NextResponse.json({ ok: false, message: 'Dane zamówienia są zbyt duże.' }, { status: 413 });
+        }
+        if (!rateLimit(`basket-checkout:${getClientIp(request)}`, 6, 15 * 60_000).ok) {
+            return NextResponse.json({ ok: false, message: 'Zbyt wiele prób. Spróbuj ponownie za 15 minut.' }, { status: 429 });
+        }
+
         const body = await request.json();
         const { items, customer, totalAmount, createAccount, password, fm_voucher_code, payment_plan } = body;
 
-        if (!items || !customer || items.length === 0) {
-            return NextResponse.json({ ok: false, message: "Brak danych zamówienia" }, { status: 400 });
+        if (
+            !Array.isArray(items)
+            || items.length === 0
+            || items.length !== 1
+            || !customer
+            || typeof customer !== 'object'
+            || typeof customer.name !== 'string'
+            || !customer.name.trim()
+            || customer.name.trim().length > 120
+            || typeof customer.email !== 'string'
+            || customer.email.length > 254
+            || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer.email)
+            || (customer.phone !== undefined && (typeof customer.phone !== 'string' || customer.phone.length > 40))
+            || items.some((item: any) => !item || !['booking', 'gift_card'].includes(item.type) || !['string', 'number'].includes(typeof item.productId) || (item.metadata !== undefined && (typeof item.metadata !== 'object' || Array.isArray(item.metadata))))
+        ) {
+            return NextResponse.json({ ok: false, message: "Checkout obsługuje jedną, jednoznacznie wycenioną pozycję." }, { status: 400 });
+        }
+        customer.name = customer.name.trim();
+        customer.email = customer.email.trim().toLowerCase();
+        customer.phone = typeof customer.phone === 'string' ? customer.phone.trim() : '';
+        if (createAccount && (typeof password !== 'string' || password.length > 200)) {
+            return NextResponse.json({ ok: false, message: 'Nieprawidłowe hasło.' }, { status: 400 });
+        }
+        if (fm_voucher_code && (typeof fm_voucher_code !== 'string' || fm_voucher_code.length > 40)) {
+            return NextResponse.json({ ok: false, message: 'Nieprawidłowy voucher.' }, { status: 400 });
         }
 
         const clientIp = (request.headers.get("x-forwarded-for") ?? "127.0.0.1").split(",")[0];
 
         // 0. Validate Foto-Match referral voucher (if provided)
-        let voucherRef: { id: number; reward_amount_grosze: number | null; reward_percent: number | null; reward_type: string | null } | null = null;
+        let voucherRef: { id: number; code: string; reward_amount_grosze: number | null; reward_percent: number | null; reward_type: string | null } | null = null;
         if (fm_voucher_code) {
             const code = String(fm_voucher_code).trim().toUpperCase();
+            const bookingItems = items.filter((item: any) => item?.type === 'booking');
+            if (bookingItems.length !== 1) {
+                return NextResponse.json({ ok: false, message: "Voucher Foto-Match można zastosować do jednej rezerwacji." }, { status: 400 });
+            }
             const ref = await prisma.fotoMatchReferral.findUnique({
                 where: { reward_voucher_code: code },
                 select: { id: true, status: true, reward_amount_grosze: true, reward_percent: true, reward_type: true, reward_expires_at: true, reward_redeemed_at: true },
@@ -27,8 +86,11 @@ export async function POST(request: Request) {
             if (!ref || ref.status !== 'REWARDED' || ref.reward_redeemed_at || (ref.reward_expires_at && ref.reward_expires_at < new Date())) {
                 return NextResponse.json({ ok: false, message: "Voucher nieprawidłowy, wykorzystany lub wygasły" }, { status: 400 });
             }
-            voucherRef = { id: ref.id, reward_amount_grosze: ref.reward_amount_grosze, reward_percent: ref.reward_percent, reward_type: ref.reward_type };
+            voucherRef = { id: ref.id, code, reward_amount_grosze: ref.reward_amount_grosze, reward_percent: ref.reward_percent, reward_type: ref.reward_type };
         }
+
+        const bookingSettings = await prisma.setting.findFirst({ orderBy: { id: 'asc' } });
+        const minDaysAhead = Math.max(0, Math.min(365, bookingSettings?.booking_min_days_ahead ?? 7));
 
         // 0b. Validate split-payment plan (only single booking)
         let useSplitPayment = false;
@@ -39,12 +101,11 @@ export async function POST(request: Request) {
             if (bookingItems.length !== 1 || items.length !== 1) {
                 return NextResponse.json({ ok: false, message: "Płatność 50/50 dostępna tylko dla pojedynczej rezerwacji w koszyku." }, { status: 400 });
             }
-            const setting = await prisma.setting.findFirst({ orderBy: { id: 'asc' } });
-            if (!setting?.split_payment_enabled) {
+            if (!bookingSettings?.split_payment_enabled) {
                 return NextResponse.json({ ok: false, message: "Płatność 50/50 nie jest aktualnie dostępna." }, { status: 400 });
             }
-            depositPercent = setting.split_payment_deposit_percent ?? 50;
-            remainingDueDays = setting.split_payment_remaining_due_days ?? 7;
+            depositPercent = bookingSettings.split_payment_deposit_percent ?? 50;
+            remainingDueDays = bookingSettings.split_payment_remaining_due_days ?? 7;
             useSplitPayment = true;
         }
 
@@ -86,6 +147,9 @@ export async function POST(request: Request) {
         // 3. Create records and PayU Product List
         const payuProducts = [];
         const createdResourceIds = [];
+        const appliedGiftCardCodes = new Set<string>();
+        let appliedPromoCode: string | null = null;
+        let appliedPromoId: number | null = null;
 
         let droneConfigPromise: ReturnType<typeof loadDronePhotographyCmsPage> | null = null;
         for (const item of items) {
@@ -159,18 +223,26 @@ export async function POST(request: Request) {
                 }
 
                 let verifiedPrice = basePrice + (isDroneStandalone ? 0 : dronePackage?.price || 0);
+                let appliedGiftCardCode: string | null = null;
 
                 if (md.promo_code) {
                     const promoCode = String(md.promo_code).trim().toUpperCase();
-                    const promo = await prisma.promoCode.findUnique({ where: { code: promoCode } });
+                    const promo = await prisma.promoCode.findFirst({
+                        where: { code: { equals: promoCode, mode: 'insensitive' } },
+                        orderBy: { id: 'asc' },
+                    });
                     const now = new Date();
                     const valid = promo?.is_active &&
                         promo.valid_from <= now &&
-                        (!promo.valid_until || promo.valid_until >= now) &&
-                        (!promo.max_usage || promo.usage_count < promo.max_usage);
+                        (!promo.valid_until || promo.valid_until >= now);
                     if (!valid || !promo) {
                         return NextResponse.json({ ok: false, message: "Kod promocyjny wygasł lub jest nieprawidłowy." }, { status: 400 });
                     }
+                    if (promo.max_usage !== null && promo.usage_count >= promo.max_usage) {
+                        return NextResponse.json({ ok: false, message: "Limit użyć kodu promocyjnego został wyczerpany." }, { status: 409 });
+                    }
+                    appliedPromoCode = promo.code;
+                    appliedPromoId = promo.id;
                     verifiedPrice = promo.discount_type === 'percentage'
                         ? verifiedPrice - Math.floor(verifiedPrice * promo.discount_value / 100)
                         : verifiedPrice - promo.discount_value * 100;
@@ -178,22 +250,37 @@ export async function POST(request: Request) {
 
                 if (md.gift_card_code) {
                     const giftCode = String(md.gift_card_code).trim().toUpperCase();
-                    const card = await prisma.giftCard.findUnique({ where: { code: giftCode } });
+                    const card = await prisma.giftCard.findFirst({
+                        where: { code: { equals: giftCode, mode: 'insensitive' } },
+                        orderBy: { id: 'asc' },
+                    });
                     if (!card?.is_active || card.redeemed_at || (card.valid_until && card.valid_until < new Date())) {
                         return NextResponse.json({ ok: false, message: "Karta podarunkowa wygasła lub została wykorzystana." }, { status: 400 });
                     }
-                    verifiedPrice -= card.amount * 100;
+                    if (Array.from(appliedGiftCardCodes).some(code => code.toUpperCase() === card.code.toUpperCase())) {
+                        return NextResponse.json({ ok: false, message: "Jednej karty podarunkowej nie można użyć do kilku pozycji koszyka." }, { status: 400 });
+                    }
+                    const giftValuePln = Number(card.value || card.amount);
+                    if (!Number.isFinite(giftValuePln) || giftValuePln <= 0) {
+                        return NextResponse.json({ ok: false, message: "Karta podarunkowa ma nieprawidłową wartość." }, { status: 400 });
+                    }
+                    verifiedPrice -= Math.round(giftValuePln * 100);
+                    appliedGiftCardCode = card.code;
+                    appliedGiftCardCodes.add(card.code);
                 }
 
                 if (voucherRef) {
-                    const voucherDiscount = voucherRef.reward_type === 'PERCENT'
-                        ? Math.floor(verifiedPrice * Number(voucherRef.reward_percent || 0) / 100)
-                        : Number(voucherRef.reward_amount_grosze || 0);
-                    verifiedPrice -= voucherDiscount;
+                    const voucherDiscount = calculateFotoMatchDiscount({
+                        baseAmountGrosze: verifiedPrice,
+                        rewardType: voucherRef.reward_type,
+                        rewardAmountGrosze: voucherRef.reward_amount_grosze,
+                        rewardPercent: voucherRef.reward_percent,
+                    });
+                    verifiedPrice -= voucherDiscount.discountGrosze;
                 }
                 verifiedPrice = Math.max(0, Math.round(verifiedPrice));
 
-                let extraBookingFields: Record<string, any> = {};
+                let extraBookingFields: Partial<Prisma.BookingUncheckedCreateInput> = {};
                 if (useSplitPayment) {
                     const totalGrosze = verifiedPrice;
                     const depositGrosze = Math.round(totalGrosze * depositPercent / 100);
@@ -217,34 +304,63 @@ export async function POST(request: Request) {
                 // Frontend wysyła m.in. `hours`, `originalPrice`, `photographer_name`,
                 // `pricing_mode` itp. — one nie istnieją w schemacie i wywalały całe checkout (500).
                 // Date musi być ISO-8601 DateTime — frontend często wysyła "2026-05-01" (samo YYYY-MM-DD)
-                let bookingDate: Date | undefined;
-                if (md.date) {
-                    const raw = String(md.date);
-                    // doklejamy czas startu sesji albo północ, żeby Prisma przyjęła
-                    const isoCandidate = raw.includes('T') ? raw : `${raw}T${md.start_time || '00:00'}:00`;
-                    const d = new Date(isoCandidate);
-                    if (!isNaN(d.getTime())) bookingDate = d;
+                const bookingDateISO = String(md.date || '');
+                const bookingRange = bookingDateUtcRange(bookingDateISO);
+                const bookingValidationTime = new Date();
+                if (!bookingRange || !isBookingDateAllowed(bookingDateISO, minDaysAhead, bookingValidationTime, 'Europe/Warsaw')) {
+                    return NextResponse.json({
+                        ok: false,
+                        message: `Najbliższy możliwy dzień rezerwacji to ${minimumBookingDateISO(minDaysAhead, bookingValidationTime, 'Europe/Warsaw')}.`,
+                    }, { status: 400 });
                 }
-                if (!bookingDate) {
-                    return NextResponse.json({ ok: false, message: "Brak lub nieprawidłowa data rezerwacji." }, { status: 400 });
+                const serviceKey = normalizeBookingServiceKey(serviceName);
+                const scheduleConfiguration = await loadBookingScheduleConfiguration({
+                    service: serviceKey,
+                    fromDate: bookingDateISO,
+                    toDate: bookingDateISO,
+                });
+                const resolvedSchedule = resolveBookingSchedule({
+                    serviceKey,
+                    date: bookingDateISO,
+                    rules: scheduleConfiguration.rules,
+                    exceptions: scheduleConfiguration.exceptions,
+                });
+                const verifiedSlot = resolvedSchedule?.enabled
+                    ? validateBookingSlot({
+                        schedule: resolvedSchedule,
+                        durationMinutes: packageHours * 60,
+                        startTime: md.start_time,
+                        endTime: md.end_time,
+                        endDayOffset: Number(md.end_day_offset),
+                    })
+                    : null;
+                if (!verifiedSlot) {
+                    return NextResponse.json({ ok: false, message: "Wybrana godzina nie jest dostępna dla tego pakietu." }, { status: 409 });
                 }
-                const allowedBookingFields: Record<string, any> = {
+                const requestedStart = verifiedSlot.start;
+                if (!isBookingStartInFuture(bookingDateISO, requestedStart, bookingValidationTime, 'Europe/Warsaw')) {
+                    return NextResponse.json({ ok: false, message: "Wybrana godzina już minęła. Wybierz późniejszy termin." }, { status: 409 });
+                }
+
+                const bookingDate = new Date(`${bookingDateISO}T${verifiedSlot.start}:00.000Z`);
+                const allowedBookingFields: Record<string, unknown> = {
                     service: serviceName,
                     package: packageName,
                     price: verifiedPrice,
                     base_price: basePrice,
                     date: bookingDate,
-                    start_time: md.start_time ?? null,
-                    end_time: md.end_time ?? null,
+                    start_time: verifiedSlot.start,
+                    end_time: verifiedSlot.end,
                     venue_city: md.venue_city ?? null,
                     venue_place: md.venue_place ?? null,
                     notes: md.notes ?? null,
-                    promo_code: md.promo_code ?? null,
-                    gift_card_code: md.gift_card_code ?? null,
+                    promo_code: appliedPromoCode,
+                    gift_card_code: appliedGiftCardCode,
                     challenge_id: md.challenge_id ?? null,
                     photographer_id: md.photographer_id ?? null,
                     client_id: userId,
                     booking_source: String(md.booking_source || 'booking').slice(0, 120),
+                    ...salesAttributionFromPayload(md),
                     booking_kind: isDroneStandalone ? 'DRONE_STANDALONE' : hasDrone ? 'PHOTO_WITH_DRONE' : 'STANDARD',
                     company_name: md.company_name ? String(md.company_name).slice(0, 120) : null,
                     drone_package_slug: dronePackage?.slug || null,
@@ -255,7 +371,7 @@ export async function POST(request: Request) {
                     flight_check_status: hasDrone ? 'PENDING' : null,
                     blocks_entire_day: packageBlocksEntireDay,
                     booking_snapshot: {
-                        version: 1,
+                        version: 2,
                         service: serviceName,
                         package: { name: packageName, price: basePrice, hours: packageHours },
                         drone: dronePackage,
@@ -264,6 +380,13 @@ export async function POST(request: Request) {
                         venue: { city: md.venue_city || null, place: md.venue_place || null },
                         droneGoal: hasDrone ? String(md.drone_goal) : null,
                         bookingSource: String(md.booking_source || 'booking').slice(0, 120),
+                        timing: {
+                            start: verifiedSlot.start,
+                            end: verifiedSlot.end,
+                            endDayOffset: verifiedSlot.endDayOffset,
+                            timezone: 'Europe/Warsaw',
+                        },
+                        attribution: salesAttributionFromPayload(md),
                         droneTermsVersion: hasDrone ? '2026-08-19' : null,
                     },
                 };
@@ -271,17 +394,121 @@ export async function POST(request: Request) {
                 Object.keys(allowedBookingFields).forEach(k => {
                     if (allowedBookingFields[k] === undefined) delete allowedBookingFields[k];
                 });
-                const booking = await prisma.booking.create({
-                    data: {
-                        ...allowedBookingFields,
-                        ...extraBookingFields,
-                        status: 'pending',
-                        email: customer.email,
-                        client_name: customer.name,
-                        phone: customer.phone,
-                        stripe_session_id: cartId // Link to Cart ID for payment tracking
+                let booking;
+                try {
+                    booking = await prisma.$transaction(async tx => {
+                        // Rezerwacja nocna blokuje oba dni. Sortowanie kluczy utrzymuje
+                        // tę samą kolejność blokad dla równoległych checkoutów.
+                        const lockDates = [
+                            bookingDateISO,
+                            ...(verifiedSlot.endDayOffset === 1 ? [shiftBookingDate(bookingDateISO, 1)] : []),
+                        ].sort();
+                        for (const lockDate of lockDates) {
+                            await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${`booking:${lockDate}`}))`;
+                        }
+                        const conflictRangeStart = new Date(`${shiftBookingDate(bookingDateISO, -1)}T00:00:00.000Z`);
+                        const conflictRangeEnd = new Date(`${shiftBookingDate(bookingDateISO, 2)}T00:00:00.000Z`);
+                        const lockedBookings = await tx.booking.findMany({
+                            where: {
+                                date: { gte: conflictRangeStart, lt: conflictRangeEnd },
+                                status: { notIn: ['cancelled', 'rejected'] },
+                            },
+                            select: { date: true, blocks_entire_day: true, start_time: true, end_time: true, status: true, created_at: true },
+                        });
+                        if (hasBookingDateTimeConflict(lockedBookings.filter(candidate => isBookingBlockingAvailability(candidate)), {
+                            dateISO: bookingDateISO,
+                            blocksEntireDay: packageBlocksEntireDay,
+                            startTime: verifiedSlot.start,
+                            endTime: verifiedSlot.end,
+                            endDayOffset: verifiedSlot.endDayOffset,
+                        })) throw new BookingConflictError();
+
+                        if (appliedPromoCode && appliedPromoId) {
+                            await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${`promo-code:${appliedPromoCode.toUpperCase()}`}))`;
+                            const lockedPromo = await tx.promoCode.findUnique({ where: { id: appliedPromoId } });
+                            const pendingPromoReservations = await tx.booking.count({
+                                where: {
+                                    promo_code: { equals: appliedPromoCode, mode: 'insensitive' },
+                                    status: 'pending',
+                                },
+                            });
+                            const currentTime = new Date();
+                            if (
+                                !lockedPromo
+                                || !lockedPromo.is_active
+                                || lockedPromo.valid_from > currentTime
+                                || (lockedPromo.valid_until && lockedPromo.valid_until < currentTime)
+                                || (lockedPromo.max_usage !== null && lockedPromo.usage_count + pendingPromoReservations >= lockedPromo.max_usage)
+                            ) {
+                                throw new PromoCodeUnavailableError();
+                            }
+                        }
+
+                        if (appliedGiftCardCode) {
+                            await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${`gift-card:${appliedGiftCardCode}`}))`;
+                            const lockedCard = await tx.giftCard.findUnique({ where: { code: appliedGiftCardCode } });
+                            const existingReservations = await tx.booking.findMany({
+                                where: { gift_card_code: { equals: appliedGiftCardCode, mode: 'insensitive' } },
+                                select: { status: true, created_at: true },
+                            });
+                            if (
+                                !lockedCard?.is_active
+                                || lockedCard.redeemed_at
+                                || (lockedCard.valid_until && lockedCard.valid_until < new Date())
+                                || existingReservations.some(candidate => isBookingBlockingAvailability(candidate))
+                            ) {
+                                throw new GiftCardUnavailableError();
+                            }
+                        }
+
+                        if (voucherRef) {
+                            await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${`foto-match-voucher:${voucherRef.code}`}))`;
+                            const lockedVoucher = await tx.fotoMatchReferral.findUnique({
+                                where: { id: voucherRef.id },
+                                select: { status: true, reward_redeemed_at: true, reward_expires_at: true },
+                            });
+                            const existingReservations = await tx.booking.findMany({
+                                where: { fm_voucher_code: voucherRef.code },
+                                select: { status: true, created_at: true },
+                            });
+                            if (
+                                !lockedVoucher
+                                || lockedVoucher.status !== 'REWARDED'
+                                || lockedVoucher.reward_redeemed_at
+                                || (lockedVoucher.reward_expires_at && lockedVoucher.reward_expires_at < new Date())
+                                || existingReservations.some(candidate => isBookingBlockingAvailability(candidate))
+                            ) {
+                                throw new ReferralVoucherUnavailableError();
+                            }
+                        }
+
+                        return tx.booking.create({
+                            data: {
+                                ...allowedBookingFields,
+                                ...extraBookingFields,
+                                status: 'pending',
+                                email: customer.email,
+                                client_name: customer.name,
+                                phone: customer.phone,
+                                stripe_session_id: cartId // Link to Cart ID for payment tracking
+                            } as Prisma.BookingUncheckedCreateInput
+                        });
+                    });
+                } catch (error) {
+                    if (error instanceof BookingConflictError) {
+                        return NextResponse.json({ ok: false, message: "Ten termin został już zajęty. Wybierz inną godzinę lub dzień." }, { status: 409 });
                     }
-                });
+                    if (error instanceof GiftCardUnavailableError) {
+                        return NextResponse.json({ ok: false, message: "Karta podarunkowa jest już wykorzystana albo zarezerwowana w innej płatności." }, { status: 409 });
+                    }
+                    if (error instanceof ReferralVoucherUnavailableError) {
+                        return NextResponse.json({ ok: false, message: "Voucher Foto-Match jest już wykorzystany albo zarezerwowany w innej płatności." }, { status: 409 });
+                    }
+                    if (error instanceof PromoCodeUnavailableError) {
+                        return NextResponse.json({ ok: false, message: "Kod promocyjny jest już wykorzystany albo chwilowo zarezerwowany w innej płatności." }, { status: 409 });
+                    }
+                    throw error;
+                }
                 createdResourceIds.push(`Booking #${booking.id}`);
                 payuProducts.push({
                     name: `${serviceName}: ${packageName}${!isDroneStandalone && dronePackage ? ` + ${dronePackage.name}` : ''}`,
@@ -309,6 +536,9 @@ export async function POST(request: Request) {
 
                 const giftValuePln = template.value || template.amount;
                 const verifiedGiftPrice = Math.round(giftValuePln * 100);
+                if (!Number.isFinite(verifiedGiftPrice) || verifiedGiftPrice <= 0) {
+                    return NextResponse.json({ ok: false, message: "Karta podarunkowa ma nieprawidłową cenę." }, { status: 400 });
+                }
 
                 await prisma.giftCardOrder.create({
                     data: {
@@ -346,8 +576,82 @@ export async function POST(request: Request) {
             return NextResponse.json({ ok: false, message: "Nie udało się potwierdzić kwoty zamówienia." }, { status: 400 });
         }
 
+        // Karta lub voucher mogą pokryć całość. Nie wysyłamy do PayU zamówienia 0 zł;
+        // potwierdzamy je atomowo i dopiero wtedy zużywamy benefity.
+        if (verifiedTotalAmount === 0) {
+            try {
+                const confirmedBookings = await prisma.$transaction(async tx => {
+                    if (appliedPromoCode && appliedPromoId) {
+                        await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${`promo-code:${appliedPromoCode.toUpperCase()}`}))`;
+                        const promo = await tx.promoCode.findUnique({ where: { id: appliedPromoId } });
+                        if (!promo || (promo.max_usage !== null && promo.usage_count >= promo.max_usage)) {
+                            throw new PromoCodeUnavailableError();
+                        }
+                        await tx.promoCode.update({
+                            where: { id: appliedPromoId },
+                            data: { usage_count: { increment: 1 } },
+                        });
+                    }
+
+                    for (const giftCode of appliedGiftCardCodes) {
+                        await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${`gift-card:${giftCode}`}))`;
+                        const redemption = await tx.giftCard.updateMany({
+                            where: { code: giftCode, is_active: true, redeemed_at: null },
+                            data: { is_active: false, redeemed_at: new Date() },
+                        });
+                        if (redemption.count !== 1) throw new GiftCardUnavailableError();
+                    }
+
+                    if (voucherRef) {
+                        await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${`foto-match-voucher:${voucherRef.code}`}))`;
+                        const redemption = await tx.fotoMatchReferral.updateMany({
+                            where: { id: voucherRef.id, status: 'REWARDED', reward_redeemed_at: null },
+                            data: { reward_redeemed_at: new Date() },
+                        });
+                        if (redemption.count !== 1) throw new ReferralVoucherUnavailableError();
+                    }
+
+                    await tx.booking.updateMany({
+                        where: { stripe_session_id: cartId, status: 'pending' },
+                        data: {
+                            status: 'confirmed',
+                            payment_plan: 'FULL',
+                            remaining_amount: 0,
+                        },
+                    });
+                    return tx.booking.findMany({ where: { stripe_session_id: cartId } });
+                });
+
+                for (const booking of confirmedBookings) {
+                    try {
+                        const { sendBookingConfirmationEmail } = await import('@/lib/email/booking');
+                        await sendBookingConfirmationEmail(booking);
+                    } catch (emailError) {
+                        await logSystem('ERROR', 'EMAIL', 'Failed to send zero-total booking confirmation', { bookingId: booking.id, error: String(emailError) });
+                    }
+                }
+
+                return NextResponse.json({
+                    ok: true,
+                    paymentRequired: false,
+                    message: "Rezerwacja potwierdzona bez dopłaty",
+                    redirectUrl: `/rezerwacja/potwierdzenie?status=success&order=${encodeURIComponent(cartId)}`,
+                    orderId: cartId,
+                });
+            } catch (error) {
+                await prisma.booking.updateMany({
+                    where: { stripe_session_id: cartId, status: 'pending' },
+                    data: { status: 'cancelled', cancelled_at: new Date(), cancelled_by: 'SYSTEM' },
+                }).catch(() => undefined);
+                if (error instanceof GiftCardUnavailableError || error instanceof ReferralVoucherUnavailableError || error instanceof PromoCodeUnavailableError) {
+                    return NextResponse.json({ ok: false, message: "Benefit został wykorzystany w innej transakcji. Odśwież koszyk." }, { status: 409 });
+                }
+                throw error;
+            }
+        }
+
         // 4. Initiate PayU Payment
-        const { createPayUOrder } = await import('@/lib/payu');
+        const { createPayUOrder, cancelPayUOrder } = await import('@/lib/payu');
 
         try {
             const payuOrder = await createPayUOrder({
@@ -363,20 +667,22 @@ export async function POST(request: Request) {
                     language: 'pl'
                 },
                 products: payuProducts,
-                continueUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'https://wlasniewski.pl'}/rezerwacja/potwierdzenie?status=success`
+                continueUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'https://wlasniewski.pl'}/rezerwacja/potwierdzenie?status=success&order=${encodeURIComponent(cartId)}`
             }, clientIp);
 
-            // Mark voucher as redeemed after successful PayU init.
-            // Note: if user abandons payment, voucher stays redeemed (acceptable trade-off vs double-use risk).
-            if (voucherRef) {
-                await prisma.fotoMatchReferral.update({
-                    where: { id: voucherRef.id },
-                    data: { reward_redeemed_at: new Date() },
-                }).catch(() => { });
+            try {
+                await prisma.booking.updateMany({
+                    where: { stripe_session_id: cartId, status: 'pending' },
+                    data: { payu_order_id: String(payuOrder.orderId) },
+                });
+            } catch (linkError) {
+                await cancelPayUOrder(String(payuOrder.orderId)).catch(() => undefined);
+                throw linkError;
             }
 
             return NextResponse.json({
                 ok: true,
+                paymentRequired: true,
                 message: "Płatność zainicjowana",
                 redirectUrl: payuOrder.redirectUri, // PayU returns redirectUri
                 orderId: payuOrder.orderId
@@ -384,7 +690,22 @@ export async function POST(request: Request) {
 
         } catch (payuError: any) {
             console.error('PayU Init Failed:', payuError);
-            throw payuError; // Bubble up to outer catch
+            await prisma.$transaction([
+                prisma.booking.updateMany({
+                    where: { stripe_session_id: cartId, status: 'pending' },
+                    data: {
+                        status: 'cancelled',
+                        cancelled_at: new Date(),
+                        cancelled_by: 'SYSTEM',
+                        cancellation_reason: 'Nie udało się zainicjować płatności PayU.',
+                    },
+                }),
+                prisma.giftCardOrder.updateMany({
+                    where: { payu_order_id: cartId, payment_status: 'pending' },
+                    data: { payment_status: 'failed' },
+                }),
+            ]).catch(cleanupError => console.error('Checkout cleanup failed:', cleanupError));
+            return NextResponse.json({ ok: false, message: "Nie udało się rozpocząć płatności. Termin został zwolniony — spróbuj ponownie." }, { status: 502 });
         }
 
     } catch (error: any) {

@@ -63,7 +63,9 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     return item;
                 });
 
-                setItems(sanitized);
+                // Checkout is deliberately single-item so a booking, voucher and
+                // payment can be committed atomically. Keep the latest customer choice.
+                setItems(sanitized.slice(-1));
             } catch (e) {
                 console.error('Failed to parse cart from localStorage', e);
                 // Fallback: clear invalid data
@@ -83,10 +85,13 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const addItem = useCallback((newItem: Omit<CartItem, 'id'>) => {
         // Fix: Use random string to ensure uniqueness even if called rapidly
         const id = `${newItem.type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        setItems(prev => [...prev, { ...newItem, id }]);
+        const replacesExistingChoice = items.length > 0;
+        setItems([{ ...newItem, id }]);
         setIsOpen(true);
-        toast.success(`Dodano do koszyka: ${newItem.title}`);
-    }, []);
+        toast.success(replacesExistingChoice
+            ? `Zmieniono wybór w koszyku: ${newItem.title}`
+            : `Dodano do koszyka: ${newItem.title}`);
+    }, [items.length]);
 
     const updateItem = useCallback((id: string, updates: Partial<CartItem>) => {
         setItems(prev => prev.map(item =>
