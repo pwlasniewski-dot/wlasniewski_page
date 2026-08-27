@@ -86,7 +86,15 @@ export async function GET(request: NextRequest) {
                 status: {
                     notIn: ['cancelled', 'rejected']
                 }
-            }
+            },
+            // Keep this public availability check independent from unrelated,
+            // newly added Booking columns until their migration is deployed.
+            select: {
+                status: true,
+                start_time: true,
+                end_time: true,
+                blocks_entire_day: true,
+            },
         });
 
         const normalizedBookings = bookingsForDate

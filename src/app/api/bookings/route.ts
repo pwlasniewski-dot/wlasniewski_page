@@ -50,6 +50,16 @@ export async function GET(request: Request) {
                             notIn: ["cancelled", "rejected", "archived"],
                         },
                     },
+                    // Availability must remain readable during additive schema
+                    // rollouts. Selecting the full Booking record would make a
+                    // deploy preview depend on columns that are not migrated yet.
+                    select: {
+                        date: true,
+                        status: true,
+                        start_time: true,
+                        end_time: true,
+                        blocks_entire_day: true,
+                    },
                 }),
                 prisma.setting.findFirst({ orderBy: { id: 'asc' }, select: { booking_min_days_ahead: true } }),
             ]);

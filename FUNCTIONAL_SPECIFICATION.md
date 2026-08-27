@@ -2,6 +2,12 @@
 
 Ten dokument stanowi kompleksowy opis funkcjonalności oraz logiki biznesowej platformy **FOTO-DRON Przemysław Właśniewski**. Dokumentacja została opracowana na podstawie audytu technicznego przeprowadzonego w grudniu 2025 r. Szczegóły techniczne dotyczące infrastruktury i wzorców projektowych znajdują się w dokumencie [ARCHITECTURE.md](file:///c:/Strona-fotografa/ARCHITECTURE.md).
 
+## Aktualizacja 2026-08-27 — dostępność terminów w rezerwacji
+
+- Minimalne wyprzedzenie zapisane w panelu jest egzekwowane zarówno przez kalendarz miesięczny, sprawdzenie godzin, jak i checkout. Dla wartości 7 dni wcześniejsze daty są nieaktywne już na pierwszym ekranie wyboru.
+- Kalendarz nie interpretuje pustej ani błędnej odpowiedzi jako wolnego miesiąca. W trakcie odczytu blokuje dni, a przy awarii pokazuje komunikat i przycisk ponowienia oraz usuwa niewiarygodny wybór.
+- Publiczne endpointy dostępności odczytują tylko pola potrzebne do ustalenia konfliktów, dzięki czemu niezwiązana, addytywna zmiana modelu `Booking` nie przerywa działania podglądu wdrożenia przed migracją.
+
 ## Aktualizacja 2026-08-21 — lejek i CMS Aero Analiza
 
 - Kanoniczne strony publiczne to `/`, `/termowizja`, `/inspekcja-fotowoltaiki-dronem`, `/inspekcja-dachu-dronem`, `/monitoring` i `/kujawsko-pomorskie`. Pozostałe historyczne adresy są przekierowaniami, nie osobnymi landingami.

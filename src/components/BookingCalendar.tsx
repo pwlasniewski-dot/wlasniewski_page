@@ -2,16 +2,12 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { isCurrentOrPastMonth, isPastBookingDate } from "@/lib/bookingDate";
+import {
+  parseCalendarAvailabilityPayload,
+  type CalendarDayAvailability,
+} from "@/lib/bookingAvailability";
 
 export type ServiceType = "Sesja" | "Ślub" | "Przyjęcie" | "Urodziny" | "Dron";
-
-type DayAvailability =
-  | undefined
-  | {
-    fullDay?: boolean;
-    booked?: string[];
-    ranges?: { start: string; end: string }[];
-  };
 
 type Props = {
   service: ServiceType;
@@ -85,30 +81,52 @@ export default function BookingCalendar(props: Props) {
   const [cursor, setCursor] = useState<Date>(() => new Date());
   const ym = useMemo(() => `${cursor.getFullYear()}-${pad(cursor.getMonth() + 1)}`, [cursor]);
 
-  const [availability, setAvailability] = useState<Record<string, DayAvailability>>({});
+  const [availability, setAvailability] = useState<Record<string, CalendarDayAvailability>>({});
   const [minBookingDate, setMinBookingDate] = useState<string | null>(null);
+  const [availabilityStatus, setAvailabilityStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [availabilityReload, setAvailabilityReload] = useState(0);
 
   useEffect(() => {
     const url =
       availabilityEndpoint ??
       `/api/bookings?mode=availability&ym=${encodeURIComponent(ym)}&service=${encodeURIComponent(service)}`;
     let alive = true;
-    fetch(url)
-      .then((r) => r.json())
-      .then((data) => {
+    const controller = new AbortController();
+    setAvailability({});
+    setMinBookingDate(null);
+    setAvailabilityStatus("loading");
+
+    void (async () => {
+      try {
+        const response = await fetch(url, { signal: controller.signal });
+        const data = await response.json();
+        if (!response.ok) throw new Error("availability_request_failed");
+
+        const parsed = parseCalendarAvailabilityPayload(data);
+        if (!parsed) throw new Error("availability_payload_invalid");
         if (!alive) return;
-        const av =
-          (data && (data.availability || data)) && typeof (data.availability || data) === "object"
-            ? (data.availability || data)
-            : {};
-        setAvailability(av);
-        setMinBookingDate(typeof data?.minBookingDate === 'string' ? data.minBookingDate : null);
-      })
-      .catch(() => setAvailability({}));
+
+        setAvailability(parsed.availability);
+        setMinBookingDate(parsed.minBookingDate);
+        setAvailabilityStatus("ready");
+      } catch (error) {
+        if (!alive || controller.signal.aborted) return;
+        console.error("[BookingCalendar] Availability unavailable", error);
+        setAvailability({});
+        setMinBookingDate(null);
+        setAvailabilityStatus("error");
+        (effectiveOnChange as ((value: { date: string; start?: string; end?: string } | null) => void) | undefined)?.(null);
+      }
+    })();
+
     return () => {
       alive = false;
+      controller.abort();
     };
-  }, [ym, service, availabilityEndpoint]);
+    // effectiveOnChange is intentionally captured for fail-closed cleanup only;
+    // inline consumer callbacks must not cause repeated availability requests.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ym, service, availabilityEndpoint, availabilityReload]);
 
   const daysGrid = useMemo(() => {
     const y = cursor.getFullYear();
@@ -126,6 +144,7 @@ export default function BookingCalendar(props: Props) {
   }, [cursor]);
 
   const selectDay = (iso: string) => {
+    if (availabilityStatus !== "ready") return;
     if (!iso || isPastBookingDate(iso) || (minBookingDate !== null && iso < minBookingDate)) return;
     if (availability[iso]?.fullDay) return;
 
@@ -211,7 +230,8 @@ export default function BookingCalendar(props: Props) {
           const isSelected = effectiveValue?.date === c.dateISO;
           const isPast = isPastBookingDate(c.dateISO);
           const isBeforeMinimum = minBookingDate !== null && c.dateISO < minBookingDate;
-          const disabled = isPast || isBeforeMinimum || info?.fullDay === true;
+          const availabilityUnavailable = availabilityStatus !== "ready";
+          const disabled = availabilityUnavailable || isPast || isBeforeMinimum || info?.fullDay === true;
 
           return (
             <button
@@ -227,7 +247,11 @@ export default function BookingCalendar(props: Props) {
                 disabled ? "bg-zinc-100 text-zinc-400 cursor-not-allowed" : "",
               ].join(" ")}
               title={
-                isPast
+                availabilityStatus === "loading"
+                  ? "Sprawdzam dostępność"
+                  : availabilityStatus === "error"
+                  ? "Nie udało się sprawdzić dostępności"
+                  : isPast
                   ? "Miniony termin"
                   : isBeforeMinimum
                   ? `Najbliższy możliwy termin: ${minBookingDate}`
@@ -241,6 +265,31 @@ export default function BookingCalendar(props: Props) {
           );
         })}
       </div>
+
+      {availabilityStatus !== "ready" && (
+        <div
+          className={`mt-4 rounded-lg border p-4 text-sm ${availabilityStatus === "error"
+            ? "border-red-300 bg-red-50 text-red-800"
+            : "border-amber-300 bg-amber-50 text-amber-900"}`}
+          role={availabilityStatus === "error" ? "alert" : "status"}
+          aria-live="polite"
+        >
+          {availabilityStatus === "loading" ? (
+            <p>Sprawdzam dostępne terminy…</p>
+          ) : (
+            <div className="flex flex-col items-start gap-3">
+              <p>Nie udało się pobrać dostępnych terminów. Kalendarz został bezpiecznie zablokowany.</p>
+              <button
+                type="button"
+                className="min-h-11 rounded-md border border-red-400 bg-white px-4 py-2 font-semibold text-red-800 hover:bg-red-100"
+                onClick={() => setAvailabilityReload(current => current + 1)}
+              >
+                Spróbuj ponownie
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {showTimeSlots && service === "Sesja" && effectiveValue?.date && (
         <div className="mt-4">

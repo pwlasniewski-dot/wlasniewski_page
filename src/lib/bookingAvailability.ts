@@ -1,7 +1,20 @@
+import { isValidBookingDate } from './bookingDate';
+
 export type BookingAvailabilityRecord = {
     blocks_entire_day?: boolean | null;
     start_time?: string | null;
     end_time?: string | null;
+};
+
+export type CalendarDayAvailability = {
+    fullDay?: boolean;
+    booked?: string[];
+    ranges?: Array<{ start: string; end: string }>;
+};
+
+export type CalendarAvailabilityPayload = {
+    availability: Record<string, CalendarDayAvailability>;
+    minBookingDate: string;
 };
 
 export const DEFAULT_AVAILABLE_HOURS = [9, 10, 11, 12, 13, 14, 15, 16, 17] as const;
@@ -22,6 +35,44 @@ export function parseBookingTime(value?: string | null): number | null {
     if (!match) return null;
     const [hours, minutes] = String(value).split(':').map(Number);
     return hours * 60 + minutes;
+}
+
+export function parseCalendarAvailabilityPayload(value: unknown): CalendarAvailabilityPayload | null {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+
+    const payload = value as Record<string, unknown>;
+    const minBookingDate = payload.minBookingDate;
+    const rawAvailability = payload.availability;
+
+    if (typeof minBookingDate !== 'string' || !isValidBookingDate(minBookingDate)) return null;
+    if (!rawAvailability || typeof rawAvailability !== 'object' || Array.isArray(rawAvailability)) return null;
+
+    const availability: Record<string, CalendarDayAvailability> = {};
+    for (const [dateISO, rawDay] of Object.entries(rawAvailability as Record<string, unknown>)) {
+        if (!isValidBookingDate(dateISO) || !rawDay || typeof rawDay !== 'object' || Array.isArray(rawDay)) continue;
+
+        const day = rawDay as Record<string, unknown>;
+        const booked = Array.isArray(day.booked)
+            ? day.booked.filter((item): item is string => typeof item === 'string' && parseBookingTime(item) !== null)
+            : [];
+        const ranges = Array.isArray(day.ranges)
+            ? day.ranges.flatMap(item => {
+                if (!item || typeof item !== 'object' || Array.isArray(item)) return [];
+                const range = item as Record<string, unknown>;
+                if (typeof range.start !== 'string' || typeof range.end !== 'string') return [];
+                if (parseBookingTime(range.start) === null || parseBookingTime(range.end) === null) return [];
+                return [{ start: range.start, end: range.end }];
+            })
+            : [];
+
+        availability[dateISO] = {
+            fullDay: day.fullDay === true,
+            booked,
+            ranges,
+        };
+    }
+
+    return { availability, minBookingDate };
 }
 
 export function isRequestedTimeAllowed(input: {

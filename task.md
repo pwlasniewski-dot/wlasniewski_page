@@ -1,5 +1,14 @@
 # Aktualny plan prac
 
+## 2026-08-27 — PR #50: poprawka kalendarza Deploy Preview
+
+- [x] Zidentyfikowano rozjazd: kalendarz pozwalał wybrać 29 sierpnia, a endpoint godzin poprawnie wymagał daty od 3 września przy siedmiodniowym wyprzedzeniu.
+- [x] Ograniczono zapytania dostępności do pól potrzebnych przy konflikcie, bez zależności od nowych kolumn atrybucji przed migracją.
+- [x] Dodano walidację odpowiedzi, blokadę kalendarza podczas ładowania i awarii, czyszczenie wyboru oraz przycisk ponowienia.
+- [x] Test regresji lejka rezerwacji: 15/15; brak błędów TypeScript w zmienionych plikach.
+- [ ] Zaktualizować gałąź PR #50, odebrać nowy Deploy Preview i sprawdzić wyszarzenie dat przed terminem minimalnym.
+- [ ] Po pozytywnym podglądzie zastosować migracje, wykonać smoke test i dopiero wtedy scalić PR.
+
 ## 2026-08-24 — FotoDron: CRM, galerie grupowe i widoczność administratora
 
 - [x] Formalny model galerii komunijnej: pełne pobranie dla uwierzytelnionego rodzica, wybory tylko do odbitek, płatne dodatki osobno, zgoda publikacyjna niezależnie, Adobe pozostaje.

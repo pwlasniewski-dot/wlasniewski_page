@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { dateISOInTimeZone, isBookingDateAllowed, isBookingStartInFuture, isCurrentOrPastMonth, isPastBookingDate, localDateISO, minimumBookingDateISO } from '../../src/lib/bookingDate.ts';
-import { hasBookingConflict, isRequestedTimeAllowed, parseAvailableHours } from '../../src/lib/bookingAvailability.ts';
+import { hasBookingConflict, isRequestedTimeAllowed, parseAvailableHours, parseCalendarAvailabilityPayload } from '../../src/lib/bookingAvailability.ts';
 import { checkoutItemsWithCurrentAttribution, parseConsentedClientAttribution, stripAttributionFromStoredCart } from '../../src/lib/analytics/clientAttribution.ts';
 import { calculateFotoMatchDiscount } from '../../src/lib/fotoMatchDiscount.ts';
 
@@ -51,6 +51,42 @@ test('availability uses configured hours and rejects overlaps or unreliable lega
     assert.equal(hasBookingConflict([{ start_time: '10:00', end_time: '12:00' }], { blocksEntireDay: false, startTime: '11:00', endTime: '13:00' }), true);
     assert.equal(hasBookingConflict([{ start_time: '10:00', end_time: '12:00' }], { blocksEntireDay: false, startTime: '12:00', endTime: '13:00' }), false);
     assert.equal(hasBookingConflict([{ blocks_entire_day: true }], { blocksEntireDay: false, startTime: '12:00', endTime: '13:00' }), true);
+});
+
+test('calendar accepts only a complete availability response and fails closed on API errors', async () => {
+    assert.deepEqual(parseCalendarAvailabilityPayload({
+        availability: {
+            '2026-09-03': {
+                fullDay: false,
+                booked: ['09:00', 'invalid'],
+                ranges: [{ start: '10:00', end: '12:00' }],
+            },
+        },
+        minBookingDate: '2026-09-03',
+    }), {
+        availability: {
+            '2026-09-03': {
+                fullDay: false,
+                booked: ['09:00'],
+                ranges: [{ start: '10:00', end: '12:00' }],
+            },
+        },
+        minBookingDate: '2026-09-03',
+    });
+    assert.equal(parseCalendarAvailabilityPayload({ ok: false, message: 'Błąd serwera' }), null);
+    assert.equal(parseCalendarAvailabilityPayload({ availability: {}, minBookingDate: 'invalid' }), null);
+
+    const calendar = await readFile(new URL('../../src/components/BookingCalendar.tsx', import.meta.url), 'utf8');
+    const monthlyAvailability = await readFile(new URL('../../src/app/api/bookings/route.ts', import.meta.url), 'utf8');
+    const dayAvailability = await readFile(new URL('../../src/app/api/availability/route.ts', import.meta.url), 'utf8');
+
+    assert.match(calendar, /if \(!response\.ok\) throw/);
+    assert.match(calendar, /availabilityStatus !== "ready"/);
+    assert.match(calendar, /Kalendarz został bezpiecznie zablokowany/);
+    assert.doesNotMatch(calendar, /data\.availability \|\| data/);
+    for (const source of [monthlyAvailability, dayAvailability]) {
+        assert.match(source, /select:\s*\{[\s\S]*?status:\s*true,[\s\S]*?start_time:\s*true,[\s\S]*?end_time:\s*true,[\s\S]*?blocks_entire_day:\s*true/);
+    }
 });
 
 test('sales attribution leaves browser storage only after analytics consent', () => {

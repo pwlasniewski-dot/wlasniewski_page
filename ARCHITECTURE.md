@@ -2,6 +2,12 @@
 
 Ten dokument stanowi techniczny blueprint platformy fotograficznej wlasniewski.pl. Jest on przeznaczony dla senior deweloperów i architektów systemowych, opisując strukturę, wzorce projektowe oraz krytyczne protokoły bezpieczeństwa.
 
+## Aktualizacja 2026-08-27 — odporny kontrakt dostępności rezerwacji
+
+- `/api/bookings?mode=availability` oraz `/api/availability` stosują jawne projekcje Prisma zamiast pobierania pełnego modelu `Booking`. Kontrakt rollout'u pozostaje kompatybilny do czasu zastosowania nowych, addytywnych kolumn.
+- `parseCalendarAvailabilityPayload` jest granicą zaufania odpowiedzi: wymaga prawidłowego `minBookingDate`, obiektu dostępności oraz normalizuje godziny i zakresy.
+- `BookingCalendar` ma stany `loading/ready/error`; wybór daty jest możliwy wyłącznie w `ready`. Nieudany odczyt działa fail-closed, usuwa istniejący wybór i pozwala jawnie ponowić żądanie.
+
 ## Aktualizacja 2026-08-21 — izolowana warstwa Aero Analiza
 
 - `middleware.ts` kanonizuje `www.aeroanaliza.pl`, przepuszcza hostowy `/robots.txt`, przepisuje sitemapę do allowlisty Aero i przekierowuje B2C oraz historyczne adresy bez renderowania duplikatów.

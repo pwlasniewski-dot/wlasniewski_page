@@ -1,5 +1,12 @@
 # PROJECT_HISTORIA & VADEMECUM STABILNOŚCI
 
+## 2026-08-27 — bezpieczny kalendarz podglądu lejka rezerwacji
+
+- Deploy Preview PR #50 ujawnił, że miesięczny endpoint dostępności pobierał pełne rekordy `Booking`. Przed zastosowaniem addytywnej migracji Prisma zapytanie mogło więc odwołać się do nieistniejących jeszcze kolumn i nie zwrócić minimalnej daty rezerwacji.
+- Oba publiczne odczyty dostępności pobierają teraz wyłącznie pola niezbędne do wykrywania konfliktu: datę, status, godziny i blokadę całego dnia. Dzięki temu podgląd działa także w kontrolowanym oknie przed migracją.
+- `BookingCalendar` działa fail-closed: do czasu poprawnej, walidowanej odpowiedzi dni są nieaktywne; awaria API czyści wybór, blokuje kalendarz i udostępnia jawne ponowienie zamiast udawać wolne terminy.
+- Test regresji lejka przechodzi 15/15. PR #50 pozostaje niescalony do zakończenia nowego Deploy Preview, migracji i kontroli produkcyjnej.
+
 ## 2026-08-24 — model galerii komunijnych i audyt produkcji FotoDron
 
 - Właściciel formalnie potwierdził, że każdy uwierzytelniony rodzic może pobrać całą cyfrową galerię grupy. Wybory zdjęć służą wyłącznie zleceniu odbitek, płatne dodatki są osobnym zamówieniem, a zgoda na publikację jest niezależna.
