@@ -28,6 +28,7 @@ const ALLOWED_EVENTS = new Set([
   'v2_date_selected', 'v2_time_selected', 'v2_booking_added_to_cart',
   'v2_booking_form_started', 'v2_booking_validation_failed',
   'v2_aero_inquiry_started', 'v2_aero_inquiry_submitted',
+  'v2_photo_inquiry_started', 'v2_photo_inquiry_submitted',
   'v2_checkout_view', 'v2_checkout_submit', 'v2_payu_redirect',
   'v2_service_load_result', 'v2_availability_result', 'v2_checkout_result',
   'v2_client_error', 'v2_performance',
@@ -143,7 +144,10 @@ function safeMetadata(raw: unknown, eventType: string) {
   const value = raw && typeof raw === 'object' ? raw as Record<string, unknown> : {};
   if (value.consent !== true) return null;
   const result: Record<string, unknown> = { consent: true };
-  const stringKeys = ['client_ts', 'session_started_at', 'timezone', 'viewport', 'tag', 'analytics_id', 'form_id'];
+  const stringKeys = [
+    'client_ts', 'session_started_at', 'timezone', 'viewport', 'tag', 'analytics_id', 'form_id',
+    'city_slug', 'service_slug', 'package_slug', 'lead_source',
+  ];
   for (const key of stringKeys) {
     const safe = safeText(value[key], key === 'source' ? 100 : 80);
     if (safe) result[key] = safe;

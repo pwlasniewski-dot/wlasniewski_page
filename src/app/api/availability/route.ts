@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
 import { loadDronePhotographyCmsPage } from '@/lib/dronePhotographyCms';
+import { hasBookingConflict, parseAvailableHours } from '@/lib/bookingAvailability';
+import {
+    bookingDateUtcRange,
+    isBookingDateAllowed,
+    isBookingStartInFuture,
+    minimumBookingDateISO,
+} from '@/lib/bookingDate';
+import { isBookingBlockingAvailability } from '@/lib/bookingStatus';
 
 interface AvailabilitySlot {
     hour: number;
@@ -23,8 +31,21 @@ export async function GET(request: NextRequest) {
     }
 
     try {
-        // Get package details
-        let pkg: { name: string; hours: number } | null = null;
+        const now = new Date();
+        const dateRange = bookingDateUtcRange(dateStr);
+        if (!dateRange) {
+            return NextResponse.json({ error: 'Nieprawidłowa data rezerwacji' }, { status: 400 });
+        }
+        const bookingSettings = await prisma.setting.findFirst({ orderBy: { id: 'asc' } });
+        const minDaysAhead = Math.max(0, Math.min(365, bookingSettings?.booking_min_days_ahead ?? 7));
+        const minBookingDate = minimumBookingDateISO(minDaysAhead, now, 'Europe/Warsaw');
+        if (!isBookingDateAllowed(dateStr, minDaysAhead, now, 'Europe/Warsaw')) {
+            return NextResponse.json({ error: `Najbliższy dostępny dzień rezerwacji to ${minBookingDate}` }, { status: 400 });
+        }
+
+        // Get package details. Godziny pakietu są jedynym źródłem godzin
+        // wyświetlanych w rezerwacji; pustą konfigurację obsługuje bezpieczny fallback.
+        let pkg: { name: string; hours: number; available_hours?: string | null; blocks_entire_day?: boolean | null } | null = null;
         if (dronePackageSlug) {
             const { config } = await loadDronePhotographyCmsPage();
             const item = config.packages.find(candidate =>
@@ -32,31 +53,35 @@ export async function GET(request: NextRequest) {
                 candidate.active !== false &&
                 candidate.bookingMode !== 'addon'
             );
-            if (item) pkg = { name: item.name, hours: Math.max(1, item.durationHours || 1) };
+            if (item) pkg = {
+                name: item.name,
+                hours: Math.max(1, item.durationHours || 1),
+                blocks_entire_day: item.blocksEntireDay === true,
+            };
         } else {
             const pkgQuery = packageId ? { id: parseInt(packageId) } : { service_id: parseInt(serviceId!) };
-            pkg = await prisma.package.findFirst({ where: pkgQuery, select: { name: true, hours: true } });
+            pkg = await prisma.package.findFirst({
+                where: pkgQuery,
+                select: { name: true, hours: true, available_hours: true, blocks_entire_day: true },
+            });
         }
 
         if (!pkg) {
             return NextResponse.json({ error: 'Package not found' }, { status: 404 });
         }
 
-        // Parse available hours from package - for now default to all hours
-        // This will be enhanced when Prisma schema updates are fully synced
-        let availableHoursArray: number[] = Array.from({ length: 24 }, (_, i) => i);
+        const availableHoursArray = parseAvailableHours(pkg.available_hours);
 
         // Get the day of week (0 = Sunday, 1 = Monday, etc.)
-        const bookingDate = new Date(dateStr);
-        const dayOfWeek = bookingDate.getDay();
+        const dayOfWeek = dateRange.start.getUTCDay();
         const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
 
         // Get all bookings for this date
         const bookingsForDate = await prisma.booking.findMany({
             where: {
                 date: {
-                    gte: new Date(dateStr + 'T00:00:00Z'),
-                    lt: new Date(dateStr + 'T23:59:59Z')
+                    gte: dateRange.start,
+                    lt: dateRange.end,
                 },
                 status: {
                     notIn: ['cancelled', 'rejected']
@@ -64,78 +89,39 @@ export async function GET(request: NextRequest) {
             }
         });
 
-        // Build availability map
-        const availabilityMap = new Map<number, AvailabilitySlot>();
+        const normalizedBookings = bookingsForDate
+          .filter(booking => isBookingBlockingAvailability(booking))
+          .map(booking => ({
+            start_time: booking.start_time,
+            end_time: booking.end_time,
+            blocks_entire_day: booking.blocks_entire_day,
+          }));
+        const dayCompletelyBlocked = normalizedBookings.some(booking => booking.blocks_entire_day);
+        const fullDayAvailable = normalizedBookings.length === 0
+            && isBookingStartInFuture(dateStr, '00:00', now, 'Europe/Warsaw');
+        const configuredHours = new Set(availableHoursArray);
 
-        // Initialize all hours as available
-        for (let hour = 0; hour < 24; hour++) {
-            availabilityMap.set(hour, {
-                hour,
-                available: availableHoursArray.includes(hour),
-                reason: availableHoursArray.includes(hour) ? undefined : 'outside_hours'
-            });
-        }
-
-        // Process existing bookings with intelligent blocking logic
-        // Rules:
-        // 1. If booking blocks_entire_day (weddings, events) = entire day is blocked
-        // 2. If booking is a session (1h) = only that time slot is blocked
-        // 3. Weddings/events take priority - if day is blocked, sessions can't be added
-
-        let dayCompletelyBlocked = false;
-
-        for (const booking of bookingsForDate) {
-            // Check if this booking should block entire day
-            // For now, we check if it's wedding/event service type by analyzing package info
-            // This will be enhanced when blocks_entire_day field is available
-
-            const isWeddingOrEvent = booking.blocks_entire_day || booking.service === 'Ślub' ||
-                booking.service === 'Przyjęcie' ||
-                booking.service === 'Urodziny';
-
-            if (isWeddingOrEvent) {
-                // Block entire day
-                dayCompletelyBlocked = true;
-                for (let hour = 0; hour < 24; hour++) {
-                    availabilityMap.set(hour, {
-                        hour,
-                        available: false,
-                        reason: 'booked_event'
-                    });
-                }
-            } else if (booking.start_time && booking.end_time) {
-                // Block only specific time slot (session)
-                // But don't block if day is already blocked by event
-                if (!dayCompletelyBlocked) {
-                    const startHour = parseInt(booking.start_time.split(':')[0]);
-                    const endHour = parseInt(booking.end_time.split(':')[0]);
-
-                    for (let hour = startHour; hour < endHour && hour < 24; hour++) {
-                        const current = availabilityMap.get(hour);
-                        // Keep event blocks, only add session blocks if not blocked by event
-                        if (current && (current.available || current.reason === 'outside_hours')) {
-                            availabilityMap.set(hour, {
-                                hour,
-                                available: false,
-                                reason: 'booked_session'
-                            });
-                        }
-                    }
-                }
+        const slots: AvailabilitySlot[] = Array.from({ length: 24 }, (_, hour) => {
+            const fitsConfiguredHours = Array.from({ length: pkg.hours }, (_, index) => hour + index)
+                .every(candidate => configuredHours.has(candidate));
+            if (!fitsConfiguredHours) return { hour, available: false, reason: 'outside_hours' };
+            const start = `${String(hour).padStart(2, '0')}:00`;
+            if (!isBookingStartInFuture(dateStr, start, now, 'Europe/Warsaw')) {
+                return { hour, available: false, reason: 'past_time' };
             }
-        }
+            if (dayCompletelyBlocked) return { hour, available: false, reason: 'booked_event' };
 
-        // A start hour is available only when the whole selected package fits
-        // before the next reservation. This prevents a 2–3 hour drone job from
-        // being placed over an already occupied slot.
-        const slots = Array.from(availabilityMap.values())
-            .sort((a, b) => a.hour - b.hour)
-            .map(slot => {
-                if (!slot.available) return slot;
-                const fits = Array.from({ length: pkg.hours }, (_, index) => availabilityMap.get(slot.hour + index))
-                    .every(candidate => candidate?.available === true);
-                return fits ? slot : { ...slot, available: false, reason: 'booked_session' };
+            const endHour = hour + pkg.hours;
+            const end = endHour < 24 ? `${String(endHour).padStart(2, '0')}:00` : null;
+            const conflicts = !end || hasBookingConflict(normalizedBookings, {
+                blocksEntireDay: false,
+                startTime: start,
+                endTime: end,
             });
+            return conflicts
+                ? { hour, available: false, reason: 'booked_session' }
+                : { hour, available: true };
+        });
 
         return NextResponse.json({
             success: true,
@@ -145,6 +131,8 @@ export async function GET(request: NextRequest) {
             packageName: pkg.name,
             packageHours: pkg.hours,
             dayCompletelyBlocked,
+            fullDayAvailable: pkg.blocks_entire_day ? fullDayAvailable : undefined,
+            minBookingDate,
             slots
         });
     } catch (error) {

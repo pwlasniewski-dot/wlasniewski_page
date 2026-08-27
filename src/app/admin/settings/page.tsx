@@ -14,9 +14,6 @@ export default function SettingsPage() {
         urgency_month: 'Styczeń',
         social_proof_enabled: 'false',
         social_proof_total_clients: '0',
-        promo_code_discount_enabled: 'false',
-        promo_code_discount_amount: '10',
-        promo_code_discount_type: 'percentage',
         // Navbar
         navbar_layout: 'logo_left_menu_right',
         navbar_sticky: 'true',
@@ -128,14 +125,21 @@ export default function SettingsPage() {
             const data = await res.json();
             if (data.success) {
                 setSettings(prev => {
-                    const newSettings = { ...prev, ...data.settings };
+                    const {
+                        promo_code_discount_enabled: _legacyPromoEnabled,
+                        promo_code_discount_amount: _legacyPromoAmount,
+                        promo_code_discount_type: _legacyPromoType,
+                        promo_code: _legacyPromoCode,
+                        promo_code_expiry: _legacyPromoExpiry,
+                        ...safeSettings
+                    } = data.settings;
+                    const newSettings = { ...prev, ...safeSettings };
 
                     // Helper to safely convert to string for frontend state
                     const normalizeBoolean = (val: any) => String(val) === 'true' || val === true ? 'true' : 'false';
 
                     // Normalize specific boolean fields that differ in DB type vs Frontend state
                     if (newSettings.urgency_enabled !== undefined) newSettings.urgency_enabled = normalizeBoolean(newSettings.urgency_enabled);
-                    if (newSettings.promo_code_discount_enabled !== undefined) newSettings.promo_code_discount_enabled = normalizeBoolean(newSettings.promo_code_discount_enabled);
                     if (newSettings.gift_card_promo_enabled !== undefined) newSettings.gift_card_promo_enabled = normalizeBoolean(newSettings.gift_card_promo_enabled);
                     if (newSettings.navbar_sticky !== undefined) newSettings.navbar_sticky = normalizeBoolean(newSettings.navbar_sticky);
                     if (newSettings.navbar_transparent !== undefined) newSettings.navbar_transparent = normalizeBoolean(newSettings.navbar_transparent);
@@ -187,7 +191,7 @@ export default function SettingsPage() {
             const settingsToSave = { ...settings } as Record<string, any>;
 
             // Convert boolean fields to actual booleans
-            const booleanFields = ['urgency_enabled', 'promo_code_discount_enabled', 'gift_card_promo_enabled',
+            const booleanFields = ['urgency_enabled', 'gift_card_promo_enabled',
                 'navbar_sticky', 'navbar_transparent', 'p24_test_mode', 'social_proof_enabled',
                 'p24_method_blik', 'p24_method_card', 'p24_method_transfer', 'booking_require_payment',
                 'split_payment_enabled'];
@@ -391,45 +395,18 @@ export default function SettingsPage() {
                     </div>
                 </div>
 
-                {/* Promo Code Settings */}
+                {/* Promo Code source */}
                 <div className="bg-zinc-900 shadow rounded-lg border border-zinc-800 p-6">
                     <h2 className="text-lg font-medium text-white mb-4">Kody Rabatowe (Globalne)</h2>
-                    <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                            <label className="text-sm font-medium text-zinc-400">Włącz rabat dla wszystkich</label>
-                            <button
-                                onClick={() => setSettings(s => ({ ...s, promo_code_discount_enabled: s.promo_code_discount_enabled === 'true' ? 'false' : 'true' }))}
-                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-gold-500 focus:ring-offset-2 ${settings.promo_code_discount_enabled === 'true' ? 'bg-gold-500' : 'bg-zinc-700'}`}
-                            >
-                                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${settings.promo_code_discount_enabled === 'true' ? 'translate-x-6' : 'translate-x-1'}`} />
-                            </button>
-                        </div>
-
-                        {settings.promo_code_discount_enabled === 'true' && (
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-zinc-400 mb-1">Wartość rabatu</label>
-                                    <input
-                                        type="number"
-                                        value={settings.promo_code_discount_amount || ''}
-                                        onChange={e => setSettings(s => ({ ...s, promo_code_discount_amount: e.target.value }))}
-                                        className="block w-full rounded-md border-zinc-700 bg-zinc-800 text-white shadow-sm focus:border-gold-500 focus:ring-gold-500 sm:text-sm px-3 py-2"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-zinc-400 mb-1">Typ rabatu</label>
-                                    <select
-                                        value={settings.promo_code_discount_type}
-                                        onChange={e => setSettings(s => ({ ...s, promo_code_discount_type: e.target.value }))}
-                                        className="block w-full rounded-md border-zinc-700 bg-zinc-800 text-white shadow-sm focus:border-gold-500 focus:ring-gold-500 sm:text-sm px-3 py-2"
-                                    >
-                                        <option value="percentage">% (Procentowy)</option>
-                                        <option value="fixed">PLN (Kwotowy)</option>
-                                    </select>
-                                </div>
-                            </div>
-                        )}
-                    </div>
+                    <p className="text-sm text-zinc-400 mb-4">
+                        Kod, rabat, ważność i miejsca publikacji są zarządzane w jednym źródle.
+                    </p>
+                    <a
+                        href="/admin/promo-codes"
+                        className="inline-flex rounded-lg bg-gold-500 px-4 py-2 text-sm font-semibold text-black hover:bg-gold-400"
+                    >
+                        Przejdź do kodów promocyjnych
+                    </a>
                 </div>
 
                 {/* Urgency Banner Settings */}

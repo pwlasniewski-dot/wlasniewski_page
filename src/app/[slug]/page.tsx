@@ -1,4 +1,5 @@
 import { notFound, permanentRedirect } from 'next/navigation';
+import { Suspense } from 'react';
 import prisma from '@/lib/db/prisma';
 import PageRenderer from '@/components/PageRenderer';
 import { Metadata } from 'next';
@@ -8,6 +9,9 @@ import CityLandingPage, { generateMetadata as cityGenerateMetadata } from '@/app
 import { b2bPublicPath, isB2bCmsPage } from '@/lib/sites/b2b-routing';
 import { findActivePublicPackages } from '@/lib/publicPackagePricing';
 import { getServiceGrowthConfig, type ServiceGrowthConfig } from '@/lib/serviceGrowth';
+import CityLeadForm from '@/components/CityLeadForm';
+import { loadPhotoFunnelConfig } from '@/lib/marketing/photo-funnel.server';
+import type { PhotoFunnelConfig } from '@/lib/marketing/photo-funnel';
 
 interface PageProps {
     params: Promise<{ slug: string }>;
@@ -37,10 +41,18 @@ function safeGrowthCity(value: string | string[] | undefined) {
     return city && GROWTH_CITIES.has(city) ? city : null;
 }
 
-function bookingHref(config: ServiceGrowthConfig, source: string, city?: string | null) {
+function bookingHref(config: ServiceGrowthConfig, source: string, city?: string | null, packageId?: number) {
     const params = new URLSearchParams({ source, service: config.bookingService });
     if (city) params.set('city', city);
+    if (packageId) params.set('package_id', String(packageId));
     return `/rezerwacja?${params.toString()}`;
+}
+
+function inquiryHref(config: ServiceGrowthConfig, source: string, city?: string | null, packageId?: number) {
+    const params = new URLSearchParams({ source, service: config.bookingService });
+    if (city) params.set('city', city);
+    if (packageId) params.set('package_slug', `package-${packageId}`);
+    return `?${params.toString()}#szybki-kontakt`;
 }
 
 function formatPrice(priceInCents: number) {
@@ -52,11 +64,13 @@ function ServiceGrowthOffer({
     packages,
     editorial,
     city,
+    funnelConfig,
 }: {
     config: ServiceGrowthConfig;
     packages: GrowthPackage[];
     editorial: boolean;
     city?: string | null;
+    funnelConfig: PhotoFunnelConfig;
 }) {
     const sectionClass = editorial
         ? 'border-t border-[#d5cabd] bg-[#ebe4da] px-6 py-16 text-[#2b251f]'
@@ -86,40 +100,64 @@ function ServiceGrowthOffer({
                         <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                             <Link
                                 href={bookingHref(config, config.slug, city)}
+                                data-analytics="photo-cta-booking-offer"
                                 className={editorial
                                     ? 'inline-flex items-center justify-center rounded-full bg-[#2b251f] px-7 py-3.5 text-sm font-semibold text-white transition hover:bg-[#4a4036]'
                                     : 'inline-flex items-center justify-center rounded-full bg-white px-7 py-3.5 text-sm font-semibold text-zinc-950 transition hover:bg-gold-400'}
                             >
-                                {config.bookingLabel}
+                                {funnelConfig.copy.packageBookingCtaLabel}
                             </Link>
-                            <Link
-                                href="/kontakt"
-                                className={editorial
-                                    ? 'inline-flex items-center justify-center rounded-full border border-[#a99b89] px-7 py-3.5 text-sm font-semibold transition hover:border-[#2b251f]'
-                                    : 'inline-flex items-center justify-center rounded-full border border-white/30 px-7 py-3.5 text-sm font-semibold transition hover:border-white'}
-                            >
-                                Zapytaj o inny zakres
-                            </Link>
+                            {funnelConfig.display.showOfferInquiryCta && (
+                                <Link
+                                    href={inquiryHref(config, `${config.slug}-offer-inquiry`, city)}
+                                    data-analytics="photo-cta-inquiry-offer"
+                                    className={editorial
+                                        ? 'inline-flex items-center justify-center rounded-full border border-[#a99b89] px-7 py-3.5 text-sm font-semibold transition hover:border-[#2b251f]'
+                                        : 'inline-flex items-center justify-center rounded-full border border-white/30 px-7 py-3.5 text-sm font-semibold transition hover:border-white'}
+                                >
+                                    {funnelConfig.copy.inquiryCtaLabel}
+                                </Link>
+                            )}
                         </div>
                     </div>
 
                     <div className="grid gap-4 md:grid-cols-3">
                         {packages.length > 0 ? packages.slice(0, 3).map((item) => (
-                            <Link
+                            <article
                                 key={item.id}
-                                href={bookingHref(config, `${config.slug}-package`, city)}
-                                className={`group flex min-h-48 flex-col rounded-2xl border p-6 transition hover:-translate-y-0.5 ${cardClass}`}
+                                className={`flex min-h-56 flex-col rounded-2xl border p-6 ${cardClass}`}
                             >
                                 <h3 className="text-xl font-semibold">{item.name}</h3>
                                 <p className={`mt-3 text-sm ${mutedClass}`}>
                                     {item.hours === 1 ? '1 godzina fotografowania' : `${item.hours} godziny fotografowania`}
                                 </p>
                                 {item.subtitle && <p className={`mt-2 text-sm leading-relaxed ${mutedClass}`}>{item.subtitle}</p>}
-                                <div className="mt-auto flex items-end justify-between gap-3 pt-7">
+                                <div className="mt-auto pt-7">
                                     <span className="text-lg font-semibold">{formatPrice(item.price)}</span>
-                                    <span className="transition group-hover:translate-x-1" aria-hidden="true">→</span>
+                                    <div className="mt-5 grid gap-2">
+                                        <Link
+                                            href={bookingHref(config, `${config.slug}-package`, city, item.id)}
+                                            data-analytics="photo-cta-booking-package"
+                                            className={editorial
+                                                ? 'inline-flex items-center justify-center rounded-full bg-[#2b251f] px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-[#4a4036]'
+                                                : 'inline-flex items-center justify-center rounded-full bg-white px-4 py-2.5 text-xs font-semibold text-zinc-950 transition hover:bg-gold-400'}
+                                        >
+                                            {funnelConfig.copy.packageBookingCtaLabel}
+                                        </Link>
+                                        {funnelConfig.display.showPackageInquiryCta && (
+                                            <Link
+                                                href={inquiryHref(config, `${config.slug}-package-inquiry`, city, item.id)}
+                                                data-analytics="photo-cta-inquiry-package"
+                                                className={editorial
+                                                    ? 'inline-flex items-center justify-center rounded-full border border-[#a99b89] px-4 py-2.5 text-center text-xs font-semibold transition hover:border-[#2b251f]'
+                                                    : 'inline-flex items-center justify-center rounded-full border border-white/30 px-4 py-2.5 text-center text-xs font-semibold transition hover:border-white'}
+                                            >
+                                                {funnelConfig.copy.packageInquiryCtaLabel}
+                                            </Link>
+                                        )}
+                                    </div>
                                 </div>
-                            </Link>
+                            </article>
                         )) : (
                             <div className={`rounded-2xl border p-6 md:col-span-3 ${cardClass}`}>
                                 <p className="font-semibold">Aktualne pakiety i ceny są dostępne w rezerwacji.</p>
@@ -127,6 +165,37 @@ function ServiceGrowthOffer({
                         )}
                     </div>
                 </div>
+            </div>
+        </section>
+    );
+}
+
+function ServiceInquirySection({
+    growthConfig,
+    city,
+    funnelConfig,
+}: {
+    growthConfig: ServiceGrowthConfig;
+    city?: string | null;
+    funnelConfig: PhotoFunnelConfig;
+}) {
+    return (
+        <section id="szybki-kontakt" className="scroll-mt-24 border-t border-white/10 bg-zinc-950 px-6 py-16 text-white md:py-20">
+            <div className="mx-auto max-w-5xl">
+                <div className="mx-auto mb-9 max-w-3xl text-center">
+                    <p className="text-xs font-semibold uppercase tracking-[0.24em] text-gold-400">{funnelConfig.copy.serviceEyebrow}</p>
+                    <h2 className="mt-4 text-3xl font-semibold leading-tight md:text-4xl">{funnelConfig.copy.serviceTitle}</h2>
+                    <p className="mt-4 leading-relaxed text-zinc-300">{funnelConfig.copy.serviceDescription}</p>
+                </div>
+                <Suspense fallback={<div className="min-h-96 rounded-2xl border border-white/10 bg-zinc-900/70" aria-label="Ładowanie formularza" />}>
+                    <CityLeadForm
+                        city={city || ''}
+                        initialService={growthConfig.bookingService}
+                        source={`${growthConfig.slug}-soft-inquiry`}
+                        showCityField={!city}
+                        funnelConfig={funnelConfig}
+                    />
+                </Suspense>
             </div>
         </section>
     );
@@ -162,8 +231,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
     if (!page) {
         // Delegate to city landing metadata if this is a fotograf-{city} URL
-    if (slug.startsWith('fotograf-')) {
-        return cityGenerateMetadata({ params: Promise.resolve({ city: slug.replace('fotograf-', '') }) });
+        if (slug.startsWith('fotograf-')) {
+            return cityGenerateMetadata({ params: Promise.resolve({ city: slug.replace('fotograf-', '') }) });
+        }
+        return {
+            title: 'Strona nie znaleziona',
+        };
     }
 
     if (isB2bCmsPage(page)) {
@@ -182,10 +255,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
             },
         };
     }
-        return {
-            title: 'Strona nie znaleziona',
-        };
-    }
 
     // City landing pages use rich metadata from the CityLandingPage component
     if (page.page_type === 'city_landing') {
@@ -194,13 +263,25 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
     if (growthConfig) {
         const canonical = `https://wlasniewski.pl/${slug}`;
+        let minimumPrice: number | null = null;
+        try {
+            const packages = await findActivePublicPackages({ serviceName: growthConfig.bookingService });
+            minimumPrice = packages.length > 0 ? Math.min(...packages.map(pkg => pkg.price)) : null;
+        } catch (error) {
+            console.warn(`[service-growth] Metadata price unavailable for ${slug}`, error);
+        }
+        const priceSuffix = minimumPrice ? ` od ${formatPrice(minimumPrice)}` : ' i terminy';
+        const metaTitle = `${growthConfig.metaTitle}${priceSuffix}`;
+        const metaDescription = minimumPrice
+            ? `${growthConfig.metaDescription} Aktywne pakiety od ${formatPrice(minimumPrice)}.`
+            : growthConfig.metaDescription;
         return {
-            title: growthConfig.metaTitle,
-            description: growthConfig.metaDescription,
+            title: metaTitle,
+            description: metaDescription,
             alternates: { canonical },
             openGraph: {
-                title: growthConfig.metaTitle,
-                description: growthConfig.metaDescription,
+                title: metaTitle,
+                description: metaDescription,
                 type: 'website',
                 url: canonical,
                 images: page.hero_image ? [page.hero_image] : [],
@@ -231,6 +312,7 @@ export default async function DynamicPage({ params, searchParams }: PageProps) {
     const growthConfig = getServiceGrowthConfig(slug);
     const resolvedSearchParams = searchParams ? await searchParams : undefined;
     const growthCity = safeGrowthCity(resolvedSearchParams?.city);
+    const photoFunnelConfig = growthConfig ? await loadPhotoFunnelConfig() : null;
 
     if (!page) {
         // Delegate to city landing page if this is a fotograf-{city} URL
@@ -327,14 +409,28 @@ export default async function DynamicPage({ params, searchParams }: PageProps) {
                         <p className={isEditorialService ? 'mt-7 max-w-3xl text-lg leading-relaxed text-[#686057]' : 'mt-7 max-w-3xl text-lg leading-relaxed text-zinc-300'}>
                             {growthConfig.intro}
                         </p>
-                        <Link
-                            href={bookingHref(growthConfig, `${growthConfig.slug}-hero`, growthCity)}
-                            className={isEditorialService
-                                ? 'mt-8 inline-flex rounded-full bg-[#2b251f] px-7 py-3.5 text-sm font-semibold text-white transition hover:bg-[#4a4036]'
-                                : 'mt-8 inline-flex rounded-full bg-white px-7 py-3.5 text-sm font-semibold text-zinc-950 transition hover:bg-gold-400'}
-                        >
-                            {growthConfig.bookingLabel}
-                        </Link>
+                        <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                            <Link
+                                href={bookingHref(growthConfig, `${growthConfig.slug}-hero`, growthCity)}
+                                data-analytics="photo-cta-booking-hero"
+                                className={isEditorialService
+                                    ? 'inline-flex items-center justify-center rounded-full bg-[#2b251f] px-7 py-3.5 text-sm font-semibold text-white transition hover:bg-[#4a4036]'
+                                    : 'inline-flex items-center justify-center rounded-full bg-white px-7 py-3.5 text-sm font-semibold text-zinc-950 transition hover:bg-gold-400'}
+                            >
+                                {photoFunnelConfig!.copy.packageBookingCtaLabel}
+                            </Link>
+                            {photoFunnelConfig?.display.showHeroInquiryCta && (
+                                <Link
+                                    href={inquiryHref(growthConfig, `${growthConfig.slug}-hero-inquiry`, growthCity)}
+                                    data-analytics="photo-cta-inquiry-hero"
+                                    className={isEditorialService
+                                        ? 'inline-flex items-center justify-center rounded-full border border-[#a99b89] px-7 py-3.5 text-sm font-semibold transition hover:border-[#2b251f]'
+                                        : 'inline-flex items-center justify-center rounded-full border border-white/30 px-7 py-3.5 text-sm font-semibold transition hover:border-white'}
+                                >
+                                    {photoFunnelConfig.copy.inquiryCtaLabel}
+                                </Link>
+                            )}
+                        </div>
                     </div>
                 </section>
             ) : !hasVisiblePrimaryHeading ? <h1 className="sr-only">{page.title}</h1> : null}
@@ -369,13 +465,31 @@ export default async function DynamicPage({ params, searchParams }: PageProps) {
                             { '@type': 'AdministrativeArea', name: 'województwo kujawsko-pomorskie' },
                         ],
                         image: page.hero_image || undefined,
+                        ...(growthPackages.length > 0 ? {
+                            offers: growthPackages.map((pkg) => ({
+                                '@type': 'Offer',
+                                name: pkg.name,
+                                price: (pkg.price / 100).toFixed(2),
+                                priceCurrency: 'PLN',
+                                availability: 'https://schema.org/InStock',
+                                url: `https://wlasniewski.pl/rezerwacja?service=${encodeURIComponent(growthConfig?.bookingService || serviceLabel)}&package_id=${pkg.id}`,
+                            })),
+                        } : {}),
                     }),
                 }}
             />
             <PageRenderer sections={sections} />
 
-            {growthConfig && (
-                <ServiceGrowthOffer config={growthConfig} packages={growthPackages} editorial={isEditorialService} city={growthCity} />
+            {growthConfig && photoFunnelConfig?.display.serviceModuleEnabled && photoFunnelConfig.display.servicePosition === 'before_packages' && (
+                <ServiceInquirySection growthConfig={growthConfig} city={growthCity} funnelConfig={photoFunnelConfig} />
+            )}
+
+            {growthConfig && photoFunnelConfig && (
+                <ServiceGrowthOffer config={growthConfig} packages={growthPackages} editorial={isEditorialService} city={growthCity} funnelConfig={photoFunnelConfig} />
+            )}
+
+            {growthConfig && photoFunnelConfig?.display.serviceModuleEnabled && photoFunnelConfig.display.servicePosition === 'after_packages' && (
+                <ServiceInquirySection growthConfig={growthConfig} city={growthCity} funnelConfig={photoFunnelConfig} />
             )}
 
             {growthConfig?.slug === 'slub' && (

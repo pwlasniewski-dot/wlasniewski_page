@@ -1,5 +1,7 @@
 import prisma from '@/lib/db/prisma';
 import { headers } from "next/headers";
+import { PAYU_ORDER_VALIDITY_SECONDS } from '@/lib/paymentPolicy';
+import { resolvePayUNotifyUrl } from '@/lib/payments/payuNotification';
 
 interface PayUSettings {
     merchantPosId: string;
@@ -12,7 +14,7 @@ interface PayUSettings {
 
 async function getPayUSettings(): Promise<PayUSettings | null> {
     const settings = await prisma.setting.findFirst({ orderBy: { id: 'asc' } });
-    if (!settings || !settings.payu_merchant_pos_id || !settings.payu_client_id || !settings.payu_client_secret) {
+    if (!settings || !settings.payu_merchant_pos_id || !settings.payu_client_id || !settings.payu_client_secret || !settings.payu_md5_key) {
         return null;
     }
     return {
@@ -20,7 +22,7 @@ async function getPayUSettings(): Promise<PayUSettings | null> {
         clientId: settings.payu_client_id,
         clientSecret: settings.payu_client_secret,
         md5Key: settings.payu_md5_key || '',
-        notifyUrl: settings.payu_notify_url || '',
+        notifyUrl: resolvePayUNotifyUrl(settings.payu_notify_url, process.env.NEXT_PUBLIC_APP_URL),
         environment: (settings.payu_environment as 'sandbox' | 'secure') || 'sandbox',
     };
 }
@@ -103,7 +105,7 @@ export async function createPayUOrder(orderData: OrderRequest, clientIp: string)
         notifyUrl: settings.notifyUrl, // Our backend webhook
         customerIp: extractClientIpv4(clientIp),
         merchantPosId: settings.merchantPosId,
-        validityTime: 3600, // 1 hour
+        validityTime: PAYU_ORDER_VALIDITY_SECONDS,
         ...orderData,
     };
 
@@ -125,8 +127,9 @@ export async function createPayUOrder(orderData: OrderRequest, clientIp: string)
         if (!location) {
             throw new Error('PayU returned 302 but no Location header');
         }
-        // Parse orderId from redirectUri params or generate from location
-        return { redirectUri: location, orderId: `payu-${Date.now()}` };
+        const orderId = new URL(location).searchParams.get('orderId');
+        if (!orderId) throw new Error('PayU returned redirect without orderId');
+        return { redirectUri: location, orderId };
     }
 
     if (!response.ok) {
@@ -139,20 +142,33 @@ export async function createPayUOrder(orderData: OrderRequest, clientIp: string)
 
 }
 
-import crypto from 'crypto';
+export async function retrievePayUOrder(orderId: string) {
+    const settings = await getPayUSettings();
+    if (!settings) throw new Error('PayU settings not configured');
+    const token = await getAccessToken(settings);
+    const domain = settings.environment === 'secure' ? 'secure.payu.com' : 'secure.snd.payu.com';
+    const response = await fetch(`https://${domain}/api/v2_1/orders/${encodeURIComponent(orderId)}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    });
+    const text = await response.text();
+    if (!response.ok) throw new Error(`PayU Order Retrieve Failed: ${response.status} ${text}`);
+    const data = text ? JSON.parse(text) : {};
+    return data?.orders?.[0] || null;
+}
 
-export function verifyPayUSignature(signatureHeader: string, body: string, merchantKey: string): boolean {
-    // Signature format: signature=SIG_VALUE;algorithm=MD5;sender=MERCHANT_ID
-    // Usually PayU sends OpenPayU-Signature header
-    // But implementation details vary. Standard is verifying MD5 or SHA with second key.
-    // Actually, for Notify, we might need a separate "Second Key" (MD5 key) from PayU panel.
-    // schema.prisma has `payu_client_secret`, is that the MD5 key? specific 'MD5 Key' is usually different.
-    // For now, let's assume loose verification or implementation later if strict security needed. 
-    // We should probably add `payu_md5_key` to schema if verification is critical now.
-    // Let's defer strict signature verification or assume client provided correct key if available.
-
-    // Simplest: just parse header
-    return true;
+export async function cancelPayUOrder(orderId: string) {
+    const settings = await getPayUSettings();
+    if (!settings) throw new Error('PayU settings not configured');
+    const token = await getAccessToken(settings);
+    const domain = settings.environment === 'secure' ? 'secure.payu.com' : 'secure.snd.payu.com';
+    const response = await fetch(`https://${domain}/api/v2_1/orders/${encodeURIComponent(orderId)}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    });
+    const text = await response.text();
+    if (!response.ok) throw new Error(`PayU Order Cancel Failed: ${response.status} ${text}`);
+    return text ? JSON.parse(text) : {};
 }
 
 /**

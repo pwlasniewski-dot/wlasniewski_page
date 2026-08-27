@@ -5,12 +5,6 @@ import { Check, X, AlertCircle } from 'lucide-react';
 
 export default function BannersManagementPage() {
     const [settings, setSettings] = useState({
-        // PromocodeBar
-        promo_code_discount_enabled: false,
-        promo_code: '',
-        promo_code_discount_amount: 10,
-        promo_code_discount_type: 'percentage',
-
         // GiftCardPromoBar
         gift_card_promo_enabled: false,
         gift_card_promo_title: 'Karty Podarunkowe',
@@ -53,9 +47,17 @@ export default function BannersManagementPage() {
 
             const data = await res.json();
             if (data.success && data.settings) {
+                const {
+                    promo_code_discount_enabled: _legacyPromoEnabled,
+                    promo_code_discount_amount: _legacyPromoAmount,
+                    promo_code_discount_type: _legacyPromoType,
+                    promo_code: _legacyPromoCode,
+                    promo_code_expiry: _legacyPromoExpiry,
+                    ...safeSettings
+                } = data.settings;
                 setSettings(prev => ({
                     ...prev,
-                    ...data.settings
+                    ...safeSettings
                 }));
             }
         } catch (error) {
@@ -144,70 +146,18 @@ export default function BannersManagementPage() {
 
                 {/* Banner Cards */}
                 <div className="space-y-6">
-                    {/* 1. PromocodeBar */}
+                    {/* 1. PromocodeBar — source: PromoCode */}
                     <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6">
-                        <div className="flex items-start justify-between mb-4">
-                            <div>
-                                <h2 className="text-xl font-bold mb-1">1️⃣ Kod Rabatowy (PromocodeBar)</h2>
-                                <p className="text-sm text-zinc-400">Złoty box w prawym górnym rogu</p>
-                            </div>
-                            <button
-                                onClick={() => setSettings(s => ({
-                                    ...s,
-                                    promo_code_discount_enabled: !s.promo_code_discount_enabled
-                                }))}
-                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${settings.promo_code_discount_enabled ? 'bg-gold-500' : 'bg-zinc-700'
-                                    }`}
-                            >
-                                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${settings.promo_code_discount_enabled ? 'translate-x-6' : 'translate-x-1'
-                                    }`} />
-                            </button>
-                        </div>
-
-                        {settings.promo_code_discount_enabled && (
-                            <div className="space-y-4 mt-4 pt-4 border-t border-zinc-800">
-                                <div>
-                                    <label className="block text-sm text-zinc-300 mb-2">Kod promocyjny</label>
-                                    <input
-                                        type="text"
-                                        value={settings.promo_code}
-                                        onChange={(e) => setSettings(s => ({ ...s, promo_code: e.target.value }))}
-                                        className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg focus:border-gold-500 focus:outline-none"
-                                        placeholder="np. WYZWANIE20"
-                                    />
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm text-zinc-300 mb-2">Wartość rabatu</label>
-                                        <input
-                                            type="number"
-                                            value={settings.promo_code_discount_amount}
-                                            onChange={(e) => setSettings(s => ({ ...s, promo_code_discount_amount: parseInt(e.target.value) || 0 }))}
-                                            className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg focus:border-gold-500 focus:outline-none"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm text-zinc-300 mb-2">Typ rabatu</label>
-                                        <select
-                                            value={settings.promo_code_discount_type}
-                                            onChange={(e) => setSettings(s => ({ ...s, promo_code_discount_type: e.target.value }))}
-                                            className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg focus:border-gold-500 focus:outline-none"
-                                        >
-                                            <option value="percentage">% (Procentowy)</option>
-                                            <option value="fixed">PLN (Kwota)</option>
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <button
-                                    onClick={() => clearLocalStorage('promo-' + settings.promo_code + '-dismissed')}
-                                    className="text-sm text-red-400 hover:text-red-300"
-                                >
-                                    🗑️ Wyczyść localStorage (pokaż ponownie)
-                                </button>
-                            </div>
-                        )}
+                        <h2 className="text-xl font-bold mb-1">1️⃣ Kod Rabatowy (PromocodeBar)</h2>
+                        <p className="text-sm text-zinc-400 mb-4">
+                            Kod, wartość, ważność i widoczność bannera są zarządzane w jednym źródle.
+                        </p>
+                        <a
+                            href="/admin/promo-codes"
+                            className="inline-flex rounded-lg bg-gold-500 px-4 py-2 text-sm font-semibold text-black hover:bg-gold-400"
+                        >
+                            Przejdź do kodów promocyjnych
+                        </a>
                     </div>
 
                     {/* 2. GiftCardPromoBar */}

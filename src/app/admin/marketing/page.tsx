@@ -164,7 +164,7 @@ export default async function MarketingPage() {
                     <div className="text-zinc-400">Instagram: <code className="text-blue-300">?utm_source=instagram&utm_medium=story&utm_campaign=komunie_maj2026</code></div>
                 </div>
                 <p className="text-zinc-400 text-xs mt-3">
-                    Landing strony: <Link href="/promocja-maj-2026" className="text-gold-400 underline">promocja-maj-2026</Link>, <Link href="/rezerwacja" className="text-gold-400 underline">rezerwacja</Link>
+                    Aktualny landing sprzedażowy: <Link href="/rezerwacja" className="text-gold-400 underline">rezerwacja</Link>
                 </p>
             </div>
         </div>

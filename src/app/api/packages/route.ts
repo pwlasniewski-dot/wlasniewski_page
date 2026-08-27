@@ -52,6 +52,39 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        const normalizedServiceId = Number(service_id);
+        const normalizedHours = Number(hours);
+        const normalizedPrice = Number(price);
+        if (
+            !Number.isInteger(normalizedServiceId) || normalizedServiceId <= 0
+            || !Number.isInteger(normalizedHours) || normalizedHours <= 0 || normalizedHours > 24
+            || !Number.isInteger(normalizedPrice) || normalizedPrice < 0
+        ) {
+            return NextResponse.json(
+                { error: 'service_id, hours and price must be valid non-negative integers' },
+                { status: 400 }
+            );
+        }
+
+        let normalizedAvailableHours: string | null | undefined;
+        if (available_hours !== undefined) {
+            const rawHours = String(available_hours).trim();
+            if (!rawHours) {
+                normalizedAvailableHours = null;
+            } else {
+                const parsedHours = rawHours.split(',').map((value) => value.trim());
+                if (parsedHours.some((value) => !/^\d{1,2}$/.test(value) || Number(value) > 23)) {
+                    return NextResponse.json(
+                        { error: 'available_hours must be a comma-separated list of hours from 0 to 23' },
+                        { status: 400 }
+                    );
+                }
+                normalizedAvailableHours = Array.from(new Set(parsedHours.map(Number)))
+                    .sort((a, b) => a - b)
+                    .join(',');
+            }
+        }
+
         if (id) {
             // Update existing package
             const pkg = await prisma.package.update({
@@ -60,11 +93,11 @@ export async function POST(request: NextRequest) {
                     name,
                     icon,
                     description,
-                    hours,
-                    price,
+                    hours: normalizedHours,
+                    price: normalizedPrice,
                     subtitle,
                     features: typeof features === 'string' ? features : JSON.stringify(features || []),
-                    ...(available_hours && { available_hours }),
+                    ...(normalizedAvailableHours !== undefined && { available_hours: normalizedAvailableHours }),
                     ...(blocks_entire_day !== undefined && { blocks_entire_day }),
                     order: order ?? 0,
                     is_active: is_active !== undefined ? is_active : true
@@ -76,15 +109,15 @@ export async function POST(request: NextRequest) {
             // Create new package
             const pkg = await prisma.package.create({
                 data: {
-                    service_id,
+                    service_id: normalizedServiceId,
                     name,
                     icon,
                     description,
-                    hours,
-                    price,
+                    hours: normalizedHours,
+                    price: normalizedPrice,
                     subtitle,
                     features: typeof features === 'string' ? features : JSON.stringify(features || []),
-                    ...(available_hours && { available_hours }),
+                    ...(normalizedAvailableHours !== undefined && { available_hours: normalizedAvailableHours }),
                     ...(blocks_entire_day !== undefined && { blocks_entire_day }),
                     order: order ?? 0,
                     is_active: is_active !== undefined ? is_active : true

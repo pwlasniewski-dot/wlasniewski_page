@@ -54,6 +54,7 @@ const navigation = [
             { name: 'Grafik / Dostępność', href: '/admin/bookings/calendar' },
             { name: 'Zamówienia', href: '/admin/bookings/orders' },
             { name: 'Pakiety rezerwacji', href: '/admin/rezerwacja' },
+            { name: 'Lejek zapytań', href: '/admin/photo-funnel' },
         ]
     },
     { name: 'Galerie', href: '/admin/galleries', icon: Image },

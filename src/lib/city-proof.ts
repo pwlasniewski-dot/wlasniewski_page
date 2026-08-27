@@ -1,4 +1,5 @@
 import prisma from '@/lib/db/prisma';
+import { normalizeGoogleBusinessProfileUrl } from '@/lib/marketing/gallery-trust';
 
 export interface CityProof {
     sessionsCount: number;          // ile zrealizowanych sesji w mieście (REALNE)
@@ -6,7 +7,7 @@ export interface CityProof {
     upcomingFreeWeekends: number | null; // wolne weekendy w nadchodzących 8 (REALNE)
     nextBookedDate: string | null;  // data najbliższego zajętego terminu
     testimonials: Array<{ name: string; text: string; rating: number | null; source: string | null }>;
-    googleReviewsUrl: string;
+    googleReviewsUrl: string | null;
     averageRating: number | null;   // średnia z testimoniali w bazie (REALNE)
     reviewsTotal: number;           // łączna liczba opinii w bazie (REALNE)
 }
@@ -94,6 +95,10 @@ export async function getCityProof(cityName: string): Promise<CityProof> {
     const averageRating = reviewsTotal > 0
         ? Math.round((allRated.reduce((a, t) => a + (t.rating || 0), 0) / reviewsTotal) * 10) / 10
         : null;
+    const profileLinkSetting = await prisma.setting.findUnique({
+        where: { setting_key: 'gbp_profile_url' },
+        select: { setting_value: true },
+    }).catch(() => null);
 
     return {
         sessionsCount,
@@ -106,7 +111,7 @@ export async function getCityProof(cityName: string): Promise<CityProof> {
             rating: t.rating,
             source: t.source,
         })),
-        googleReviewsUrl: 'https://g.page/r/wlasniewski-fotografia/review',
+        googleReviewsUrl: normalizeGoogleBusinessProfileUrl(profileLinkSetting?.setting_value),
         averageRating,
         reviewsTotal,
     };

@@ -60,12 +60,12 @@ interface Props {
 }
 
 import { BUSINESS_INFO } from '@/lib/business-info';
+import { normalizeGoogleBusinessProfileUrl } from '@/lib/marketing/gallery-trust';
 
 const PHOTOGRAPHER = {
     name: BUSINESS_INFO.name,
     studio: BUSINESS_INFO.tagline,
     yearsActive: 12,
-    googleReviewsUrl: 'https://g.page/r/wlasniewski-fotografia/review',
     portfolioUrl: '/portfolio',
     aboutUrl: '/o-mnie',
     phone: BUSINESS_INFO.phone,
@@ -93,6 +93,7 @@ export default function InviteClient({ initialChallenge, uniqueLink }: Props) {
     const [copied, setCopied] = useState(false);
     const [requestingLink, setRequestingLink] = useState(false);
     const [requestedLinkMasked, setRequestedLinkMasked] = useState<string | null>(null);
+    const [googleProfileUrl, setGoogleProfileUrl] = useState<string | null>(null);
 
     const [shareUrl, setShareUrl] = useState('');
     useEffect(() => {
@@ -100,6 +101,13 @@ export default function InviteClient({ initialChallenge, uniqueLink }: Props) {
             setShareUrl(`${window.location.origin}/foto-wyzwanie/invite/${uniqueLink}`);
         }
     }, [uniqueLink]);
+
+    useEffect(() => {
+        fetch('/api/settings/public')
+            .then(response => response.ok ? response.json() : null)
+            .then(data => setGoogleProfileUrl(normalizeGoogleBusinessProfileUrl(data?.settings?.gbp_profile_url)))
+            .catch(() => setGoogleProfileUrl(null));
+    }, []);
 
     // Track page view + scroll milestones (best-effort, idempotent server-side)
     useChallengeTracking(challenge ? uniqueLink : null);
@@ -420,11 +428,13 @@ export default function InviteClient({ initialChallenge, uniqueLink }: Props) {
                             <p className="text-xs text-zinc-400 mb-2">{PHOTOGRAPHER.studio} · {PHOTOGRAPHER.yearsActive} lat doświadczenia</p>
                             <p className="text-xs text-zinc-500">{PHOTOGRAPHER.addressShort}</p>
                             <div className="flex flex-wrap gap-3 mt-3 text-xs">
-                                <a href={PHOTOGRAPHER.googleReviewsUrl} target="_blank" rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-1 text-amber-400 hover:text-amber-300">
-                                    <Star size={12} fill="currentColor" />
-                                    Opinie Google
-                                </a>
+                                {googleProfileUrl && (
+                                    <a href={googleProfileUrl} target="_blank" rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-1 text-amber-400 hover:text-amber-300">
+                                        <Star size={12} fill="currentColor" />
+                                        Opinie Google
+                                    </a>
+                                )}
                                 <Link href={PHOTOGRAPHER.portfolioUrl} className="inline-flex items-center gap-1 text-zinc-400 hover:text-white">
                                     <Camera size={12} />
                                     Portfolio

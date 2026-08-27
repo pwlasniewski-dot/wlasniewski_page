@@ -39,7 +39,7 @@ export default function BasketDrawer() {
                                 </div>
                                 <div>
                                     <h2 className="text-xl font-bold text-white">Twój Koszyk</h2>
-                                    <p className="text-xs text-zinc-500 uppercase tracking-widest">Premium Selection</p>
+                                    <p className="text-xs text-zinc-500 uppercase tracking-widest">Jedna bezpieczna płatność</p>
                                 </div>
                             </div>
                             <button
@@ -136,7 +136,7 @@ export default function BasketDrawer() {
                                         <p className="text-amber-500 text-3xl font-black">{formattedTotal} zł</p>
                                     </div>
                                     <div className="text-right">
-                                        <p className="text-zinc-600 text-[10px] uppercase font-bold">Produkty: {items.length}</p>
+                                        <p className="text-zinc-600 text-[10px] uppercase font-bold">Jedna pozycja</p>
                                     </div>
                                 </div>
 
@@ -150,7 +150,7 @@ export default function BasketDrawer() {
                                 </button>
 
                                 <p className="text-[10px] text-zinc-600 text-center mt-6 uppercase tracking-widest font-bold">
-                                    Bezpieczna płatność PayU • Gwarancja Satysfakcji
+                                    Bezpieczna płatność obsługiwana przez PayU
                                 </p>
                             </div>
                         )}

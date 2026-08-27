@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import toast from 'react-hot-toast';
+import { normalizeGoogleBusinessProfileUrl, normalizeGoogleReviewUrl } from '@/lib/marketing/gallery-trust';
 
 interface Booking {
     id: number;
@@ -77,11 +78,9 @@ export default function LocalSeoClient({ initialSettings, completedBookings, ini
     const [pending, startTransition] = useTransition();
     const [sendingReview, setSendingReview] = useState<number | null>(null);
 
-    const placeId = settings.google_place_id || '';
     const directReviewLink = settings.gbp_review_link || '';
-    const reviewLink = directReviewLink || (placeId
-        ? `https://search.google.com/local/writereview?placeid=${placeId}`
-        : '');
+    const reviewLink = normalizeGoogleReviewUrl(directReviewLink) || '';
+    const profileLink = normalizeGoogleBusinessProfileUrl(settings.gbp_profile_url) || '';
 
     const saveSetting = async (key: string, value: string) => {
         const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null;
@@ -93,11 +92,12 @@ export default function LocalSeoClient({ initialSettings, completedBookings, ini
             },
             body: JSON.stringify({ key, value }),
         });
-        if (res.ok) {
-            setSettings(prev => ({ ...prev, [key]: value }));
+        const result = await res.json().catch(() => null);
+        if (res.ok && result?.ok) {
+            setSettings(prev => ({ ...prev, [key]: result.value ?? value }));
             toast.success('Zapisano');
         } else {
-            toast.error('Błąd zapisu');
+            toast.error(result?.message || 'Błąd zapisu');
         }
     };
 
@@ -215,6 +215,28 @@ export default function LocalSeoClient({ initialSettings, completedBookings, ini
                             </button>
                         </div>
                     )}
+                    <div className="mt-6 border-t border-zinc-800 pt-5">
+                        <h3 className="mb-2 text-sm font-semibold">Publiczny profil firmy / lista opinii</h3>
+                        <p className="mb-3 text-xs text-zinc-500">Ten osobny link służy klientom przed zakupem do czytania opinii. Nie wklejaj tutaj adresu kończącego się na /review.</p>
+                        <div className="flex gap-2">
+                            <input
+                                type="text"
+                                placeholder="https://maps.app.goo.gl/..."
+                                defaultValue={profileLink}
+                                id="profileLinkInput"
+                                className="flex-1 rounded border border-zinc-700 bg-zinc-800 px-3 py-2 font-mono text-sm"
+                            />
+                            <button
+                                onClick={() => {
+                                    const value = (document.getElementById('profileLinkInput') as HTMLInputElement).value.trim();
+                                    void saveSetting('gbp_profile_url', value);
+                                }}
+                                className="rounded bg-zinc-700 px-4 py-2 text-sm font-semibold hover:bg-zinc-600"
+                            >
+                                Zapisz profil
+                            </button>
+                        </div>
+                    </div>
                 </section>
 
                 {/* Step 2: GBP Checklist */}

@@ -1,17 +1,36 @@
 import { getCityProof } from '@/lib/city-proof';
 import CityLeadForm from './CityLeadForm';
 import Link from 'next/link';
+import { Suspense } from 'react';
+import {
+    DEFAULT_PHOTO_FUNNEL_CONFIG,
+    formatPhotoFunnelTemplate,
+    type PhotoFunnelConfig,
+} from '@/lib/marketing/photo-funnel';
 
 interface CityLeadSectionProps {
     city: string;
     citySlug: string;
+    initialService?: string;
+    initialPackageSlug?: string;
+    source?: string;
+    showCityField?: boolean;
+    funnelConfig?: PhotoFunnelConfig;
 }
 
 /**
  * Sekcja konwersyjna z REALNYM social proof z bazy.
  * Bez wymyślonych liczb, bez fałszywych "odpowiedź w 2h".
  */
-export default async function CityLeadSection({ city, citySlug }: CityLeadSectionProps) {
+export default async function CityLeadSection({
+    city,
+    citySlug,
+    initialService,
+    initialPackageSlug,
+    source,
+    showCityField,
+    funnelConfig = DEFAULT_PHOTO_FUNNEL_CONFIG,
+}: CityLeadSectionProps) {
     const proof = await getCityProof(city);
     const cityLocative: Record<string, string> = {
         'Toruń': 'Toruniu',
@@ -24,6 +43,7 @@ export default async function CityLeadSection({ city, citySlug }: CityLeadSectio
         'Lisewo': 'Lisewie',
     };
     const cityIn = cityLocative[city] || city;
+    const cityTitle = formatPhotoFunnelTemplate(funnelConfig.copy.cityTitleTemplate, { city, cityIn });
 
     // Buduj wiarygodne, ale prawdziwe stwierdzenia
     const trustBadges: Array<{ icon: string; text: string; highlight?: boolean }> = [];
@@ -72,10 +92,10 @@ export default async function CityLeadSection({ city, citySlug }: CityLeadSectio
                 {/* Nagłówek z REALNYMI badges */}
                 <div className="text-center mb-10">
                     <h2 className="text-3xl md:text-4xl font-bold font-display mb-4">
-                        Sprawdź wolne terminy w <span className="text-amber-400">{cityIn}</span>
+                        {cityTitle}
                     </h2>
                     <p className="text-zinc-400 text-lg mb-6">
-                        Zostaw kontakt — odezwę się z propozycją terminu i wyceną.
+                        {funnelConfig.copy.cityDescription}
                     </p>
 
                     {trustBadges.length > 0 && (
@@ -100,7 +120,17 @@ export default async function CityLeadSection({ city, citySlug }: CityLeadSectio
                 <div className="grid lg:grid-cols-5 gap-8 items-start">
                     {/* Form (3/5) */}
                     <div className="lg:col-span-3">
-                        <CityLeadForm city={city} citySlug={citySlug} />
+                        <Suspense fallback={<div className="min-h-96 rounded-2xl border border-white/10 bg-zinc-900/70" aria-label="Ładowanie formularza" />}>
+                            <CityLeadForm
+                                city={city}
+                                citySlug={citySlug}
+                                initialService={initialService}
+                                initialPackageSlug={initialPackageSlug}
+                                source={source}
+                                showCityField={showCityField}
+                                funnelConfig={funnelConfig}
+                            />
+                        </Suspense>
                     </div>
 
                     {/* REALNE opinie (2/5) */}
@@ -108,7 +138,7 @@ export default async function CityLeadSection({ city, citySlug }: CityLeadSectio
                         {proof.testimonials.length > 0 ? (
                             <>
                                 <h3 className="text-sm uppercase tracking-wider text-zinc-500 font-semibold mb-3">
-                                    Co mówią klienci
+                                    {funnelConfig.copy.reviewsHeading}
                                 </h3>
                                 {proof.testimonials.slice(0, 2).map((t, i) => (
                                     <blockquote
@@ -132,25 +162,29 @@ export default async function CityLeadSection({ city, citySlug }: CityLeadSectio
                                     </blockquote>
                                 ))}
 
-                                <a
-                                    href={proof.googleReviewsUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="block text-center text-sm text-amber-400 hover:text-amber-300 transition-colors py-2"
-                                >
-                                    Zobacz opinie w Google →
-                                </a>
+                                {proof.googleReviewsUrl && (
+                                    <a
+                                        href={proof.googleReviewsUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="block text-center text-sm text-amber-400 hover:text-amber-300 transition-colors py-2"
+                                    >
+                                        {funnelConfig.copy.reviewsCtaLabel}
+                                    </a>
+                                )}
                             </>
                         ) : (
                             <div className="bg-zinc-900/60 border border-zinc-700/50 rounded-lg p-6 text-center">
                                 <p className="text-zinc-400 text-sm mb-4">
-                                    Sprawdź {proof.sessionsCount > 0 ? `${proof.sessionsCount} ` : ''}realizacji w portfolio
+                                    {formatPhotoFunnelTemplate(funnelConfig.copy.emptyPortfolioTextTemplate, {
+                                        count: proof.sessionsCount > 0 ? `${proof.sessionsCount} ` : '',
+                                    })}
                                 </p>
                                 <Link
                                     href="/portfolio"
                                     className="inline-block text-amber-400 hover:text-amber-300 font-medium text-sm"
                                 >
-                                    Zobacz portfolio →
+                                    {funnelConfig.copy.portfolioCtaLabel}
                                 </Link>
                             </div>
                         )}

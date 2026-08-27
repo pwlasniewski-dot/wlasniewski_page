@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db/prisma';
-import { withAuth } from '@/lib/auth/middleware';
+import { requireAuth } from '@/lib/auth/middleware';
 
 // GET all service types
 export async function GET(request: NextRequest) {
@@ -23,6 +23,9 @@ export async function GET(request: NextRequest) {
 
 // POST - Create or update service type
 export async function POST(request: NextRequest) {
+    const authError = await requireAuth(request);
+    if (authError) return authError;
+
     try {
         const body = await request.json();
         const {
@@ -81,6 +84,9 @@ export async function POST(request: NextRequest) {
 
 // DELETE service type
 export async function DELETE(request: NextRequest) {
+    const authError = await requireAuth(request);
+    if (authError) return authError;
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 

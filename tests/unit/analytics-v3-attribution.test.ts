@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { isSemanticCta, pathsBeforeFirstBookingStart } from '../../src/lib/analytics/v3Attribution.ts';
+import { isSalesIntentStart, isSemanticCta, pathsBeforeFirstBookingStart } from '../../src/lib/analytics/v3Attribution.ts';
 
 const at = (seconds: number) => new Date(1_700_000_000_000 + seconds * 1000);
 
@@ -36,4 +36,14 @@ test('Aero inquiry start closes the assisted-page path', () => {
     { event_type: 'v2_page_view', session_id: 's', page_url: '/monitoring', created_at: at(2) },
   ], event => event.page_url || '/');
   assert.deepEqual(paths, ['/termowizja']);
+});
+
+test('photography inquiry start is a real sales-intent start', () => {
+  const start = { event_type: 'v2_photo_inquiry_started', session_id: 's', page_url: '/fotograf-torun', created_at: at(1) };
+  assert.equal(isSalesIntentStart(start), true);
+  assert.deepEqual(pathsBeforeFirstBookingStart([
+    { event_type: 'v2_page_view', session_id: 's', page_url: '/fotograf-torun', created_at: at(0) },
+    start,
+    { event_type: 'v2_page_view', session_id: 's', page_url: '/kontakt', created_at: at(2) },
+  ], event => event.page_url || '/'), ['/fotograf-torun']);
 });

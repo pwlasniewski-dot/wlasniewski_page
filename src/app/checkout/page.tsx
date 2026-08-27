@@ -1,11 +1,13 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useCart } from '@/context/CartContext';
 import { ShoppingBag, Lock, ShieldCheck, CreditCard, Gift, Wallet } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAnalytics } from '@/hooks/useAnalytics';
+import { calculateFotoMatchDiscount } from '@/lib/fotoMatchDiscount';
+import { checkoutItemsWithCurrentAttribution, readConsentedClientAttribution } from '@/lib/analytics/clientAttribution';
 
 export default function CheckoutPage() {
     const { trackEvent } = useAnalytics();
@@ -63,20 +65,20 @@ export default function CheckoutPage() {
             const amount = Number(d.amount_grosze ?? 0);
             const percent = Number(d.percent ?? 0);
             const type = String(d.type || 'AMOUNT');
-            let discount = 0;
+            const calculated = calculateFotoMatchDiscount({
+                baseAmountGrosze: totalAmount,
+                rewardType: type,
+                rewardAmountGrosze: amount,
+                rewardPercent: percent,
+            });
             const parts: string[] = [];
             if (type === 'AMOUNT' || type === 'BOTH') {
-                discount += amount;
                 if (amount > 0) parts.push(`−${(amount / 100).toFixed(2)} zł`);
             }
             if (type === 'PERCENT' || type === 'BOTH') {
-                const fromPercent = Math.round(totalAmount * percent / 100);
-                discount += fromPercent;
                 if (percent > 0) parts.push(`−${percent}%`);
             }
-            // Cap to total
-            discount = Math.min(discount, totalAmount);
-            setVoucherInfo({ valid: true, discount_grosze: discount, label: parts.join(' + ') || 'Voucher zaakceptowany' });
+            setVoucherInfo({ valid: true, discount_grosze: calculated.discountGrosze, label: parts.join(' + ') || 'Voucher zaakceptowany' });
         } catch (e: any) {
             setVoucherInfo({ valid: false, discount_grosze: 0, label: e?.message || 'Błąd weryfikacji' });
         } finally {
@@ -116,6 +118,26 @@ export default function CheckoutPage() {
             marketing: false
         }
     });
+    const bookingContactPrefilled = useRef(false);
+
+    useEffect(() => {
+        if (bookingContactPrefilled.current) return;
+        const booking = items.find(item => item.type === 'booking');
+        if (!booking?.metadata || typeof booking.metadata !== 'object') return;
+
+        const name = typeof booking.metadata.name === 'string' ? booking.metadata.name.slice(0, 120) : '';
+        const email = typeof booking.metadata.email === 'string' ? booking.metadata.email.slice(0, 254) : '';
+        const phone = typeof booking.metadata.phone === 'string' ? booking.metadata.phone.slice(0, 40) : '';
+        if (!name && !email && !phone) return;
+
+        bookingContactPrefilled.current = true;
+        setFormData(current => ({
+            ...current,
+            name: current.name || name,
+            email: current.email || email,
+            phone: current.phone || phone,
+        }));
+    }, [items]);
 
     if (items.length === 0) {
         return (
@@ -156,12 +178,8 @@ export default function CheckoutPage() {
         setSubmitting(true);
         let checkoutFailureTracked = false;
         try {
+            const checkoutItems = checkoutItemsWithCurrentAttribution(items, readConsentedClientAttribution());
             void trackEvent('checkout_submit', { item_count: items.length, amount_bucket: amountNow < 50000 ? 'under_500' : amountNow < 100000 ? '500_999' : '1000_plus' });
-            void trackEvent('payment_started', {
-                amount_grosze: amountNow,
-                item_count: items.length,
-                payment_plan: paymentPlan,
-            });
             if (typeof window !== 'undefined' && (window as any).gtag) {
                 (window as any).gtag('event', 'begin_checkout', {
                     currency: 'PLN',
@@ -175,7 +193,7 @@ export default function CheckoutPage() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    items,
+                    items: checkoutItems,
                     customer: {
                         name: formData.name,
                         email: formData.email,
@@ -210,11 +228,19 @@ export default function CheckoutPage() {
             });
             void trackEvent('checkout_result', { status: 'ok', area: 'checkout', endpoint: 'basket_checkout', http_status: response.status, has_payment_redirect: !!data.redirectUrl });
 
-            toast.success('Zamówienie przyjęte! Przekierowanie do płatności...');
+            const paymentRequired = data.paymentRequired === true;
+            toast.success(paymentRequired ? 'Zamówienie przyjęte! Przekierowanie do płatności...' : 'Rezerwacja została potwierdzona.');
 
             // Redirect to PayU payment page if URL provided
             if (data.redirectUrl) {
-                void trackEvent('payu_redirect', { status: 'ok', area: 'payu' }, true);
+                if (paymentRequired) {
+                    void trackEvent('payment_started', {
+                        amount_grosze: amountNow,
+                        item_count: items.length,
+                        payment_plan: paymentPlan,
+                    }, true);
+                    void trackEvent('payu_redirect', { status: 'ok', area: 'payu' }, true);
+                }
                 clearCart();
                 window.location.href = data.redirectUrl;
             } else {
