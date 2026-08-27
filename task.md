@@ -9,8 +9,8 @@
 - [x] Teksty nowego wyboru godziny podpięto do istniejącego CMS lejka.
 - [x] Dodano addytywną migrację, testy domeny godzin nocnych oraz zgodność ICS/e-mail/kalendarza administratora.
 - [x] Build produkcyjny: 254/254 stron. Testy celowane: 29/29; pełny zestaw: 226/227, jedyna porażka to zastany test galerii wymagający `DATABASE_URL`.
-- [ ] Zaktualizować PR #50, odebrać Deploy Preview i sprawdzić mobilnie sesję oraz wydarzenie kończące się po północy.
-- [ ] Po osobnej zgodzie zastosować migrację produkcyjną; dopiero potem scalić PR.
+- [x] Zaktualizowano PR #50, odebrano Deploy Preview i sprawdzono mobilnie sesję oraz wydarzenie kończące się po północy.
+- [x] Zastosowano migracje produkcyjne, scalono PR #50 i wykonano kontrolę publicznego formularza.
 
 ## 2026-08-27 — PR #50: poprawka kalendarza Deploy Preview
 
@@ -18,8 +18,8 @@
 - [x] Ograniczono zapytania dostępności do pól potrzebnych przy konflikcie, bez zależności od nowych kolumn atrybucji przed migracją.
 - [x] Dodano walidację odpowiedzi, blokadę kalendarza podczas ładowania i awarii, czyszczenie wyboru oraz przycisk ponowienia.
 - [x] Test regresji lejka rezerwacji: 15/15; brak błędów TypeScript w zmienionych plikach.
-- [ ] Zaktualizować gałąź PR #50, odebrać nowy Deploy Preview i sprawdzić wyszarzenie dat przed terminem minimalnym.
-- [ ] Po pozytywnym podglądzie zastosować migracje, wykonać smoke test i dopiero wtedy scalić PR.
+- [x] Zaktualizowano gałąź PR #50, odebrano nowy Deploy Preview i sprawdzono wyszarzenie dat przed terminem minimalnym.
+- [x] Po pozytywnym podglądzie zastosowano migracje, wykonano smoke test i scalono PR.
 
 ## 2026-08-24 — FotoDron: CRM, galerie grupowe i widoczność administratora
 
