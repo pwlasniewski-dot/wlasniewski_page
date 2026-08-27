@@ -81,11 +81,25 @@ interface GiftCard {
     amount: number;
 }
 
+interface AvailabilitySlot {
+    start: string;
+    end: string;
+    endDayOffset: number;
+    available: boolean;
+    reason?: string;
+}
+
 const trackBookingEvent = (event: string, params: Record<string, unknown> = {}) => {
     if (typeof window !== 'undefined' && (window as any).gtag) {
         (window as any).gtag('event', event, params);
     }
 };
+
+function formatDurationLabel(hours: number) {
+    if (hours === 1) return '1 godzina';
+    if (hours >= 2 && hours <= 4) return `${hours} godziny`;
+    return `${hours} godzin`;
+}
 
 export default function RezerwacjaPage() {
     const { trackEvent } = useAnalytics();
@@ -100,13 +114,12 @@ export default function RezerwacjaPage() {
     const [service, setService] = useState<ServiceType | null>(null);
     const [chosenPackage, setChosenPackage] = useState<Package | null>(null);
     const [selectedDroneAddonSlug, setSelectedDroneAddonSlug] = useState<string | null>(null);
-    const [slot, setSlot] = useState<{ date: string; start?: string; end?: string } | null>(null);
+    const [slot, setSlot] = useState<{ date: string; start?: string; end?: string; endDayOffset?: number } | null>(null);
 
     // Availability
-    const [availableHours, setAvailableHours] = useState<Array<{ hour: number; available: boolean; reason?: string }>>([]);
+    const [availableSlots, setAvailableSlots] = useState<AvailabilitySlot[]>([]);
     const [loadingAvailability, setLoadingAvailability] = useState(false);
-    const [selectedHour, setSelectedHour] = useState<number | null>(null);
-    const [fullDayAvailable, setFullDayAvailable] = useState<boolean | null>(null);
+    const [selectedStart, setSelectedStart] = useState<string>('');
     const [availabilityError, setAvailabilityError] = useState('');
 
     // Form fields
@@ -294,15 +307,13 @@ export default function RezerwacjaPage() {
     // Load available hours when package and date are selected
     useEffect(() => {
         if (!chosenPackage || !slot?.date) {
-            setAvailableHours([]);
-            setSelectedHour(null);
-            setFullDayAvailable(null);
+            setAvailableSlots([]);
+            setSelectedStart('');
             setAvailabilityError('');
             return;
         }
 
         const loadAvailability = async () => {
-            setFullDayAvailable(null);
             setAvailabilityError('');
             setLoadingAvailability(true);
             try {
@@ -313,39 +324,25 @@ export default function RezerwacjaPage() {
                 );
                 if (res.ok) {
                     const data = await res.json();
-                    if (chosenPackage.blocks_entire_day) {
-                        const isAvailable = data.fullDayAvailable === true;
-                        setFullDayAvailable(isAvailable);
-                        setAvailableHours([]);
-                        setSelectedHour(null);
-                        setSlot(prev => prev
-                            ? isAvailable
-                                ? { ...prev, start: '08:00', end: '22:00' }
-                                : { date: prev.date }
-                            : null);
-                        void trackEvent('availability_result', { status: 'ok', area: 'availability', http_status: res.status, available_count: isAvailable ? 1 : 0, has_available_slots: isAvailable });
-                        if (isAvailable) void trackEvent('time_selected');
-                        return;
-                    }
-
-                    setFullDayAvailable(null);
-                    setAvailableHours(data.slots || []);
-                    setSelectedHour(null); // Reset selection when date changes
-                    const availableCount = (data.slots || []).filter((item: { available: boolean }) => item.available).length;
+                    const parsedSlots = Array.isArray(data.slots)
+                        ? data.slots.filter((item: AvailabilitySlot) => item && typeof item.start === 'string' && typeof item.end === 'string')
+                        : [];
+                    setAvailableSlots(parsedSlots);
+                    setSelectedStart('');
+                    setSlot(prev => prev ? { date: prev.date } : null);
+                    const availableCount = parsedSlots.filter((item: AvailabilitySlot) => item.available).length;
                     void trackEvent('availability_result', { status: 'ok', area: 'availability', http_status: res.status, available_count: availableCount, has_available_slots: availableCount > 0 });
                 } else {
                     console.error('Failed to load availability:', res.status);
                     const errorPayload = await res.json().catch(() => null);
                     setAvailabilityError(typeof errorPayload?.error === 'string' ? errorPayload.error : 'Nie udało się sprawdzić dostępności. Wybierz inny termin.');
-                    setAvailableHours([]);
-                    setFullDayAvailable(chosenPackage.blocks_entire_day ? false : null);
+                    setAvailableSlots([]);
                     void trackEvent('availability_result', { status: 'error', area: 'availability', http_status: res.status, reason_code: 'http_error' });
                 }
             } catch (error) {
                 console.error('Failed to load availability:', error);
                 setAvailabilityError('Nie udało się sprawdzić dostępności. Spróbuj ponownie.');
-                setAvailableHours([]);
-                setFullDayAvailable(chosenPackage.blocks_entire_day ? false : null);
+                setAvailableSlots([]);
                 void trackEvent('availability_result', { status: 'error', area: 'availability', reason_code: 'network_error' });
             } finally {
                 setLoadingAvailability(false);
@@ -354,6 +351,15 @@ export default function RezerwacjaPage() {
 
         loadAvailability();
     }, [chosenPackage, slot?.date]);
+
+    const bookableSlots = useMemo(
+        () => availableSlots.filter(item => item.available),
+        [availableSlots],
+    );
+    const selectedAvailabilitySlot = useMemo(
+        () => bookableSlots.find(item => item.start === selectedStart) || null,
+        [bookableSlots, selectedStart],
+    );
 
     const selectedDroneAddon = useMemo(
         () => droneCatalog?.packages.find(item => item.slug === selectedDroneAddonSlug) || null,
@@ -405,10 +411,10 @@ export default function RezerwacjaPage() {
             slot &&
             chosenPackage &&
             rodo &&
-            (chosenPackage?.blocks_entire_day ? fullDayAvailable === true : Boolean(slot?.start)) &&
+            Boolean(slot?.start && slot?.end) &&
             (!needsVenue || (venueCity && venuePlace)) &&
             (!hasDrone || (droneGoal && droneTermsAccepted)),
-        [name, email, slot, chosenPackage, rodo, needsVenue, venueCity, venuePlace, hasDrone, droneGoal, droneTermsAccepted, fullDayAvailable]
+        [name, email, slot, chosenPackage, rodo, needsVenue, venueCity, venuePlace, hasDrone, droneGoal, droneTermsAccepted]
     );
 
     // Check promo code
@@ -499,7 +505,7 @@ export default function RezerwacjaPage() {
         if (!e.currentTarget.checkValidity() || !isReadyToSubmit || !slot || !chosenPackage) {
             const fieldGroup = !service ? 'service'
                 : !chosenPackage ? 'package'
-                    : !slot || (!chosenPackage.blocks_entire_day && !slot.start) ? 'date_time'
+                    : !slot || !slot.start || !slot.end ? 'date_time'
                         : !name || !email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? 'contact'
                             : !rodo ? 'consent'
                                 : 'venue';
@@ -526,6 +532,7 @@ export default function RezerwacjaPage() {
                 date: slot.date,
                 start_time: slot.start ?? null,
                 end_time: slot.end ?? null,
+                end_day_offset: slot.endDayOffset ?? 0,
                 name,
                 email,
                 phone: phone || null,
@@ -712,7 +719,7 @@ export default function RezerwacjaPage() {
                                             setService(svc);
                                             setChosenPackage(null);
                                             setSlot(null);
-                                            setSelectedHour(null);
+                                            setSelectedStart('');
                                             setSelectedDroneAddonSlug(null);
                                             setDroneGoal('');
                                             setDroneTermsAccepted(false);
@@ -758,7 +765,7 @@ export default function RezerwacjaPage() {
                                             onClick={() => {
                                                 markBookingFormStarted('package', service.name);
                                                 setChosenPackage(pkg);
-                                                setSelectedHour(null);
+                                                setSelectedStart('');
                                                 setSlot(current => current ? { date: current.date } : null);
                                                 trackBookingEvent('booking_package_select', { service: service.name, package: pkg.name, value: pkg.price / 100, currency: 'PLN' });
                                                 void trackEvent('package_selected', { amount_bucket: pkg.price < 50000 ? 'under_500' : pkg.price < 100000 ? '500_999' : '1000_plus' });
@@ -851,6 +858,8 @@ export default function RezerwacjaPage() {
                                         }}
                                         selectedSlot={slot}
                                         service={(service?.name as "Sesja" | "Ślub" | "Przyjęcie" | "Urodziny" | "Dron") || 'Sesja'}
+                                        durationHours={chosenPackage?.hours || 1}
+                                        blocksEntireDay={chosenPackage?.blocks_entire_day === true}
                                         showTimeSlots={false}
                                     />
                                 </div>
@@ -879,55 +888,58 @@ export default function RezerwacjaPage() {
                                             <div className="text-center text-[#6b645c]">
                                                 <p>{photoFunnelConfig.bookingCopy.availabilityLoading}</p>
                                             </div>
-                                        ) : chosenPackage.blocks_entire_day ? (
-                                            fullDayAvailable ? (
-                                                <div className="p-6 bg-[#ebe6de] border border-[#a99b89]/60 rounded-xl text-center">
-                                                    <p className="text-[#766958] font-bold mb-1">{photoFunnelConfig.bookingCopy.fullDayAvailableTitle}</p>
-                                                    <p className="text-[#6b645c] text-sm">{photoFunnelConfig.bookingCopy.fullDayAvailableText}</p>
-                                                </div>
-                                            ) : (
-                                                <div className="p-6 bg-red-50 border border-red-300 rounded-xl text-center">
-                                                    <p className="text-red-800 font-bold mb-1">{photoFunnelConfig.bookingCopy.fullDayUnavailableTitle}</p>
-                                                    <p className="text-red-700 text-sm">{photoFunnelConfig.bookingCopy.fullDayUnavailableText}</p>
-                                                </div>
-                                            )
-                                        ) : availableHours.length === 0 ? (
-                                            <div className="text-center text-[#766958]">
+                                        ) : bookableSlots.length === 0 ? (
+                                            <div className="rounded-xl border border-[#d2cabf] bg-[#f8f5f0] p-6 text-center text-[#766958]">
                                                 <p>{photoFunnelConfig.bookingCopy.noHours}</p>
                                             </div>
                                         ) : (
-                                            <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
-                                                {availableHours.map((hSlot) => (
-                                                    <button
-                                                        key={hSlot.hour}
-                                                        type="button"
-                                                        disabled={!hSlot.available}
-                                                        onClick={() => {
-                                                            const start = `${hSlot.hour.toString().padStart(2, '0')}:00`;
-                                                            const end = `${(hSlot.hour + (chosenPackage?.hours || 1)).toString().padStart(2, '0')}:00`;
-                                                            setSelectedHour(hSlot.hour);
-                                                            setSlot(prev => prev ? { ...prev, start, end } : null);
-                                                            void trackEvent('time_selected');
-                                                        }}
-                                                        className={`min-h-11 py-3 rounded-lg transition-all text-sm font-medium ${hSlot.available
-                                                            ? selectedHour === hSlot.hour
-                                                                ? 'bg-[#5b554e] text-white border border-[#8d7f6d]'
-                                                                : 'bg-[#ece7e0] text-[#25221f] border border-[#d2cabf] hover:border-[#8d7f6d] hover:bg-white'
-                                                            : 'bg-[#eee9e2] text-[#9b9287] border border-[#ddd6cc] cursor-not-allowed'
-                                                            }`}
-                                                        title={
-                                                            !hSlot.available
-                                                                ? hSlot.reason === 'booked_session'
-                                                                    ? 'Zajęte - rezerwacja sesji'
-                                                                    : hSlot.reason === 'booked_event'
-                                                                        ? 'Zajęte - rezerwacja całodniowa'
-                                                                        : 'Poza godzinami dostępnymi'
-                                                                : ''
-                                                        }
-                                                    >
-                                                        {hSlot.hour.toString().padStart(2, '0')}:00
-                                                    </button>
-                                                ))}
+                                            <div className="rounded-2xl border border-[#d2cabf] bg-[#f8f5f0] p-5 md:p-6">
+                                                <label htmlFor="booking-start-time" className="mb-2 block text-sm font-semibold text-[#4d463e]">
+                                                    {photoFunnelConfig.bookingCopy.startTimeLabel}
+                                                </label>
+                                                <select
+                                                    id="booking-start-time"
+                                                    value={selectedStart}
+                                                    onChange={event => {
+                                                        const selected = bookableSlots.find(item => item.start === event.target.value);
+                                                        setSelectedStart(event.target.value);
+                                                        setSlot(prev => prev && selected
+                                                            ? {
+                                                                ...prev,
+                                                                start: selected.start,
+                                                                end: selected.end,
+                                                                endDayOffset: selected.endDayOffset,
+                                                            }
+                                                            : prev ? { date: prev.date } : null);
+                                                        if (selected) void trackEvent('time_selected');
+                                                    }}
+                                                    className="min-h-12 w-full rounded-xl border border-[#b9ae9f] bg-white px-4 py-3 text-base font-medium text-[#25221f] outline-none transition focus:border-[#8d7f6d] focus:ring-2 focus:ring-[#8d7f6d]/20"
+                                                >
+                                                    <option value="">{photoFunnelConfig.bookingCopy.startTimePlaceholder}</option>
+                                                    {bookableSlots.map(item => (
+                                                        <option key={`${item.start}-${item.endDayOffset}`} value={item.start}>
+                                                            {formatPhotoFunnelTemplate(photoFunnelConfig.bookingCopy.slotOptionTemplate, {
+                                                                start: item.start,
+                                                                end: item.end,
+                                                                nextDay: item.endDayOffset === 1 ? ` ${photoFunnelConfig.bookingCopy.nextDayLabel}` : '',
+                                                            })}
+                                                        </option>
+                                                    ))}
+                                                </select>
+
+                                                {selectedAvailabilitySlot && (
+                                                    <div className="mt-4 rounded-xl border border-[#a99b89]/60 bg-white p-4" aria-live="polite">
+                                                        <p className="font-semibold text-[#25221f]">
+                                                            {selectedAvailabilitySlot.start}–{selectedAvailabilitySlot.end}
+                                                            {selectedAvailabilitySlot.endDayOffset === 1 ? ` ${photoFunnelConfig.bookingCopy.nextDayLabel}` : ''}
+                                                        </p>
+                                                        <p className="mt-1 text-sm leading-6 text-[#6b645c]">
+                                                            {formatPhotoFunnelTemplate(photoFunnelConfig.bookingCopy.slotDurationTemplate, {
+                                                                duration: formatDurationLabel(chosenPackage.hours),
+                                                            })}
+                                                        </p>
+                                                    </div>
+                                                )}
                                             </div>
                                         )}
                                     </div>

@@ -11,8 +11,8 @@ export type ServiceType = "Sesja" | "Ślub" | "Przyjęcie" | "Urodziny" | "Dron"
 
 type Props = {
   service: ServiceType;
-  durationHours?: 1 | 2;
-  sessionDuration?: 1 | 2; // Alias for durationHours
+  durationHours?: number;
+  sessionDuration?: number; // Alias for durationHours
   // Support both interfaces
   value?: { date: string; start?: string; end?: string } | null;
   selectedDate?: Date | null;
@@ -22,6 +22,7 @@ type Props = {
   onSlotSelect?: ((val: { date: string; start?: string; end?: string } | null) => void) | ((date: Date | null) => void);
   availabilityEndpoint?: string;
   showTimeSlots?: boolean;
+  blocksEntireDay?: boolean;
 };
 
 const pad = (n: number) => (n < 10 ? `0${n}` : `${n}`);
@@ -40,7 +41,7 @@ function sessionStartsForDate(dateISO: string): string[] {
   return isWeekend ? ["17:00", "19:00"] : ["18:00"];
 }
 
-function buildSessionSlots(dateISO: string, durationHours: 1 | 2): { start: string; end: string }[] {
+function buildSessionSlots(dateISO: string, durationHours: number): { start: string; end: string }[] {
   const starts = sessionStartsForDate(dateISO);
   const durMin = durationHours * 60;
   return starts.map((s) => {
@@ -62,6 +63,7 @@ export default function BookingCalendar(props: Props) {
     onSlotSelect,
     availabilityEndpoint,
     showTimeSlots = true,
+    blocksEntireDay = false,
   } = props;
 
   // Normalize inputs
@@ -89,7 +91,7 @@ export default function BookingCalendar(props: Props) {
   useEffect(() => {
     const url =
       availabilityEndpoint ??
-      `/api/bookings?mode=availability&ym=${encodeURIComponent(ym)}&service=${encodeURIComponent(service)}`;
+      `/api/bookings?mode=availability&ym=${encodeURIComponent(ym)}&service=${encodeURIComponent(service)}&durationHours=${encodeURIComponent(String(durationHours))}&exclusiveDay=${blocksEntireDay ? 'true' : 'false'}`;
     let alive = true;
     const controller = new AbortController();
     setAvailability({});
@@ -109,6 +111,12 @@ export default function BookingCalendar(props: Props) {
         setAvailability(parsed.availability);
         setMinBookingDate(parsed.minBookingDate);
         setAvailabilityStatus("ready");
+        if (
+          effectiveValue?.date
+          && (parsed.availability[effectiveValue.date]?.fullDay || parsed.availability[effectiveValue.date]?.closed)
+        ) {
+          (effectiveOnChange as ((value: { date: string; start?: string; end?: string } | null) => void) | undefined)?.(null);
+        }
       } catch (error) {
         if (!alive || controller.signal.aborted) return;
         console.error("[BookingCalendar] Availability unavailable", error);
@@ -126,7 +134,7 @@ export default function BookingCalendar(props: Props) {
     // effectiveOnChange is intentionally captured for fail-closed cleanup only;
     // inline consumer callbacks must not cause repeated availability requests.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ym, service, availabilityEndpoint, availabilityReload]);
+  }, [ym, service, durationHours, blocksEntireDay, availabilityEndpoint, availabilityReload]);
 
   const daysGrid = useMemo(() => {
     const y = cursor.getFullYear();
@@ -146,7 +154,7 @@ export default function BookingCalendar(props: Props) {
   const selectDay = (iso: string) => {
     if (availabilityStatus !== "ready") return;
     if (!iso || isPastBookingDate(iso) || (minBookingDate !== null && iso < minBookingDate)) return;
-    if (availability[iso]?.fullDay) return;
+    if (availability[iso]?.fullDay || availability[iso]?.closed) return;
 
     // Check if onChange expects Date | null (for selectedDate interface)
     if (selectedDate !== undefined) {
@@ -231,7 +239,7 @@ export default function BookingCalendar(props: Props) {
           const isPast = isPastBookingDate(c.dateISO);
           const isBeforeMinimum = minBookingDate !== null && c.dateISO < minBookingDate;
           const availabilityUnavailable = availabilityStatus !== "ready";
-          const disabled = availabilityUnavailable || isPast || isBeforeMinimum || info?.fullDay === true;
+          const disabled = availabilityUnavailable || isPast || isBeforeMinimum || info?.fullDay === true || info?.closed === true;
 
           return (
             <button
@@ -255,6 +263,8 @@ export default function BookingCalendar(props: Props) {
                   ? "Miniony termin"
                   : isBeforeMinimum
                   ? `Najbliższy możliwy termin: ${minBookingDate}`
+                  : info?.closed
+                  ? "Brak godzin mieszczących wybrany pakiet"
                   : disabled
                   ? "Dzień zajęty"
                   : c.dateISO

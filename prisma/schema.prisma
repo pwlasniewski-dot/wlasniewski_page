@@ -532,6 +532,39 @@ model Package {
   @@map("packages")
 }
 
+model BookingAvailabilityRule {
+  id                    Int      @id @default(autoincrement())
+  service_key           String   @db.VarChar(30)
+  day_of_week           Int
+  enabled               Boolean  @default(true)
+  start_minute          Int
+  end_minute            Int
+  slot_interval_minutes Int      @default(60)
+  created_at            DateTime @default(now())
+  updated_at            DateTime @updatedAt
+
+  @@unique([service_key, day_of_week])
+  @@index([service_key, enabled])
+  @@map("booking_availability_rules")
+}
+
+model BookingAvailabilityException {
+  id                    Int      @id @default(autoincrement())
+  service_key           String   @db.VarChar(30)
+  date                  DateTime @db.Date
+  mode                  String   @db.VarChar(20)
+  start_minute          Int?
+  end_minute            Int?
+  slot_interval_minutes Int?
+  note                  String?  @db.VarChar(160)
+  created_at            DateTime @default(now())
+  updated_at            DateTime @updatedAt
+
+  @@unique([service_key, date])
+  @@index([date])
+  @@map("booking_availability_exceptions")
+}
+
 model GiftCardOrder {
   id                Int       @id @default(autoincrement())
   order_number      String?   @unique

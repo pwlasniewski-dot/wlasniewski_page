@@ -1,6 +1,7 @@
 import { sendEmail, getAdminEmail } from './sender';
 import { generateBookingConfirmedEmail, generateAdminEmail } from '@/lib/email-templates';
 import { Booking } from '@prisma/client';
+import { formatBookingTimeRange } from '@/lib/bookingSchedule';
 
 export async function sendBookingConfirmationEmail(booking: Booking) {
     const formattedDate = new Date(booking.date).toLocaleDateString('pl-PL', {
@@ -21,7 +22,7 @@ export async function sendBookingConfirmationEmail(booking: Booking) {
         service: booking.service,
         packageName: booking.package,
         date: formattedDate,
-        time: booking.start_time ? (booking.end_time ? `${booking.start_time} - ${booking.end_time}` : booking.start_time) : undefined,
+        time: formatBookingTimeRange(booking.start_time, booking.end_time),
         location: booking.venue_city ? (booking.venue_place ? `${booking.venue_city}, ${booking.venue_place}` : booking.venue_city) : undefined,
         price: priceZl,
         promoCode: booking.promo_code || undefined,

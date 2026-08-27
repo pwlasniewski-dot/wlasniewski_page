@@ -6,6 +6,9 @@ import { requireAuth } from "@/lib/auth/middleware";
 import { normalizeGoogleReviewUrl } from "@/lib/marketing/gallery-trust";
 import { isBookingBlockingAvailability } from '@/lib/bookingStatus';
 import { minimumBookingDateISO } from '@/lib/bookingDate';
+import { buildBookingSlots, normalizeBookingServiceKey, resolveBookingSchedule } from '@/lib/bookingSchedule';
+import { loadBookingScheduleConfiguration } from '@/lib/bookingScheduleRepository';
+import { hasBookingDateTimeConflict } from '@/lib/bookingAvailability';
 
 import prisma from '@/lib/db/prisma';
 
@@ -39,12 +42,19 @@ export async function GET(request: Request) {
             const endDate = new Date(Date.UTC(year, month, 1));
 
             // Fetch bookings for this month
-            const [bookings, bookingSettings] = await Promise.all([
+            const lastMonthDate = new Date(endDate.getTime() - 86_400_000).toISOString().slice(0, 10);
+            const serviceKey = normalizeBookingServiceKey(searchParams.get('service'));
+            const requestedDuration = Number(searchParams.get('durationHours'));
+            const durationMinutes = Number.isFinite(requestedDuration) && requestedDuration > 0
+                ? Math.min(24, requestedDuration) * 60
+                : 60;
+            const exclusiveDay = searchParams.get('exclusiveDay') === 'true';
+            const [bookings, bookingSettings, bookingConfiguration] = await Promise.all([
                 prisma.booking.findMany({
                     where: {
                         date: {
-                            gte: startDate,
-                            lt: endDate,
+                            gte: new Date(startDate.getTime() - 86_400_000),
+                            lt: new Date(endDate.getTime() + 86_400_000),
                         },
                         status: {
                             notIn: ["cancelled", "rejected", "archived"],
@@ -62,21 +72,45 @@ export async function GET(request: Request) {
                     },
                 }),
                 prisma.setting.findFirst({ orderBy: { id: 'asc' }, select: { booking_min_days_ahead: true } }),
+                loadBookingScheduleConfiguration({
+                    service: serviceKey,
+                    fromDate: startDate.toISOString().slice(0, 10),
+                    toDate: lastMonthDate,
+                }),
             ]);
 
             const availability: Record<string, any> = {};
+            const blockingBookings = bookings.filter(booking => isBookingBlockingAvailability(booking));
+
+            for (let day = 1; day <= new Date(Date.UTC(year, month, 0)).getUTCDate(); day += 1) {
+                const dateKey = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const schedule = resolveBookingSchedule({
+                    serviceKey,
+                    date: dateKey,
+                    rules: bookingConfiguration.rules,
+                    exceptions: bookingConfiguration.exceptions,
+                });
+                const candidateSlots = schedule?.enabled ? buildBookingSlots(schedule, durationMinutes) : [];
+                const hasBookableSlot = candidateSlots.some(slot => !hasBookingDateTimeConflict(blockingBookings, {
+                    dateISO: dateKey,
+                    blocksEntireDay: exclusiveDay,
+                    startTime: slot.start,
+                    endTime: slot.end,
+                    endDayOffset: slot.endDayOffset,
+                }));
+                availability[dateKey] = {
+                    fullDay: false,
+                    closed: !schedule?.enabled || !hasBookableSlot,
+                    booked: [],
+                    ranges: [],
+                };
+            }
 
             // Process bookings into availability format
-            bookings.filter(booking => isBookingBlockingAvailability(booking)).forEach((booking) => {
+            blockingBookings.forEach((booking) => {
                 const dateKey = booking.date.toISOString().split("T")[0];
 
-                if (!availability[dateKey]) {
-                    availability[dateKey] = {
-                        fullDay: false,
-                        booked: [],
-                        ranges: [],
-                    };
-                }
+                if (!availability[dateKey]) return;
 
                 // Wyłącznie jawna konfiguracja pakietu może zablokować cały dzień.
                 if (booking.blocks_entire_day) {
@@ -89,7 +123,8 @@ export async function GET(request: Request) {
                         if (booking.end_time) {
                             availability[dateKey].ranges.push({
                                 start: booking.start_time,
-                                end: booking.end_time
+                                end: booking.end_time,
+                                endDayOffset: booking.end_time <= booking.start_time ? 1 : 0,
                             });
                         }
                     }

@@ -6,7 +6,13 @@ import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { loadDronePhotographyCmsPage } from '@/lib/dronePhotographyCms';
 import { salesAttributionFromPayload } from '@/lib/analytics/salesAttribution';
-import { hasBookingConflict, isRequestedTimeAllowed } from '@/lib/bookingAvailability';
+import { hasBookingDateTimeConflict } from '@/lib/bookingAvailability';
+import {
+    normalizeBookingServiceKey,
+    resolveBookingSchedule,
+    validateBookingSlot,
+} from '@/lib/bookingSchedule';
+import { loadBookingScheduleConfiguration } from '@/lib/bookingScheduleRepository';
 import { bookingDateUtcRange, isBookingDateAllowed, isBookingStartInFuture, minimumBookingDateISO } from '@/lib/bookingDate';
 import { isBookingBlockingAvailability } from '@/lib/bookingStatus';
 import { getClientIp, rateLimit } from '@/lib/rate-limit';
@@ -16,6 +22,12 @@ class BookingConflictError extends Error {}
 class GiftCardUnavailableError extends Error {}
 class ReferralVoucherUnavailableError extends Error {}
 class PromoCodeUnavailableError extends Error {}
+
+function shiftBookingDate(dateISO: string, days: number) {
+    const shifted = new Date(`${dateISO}T00:00:00.000Z`);
+    shifted.setUTCDate(shifted.getUTCDate() + days);
+    return shifted.toISOString().slice(0, 10);
+}
 
 export async function POST(request: Request) {
     try {
@@ -148,7 +160,6 @@ export async function POST(request: Request) {
                 let packageName = '';
                 let packageHours = 1;
                 let packageBlocksEntireDay = false;
-                let packageAvailableHours: string | null = null;
                 let basePrice = 0;
                 let dronePackage: { slug: string; name: string; price: number } | null = null;
                 let selectedPackage: any = null;
@@ -183,7 +194,6 @@ export async function POST(request: Request) {
                     packageName = selectedPackage.name;
                     packageHours = selectedPackage.hours;
                     packageBlocksEntireDay = selectedPackage.blocks_entire_day === true;
-                    packageAvailableHours = selectedPackage.available_hours;
                     basePrice = selectedPackage.price;
 
                     if (md.drone_addon_slug) {
@@ -303,29 +313,44 @@ export async function POST(request: Request) {
                         message: `Najbliższy możliwy dzień rezerwacji to ${minimumBookingDateISO(minDaysAhead, bookingValidationTime, 'Europe/Warsaw')}.`,
                     }, { status: 400 });
                 }
-                if (!isRequestedTimeAllowed({
-                    startTime: md.start_time,
-                    endTime: md.end_time,
-                    durationHours: packageHours,
-                    availableHours: packageAvailableHours,
-                    blocksEntireDay: packageBlocksEntireDay,
-                })) {
+                const serviceKey = normalizeBookingServiceKey(serviceName);
+                const scheduleConfiguration = await loadBookingScheduleConfiguration({
+                    service: serviceKey,
+                    fromDate: bookingDateISO,
+                    toDate: bookingDateISO,
+                });
+                const resolvedSchedule = resolveBookingSchedule({
+                    serviceKey,
+                    date: bookingDateISO,
+                    rules: scheduleConfiguration.rules,
+                    exceptions: scheduleConfiguration.exceptions,
+                });
+                const verifiedSlot = resolvedSchedule?.enabled
+                    ? validateBookingSlot({
+                        schedule: resolvedSchedule,
+                        durationMinutes: packageHours * 60,
+                        startTime: md.start_time,
+                        endTime: md.end_time,
+                        endDayOffset: Number(md.end_day_offset),
+                    })
+                    : null;
+                if (!verifiedSlot) {
                     return NextResponse.json({ ok: false, message: "Wybrana godzina nie jest dostępna dla tego pakietu." }, { status: 409 });
                 }
-                const requestedStart = packageBlocksEntireDay ? '00:00' : md.start_time;
+                const requestedStart = verifiedSlot.start;
                 if (!isBookingStartInFuture(bookingDateISO, requestedStart, bookingValidationTime, 'Europe/Warsaw')) {
                     return NextResponse.json({ ok: false, message: "Wybrana godzina już minęła. Wybierz późniejszy termin." }, { status: 409 });
                 }
 
-                const bookingDate = new Date(`${bookingDateISO}T${md.start_time || '00:00'}:00.000Z`);
+                const bookingDate = new Date(`${bookingDateISO}T${verifiedSlot.start}:00.000Z`);
                 const allowedBookingFields: Record<string, unknown> = {
                     service: serviceName,
                     package: packageName,
                     price: verifiedPrice,
                     base_price: basePrice,
                     date: bookingDate,
-                    start_time: md.start_time ?? null,
-                    end_time: md.end_time ?? null,
+                    start_time: verifiedSlot.start,
+                    end_time: verifiedSlot.end,
                     venue_city: md.venue_city ?? null,
                     venue_place: md.venue_place ?? null,
                     notes: md.notes ?? null,
@@ -346,7 +371,7 @@ export async function POST(request: Request) {
                     flight_check_status: hasDrone ? 'PENDING' : null,
                     blocks_entire_day: packageBlocksEntireDay,
                     booking_snapshot: {
-                        version: 1,
+                        version: 2,
                         service: serviceName,
                         package: { name: packageName, price: basePrice, hours: packageHours },
                         drone: dronePackage,
@@ -355,6 +380,12 @@ export async function POST(request: Request) {
                         venue: { city: md.venue_city || null, place: md.venue_place || null },
                         droneGoal: hasDrone ? String(md.drone_goal) : null,
                         bookingSource: String(md.booking_source || 'booking').slice(0, 120),
+                        timing: {
+                            start: verifiedSlot.start,
+                            end: verifiedSlot.end,
+                            endDayOffset: verifiedSlot.endDayOffset,
+                            timezone: 'Europe/Warsaw',
+                        },
                         attribution: salesAttributionFromPayload(md),
                         droneTermsVersion: hasDrone ? '2026-08-19' : null,
                     },
@@ -366,20 +397,30 @@ export async function POST(request: Request) {
                 let booking;
                 try {
                     booking = await prisma.$transaction(async tx => {
-                        // Blokada transakcyjna per dzień domyka wyścig dwóch równoległych
-                        // checkoutów. Po uzyskaniu blokady zawsze odczytujemy termin ponownie.
-                        await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${`booking:${bookingDateISO}`}))`;
+                        // Rezerwacja nocna blokuje oba dni. Sortowanie kluczy utrzymuje
+                        // tę samą kolejność blokad dla równoległych checkoutów.
+                        const lockDates = [
+                            bookingDateISO,
+                            ...(verifiedSlot.endDayOffset === 1 ? [shiftBookingDate(bookingDateISO, 1)] : []),
+                        ].sort();
+                        for (const lockDate of lockDates) {
+                            await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${`booking:${lockDate}`}))`;
+                        }
+                        const conflictRangeStart = new Date(`${shiftBookingDate(bookingDateISO, -1)}T00:00:00.000Z`);
+                        const conflictRangeEnd = new Date(`${shiftBookingDate(bookingDateISO, 2)}T00:00:00.000Z`);
                         const lockedBookings = await tx.booking.findMany({
                             where: {
-                                date: { gte: bookingRange.start, lt: bookingRange.end },
+                                date: { gte: conflictRangeStart, lt: conflictRangeEnd },
                                 status: { notIn: ['cancelled', 'rejected'] },
                             },
-                            select: { blocks_entire_day: true, start_time: true, end_time: true, status: true, created_at: true },
+                            select: { date: true, blocks_entire_day: true, start_time: true, end_time: true, status: true, created_at: true },
                         });
-                        if (hasBookingConflict(lockedBookings.filter(candidate => isBookingBlockingAvailability(candidate)), {
+                        if (hasBookingDateTimeConflict(lockedBookings.filter(candidate => isBookingBlockingAvailability(candidate)), {
+                            dateISO: bookingDateISO,
                             blocksEntireDay: packageBlocksEntireDay,
-                            startTime: md.start_time,
-                            endTime: md.end_time,
+                            startTime: verifiedSlot.start,
+                            endTime: verifiedSlot.end,
+                            endDayOffset: verifiedSlot.endDayOffset,
                         })) throw new BookingConflictError();
 
                         if (appliedPromoCode && appliedPromoId) {

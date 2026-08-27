@@ -90,6 +90,11 @@ const BOOKING_FIELDS: Array<[BookingCopyKey, string]> = [
     ['choosePackageLead', 'Komunikat wyboru pakietu — linia 1'],
     ['choosePackageHelp', 'Komunikat wyboru pakietu — linia 2'],
     ['availabilityLoading', 'Komunikat sprawdzania dostępności'],
+    ['startTimeLabel', 'Etykieta pola godziny rozpoczęcia'],
+    ['startTimePlaceholder', 'Pierwsza opcja wyboru godziny'],
+    ['slotOptionTemplate', 'Opcja terminu ({start}, {end}, {nextDay})'],
+    ['slotDurationTemplate', 'Opis czasu trwania ({duration})'],
+    ['nextDayLabel', 'Dopisek po północy'],
     ['fullDayAvailableTitle', 'Dostępny dzień — tytuł'],
     ['fullDayAvailableText', 'Dostępny dzień — opis'],
     ['fullDayUnavailableTitle', 'Zajęty dzień — tytuł'],
@@ -143,7 +148,7 @@ function copyFieldIsLong(key: CopyKey) {
 
 const LONG_BOOKING_FIELDS: BookingCopyKey[] = [
     'heroDescription', 'paymentSplitTemplate', 'paymentFull', 'giftDescription', 'choosePackageHelp',
-    'fullDayAvailableText', 'fullDayUnavailableText', 'splitSummaryTemplate',
+    'fullDayAvailableText', 'fullDayUnavailableText', 'slotDurationTemplate', 'splitSummaryTemplate',
 ];
 
 const LONG_GALLERY_FIELDS: GalleryCopyKey[] = [

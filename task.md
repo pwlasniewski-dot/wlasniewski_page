@@ -1,5 +1,17 @@
 # Aktualny plan prac
 
+## 2026-08-27 — PR #50: grafik usług i rezerwacje do 02:00
+
+- [x] Rozdzielono dostępność sesji, ślubów, przyjęć, urodzin i drona na siedem dni tygodnia.
+- [x] Dodano edytor grafiku i wyjątków daty w `/admin/rezerwacja`; zapis jest autoryzowany i walidowany.
+- [x] Zastąpiono 24 przyciski jednym mobilnym wyborem wyłącznie wolnych godzin z jawnym zakończeniem następnego dnia.
+- [x] Checkout waliduje grafik serwerowo, obsługuje przejście przez północ i blokuje oba dni nocnej rezerwacji.
+- [x] Teksty nowego wyboru godziny podpięto do istniejącego CMS lejka.
+- [x] Dodano addytywną migrację, testy domeny godzin nocnych oraz zgodność ICS/e-mail/kalendarza administratora.
+- [x] Build produkcyjny: 254/254 stron. Testy celowane: 29/29; pełny zestaw: 226/227, jedyna porażka to zastany test galerii wymagający `DATABASE_URL`.
+- [ ] Zaktualizować PR #50, odebrać Deploy Preview i sprawdzić mobilnie sesję oraz wydarzenie kończące się po północy.
+- [ ] Po osobnej zgodzie zastosować migrację produkcyjną; dopiero potem scalić PR.
+
 ## 2026-08-27 — PR #50: poprawka kalendarza Deploy Preview
 
 - [x] Zidentyfikowano rozjazd: kalendarz pozwalał wybrać 29 sierpnia, a endpoint godzin poprawnie wymagał daty od 3 września przy siedmiodniowym wyprzedzeniu.

@@ -2,6 +2,15 @@
 
 Ten dokument stanowi kompleksowy opis funkcjonalności oraz logiki biznesowej platformy **FOTO-DRON Przemysław Właśniewski**. Dokumentacja została opracowana na podstawie audytu technicznego przeprowadzonego w grudniu 2025 r. Szczegóły techniczne dotyczące infrastruktury i wzorców projektowych znajdują się w dokumencie [ARCHITECTURE.md](file:///c:/Strona-fotografa/ARCHITECTURE.md).
 
+## Aktualizacja 2026-08-27 — grafik usług i godziny po północy
+
+- Grafik jest osobny dla `Sesja`, `Ślub`, `Przyjęcie`, `Urodziny` i `Dron`, z konfiguracją poniedziałek–niedziela, włączaniem dnia, godziną od/do oraz interwałem 30 albo 60 minut.
+- Wartość końca może sięgać 02:00 następnego dnia. Klient zawsze wybiera godzinę należącą do daty wskazanej w kalendarzu; system pokazuje prawidłowy dzień zakończenia i nigdy nie renderuje `24:00` ani `26:00`.
+- Długość pakietu musi w całości mieścić się w oknie. Przykładowo pakiet 12-godzinny nie jest oferowany w sześciogodzinnym oknie dnia roboczego.
+- Wyjątek daty ma pierwszeństwo przed regułą tygodniową i może zamknąć dzień albo zastąpić jego godziny. Wyjątki są rozdzielone per usługa.
+- `blocks_entire_day` oznacza wyłączność operacyjną dnia, a nie brak wyboru godziny. Każda rezerwacja zachowuje konkretny początek i koniec.
+- Teksty pola godziny, opcji, czasu trwania i dopisku po północy są częścią istniejącego CMS lejka fotograficznego.
+
 ## Aktualizacja 2026-08-27 — dostępność terminów w rezerwacji
 
 - Minimalne wyprzedzenie zapisane w panelu jest egzekwowane zarówno przez kalendarz miesięczny, sprawdzenie godzin, jak i checkout. Dla wartości 7 dni wcześniejsze daty są nieaktywne już na pierwszym ekranie wyboru.

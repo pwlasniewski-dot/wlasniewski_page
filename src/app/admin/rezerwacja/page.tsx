@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { getApiUrl } from '@/lib/api-config';
 import { Toaster, toast } from 'sonner';
 import RichTextEditor from '@/components/admin/RichTextEditor';
+import BookingAvailabilityEditor from '@/components/admin/BookingAvailabilityEditor';
 
 interface ServiceType {
     id: number;
@@ -219,6 +220,8 @@ export default function AdminPackagesPage() {
                     </button>
                 </div>
 
+                <BookingAvailabilityEditor />
+
                 {/* Service Types List */}
                 <div className="space-y-8">
                     {serviceTypes.map((service) => (
@@ -391,16 +394,8 @@ export default function AdminPackagesPage() {
                                     />
                                 </div>
 
-                                <div>
-                                    <label className="block text-sm font-medium text-zinc-300 mb-1">Dostępne godziny (np: 9,10,11,12,13,14,15,16,17)</label>
-                                    <input
-                                        type="text"
-                                        value={editingPackage.available_hours || ''}
-                                        onChange={(e) => setEditingPackage({ ...editingPackage, available_hours: e.target.value })}
-                                        className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 text-white rounded-lg focus:ring-2 focus:ring-amber-500 outline-none text-sm"
-                                        placeholder="9,10,11,12,13,14,15,16,17"
-                                    />
-                                    <p className="text-xs text-zinc-400 mt-1">Wpisz numery godzin od 0-23 dla poszczególnych dni</p>
+                                <div className="rounded-lg border border-zinc-700 bg-zinc-800/70 p-4 text-sm text-zinc-300">
+                                    Godziny rozpoczęcia ustawia się w sekcji <strong className="text-white">Grafik rezerwacji</strong> u góry strony. Jeden grafik obsługuje ofertę, kalendarz i kontrolę płatności.
                                 </div>
 
                                 <div className="flex items-center gap-2">
@@ -411,7 +406,7 @@ export default function AdminPackagesPage() {
                                         onChange={(e) => setEditingPackage({ ...editingPackage, blocks_entire_day: e.target.checked })}
                                         className="w-4 h-4 rounded"
                                     />
-                                    <label htmlFor="blocks_entire_day" className="text-sm text-zinc-300">Blokuje cały dzień (ślub/urodziny)</label>
+                                    <label htmlFor="blocks_entire_day" className="text-sm text-zinc-300">Po rezerwacji nie przyjmuj innych zleceń rozpoczynających się tego dnia</label>
                                 </div>
 
                                 <div className="flex items-center gap-2">

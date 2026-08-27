@@ -103,6 +103,11 @@ export interface PhotoFunnelConfig {
         choosePackageLead: string;
         choosePackageHelp: string;
         availabilityLoading: string;
+        startTimeLabel: string;
+        startTimePlaceholder: string;
+        slotOptionTemplate: string;
+        slotDurationTemplate: string;
+        nextDayLabel: string;
         fullDayAvailableTitle: string;
         fullDayAvailableText: string;
         fullDayUnavailableTitle: string;
@@ -240,6 +245,11 @@ export const DEFAULT_PHOTO_FUNNEL_CONFIG: PhotoFunnelConfig = {
         choosePackageLead: 'Najpierw wybierz pakiet powyżej,',
         choosePackageHelp: 'abyśmy mogli sprawdzić dostępność dla wybranej długości sesji.',
         availabilityLoading: 'Sprawdzam dostępność...',
+        startTimeLabel: 'Godzina rozpoczęcia',
+        startTimePlaceholder: 'Wybierz dostępną godzinę',
+        slotOptionTemplate: '{start} — zakończenie {end}{nextDay}',
+        slotDurationTemplate: 'Czas trwania: {duration}. Sprawdź godzinę zakończenia przed przejściem dalej.',
+        nextDayLabel: 'następnego dnia',
         fullDayAvailableTitle: 'Pakiet całodniowy (ślub lub przyjęcie)',
         fullDayAvailableText: 'Dzień jest dostępny. Nie musisz wybierać konkretnych godzin.',
         fullDayUnavailableTitle: 'Ten dzień jest już zajęty',
@@ -359,6 +369,11 @@ export const PHOTO_FUNNEL_BOOKING_COPY_LIMITS: Record<keyof PhotoFunnelConfig['b
     choosePackageLead: 180,
     choosePackageHelp: 300,
     availabilityLoading: 120,
+    startTimeLabel: 120,
+    startTimePlaceholder: 160,
+    slotOptionTemplate: 220,
+    slotDurationTemplate: 300,
+    nextDayLabel: 80,
     fullDayAvailableTitle: 180,
     fullDayAvailableText: 300,
     fullDayUnavailableTitle: 180,
