@@ -9,6 +9,7 @@ Total output lines: 2270
 - Usunięto dynamiczną trasę metadanych zależną od nagłówka `Host`. `wlasniewski.pl` otrzymał statyczny `public/robots.txt`, a `aeroanaliza.pl` osobny statyczny plik podawany przez middleware bez wejścia do renderera Next.js.
 - Obie domeny zachowują osobne sitemapy oraz reguły prywatnych tras. Netlify otrzymał całodobowy cache CDN z tygodniowym `stale-while-revalidate`.
 - Testy zawartości, rozdzielenia domen, przepisywania hosta i cache przeszły 10/10. Pełny zestaw: 229/230; jedyna porażka to zastany test galerii wymagający `DATABASE_URL`. Build wygenerował 253/253 strony, a fallbacki bez bazy nie przerwały kompilacji.
+- PR #51 scalono do `main` jako `c68ae15ddcf35cc8ab86eafc42df00c3721d331e`. Produkcyjny smoke test potwierdził `200`, `text/plain`, cache CDN oraz własne sitemapy dla `wlasniewski.pl` i `aeroanaliza.pl`; `www` wykonuje jedno przekierowanie do hosta kanonicznego.
 
 ## 2026-08-27 — wydanie produkcyjne lejka i grafiku rezerwacji
 
