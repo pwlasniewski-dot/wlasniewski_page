@@ -23,11 +23,12 @@ test('moves historical B2B subdomains directly to the canonical Aero host', asyn
     assert.equal(drone.headers.get('location'), 'https://aeroanaliza.pl/');
 });
 
-test('does not rewrite Aero robots to the old missing B2B route', async () => {
+test('rewrites Aero robots to the static domain-specific file', async () => {
     const response = await middleware(request('aeroanaliza.pl', '/robots.txt'));
     assert.equal(response.status, 200);
-    assert.equal(response.headers.get('x-middleware-next'), '1');
-    assert.equal(response.headers.get('x-middleware-rewrite'), null);
+    assert.equal(response.headers.get('x-middleware-next'), null);
+    assert.equal(response.headers.get('x-middleware-rewrite'), 'https://aeroanaliza.pl/_static/aeroanaliza-robots.txt');
+    assert.match(response.headers.get('cache-control') ?? '', /max-age=86400/);
 });
 
 test('rewrites only the canonical sitemap implementation', async () => {

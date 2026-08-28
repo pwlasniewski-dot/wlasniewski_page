@@ -1,5 +1,15 @@
 # Aktualny plan prac
 
+## 2026-08-28 — naprawa przerwanego crawla SEO
+
+- [x] Potwierdzono, że produkcyjne `robots.txt`, sitemap i homepage zwracają `200`, lecz odpowiedź trwa 5–9 sekund.
+- [x] Zastąpiono dynamiczną trasę statycznym `robots.txt` niezależnym od Next.js, bazy i CMS.
+- [x] Zachowano osobny statyczny plik oraz sitemapę dla Aero Analiza.
+- [x] Dodano całodobowy cache CDN i tygodniowe podawanie poprzedniej poprawnej wersji podczas odświeżenia.
+- [x] Testy celowane: 10/10; pełny zestaw: 229/230 (jedyny zastany test galerii wymaga `DATABASE_URL`); `git diff --check`: PASS; build: 253/253.
+- [ ] Opublikować poprawkę i potwierdzić czas/status obu domen na produkcji.
+- [ ] Ponowić zewnętrzny crawl po propagacji wersji.
+
 ## 2026-08-27 — PR #50: grafik usług i rezerwacje do 02:00
 
 - [x] Rozdzielono dostępność sesji, ślubów, przyjęć, urodzin i drona na siedem dni tygodnia.

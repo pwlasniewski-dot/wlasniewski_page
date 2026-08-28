@@ -2,6 +2,12 @@
 
 Ten dokument stanowi kompleksowy opis funkcjonalności oraz logiki biznesowej platformy **FOTO-DRON Przemysław Właśniewski**. Dokumentacja została opracowana na podstawie audytu technicznego przeprowadzonego w grudniu 2025 r. Szczegóły techniczne dotyczące infrastruktury i wzorców projektowych znajdują się w dokumencie [ARCHITECTURE.md](file:///c:/Strona-fotografa/ARCHITECTURE.md).
 
+## Aktualizacja 2026-08-28 — niezależna dostępność robots.txt
+
+- `https://wlasniewski.pl/robots.txt` jest statycznym zasobem fotografii, pozwala indeksować publiczną część serwisu, blokuje trasy prywatne i wskazuje wyłącznie sitemapę `wlasniewski.pl`.
+- `https://aeroanaliza.pl/robots.txt` podaje osobny statyczny kontrakt Aero, jawnie dopuszcza boty Google, Bing i OpenAI oraz wskazuje wyłącznie sitemapę `aeroanaliza.pl`.
+- Dostępność obu plików nie zależy od połączenia z bazą, CMS ani uruchomienia renderera aplikacji. Odpowiedzi mogą być buforowane przez CDN przez 24 godziny.
+
 ## Aktualizacja 2026-08-27 — grafik usług i godziny po północy
 
 - Grafik jest osobny dla `Sesja`, `Ślub`, `Przyjęcie`, `Urodziny` i `Dron`, z konfiguracją poniedziałek–niedziela, włączaniem dnia, godziną od/do oraz interwałem 30 albo 60 minut.
