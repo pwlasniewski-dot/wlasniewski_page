@@ -3,6 +3,13 @@ Total output lines: 2270
 
 # PROJECT_HISTORIA & VADEMECUM STABILNOŚCI
 
+## 2026-08-28 — statyczny robots.txt po przerwanym audycie SEO
+
+- Zewnętrzny crawler zakończył audyt z wynikiem 0, ponieważ nie przeanalizował żadnego URL-a i zgłosił niedostępny `robots.txt`. Kontrola produkcji wykazała poprawny status i treść, ale czas odpowiedzi 5–8 sekund.
+- Usunięto dynamiczną trasę metadanych zależną od nagłówka `Host`. `wlasniewski.pl` otrzymał statyczny `public/robots.txt`, a `aeroanaliza.pl` osobny statyczny plik podawany przez middleware bez wejścia do renderera Next.js.
+- Obie domeny zachowują osobne sitemapy oraz reguły prywatnych tras. Netlify otrzymał całodobowy cache CDN z tygodniowym `stale-while-revalidate`.
+- Testy zawartości, rozdzielenia domen, przepisywania hosta i cache przeszły 10/10. Pełny zestaw: 229/230; jedyna porażka to zastany test galerii wymagający `DATABASE_URL`. Build wygenerował 253/253 strony, a fallbacki bez bazy nie przerwały kompilacji.
+
 ## 2026-08-27 — wydanie produkcyjne lejka i grafiku rezerwacji
 
 - Przed migracją utworzono punkt przywracania Neon `predeploy-backup-booking-20260827` (`br-cool-base-aebqes75`).

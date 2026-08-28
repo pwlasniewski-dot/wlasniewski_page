@@ -93,10 +93,14 @@ export default async function middleware(req: NextRequest) {
             return NextResponse.redirect(target, 308);
         }
 
-        // Root metadata route already switches its content by Host. Let it run
-        // directly; rewriting it to /b2b/robots.txt produced an HTML 404.
+        // Keep robots.txt static and domain-specific. The target lives under
+        // /_static, which is excluded from this middleware, so the rewrite can
+        // never recurse or invoke a Next.js metadata/server route.
         if (url.pathname === '/robots.txt') {
-            return NextResponse.next();
+            url.pathname = '/_static/aeroanaliza-robots.txt';
+            const response = NextResponse.rewrite(url);
+            response.headers.set('Cache-Control', 'public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800');
+            return response;
         }
 
         // For sitemap.xml, rewrite to /b2b/sitemap.xml

@@ -1,0 +1,26 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /api
+
+User-agent: OAI-SearchBot
+Allow: /
+Disallow: /admin
+Disallow: /api
+
+User-agent: ChatGPT-User
+Allow: /
+Disallow: /admin
+Disallow: /api
+
+User-agent: Googlebot
+Allow: /
+Disallow: /admin
+Disallow: /api
+
+User-agent: Bingbot
+Allow: /
+Disallow: /admin
+Disallow: /api
+
+Sitemap: https://aeroanaliza.pl/sitemap.xml

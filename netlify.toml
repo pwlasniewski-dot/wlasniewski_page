@@ -62,6 +62,20 @@
   [headers.values]
     Cache-Control = "public, max-age=86400"
 
+# robots.txt must stay available even when the Next.js runtime or database is
+# cold. Crawlers commonly abort the whole audit when this response times out.
+[[headers]]
+  for = "/robots.txt"
+  [headers.values]
+    Cache-Control = "public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800"
+    Content-Type = "text/plain; charset=utf-8"
+
+[[headers]]
+  for = "/_static/aeroanaliza-robots.txt"
+  [headers.values]
+    Cache-Control = "public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800"
+    Content-Type = "text/plain; charset=utf-8"
+
 # HTML pages - short cache with revalidation
 [[headers]]
   for = "/*"

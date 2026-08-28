@@ -1,0 +1,18 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /api
+Disallow: /galeria
+Disallow: /strefa-klienta
+Disallow: /konto
+Disallow: /panel-fotografa
+Disallow: /logowanie
+Disallow: /rejestracja
+Disallow: /checkout
+Disallow: /invite
+Disallow: /foto-wyzwanie/invite
+Disallow: /foto-match/profil
+Disallow: /foto-match/onboarding
+Disallow: /karta-podarunkowa/dostep
+
+Sitemap: https://wlasniewski.pl/sitemap.xml

@@ -2,6 +2,13 @@
 
 Ten dokument stanowi techniczny blueprint platformy fotograficznej wlasniewski.pl. Jest on przeznaczony dla senior deweloperów i architektów systemowych, opisując strukturę, wzorce projektowe oraz krytyczne protokoły bezpieczeństwa.
 
+## Aktualizacja 2026-08-28 — statyczna granica robots.txt
+
+- `src/app/robots.ts` został usunięty, ponieważ odczyt `headers()` wymuszał dynamiczną odpowiedź Next.js i powodował wielosekundowe opóźnienie na Netlify.
+- B2C korzysta bezpośrednio z `public/robots.txt`. Dla hosta Aero middleware przepisuje `/robots.txt` do `/_static/aeroanaliza-robots.txt`; katalog `/_static` jest wyłączony z matchera, więc przepisywanie nie zapętla się i nie uruchamia renderera.
+- Nagłówki Netlify ustawiają `max-age=86400`, `s-maxage=86400` i `stale-while-revalidate=604800`. Pliki są dostępne bez Prisma, zmiennych CMS i funkcji serwerowych.
+- Rozdzielenie marek jest twarde: każdy plik zawiera wyłącznie sitemapę własnej domeny.
+
 ## Aktualizacja 2026-08-27 — model grafiku i absolutna oś czasu rezerwacji
 
 - `BookingAvailabilityRule` przechowuje jedno okno per `service_key/day_of_week`; minuty końca mogą przekroczyć 1440 do maksymalnie 1560. `BookingAvailabilityException` nadpisuje konkretną datę trybem `CLOSED` lub `CUSTOM`.
