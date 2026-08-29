@@ -2,6 +2,13 @@
 
 Ten dokument stanowi kompleksowy opis funkcjonalności oraz logiki biznesowej platformy **FOTO-DRON Przemysław Właśniewski**. Dokumentacja została opracowana na podstawie audytu technicznego przeprowadzonego w grudniu 2025 r. Szczegóły techniczne dotyczące infrastruktury i wzorców projektowych znajdują się w dokumencie [ARCHITECTURE.md](file:///c:/Strona-fotografa/ARCHITECTURE.md).
 
+## Aktualizacja 2026-08-29 — Studio voucherów
+
+- Panel `Vouchery / prezenty → Studio voucherów` pozwala przygotować voucher do odbioru osobistego bez adresu e-mail albo do wysyłki na podany adres.
+- Administrator może wybrać kontrolowany wzór, zmienić kod, wartość rozliczeniową, odbiorcę, nadawcę, tytuł, rodzaj sesji, dedykację i datę ważności oraz zdecydować, czy kwota ma być widoczna.
+- Akcja `Zapisz i drukuj / PDF` najpierw utrwala voucher, a dopiero potem otwiera wersję wydruku. Dzięki temu kod widoczny na kartce zawsze istnieje w bazie.
+- Wyłączenie ceny działa spójnie w podglądzie administratora, wydruku, e-mailu i publicznym widoku odbiorcy. Nie usuwa wartości vouchera wykorzystywanej przy rezerwacji.
+
 ## Aktualizacja 2026-08-28 — niezależna dostępność robots.txt
 
 - `https://wlasniewski.pl/robots.txt` jest statycznym zasobem fotografii, pozwala indeksować publiczną część serwisu, blokuje trasy prywatne i wskazuje wyłącznie sitemapę `wlasniewski.pl`.

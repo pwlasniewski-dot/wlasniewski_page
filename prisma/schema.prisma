@@ -614,6 +614,7 @@ model GiftCard {
   message          String?
   card_description String?
   card_title       String?
+  show_price       Boolean         @default(true)
   lowest_price_30d Int?
   status           String          @default("active")
   owner_id         Int?

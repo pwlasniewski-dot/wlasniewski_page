@@ -1,5 +1,16 @@
 # Aktualny plan prac
 
+## 2026-08-29 — Studio voucherów prezentowych
+
+- [x] Audyt istniejących kart, wydruku, e-maila, panelu, API i modelu Prisma.
+- [x] Czytelne wejście `Vouchery / prezenty → Studio voucherów` oraz wzory szybkiego startu.
+- [x] Opcjonalny e-mail, edycja odbiorcy/nadawcy/treści/ważności i przełącznik ceny.
+- [x] Spójny podgląd, zapis przed drukiem, natywny druk lub PDF oraz bezpieczna wysyłka e-mail.
+- [x] Addytywna migracja `GiftCard.show_price` i zgodność publicznego widoku odbiorcy.
+- [x] Testy celowane generatora i kontraktu Studio voucherów.
+- [x] Build produkcyjny 253/253; testy celowane 5/5; pełny zestaw 234/235 z jednym zastanym testem wymagającym `DATABASE_URL`.
+- [ ] Deploy Preview, migracja produkcyjna, scalenie oraz smoke test produkcji.
+
 ## 2026-08-28 — naprawa przerwanego crawla SEO
 
 - [x] Potwierdzono, że produkcyjne `robots.txt`, sitemap i homepage zwracają `200`, lecz odpowiedź trwa 5–9 sekund.

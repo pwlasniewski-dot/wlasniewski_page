@@ -2,6 +2,13 @@
 
 Ten dokument stanowi techniczny blueprint platformy fotograficznej wlasniewski.pl. Jest on przeznaczony dla senior deweloperów i architektów systemowych, opisując strukturę, wzorce projektowe oraz krytyczne protokoły bezpieczeństwa.
 
+## Aktualizacja 2026-08-29 — architektura Studio voucherów
+
+- `GiftCard.show_price` jest addytywną, domyślnie zgodną wstecz flagą prezentacji. `value` i `amount` pozostają serwerowym źródłem wartości rozliczeniowej niezależnie od widoczności ceny.
+- `/api/gift-cards` wymaga autoryzacji administratora, waliduje długości, format kodu, e-mail i kwotę oraz pozwala na `recipient_email=null` dla odbioru osobistego. Edycja zapisuje komplet pól używanych przez podgląd, druk i e-mail.
+- `voucherPrintDocument.ts` generuje samodzielny dokument wydruku z escapowaniem treści administratora. Nie przenosi danych przez query string i nie tworzy osobnego, niespójnego rekordu vouchera.
+- `giftCardTemplate.ts`, `GiftCard.tsx` i publiczny widok dostępu odczytują tę samą flagę widoczności ceny. Addytywna migracja zachowuje `true` dla istniejących kart.
+
 ## Aktualizacja 2026-08-28 — statyczna granica robots.txt
 
 - `src/app/robots.ts` został usunięty, ponieważ odczyt `headers()` wymuszał dynamiczną odpowiedź Next.js i powodował wielosekundowe opóźnienie na Netlify.

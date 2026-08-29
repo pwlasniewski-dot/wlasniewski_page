@@ -61,7 +61,9 @@ export async function POST(request: NextRequest) {
             'Przemysław Właśniewski Fotografia',
             giftCard.message || '',
             logoUrl,
-            'KARTA PODARUNKOWA'
+            giftCard.card_title || 'KARTA PODARUNKOWA',
+            giftCard.card_description || undefined,
+            { showPrice: giftCard.show_price, validUntil: giftCard.valid_until }
         );
 
         // Send email

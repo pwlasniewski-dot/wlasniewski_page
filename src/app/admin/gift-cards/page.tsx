@@ -6,6 +6,7 @@ import { Gift, Mail, Printer, Copy, Trash2, Plus, Share2, Facebook, Send, Shoppi
 import GiftCard from '@/components/GiftCard';
 import toast from 'react-hot-toast';
 import { getApiUrl } from '@/lib/api-config';
+import { buildVoucherPrintDocument } from '@/lib/gift-cards/voucherPrintDocument';
 
 const THEMES = [
     { id: 'christmas', label: 'Boże Narodzenie', icon: '🎄' },
@@ -17,9 +18,9 @@ const THEMES = [
     { id: 'childrens-day', label: 'Dzień Dziecka', icon: '🎈' },
     { id: 'wedding', label: 'Ślub', icon: '💒' },
     { id: 'birthday', label: 'Urodziny', icon: '🎂' },
-    { id: 'gold', label: 'Złota (logo)', icon: '✨' },
-    { id: 'blue', label: 'Niebieska (logo)', icon: '🌟' },
-    { id: 'green', label: 'Zielona (logo)', icon: '🌿' }
+    { id: 'gold', label: 'Nocturne Gold — premium', icon: '✨' },
+    { id: 'blue', label: 'Celebration — uroczysta', icon: '🌟' },
+    { id: 'green', label: 'Rodzinna — jasna', icon: '🌿' }
 ] as const;
 
 interface GiftCard {
@@ -35,6 +36,8 @@ interface GiftCard {
     card_description?: string;
     notes?: string;
     lowest_price_30d?: number;
+    show_price?: boolean;
+    valid_until?: string;
     status?: string;
     created_at?: string;
 }
@@ -59,7 +62,7 @@ export default function GiftCardsAdmin() {
     const [formData, setFormData] = useState({
         code: '',
         value: 100,
-        theme: 'christmas' as string,
+        theme: 'green' as string,
         recipientEmail: '',
         recipientName: '',
         senderName: '',
@@ -67,7 +70,9 @@ export default function GiftCardsAdmin() {
         card_title: '',
         card_description: '',
         notes: '',
-        lowest_price_30d: 0
+        lowest_price_30d: 0,
+        showPrice: false,
+        validUntil: ''
     });
 
     useEffect(() => {
@@ -225,6 +230,16 @@ export default function GiftCardsAdmin() {
         setFormData(prev => ({ ...prev, code }));
     };
 
+    const applyPreset = (preset: 'family' | 'couple' | 'birthday' | 'wedding') => {
+        const presets = {
+            family: { theme: 'green', card_title: 'Voucher podarunkowy', card_description: 'Sesja rodzinna', message: 'Wspólny czas, naturalne emocje i fotografie na lata.' },
+            couple: { theme: 'valentines', card_title: 'Voucher podarunkowy', card_description: 'Sesja dla dwojga', message: 'Chwila tylko dla Was i fotografie pełne bliskości.' },
+            birthday: { theme: 'birthday', card_title: 'Prezent urodzinowy', card_description: 'Sesja fotograficzna', message: 'Niech ten prezent zostanie z Tobą na lata.' },
+            wedding: { theme: 'wedding', card_title: 'Prezent dla Was', card_description: 'Sesja poślubna', message: 'Na nowy wspólny rozdział i piękne wspomnienia.' },
+        } as const;
+        setFormData(previous => ({ ...previous, ...presets[preset] }));
+    };
+
     const handleEdit = (card: GiftCard) => {
         setEditingId(card.id || null);
         setFormData({
@@ -238,7 +253,9 @@ export default function GiftCardsAdmin() {
             card_title: card.card_title || '',
             card_description: card.card_description || '',
             notes: card.notes || '',
-            lowest_price_30d: card.lowest_price_30d || 0
+            lowest_price_30d: card.lowest_price_30d || 0,
+            showPrice: card.show_price !== false,
+            validUntil: card.valid_until ? new Date(card.valid_until).toISOString().slice(0, 10) : ''
         });
         setShowCreateModal(true);
     };
@@ -249,7 +266,7 @@ export default function GiftCardsAdmin() {
         setFormData({
             code: '',
             value: 100,
-            theme: 'christmas',
+            theme: 'green',
             recipientEmail: '',
             recipientName: '',
             senderName: '',
@@ -257,15 +274,20 @@ export default function GiftCardsAdmin() {
             card_title: '',
             card_description: '',
             notes: '',
-            lowest_price_30d: 0
+            lowest_price_30d: 0,
+            showPrice: false,
+            validUntil: ''
         });
     };
 
-    const createCard = async () => {
-        if (!formData.code || !formData.value || !formData.recipientEmail) {
-            toast.error('Wypełnij wszystkie wymagane pola (kod, wartość, email)');
+    const createCard = async (action: 'save' | 'print' = 'save') => {
+        if (!formData.value || formData.value < 1) {
+            toast.error('Podaj wartość rozliczeniową vouchera');
             return;
         }
+
+        const code = formData.code || Array.from({ length: 8 }, () => 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'[Math.floor(Math.random() * 36)]).join('');
+        const printWindow = action === 'print' ? window.open('', 'voucher-print', 'width=1200,height=850') : null;
 
         setLoading(true);
         try {
@@ -281,7 +303,12 @@ export default function GiftCardsAdmin() {
             // Wait, my PATCH in route.ts is on the base route but requires ID in body. Correct.
 
             const method = isEdit ? 'PATCH' : 'POST';
-            const body = isEdit ? { ...formData, id: editingId } : formData;
+            const payload = {
+                ...formData,
+                code,
+                valid_until: formData.validUntil || null,
+            };
+            const body = isEdit ? { ...payload, id: editingId } : payload;
 
             const res = await fetch(getApiUrl('gift-cards'), {
                 method: method,
@@ -301,13 +328,19 @@ export default function GiftCardsAdmin() {
 
             const data = await res.json();
             if (data.success) {
-                toast.success(isEdit ? 'Karta zaktualizowana' : 'Karta podarunkowa utworzona');
+                const savedCard = data.giftCard as GiftCard;
+                toast.success(isEdit ? 'Voucher zaktualizowany' : 'Voucher zapisany');
+                if (action === 'print') {
+                    openVoucherPrint(savedCard, printWindow);
+                }
                 handleCloseModal();
                 fetchCards();
             } else {
+                printWindow?.close();
                 toast.error(data.error || 'Błąd');
             }
         } catch (error) {
+            printWindow?.close();
             console.error('Error:', error);
             toast.error('Błąd serwera');
         } finally {
@@ -355,188 +388,36 @@ export default function GiftCardsAdmin() {
         toast.success('Kod skopiowany');
     };
 
-    const printCard = (card: GiftCard) => {
-        const printWindow = window.open('', '', 'width=1000,height=700');
-        if (printWindow) {
-            const themes: any = {
-                christmas: { bg: 'linear-gradient(135deg, #c41e3a 0%, #165b33 100%)', emoji: '🎄' },
-                wosp: { bg: 'linear-gradient(135deg, #e63946 0%, #a4161a 100%)', emoji: '❤️' },
-                valentines: { bg: 'linear-gradient(135deg, #e01e5a 0%, #c5192d 100%)', emoji: '💝' },
-                easter: { bg: 'linear-gradient(135deg, #ffd60a 0%, #ffc300 100%)', emoji: '🐰' },
-                halloween: { bg: 'linear-gradient(135deg, #ff6b35 0%, #f7931e 100%)', emoji: '👻' },
-                'mothers-day': { bg: 'linear-gradient(135deg, #ff69b4 0%, #ff1493 100%)', emoji: '💐' },
-                'childrens-day': { bg: 'linear-gradient(135deg, #00d4ff 0%, #0099ff 100%)', emoji: '🎈' },
-                wedding: { bg: 'linear-gradient(135deg, #fff5ee 0%, #ffe4e1 100%)', emoji: '💒' },
-                birthday: { bg: 'linear-gradient(135deg, #ff6b9d 0%, #c44569 100%)', emoji: '🎂' }
-            };
-
-            const theme = themes[card.theme] || themes.christmas;
-
-            printWindow.document.write(`
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <meta charset="UTF-8">
-                    <title>Karta Podarunkowa - ${card.code}</title>
-                    <style>
-                        * { margin: 0; padding: 0; box-sizing: border-box; }
-                        body { 
-                            font-family: 'Arial', sans-serif; 
-                            background: #f5f5f5; 
-                            padding: 20px;
-                            display: flex;
-                            justify-content: center;
-                            align-items: center;
-                            min-height: 100vh;
-                        }
-                        @media print {
-                            body { padding: 0; background: white; }
-                            .print-container { 
-                                page-break-inside: avoid; 
-                                -webkit-print-color-adjust: exact !important;
-                                print-color-adjust: exact !important;
-                                color-adjust: exact !important;
-                            }
-                        }
-                        .print-container {
-                            width: 540px;
-                            height: 340px;
-                            background: ${theme.bg};
-                            border-radius: 20px;
-                            padding: 30px;
-                            color: white;
-                            display: flex;
-                            flex-direction: column;
-                            justify-content: space-between;
-                            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-                            position: relative;
-                            overflow: hidden;
-                            -webkit-print-color-adjust: exact !important;
-                            print-color-adjust: exact !important;
-                            color-adjust: exact !important;
-                        }
-                        .emoji { font-size: 60px; position: absolute; opacity: 0.2; }
-                        .emoji-top { top: 10px; right: 20px; }
-                        .emoji-bottom { bottom: 10px; left: 20px; }
-                        .header {
-                            text-align: center;
-                            z-index: 2;
-                        }
-                        .title {
-                            font-size: 32px;
-                            font-weight: bold;
-                            margin-bottom: 10px;
-                            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-                        }
-                        .subtitle {
-                            font-size: 14px;
-                            opacity: 0.9;
-                            margin-bottom: 20px;
-                        }
-                        .middle {
-                            text-align: center;
-                            z-index: 2;
-                        }
-                        .recipient {
-                            font-size: 12px;
-                            opacity: 0.85;
-                            margin-bottom: 15px;
-                        }
-                        .amount {
-                            font-size: 48px;
-                            font-weight: bold;
-                            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-                        }
-                        .footer {
-                            display: flex;
-                            justify-content: space-between;
-                            align-items: flex-end;
-                            z-index: 2;
-                        }
-                        .code-box {
-                            background: rgba(255,255,255,0.2);
-                            border: 2px solid rgba(255,255,255,0.5);
-                            border-radius: 8px;
-                            padding: 10px 15px;
-                            text-align: center;
-                        }
-                        .code {
-                            font-size: 18px;
-                            font-weight: bold;
-                            letter-spacing: 2px;
-                        }
-                        .sender {
-                            font-size: 12px;
-                            opacity: 0.8;
-                        }
-                        .print-button {
-                            margin-top: 30px;
-                            text-align: center;
-                        }
-                        button {
-                            padding: 10px 30px;
-                            font-size: 16px;
-                            background: #4CAF50;
-                            color: white;
-                            border: none;
-                            border-radius: 5px;
-                            cursor: pointer;
-                        }
-                        button:hover {
-                            background: #45a049;
-                        }
-                        @media print {
-                            button { display: none; }
-                        }
-                    </style>
-                </head>
-                <body>
-                    <div style="width: 100%; display: flex; flex-direction: column; align-items: center;">
-                        <div class="print-container">
-                            <div class="emoji emoji-top">${theme.emoji}</div>
-                            <div class="emoji emoji-bottom">${theme.emoji}</div>
-                            
-                            <div class="header">
-                                <div class="title">${card.card_title || 'KARTA PODARUNKOWA'}</div>
-                                <div class="subtitle">${card.card_description || 'Życzenia pełnego sza!'}</div>
-                            </div>
-                            
-                            <div class="middle">
-                                <div class="recipient">${card.recipient_name || 'Drogi odbiorco'}</div>
-                                <div class="amount">${card.value} zł</div>
-                            </div>
-                            
-                            <div class="footer">
-                                <div class="code-box">
-                                    <div style="font-size: 10px; opacity: 0.8; margin-bottom: 5px;">KOD PROMOCYJNY</div>
-                                    <div class="code">${card.code}</div>
-                                </div>
-                                <div style="text-align: right;">
-                                    <div class="sender">${card.sender_name || 'Od Fotografa'}</div>
-                                    <div style="font-size: 11px; opacity: 0.7; margin-top: 3px;">wlasniewski.pl</div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="print-button">
-                            <button onclick="window.print()">Drukuj</button>
-                            <button onclick="window.close()" style="margin-left: 10px; background: #999;">Zamknij</button>
-                        </div>
-                    </div>
-                </body>
-                </html>
-            `);
-            printWindow.document.close();
+    const openVoucherPrint = (card: GiftCard, targetWindow?: Window | null) => {
+        const printWindow = targetWindow || window.open('', 'voucher-print', 'width=1200,height=850');
+        if (!printWindow) {
+            toast.error('Przeglądarka zablokowała okno wydruku');
+            return;
         }
+        printWindow.document.open();
+        printWindow.document.write(buildVoucherPrintDocument({
+            code: card.code,
+            value: card.value,
+            theme: card.theme,
+            recipientName: card.recipient_name,
+            senderName: card.sender_name,
+            message: card.message,
+            cardTitle: card.card_title,
+            cardDescription: card.card_description,
+            showPrice: card.show_price !== false,
+            validUntil: card.valid_until,
+        }, window.location.origin));
+        printWindow.document.close();
     };
 
     const generateShareText = (card: GiftCard) => {
-        return `🎁 KARTA PODARUNKOWA - ${card.value}zł
+        const valueLine = card.show_price === false ? '📸 Prezent: sesja fotograficzna' : `📸 Wartość: ${card.value} zł`;
+        return `🎁 KARTA PODARUNKOWA
 
 Otrzymałeś kartę podarunkową na sesję fotograficzną!
 
 💝 Kod promocyjny: ${card.code}
-📸 Wartość: ${card.value}zł
+${valueLine}
 
 ✨ Specjalna oferta - sesja fotograficzna na wiele okazji:
 - Sesje ślubne
@@ -638,7 +519,7 @@ Otrzymałeś kartę podarunkową na sesję fotograficzną!
     };
 
     return (
-        <div className="min-h-screen bg-zinc-950 p-6">
+        <div className="min-h-screen bg-zinc-950 p-3 sm:p-6">
             {!isAuthorized && (
                 <div className="flex items-center justify-center min-h-screen">
                     <div className="text-center">
@@ -650,12 +531,13 @@ Otrzymałeś kartę podarunkową na sesję fotograficzną!
             {isAuthorized && (
                 <div className="max-w-7xl mx-auto">
                     {/* Header */}
-                    <div className="flex items-center justify-between mb-8">
+                    <div className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
                         <div>
-                            <h1 className="text-4xl font-bold text-white">🎁 Karty Podarunkowe</h1>
-                            <p className="text-zinc-400 mt-2">Twórz i zarządzaj kartami podarunkowymi z sezonowymi wzorami</p>
+                            <p className="mb-2 text-xs font-bold uppercase tracking-[0.24em] text-gold-400">Karty podarunkowe</p>
+                            <h1 className="text-4xl font-bold text-white">Studio voucherów</h1>
+                            <p className="text-zinc-400 mt-2">Personalizacja, wydruk lub PDF oraz wysyłka e-mail w jednym miejscu.</p>
                         </div>
-                        <div className="flex gap-4">
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                             <button
                                 onClick={() => router.push('/admin/bookings/orders')}
                                 className="inline-flex items-center gap-2 px-6 py-3 bg-zinc-800 hover:bg-zinc-700 text-white font-bold rounded-lg transition-all"
@@ -668,7 +550,7 @@ Otrzymałeś kartę podarunkową na sesję fotograficzną!
                                 className="inline-flex items-center gap-2 px-6 py-3 bg-gold-500 hover:bg-gold-400 text-black font-bold rounded-lg transition-all"
                             >
                                 <Plus className="w-5 h-5" />
-                                Nowa Karta
+                                Nowy voucher
                             </button>
                         </div>
                     </div>
@@ -739,8 +621,19 @@ Otrzymałeś kartę podarunkową na sesję fotograficzną!
 
                     {/* Create Form */}
                     {showCreateModal && (
-                        <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6 mb-8">
-                            <h2 className="text-xl font-bold text-white mb-6">{editingId ? 'Edytuj Kartę' : 'Stwórz Nową Kartę'}</h2>
+                        <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 sm:p-6 mb-8">
+                            <div className="mb-6 flex flex-col gap-4 border-b border-zinc-800 pb-6">
+                                <div>
+                                    <h2 className="text-xl font-bold text-white">{editingId ? 'Edytuj voucher' : 'Nowy voucher'}</h2>
+                                    <p className="mt-1 text-sm text-zinc-400">Zacznij od wzoru, potem zmień każde pole. E-mail jest opcjonalny przy odbiorze osobistym.</p>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                                    <button type="button" onClick={() => applyPreset('family')} className="rounded-lg border border-gold-500/30 bg-gold-500/10 px-3 py-2 text-sm font-semibold text-gold-200 hover:bg-gold-500/20">Sesja rodzinna</button>
+                                    <button type="button" onClick={() => applyPreset('couple')} className="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm font-semibold text-zinc-200 hover:bg-zinc-700">Dla dwojga</button>
+                                    <button type="button" onClick={() => applyPreset('birthday')} className="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm font-semibold text-zinc-200 hover:bg-zinc-700">Urodziny</button>
+                                    <button type="button" onClick={() => applyPreset('wedding')} className="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm font-semibold text-zinc-200 hover:bg-zinc-700">Ślub</button>
+                                </div>
+                            </div>
 
                             <div className="grid md:grid-cols-2 gap-8">
                                 {/* Form */}
@@ -792,14 +685,13 @@ Otrzymałeś kartę podarunkową na sesję fotograficzną!
 
                                     {/* Recipient Email */}
                                     <div>
-                                        <label className="block text-sm font-medium text-zinc-400 mb-2">Dla kogo (email) *</label>
+                                        <label className="block text-sm font-medium text-zinc-400 mb-2">E-mail odbiorcy <span className="text-zinc-600">(opcjonalny)</span></label>
                                         <input
                                             type="email"
                                             value={formData.recipientEmail}
                                             onChange={e => setFormData(prev => ({ ...prev, recipientEmail: e.target.value }))}
-                                            placeholder="recipient@example.com"
+                                            placeholder="Wpisz tylko, jeśli voucher ma zostać wysłany"
                                             className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:border-gold-500 focus:outline-none"
-                                            required
                                         />
                                     </div>
 
@@ -813,6 +705,30 @@ Otrzymałeś kartę podarunkową na sesję fotograficzną!
                                             placeholder="Imię odbiorcy"
                                             className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:border-gold-500 focus:outline-none"
                                         />
+                                    </div>
+
+                                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                        <label className="flex cursor-pointer items-center justify-between rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-3">
+                                            <span>
+                                                <span className="block text-sm font-medium text-white">Pokaż cenę</span>
+                                                <span className="mt-0.5 block text-xs text-zinc-500">Wyłącz dla prezentu bez kwoty</span>
+                                            </span>
+                                            <input
+                                                type="checkbox"
+                                                checked={formData.showPrice}
+                                                onChange={event => setFormData(previous => ({ ...previous, showPrice: event.target.checked }))}
+                                                className="h-5 w-5 accent-gold-500"
+                                            />
+                                        </label>
+                                        <div>
+                                            <label className="block text-sm font-medium text-zinc-400 mb-2">Ważny do <span className="text-zinc-600">(opcjonalnie)</span></label>
+                                            <input
+                                                type="date"
+                                                value={formData.validUntil}
+                                                onChange={event => setFormData(previous => ({ ...previous, validUntil: event.target.value }))}
+                                                className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-3 text-white focus:border-gold-500 focus:outline-none"
+                                            />
+                                        </div>
                                     </div>
 
                                     {/* Sender */}
@@ -889,17 +805,24 @@ Otrzymałeś kartę podarunkową na sesję fotograficzną!
                                     </div>
 
                                     {/* Actions */}
-                                    <div className="flex gap-2 pt-4">
+                                    <div className="grid grid-cols-1 gap-2 pt-4 sm:grid-cols-2">
                                         <button
-                                            onClick={createCard}
+                                            onClick={() => createCard('save')}
                                             disabled={loading}
                                             className="flex-1 px-6 py-3 bg-gold-500 hover:bg-gold-400 text-black font-bold rounded-lg transition-all disabled:opacity-50"
                                         >
-                                            {loading ? 'Zapisywanie...' : (editingId ? 'Zaktualizuj Kartę' : 'Stwórz Kartę')}
+                                            {loading ? 'Zapisywanie...' : (editingId ? 'Zapisz zmiany' : 'Zapisz voucher')}
+                                        </button>
+                                        <button
+                                            onClick={() => createCard('print')}
+                                            disabled={loading}
+                                            className="flex-1 px-6 py-3 bg-white hover:bg-zinc-100 text-black font-bold rounded-lg transition-all disabled:opacity-50"
+                                        >
+                                            <span className="inline-flex items-center gap-2"><Printer className="h-4 w-4" /> Zapisz i drukuj / PDF</span>
                                         </button>
                                         <button
                                             onClick={handleCloseModal}
-                                            className="px-6 py-3 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg transition-all"
+                                            className="px-6 py-3 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg transition-all sm:col-span-2"
                                         >
                                             Anuluj
                                         </button>
@@ -920,6 +843,7 @@ Otrzymałeś kartę podarunkową na sesję fotograficzną!
                                             message={formData.message}
                                             cardTitle={formData.card_title}
                                             cardDescription={formData.card_description}
+                                            showPrice={formData.showPrice}
                                         />
                                     </div>
                                 </div>
@@ -944,6 +868,7 @@ Otrzymałeś kartę podarunkową na sesję fotograficzną!
                                             message={card.message}
                                             cardTitle={card.card_title}
                                             cardDescription={card.card_description}
+                                            showPrice={card.show_price !== false}
                                         />
                                     </div>
                                 </div>
@@ -977,7 +902,7 @@ Otrzymałeś kartę podarunkową na sesję fotograficzną!
                                     )}
 
                                     {/* Actions */}
-                                    <div className="flex gap-2 pt-3 border-t border-zinc-700">
+                                    <div className="grid grid-cols-2 gap-2 pt-3 border-t border-zinc-700">
                                         <button
                                             onClick={() => copyCode(card.code)}
                                             className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded text-sm transition-all"
@@ -986,7 +911,7 @@ Otrzymałeś kartę podarunkową na sesję fotograficzną!
                                             Kopiuj
                                         </button>
                                         <button
-                                            onClick={() => printCard(card)}
+                                            onClick={() => openVoucherPrint(card)}
                                             className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm transition-all"
                                         >
                                             <Printer className="w-4 h-4" />
@@ -1001,13 +926,13 @@ Otrzymałeś kartę podarunkową na sesję fotograficzną!
                                         </button>
                                         <button
                                             onClick={() => deleteCard(card.id!)}
-                                            className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded transition-all"
+                                            className="flex items-center justify-center px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded transition-all"
                                         >
                                             <Trash2 className="w-4 h-4" />
                                         </button>
                                         <button
                                             onClick={() => handleEdit(card)}
-                                            className="px-3 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded transition-all"
+                                            className="flex items-center justify-center px-3 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded transition-all"
                                         >
                                             <Edit className="w-4 h-4" />
                                         </button>

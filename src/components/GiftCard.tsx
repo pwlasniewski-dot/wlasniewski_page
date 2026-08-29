@@ -15,6 +15,7 @@ interface GiftCardProps {
     cardDescription?: string;
     isPrint?: boolean;
     hideCode?: boolean;
+    showPrice?: boolean;
     orderId?: string;
 }
 
@@ -164,6 +165,7 @@ export default function GiftCard({
     cardDescription,
     isPrint = false,
     hideCode = false,
+    showPrice = true,
     orderId
 }: GiftCardProps) {
     const config = themeConfigs[theme] || themeConfigs.gold;
@@ -214,8 +216,17 @@ export default function GiftCard({
 
                 <div className="flex items-end justify-between gap-[3cqw]">
                     <div>
-                        <div className={`text-[1.45cqw] uppercase tracking-[0.24em] ${config.mutedClass}`}>Wartość</div>
-                        <div className="mt-[0.4cqw] text-[5.8cqw] font-semibold leading-none">{Math.round(value)} zł</div>
+                        {showPrice ? (
+                            <>
+                                <div className={`text-[1.45cqw] uppercase tracking-[0.24em] ${config.mutedClass}`}>Wartość</div>
+                                <div className="mt-[0.4cqw] text-[5.8cqw] font-semibold leading-none">{Math.round(value)} zł</div>
+                            </>
+                        ) : (
+                            <>
+                                <div className={`text-[1.45cqw] uppercase tracking-[0.24em] ${config.mutedClass}`}>Prezent</div>
+                                <div className="mt-[0.6cqw] font-display text-[4.1cqw] font-medium leading-none">Sesja fotograficzna</div>
+                            </>
+                        )}
                     </div>
                     <div className={`rounded-full border ${config.borderClass} bg-black/10 px-[2.7cqw] py-[1.35cqw] text-right backdrop-blur-sm`}>
                         <div className={`text-[1.25cqw] uppercase tracking-[0.2em] ${config.mutedClass}`}>{hideCode ? 'Kod po opłaceniu' : 'Kod karty'}</div>

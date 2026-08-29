@@ -69,12 +69,12 @@ const navigation = [
     { name: 'Banery', href: '/admin/banners', icon: Tag },
     { name: 'Opinie', href: '/admin/testimonials', icon: MessageSquare },
     {
-        name: 'Karty podarunkowe',
+        name: 'Vouchery / prezenty',
         href: '/admin/gift-cards',
         icon: FileText,
         children: [
-            { name: 'Karty', href: '/admin/gift-cards' },
-            { name: 'Sklep', href: '/admin/gift-cards/sklep' },
+            { name: 'Studio voucherów', href: '/admin/gift-cards' },
+            { name: 'Oferta w sklepie', href: '/admin/gift-cards/sklep' },
         ]
     },
     { name: 'Zlecenia Dronowe', href: '/admin/drone-orders', icon: Zap },

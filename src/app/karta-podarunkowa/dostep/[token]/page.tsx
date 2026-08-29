@@ -14,6 +14,8 @@ interface GiftCardData {
     theme: string;
     card_title: string;
     card_description: string;
+    show_price: boolean;
+    valid_until?: string;
     photographer_message?: string;
 }
 
@@ -54,8 +56,9 @@ export default function AccessPage() {
                 // Calculate days remaining - handle potential missing expires_at
                 let expiresAtDate: Date | null = null;
 
-                if (data.expires_at) {
-                    const parsed = new Date(data.expires_at);
+                const configuredExpiry = data.gift_card?.valid_until || data.expires_at;
+                if (configuredExpiry) {
+                    const parsed = new Date(configuredExpiry);
                     if (!isNaN(parsed.getTime())) {
                         expiresAtDate = parsed;
                     }
@@ -112,7 +115,9 @@ export default function AccessPage() {
             try {
                 await navigator.share({
                     title: 'Karta Podarunkowa',
-                    text: `${order?.gift_card.card_title} - ${order?.gift_card.value} zł`,
+                    text: order?.gift_card.show_price === false
+                        ? `${order?.gift_card.card_title} - sesja fotograficzna`
+                        : `${order?.gift_card.card_title} - ${order?.gift_card.value} zł`,
                     url: window.location.href,
                 });
             } catch (err) {
@@ -216,6 +221,7 @@ export default function AccessPage() {
                                 recipientName={order.recipient_name}
                                 senderName={order.sender_name}
                                 message={order.message}
+                                showPrice={order.gift_card.show_price !== false}
                             />
                         </div>
                         <div className="hidden print:block text-black text-center mt-8 space-y-2 print-details">
